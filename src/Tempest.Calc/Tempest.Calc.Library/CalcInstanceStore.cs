@@ -294,7 +294,11 @@ public sealed class CalcInstanceStore
             {
                 var key = ImportProfileKey(profileId, version);
 
-                if (await tx.ReadAsync(ScanProfileCollection, key, token).ConfigureAwait(false) is null)
+                // Only the version as the install writes it: a person who saved their own profile under the demonstration's id and version before the
+                // install (the install then uses theirs, as it cannot overwrite a version) keeps it (security review SEC-C-03).
+                if (await tx.ReadAsync(ScanProfileCollection, key, token).ConfigureAwait(false) is not { } stored
+                    || CalcDemoProject.ShippedProfile(profileId, version) is not { } shipped
+                    || !string.Equals(stored, Serialise(shipped), StringComparison.Ordinal))
                     continue;
 
                 await tx.DeleteAsync(ScanProfileCollection, key, token).ConfigureAwait(false);

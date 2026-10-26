@@ -177,7 +177,8 @@ public sealed class RecordImportService
             var originText = Cell(row, "origin");
             var origin = CalcDataOrigin.UserEntered;
 
-            if (originText.Length > 0 && (!Enum.TryParse(originText, true, out origin) || origin == CalcDataOrigin.Indicative))
+            // A name, never a number or a combination ('7', 'Derived, ManufacturerExample'): Enum.TryParse takes both and makes an origin no record can have (SEC-C-04).
+            if (originText.Length > 0 && (!originText.All(char.IsAsciiLetter) || !Enum.TryParse(originText, true, out origin) || !Enum.IsDefined(origin) || origin == CalcDataOrigin.Indicative))
             {
                 issues.Add($"Line {line}: origin must be UserEntered, Derived or ManufacturerExample, not '{originText}'.");
                 continue;
@@ -338,7 +339,11 @@ public sealed class RecordImportService
         }
 
         // Rows.
-        var rows = ParseRows(table, headerCells.Count, bound, profile);
+        // A declared decimal comma with a comma delimiter makes every unquoted number of a file ambiguous: '14,8' is the two fields 14 and 8, and a row
+        // that also leaves a trailing value out still has the header's width, so nothing else notices (security review SEC-C-01, as W1's P-B-01). A typed
+        // grid is exempt: GridToCsv quotes every cell that holds a comma, so its numbers cannot be split.
+        var commaSplit = profile.Decimal == DecimalMark.Comma && delimiter == ',' && request.FileName is not null;
+        var rows = ParseRows(table, headerCells.Count, bound, profile, commaSplit);
 
         if (rows.Count == 0 && fileIssues.All(i => i.Severity != RecordSeverity.Error))
             fileIssues.Add(new RecordImportIssue(RecordSeverity.Error, null, null, "The file holds a header row and no data rows."));
@@ -671,7 +676,7 @@ public sealed class RecordImportService
     // Rows
     // ------------------------------------------------------------------
 
-    private static List<ParsedRow> ParseRows(CsvTable table, int headerCount, Dictionary<string, BoundColumn> bound, NumberProfile profile)
+    private static List<ParsedRow> ParseRows(CsvTable table, int headerCount, Dictionary<string, BoundColumn> bound, NumberProfile profile, bool commaSplit)
     {
         var rows = new List<ParsedRow>();
 
@@ -695,6 +700,12 @@ public sealed class RecordImportService
 
                 if (cell.IsBlank)
                     continue;
+
+                if (commaSplit && column.IsNumeric && !table.WasQuoted(i, column.FileIndex))
+                {
+                    row.Add(RecordSeverity.Error, column.Symbol, $"{column.Symbol}: '{Clip(cell.Raw)}' is a number without quotes in a file whose fields are separated by commas, and the number format is a decimal comma. A decimal comma ('14,8') is split by the comma into 14 and 8, so no unquoted number can be read reliably. Put the numbers in quotes (\"14,8\") or save the file with semicolons between the fields.");
+                    continue;
+                }
 
                 ParseCell(row, column, cell, profile);
             }

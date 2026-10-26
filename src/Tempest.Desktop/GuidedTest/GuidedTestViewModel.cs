@@ -319,6 +319,52 @@ public sealed class GuidedTestViewModel
         Status = $"Saved the results sheet as '{name}'.";
     }, "save the results sheet");
 
+    /// <summary>
+    /// Saves the results sheet at the path the save picker gave, by the dashboard export's rule (security review SEC-C-09): the file is a <c>.md</c> file,
+    /// so a name with another extension or none gets <c>.md</c> added; the picker's overwrite prompt covered the name as typed, not the name with the
+    /// extension added, so an added extension never replaces a file that is there. Written through a temporary file (<see cref="ManualTestMarkdown.WriteFileAsync"/>).
+    /// </summary>
+    public Task SaveResultsToPathAsync(string pickedPath) => RunGuardedAsync(async () =>
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(pickedPath);
+
+        if (ExportMarkdown() is not { } sheet)
+        {
+            Status = "Start or resume a run first.";
+            return;
+        }
+
+        if (ResultsSheetPath(pickedPath, out var refusal) is not { } path)
+        {
+            Status = refusal!;
+            return;
+        }
+
+        await ManualTestMarkdown.WriteFileAsync(path, sheet).ConfigureAwait(true);
+        Status = $"Saved the results sheet as '{Path.GetFileName(path)}'.";
+    }, "save the results sheet");
+
+    /// <summary>The path a results sheet is written to for <paramref name="pickedPath"/>, or <see langword="null"/> with the reason when the added <c>.md</c> names a file that is already there.</summary>
+    public static string? ResultsSheetPath(string pickedPath, out string? refusal)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(pickedPath);
+        refusal = null;
+        const string wanted = ".md";
+
+        if (string.Equals(Path.GetExtension(pickedPath), wanted, StringComparison.OrdinalIgnoreCase))
+            return pickedPath;
+
+        var path = pickedPath + wanted;
+
+        if (File.Exists(path) || Directory.Exists(path))
+        {
+            refusal = $"A file named {Path.GetFileName(path)} already exists in that folder, so nothing was saved. Choose a file name that ends in {wanted}, or another folder.";
+            return null;
+        }
+
+        return path;
+    }
+
     /// <summary>A file name for the saved results sheet: the commit and the date, for example <c>tempestos-guided-test-1a2b3c4-20261026.md</c>.</summary>
     public string SuggestedFileName => _run is { } run
         ? $"tempestos-guided-test-{Safe(run.BuildCommit)}-{run.StartedUtc.UtcDateTime:yyyyMMdd}.md"

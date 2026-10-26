@@ -40,7 +40,15 @@ public static class GuidedTolerance
     public const int FormSignificantFigures = 5;
 
     /// <summary>The rule, in the words shown to the tester.</summary>
-    public const string RuleText = "A number passes when it differs from the expected value by no more than half a unit in the last digit of the less precise of the two, counting the digits as written (the form shows 5 significant figures). A text must be identical.";
+    public const string RuleText = "A number passes when it differs from the expected value by no more than half a unit in the last digit of the less precise of the two, counting the digits as written (the form shows 5 significant figures), and by no more than 1 % of the expected value unless the form's own last digit is coarser. A text must be identical.";
+
+    /// <summary>
+    /// The most an output the form shows may differ from the expected value, in per cent of it, whatever few digits the expected value is written with
+    /// (the worked examples' own verification tolerance, <c>CalcExpectedValue.RelativeTolerance</c>, 1 % by default). Without it an expected value
+    /// written as an exact '1' or '5' allowed ±0.5, so a utilisation of 1.4 against an expected 1, or 5.49 A against 5 A, was suggested as a Pass
+    /// (security review SEC-C-02). The form's own last displayed digit is never refused: half of it is always allowed.
+    /// </summary>
+    public const int ShownRelativeCapPercent = 1;
 
     private const int MaxExponent = 300;
 
@@ -70,7 +78,7 @@ public static class GuidedTolerance
         if (!TryParse(shownNumber, out var actual))
             return new(GuidedCompareOutcome.Mismatch, $"{symbol}: the form shows '{shownNumber}' where the script expects the number {expectedValue}.");
 
-        return CompareNumbers(symbol, expected, actual, expectedValue, shownNumber, Math.Clamp(shownSignificantFigures, 1, 15));
+        return CompareNumbers(symbol, expected, actual, expectedValue, shownNumber, Math.Clamp(shownSignificantFigures, 1, 15), ShownRelativeCapPercent);
     }
 
     /// <summary>Compares two numbers given as text, the second exactly as the tester read it (its digits as written; no form rounding assumed).</summary>
@@ -85,7 +93,7 @@ public static class GuidedTolerance
         if (!TryParse(shownValue, out var actual))
             return new(GuidedCompareOutcome.Mismatch, $"{symbol}: '{shownValue.Trim()}' is not a number; the script expects {expectedValue}.");
 
-        return CompareNumbers(symbol, expected, actual, expectedValue, shownValue.Trim(), formSignificantFigures: null);
+        return CompareNumbers(symbol, expected, actual, expectedValue, shownValue.Trim(), formSignificantFigures: null, capPercent: null);
     }
 
     /// <summary>Two texts agree only when identical (ordinal, after trimming the ends).</summary>
@@ -99,14 +107,23 @@ public static class GuidedTolerance
             : new(GuidedCompareOutcome.Mismatch, $"{symbol}: the form shows '{shown.Trim()}' where the script expects '{expected.Trim()}'.");
     }
 
-    /// <summary>The allowance for an expected value as written, as text (for example <c>±0.05</c>): half a unit in its last digit; <c>exact text</c> for a text.</summary>
+    /// <summary>The allowance for an expected value as written, as text (for example <c>±0.05</c>): half a unit in its last digit, or <see cref="ShownRelativeCapPercent"/> of the value when that is less; <c>exact text</c> for a text.</summary>
     public static string AllowanceText(string expectedValue)
     {
         ArgumentNullException.ThrowIfNull(expectedValue);
-        return !TryParse(expectedValue, out var n) ? "exact text" : n.Digits.IsZero && n.Unit >= 0 ? "exactly zero" : "±" + HalfUnitText(n.Unit);
+        if (!TryParse(expectedValue, out var n))
+            return "exact text";
+
+        if (n.Digits.IsZero && n.Unit >= 0)
+            return "exactly zero";
+
+        // The cap applies when 1 % of the value is less than half its last written place (at the scale of that place: |digits| · percent < 50).
+        return BigInteger.Abs(n.Digits) * ShownRelativeCapPercent < 50
+            ? $"±{ShownRelativeCapPercent.ToString(CultureInfo.InvariantCulture)} % of {expectedValue.Trim()}"
+            : "±" + HalfUnitText(n.Unit);
     }
 
-    private static GuidedComparison CompareNumbers(string symbol, Decimal10 expected, Decimal10 actual, string expectedText, string shownText, int? formSignificantFigures)
+    private static GuidedComparison CompareNumbers(string symbol, Decimal10 expected, Decimal10 actual, string expectedText, string shownText, int? formSignificantFigures, int? capPercent)
     {
         // The last place of the shown value. A value the form wrote is rounded to its significant figures and has its trailing zeros dropped, so
         // its last place is that figure's place whatever was written ('4290' is 4290.0; '2494200' is 2.4942E+6), not the last digit that happens to show.
@@ -118,14 +135,29 @@ public static class GuidedTolerance
         // 'unit' is the exponent of the coarser last place; the allowance is half of 10^unit.
         var unit = Math.Max(expectedUnit, shownUnit);
 
-        // Both numbers in whole multiples of 10^-s, s being the finer written scale, so the arithmetic is exact.
-        var s = -Math.Min(Math.Min(expected.Unit, actual.Unit), unit);
+        // Both numbers in whole multiples of 10^-s, s being the finer written scale (and the shown value's last place), so the arithmetic is exact.
+        var s = -Math.Min(Math.Min(Math.Min(expected.Unit, actual.Unit), unit), shownUnit);
         var difference = BigInteger.Abs(expected.AtScale(s) - actual.AtScale(s));
-        var twiceAllowance = BigInteger.Pow(10, s + unit);
 
+        // Twice the allowance, times 100 so that a cap in whole per cent stays an integer: the rule's half unit, capped at capPercent of the expected
+        // value, but never below half of the form's own last displayed place (a correct value rounded to the form's figures always agrees).
+        var rule = 100 * BigInteger.Pow(10, s + unit);
+        var allowed = rule;
         var applied = "±" + HalfUnitText(unit);
 
-        return 2 * difference <= twiceAllowance
+        if (capPercent is { } percent)
+        {
+            var cap = 2 * percent * BigInteger.Abs(expected.AtScale(s));
+            var display = 100 * BigInteger.Pow(10, s + shownUnit);
+
+            if (cap < rule)
+            {
+                allowed = BigInteger.Max(cap, display);
+                applied = cap >= display ? $"±{percent.ToString(CultureInfo.InvariantCulture)} % of {expectedText}" : "±" + HalfUnitText(shownUnit);
+            }
+        }
+
+        return 200 * difference <= allowed
             ? new(GuidedCompareOutcome.Match, $"{symbol}: {shownText} agrees with {expectedText} (allowance {applied}).", applied)
             : new(GuidedCompareOutcome.Mismatch, $"{symbol}: {shownText} differs from {expectedText} by more than {applied}.", applied);
     }

@@ -29,6 +29,10 @@ public sealed class GuidedAutoCompareTests
         "example:mech.press-fit/hollow-shaft",
         "example:mech.iso286-fit/h7-p6-50mm",
 
+        // Joined with the 1 % cap (security review SEC-C-02): the README prints g6's es as the standard's rounded -7 µm and c_min as 7 µm; the engine
+        // gives -7.2853 and 7.2853 µm. The half-unit rule alone let 0.29 µm (4 %) pass; the tester now decides.
+        "example:mech.iso286-fit/h7-g6-25mm",
+
         // Not a digit difference: the README states p0 in a bare "bar" and the form shows "bar a" (absolute). A bare bar names no basis, so the rule
         // does not take it for absolute (L10, review); the tester confirms it is the absolute pre-charge.
         "example:fp.accumulator/clamp-circuit-bladder-accumulator",

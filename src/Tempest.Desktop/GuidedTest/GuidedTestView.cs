@@ -393,16 +393,23 @@ public sealed class GuidedTestView : UserControl
         if (file is null)
             return;
 
-        // A file on disk is written through a temporary file and moved over the target, so a failure part-way leaves the earlier file whole; a place the
-        // picker gives no path for is written through its own stream.
+        // A file on disk takes the export's path rule (a .md file; an added extension never replaces a file) and is written through a temporary file
+        // moved over the target, so a failure part-way leaves the earlier file whole (SEC-C-09).
+        if (file.TryGetLocalPath() is { Length: > 0 } path)
+        {
+            await _model.SaveResultsToPathAsync(path).ConfigureAwait(true);
+            return;
+        }
+
+        // A place the picker gives no path for is written through its own stream, and only under a .md name.
+        if (!file.Name.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+        {
+            _model.ReportStatus("The results sheet is a markdown file: choose a name that ends in .md.");
+            return;
+        }
+
         await _model.SaveResultsAsync(async sheet =>
         {
-            if (file.TryGetLocalPath() is { Length: > 0 } path)
-            {
-                await ManualTestMarkdown.WriteFileAsync(path, sheet).ConfigureAwait(true);
-                return;
-            }
-
             await using var stream = await file.OpenWriteAsync().ConfigureAwait(true);
             await stream.WriteAsync(new UTF8Encoding(false).GetBytes(sheet)).ConfigureAwait(true);
         }, file.Name).ConfigureAwait(true);

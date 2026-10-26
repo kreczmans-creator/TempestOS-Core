@@ -928,6 +928,16 @@ public sealed partial class CalcInstanceService
     }
 }
 
+/// <summary>A calculation or pack was to be made in a project that has been deleted (security review SEC-C-05); the message is one sentence.</summary>
+public sealed class CalcProjectDeletedException : InvalidOperationException
+{
+    public CalcProjectDeletedException(string message) : base(message) { }
+
+    public CalcProjectDeletedException() { }
+
+    public CalcProjectDeletedException(string message, Exception innerException) : base(message, innerException) { }
+}
+
 /// <summary>A new calculation's inputs carry a link that breaks the linking rules (ADR-0168 amendment).</summary>
 public sealed class CalcLinkRefusedException : InvalidOperationException
 {
