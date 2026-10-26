@@ -43,7 +43,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 48/48
-  Test run: 2026-10-26 10:50 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -388,7 +388,7 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
   Content hash: e9d829e843189b74
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-26 10:50 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test
 
 
@@ -402,7 +402,7 @@ Issued: 2026-10-26    Issue: HPU-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The pre-charge gas volume V0 of a hydraulic accumulator that delivers, or absorbs, a liquid volume ΔV between the lowest working pressure p1 and the highest p2, from p·Vⁿ = const with absolute pressures and an exponent n between 1 (isothermal) and 1.4 (adiabatic), the gas either charged as fast as it is discharged or (a held accumulator, the default for an emergency stroke) charged slowly and isothermally to p2 and then discharged at n; the volume scaled to the lowest operating temperature (T_max/T_min) and the pre-charge pressure at the charging temperature; the next size from your own size list; and the bar·litre product PS·V of the vessel's own maximum allowable pressure and volume against the PSSR Schedule 1 250 bar·L exception. Three modes: energy storage, shock and pulsation (screening only) and emergency stroke (ΔV is the stroke volume, linkable from the cylinder circuit). Not a pressure-vessel code check.
-Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas volume, one exponent both ways (charged as fast as it is discharged): V0 = ΔV / [(p0/p1)^(1/n) − (p0/p2)^(1/n)], n = 1 isothermal … 1.4 adiabatic Gas volume, slow charge and discharge at n (a held accumulator): charged isothermally to p2, V2 = V0·p0/p2, then discharged at n to p1, V1 = V2·(p2/p1)^(1/n), ΔV = V1 − V2, so V0 = ΔV·(p2/p0) / [(p2/p1)^(1/n) − 1] Either volume × the real-gas factor f_rg (user input, at least 1) and × (T_max + 273.15)/(T_min + 273.15), because p0 is defined at T_max and the gas delivers less when cold Pre-charge rules (records, applied to absolute pressures): p0 ≤ r_0·p1 at T_max (default 0.9, bladder type) and p2/p0(T_min) ≤ r_p (default 4), p0(T_min) = p0·(T_min + 273.15)/(T_max + 273.15) Pre-charge at the charging temperature: p0(T_c) = p0(T_max)·(T_c + 273.15)/(T_max + 273.15) Next size: the smallest listed size not below V0 PSSR bar-litre product: PS·V, PS = the vessel's maximum allowable pressure (bar gauge, entered, not below p2 gauge), V = the vessel volume entered (default the selected size); compared with 250 bar·L (PSSR Schedule 1, indication only; not available without PS and a volume)
+Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas volume, one exponent both ways (charged as fast as it is discharged): V0 = ΔV / [(p0/p1)^(1/n) − (p0/p2)^(1/n)], n = 1 isothermal … 1.4 adiabatic Gas volume, slow charge and discharge at n (a held accumulator): charged isothermally to p2, V2 = V0·p0/p2, then discharged at n to p1, V1 = V2·(p2/p1)^(1/n), ΔV = V1 − V2, so V0 = ΔV·(p2/p0) / [(p2/p1)^(1/n) − 1] Either volume × the real-gas factor f_rg (user input, at least 1) and × the cold-gas factor, because p0 is defined at T_max and the gas delivers less when cold: (T_max + 273.15)/(T_min + 273.15) for the held accumulator, that ratio to the power 1/n for one exponent both ways Pre-charge rules (records, applied to absolute pressures): p0 ≤ r_0·p1 at T_max (default 0.9, bladder type) and p2/p0(T_min) ≤ r_p (default 4), p0(T_min) = p0·(T_min + 273.15)/(T_max + 273.15) Pre-charge at the charging temperature: p0(T_c) = p0(T_max)·(T_c + 273.15)/(T_max + 273.15) Next size: the smallest listed size not below V0 PSSR bar-litre product: PS·V, PS = the vessel's maximum allowable pressure (bar gauge, entered, not below p2 gauge), V = the vessel volume entered (default the selected size); compared with 250 bar·L (PSSR Schedule 1, indication only; not available without PS and a volume)
   Ref: Pressure Systems Safety Regulations 2000 (SI 2000/128) Schedule 1 — 250 bar·litre exception, indication only
   Ref: Pressure Equipment Directive 2014/68/EU and UK PER 2016 — Pressure equipment; not checked here
   Ref: Esposito, Fluid Power with Applications Ch. on accumulators — Gas-charged accumulator sizing, p·Vⁿ = const
@@ -431,7 +431,7 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   A2. The exponent n is the user's: 1 for a slow discharge with heat exchange (isothermal), towards 1.4 for a fast one (adiabatic). With the same exponent both ways the larger n gives the larger volume for a given ΔV. (Gas-law exponents, closed form.)
   A3. The gas process is stated on the sheet. A held accumulator (an emergency stroke, by default) is charged slowly, so isothermally with charge exponent 1 (V2 = V0·p0/p2), and discharged at the exponent n; sizing it with one exponent from the pre-charge to both pressures understates the volume. The one-exponent form (charge exponent = n) is for a gas charged as fast as it is discharged, as in a pulsation or a fast cycle; choose it in the energy-storage duty for that case. The shock and pulsation duty always uses one exponent. (Gas-law sizing of a held accumulator: slow charge, fast discharge.)
   A4. The gas is ideal unless a real-gas factor is entered (at least 1: nitrogen's compressibility factor exceeds 1 at high pressure, so the real gas needs more volume, never less); above 200 bar the sheet warns that nitrogen departs from the ideal-gas law and a factor from a gas-property source should be entered. (Real-gas correction as a user factor.)
-  A5. The pre-charge p0 is defined at the maximum operating temperature T_max and V0 is sized there; at the lowest operating temperature T_min the same gas delivers only the fraction T_min/T_max (absolute) of ΔV, so V0 is multiplied by T_max/T_min, and the p2/p0 rule is checked with p0 at T_min. The temperature range is the user's; with T_min = T_max the correction is 1. (Manufacturer sizing practice; the gas law at constant mass.)
+  A5. The pre-charge p0 is defined at the maximum operating temperature T_max and V0 is sized there; at the lowest operating temperature T_min the same gas delivers only the fraction T_min/T_max (absolute) of ΔV, so V0 is multiplied by T_max/T_min for a held accumulator (isothermal charge to p2) and by (T_max/T_min)^(1/n) when one exponent n holds both ways (the pre-charge at T_min is p0·T_min/T_max), and the p2/p0 rule is checked with p0 at T_min. The temperature range is the user's; with T_min = T_max the correction is 1. (Manufacturer sizing practice; the gas law at constant mass.)
   A6. The pre-charge rules (p0 ≤ 0.9·p1 and p2/p0 ≤ 4 by default) are records for the accumulator type and make and are checked as PASS/FAIL on ABSOLUTE pressures, whichever basis the pressures are entered on; the right values, and whether the manufacturer states the ratio on gauge or absolute pressures, come from the manufacturer (the same numbers read as gauge pressures give a different ratio). (Rules are records, not built-in limits.)
   A7. The bar·litre product is PS times V of the vessel itself: PS is the vessel's maximum allowable pressure in bar gauge (the nameplate or relief setting, never below the highest working pressure p2) and V its internal volume (the selected size unless entered). Without PS and a volume the indication is not available. It indicates whether the 250 bar·L exception of PSSR Schedule 1 can apply; it is not a compliance statement, and PED / UK PER, PSSR examination and the vessel's own design code stay with the manufacturer and the competent person. (Regulatory gating: no pressure-vessel code check.)
   A8. process (Gas process (By duty: an emergency stroke is charged slowly to p2 and discharged at n, the other duties use one exponent both ways)) is taken as By duty. (Sheet default value; no project figure given.)
@@ -471,35 +471,39 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
       = 3.927 L · 1.5188 / [(1.3305)^(1/1.4) − 1]
       = 26.357 L
         Gas volume for the displacement, ideal gas, slow charge and discharge at n
-  [24] f_T = (T_max / 1 K) / (T_min / 1 K)
+  [24] f_Tabs = (T_max / 1 K) / (T_min / 1 K)
       = 50 degC / 1 K / (10 degC / 1 K)
       = 1.1413
-        Temperature scaling of the gas volume: maximum over minimum absolute temperature
-  [25] V0 = V0_ideal * f_rg * f_T
+        Absolute temperature ratio T_max/T_min
+  [25] f_T = f_Tabs
+      = 1.1413
+      = 1.1413
+        Temperature scaling of the gas volume: the temperature ratio (isothermal charge to p2)
+  [26] V0 = V0_ideal * f_rg * f_T
       = 26.357 L × 1.311 × 1.1413
       = 39.436 L
         Pre-charge gas volume V0 (accumulator size required)
-  [26] T_ratio = (T_c / 1 K) / (T_max / 1 K)
+  [27] T_ratio = (T_c / 1 K) / (T_max / 1 K)
       = 20 degC / 1 K / (50 degC / 1 K)
       = 0.90716
         Charging over maximum absolute temperature
-  [27] p0 = pa_0 * T_ratio
+  [28] p0 = pa_0 * T_ratio
       = 106.01 bar a × 0.90716
       = 96.171 bar a
         Absolute pre-charge pressure at the charging temperature
-  [28] p0_min = pa_0 / f_T
+  [29] p0_min = pa_0 / f_Tabs
       = 106.01 bar a / 1.1413
       = 92.891 bar a
         Absolute pre-charge pressure at the minimum operating temperature
-  [29] p0_set = p0 - p_atm
+  [30] p0_set = p0 - p_atm
       = 96.171 bar a − 1.0132 bar a
       = 95.158 bar g
         Pre-charge to set at the charging temperature (gauge)
-  [30] u_r0 = pa_0 / (r_0 * pa_1)
+  [31] u_r0 = pa_0 / (r_0 * pa_1)
       = 106.01 bar a / (0.9 × 121.01 bar a)
       = 0.97339
         Pre-charge against the p0/p1 rule
-  [31] u_rp = (pa_2 / p0_min) / r_p
+  [32] u_rp = (pa_2 / p0_min) / r_p
       = 161.01 bar a / 92.891 bar a / 4
       = 0.43334
         Pressure ratio p2/p0 (p0 at the minimum temperature) against the rule
@@ -526,11 +530,11 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   WARNING exponent-real: n: the exponent 1.4 is the ideal-gas value; real nitrogen at 121.01 to 161.01 bar absolute is stiffer (an effective isentropic exponent of about 1.5 to 2.1 between 60 and 350 bar). Your real-gas factor f_rg = 1.311 is applied on top: it must be the factor for the discharge path, not for an isothermal one.
 
 8. VERIFICATION
-  Template: fp.accumulator@1.5.0
-  Content hash: c6e6a77e9075d556
+  Template: fp.accumulator@1.5.1
+  Content hash: ebe37e59c3db34a4
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 10/10
-  Test run: 2026-10-26 10:50 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test
 
 
@@ -686,7 +690,7 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
   Content hash: f891afe6e1b6d955
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 10:50 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test
 
 
@@ -729,7 +733,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   J_motor | Candidate motor rotor inertia | 0.1 | kg*m^2 | spec: SPEC-HPU-05 §5 (pump drive) | 1e-7 … 10 kg*m^2
   T_rated | Candidate motor continuous (rated) torque | 120 | N*m | spec: SPEC-HPU-05 §5 (pump drive) | 0.01 … 100000 N*m
   T_peak | Candidate motor peak torque | 275 | N*m | spec: SPEC-HPU-05 §5 (pump drive) | 0.01 … 100000 N*m
-  n_rated | Candidate motor rated (nameplate) speed, with the rated torque the rated power P_rated = T_rated·ω_rated (continuous duty; leave blank if not known: there is then no P_rated) | 1460 | rpm | spec: SPEC-HPU-05 §5 (pump drive) | 10 … 100000 rpm
+  n_rated | Candidate motor rated (nameplate) speed, with the rated torque the rated power P_rated = T_rated·ω_rated (leave blank if not known: there is then no P_rated) | 1460 | rpm | spec: SPEC-HPU-05 §5 (pump drive) | 10 … 100000 rpm
   T_basis | Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter | Load peak (T_pk) |  | assumption: Sheet default value; no project figure given. | any
   n_max | Candidate motor maximum speed | 3000 | rpm | spec: SPEC-HPU-05 §5 (pump drive) | 10 … 100000 rpm
   SF | Safety margin on torque | 1.25 |  | assumption: Sheet default value; no project figure given. | 1 … 3
@@ -845,27 +849,31 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
       = 85.725 N·m × 151.84 rad/s
       = 13.017 kW
         Peak mechanical power (end of the run-up)
-  [44] P_rms = P_cont
+  [44] n_mean = omega_pk
+      = 151.84 rad/s
+      = 1450 rpm
+        Mean motor speed: the steady running speed
+  [45] P_rms = P_cont
       = 11806 W
       = 11.806 kW
         RMS mechanical power: the steady running power (thermal-equivalent continuous power)
-  [45] J_ratio = (J_refl + J_mech) / J_motor
+  [46] J_ratio = (J_refl + J_mech) / J_motor
       = (0.0040404 kg·m² + 0.001 kg·m²) / 0.1 kg·m²
       = 0.050404
         Inertia ratio (load : motor)
-  [46] u_peak = SF * T_pk / T_peak
+  [47] u_peak = SF * T_pk / T_peak
       = 1.25 × 85.725 N·m / 275 N·m
       = 0.38966
         Peak torque utilisation with safety margin
-  [47] u_rms = SF * T_rms / T_rated
+  [48] u_rms = SF * T_rms / T_rated
       = 1.25 × 77.751 N·m / 120 N·m
       = 0.8099
         Continuous torque utilisation with safety margin
-  [48] u_speed = n_pk / n_max
+  [49] u_speed = n_pk / n_max
       = 1450 rpm / 3000 rpm
       = 0.48333
         Speed utilisation
-  [49] duty = T_rms / T_rated
+  [50] duty = T_rms / T_rated
       = 77.751 N·m / 120 N·m
       = 0.64792
         Thermal duty (without margin)
@@ -897,6 +905,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   T_out_a = 0 N·m    Output shaft alternating torque
   T_out_pk = 84.868 N·m    Output shaft peak torque
   n_out = 1450 rpm    Output shaft speed
+  n_mean = 1450 rpm    Mean motor speed (the steady speed)
   P_rated = 18347 W    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
   u_power = 0.64348    Rated power utilisation P_cont/P_rated
 
@@ -911,11 +920,11 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   WARNING continuous-ignored: duty_mode: continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.
 
 8. VERIFICATION
-  Template: elec.motor-sizing@1.8.0
-  Content hash: cfcdbae91693adc3
+  Template: elec.motor-sizing@1.9.0
+  Content hash: b13348936aa53b72
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 10:50 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test
 
 
@@ -953,8 +962,8 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   system | Conductor system (AWG: geometry only, no AWG capacities are supplied) | metric |  | assumption: Sheet default value; no project figure given. | any
   device | Protective device | MCB type C |  | spec: SPEC-HPU-05 §6 (power supply) | any
   C_a | Ambient correction factor (1 does not apply the ambient: enter the factor for θ_a from your licensed table) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1.5
-  C_g | Grouping correction factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1.5
-  C_i | Thermal insulation correction factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1.5
+  C_g | Grouping correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
+  C_i | Thermal insulation correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
   derive_Ca | Derive C_a from the temperatures instead of the entered factor | no |  | assumption: Sheet default value; no project figure given. | any
   theta_ref | Reference ambient temperature for the derived C_a | 30 | degC | assumption: Sheet default value; no project figure given. | 0 … 60 degC
   ratings | Preferred device ratings | 9 row(s) |  | record: SYNTHETIC device ratings (test values, not a manufacturer table) — Synthetic test data, not from any catalogue, n/a, invented values for the worked example rev 1 | any
@@ -989,8 +998,8 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   A12. N_g (Grouped circuits) is taken as 1. (Sheet default value; no project figure given.)
   A13. system (Conductor system (AWG: geometry only, no AWG capacities are supplied)) is taken as metric. (Sheet default value; no project figure given.)
   A14. C_a (Ambient correction factor (1 does not apply the ambient: enter the factor for θ_a from your licensed table)) is taken as 1. (Sheet default value; no project figure given.)
-  A15. C_g (Grouping correction factor) is taken as 1. (Sheet default value; no project figure given.)
-  A16. C_i (Thermal insulation correction factor) is taken as 1. (Sheet default value; no project figure given.)
+  A15. C_g (Grouping correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
+  A16. C_i (Thermal insulation correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
   A17. derive_Ca (Derive C_a from the temperatures instead of the entered factor) is taken as no. (Sheet default value; no project figure given.)
   A18. theta_ref (Reference ambient temperature for the derived C_a) is taken as 30 degC. (Sheet default value; no project figure given.)
   A19. Machine wiring context (BS EN 60204-1): the conductor is sized for the protective device rating; the capacities and factors are the user's records for the installation method stated. (The context changes citations, and whether a gG fuse, MCCB or MPCB without I₂ may be deemed to meet I₂ ≤ 1.45·I_z (installation) or must have I₂ entered (machine wiring); no other number differs.)
@@ -1012,35 +1021,38 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
       = MCB type C
       = 1
         Semi-enclosed fuse factor
-  [23] I_t_req = I_n / (C_a * C_g * C_i * C_c)    « BS EN 60204-1 cl. 12.4
+  [21] theta_op = 70 degC
+      = 70 degC
+        Conductor operating temperature for the insulation (→ E5 θ, E3 T_c)
+  [24] I_t_req = I_n / (C_a * C_g * C_i * C_c)    « BS EN 60204-1 cl. 12.4
       = 40 A / (1 × 1 × 1 × 1)
       = 40 A
         Required tabulated capacity
-  [24] I_t = I_t of the selected row of the ampacity record    « BS EN 60204-1 cl. 12.4
+  [25] I_t = I_t of the selected row of the ampacity record    « BS EN 60204-1 cl. 12.4
       = I_t,req = 40 A
       = 44.6 A
         Tabulated current-carrying capacity of the selected conductor
-  [25] CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req    « BS EN 60204-1 cl. 12.4
+  [26] CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req    « BS EN 60204-1 cl. 12.4
       = I_t,req = 40 A
       = 10 mm²
         Selected conductor cross-section
-  [26] I_z = I_t * C_a * C_g * C_i    « BS EN 60204-1 cl. 12.4
+  [27] I_z = I_t * C_a * C_g * C_i    « BS EN 60204-1 cl. 12.4
       = 44.6 A × 1 × 1 × 1
       = 44.6 A
         Current-carrying capacity in the installed conditions
-  [27] u_Ib = I_b / I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [28] u_Ib = I_b / I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 33.47 A / 40 A
       = 0.83675
         Design current utilisation of the device
-  [28] u_In = I_n / I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [29] u_In = I_n / I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 40 A / 44.6 A
       = 0.89686
         Device rating utilisation of the conductor
-  [29] I2 = 1.45 * I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [30] I2 = 1.45 * I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 1.45 × 40 A
       = 58 A
         Conventional operating current (inherent 1.45 I_n)
-  [30] u_I2 = I2 / (1.45 * I_z)    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [31] u_I2 = I2 / (1.45 * I_z)    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 58 A / (1.45 × 44.6 A)
       = 0.89686
         I₂ utilisation of 1.45 I_z
@@ -1056,6 +1068,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   L = 30 m    Circuit length
   u_Ib = 0.83675    I_b / I_n
   u_In = 0.89686    I_n / I_z
+  theta_op = 70 degC    Conductor operating temperature for the insulation
   I2 = 58 A    Conventional operating current
   u_I2 = 0.89686    I₂ / (1.45 I_z)
   device_code = 2    Protective device type code
@@ -1069,11 +1082,11 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   WARNING record: Tabulated values not taken from a reference record: C_a, C_g, C_i (Cable correction factors). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.conductor-sizing@1.2.0
-  Content hash: 7797b9e5dc359f7a
+  Template: elec.conductor-sizing@1.3.0
+  Content hash: 549b80a7a72f70a5
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 10:50 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test
 
 
@@ -1104,7 +1117,7 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   rho_20 | Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.0194 | ohm*mm^2/m | assumption: Sheet default value; no project figure given. | 0.01 … 0.05 ohm*mm^2/m
   alpha | Temperature coefficient of resistance | 0.00393 |  | assumption: Sheet default value; no project figure given. | 0.003 … 0.0045
   A_c | Conductor cross-section | 10 | mm^2 | link: Motor supply cable rev A · CSA | 1 … 1000 mm^2
-  T_c | Conductor operating temperature for the resistance | 70 | degC | assumption: Sheet default value; no project figure given. | 20 … 90 degC
+  T_c | Conductor operating temperature for the resistance | 70 | degC | link: Motor supply cable rev A · theta_op | 20 … 90 degC
   X_km | Reactance per km per conductor | 0.08 | ohm/km | assumption: Sheet default value; no project figure given. | 0 … 1 ohm/km
   dv_limit | Voltage-drop limit | 5 |  | assumption: Sheet default value; no project figure given. | 1 … 10
   T_rated | Conductor rated temperature | 70 | degC | assumption: Sheet default value; no project figure given. | 60 … 90 degC
@@ -1118,10 +1131,9 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   A5. data (Conductor data from) is taken as resistivity and area. (Sheet default value; no project figure given.)
   A6. rho_20 (Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m)) is taken as 0.0194 ohm*mm^2/m. (Sheet default value; no project figure given.)
   A7. alpha (Temperature coefficient of resistance) is taken as 0.00393. (Sheet default value; no project figure given.)
-  A8. T_c (Conductor operating temperature for the resistance) is taken as 70 degC. (Sheet default value; no project figure given.)
-  A9. X_km (Reactance per km per conductor) is taken as 0.08 ohm/km. (Sheet default value; no project figure given.)
-  A10. dv_limit (Voltage-drop limit) is taken as 5. (Sheet default value; no project figure given.)
-  A11. T_rated (Conductor rated temperature) is taken as 70 degC. (Sheet default value; no project figure given.)
+  A8. X_km (Reactance per km per conductor) is taken as 0.08 ohm/km. (Sheet default value; no project figure given.)
+  A9. dv_limit (Voltage-drop limit) is taken as 5. (Sheet default value; no project figure given.)
+  A10. T_rated (Conductor rated temperature) is taken as 70 degC. (Sheet default value; no project figure given.)
 
 4. WORKING
   [9] sin_phi = sqrt(1 - cos_phi^2)
@@ -1171,11 +1183,11 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   No warnings.
 
 8. VERIFICATION
-  Template: elec.voltage-drop@1.1.0
-  Content hash: 28e4e44162109057
+  Template: elec.voltage-drop@1.2.0
+  Content hash: c20fe1c4471c778d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 10:50 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test
 
 
@@ -1206,7 +1218,7 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   L | Circuit length | 30 | m | link: Motor supply cable rev A · L | 0.1 … 1000 m
   S_line | Line conductor cross-section | 10 | mm^2 | link: Motor supply cable rev A · CSA | 0.5 … 630 mm^2
   S_cpc | Protective conductor cross-section | 10 | mm^2 | link: Motor supply cable rev A · CSA | 0.5 … 630 mm^2
-  theta | Conductor temperature for Z_s | 70 | degC | assumption: Sheet default value; no project figure given. | 20 … 90 degC
+  theta | Conductor temperature for Z_s | 70 | degC | link: Motor supply cable rev A · theta_op | 20 … 90 degC
   rho_20 | Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R) | 0.000017241 | ohm*mm | assumption: Sheet default value; no project figure given. | 0.000001 … 0.0001 ohm*mm
   k_R | Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the cable standard's maximum conductor resistances are 5 to 12 % above pure copper, so the default is 1.125 and Z_s is not understated; k is not changed by it) | 1.125 |  | assumption: Sheet default value; no project figure given. | 1 … 1.5
   alpha | Temperature coefficient of resistance | 0.00393 | 1/K | assumption: Sheet default value; no project figure given. | 0.001 … 0.01 1/K
@@ -1230,14 +1242,13 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   A6. The line conductor check (reg. 434.5.2) needs the device's let-through energy at the maximum prospective fault; the end-of-line earth fault is the minimum fault and does not bound it, so the check is made only when I2t_let is entered or the disconnection time is 0.1 s or more. (Stated limitation: the end-of-line earth fault is the minimum fault, not the maximum.)
   A7. C_min (Voltage factor C_min) is taken as 0.95. (Sheet default value; no project figure given.)
   A8. c_max (Voltage factor c for the maximum fault) is taken as 1.1. (Sheet default value; no project figure given.)
-  A9. theta (Conductor temperature for Z_s) is taken as 70 degC. (Sheet default value; no project figure given.)
-  A10. rho_20 (Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R)) is taken as 0.000017241 ohm*mm. (Sheet default value; no project figure given.)
-  A11. k_R (Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the cable standard's maximum conductor resistances are 5 to 12 % above pure copper, so the default is 1.125 and Z_s is not understated; k is not changed by it)) is taken as 1.125. (Sheet default value; no project figure given.)
-  A12. alpha (Temperature coefficient of resistance) is taken as 0.00393 1/K. (Sheet default value; no project figure given.)
-  A13. Q_c (Volumetric heat capacity) is taken as 0.00345 J/(K*mm^3). (Sheet default value; no project figure given.)
-  A14. beta (Reciprocal temperature coefficient β) is taken as 234.5 K. (Sheet default value; no project figure given.)
-  A15. theta_i (Initial temperature for the adiabatic check) is taken as 70 degC. (Sheet default value; no project figure given.)
-  A16. theta_f (Final temperature for the adiabatic check) is taken as 160 degC. (Sheet default value; no project figure given.)
+  A9. rho_20 (Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R)) is taken as 0.000017241 ohm*mm. (Sheet default value; no project figure given.)
+  A10. k_R (Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the cable standard's maximum conductor resistances are 5 to 12 % above pure copper, so the default is 1.125 and Z_s is not understated; k is not changed by it)) is taken as 1.125. (Sheet default value; no project figure given.)
+  A11. alpha (Temperature coefficient of resistance) is taken as 0.00393 1/K. (Sheet default value; no project figure given.)
+  A12. Q_c (Volumetric heat capacity) is taken as 0.00345 J/(K*mm^3). (Sheet default value; no project figure given.)
+  A13. beta (Reciprocal temperature coefficient β) is taken as 234.5 K. (Sheet default value; no project figure given.)
+  A14. theta_i (Initial temperature for the adiabatic check) is taken as 70 degC. (Sheet default value; no project figure given.)
+  A15. theta_f (Final temperature for the adiabatic check) is taken as 160 degC. (Sheet default value; no project figure given.)
 
 4. WORKING
   [20] R_12 = rho_20 * k_R * L * (1 / S_line + 1 / S_cpc) * (1 + alpha * (theta - 20 degC))
@@ -1342,11 +1353,11 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   WARNING record: Tabulated values not taken from a reference record: rho_20, k_R, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let, I_cn (Device time–current points). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.fault-protection@1.3.1
-  Content hash: 38d73f5c838ae5dd
+  Template: elec.fault-protection@1.3.2
+  Content hash: 90eaa848fc6ff338
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 10:50 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test
 
 
@@ -1612,5 +1623,5 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
   Content hash: 66f32fca1f51bd3a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 10:50 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test

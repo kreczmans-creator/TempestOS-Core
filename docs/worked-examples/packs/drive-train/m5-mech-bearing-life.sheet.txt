@@ -19,7 +19,7 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
   type | Bearing type | ball (p = 3) |  | spec: SPEC-CNV-07 §6 (bearing schedule) | any
   F_r | Radial load | 1.34604 | kN | link: Shaft rev A · R_A | 0 … 2000 kN
   F_a | Axial load | 0 | kN | link: Motor sizing rev A · F_ax_pk | 0 … 2000 kN
-  n | Speed | 1475 | rpm | link: Motor sizing rev A · n_pk | 1 … 50000 rpm
+  n | Speed | 1475 | rpm | link: Motor sizing rev A · n_mean | 1 … 50000 rpm
   C | Basic dynamic load rating | 25.5 | kN | spec: SPEC-CNV-07 §6 (bearing schedule) | 0.1 … 10000 kN
   C_0 | Basic static load rating | 15.3 | kN | spec: SPEC-CNV-07 §6 (bearing schedule) | 0.1 … 10000 kN
   e_lim | Load ratio limit e | 0.3 |  | assumption: Sheet default value; no project figure given. | 0 … 5
@@ -117,5 +117,5 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
   Content hash: 555757395aab4030
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 08:42 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test

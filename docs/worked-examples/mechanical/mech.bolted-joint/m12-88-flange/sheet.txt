@@ -8,7 +8,7 @@ Issued: —
 
 1. SCOPE AND METHOD
 One bolt clamping members under an axial working load: the preload from the tightening torque with its scatter (or as measured), the stiffness of bolt and members, how much of the working load the bolt sees, the residual clamp after embedding, separation, yield under preload plus working load, the thread engagement needed against stripping, and the fatigue amplitude.
-Tensile stress area of the thread: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 P and d_3 = d − 1.2269 P. Assembly preload from the tightening torque, nut-factor method: F_M = M_A/(K d). Assembly preload from the tightening torque, thread and head friction method: F_M = M_A/(0.16 P + 0.58 d_2 μ_G + 0.5 D_Km μ_K). Assembly preload stated directly (measured) instead of derived: F_M = F_V. Bolt and member stiffness and the stress area may also be given (measured, FE or a fastener record) instead of derived. Minimum preload after the tightening scatter: F_M,min = F_M/α_A. Bolt resilience, the head, free shank and engaged thread as springs in series: δ_S = (0.4 d + 0.4 d)/(E_S A_N) + l_k/(E_S A_s) + 0.5 d/(E_S A_d3). Member stiffness, the clamped parts as two pressure frusta: k = 0.5774 π E d / ln[((1.155 t + d_w − d_h)(d_w + d_h))/((1.155 t + d_w + d_h)(d_w − d_h))]. Load factor, the share of the working load the bolt sees: Φ = n k_S/(k_S + k_P). Preload lost to embedding (settling of the interfaces): F_Z = f_Z (k_S k_P)/(k_S + k_P). Residual clamp at the interface under the working load: F_KR = max(F_M,min − (1 − Φ) F_A − F_Z, 0). Maximum bolt load, the whole working load once the joint opens: F_S,max = max(F_M + Φ F_A, F_A). Working equivalent stress in the bolt, tension with half the tightening torsion: σ_red = √(σ_z² + 3 (0.5 τ)²). Fatigue stress amplitude in the thread: σ_a = (F_S,max − F_M)/(2 A_s). Thread engagement length needed against stripping: m_min = S F_S,max/(0.5 π d τ_B).
+Tensile stress area of the thread: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 P and d_3 = d − 1.2269 P. Assembly preload from the tightening torque, nut-factor method: F_M = M_A/(K d). Assembly preload from the tightening torque, thread and head friction method: F_M = M_A/(0.16 P + 0.58 d_2 μ_G + 0.5 D_Km μ_K). Assembly preload stated directly (measured) instead of derived: F_M = F_V. Thread torsion under preload: τ_M = M_G/W_p with M_G = F_M (0.16 P + 0.58 d_2 μ_G), W_p = π/16·d_3³ at the minor diameter (conservative: the VDI 2230 mean diameter d_S = (d_2 + d_3)/2 gives a lower τ_M). Bolt and member stiffness and the stress area may also be given (measured, FE or a fastener record) instead of derived. Minimum preload after the tightening scatter: F_M,min = F_M/α_A. Bolt resilience, the head, free shank and engaged thread as springs in series: δ_S = (0.4 d + 0.4 d)/(E_S A_N) + l_k/(E_S A_s) + 0.5 d/(E_S A_d3). Member stiffness, the clamped parts as two pressure frusta: k = 0.5774 π E d / ln[((1.155 t + d_w − d_h)(d_w + d_h))/((1.155 t + d_w + d_h)(d_w − d_h))]. Load factor, the share of the working load the bolt sees: Φ = n k_S/(k_S + k_P). Preload lost to embedding (settling of the interfaces): F_Z = f_Z (k_S k_P)/(k_S + k_P). Residual clamp at the interface under the working load: F_KR = max(F_M,min − (1 − Φ) F_A − F_Z, 0). Maximum bolt load, the whole working load once the joint opens: F_S,max = max(F_M + Φ F_A, F_A). Working equivalent stress in the bolt, tension with half the tightening torsion: σ_red = √(σ_z² + 3 (0.5 τ)²). Fatigue stress amplitude in the thread: σ_a = (F_S,max − F_M)/(2 A_s). Thread engagement length needed against stripping: m_min = S F_S,max/(0.5 π d τ_B).
   Ref: VDI 2230 Part 1:2015 §5.1–§5.5 — Systematic calculation of highly stressed bolted joints — calculation steps R0–R13
   Ref: ISO 898-1:2013 §9.1.6 — Tensile stress area of the thread
   Ref: Shigley's Mechanical Engineering Design §8-5, §8-7 — Joint stiffness (frusta); preload and torque
@@ -28,9 +28,9 @@ Tensile stress area of the thread: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d
   f_Z | Embedding (settling) loss | 11 | µm | assumption: Three interfaces, machined. | 0 … 100 µm
   method | Preload method | friction |  | spec: Assembly procedure AP-7 | any
   M_A | Tightening torque | 80 | N*m | spec: Assembly procedure AP-7 | 0.1 … 10000 N*m
-  K | Nut factor (nut-factor method) | 0.2 |  | assumption: Not used by the friction method. | 0.1 … 0.35
-  mu_G | Thread friction coefficient | 0.12 |  | assumption: Lightly oiled zinc-plated thread. | 0.06 … 0.25
-  mu_K | Head / nut bearing friction coefficient | 0.12 |  | assumption: Lightly oiled head bearing. | 0.06 … 0.25
+  K | Nut factor (nut-factor method); F_M is the maximum preload, so enter the smallest value the joint can have | 0.2 |  | assumption: Not used by the friction method. | 0.1 … 0.35
+  mu_G | Thread friction coefficient; F_M is the maximum preload, so enter the smallest value the joint can have | 0.12 |  | assumption: Lightly oiled zinc-plated thread. | 0.06 … 0.25
+  mu_K | Head / nut bearing friction coefficient; F_M is the maximum preload, so enter the smallest value the joint can have | 0.12 |  | assumption: Lightly oiled head bearing. | 0.06 … 0.25
   nu_perm | Permitted assembly utilisation ν: the equivalent stress at assembly over the proof strength (VDI 2230 R7; 0.9 is the usual target, 1.0 is the limit at which the bolt yields in tightening) | 1 |  | default | 0.5 … 1
   alpha_A | Tightening scatter factor (F_M,max / F_M,min) | 1.6 |  | assumption: Torque wrench, VDI 2230 Table A8 order. | 1 … 4
   F_A | Axial working load (per bolt) | 10 | kN | spec: LOAD-CASE-3 | 0 … 5000 kN
@@ -42,17 +42,19 @@ Tensile stress area of the thread: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d
 3. ASSUMPTIONS
   A1. The joint is concentrically clamped and concentrically loaded; the members behave as two 30° frusta in series. (Eccentric clamping and loading (VDI 2230 full procedure) are outside this sheet.)
   A2. Thread torsion is taken at 50 % in the equivalent stress for the working state. (Common VDI 2230 practice (k_τ = 0.5).)
-  A3. The working load is a pulsating 0…F_A load; the fatigue amplitude is Φ F_A / (2 A_s). (Compare with the bolt's endurance limit as entered.)
-  A4. Thread stripping uses a shear area of half the pitch per unit length on the nominal diameter. (A conservative simplification of ISO 898-2 / VDI 2230 §5.5.5.)
-  A5. sigma_A (Bolt endurance limit (stress amplitude)) is taken as 50 MPa. (Rolled-before-heat-treatment M12, VDI 2230 order of magnitude.)
-  A6. n (Load introduction factor (0 = at the clamped faces, 1 = under the head)) is taken as 0.5. (Load introduced at mid-thickness.)
-  A7. f_Z (Embedding (settling) loss) is taken as 11 µm. (Three interfaces, machined.)
-  A8. K (Nut factor (nut-factor method)) is taken as 0.2. (Not used by the friction method.)
-  A9. mu_G (Thread friction coefficient) is taken as 0.12. (Lightly oiled zinc-plated thread.)
-  A10. mu_K (Head / nut bearing friction coefficient) is taken as 0.12. (Lightly oiled head bearing.)
-  A11. alpha_A (Tightening scatter factor (F_M,max / F_M,min)) is taken as 1.6. (Torque wrench, VDI 2230 Table A8 order.)
-  A12. tau_B (Nut / internal-thread material shear strength) is taken as 400 MPa. (Nut material shear strength.)
-  A13. S_strip (Safety factor on stripping) is taken as 1.25. (Stripping safety factor.)
+  A3. The thread torsion modulus is taken at the minor diameter d_3, W_p = π/16·d_3³, which is conservative: with the VDI 2230 mean diameter d_S the torsion stress is about 14 % lower and ν_M about 5 % lower at the defaults. (Stated choice; the equivalent stress at assembly is the more conservative for it.)
+  A4. F_M is the maximum preload (the one the tightening torque gives with the smallest friction and nut factor); F_M,min = F_M/α_A is the minimum after the scatter. (VDI 2230 R2: the maximum preload comes from the minimum friction coefficients.)
+  A5. The working load is a pulsating 0…F_A load; the fatigue amplitude is Φ F_A / (2 A_s). (Compare with the bolt's endurance limit as entered.)
+  A6. Thread stripping uses a shear area of half the pitch per unit length on the nominal diameter. (A conservative simplification of ISO 898-2 / VDI 2230 §5.5.5.)
+  A7. sigma_A (Bolt endurance limit (stress amplitude)) is taken as 50 MPa. (Rolled-before-heat-treatment M12, VDI 2230 order of magnitude.)
+  A8. n (Load introduction factor (0 = at the clamped faces, 1 = under the head)) is taken as 0.5. (Load introduced at mid-thickness.)
+  A9. f_Z (Embedding (settling) loss) is taken as 11 µm. (Three interfaces, machined.)
+  A10. K (Nut factor (nut-factor method); F_M is the maximum preload, so enter the smallest value the joint can have) is taken as 0.2. (Not used by the friction method.)
+  A11. mu_G (Thread friction coefficient; F_M is the maximum preload, so enter the smallest value the joint can have) is taken as 0.12. (Lightly oiled zinc-plated thread.)
+  A12. mu_K (Head / nut bearing friction coefficient; F_M is the maximum preload, so enter the smallest value the joint can have) is taken as 0.12. (Lightly oiled head bearing.)
+  A13. alpha_A (Tightening scatter factor (F_M,max / F_M,min)) is taken as 1.6. (Torque wrench, VDI 2230 Table A8 order.)
+  A14. tau_B (Nut / internal-thread material shear strength) is taken as 400 MPa. (Nut material shear strength.)
+  A15. S_strip (Safety factor on stripping) is taken as 1.25. (Stripping safety factor.)
 
 4. WORKING
   [24] d_2 = d - 0.6495 * P    « ISO 898-1 §9.1.6
@@ -247,7 +249,7 @@ Tensile stress area of the thread: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d
   WARNING preload-yield: M_A: the preload alone takes the bolt above 90 % of its proof strength.
 
 8. VERIFICATION
-  Template: mech.bolted-joint@1.2.0
+  Template: mech.bolted-joint@1.2.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5

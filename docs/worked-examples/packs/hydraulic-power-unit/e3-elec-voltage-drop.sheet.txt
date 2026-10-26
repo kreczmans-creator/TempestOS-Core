@@ -25,7 +25,7 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   rho_20 | Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.0194 | ohm*mm^2/m | assumption: Sheet default value; no project figure given. | 0.01 … 0.05 ohm*mm^2/m
   alpha | Temperature coefficient of resistance | 0.00393 |  | assumption: Sheet default value; no project figure given. | 0.003 … 0.0045
   A_c | Conductor cross-section | 10 | mm^2 | link: Motor supply cable rev A · CSA | 1 … 1000 mm^2
-  T_c | Conductor operating temperature for the resistance | 70 | degC | assumption: Sheet default value; no project figure given. | 20 … 90 degC
+  T_c | Conductor operating temperature for the resistance | 70 | degC | link: Motor supply cable rev A · theta_op | 20 … 90 degC
   X_km | Reactance per km per conductor | 0.08 | ohm/km | assumption: Sheet default value; no project figure given. | 0 … 1 ohm/km
   dv_limit | Voltage-drop limit | 5 |  | assumption: Sheet default value; no project figure given. | 1 … 10
   T_rated | Conductor rated temperature | 70 | degC | assumption: Sheet default value; no project figure given. | 60 … 90 degC
@@ -39,10 +39,9 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   A5. data (Conductor data from) is taken as resistivity and area. (Sheet default value; no project figure given.)
   A6. rho_20 (Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m)) is taken as 0.0194 ohm*mm^2/m. (Sheet default value; no project figure given.)
   A7. alpha (Temperature coefficient of resistance) is taken as 0.00393. (Sheet default value; no project figure given.)
-  A8. T_c (Conductor operating temperature for the resistance) is taken as 70 degC. (Sheet default value; no project figure given.)
-  A9. X_km (Reactance per km per conductor) is taken as 0.08 ohm/km. (Sheet default value; no project figure given.)
-  A10. dv_limit (Voltage-drop limit) is taken as 5. (Sheet default value; no project figure given.)
-  A11. T_rated (Conductor rated temperature) is taken as 70 degC. (Sheet default value; no project figure given.)
+  A8. X_km (Reactance per km per conductor) is taken as 0.08 ohm/km. (Sheet default value; no project figure given.)
+  A9. dv_limit (Voltage-drop limit) is taken as 5. (Sheet default value; no project figure given.)
+  A10. T_rated (Conductor rated temperature) is taken as 70 degC. (Sheet default value; no project figure given.)
 
 4. WORKING
   [9] sin_phi = sqrt(1 - cos_phi^2)
@@ -92,9 +91,9 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   No warnings.
 
 8. VERIFICATION
-  Template: elec.voltage-drop@1.1.0
-  Content hash: 28e4e44162109057
+  Template: elec.voltage-drop@1.2.0
+  Content hash: c20fe1c4471c778d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 09:36 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test
