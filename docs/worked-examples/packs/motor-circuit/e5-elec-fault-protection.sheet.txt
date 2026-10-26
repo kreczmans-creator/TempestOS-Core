@@ -23,7 +23,7 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   L | Circuit length | 25 | m | link: Cable and device rev A · L | 0.1 … 1000 m
   S_line | Line conductor cross-section | 1.5 | mm^2 | link: Cable and device rev A · CSA | 0.5 … 630 mm^2
   S_cpc | Protective conductor cross-section | 1.5 | mm^2 | link: Cable and device rev A · CSA | 0.5 … 630 mm^2
-  theta | Conductor temperature for Z_s | 70 | degC | assumption: Sheet default value; no project figure given. | 20 … 90 degC
+  theta | Conductor temperature for Z_s | 70 | degC | link: Cable and device rev A · theta_op | 20 … 90 degC
   rho_20 | Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R) | 0.000017241 | ohm*mm | assumption: Sheet default value; no project figure given. | 0.000001 … 0.0001 ohm*mm
   k_R | Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the cable standard's maximum conductor resistances are 5 to 12 % above pure copper, so the default is 1.125 and Z_s is not understated; k is not changed by it) | 1.125 |  | assumption: Sheet default value; no project figure given. | 1 … 1.5
   alpha | Temperature coefficient of resistance | 0.00393 | 1/K | assumption: Sheet default value; no project figure given. | 0.001 … 0.01 1/K
@@ -46,14 +46,13 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   A6. The line conductor check (reg. 434.5.2) needs the device's let-through energy at the maximum prospective fault; the end-of-line earth fault is the minimum fault and does not bound it, so the check is made only when I2t_let is entered or the disconnection time is 0.1 s or more. (Stated limitation: the end-of-line earth fault is the minimum fault, not the maximum.)
   A7. C_min (Voltage factor C_min) is taken as 0.95. (Sheet default value; no project figure given.)
   A8. c_max (Voltage factor c for the maximum fault) is taken as 1.1. (Sheet default value; no project figure given.)
-  A9. theta (Conductor temperature for Z_s) is taken as 70 degC. (Sheet default value; no project figure given.)
-  A10. rho_20 (Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R)) is taken as 0.000017241 ohm*mm. (Sheet default value; no project figure given.)
-  A11. k_R (Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the cable standard's maximum conductor resistances are 5 to 12 % above pure copper, so the default is 1.125 and Z_s is not understated; k is not changed by it)) is taken as 1.125. (Sheet default value; no project figure given.)
-  A12. alpha (Temperature coefficient of resistance) is taken as 0.00393 1/K. (Sheet default value; no project figure given.)
-  A13. Q_c (Volumetric heat capacity) is taken as 0.00345 J/(K*mm^3). (Sheet default value; no project figure given.)
-  A14. beta (Reciprocal temperature coefficient β) is taken as 234.5 K. (Sheet default value; no project figure given.)
-  A15. theta_i (Initial temperature for the adiabatic check) is taken as 70 degC. (Sheet default value; no project figure given.)
-  A16. theta_f (Final temperature for the adiabatic check) is taken as 160 degC. (Sheet default value; no project figure given.)
+  A9. rho_20 (Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R)) is taken as 0.000017241 ohm*mm. (Sheet default value; no project figure given.)
+  A10. k_R (Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the cable standard's maximum conductor resistances are 5 to 12 % above pure copper, so the default is 1.125 and Z_s is not understated; k is not changed by it)) is taken as 1.125. (Sheet default value; no project figure given.)
+  A11. alpha (Temperature coefficient of resistance) is taken as 0.00393 1/K. (Sheet default value; no project figure given.)
+  A12. Q_c (Volumetric heat capacity) is taken as 0.00345 J/(K*mm^3). (Sheet default value; no project figure given.)
+  A13. beta (Reciprocal temperature coefficient β) is taken as 234.5 K. (Sheet default value; no project figure given.)
+  A14. theta_i (Initial temperature for the adiabatic check) is taken as 70 degC. (Sheet default value; no project figure given.)
+  A15. theta_f (Final temperature for the adiabatic check) is taken as 160 degC. (Sheet default value; no project figure given.)
 
 4. WORKING
   [20] R_12 = rho_20 * k_R * L * (1 / S_line + 1 / S_cpc) * (1 + alpha * (theta - 20 degC))
@@ -133,9 +132,9 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   WARNING record: Tabulated values not taken from a reference record: rho_20, k_R, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let (Device time–current points). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.fault-protection@1.3.1
-  Content hash: 38d73f5c838ae5dd
+  Template: elec.fault-protection@1.3.2
+  Content hash: 90eaa848fc6ff338
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 10:50 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test

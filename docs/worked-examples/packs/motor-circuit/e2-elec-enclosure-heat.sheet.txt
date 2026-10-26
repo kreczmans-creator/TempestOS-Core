@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Enclosure heat    Revision: A
 Title: Enclosure heat dissipation and fan sizing
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.
@@ -18,7 +18,7 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   loads | Heat loads | 2 row(s) |  | drawing: DRG-LINE-120 rev B | any
   loads[1] |  | name = Servo drive; P = 60 W; qty = 1; duty = 1 |  |  | 
   loads[2] |  | name = Contactors, terminals and busbars; P = 20 W; qty = 1; duty = 1 |  |  | 
-  P_add | Additional heat load (linked from E6's dissipated heat or another calculation) | 140 | W | link: Load budget rev A · Phi | 0 … 100000 W
+  P_add | Additional heat load (linked from E6's dissipated heat or another calculation) | 153.333 | W | link: Load budget rev A · Phi | 0 … 100000 W
   I_sun | Solar irradiance on the enclosure (0 = indoors) | 0 | W/m^2 | assumption: Sheet default value; no project figure given. | 0 … 1200 W/m^2
   A_sun | Sunlit area | 0 | m^2 | assumption: Sheet default value; no project figure given. | 0 … 100 m^2
   alpha_sun | Surface absorptivity | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
@@ -39,7 +39,7 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   V_ref | Reference airflow for the system resistance | 100 | m^3/h | assumption: Sheet default value; no project figure given. | 1 … 100000 m^3/h
 
 3. ASSUMPTIONS
-  A1. Heat leaves the enclosure through its exposed faces at one overall coefficient h (natural convection plus radiation to surroundings at the ambient temperature); covered faces dissipate nothing. (IEC TR 60890-style effective-surface approach; h is a reference value the user may edit.)
+  A1. Heat leaves the enclosure through its exposed faces at one overall coefficient h (natural convection plus radiation to surroundings at the ambient temperature); covered faces dissipate nothing. (Plain exposed-area method of manufacturer practice, not an IEC TR 60890 verification; h is a reference value the user may edit.)
   A2. Forced ventilation removes the full heat load with air entering at ambient and leaving at the target rise; natural dissipation is neglected for the airflow (conservative). (Manufacturer fan-sizing practice.)
   A3. A sealed enclosure (T_seal entered) is a closed, rigid, leak-free volume of dry air at the site pressure when closed: the pressure difference follows from the ideal-gas relation at constant volume, from the sealing temperature to the internal temperature with natural dissipation T_int (the temperature without a cooling unit); a breather, a seal that leaks or a flexing wall reduces it, so it is an upper bound (a pressure-compensation element is modelled only as a cap at its cracking pressure, with no flow resistance); the site pressure is the standard atmosphere at the altitude. (Ideal gas at constant volume (derived).)
   A4. The fan curve is linear between the entered points; the system resistance scales with airflow squared. (Duty-point idealisation.)
@@ -56,6 +56,7 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   A15. altitude (Site altitude (air density)) is taken as 0 m. (Sheet default value; no project figure given.)
   A16. p_sys (System resistance (filters, grilles) at the reference airflow) is taken as 20 Pa. (Sheet default value; no project figure given.)
   A17. V_ref (Reference airflow for the system resistance) is taken as 100 m^3/h. (Sheet default value; no project figure given.)
+  A18. The effective surface is the plain exposed-area method of manufacturer practice: each face area weighted by how freely it sheds heat, one overall coefficient h. This is not a verification of temperature rise to IEC TR 60890 or BS EN 61439-1 cl. 10.10 (neither the surface factors nor the standard's temperature-rise correlation is used). (Stated on every run so the result is not read as an assembly verification.)
 
 4. WORKING
   [18] P_loads = Σ P_i × n_i × d_i
@@ -67,35 +68,35 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
       = 0 W
         Solar gain
   [20] P_total = P_loads + P_add + P_solar
-      = 80 W + 140 W + 0 W
-      = 220 W
+      = 80 W + 153.33 W + 0 W
+      = 233.33 W
         Total heat to remove
-  [21] A_eff = f_top * W * D + f_bottom * W * D + f_front * W * H + f_rear * W * H + f_left * H * D + f_right * H * D    « IEC TR 60890 approach
+  [21] A_eff = f_top * W * D + f_bottom * W * D + f_front * W * H + f_rear * W * H + f_left * H * D + f_right * H * D    « plain exposed-area method (manufacturer practice), not an IEC TR 60890 verification
       = 1 × 1 m × 0.3 m + 0 × 1 m × 0.3 m + 1 × 1 m × 1.2 m + 0 × 1 m × 1.2 m + 1 × 1.2 m × 0.3 m + 1 × 1.2 m × 0.3 m
       = 2.22 m²
         Effective dissipating surface
   [22] dT_nat = P_total / (h * A_eff)
-      = 220 W / (5.5 W/(m²·K) × 2.22 m²)
-      = 18.018 K
+      = 233.33 W / (5.5 W/(m²·K) × 2.22 m²)
+      = 19.11 K
         Temperature rise with natural dissipation
   [23] T_int = T_amb + dT_nat
-      = 35 degC + 18.018 K
-      = 53.018 degC
+      = 35 degC + 19.11 K
+      = 54.11 degC
         Internal temperature with natural dissipation
   [24] dT_allow = T_max - T_amb
       = 55 degC − 35 degC
       = 20 K
         Allowed rise
   [25] u_nat = dT_nat / dT_allow
-      = 18.018 K / 20 K
-      = 0.9009
+      = 19.11 K / 20 K
+      = 0.9555
         Natural dissipation utilisation
   [26] P_nat_max = h * A_eff * dT_allow
       = 5.5 W/(m²·K) × 2.22 m² × 20 K
       = 244.2 W
         Heat the enclosure dissipates naturally at the limit
   [27] P_cool = max(0 W, P_total - P_nat_max)
-      = max(0 W, 220 W − 244.2 W)
+      = max(0 W, 233.33 W − 244.2 W)
       = 0 W
         Cooling-unit capacity needed if ventilation is not used
   [28] p_site = 101325 (1 − 2.25577e-5 z)^5.2559
@@ -107,38 +108,38 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
       = 1.1455 kg/m³
         Air density at ambient and altitude
   [30] V_req = P_total / (rho_air * 1006 J/(kg*K) * dT_allow)
-      = 220 W / (1.1455 kg/m³ × 1006 J/(kg*K) × 20 K)
-      = 34.364 m³/h
+      = 233.33 W / (1.1455 kg/m³ × 1006 J/(kg*K) × 20 K)
+      = 36.447 m³/h
         Airflow for forced ventilation at the allowed rise (natural dissipation neglected)
   [31] V_req_net = max(0 m^3/h, (P_total - P_nat_max) / (rho_air * 1006 J/(kg*K) * dT_allow))
-      = max(0 m^3/h, (220 W − 244.2 W) / (1.1455 kg/m³ × 1006 J/(kg*K) × 20 K))
+      = max(0 m^3/h, (233.33 W − 244.2 W) / (1.1455 kg/m³ × 1006 J/(kg*K) × 20 K))
       = 0 m³/h
         Airflow crediting natural dissipation
 
 5. RESULTS
   P_loads = 80 W    Internal heat load
   P_solar = 0 W    Solar gain
-  P_total = 220 W    Total heat
+  P_total = 233.33 W    Total heat
   A_eff = 2.22 m²    Effective surface
-  dT_nat = 18.018 K    Natural temperature rise
-  T_int = 53.018 degC    Internal temperature (natural)
+  dT_nat = 19.11 K    Natural temperature rise
+  T_int = 54.11 degC    Internal temperature (natural)
   P_nat_max = 244.2 W    Natural dissipation at the limit
   P_cool = 0 W    Cooling unit needed
   T_max = 55 degC    Internal temperature limit
   rho_air = 1.1455 kg/m³    Air density
-  V_req = 34.364 m³/h    Required airflow
+  V_req = 36.447 m³/h    Required airflow
   V_req_net = 0 m³/h    Required airflow (net)
 
 6. CHECKS (governing first)
-  PASS  Natural dissipation holds T_max: u_nat = 0.9009 vs u_nat ≤ 1  utilisation 0.901
+  PASS  Natural dissipation holds T_max: u_nat = 0.9555 vs u_nat ≤ 1  utilisation 0.956
 
 7. APPLICABILITY
   No warnings.
 
 8. VERIFICATION
-  Template: elec.enclosure-heat@1.5.0
-  Content hash: 857f14f33a5fb9c0
+  Template: elec.enclosure-heat@1.5.1
+  Content hash: 6c68c61c7df7f4fe
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test

@@ -90,6 +90,25 @@ public sealed class DriveTrainChainTests
     }
 
     [Fact]
+    public async Task On_A_Point_To_Point_Cycle_The_Bearing_Life_Is_Counted_At_The_Mean_Speed_Not_The_Peak_Speed()
+    {
+        // chain.drive-train-03: a quarter turn of the drum (12.5:1) is 0.25 x 2 pi x 12.5 = 19.635 rad of the motor per 0.9 s cycle (0.4 s move, 0.5 s dwell): n_mean = 19.635/0.9 = 21.817 rad/s = 208.33 rpm, where the peak speed
+        // 19.635/(0.4 x 2/3) = 73.631 rad/s = 703.125 rpm was bound to the bearing before: the bearing turns at the mean speed (python3).
+        var host = Host();
+        var made = await ChainKit.InstantiateAsync(host, CalcPackTemplates.DriveTrain, "Conveyor drive, point to point", PointToPointInputs(host));
+        var (e1, m5) = (made.Instances["e1"], made.Instances["m5"]);
+
+        Assert.Equal(703.125, Si(e1, "n_pk") * 60 / (2 * Math.PI), 3);
+        Assert.Equal(208.3333, Si(e1, "n_mean") * 60 / (2 * Math.PI), 3);
+        Assert.Equal(Si(e1, "n_mean"), InputSi(m5, "n"), 9);
+        Assert.Contains(m5.Links, l => l.Input.Symbol == "n" && l.Link.OutputSymbol == "n_mean");
+        Assert.DoesNotContain(CalcPackTemplates.DriveTrain.Bindings, b => b is { FromStep: "e1", Output: "n_pk", ToStep: "m5" });
+
+        // The shaft's critical-speed ratio still uses the peak speed.
+        Assert.Equal(Si(e1, "n_pk"), InputSi(made.Instances["m4"], "n"), 9);
+    }
+
+    [Fact]
     public async Task A_Ball_Screw_Motor_Puts_Its_Peak_Thrust_On_The_Bearing_As_The_Axial_Load()
     {
         // chain.drive-train-05: E1 as a 50 kg ball-screw slide (10 mm lead, 0.1 friction): F_load 49.033 N + m a_pk (50 x 9) = 499.033 N (python3) reaches M5 F_a (0.499033 kN). The bearing's axial

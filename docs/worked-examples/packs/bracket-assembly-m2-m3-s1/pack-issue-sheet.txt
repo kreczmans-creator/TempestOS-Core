@@ -38,7 +38,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 12/12
-  Test run: 2026-10-26 11:01 UTC
+  Test run: 2026-10-26 13:10 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -51,7 +51,7 @@ Issued: 2026-10-26    Issue: BRK-CALC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A shaft (solid or hollow) pressed or shrunk into a hub: the interface pressure for a given diametral interference, the hoop and radial stresses at the interface in hub and shaft, von Mises utilisation against each yield strength, the axial assembly force and the torque the joint can carry by friction, and the temperature rise to shrink-fit the hub.
-Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as thick cylinders: p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² − R²) + ν_h) + (R/E_s)·((R² + r_i²)/(R² − r_i²) − ν_s) ]. Stresses at the hub bore: σ_θ = p·(r_o² + R²)/(r_o² − R²); σ_r = −p. Stresses at the shaft surface: σ_θ = −p·(R² + r_i²)/(R² − r_i²); σ_r = −p. Axial force and torque the fit holds by friction: F = μ·p·2πR·L; T = μ·p·2πR²·L. Temperature difference to assemble by heating the hub, with assembly clearance c_a: ΔT = (δ + c_a)/(α·2R).
+Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as thick cylinders: p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² − R²) + ν_h) + (R/E_s)·((R² + r_i²)/(R² − r_i²) − ν_s) ]. Stresses at the hub bore: σ_θ = p·(r_o² + R²)/(r_o² − R²); σ_r = −p. Stresses at the shaft surface: σ_θ = −p·(R² + r_i²)/(R² − r_i²); σ_r = −p. Surface smoothing on assembly (when Rz is entered): δ_eff = max(δ − 0.8·(Rz_h + Rz_s), 0), p_eff = p·δ_eff/δ. Axial force and torque the fit holds by friction, on p_eff: F = μ·p_eff·2πR·L; T = μ·p_eff·2πR²·L. The stresses stay at the nominal p (the larger interference of the fit). Temperature difference to assemble by heating the hub, with assembly clearance c_a: ΔT = (δ + c_a)/(α·2R).
   Ref: Shigley's Mechanical Engineering Design §3-16, §3-17 — Press and shrink fits; stresses in pressurised cylinders
   Ref: Roark's Formulas for Stress and Strain Ch. 13, Table 13.5 — Thick-walled cylinders under pressure
 
@@ -74,8 +74,10 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
 
 3. ASSUMPTIONS
   A1. Both parts are long cylinders in plane stress; the interface pressure is uniform along the engagement. (Lamé thick-cylinder relations; end effects neglected.)
-  A2. The friction coefficient is as entered and the same for assembly and for torque transmission. (Enter it with its source; it dominates the force and torque results.)
-  A3. Yield is checked by the von Mises equivalent stress at the hub bore, at the shaft surface and, for a hollow shaft, at the shaft bore (where the hoop stress is largest: 2·p·R²/(R² − r_i²), with no radial stress), the larger of the two shaft values governing. (Axial stress taken as zero.)
+  A2. The interference is the nominal one given: the torque and the press force need the minimum interference of the fit, the stresses the maximum, and the surface roughness smooths on assembly and takes about 0.8·(Rz_h + Rz_s) off it unless the roughness is entered. (DIN 7190-1; enter Rz to apply the smoothing to the torque and the force.)
+  A3. The friction coefficient is as entered and the same for assembly and for torque transmission. (Enter it with its source; it dominates the force and torque results.)
+  A4. Yield is checked by the von Mises equivalent stress at the hub bore, at the shaft surface and, for a hollow shaft, at the shaft bore (where the hoop stress is largest: 2·p·R²/(R² − r_i²), with no radial stress), the larger of the two shaft values governing. (Axial stress taken as zero.)
+  A5. No surface smoothing is applied: the torque and the press force are at the nominal interference. Roughness takes about 0.8·(Rz_h + Rz_s) off it on assembly, so a fine fit grips less than shown; check the torque at the minimum interference of the fit and the stresses at the maximum. (Enter Rz_h and Rz_s to apply the smoothing (DIN 7190-1).)
 
 4. WORKING
   [15] R = d / 2
@@ -138,15 +140,23 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
       = max(62.1 MPa, 62.1 MPa)
       = 62.1 MPa
         Largest shaft von Mises stress, surface or bore
-  [30] F_a = mu * p * 2 * pi * R * L
+  [30] delta_eff = delta
+      = 40 µm
+      = 40 µm
+        Effective interference (no roughness entered: the nominal interference)
+  [31] p_eff = p * delta_eff / delta
+      = 62.1 MPa × 40 µm / 40 µm
+      = 62.1 MPa
+        Interface pressure that grips, at the effective interference
+  [32] F_a = mu * p_eff * 2 * pi * R * L
       = 0.15 × 62.1 MPa × 2 × π × 25 mm × 60 mm
       = 87.792 kN
         Axial assembly (press) force
-  [31] T = mu * p * 2 * pi * R^2 * L
+  [33] T = mu * p_eff * 2 * pi * R^2 * L
       = 0.15 × 62.1 MPa × 2 × π × (25 mm)^2 × 60 mm
       = 2194.8 N·m
         Torque capacity by friction
-  [32] dT = (delta + c_a) / (alpha_h * d)
+  [34] dT = (delta + c_a) / (alpha_h * d)
       = (40 µm + 20 µm) / (0.000012 1/K × 50 mm)
       = 100 K
         Hub temperature rise for shrink fitting
@@ -159,6 +169,8 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
   sigma_vm_shaft = 62.1 MPa    Shaft von Mises stress at the surface
   sigma_vm_shaft_bore = 62.1 MPa    Shaft von Mises stress at the shaft bore
   sigma_vm_shaft_max = 62.1 MPa    Largest shaft von Mises stress (surface or bore)
+  delta_eff = 40 µm    Effective interference after smoothing
+  p_eff = 62.1 MPa    Gripping interface pressure
   F_a = 87.792 kN    Assembly force
   T = 2194.8 N·m    Torque capacity
   dT = 100 K    Shrink-fit temperature rise
@@ -171,11 +183,11 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
   No warnings.
 
 8. VERIFICATION
-  Template: mech.press-fit@1.1.0
-  Content hash: ab00ab9413e55979
+  Template: mech.press-fit@1.2.0
+  Content hash: 85c16c3f7bfa63b4
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-26 11:01 UTC
+  Test run: 2026-10-26 13:10 UTC
   Application: TempestOS test
 
 
@@ -189,7 +201,7 @@ Issued: 2026-10-26    Issue: BRK-CALC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 One bolt clamping members under an axial working load: the preload from the tightening torque with its scatter (or as measured), the stiffness of bolt and members, how much of the working load the bolt sees, the residual clamp after embedding, separation, yield under preload plus working load, the thread engagement needed against stripping, and the fatigue amplitude.
-Tensile stress area of the thread: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 P and d_3 = d − 1.2269 P. Assembly preload from the tightening torque, nut-factor method: F_M = M_A/(K d). Assembly preload from the tightening torque, thread and head friction method: F_M = M_A/(0.16 P + 0.58 d_2 μ_G + 0.5 D_Km μ_K). Assembly preload stated directly (measured) instead of derived: F_M = F_V. Bolt and member stiffness and the stress area may also be given (measured, FE or a fastener record) instead of derived. Minimum preload after the tightening scatter: F_M,min = F_M/α_A. Bolt resilience, the head, free shank and engaged thread as springs in series: δ_S = (0.4 d + 0.4 d)/(E_S A_N) + l_k/(E_S A_s) + 0.5 d/(E_S A_d3). Member stiffness, the clamped parts as two pressure frusta: k = 0.5774 π E d / ln[((1.155 t + d_w − d_h)(d_w + d_h))/((1.155 t + d_w + d_h)(d_w − d_h))]. Load factor, the share of the working load the bolt sees: Φ = n k_S/(k_S + k_P). Preload lost to embedding (settling of the interfaces): F_Z = f_Z (k_S k_P)/(k_S + k_P). Residual clamp at the interface under the working load: F_KR = max(F_M,min − (1 − Φ) F_A − F_Z, 0). Maximum bolt load, the whole working load once the joint opens: F_S,max = max(F_M + Φ F_A, F_A). Working equivalent stress in the bolt, tension with half the tightening torsion: σ_red = √(σ_z² + 3 (0.5 τ)²). Fatigue stress amplitude in the thread: σ_a = (F_S,max − F_M)/(2 A_s). Thread engagement length needed against stripping: m_min = S F_S,max/(0.5 π d τ_B).
+Tensile stress area of the thread: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 P and d_3 = d − 1.2269 P. Assembly preload from the tightening torque, nut-factor method: F_M = M_A/(K d). Assembly preload from the tightening torque, thread and head friction method: F_M = M_A/(0.16 P + 0.58 d_2 μ_G + 0.5 D_Km μ_K). Assembly preload stated directly (measured) instead of derived: F_M = F_V. Thread torsion under preload: τ_M = M_G/W_p with M_G = F_M (0.16 P + 0.58 d_2 μ_G), W_p = π/16·d_3³ at the minor diameter (conservative: the VDI 2230 mean diameter d_S = (d_2 + d_3)/2 gives a lower τ_M). Bolt and member stiffness and the stress area may also be given (measured, FE or a fastener record) instead of derived. Minimum preload after the tightening scatter: F_M,min = F_M/α_A. Bolt resilience, the head, free shank and engaged thread as springs in series: δ_S = (0.4 d + 0.4 d)/(E_S A_N) + l_k/(E_S A_s) + 0.5 d/(E_S A_d3). Member stiffness, the clamped parts as two pressure frusta: k = 0.5774 π E d / ln[((1.155 t + d_w − d_h)(d_w + d_h))/((1.155 t + d_w + d_h)(d_w − d_h))]. Load factor, the share of the working load the bolt sees: Φ = n k_S/(k_S + k_P). Preload lost to embedding (settling of the interfaces): F_Z = f_Z (k_S k_P)/(k_S + k_P). Residual clamp at the interface under the working load: F_KR = max(F_M,min − (1 − Φ) F_A − F_Z, 0). Maximum bolt load, the whole working load once the joint opens: F_S,max = max(F_M + Φ F_A, F_A). Working equivalent stress in the bolt, tension with half the tightening torsion: σ_red = √(σ_z² + 3 (0.5 τ)²). Fatigue stress amplitude in the thread: σ_a = (F_S,max − F_M)/(2 A_s). Thread engagement length needed against stripping: m_min = S F_S,max/(0.5 π d τ_B).
   Ref: VDI 2230 Part 1:2015 §5.1–§5.5 — Systematic calculation of highly stressed bolted joints — calculation steps R0–R13
   Ref: ISO 898-1:2013 §9.1.6 — Tensile stress area of the thread
   Ref: Shigley's Mechanical Engineering Design §8-5, §8-7 — Joint stiffness (frusta); preload and torque
@@ -209,9 +221,9 @@ Tensile stress area of the thread: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d
   f_Z | Embedding (settling) loss | 11 | µm | spec: SPEC-BRK-2 §3 | 0 … 100 µm
   method | Preload method | nut factor |  | spec: SPEC-BRK-2 §3 | any
   M_A | Tightening torque | 93 | N*m | spec: SPEC-BRK-2 §3 | 0.1 … 10000 N*m
-  K | Nut factor (nut-factor method) | 0.2 |  | spec: SPEC-BRK-2 §3 | 0.1 … 0.35
-  mu_G | Thread friction coefficient | 0.12 |  | spec: SPEC-BRK-2 §3 | 0.06 … 0.25
-  mu_K | Head / nut bearing friction coefficient | 0.12 |  | spec: SPEC-BRK-2 §3 | 0.06 … 0.25
+  K | Nut factor (nut-factor method); F_M is the maximum preload, so enter the smallest value the joint can have | 0.2 |  | spec: SPEC-BRK-2 §3 | 0.1 … 0.35
+  mu_G | Thread friction coefficient; F_M is the maximum preload, so enter the smallest value the joint can have | 0.12 |  | spec: SPEC-BRK-2 §3 | 0.06 … 0.25
+  mu_K | Head / nut bearing friction coefficient; F_M is the maximum preload, so enter the smallest value the joint can have | 0.12 |  | spec: SPEC-BRK-2 §3 | 0.06 … 0.25
   nu_perm | Permitted assembly utilisation ν: the equivalent stress at assembly over the proof strength (VDI 2230 R7; 0.9 is the usual target, 1.0 is the limit at which the bolt yields in tightening) | 1 |  | default | 0.5 … 1
   alpha_A | Tightening scatter factor (F_M,max / F_M,min) | 1.6 |  | spec: SPEC-BRK-2 §3 | 1 … 4
   F_A | Axial working load (per bolt) | 10 | kN | spec: SPEC-BRK-2 §3 | 0 … 5000 kN
@@ -223,8 +235,10 @@ Tensile stress area of the thread: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d
 3. ASSUMPTIONS
   A1. The joint is concentrically clamped and concentrically loaded; the members behave as two 30° frusta in series. (Eccentric clamping and loading (VDI 2230 full procedure) are outside this sheet.)
   A2. Thread torsion is taken at 50 % in the equivalent stress for the working state. (Common VDI 2230 practice (k_τ = 0.5).)
-  A3. The working load is a pulsating 0…F_A load; the fatigue amplitude is Φ F_A / (2 A_s). (Compare with the bolt's endurance limit as entered.)
-  A4. Thread stripping uses a shear area of half the pitch per unit length on the nominal diameter. (A conservative simplification of ISO 898-2 / VDI 2230 §5.5.5.)
+  A3. The thread torsion modulus is taken at the minor diameter d_3, W_p = π/16·d_3³, which is conservative: with the VDI 2230 mean diameter d_S the torsion stress is about 14 % lower and ν_M about 5 % lower at the defaults. (Stated choice; the equivalent stress at assembly is the more conservative for it.)
+  A4. F_M is the maximum preload (the one the tightening torque gives with the smallest friction and nut factor); F_M,min = F_M/α_A is the minimum after the scatter. (VDI 2230 R2: the maximum preload comes from the minimum friction coefficients.)
+  A5. The working load is a pulsating 0…F_A load; the fatigue amplitude is Φ F_A / (2 A_s). (Compare with the bolt's endurance limit as entered.)
+  A6. Thread stripping uses a shear area of half the pitch per unit length on the nominal diameter. (A conservative simplification of ISO 898-2 / VDI 2230 §5.5.5.)
 
 4. WORKING
   [24] d_2 = d - 0.6495 * P    « ISO 898-1 §9.1.6
@@ -419,11 +433,11 @@ Tensile stress area of the thread: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d
   WARNING preload-yield: M_A: the preload alone takes the bolt above 90 % of its proof strength.
 
 8. VERIFICATION
-  Template: mech.bolted-joint@1.2.0
-  Content hash: 1605cb9b0b97fce8
+  Template: mech.bolted-joint@1.2.1
+  Content hash: df65ae01a912bd25
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 11:01 UTC
+  Test run: 2026-10-26 13:10 UTC
   Application: TempestOS test
 
 
@@ -566,5 +580,5 @@ Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − 
   Content hash: 18d6536f1f7df3e1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 11:01 UTC
+  Test run: 2026-10-26 13:10 UTC
   Application: TempestOS test

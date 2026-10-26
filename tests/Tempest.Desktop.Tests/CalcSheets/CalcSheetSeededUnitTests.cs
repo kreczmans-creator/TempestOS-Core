@@ -7,7 +7,10 @@ using Tempest.Desktop.CalcSheets;
 
 namespace Tempest.Desktop.Tests.CalcSheets;
 
-/// <summary>desktop.calc-sheet-view-01: a seeded quantity whose unit is valid but not in the pick list kept its number and took the default unit, so it silently changed scale.</summary>
+/// <summary>
+/// desktop.calc-sheet-view-01: a seeded quantity whose unit is valid but not in the pick list kept its number and took the default unit, so it silently changed scale.
+/// desktop.calc-sheet-view-02 and its Low remainder: a seed whose unit is unknown (kn) or of another dimension (mm for a load) fell back to the default unit and ran; the form now keeps the seed's own unit, so the engine refuses it.
+/// </summary>
 public sealed class CalcSheetSeededUnitTests
 {
     private static (CalcSheetView View, CalcCatalogue Catalogue) NewView()
@@ -57,5 +60,23 @@ public sealed class CalcSheetSeededUnitTests
 
         // 3000 daN = 30 kN: the same stress as the 30 kN case of the import test (30e3 N / 150 mm^2 = 200 MPa), not 3000 kN (20 000 MPa).
         Assert.Equal(30e3, UnitCatalog.Parse("daN").ToSi(3000) , 6);
+    }
+
+    [AvaloniaTheory]
+    [InlineData("kn")]
+    [InlineData("mm")]
+    [InlineData("zz")]
+    public void A_Seeded_Unit_That_The_Engine_Cannot_Use_Is_Kept_And_Refused_Not_Replaced_By_The_Default(string seedUnit)
+    {
+        var (view, catalogue) = NewView();
+        view.ApplyImportedInputs(new CalcInputSet([CalcInputValue.Quantity("F", 30, seedUnit), CalcInputValue.Quantity("A", 150, "mm^2")]));
+
+        var read = view.ReadForm();
+        Assert.Equal(seedUnit, read.Find("F")!.Unit);
+        Assert.Equal(30, read.Find("F")!.Number);
+
+        var result = CalcRunner.Run(catalogue.Get("test.desktop-stress").Calculator, read);
+        Assert.True(result.IsBlocked);
+        Assert.Contains(result.Blocks, b => b.Message.Contains('F', StringComparison.Ordinal));
     }
 }

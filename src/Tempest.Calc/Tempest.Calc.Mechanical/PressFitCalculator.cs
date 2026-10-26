@@ -9,9 +9,9 @@ public sealed class PressFitCalculator : ICalcCalculator
     public const string Id = "mech.press-fit";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Mechanical, "Press and shrink fit",
+        Id, "1.2.0", CalcDiscipline.Mechanical, "Press and shrink fit",
         "A shaft (solid or hollow) pressed or shrunk into a hub: the interface pressure for a given diametral interference, the hoop and radial stresses at the interface in hub and shaft, von Mises utilisation against each yield strength, the axial assembly force and the torque the joint can carry by friction, and the temperature rise to shrink-fit the hub.",
-        "Radial interference: δ_r = δ/2.\nInterface pressure, the hub and the shaft as thick cylinders: p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² − R²) + ν_h) + (R/E_s)·((R² + r_i²)/(R² − r_i²) − ν_s) ].\nStresses at the hub bore: σ_θ = p·(r_o² + R²)/(r_o² − R²); σ_r = −p.\nStresses at the shaft surface: σ_θ = −p·(R² + r_i²)/(R² − r_i²); σ_r = −p.\nAxial force and torque the fit holds by friction: F = μ·p·2πR·L; T = μ·p·2πR²·L.\nTemperature difference to assemble by heating the hub, with assembly clearance c_a: ΔT = (δ + c_a)/(α·2R).",
+        "Radial interference: δ_r = δ/2.\nInterface pressure, the hub and the shaft as thick cylinders: p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² − R²) + ν_h) + (R/E_s)·((R² + r_i²)/(R² − r_i²) − ν_s) ].\nStresses at the hub bore: σ_θ = p·(r_o² + R²)/(r_o² − R²); σ_r = −p.\nStresses at the shaft surface: σ_θ = −p·(R² + r_i²)/(R² − r_i²); σ_r = −p.\nSurface smoothing on assembly (when Rz is entered): δ_eff = max(δ − 0.8·(Rz_h + Rz_s), 0), p_eff = p·δ_eff/δ.\nAxial force and torque the fit holds by friction, on p_eff: F = μ·p_eff·2πR·L; T = μ·p_eff·2πR²·L. The stresses stay at the nominal p (the larger interference of the fit).\nTemperature difference to assemble by heating the hub, with assembly clearance c_a: ΔT = (δ + c_a)/(α·2R).",
         [
             new CalcInputSpec("d", "Interface (nominal) diameter", CalcInputKind.Quantity, "mm", Default: 50, Min: 1, Max: 1000, HardMin: 1e-3, HardMax: 1e5),
             new CalcInputSpec("delta", "Diametral interference", CalcInputKind.Quantity, "µm", Default: 40, Min: 1, Max: 500, HardMin: 0, HardMax: 1e5),
@@ -27,9 +27,12 @@ public sealed class PressFitCalculator : ICalcCalculator
             new CalcInputSpec("S_y_s", "Shaft yield strength", CalcInputKind.Quantity, "MPa", ReferenceLibrary: "Materials:shaft", ReferenceProperty: "YieldStrength", ReferenceDimension: "Pressure", Default: 350, Min: 50, Max: 2000, HardMin: 1e-3, HardMax: 1e5),
             new CalcInputSpec("alpha_h", "Hub thermal expansion coefficient", CalcInputKind.Quantity, "1/K", Default: 12e-6, Min: 5e-6, Max: 30e-6, HardMin: 1e-9, HardMax: 1e-3),
             new CalcInputSpec("c_a", "Assembly clearance wanted for shrink fitting", CalcInputKind.Quantity, "µm", Default: 20, Min: 0, Max: 500, HardMin: 0, HardMax: 1e5),
+            new CalcInputSpec("Rz_h", "Hub bore roughness Rz (blank: the smoothing is not applied)", CalcInputKind.Quantity, "µm", Min: 0, Max: 100, HardMin: 0, HardMax: 1e4, IsOptional: true),
+            new CalcInputSpec("Rz_s", "Shaft surface roughness Rz (blank: the smoothing is not applied)", CalcInputKind.Quantity, "µm", Min: 0, Max: 100, HardMin: 0, HardMax: 1e4, IsOptional: true),
         ],
         [
             new CalcAssumption("Both parts are long cylinders in plane stress; the interface pressure is uniform along the engagement.", "Lamé thick-cylinder relations; end effects neglected."),
+            new CalcAssumption("The interference is the nominal one given: the torque and the press force need the minimum interference of the fit, the stresses the maximum, and the surface roughness smooths on assembly and takes about 0.8·(Rz_h + Rz_s) off it unless the roughness is entered.", "DIN 7190-1; enter Rz to apply the smoothing to the torque and the force."),
             new CalcAssumption("The friction coefficient is as entered and the same for assembly and for torque transmission.", "Enter it with its source; it dominates the force and torque results."),
             new CalcAssumption("Yield is checked by the von Mises equivalent stress at the hub bore, at the shaft surface and, for a hollow shaft, at the shaft bore (where the hoop stress is largest: 2·p·R²/(R² − r_i²), with no radial stress), the larger of the two shaft values governing.", "Axial stress taken as zero."),
         ],
@@ -107,8 +110,35 @@ public sealed class PressFitCalculator : ICalcCalculator
         }
 
         c.Assign("sigma_vm_shaft_max", "max(sigma_vm_shaft, sigma_vm_shaft_bore)", "MPa", "Largest shaft von Mises stress, surface or bore");
-        c.Assign("F_a", "mu * p * 2 * pi * R * L", "kN", "Axial assembly (press) force");
-        c.Assign("T", "mu * p * 2 * pi * R^2 * L", "N*m", "Torque capacity by friction");
+
+        // Surface smoothing (mech.press-fit-R1): the roughness peaks flatten on assembly, so the grip comes from a smaller interference than the nominal one; the stresses stay on the nominal.
+        var roughness = new List<string>();
+
+        if (c.Has("Rz_h"))
+        {
+            c.Input("Rz_h");
+            roughness.Add("Rz_h");
+        }
+
+        if (c.Has("Rz_s"))
+        {
+            c.Input("Rz_s");
+            roughness.Add("Rz_s");
+        }
+
+        if (roughness.Count > 0)
+        {
+            c.Assign("delta_eff", $"max(delta - 0.8 * ({string.Join(" + ", roughness)}), 0 µm)", "µm", "Effective interference after the surface smoothing", "DIN 7190-1");
+        }
+        else
+        {
+            c.Assign("delta_eff", "delta", "µm", "Effective interference (no roughness entered: the nominal interference)");
+            c.Assume("No surface smoothing is applied: the torque and the press force are at the nominal interference. Roughness takes about 0.8·(Rz_h + Rz_s) off it on assembly, so a fine fit grips less than shown; check the torque at the minimum interference of the fit and the stresses at the maximum.", "Enter Rz_h and Rz_s to apply the smoothing (DIN 7190-1).");
+        }
+
+        c.Assign("p_eff", c.Si("delta") > 0 ? "p * delta_eff / delta" : "p", "MPa", "Interface pressure that grips, at the effective interference");
+        c.Assign("F_a", "mu * p_eff * 2 * pi * R * L", "kN", "Axial assembly (press) force");
+        c.Assign("T", "mu * p_eff * 2 * pi * R^2 * L", "N*m", "Torque capacity by friction");
         c.Assign("dT", "(delta + c_a) / (alpha_h * d)", "K", "Hub temperature rise for shrink fitting");
 
         c.Output("p", "Interface pressure");
@@ -118,6 +148,8 @@ public sealed class PressFitCalculator : ICalcCalculator
         c.Output("sigma_vm_shaft", "Shaft von Mises stress at the surface");
         c.Output("sigma_vm_shaft_bore", "Shaft von Mises stress at the shaft bore");
         c.Output("sigma_vm_shaft_max", "Largest shaft von Mises stress (surface or bore)");
+        c.Output("delta_eff", "Effective interference after smoothing");
+        c.Output("p_eff", "Gripping interface pressure");
         c.Output("F_a", "Assembly force");
         c.Output("T", "Torque capacity");
         c.Output("dT", "Shrink-fit temperature rise");

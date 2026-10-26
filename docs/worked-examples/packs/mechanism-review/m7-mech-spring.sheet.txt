@@ -287,9 +287,9 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
   WARNING record: Tabulated values not taken from a reference record: G, E, rho (Material properties); Rm (Wire tensile strength R_m(d)); f_tau, f_sigma, f_su (Permissible and ultimate stress fractions); nu_seat (End-support coefficient); S_e (Endurance strength). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: mech.spring@1.3.0
-  Content hash: b86b6ede74cb8218
+  Template: mech.spring@1.3.1
+  Content hash: f236fe54380fb9be
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 10:14 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test

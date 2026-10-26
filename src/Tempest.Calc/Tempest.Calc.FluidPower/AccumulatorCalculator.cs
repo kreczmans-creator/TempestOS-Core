@@ -62,12 +62,12 @@ public sealed class AccumulatorCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.5.0", CalcDiscipline.FluidPower, "Accumulator sizing (gas law)",
+        Id, "1.5.1", CalcDiscipline.FluidPower, "Accumulator sizing (gas law)",
         "The pre-charge gas volume V0 of a hydraulic accumulator that delivers, or absorbs, a liquid volume ΔV between the lowest working pressure p1 and the highest p2, from p·Vⁿ = const with absolute pressures and an exponent n between 1 (isothermal) and 1.4 (adiabatic), the gas either charged as fast as it is discharged or (a held accumulator, the default for an emergency stroke) charged slowly and isothermally to p2 and then discharged at n; the volume scaled to the lowest operating temperature (T_max/T_min) and the pre-charge pressure at the charging temperature; the next size from your own size list; and the bar·litre product PS·V of the vessel's own maximum allowable pressure and volume against the PSSR Schedule 1 250 bar·L exception. Three modes: energy storage, shock and pulsation (screening only) and emergency stroke (ΔV is the stroke volume, linkable from the cylinder circuit). Not a pressure-vessel code check.",
         "Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode)\n" +
         "Gas volume, one exponent both ways (charged as fast as it is discharged): V0 = ΔV / [(p0/p1)^(1/n) − (p0/p2)^(1/n)], n = 1 isothermal … 1.4 adiabatic\n" +
         "Gas volume, slow charge and discharge at n (a held accumulator): charged isothermally to p2, V2 = V0·p0/p2, then discharged at n to p1, V1 = V2·(p2/p1)^(1/n), ΔV = V1 − V2, so V0 = ΔV·(p2/p0) / [(p2/p1)^(1/n) − 1]\n" +
-        "Either volume × the real-gas factor f_rg (user input, at least 1) and × (T_max + 273.15)/(T_min + 273.15), because p0 is defined at T_max and the gas delivers less when cold\n" +
+        "Either volume × the real-gas factor f_rg (user input, at least 1) and × the cold-gas factor, because p0 is defined at T_max and the gas delivers less when cold: (T_max + 273.15)/(T_min + 273.15) for the held accumulator, that ratio to the power 1/n for one exponent both ways\n" +
         "Pre-charge rules (records, applied to absolute pressures): p0 ≤ r_0·p1 at T_max (default 0.9, bladder type) and p2/p0(T_min) ≤ r_p (default 4), p0(T_min) = p0·(T_min + 273.15)/(T_max + 273.15)\n" +
         "Pre-charge at the charging temperature: p0(T_c) = p0(T_max)·(T_c + 273.15)/(T_max + 273.15)\n" +
         "Next size: the smallest listed size not below V0\n" +
@@ -98,7 +98,7 @@ public sealed class AccumulatorCalculator : ICalcCalculator
             new CalcAssumption("The exponent n is the user's: 1 for a slow discharge with heat exchange (isothermal), towards 1.4 for a fast one (adiabatic). With the same exponent both ways the larger n gives the larger volume for a given ΔV.", "Gas-law exponents, closed form."),
             new CalcAssumption("The gas process is stated on the sheet. A held accumulator (an emergency stroke, by default) is charged slowly, so isothermally with charge exponent 1 (V2 = V0·p0/p2), and discharged at the exponent n; sizing it with one exponent from the pre-charge to both pressures understates the volume. The one-exponent form (charge exponent = n) is for a gas charged as fast as it is discharged, as in a pulsation or a fast cycle; choose it in the energy-storage duty for that case. The shock and pulsation duty always uses one exponent.", "Gas-law sizing of a held accumulator: slow charge, fast discharge."),
             new CalcAssumption("The gas is ideal unless a real-gas factor is entered (at least 1: nitrogen's compressibility factor exceeds 1 at high pressure, so the real gas needs more volume, never less); above 200 bar the sheet warns that nitrogen departs from the ideal-gas law and a factor from a gas-property source should be entered.", "Real-gas correction as a user factor."),
-            new CalcAssumption("The pre-charge p0 is defined at the maximum operating temperature T_max and V0 is sized there; at the lowest operating temperature T_min the same gas delivers only the fraction T_min/T_max (absolute) of ΔV, so V0 is multiplied by T_max/T_min, and the p2/p0 rule is checked with p0 at T_min. The temperature range is the user's; with T_min = T_max the correction is 1.", "Manufacturer sizing practice; the gas law at constant mass."),
+            new CalcAssumption("The pre-charge p0 is defined at the maximum operating temperature T_max and V0 is sized there; at the lowest operating temperature T_min the same gas delivers only the fraction T_min/T_max (absolute) of ΔV, so V0 is multiplied by T_max/T_min for a held accumulator (isothermal charge to p2) and by (T_max/T_min)^(1/n) when one exponent n holds both ways (the pre-charge at T_min is p0·T_min/T_max), and the p2/p0 rule is checked with p0 at T_min. The temperature range is the user's; with T_min = T_max the correction is 1.", "Manufacturer sizing practice; the gas law at constant mass."),
             new CalcAssumption("The pre-charge rules (p0 ≤ 0.9·p1 and p2/p0 ≤ 4 by default) are records for the accumulator type and make and are checked as PASS/FAIL on ABSOLUTE pressures, whichever basis the pressures are entered on; the right values, and whether the manufacturer states the ratio on gauge or absolute pressures, come from the manufacturer (the same numbers read as gauge pressures give a different ratio).", "Rules are records, not built-in limits."),
             new CalcAssumption("The bar·litre product is PS times V of the vessel itself: PS is the vessel's maximum allowable pressure in bar gauge (the nameplate or relief setting, never below the highest working pressure p2) and V its internal volume (the selected size unless entered). Without PS and a volume the indication is not available. It indicates whether the 250 bar·L exception of PSSR Schedule 1 can apply; it is not a compliance statement, and PED / UK PER, PSSR examination and the vessel's own design code stay with the manufacturer and the competent person.", "Regulatory gating: no pressure-vessel code check."),
         ],
@@ -326,12 +326,15 @@ public sealed class AccumulatorCalculator : ICalcCalculator
                 "p·Vⁿ = const");
         }
 
-        c.Assign("f_T", "(T_max / 1 K) / (T_min / 1 K)", null, "Temperature scaling of the gas volume: maximum over minimum absolute temperature");
+        // The pre-charge is defined at T_max and the gas cools at constant volume: p0' = p0·T_min/T_max. A held accumulator (isothermal charge to p2, then n) needs V0 ∝ p2/p0', the first power of the
+        // temperature ratio; a gas charged as fast as it is discharged (one exponent) needs V0 ∝ (p0/p0')^(1/n), the ratio to the power 1/n (fp.accumulator-03).
+        c.Assign("f_Tabs", "(T_max / 1 K) / (T_min / 1 K)", null, "Absolute temperature ratio T_max/T_min");
+        c.Assign("f_T", slowCharge ? "f_Tabs" : "f_Tabs^(1 / n)", null, slowCharge ? "Temperature scaling of the gas volume: the temperature ratio (isothermal charge to p2)" : "Temperature scaling of the gas volume: the temperature ratio to the power 1/n (one exponent both ways)");
         c.Assign("V0", "V0_ideal * f_rg * f_T", "L", "Pre-charge gas volume V0 (accumulator size required)");
 
         c.Assign("T_ratio", "(T_c / 1 K) / (T_max / 1 K)", null, "Charging over maximum absolute temperature");
         c.Assign("p0", "pa_0 * T_ratio", UnitCatalog.BarAbsolute, "Absolute pre-charge pressure at the charging temperature");
-        c.Assign("p0_min", "pa_0 / f_T", UnitCatalog.BarAbsolute, "Absolute pre-charge pressure at the minimum operating temperature");
+        c.Assign("p0_min", "pa_0 / f_Tabs", UnitCatalog.BarAbsolute, "Absolute pre-charge pressure at the minimum operating temperature");
         c.Assign("p0_set", absolute ? "p0" : "p0 - p_atm", absolute ? UnitCatalog.BarAbsolute : UnitCatalog.BarGauge, absolute ? "Pre-charge to set at the charging temperature (absolute)" : "Pre-charge to set at the charging temperature (gauge)");
 
         c.Assign("u_r0", "pa_0 / (r_0 * pa_1)", null, "Pre-charge against the p0/p1 rule");

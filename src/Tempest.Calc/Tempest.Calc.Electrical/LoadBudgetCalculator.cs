@@ -29,18 +29,19 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.Electrical, "Load budget, PSU, transformer and battery",
+        Id, "1.4.0", CalcDiscipline.Electrical, "Load budget, PSU, transformer and battery",
         "The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.",
         "Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative); this duty-weighted demand sizes the transformer and the enclosure heat\n" +
         "Running load of each load while it is on: P_i·k_i, apparent P_i·k_i/cosφ_i (the duty d is the share of time on, so it is left out: a cable, a bus and a power supply carry the load while it is on)\n" +
         "Bus currents: I_3φ = S_3φ,run/(√3·U), I_1φ = S_1φ,run/U, I_DC = P_DC,run/U_DC, from the running loads; when a bus is chosen for the DC power supply its input P_DC,run/η_PSU (power factor 1) is added to that bus\n" +
-        "Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0)\n" +
+        "Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i + P_DC·(1/η_PSU − 1), h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0); the second term is the power supply's own loss, present when an AC bus is chosen for it\n" +
         "Power supply sizing: P_PSU ≥ margin·P_DC,run/f_derate (the running DC load, duty not applied; f_derate from the manufacturer's curve at θ and altitude)\n" +
         "Transformer sizing: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two\n" +
-        "Battery sizing: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t",
+        "Battery sizing: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t, never below I_b·t (the exponent is not valid beyond the rated hour rate H)",
         [
             new CalcInputSpec("loads", "Loads", CalcInputKind.Table, Columns: LoadColumns, MaxRows: 100),
             new CalcInputSpec("P_add", "Additional three-phase load (linked from E1's RMS power)", CalcInputKind.Quantity, "kW", Default: 0, Min: 0, Max: 200, HardMin: 0, HardMax: 200, Group: "Loads"),
+            new CalcInputSpec("P_rated_add", "Rated (nameplate) shaft power of the additional machine (linked from E1's P_rated): the supply carries the larger of this and the duty power P_add; blank: the machine is sized on its duty only", CalcInputKind.Quantity, "kW", Min: 0, Max: 200, HardMin: 0, HardMax: 200, IsOptional: true, Group: "Loads"),
             new CalcInputSpec("cosphi_add", "Power factor of the additional load", CalcInputKind.Number, Default: 0.85, Min: 0.5, Max: 1, HardMin: 0.5, HardMax: 1, Group: "Loads"),
             new CalcInputSpec("eta_add", "Efficiency of the additional load", CalcInputKind.Number, Default: 0.9, Min: 0.5, Max: 1, HardMin: 0.5, HardMax: 1, Group: "Loads"),
             new CalcInputSpec("inrush_add", "Starting multiple of the additional load", CalcInputKind.Number, Default: 1, Min: 1, Max: 20, HardMin: 1, HardMax: 20, Group: "Loads"),
@@ -83,6 +84,9 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
             new CalcApplicabilityRule("load-defaults", "A load row with a blank optional cell (η, d, k or inrush): the blank is taken as 1, which understates the heat (η) and the starting peak (inrush) and overstates the demand (d, k).", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("psu_bus", "DC loads with no AC bus chosen for their power supply: the AC bus currents and the transformer demand omit its input.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("derate", "Ambient above 40 °C with no PSU derating entered.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("rated-add", "A linked machine with no rated power: the supply is sized on its duty power only, and the machine's rating can be higher.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("battery-charge", "A battery-backed load with an autonomy: the power supply rating omits the battery's charging power.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("peukert-range", "An autonomy beyond the Peukert rated hour rate: the capacity is not taken below the plain product I_b·t.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("peukert", "Peukert needs both the exponent and the hour rate.", CalcNoticeSeverity.Warning),
         ],
         [
@@ -117,6 +121,8 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
             new CalcOutputPort("I_1ph", "A", "Single-phase bus current"),
             new CalcOutputPort("I_DC", "A", "DC bus current"),
             new CalcOutputPort("Phi", "kW", "Heat dissipated inside the enclosure (→ E2)"),
+            new CalcOutputPort("U_L", "V", "Three-phase line voltage of the bus (→ E3 V_n)"),
+            new CalcOutputPort("pf_link", "", "Power factor of the linked machine (→ E3 cos φ)"),
             new CalcOutputPort("C_req", "A*h", "Minimum battery capacity"),
         ],
         RecordKinds:
@@ -201,8 +207,21 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
 
         // A linked machine (E1's continuous power) enters as a three-phase load drawing P_add/η_add (Addendum A §A7 motor circuit). The machine is outside the
         // enclosure, so by default none of its loss is panel heat (heat_add = 0).
-        if (c.Si("P_add") > 0)
-            loads.Add(new Load(loads.Count + 1, "Linked load", Ac3, c.Si("P_add") / c.InputSi("eta_add"), c.InputSi("cosphi_add"), c.InputSi("eta_add"), 1, 1, c.InputSi("inrush_add"), false, c.InputSi("heat_add"), psuEta));
+        // The supply carries the machine the circuit is for, not only the duty it is asked to do (chain.motor-circuit-04): the larger of the duty power and the rated shaft power.
+        var pLinked = c.Si("P_add");
+
+        if (c.Has("P_rated_add"))
+        {
+            c.Input("P_rated_add");
+            pLinked = Math.Max(pLinked, c.Si("P_rated_add"));
+        }
+        else if (pLinked > 0)
+        {
+            c.Warn("rated-add", "P_rated_add: the linked machine is sized on its duty power only; its rated (nameplate) power, which the drive and the supply must carry, can be higher (a larger motor on the same duty draws more current). Enter P_rated_add, or link E1's P_rated, to size the cable and the device for the machine.");
+        }
+
+        if (pLinked > 0)
+            loads.Add(new Load(loads.Count + 1, "Linked load", Ac3, pLinked / c.InputSi("eta_add"), c.InputSi("cosphi_add"), c.InputSi("eta_add"), 1, 1, c.InputSi("inrush_add"), false, c.InputSi("heat_add"), psuEta));
 
         var kW = UnitCatalog.Parse("kW");
         var kVA = UnitCatalog.Parse("kVA");
@@ -227,7 +246,11 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
         c.Record("I_3ph", "S_3φ,run/(√3·U_3ph), S_run = Σ P_i·k_i/cosφ_i", $"{F(s3)} / (√3 × {F(c.Si("U_3ph"))})", ScalarValue.Of(s3 / (Math.Sqrt(3) * c.Si("U_3ph")), amp), "Three-phase bus current, loads while on (duty not applied)");
         c.Record("I_1ph", "S_1φ,run/U_1ph, S_run = Σ P_i·k_i/cosφ_i", $"{F(s1)} / {F(c.Si("U_1ph"))}", ScalarValue.Of(s1 / c.Si("U_1ph"), amp), "Single-phase bus current, loads while on (duty not applied)");
         c.Record("I_DC", "P_DC,run/U_DC, P_DC,run = Σ DC P_i·k_i", $"{F(pdcRun)} / {F(c.Si("U_DC"))}", ScalarValue.Of(pdcRun / c.Si("U_DC"), amp), "DC bus current, loads while on (duty not applied)");
-        c.Record("Phi", "Σ h_i·P_i·d_i·k_i", string.Join(" + ", loads.Select(l => $"{F(l.Heat)}×{F(l.Demand / 1e3)}")), ScalarValue.Of(loads.Sum(l => l.Heat * l.Demand) / 1e3, kW), "Heat dissipated inside the enclosure (→ E2)");
+        // The power supply's own loss is heat inside the panel too (elec.load-budget-05): P_DC·(1/η_PSU − 1), only when a bus is chosen for it (its η is then known).
+        var pdcDemand = loads.Where(l => l.Supply == Dc).Sum(l => l.Demand);
+        var psuLoss = psuBus == PsuNone ? 0 : pdcDemand * (1 / psuEta - 1);
+        var heatTerms = string.Join(" + ", loads.Select(l => $"{F(l.Heat)}×{F(l.Demand / 1e3)}"));
+        c.Record("Phi", psuBus == PsuNone ? "Σ h_i·P_i·d_i·k_i" : "Σ h_i·P_i·d_i·k_i + P_DC·(1/η_PSU − 1)", psuBus == PsuNone ? heatTerms : $"{heatTerms} + PSU loss {F(psuLoss / 1e3)}", ScalarValue.Of((loads.Sum(l => l.Heat * l.Demand) + psuLoss) / 1e3, kW), "Heat dissipated inside the enclosure (→ E2)");
 
         if (c.Si("theta") > 273.15 + 40 && c.InputSi("f_derate") >= 1)
             c.Warn("derate", "f_derate: the ambient is above 40 °C but no PSU derating is entered; read the factor from the manufacturer's curve.");
@@ -259,11 +282,24 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
             if (c.Has("k_p") != c.Has("H_rate"))
                 c.Warn("peukert", "k_p/H_rate: Peukert needs both the exponent and the hour rate; it is not applied.");
 
+            if (loads.Any(l => l.Backed))
+                c.Warn("battery-charge", "t_auto: the power supply rating covers the DC loads only. A battery-backed load needs the battery's charging power on top (a 0.1C charge at the battery voltage is a common allowance); check that the supply can charge the battery as well as carry the load.");
+
             if (c.Has("k_p") && c.Has("H_rate"))
             {
                 c.Input("k_p");
                 c.Input("H_rate");
-                c.Assign("Ah", "I_b * H_rate * (t_auto / H_rate)^(1 / k_p)", "A*h", "Discharge capacity, Peukert-adjusted", "Linden 5th ed.");
+
+                // Peukert's exponent is valid inside the rated hour rate (elec.load-budget-06): beyond it the relation gives a capacity credit that real batteries do not, so the plain product is the floor.
+                if (c.Si("t_auto") > c.Si("H_rate") * (1 + 1e-9))
+                {
+                    c.Warn("peukert-range", $"t_auto: the autonomy {F(c.Si("t_auto") / 3600)} h is beyond the rated hour rate {F(c.Si("H_rate") / 3600)} h, outside the range the Peukert exponent is valid for; the capacity is not taken below I_b·t.");
+                    c.Assign("Ah", "max(I_b * H_rate * (t_auto / H_rate)^(1 / k_p), I_b * t_auto)", "A*h", "Discharge capacity, Peukert-adjusted (not below I_b·t beyond the rated hour rate)", "Linden 5th ed.");
+                }
+                else
+                {
+                    c.Assign("Ah", "I_b * H_rate * (t_auto / H_rate)^(1 / k_p)", "A*h", "Discharge capacity, Peukert-adjusted", "Linden 5th ed.");
+                }
             }
             else
             {
@@ -273,6 +309,11 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
             c.Assign("C_req", "Ah / (DoD * eta_b * k_temp * k_age)", "A*h", "Minimum battery capacity");
             outputs.AddRange([("I_b", "Battery discharge current"), ("Ah", "Discharge capacity"), ("C_req", "Minimum battery capacity")]);
         }
+
+        // The supply voltage and the linked machine's power factor travel on to the voltage-drop step (chain.motor-circuit-07).
+        c.Record("U_L", "U_3ph", $"{F(c.Si("U_3ph"))} V", ScalarValue.Of(c.Si("U_3ph"), "V"), "Three-phase line voltage of the bus");
+        c.Record("pf_link", "cosφ of the linked machine", F(c.InputSi("cosphi_add")), new ScalarValue(c.InputSi("cosphi_add")), "Power factor of the linked machine");
+        outputs.AddRange([("U_L", "Three-phase line voltage"), ("pf_link", "Power factor of the linked machine")]);
 
         foreach (var (symbol, text) in outputs)
             c.Output(symbol, text);

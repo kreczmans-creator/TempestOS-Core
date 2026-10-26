@@ -8,7 +8,7 @@ namespace Tempest.Calc.Electrical;
 /// E2 — enclosure heat dissipation and fan sizing: an internal heat-load
 /// schedule, the effective dissipating surface from the mounting condition
 /// (per-face exposure factors), natural dissipation through a user-editable
-/// heat-transfer coefficient (IEC TR 60890-style approach), the temperature
+/// heat-transfer coefficient (plain exposed-area method), the temperature
 /// rise, the airflow for forced ventilation at a target rise with altitude
 /// density correction, fan duty against a user fan curve, optional solar
 /// gain and the cooling-unit duty when ventilation cannot hold the limit.
@@ -26,7 +26,7 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.5.0", CalcDiscipline.Electrical, "Enclosure heat dissipation and fan sizing",
+        Id, "1.5.1", CalcDiscipline.Electrical, "Enclosure heat dissipation and fan sizing",
         "Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.",
         "Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+ α I A_sun).\nEffective cooling surface, each face weighted by how freely it sheds heat: A_eff = Σ f_face × A_face.\nTemperature rise with natural cooling, one coefficient over the exposed faces (the IEC TR 60890 tables are not used): ΔT = P/(h A_eff).\nAir flow a fan must move to hold the target rise: V = P/(ρ c_p ΔT_target), with ρ = p(z)/(287.055 T) and c_p = 1006 J/(kg·K).\nFan duty point, where the fan curve meets the system resistance (found by bisection): p_fan(V) = p_sys (V/V_ref)².\nCooling unit capacity, when the surfaces alone cannot reject the heat: P_cool = P − h A_eff (T_max − T_amb).\nSealed enclosure (sealing temperature T_seal entered, no breather), pressure difference across the walls when the air warms or cools from the sealing temperature at constant volume, in absolute temperatures (a rise when T_int > T_seal, a suction when below): Δp = p_site·|T_int/T_seal − 1|.\nA pressure-compensation element (breather or relief) limits it to its cracking pressure: dp_seal = min(Δp, dp_relief).\nForce of that pressure on a cover of area A_cover: F_seal = dp_seal·A_cover.",
         [
@@ -57,7 +57,7 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
             new CalcInputSpec("V_ref", "Reference airflow for the system resistance", CalcInputKind.Quantity, "m^3/h", Default: 100, Min: 1, Max: 1e5, HardMin: 1e-3, HardMax: 1e7, Group: "Fan"),
         ],
         [
-            new CalcAssumption("Heat leaves the enclosure through its exposed faces at one overall coefficient h (natural convection plus radiation to surroundings at the ambient temperature); covered faces dissipate nothing.", "IEC TR 60890-style effective-surface approach; h is a reference value the user may edit."),
+            new CalcAssumption("Heat leaves the enclosure through its exposed faces at one overall coefficient h (natural convection plus radiation to surroundings at the ambient temperature); covered faces dissipate nothing.", "Plain exposed-area method of manufacturer practice, not an IEC TR 60890 verification; h is a reference value the user may edit."),
             new CalcAssumption("Forced ventilation removes the full heat load with air entering at ambient and leaving at the target rise; natural dissipation is neglected for the airflow (conservative).", "Manufacturer fan-sizing practice."),
             new CalcAssumption("A sealed enclosure (T_seal entered) is a closed, rigid, leak-free volume of dry air at the site pressure when closed: the pressure difference follows from the ideal-gas relation at constant volume, from the sealing temperature to the internal temperature with natural dissipation T_int (the temperature without a cooling unit); a breather, a seal that leaks or a flexing wall reduces it, so it is an upper bound (a pressure-compensation element is modelled only as a cap at its cracking pressure, with no flow resistance); the site pressure is the standard atmosphere at the altitude.", "Ideal gas at constant volume (derived)."),
             new CalcAssumption("The fan curve is linear between the entered points; the system resistance scales with airflow squared.", "Duty-point idealisation."),
@@ -79,7 +79,7 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
         ],
         [
             new CalcTestCase("ka-wall-mounted", "Wall-mounted 600 × 800 × 300 enclosure, 300 W (analytic)",
-                new CalcReferenceSource("Analytic (effective-surface method as in IEC TR 60890 / manufacturer guides)", null, "A_eff = top 0.18 + front 0.48 + two sides 0.48 = 1.14 m²; ΔT = 300/(5.5 × 1.14) = 47.85 K; forced at 15 K rise, 35 °C sea level: ρ = 1.1455 kg/m³, V = 300/(1.1455 × 1006 × 15) = 0.017355 m³/s = 62.48 m³/h; cooling unit at 50 °C limit: 300 − 5.5 × 1.14 × 15 = 205.95 W"),
+                new CalcReferenceSource("Analytic (plain exposed-area method of manufacturer guides)", null, "A_eff = top 0.18 + front 0.48 + two sides 0.48 = 1.14 m²; ΔT = 300/(5.5 × 1.14) = 47.85 K; forced at 15 K rise, 35 °C sea level: ρ = 1.1455 kg/m³, V = 300/(1.1455 × 1006 × 15) = 0.017355 m³/s = 62.48 m³/h; cooling unit at 50 °C limit: 300 − 5.5 × 1.14 × 15 = 205.95 W"),
                 [Loads(("PLC and I/O", 80, 1, 1), ("drives", 55, 4, 1)), CalcInputValue.Quantity("I_sun", 0, "W/m^2"), CalcInputValue.Quantity("A_sun", 0, "m^2"), CalcInputValue.Quantity("W", 0.6, "m"), CalcInputValue.Quantity("H", 0.8, "m"), CalcInputValue.Quantity("D", 0.3, "m"), CalcInputValue.Of("f_top", 1), CalcInputValue.Of("f_front", 1), CalcInputValue.Of("f_rear", 0), CalcInputValue.Of("f_left", 1), CalcInputValue.Of("f_right", 1), CalcInputValue.Of("f_bottom", 0), CalcInputValue.Quantity("h", 5.5, "W/(m^2*K)"), CalcInputValue.Quantity("T_amb", 35, "degC"), CalcInputValue.Quantity("T_max", 50, "degC"), CalcInputValue.Quantity("altitude", 0, "m")],
                 [new CalcExpectedValue("P_total", 300, "W", 1e-9), new CalcExpectedValue("A_eff", 1.14, "m^2", 1e-9), new CalcExpectedValue("dT_nat", 47.847, "K", 1e-4), new CalcExpectedValue("V_req", 62.48, "m^3/h", 1e-3), new CalcExpectedValue("P_cool", 205.95, "W", 1e-4)]),
             new CalcTestCase("ka-fan-duty", "Fan duty point against a linear fan curve (analytic)",
@@ -135,7 +135,8 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
         c.Record("P_loads", "Σ P_i × n_i × d_i", $"{rows.Count} item(s)", ScalarValue.Of(pLoads, "W"), "Internal heat load");
         c.Assign("P_solar", "alpha_sun * I_sun * A_sun", "W", "Solar gain");
         c.Assign("P_total", "P_loads + P_add + P_solar", "W", "Total heat to remove");
-        c.Assign("A_eff", "f_top * W * D + f_bottom * W * D + f_front * W * H + f_rear * W * H + f_left * H * D + f_right * H * D", "m^2", "Effective dissipating surface", "IEC TR 60890 approach");
+        c.Assume("The effective surface is the plain exposed-area method of manufacturer practice: each face area weighted by how freely it sheds heat, one overall coefficient h. This is not a verification of temperature rise to IEC TR 60890 or BS EN 61439-1 cl. 10.10 (neither the surface factors nor the standard's temperature-rise correlation is used).", "Stated on every run so the result is not read as an assembly verification.");
+        c.Assign("A_eff", "f_top * W * D + f_bottom * W * D + f_front * W * H + f_rear * W * H + f_left * H * D + f_right * H * D", "m^2", "Effective dissipating surface", "plain exposed-area method (manufacturer practice), not an IEC TR 60890 verification");
         c.Assign("dT_nat", "P_total / (h * A_eff)", "K", "Temperature rise with natural dissipation");
         c.Assign("T_int", "T_amb + dT_nat", "degC", "Internal temperature with natural dissipation");
         c.Assign("dT_allow", "T_max - T_amb", "K", "Allowed rise");

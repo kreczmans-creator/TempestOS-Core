@@ -8,7 +8,7 @@ Issued: —
 
 1. SCOPE AND METHOD
 A shaft (solid or hollow) pressed or shrunk into a hub: the interface pressure for a given diametral interference, the hoop and radial stresses at the interface in hub and shaft, von Mises utilisation against each yield strength, the axial assembly force and the torque the joint can carry by friction, and the temperature rise to shrink-fit the hub.
-Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as thick cylinders: p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² − R²) + ν_h) + (R/E_s)·((R² + r_i²)/(R² − r_i²) − ν_s) ]. Stresses at the hub bore: σ_θ = p·(r_o² + R²)/(r_o² − R²); σ_r = −p. Stresses at the shaft surface: σ_θ = −p·(R² + r_i²)/(R² − r_i²); σ_r = −p. Axial force and torque the fit holds by friction: F = μ·p·2πR·L; T = μ·p·2πR²·L. Temperature difference to assemble by heating the hub, with assembly clearance c_a: ΔT = (δ + c_a)/(α·2R).
+Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as thick cylinders: p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² − R²) + ν_h) + (R/E_s)·((R² + r_i²)/(R² − r_i²) − ν_s) ]. Stresses at the hub bore: σ_θ = p·(r_o² + R²)/(r_o² − R²); σ_r = −p. Stresses at the shaft surface: σ_θ = −p·(R² + r_i²)/(R² − r_i²); σ_r = −p. Surface smoothing on assembly (when Rz is entered): δ_eff = max(δ − 0.8·(Rz_h + Rz_s), 0), p_eff = p·δ_eff/δ. Axial force and torque the fit holds by friction, on p_eff: F = μ·p_eff·2πR·L; T = μ·p_eff·2πR²·L. The stresses stay at the nominal p (the larger interference of the fit). Temperature difference to assemble by heating the hub, with assembly clearance c_a: ΔT = (δ + c_a)/(α·2R).
   Ref: Shigley's Mechanical Engineering Design §3-16, §3-17 — Press and shrink fits; stresses in pressurised cylinders
   Ref: Roark's Formulas for Stress and Strain Ch. 13, Table 13.5 — Thick-walled cylinders under pressure
 
@@ -31,10 +31,12 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
 
 3. ASSUMPTIONS
   A1. Both parts are long cylinders in plane stress; the interface pressure is uniform along the engagement. (Lamé thick-cylinder relations; end effects neglected.)
-  A2. The friction coefficient is as entered and the same for assembly and for torque transmission. (Enter it with its source; it dominates the force and torque results.)
-  A3. Yield is checked by the von Mises equivalent stress at the hub bore, at the shaft surface and, for a hollow shaft, at the shaft bore (where the hoop stress is largest: 2·p·R²/(R² − r_i²), with no radial stress), the larger of the two shaft values governing. (Axial stress taken as zero.)
-  A4. mu (Coefficient of friction at the interface) is taken as 0.15. (Dry steel on steel.)
-  A5. c_a (Assembly clearance wanted for shrink fitting) is taken as 20 µm. (Assembly clearance.)
+  A2. The interference is the nominal one given: the torque and the press force need the minimum interference of the fit, the stresses the maximum, and the surface roughness smooths on assembly and takes about 0.8·(Rz_h + Rz_s) off it unless the roughness is entered. (DIN 7190-1; enter Rz to apply the smoothing to the torque and the force.)
+  A3. The friction coefficient is as entered and the same for assembly and for torque transmission. (Enter it with its source; it dominates the force and torque results.)
+  A4. Yield is checked by the von Mises equivalent stress at the hub bore, at the shaft surface and, for a hollow shaft, at the shaft bore (where the hoop stress is largest: 2·p·R²/(R² − r_i²), with no radial stress), the larger of the two shaft values governing. (Axial stress taken as zero.)
+  A5. mu (Coefficient of friction at the interface) is taken as 0.15. (Dry steel on steel.)
+  A6. c_a (Assembly clearance wanted for shrink fitting) is taken as 20 µm. (Assembly clearance.)
+  A7. No surface smoothing is applied: the torque and the press force are at the nominal interference. Roughness takes about 0.8·(Rz_h + Rz_s) off it on assembly, so a fine fit grips less than shown; check the torque at the minimum interference of the fit and the stresses at the maximum. (Enter Rz_h and Rz_s to apply the smoothing (DIN 7190-1).)
 
 4. WORKING
   [15] R = d / 2
@@ -101,15 +103,23 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
       = max(72.183 MPa, 132.48 MPa)
       = 132.48 MPa
         Largest shaft von Mises stress, surface or bore
-  [31] F_a = mu * p * 2 * pi * R * L
+  [31] delta_eff = delta
+      = 40 µm
+      = 40 µm
+        Effective interference (no roughness entered: the nominal interference)
+  [32] p_eff = p * delta_eff / delta
+      = 49.68 MPa × 40 µm / 40 µm
+      = 49.68 MPa
+        Interface pressure that grips, at the effective interference
+  [33] F_a = mu * p_eff * 2 * pi * R * L
       = 0.15 × 49.68 MPa × 2 × π × 25 mm × 60 mm
       = 70.233 kN
         Axial assembly (press) force
-  [32] T = mu * p * 2 * pi * R^2 * L
+  [34] T = mu * p_eff * 2 * pi * R^2 * L
       = 0.15 × 49.68 MPa × 2 × π × (25 mm)^2 × 60 mm
       = 1755.8 N·m
         Torque capacity by friction
-  [33] dT = (delta + c_a) / (alpha_h * d)
+  [35] dT = (delta + c_a) / (alpha_h * d)
       = (40 µm + 20 µm) / (0.000012 1/K × 50 mm)
       = 100 K
         Hub temperature rise for shrink fitting
@@ -122,6 +132,8 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
   sigma_vm_shaft = 72.183 MPa    Shaft von Mises stress at the surface
   sigma_vm_shaft_bore = 132.48 MPa    Shaft von Mises stress at the shaft bore
   sigma_vm_shaft_max = 132.48 MPa    Largest shaft von Mises stress (surface or bore)
+  delta_eff = 40 µm    Effective interference after smoothing
+  p_eff = 49.68 MPa    Gripping interface pressure
   F_a = 70.233 kN    Assembly force
   T = 1755.8 N·m    Torque capacity
   dT = 100 K    Shrink-fit temperature rise
@@ -134,7 +146,7 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
   No warnings.
 
 8. VERIFICATION
-  Template: mech.press-fit@1.1.0
+  Template: mech.press-fit@1.2.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 2/2

@@ -124,7 +124,7 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
   WARNING input.hole_kind: hole_kind (Hole: an ISO 286 class, or a rolling-bearing bore (ES and EI from the bearing record, ISO 492)) was not entered; the template default 'ISO 286 hole class' is used.
 
 8. VERIFICATION
-  Template: mech.iso286-fit@1.3.0
+  Template: mech.iso286-fit@1.4.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

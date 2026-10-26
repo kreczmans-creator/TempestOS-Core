@@ -28,7 +28,7 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 | Motor sizing | `T_alt` | Shaft | `T_a` | 0 kN*m |
 | Motor sizing | `n_pk` | Shaft | `n` | 1475 rpm |
 | Shaft | `R_A` | Bearing A life | `F_r` | 1.34604 kN |
-| Motor sizing | `n_pk` | Bearing A life | `n` | 1475 rpm |
+| Motor sizing | `n_mean` | Bearing A life | `n` | 1475 rpm |
 | Motor sizing | `F_ax_pk` | Bearing A life | `F_a` | 0 kN |
 | Shaft | `d_A` | Bearing A seat fit | `D` | 35 mm |
 | Motor sizing | `T_pk` | Shaft | `T_pk` | 0.159248 kN*m |
