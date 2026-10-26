@@ -1114,7 +1114,13 @@ public sealed partial class CalcSheetView : UserControl
                 if (spec.Kind == CalcInputKind.Quantity)
                 {
                     unit = new ComboBox { MinHeight = DesignTokens.MinControlSize, HorizontalAlignment = HorizontalAlignment.Stretch };
-                    var units = UnitChoices(spec, seed?.Unit);
+                    var units = UnitChoices(spec, seed?.Unit).ToList();
+
+                    // A seed unit the engine cannot use (unknown text such as "kn", or a unit of another dimension) is kept visible as it came, so the run refuses it with the engine's own message; replacing it with the
+                    // default unit would read its number in that unit and run (desktop.calc-sheet-view-02).
+                    if (seed?.Unit is { Length: > 0 } seedUnit && !units.Contains(seedUnit))
+                        units.Add(seedUnit);
+
                     unit.ItemsSource = units;
                     unit.SelectedItem = seed?.Unit is { } u && units.Contains(u) ? u : spec.DefaultUnit;
                     unit.Tag = unit.SelectedItem;
