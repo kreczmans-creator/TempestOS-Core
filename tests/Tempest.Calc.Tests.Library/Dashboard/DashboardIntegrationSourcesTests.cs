@@ -18,8 +18,8 @@ public sealed class DashboardIntegrationSourcesTests
     private static VerificationDashboardService Service(LibraryTestHost host, IDashboardManualTestSource? manual = null) =>
         new(host.Catalogue, [], VerificationSnapshot.From(new Dictionary<string, SnapshotItem>()), new RecordRequirementsRecordsSource(host.Store), manual);
 
-    private static Guided.ManualTestStatus Guide(string id, Guided.ManualTestOutcome outcome, int recorded, int inScript) =>
-        new(id, outcome, new DateTimeOffset(2026, 10, 26, 9, 0, 0, TimeSpan.Zero), "abc1234", "S. Kreczman", Guid.NewGuid(), recorded, inScript);
+    private static Guided.ManualTestStatus Guide(string id, Guided.ManualTestOutcome outcome, int recorded, int inScript, string build = "0.26.0 (abc1234)", string commit = "abc1234") =>
+        new(id, outcome, new DateTimeOffset(2026, 10, 26, 9, 0, 0, TimeSpan.Zero), commit, "S. Kreczman", Guid.NewGuid(), recorded, inScript, build);
 
     // ------------------------------------------------------------------
     // Manual test status from the guided test (C-5)
@@ -71,6 +71,98 @@ public sealed class DashboardIntegrationSourcesTests
         Assert.Equal(DashboardManualTestOutcome.Failed, (await source.StatusAsync(SpringId)).Outcome);
         Assert.Same(DashboardManualTestStatus.NotTested, await source.StatusAsync(RecordedId));
         Assert.Throws<ArgumentNullException>(() => new GuidedManualTestStatusSource(null!));
+    }
+
+    // ------------------------------------------------------------------
+    // SEC-C-06: the manual-test column names the build
+    // ------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(Guided.ManualTestOutcome.Pass, 2, 2, "Passed — 0.26.0 (abc1234)")]
+    [InlineData(Guided.ManualTestOutcome.Pass, 1, 2, "Partly passed — 0.26.0 (abc1234)")]
+    [InlineData(Guided.ManualTestOutcome.Fail, 1, 2, "Failed — 0.26.0 (abc1234)")]
+    public void A_Result_Reads_With_The_Build_It_Was_Recorded_On(Guided.ManualTestOutcome guided, int recorded, int inScript, string expected)
+    {
+        var status = GuidedManualTestStatusSource.Map(Guide(SpringId, guided, recorded, inScript), new RunningBuild("0.26.0 (abc1234)", "abc1234"));
+
+        Assert.Equal(expected, status.Display);
+        Assert.False(status.RecordedOnOtherBuild);
+        Assert.Equal("0.26.0 (abc1234)", status.Build);
+        Assert.Equal("abc1234", status.BuildCommit);
+        Assert.Contains("on build 0.26.0 (abc1234).", status.Note, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_Result_Recorded_On_Another_Commit_Is_Flagged_With_Both_Builds()
+    {
+        var status = GuidedManualTestStatusSource.Map(Guide(SpringId, Guided.ManualTestOutcome.Pass, 2, 2), new RunningBuild("0.26.0 (def5678)", "def5678"));
+
+        Assert.True(status.RecordedOnOtherBuild);
+        Assert.Equal(DashboardManualTestOutcome.Passed, status.Outcome);
+        Assert.Equal("Passed", status.Label);
+        Assert.Equal("Passed — 0.26.0 (abc1234) — recorded on a different build", status.Display);
+        Assert.Contains("not the build running now (0.26.0 (def5678))", status.Note, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("0.26.0 (abc1234)", "ABC1234", false)]
+    [InlineData("0.26.1 (abc1234)", "abc1234", false)]
+    [InlineData("0.26.0 (abc1234)", "abc1235", true)]
+    [InlineData("0.26.0", "", true)]
+    [InlineData("", "", false)]
+    public void The_Running_Build_Is_Compared_By_Commit_When_Both_Name_One(string runningBuild, string runningCommit, bool differs) =>
+        Assert.Equal(differs, new RunningBuild(runningBuild, runningCommit).Differs(Guide(SpringId, Guided.ManualTestOutcome.Pass, 1, 1)));
+
+    [Fact]
+    public void Without_A_Commit_On_Either_Side_The_Build_Text_Decides_And_A_Build_That_Names_Nothing_Flags_Nothing()
+    {
+        var recorded = Guide(SpringId, Guided.ManualTestOutcome.Pass, 1, 1, build: "0.26.0", commit: "unknown");
+
+        Assert.False(new RunningBuild("0.26.0", string.Empty).Differs(recorded));
+        Assert.True(new RunningBuild("0.26.1", string.Empty).Differs(recorded));
+        Assert.False(new RunningBuild(string.Empty, string.Empty).Differs(recorded));
+        Assert.Equal("Passed — 0.26.0", GuidedManualTestStatusSource.Map(recorded).Display);
+    }
+
+    [Fact]
+    public void A_Result_That_Names_No_Build_Says_So_And_A_Row_Nobody_Tested_Names_None()
+    {
+        var none = GuidedManualTestStatusSource.Map(Guide(SpringId, Guided.ManualTestOutcome.Pass, 1, 1, build: string.Empty, commit: string.Empty));
+
+        Assert.Equal("Passed — unknown build", none.Display);
+        Assert.Equal("Not tested", DashboardManualTestStatus.NotTested.Display);
+        Assert.Equal(string.Empty, DashboardManualTestStatus.NotTested.BuildText);
+        Assert.Equal("Passed — abc1234", new DashboardManualTestStatus(DashboardManualTestOutcome.Passed, BuildCommit: "abc1234").Display);
+    }
+
+    [Fact]
+    public async Task The_Dashboard_And_Its_Markdown_Show_The_Build_And_The_Flag_Read_From_The_Running_Build()
+    {
+        var host = new LibraryTestHost(calculators: [new SpringCalculator(), new RecordedCalculator()]);
+        var runs = new FakeRuns
+        {
+            [SpringId] = Guide(SpringId, Guided.ManualTestOutcome.Pass, 3, 3),
+            [RecordedId] = Guide(RecordedId, Guided.ManualTestOutcome.Pass, 1, 1, build: "0.26.0 (0000000)", commit: "0000000"),
+        };
+        var running = new RunningBuild("0.26.0 (abc1234)", "abc1234");
+        var service = Service(host, new GuidedManualTestStatusSource(runs, () => running));
+
+        var report = await service.BuildAsync();
+
+        Assert.Equal("Passed — 0.26.0 (abc1234)", report.Rows.Single(r => r.Id == SpringId).ManualTest.Display);
+        Assert.Equal("Passed — 0.26.0 (0000000) — recorded on a different build", report.Rows.Single(r => r.Id == RecordedId).ManualTest.Display);
+        Assert.Equal(1, runs.Reads);
+
+        var text = VerificationMarkdown.Write(report, report.Rows, string.Empty, "0.26.0");
+        Assert.Contains("| Passed — 0.26.0 \\(abc1234\\) |", text, StringComparison.Ordinal);
+        Assert.Contains("| Passed — 0.26.0 \\(0000000\\) — recorded on a different build |", text, StringComparison.Ordinal);
+
+        // The same results asked for one row at a time carry the same flag, and the build running is read each time it is asked.
+        var source = new GuidedManualTestStatusSource(runs, () => running);
+        Assert.True((await source.StatusAsync(RecordedId)).RecordedOnOtherBuild);
+        running = new RunningBuild("0.26.0 (0000000)", "0000000");
+        Assert.False((await source.StatusAsync(RecordedId)).RecordedOnOtherBuild);
+        Assert.True((await source.StatusAsync(SpringId)).RecordedOnOtherBuild);
     }
 
     // ------------------------------------------------------------------

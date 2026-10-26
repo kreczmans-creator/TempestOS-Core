@@ -246,7 +246,7 @@ public sealed class ManualTestRunService : IManualTestStatusSource
                 : ManualTestOutcome.Pass;
             var newest = counted.OrderByDescending(c => c.Result.RecordedUtc).First();
             var inScript = _script.Steps.Count(s => s.Kind == GuidedStepKind.Example && string.Equals(s.TemplateId, group.Key, StringComparison.Ordinal));
-            status[group.Key] = new ManualTestStatus(group.Key, worst, newest.Result.RecordedUtc, newest.Run.BuildCommit, newest.Run.Tester, newest.Run.Id, counted.Count, inScript);
+            status[group.Key] = new ManualTestStatus(group.Key, worst, newest.Result.RecordedUtc, newest.Run.BuildCommit, newest.Run.Tester, newest.Run.Id, counted.Count, inScript, newest.Run.Build);
         }
 
         return status;

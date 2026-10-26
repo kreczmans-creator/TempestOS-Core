@@ -5,6 +5,7 @@ using Tempest.Calc.Library.Dashboard;
 using Tempest.Calc.Library.ManualTesting;
 using Tempest.Core.Identity;
 using Tempest.Desktop.CalcSheets;
+using Tempest.Desktop.Composition;
 using Tempest.Desktop.Views;
 using Tempest.Workspace.Shell;
 using DashboardOutcome = Tempest.Calc.Library.Dashboard.DashboardManualTestOutcome;
@@ -68,6 +69,16 @@ public sealed class VerificationDashboardWiringTests
             var bearing = dashboard.Rows.Single(r => r.Id == BearingId);
             Assert.Equal(DashboardOutcome.Passed, bearing.ManualTest.Outcome);
             Assert.Equal("Passed", bearing.ManualTest.Label);
+
+            // SEC-C-06: the result names the build the run was recorded on, which here is the build running, so it is not flagged; the composed
+            // service flags it once the build running is another.
+            Assert.False(string.IsNullOrWhiteSpace(bearing.ManualTest.Build) && string.IsNullOrWhiteSpace(bearing.ManualTest.BuildCommit));
+            Assert.StartsWith("Passed — ", bearing.ManualTest.Display, StringComparison.Ordinal);
+            Assert.False(bearing.ManualTest.RecordedOnOtherBuild);
+            Assert.Equal(run.Build, bearing.ManualTest.Build);
+            var elsewhere = await MainWindowComposer.ComposeVerificationService(host.CalcInstances!, runs, () => new RunningBuild("9.9.9 (fffffff)", "fffffff")).BuildAsync();
+            Assert.True(elsewhere.Rows.Single(r => r.Id == BearingId).ManualTest.RecordedOnOtherBuild);
+            Assert.EndsWith("recorded on a different build", elsewhere.Rows.Single(r => r.Id == BearingId).ManualTest.Display, StringComparison.Ordinal);
             Assert.Contains($"{examples.Count} of {examples.Count} worked examples recorded", bearing.ManualTest.Note, StringComparison.Ordinal);
             Assert.Equal("Not tested", dashboard.Rows.Single(r => r.Id == SpringId).ManualTest.Label);
 

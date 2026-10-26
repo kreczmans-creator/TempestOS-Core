@@ -141,10 +141,19 @@ public sealed class VerificationDashboardView : UserControl
                 if (r.MissingRecordKinds.Count > 0)
                     records.Foreground = Brushes.DarkOrange;
 
+                // SEC-C-06: the latest finished guided result names its build; one recorded on another build than the running one is flagged.
+                var manual = Cell(r.ManualTest.Display);
+
+                if (r.ManualTest.RecordedOnOtherBuild)
+                {
+                    manual.Foreground = Brushes.DarkOrange;
+                    ToolTip.SetTip(manual, "This result was recorded on a different build from the one running now, so it does not show that this build passes. Run the guided test again on this build.");
+                }
+
                 var row = Row(
                     Cell(r.Kind == VerificationRowKind.Chain ? $"{r.Title} (chain)" : r.Title), Cell(r.Discipline), Cell(r.Version.Length > 0 ? r.Version : "—"), kat,
                     Cell(r.Unconfirmed.ToString(System.Globalization.CultureInfo.InvariantCulture)), Cell(r.Secondary.ToString(System.Globalization.CultureInfo.InvariantCulture)),
-                    Cell($"{r.RederivationResult}: {r.RederivationFindings.Text}"), records, open, Cell(r.ManualTest.Label));
+                    Cell($"{r.RederivationResult}: {r.RederivationFindings.Text}"), records, open, manual);
                 AutomationProperties.SetName(row, r.Id);
 
                 if (r.Steps.Count > 0)

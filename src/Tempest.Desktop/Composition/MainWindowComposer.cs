@@ -826,7 +826,10 @@ internal sealed partial class MainWindowComposer
 
         if (host.CalcInstances is { } calcInstances)
         {
-            var verificationService = ComposeVerificationService(calcInstances, host.ManualTests);
+            var verificationServices = host.Services!;
+            var verificationService = ComposeVerificationService(
+                calcInstances, host.ManualTests,
+                () => new Tempest.Calc.Library.Dashboard.RunningBuild(MainWindow.DescribeBuild(verificationServices), BuildDescription.Commit(verificationServices)));
             verificationDashboard = new Tempest.Desktop.CalcSheets.VerificationDashboardView(new Tempest.Desktop.CalcSheets.VerificationDashboardViewModel(
                 verificationService, evidenceFilePicker,
                 new Tempest.Desktop.CalcSheets.VerificationPdfRenderer { IdentityProvider = () => session.OrganisationIdentity.ToIdentity() }, ApplicationVersionText));
@@ -1055,10 +1058,12 @@ internal sealed partial class MainWindowComposer
     /// Addendum C integration: the verification dashboard's service as the app composes it. Records not entered come from C-3's required kinds
     /// per calculator (<see cref="Tempest.Calc.Library.Dashboard.RecordRequirementsRecordsSource"/>, C-4's "usable for real work" rule kept);
     /// the manual-test column comes from the guided test's finished runs (<paramref name="manualTests"/>, C-5) and reads "not tested" when the
-    /// build has no guided test. <c>internal</c> so a Desktop test drives the same wiring.
+    /// build has no guided test. Each manual result names the build it was recorded on and is flagged when that is not <paramref name="runningBuild"/>, the
+    /// build now running (SEC-C-06). <c>internal</c> so a Desktop test drives the same wiring.
     /// </summary>
     internal static Tempest.Calc.Library.Dashboard.VerificationDashboardService ComposeVerificationService(
-        Tempest.Calc.Library.CalcInstanceService calcInstances, Tempest.Calc.Library.ManualTesting.IManualTestStatusSource? manualTests)
+        Tempest.Calc.Library.CalcInstanceService calcInstances, Tempest.Calc.Library.ManualTesting.IManualTestStatusSource? manualTests,
+        Func<Tempest.Calc.Library.Dashboard.RunningBuild>? runningBuild = null)
     {
         ArgumentNullException.ThrowIfNull(calcInstances);
         return new Tempest.Calc.Library.Dashboard.VerificationDashboardService(
@@ -1066,7 +1071,7 @@ internal sealed partial class MainWindowComposer
             records: new Tempest.Calc.Library.Dashboard.RecordRequirementsRecordsSource(calcInstances.Store),
             manual: manualTests is null
                 ? new Tempest.Calc.Library.Dashboard.NoDashboardManualTestSource()
-                : new Tempest.Calc.Library.Dashboard.GuidedManualTestStatusSource(manualTests));
+                : new Tempest.Calc.Library.Dashboard.GuidedManualTestStatusSource(manualTests, runningBuild));
     }
 
     /// <summary>

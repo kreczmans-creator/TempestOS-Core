@@ -62,6 +62,45 @@ public sealed class VerificationDashboardViewTests
         Assert.True(buttons[VerificationDashboardView.RefreshCaption].IsEnabled);
     }
 
+    /// <summary>SEC-C-06: two latest results, one recorded on the running build and one on an older build.</summary>
+    private sealed class TwoBuildRuns : Tempest.Calc.Library.ManualTesting.IManualTestStatusSource
+    {
+        public Task<IReadOnlyDictionary<string, Tempest.Calc.Library.ManualTesting.ManualTestStatus>> LatestByTemplateAsync(CancellationToken cancellationToken = default)
+        {
+            var at = new DateTimeOffset(2026, 10, 26, 9, 0, 0, TimeSpan.Zero);
+            return Task.FromResult<IReadOnlyDictionary<string, Tempest.Calc.Library.ManualTesting.ManualTestStatus>>(new Dictionary<string, Tempest.Calc.Library.ManualTesting.ManualTestStatus>(StringComparer.Ordinal)
+            {
+                ["mech.shaft"] = new("mech.shaft", Tempest.Calc.Library.ManualTesting.ManualTestOutcome.Pass, at, "abc1234", "Tester", Guid.NewGuid(), 2, 2, "0.26.0 (abc1234)"),
+                ["mech.spring"] = new("mech.spring", Tempest.Calc.Library.ManualTesting.ManualTestOutcome.Pass, at, "0000000", "Tester", Guid.NewGuid(), 2, 2, "0.26.0 (0000000)"),
+            });
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task The_Manual_Test_Column_Shows_The_Build_And_Flags_A_Result_From_Another_Build()
+    {
+        var running = new RunningBuild("0.26.0 (abc1234)", "abc1234");
+        var service = new VerificationDashboardService(
+            new CalcCatalogue(CalcCalculatorComposition.All()), CalcPackTemplateComposition.All(), manual: new GuidedManualTestStatusSource(new TwoBuildRuns(), () => running));
+        var model = new VerificationDashboardViewModel(service, new StubFilePicker(), new VerificationPdfRenderer(), () => "TempestOS test");
+        var view = new VerificationDashboardView(model);
+        await view.RefreshAsync();
+
+        var texts = view.GetLogicalDescendants().OfType<TextBlock>().ToList();
+        Assert.Contains(texts, t => t.Text == "Passed — 0.26.0 (abc1234)");
+        var flagged = texts.Single(t => t.Text == "Passed — 0.26.0 (0000000) — recorded on a different build");
+        Assert.NotNull(ToolTip.GetTip(flagged));
+        Assert.Contains("different build", ToolTip.GetTip(flagged)!.ToString(), StringComparison.Ordinal);
+        Assert.Equal(Avalonia.Media.Brushes.DarkOrange, flagged.Foreground);
+        Assert.NotEqual(Avalonia.Media.Brushes.DarkOrange, texts.Single(t => t.Text == "Passed — 0.26.0 (abc1234)").Foreground);
+        Assert.True(model.Rows.Single(r => r.Id == "mech.spring").ManualTest.RecordedOnOtherBuild);
+
+        // The same wording reaches the PDF and the Markdown the owner keeps.
+        var markdown = VerificationMarkdown.Write(model.Report!, model.Rows, string.Empty, "0.26.0");
+        Assert.Contains("Passed — 0.26.0 \\(0000000\\) — recorded on a different build", markdown, StringComparison.Ordinal);
+        Assert.True(new VerificationPdfRenderer().Render(model.Report!, model.Rows, string.Empty, "TempestOS test").Length > 1000);
+    }
+
     [AvaloniaFact]
     public async Task The_Export_Buttons_Save_Through_The_Picker_And_The_Status_Line_Says_Where()
     {

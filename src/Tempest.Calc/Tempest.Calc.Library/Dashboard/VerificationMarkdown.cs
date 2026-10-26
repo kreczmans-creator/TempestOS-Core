@@ -59,7 +59,7 @@ public static class VerificationMarkdown
               .Append(" | ").Append(Cell($"{r.RederivationResult}: {r.RederivationFindings.Text}"))
               .Append(" | ").Append(r.MissingRecordKinds.Count == 0 ? "none" : Cell(string.Join("; ", r.MissingRecordKinds)))
               .Append(" | ").Append(Cell(r.OpenDefectsText))
-              .Append(" | ").Append(Cell(r.ManualTest.Label))
+              .Append(" | ").Append(Cell(r.ManualTest.Display))
               .Append(" |\n");
             written++;
         }
