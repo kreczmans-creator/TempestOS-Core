@@ -77,12 +77,26 @@ public static class GlaserModel
             ? 610.5 * Math.Exp(17.269 * celsius / (237.3 + celsius))
             : 610.5 * Math.Exp(21.875 * celsius / (265.5 + celsius));
 
+    /// <summary>Saturation vapour pressure over liquid water in Pa at θ °C by the Magnus form, also below 0 °C (supercooled water), for converting a humidity read relative to water.</summary>
+    public static double SaturationPressureOverWater(double celsius) => 610.5 * Math.Exp(17.269 * celsius / (237.3 + celsius));
+
     /// <summary>The temperature in °C at which a vapour pressure in Pa is saturated: the inverse of <see cref="SaturationPressure"/> (clamped to 1 Pa at the low end).</summary>
     public static double DewPoint(double pressure)
     {
         var x = Math.Log(Math.Max(pressure, 1.0) / 610.5);
         return x >= 0 ? 237.3 * x / (17.269 - x) : 265.5 * x / (21.875 - x);
     }
+
+    /// <summary>
+    /// How many equal sub-layers each layer is split into for the refinement check. The saturation line is convex inside a uniform layer, so the
+    /// straight vapour-pressure chord can cross it between two interfaces; the interface-only model misses that condensate and its verdict
+    /// depends on how the user cut the wall. Twenty slices per layer is within 10 % of the fine-mesh limit for the reproduction wall (bs.glaser-01).
+    /// </summary>
+    public const int RefineSlices = 20;
+
+    /// <summary>Every layer split into <paramref name="slices"/> equal sub-layers of the same λ and μ (inside the model; not counted against <see cref="MaxLayers"/>).</summary>
+    public static IReadOnlyList<GlaserLayer> Refine(IReadOnlyList<GlaserLayer> layers, int slices = RefineSlices) =>
+        [.. layers.SelectMany(l => Enumerable.Repeat(new GlaserLayer(l.D / slices, l.Lambda, l.Mu), slices))];
 
     /// <summary>Total thermal resistance R_si + Σ d/λ + R_se, m²K/W.</summary>
     public static double TotalResistance(IReadOnlyList<GlaserLayer> layers, double rsi, double rse) => rsi + layers.Sum(l => l.R) + rse;

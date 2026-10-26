@@ -180,6 +180,31 @@ public sealed class GlaserTests
         Assert.True(glazing.OutputSi("fRsi") > thin.OutputSi("fRsi"));
     }
 
+    private static CalcInputValue ColdYear() => GlaserCalculator.Climate((-8, 85), (-6, 84), (-1, 82), (5, 78), (11, 72), (15, 70), (18, 72), (17, 74), (12, 80), (6, 84), (0, 87), (-5, 86));
+
+    [Fact]
+    public void A_Verdict_That_Depends_On_How_The_Wall_Is_Cut_Into_Layers_Is_Refined_And_Warned()
+    {
+        // bs.glaser-01: 25 mm (0.035, 8) + 50 mm (0.5, 10) + 215 mm (0.5, 40), 40 % inside, Mc_limit 1000. As entered the interface-only model leaves nothing
+        // (PASS); every layer in 20 slices leaves 561.663 g/m2 after the year (independent python lower-hull run; the converged value is about 580).
+        var three = GlaserCalculator.Layers(("", "Insulation", 25, 0.035, 8), ("", "Board", 50, 0.5, 10), ("", "Masonry", 215, 0.5, 40));
+        var result = Run(Sheet(three, ColdYear()).With(Q("RH_int", 40, "%")).With(Q("Mc_limit", 1000, "g/m^2")));
+        Assert.Equal(0, result.OutputSi("Mc_end"), 12);
+        Assert.Equal(0.561663103, result.OutputSi("Mc_end_fine") , 6);
+        Assert.Equal(0, result.OutputSi("pass"));
+        Assert.Contains(result.Warnings, w => w.RuleId == "layer-subdivision");
+
+        // The same wall cut into 9 slices per layer by the user fails on its own, and the refined run agrees with it.
+        var slices = Enumerable.Range(0, 9).Select(_ => ("", "Insulation", 25 / 9.0, 0.035, 8.0)).Concat(Enumerable.Range(0, 9).Select(_ => ("", "Board", 50 / 9.0, 0.5, 10.0))).Concat(Enumerable.Range(0, 9).Select(_ => ("", "Masonry", 215 / 9.0, 0.5, 40.0))).ToArray();
+        var cut = Run(Sheet(GlaserCalculator.Layers(slices), ColdYear()).With(Q("RH_int", 40, "%")).With(Q("Mc_limit", 1000, "g/m^2")));
+        Assert.Equal(0, cut.OutputSi("pass"));
+        Assert.True(cut.OutputSi("Mc_end") > 0.5);
+
+        // A wall that is the same at any resolution is not warned.
+        var plain = Run(Sheet(GlaserCalculator.Layers(("", "Plaster", 15, 0.5, 10), ("", "Brick", 215, 0.8, 8)), GlaserCalculator.Climate(Seasonal)).With(Q("RH_int", 40, "%")));
+        Assert.DoesNotContain(plain.Warnings, w => w.RuleId == "layer-subdivision");
+    }
+
     [Fact]
     public void The_Surface_Check_Defaults_To_The_Conventional_0_25_And_Warns_Below_It()
     {
