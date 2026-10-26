@@ -1,4 +1,4 @@
-# M2b — Press and shrink fit (`mech.press-fit@1.0.1`)
+# M2b — Press and shrink fit (`mech.press-fit@1.1.0`)
 
 **In plain terms.** Pressing a shaft into a slightly smaller hole stretches the hub and squeezes the shaft until the two meet at a common radius. That interference sets up a contact pressure, found by treating hub and shaft as thick cylinders, and the pressure times friction over the contact area is the torque and axial force the joint can carry without slipping. The same pressure makes the hub's hoop stress highest at its bore, which is checked against yield, and heating or spinning the parts changes the interference.
 
@@ -8,7 +8,7 @@
 
 **Inputs.** `d`, `delta` (diametral, µm), `d_o`, `d_i` (0 solid), `L`, `E_h`, `nu_h`, `E_s`, `nu_s`, `mu` (with its source), `S_y_h`, `S_y_s`, `alpha_h`, `c_a`.
 
-**Outputs.** `p`, `sigma_t_hub`, `sigma_t_shaft`, `sigma_vm_hub`, `sigma_vm_shaft`, `F_a`, `T`, `dT`. **Checks.** hub yield, shaft yield.
+**Outputs.** `p`, `sigma_t_hub`, `sigma_t_shaft`, `sigma_vm_hub`, `sigma_vm_shaft` (at the shaft surface), `sigma_vm_shaft_bore` and `sigma_vm_shaft_max` (1.1.0: the hollow shaft's bore, where the hoop stress `2pR²/(R² − r_i²)` is largest and the radial stress zero, and the larger of the two), `F_a`, `T`, `dT`. **Checks.** hub yield, shaft yield at the surface and the bore (d 50, bore 25, hub 100 mm, δ 120 µm: surface 216.6 MPa, bore 397.4 MPa, u 1.136 where the check read 0.619 and passed; a solid shaft is unchanged).
 
 **Limitations.** Plane stress, uniform pressure, no end effects, no surface-finish loss of interference, friction as entered.
 
@@ -31,8 +31,8 @@ sigma_t_shaft = −62.1 MPa × ((25 mm)^2 + (0 mm)^2) / ((25 mm)^2 − (0 mm)^2)
 sigma_r_shaft = −62.1 MPa = -62.1 MPa
 sigma_vm_hub = sqrt((103.5 MPa)^2 − 103.5 MPa × (-62.1 MPa) + (-62.1 MPa)^2) = 144.9 MPa
 sigma_vm_shaft = sqrt((-62.1 MPa)^2 − (-62.1 MPa) × (-62.1 MPa) + (-62.1 MPa)^2) = 62.1 MPa
-F_a = 0.15 × 62.1 MPa × 2 × π × 25 mm × 60 mm = 87.792 kN
-… 2 more step(s) on the sheet
+sigma_vm_shaft_bore = 62.1 MPa
+… 4 more step(s) on the sheet
 Governing: PASS  Hub yield: 144.9 MPa vs 355 MPa  utilisation 0.408
 ```
 <!-- hand-arithmetic:end -->
