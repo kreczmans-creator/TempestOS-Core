@@ -91,7 +91,7 @@ public static class MechanicalWorkedExamples
                 CalcInputValue.Quantity("S_y_h", 355, "MPa", CalcProvenance.Specification("EN 10025 S355")), CalcInputValue.Quantity("S_y_s", 355, "MPa", CalcProvenance.Specification("EN 10025 S355")),
                 CalcInputValue.Quantity("alpha_h", 12e-6, "1/K", CalcProvenance.Specification("steel")), CalcInputValue.Quantity("c_a", 20, "µm", CalcProvenance.Assumed("Assembly clearance for a shrink fit.")),
             ]),
-            [new CalcExpectedValue("p", 62.1, "MPa", 1e-3), new CalcExpectedValue("sigma_t_hub", 103.5, "MPa", 1e-3), new CalcExpectedValue("F_a", 87.80, "kN", 2e-3), new CalcExpectedValue("T", 2195, "N*m", 2e-3), new CalcExpectedValue("dT", 100, "K", 1e-6)],
+            [new CalcExpectedValue("p_int", 62.1, "MPa", 1e-3), new CalcExpectedValue("sigma_t_hub", 103.5, "MPa", 1e-3), new CalcExpectedValue("F_a", 87.80, "kN", 2e-3), new CalcExpectedValue("T", 2195, "N*m", 2e-3), new CalcExpectedValue("dT", 100, "K", 1e-6)],
             "Equal-stiffness steel parts: the interface pressure is 62 MPa, the hub bore hoop stress 104 MPa (von Mises 145 MPa, 41 % of yield), the press force 88 kN and the friction torque 2.2 kN·m. Shrinking the hub needs a 100 K rise for 20 µm of assembly clearance."),
 
         new(PressFitCalculator.Id, "hollow-shaft", "Hollow 50 mm shaft (25 mm bore) in a 100 mm hub",
@@ -107,7 +107,7 @@ public static class MechanicalWorkedExamples
                 CalcInputValue.Quantity("S_y_h", 355, "MPa", CalcProvenance.Specification("EN 10025 S355")), CalcInputValue.Quantity("S_y_s", 355, "MPa", CalcProvenance.Specification("EN 10025 S355")),
                 CalcInputValue.Quantity("alpha_h", 12e-6, "1/K", CalcProvenance.Specification("steel")), CalcInputValue.Quantity("c_a", 20, "µm", CalcProvenance.Assumed("Assembly clearance.")),
             ]),
-            [new CalcExpectedValue("p", 49.63, "MPa", 2e-3), new CalcExpectedValue("sigma_t_shaft", -82.7, "MPa", 2e-3)],
+            [new CalcExpectedValue("p_int", 49.63, "MPa", 2e-3), new CalcExpectedValue("sigma_t_shaft", -82.7, "MPa", 2e-3)],
             "The bore makes the shaft more compliant, so the same interference gives 50 MPa instead of 62 MPa and the shaft surface sees −83 MPa hoop compression."),
 
         new(ThickCylinderCalculator.Id, "internal-pressure-closed", "Internal pressure, closed ends",

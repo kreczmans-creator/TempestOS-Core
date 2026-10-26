@@ -23,7 +23,7 @@ The bore makes the shaft more compliant, so the same interference gives 50 MPa i
 
 | Output | Expected | Computed | Result |
 |---|---|---|---|
-| `p` | 49.63 MPa | 49.68 MPa | PASS |
+| `p_int` | 49.63 MPa | 49.68 MPa | PASS |
 | `sigma_t_shaft` | -82.7 MPa | -82.8 MPa | PASS |
 
-Governing check: Shaft yield, surface and bore — PASS (utilisation 0.37). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Largest shaft von Mises stress against yield strength — PASS (utilisation 0.37). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

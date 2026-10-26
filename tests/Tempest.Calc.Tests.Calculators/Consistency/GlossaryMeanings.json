@@ -1406,9 +1406,6 @@
   "barometric-pressure": [
    "bs.psychrometrics"
   ],
-  "interface-pressure": [
-   "mech.press-fit"
-  ],
   "pitch": [
    "mech.spring"
   ],

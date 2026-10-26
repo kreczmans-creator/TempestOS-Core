@@ -9149,7 +9149,7 @@
             "µm"
           ],
           "descriptions": [
-            "Hub bore roughness Rz (blank: the smoothing is not applied)"
+            "Hub bore roughness Rz (optional; blank = the smoothing is not applied)"
           ],
           "templates": [
             "mech.press-fit"
@@ -9167,7 +9167,7 @@
             "µm"
           ],
           "descriptions": [
-            "Shaft surface roughness Rz (blank: the smoothing is not applied)"
+            "Shaft surface roughness Rz (optional; blank = the smoothing is not applied)"
           ],
           "templates": [
             "mech.press-fit"
@@ -20720,19 +20720,6 @@
           ]
         },
         {
-          "meaning": "interface-pressure",
-          "quantity": "Stress, pressure",
-          "units": [
-            "MPa"
-          ],
-          "descriptions": [
-            "Interface pressure"
-          ],
-          "templates": [
-            "mech.press-fit"
-          ]
-        },
-        {
           "meaning": "pitch",
           "quantity": "Length",
           "units": [
@@ -21103,6 +21090,24 @@
           ],
           "templates": [
             "bs.sealed-system"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "p_int",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Stress, pressure",
+          "units": [
+            "MPa"
+          ],
+          "descriptions": [
+            "Interface pressure"
+          ],
+          "templates": [
+            "mech.press-fit"
           ]
         }
       ]

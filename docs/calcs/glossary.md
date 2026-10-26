@@ -197,7 +197,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `n`: `n:operating-speed` Rotational speed, frequency (bearing-life, bearing-life-basic, shaft); `n:active-coils` Plain number (spring); `n:air-change-rate` Rotational speed, frequency (room-heat-loss); `n:cycles` Plain number (fatigue-miner); `n:emitter-exponent` Plain number (sealed-system); `n:gas-exponent` Plain number (accumulator); `n:load-introduction-factor` Plain number (bolted-joint); `n:thickness-design-factor` Plain number (thin-vessel)
 - `n_L`: `n_L:load-factor-against-axial-yield` Plain number (bolted-joint); `n_L:load-speed-at-the-output` Rotational speed, frequency (motor-sizing)
 - `n_t`: `n_t:holding-down-bolts-per-row` Plain number (base-plate); `n_t:total-coils` Plain number (spring)
-- `p`: `p:barometric-pressure` Stress, pressure (psychrometrics); `p:interface-pressure` Stress, pressure (press-fit); `p:pitch` Length (spring); `p:pressure` Stress, pressure (oring-gland); `p:supply-pressure` Stress, pressure (cylinder)
+- `p`: `p:barometric-pressure` Stress, pressure (psychrometrics); `p:pitch` Length (spring); `p:pressure` Stress, pressure (oring-gland); `p:supply-pressure` Stress, pressure (cylinder)
 - `p_1`: `p_1:lowest-working-pressure` Stress, pressure (accumulator); `p_1:pitch-load-direction` Length (connection-ec3)
 - `p_2`: `p_2:gauge` Length (connection-ec3); `p_2:highest-working-pressure` Stress, pressure (accumulator)
 - `p_i`: `p_i:internal-pressure` Stress, pressure (thick-cylinder); `p_i:pre-charge-pressure` Stress, pressure (sealed-system)
@@ -228,7 +228,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `w`: `w:distributed-load` Line force, distributed load, stiffness (beam-formulas); `w:key-width` Length (shaft); `w:mass-per-metre` Mass per length (containment)
 - `y_c`: `y_c:centroid-y` Length (weld-group, section-properties); `y_c:extreme-fibre-distance` Length (beam-formulas)
 
-## All symbols (1404 symbols in 54 templates)
+## All symbols (1405 symbols in 54 templates)
 
 One row per symbol, declared meaning and quantity type. Status `ok` is a symbol with one meaning; `RESOLVE` a symbol with several (phases B and C).
 
@@ -709,8 +709,8 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `Rse` | `Rse:external-surface-resistance` | Thermal resistance | m²·K/W | External surface resistance R_se; Rse (blank = 0.04 outside, the same as Rsi where it faces another spa… | bs.glaser, bs.room-heat-loss | ok |
 | `Rsi` | `Rsi:internal-surface-resistance` | Thermal resistance | m²·K/W | Internal surface resistance R_si; Rsi (blank = 0.13 horizontal, 0.10 upward, 0.17 downward) | bs.glaser, bs.room-heat-loss | ok |
 | `Rsi_f` | — | Thermal resistance | m²·K/W | Internal surface resistance R_si,f for the f_Rsi check (0.25 m²K/W is… | bs.glaser | ok |
-| `Rz_h` | — | Length | µm | Hub bore roughness Rz (blank: the smoothing is not applied) | mech.press-fit | ok |
-| `Rz_s` | — | Length | µm | Shaft surface roughness Rz (blank: the smoothing is not applied) | mech.press-fit | ok |
+| `Rz_h` | — | Length | µm | Hub bore roughness Rz (optional; blank = the smoothing is not applied) | mech.press-fit | ok |
+| `Rz_s` | — | Length | µm | Shaft surface roughness Rz (optional; blank = the smoothing is not ap… | mech.press-fit | ok |
 | `S` | `S:allowable-stress` | Stress, pressure | MPa | Allowable stress at design temperature | mech.thin-vessel | RESOLVE (2 meanings) |
 | `S` | `S:stress-range` | Stress, pressure | MPa | Stress range | mech.fatigue-miner | RESOLVE (2 meanings) |
 | `SF` | — | Plain number | — | Safety margin on torque | elec.motor-sizing | ok |
@@ -1388,11 +1388,10 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `omega4_0` | — | Rotational speed, frequency | rad/s | Rocker angular velocity at the first input angle | mech.mechanism | ok |
 | `omega_out_pk` | — | Rotational speed, frequency | rad/s | Peak output (rocker) angular velocity | mech.mechanism | ok |
 | `output_motion` | — | Velocity | m/s | Peak speed of the output pin at the rocker length c (mech.output_moti… | mech.mechanism | ok |
-| `p` | `p:barometric-pressure` | Stress, pressure | kPa | Barometric pressure (blank = standard atmosphere at the altitude) | bs.psychrometrics | RESOLVE (5 meanings) |
-| `p` | `p:interface-pressure` | Stress, pressure | MPa | Interface pressure | mech.press-fit | RESOLVE (5 meanings) |
-| `p` | `p:pitch` | Length | mm | Pitch | mech.spring | RESOLVE (5 meanings) |
-| `p` | `p:pressure` | Stress, pressure | bar | Pressure | fp.oring-gland | RESOLVE (5 meanings) |
-| `p` | `p:supply-pressure` | Stress, pressure | bar, bar g | Supply pressure; Supply pressure at the cylinder and the pump (gauge) | fp.cylinder | RESOLVE (5 meanings) |
+| `p` | `p:barometric-pressure` | Stress, pressure | kPa | Barometric pressure (blank = standard atmosphere at the altitude) | bs.psychrometrics | RESOLVE (4 meanings) |
+| `p` | `p:pitch` | Length | mm | Pitch | mech.spring | RESOLVE (4 meanings) |
+| `p` | `p:pressure` | Stress, pressure | bar | Pressure | fp.oring-gland | RESOLVE (4 meanings) |
+| `p` | `p:supply-pressure` | Stress, pressure | bar, bar g | Supply pressure; Supply pressure at the cylinder and the pump (gauge) | fp.cylinder | RESOLVE (4 meanings) |
 | `p0` | — | Stress, pressure | bar a | Pre-charge, absolute, at the charging temperature | fp.accumulator | ok |
 | `p0_min` | — | Stress, pressure | bar a | Pre-charge, absolute, at the minimum operating temperature | fp.accumulator | ok |
 | `p0_set` | — | Stress, pressure | bar a | Pre-charge to set at the charging temperature | fp.accumulator | ok |
@@ -1412,6 +1411,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `p_gap` | — | Percent quantity | % | Fraction outside the limit: extrusion gap above the permitted gap | fp.oring-gland | ok |
 | `p_i` | `p_i:internal-pressure` | Stress, pressure | MPa | Internal pressure | mech.thick-cylinder | RESOLVE (2 meanings) |
 | `p_i` | `p_i:pre-charge-pressure` | Stress, pressure | bar | Pre-charge pressure | bs.sealed-system | RESOLVE (2 meanings) |
+| `p_int` | — | Stress, pressure | MPa | Interface pressure | mech.press-fit | ok |
 | `p_load` | — | Stress, pressure | bar | Lowest pressure the load still needs, bar gauge (an emergency stroke:… | fp.accumulator | ok |
 | `p_margin` | — | Stress, pressure | bar | Pre-charge margin over static head | bs.sealed-system | ok |
 | `p_o` | — | Stress, pressure | MPa | External pressure | mech.thick-cylinder | ok |

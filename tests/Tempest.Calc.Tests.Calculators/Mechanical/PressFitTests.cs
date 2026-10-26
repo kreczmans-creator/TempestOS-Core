@@ -14,11 +14,11 @@ public sealed class PressFitTests
         // python3: R 25, r_i 12.5, r_o 50 mm, E 207 GPa, nu 0.292: p = 0.06/(C_h + C_s) = 149.04 MPa; surface sigma_t = -p (R^2 + r_i^2)/(R^2 - r_i^2) = -248.4, sigma_r = -149.04: von Mises 216.55; bore sigma_t = -2 p R^2/(R^2 - r_i^2) = -397.44.
         var r = CalcRunner.Run(Fit, CalcTemplateHasher.DefaultInputs(Fit.Template).With(CalcInputValue.Quantity("d_i", 25, "mm")).With(CalcInputValue.Quantity("delta", 120, "µm")));
         Assert.False(r.IsBlocked);
-        Assert.Equal(149.04, r.OutputSi("p") / 1e6, 2);
+        Assert.Equal(149.04, r.OutputSi("p_int") / 1e6, 2);
         Assert.Equal(216.55, r.OutputSi("sigma_vm_shaft") / 1e6, 2);
         Assert.Equal(397.44, r.OutputSi("sigma_vm_shaft_bore") / 1e6, 2);
         Assert.Equal(397.44, r.OutputSi("sigma_vm_shaft_max") / 1e6, 2);
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("Shaft yield", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Largest shaft von Mises stress", StringComparison.Ordinal) && !c.Passed);
         Assert.False(r.Passed);
 
         // A solid shaft has no bore: its centre is in equal hoop and radial stress p, the same von Mises as the surface, so nothing changes for it.
