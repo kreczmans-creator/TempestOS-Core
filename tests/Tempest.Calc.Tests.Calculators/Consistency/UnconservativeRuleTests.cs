@@ -36,6 +36,7 @@ public sealed class UnconservativeRuleTests
         new("fp.accumulator", "realgas", "Real-gas factor against", ProbeInputs.IdealGasAccumulator),
         new("elec.pcb-trace", "copper", "Copper weight against the range", ProbeInputs.HalfOunceTrace),
         new("struct.base-plate", "prying", "Prying force against the bolt tension", ProbeInputs.PryingBasePlate),
+        new("struct.beam-formulas", "deep-beam", "Shortest span of a beam that is not deep", ProbeInputs.DeepBeam),
         new("struct.plate-bending", "ritz-converge", "Ritz change against the tolerance", ProbeInputs.LongClampedPlate),
     ];
 

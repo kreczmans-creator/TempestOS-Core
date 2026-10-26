@@ -158,7 +158,7 @@ public sealed class SteelSupportChainTests
         var bearingBefore = InputSi(made.Instances["s6"], "F_1_vb_Rd");
 
         // A thicker base plate for the bolts' bearing: the bearing value rises, the tension resistance does not.
-        await ReviseAndUpdateAsync(host, made, "s4b", "t", 1.2, ["s6"]);
+        await ReviseAndUpdateAsync(host, made, "s4b", "t_p", 1.2, ["s6"]);
 
         var (s4b, s6) = (await Fresh(host, made, "s4b"), await Fresh(host, made, "s6"));
         Assert.Equal(Si(s4b, "F_b_Rd"), InputSi(s6, "F_1_vb_Rd"), 9);

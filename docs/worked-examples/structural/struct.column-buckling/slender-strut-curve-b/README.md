@@ -8,9 +8,9 @@ A slender strut at λ = 150. Its strength is governed by buckling, not by the hi
 |---|---|---|
 | `A` | 1200 mm^2 | spec: SPEC-ST-02 section schedule |
 | `E` | 205 GPa | spec: BS 5950-1 3.1.3: E = 205 GPa |
+| `F` | 100 kN | assumption: Factored brace force |
 | `I` | 12 cm^4 | spec: SPEC-ST-02 section schedule |
 | `L_E` | 1.5 m | drawing: DRG-ST-411 rev A |
-| `P` | 100 kN | assumption: Factored brace force |
 | `curve` | b | spec: BS 5950-1 Table 23: hot-finished tube, curve b |
 | `p_y` | 355 MPa | spec: SPEC-ST-02: S355 |
 
@@ -18,7 +18,7 @@ A slender strut at λ = 150. Its strength is governed by buckling, not by the hi
 |---|---|---|---|
 | `lambda` | 150  | 150  | PASS |
 | `p_c` | 77.973 MPa | 77.9728 MPa | PASS |
-| `P_c` | 93.567 kN | 93.5674 kN | PASS |
+| `F_c_Rd` | 93.567 kN | 93.5674 kN | PASS |
 | `u` | 1.0688  | 1.06875  | PASS |
 
 Governing check: Axial load against compression resistance — FAIL (utilisation 1.07). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

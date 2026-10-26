@@ -1067,7 +1067,7 @@
             "mm²"
           ],
           "descriptions": [
-            "Net area in tension"
+            "Net area in tension (optional; blank = no block tearing check)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -1085,7 +1085,7 @@
             "mm²"
           ],
           "descriptions": [
-            "Net area in shear"
+            "Net area in shear (optional; blank = no block tearing check)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -1139,7 +1139,7 @@
             "mm²"
           ],
           "descriptions": [
-            "Anchor bolt tensile stress area (from S4)",
+            "Anchor bolt tensile stress area (from the connection sheet)",
             "Stress area",
             "Tensile stress area"
           ],
@@ -1538,7 +1538,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "C_f,d, friction coefficient plate to grout"
+            "Friction coefficient, plate to grout"
           ],
           "templates": [
             "struct.base-plate"
@@ -2643,6 +2643,19 @@
           ]
         },
         {
+          "meaning": "applied-axial-load",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Applied axial load"
+          ],
+          "templates": [
+            "struct.column-buckling"
+          ]
+        },
+        {
           "meaning": "lmtd-correction-factor",
           "quantity": "Plain number",
           "units": [],
@@ -2651,6 +2664,19 @@
           ],
           "templates": [
             "bs.heat-exchanger"
+          ]
+        },
+        {
+          "meaning": "point-load",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Point load, downward (optional; blank = not used by the distributed-load and couple cases)"
+          ],
+          "templates": [
+            "struct.beam-formulas"
           ]
         }
       ]
@@ -2702,7 +2728,7 @@
             "kN"
           ],
           "descriptions": [
-            "Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd)"
+            "Bolt bearing resistance on the plate (from the bearing resistance of the connection sheet)"
           ],
           "templates": [
             "struct.base-plate"
@@ -2779,6 +2805,24 @@
           ],
           "templates": [
             "mech.bolted-joint"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "F_E",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Euler critical load"
+          ],
+          "templates": [
+            "struct.column-buckling"
           ]
         }
       ]
@@ -3081,6 +3125,24 @@
           ],
           "templates": [
             "mech.spring"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "F_c_Rd",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Compression resistance"
+          ],
+          "templates": [
+            "struct.column-buckling"
           ]
         }
       ]
@@ -3542,7 +3604,7 @@
           ],
           "descriptions": [
             "Tension resistance",
-            "Tension resistance per bolt (from S4)"
+            "Tension resistance per bolt (from the connection sheet)"
           ],
           "templates": [
             "struct.base-plate",
@@ -3630,10 +3692,10 @@
           "meaning": "",
           "quantity": "Line force, distributed load, stiffness",
           "units": [
-            "N/mm"
+            "kN/m"
           ],
           "descriptions": [
-            "Weld force per unit length"
+            "Weld force per unit length (optional; blank = no weld check)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -4890,7 +4952,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "K_FI consequence-class factor"
+            "Consequence-class factor"
           ],
           "templates": [
             "struct.load-combinations"
@@ -5649,7 +5711,7 @@
             "kN·m"
           ],
           "descriptions": [
-            "Applied couple"
+            "Applied couple (optional; blank = not used by the other cases)"
           ],
           "templates": [
             "struct.beam-formulas"
@@ -6695,7 +6757,7 @@
             "kN"
           ],
           "descriptions": [
-            "Axial force, COMPRESSION positive (the opposite sign to S3's N_Ed, which is tension positive; S2's R1_y, an upward reaction, is compression positive)"
+            "Axial force, compression positive and opposite in sign to the member sheet's axial force (a frame reaction R1_y is compression positive)"
           ],
           "templates": [
             "struct.base-plate"
@@ -7064,19 +7126,6 @@
           ]
         },
         {
-          "meaning": "applied-axial-load",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Applied axial load"
-          ],
-          "templates": [
-            "struct.column-buckling"
-          ]
-        },
-        {
           "meaning": "deflection-force",
           "quantity": "Force",
           "units": [
@@ -7155,19 +7204,6 @@
           ]
         },
         {
-          "meaning": "point-load",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Point load (downward)"
-          ],
-          "templates": [
-            "struct.beam-formulas"
-          ]
-        },
-        {
           "meaning": "thread-pitch",
           "quantity": "Length",
           "units": [
@@ -7227,24 +7263,6 @@
           ],
           "templates": [
             "mech.bearing-life"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "P_E",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Euler load"
-          ],
-          "templates": [
-            "struct.column-buckling"
           ]
         }
       ]
@@ -7351,24 +7369,6 @@
           ],
           "templates": [
             "elec.motor-sizing"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "P_c",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Compression resistance"
-          ],
-          "templates": [
-            "struct.column-buckling"
           ]
         }
       ]
@@ -11216,7 +11216,7 @@
             "kN"
           ],
           "descriptions": [
-            "Group force for block tearing"
+            "Group force for block tearing (optional; blank = no block tearing check)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -12201,7 +12201,7 @@
           "descriptions": [
             "Throat",
             "Throat thickness",
-            "Weld throat"
+            "Weld throat (optional; blank = no weld check)"
           ],
           "templates": [
             "mech.weld-group",
@@ -12216,7 +12216,7 @@
             "m"
           ],
           "descriptions": [
-            "Load position from the left end",
+            "Load position from the left end (optional; blank = not used by the distributed-load cases)",
             "a from end i"
           ],
           "templates": [
@@ -12470,7 +12470,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "α, concentration factor √(A_c1/A_c0) of the foundation (1 when the foundation geometry is not known)"
+            "Concentration factor √(A_c1/A_c0) of the foundation (1 when the foundation geometry is not known)"
           ],
           "templates": [
             "struct.base-plate"
@@ -12687,7 +12687,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "α_cc, long-term effects on the concrete strength"
+            "Coefficient for long-term effects on the concrete strength"
           ],
           "templates": [
             "struct.base-plate"
@@ -13270,7 +13270,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Correlation factor β_w (0.8 S235, 0.85 S275, 0.9 S355, 1.0 S420/S460)"
+            "Correlation factor (0.8 S235, 0.85 S275, 0.9 S355, 1.0 S420 and S460)"
           ],
           "templates": [
             "struct.fillet-weld"
@@ -13306,7 +13306,7 @@
             "mm"
           ],
           "descriptions": [
-            "Bearing outstand c"
+            "Bearing outstand round the column footprint"
           ],
           "templates": [
             "struct.base-plate"
@@ -14362,7 +14362,7 @@
             "mm"
           ],
           "descriptions": [
-            "Hole diameter (blank: normal clearance d + 2, or d + 3 from M27)"
+            "Hole diameter (optional; blank = normal clearance d + 2, or d + 3 from M27)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -15005,7 +15005,7 @@
             "mm"
           ],
           "descriptions": [
-            "Deflection limit"
+            "Deflection limit (optional; blank = no deflection check)"
           ],
           "templates": [
             "struct.beam-formulas"
@@ -15666,7 +15666,7 @@
             "mm"
           ],
           "descriptions": [
-            "Across-corners dimension of the smaller of bolt head and nut (blank: punching takes d_m = the across-flats s, conservative)"
+            "Across-corners dimension of the smaller of bolt head and nut (optional; blank = punching takes the across-flats dimension, which is conservative)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -15700,7 +15700,7 @@
             "mm"
           ],
           "descriptions": [
-            "Edge distance e_min of the bolt row (used only with prying)"
+            "Edge distance of the bolt row, used only with prying (optional; blank = prying needs it)"
           ],
           "templates": [
             "struct.base-plate"
@@ -16433,7 +16433,7 @@
             "MPa"
           ],
           "descriptions": [
-            "Grout characteristic strength (optional: checks the β_j = 2/3 condition)"
+            "Grout characteristic strength (optional; blank = the β_j = 2/3 condition is not checked)"
           ],
           "templates": [
             "struct.base-plate"
@@ -16517,7 +16517,7 @@
             "MPa"
           ],
           "descriptions": [
-            "Bearing strength f_jd"
+            "Design bearing strength of the joint"
           ],
           "templates": [
             "struct.base-plate"
@@ -16785,11 +16785,11 @@
             "MPa"
           ],
           "descriptions": [
-            "Plate ultimate strength",
+            "Plate ultimate tensile strength",
             "Ultimate strength f_u of the lug plate",
-            "Ultimate strength of the weaker part joined",
             "Ultimate tensile strength (optional)",
-            "Ultimate tensile strength (optional; blank = the sheet is blocked when N_Ed is tension)"
+            "Ultimate tensile strength (optional; blank = the sheet is blocked when N_Ed is tension)",
+            "Ultimate tensile strength of the weaker part joined"
           ],
           "templates": [
             "mech.material-margin",
@@ -16811,8 +16811,8 @@
             "MPa"
           ],
           "descriptions": [
-            "Anchor bolt ultimate strength",
-            "Bolt ultimate strength"
+            "Anchor bolt ultimate tensile strength",
+            "Bolt ultimate tensile strength"
           ],
           "templates": [
             "struct.base-plate",
@@ -17139,9 +17139,8 @@
           "units": [],
           "descriptions": [
             "Partial factor for cross-section resistance",
-            "Partial factor γ_M0 on the resistance of the cross-section",
-            "γ_M0",
-            "γ_M0, partial factor for the plate"
+            "Partial factor for the plate",
+            "Partial factor γ_M0 on the resistance of the cross-section"
           ],
           "templates": [
             "struct.base-plate",
@@ -17178,10 +17177,10 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
+            "Partial factor for bolt and weld resistance",
             "Partial factor for net-section fracture",
-            "Partial factor γ_M2",
-            "γ_M2",
-            "γ_M2, partial factor for the anchor bolts"
+            "Partial factor for the anchor bolts",
+            "Partial factor for the weld resistance"
           ],
           "templates": [
             "struct.base-plate",
@@ -17216,7 +17215,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "γ_c, partial factor for concrete"
+            "Partial factor for concrete"
           ],
           "templates": [
             "struct.base-plate"
@@ -20779,7 +20778,7 @@
             "mm"
           ],
           "descriptions": [
-            "Pitch (load direction; blank: one row)"
+            "Pitch in the load direction (optional; blank = one row)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -20797,7 +20796,7 @@
             "mm"
           ],
           "descriptions": [
-            "Gauge (across the load; blank: one line)"
+            "Gauge across the load (optional; blank = one line)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -22722,7 +22721,7 @@
             "MPa"
           ],
           "descriptions": [
-            "Allowable bending stress",
+            "Allowable bending stress (optional; blank = no stress check)",
             "Allowable stress"
           ],
           "templates": [
@@ -22833,7 +22832,7 @@
             "MPa"
           ],
           "descriptions": [
-            "Directional: normal stress ⊥ throat"
+            "Directional method: normal stress perpendicular to the throat (optional; blank = no directional check)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -23516,14 +23515,11 @@
             "Lug plate thickness t",
             "Lug thickness",
             "Plate thickness",
-            "Thickness",
-            "Wall thickness (RHS and CHS)"
+            "Thickness"
           ],
           "templates": [
             "bs.plane-wall",
             "mech.lifting-lug",
-            "struct.base-plate",
-            "struct.connection-ec3",
             "struct.lifting",
             "struct.plate-bending"
           ]
@@ -23584,7 +23580,7 @@
             "mm"
           ],
           "descriptions": [
-            "Thickness of the other ply the bolt bears on (the column flange behind an end plate; blank = one ply only): bearing is taken on the thinner ply, with this sheet's f_u, edge distances and spacings"
+            "Thickness of the other ply, such as the column flange behind an end plate (optional; blank = one ply only)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -23857,7 +23853,7 @@
             "mm"
           ],
           "descriptions": [
-            "Grout thickness (optional: checks the β_j = 2/3 condition)"
+            "Grout thickness (optional; blank = the β_j = 2/3 condition is not checked)"
           ],
           "templates": [
             "struct.base-plate"
@@ -24020,7 +24016,8 @@
           ],
           "templates": [
             "mech.thin-vessel",
-            "struct.base-plate"
+            "struct.base-plate",
+            "struct.connection-ec3"
           ]
         }
       ]
@@ -24241,16 +24238,18 @@
       "symbol": "t_wall",
       "meanings": [
         {
-          "meaning": "",
+          "meaning": "wall-thickness",
           "quantity": "Length",
           "units": [
             "mm"
           ],
           "descriptions": [
-            "Pipe wall thickness"
+            "Pipe wall thickness",
+            "Wall thickness (RHS and CHS)"
           ],
           "templates": [
-            "bs.pipe-expansion"
+            "bs.pipe-expansion",
+            "struct.base-plate"
           ]
         }
       ]
@@ -24474,7 +24473,7 @@
             "MPa"
           ],
           "descriptions": [
-            "Directional: shear ∥ weld axis"
+            "Directional method: shear parallel to the weld axis (optional; blank = no directional check)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -24492,7 +24491,7 @@
             "MPa"
           ],
           "descriptions": [
-            "Directional: shear ⊥ weld axis"
+            "Directional method: shear perpendicular to the weld axis (optional; blank = no directional check)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -26057,7 +26056,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Governing utilisation reported by the PROFIS anchorage design (from the attached report; blank = the anchorage is not assessed here)"
+            "Governing utilisation reported by the PROFIS anchorage design, from the attached report (optional; blank = the anchorage is not assessed here)"
           ],
           "templates": [
             "struct.base-plate"
@@ -26905,7 +26904,7 @@
             "kN/m"
           ],
           "descriptions": [
-            "Distributed load (downward)"
+            "Distributed load, downward (optional; blank = not used by the point-load and couple cases)"
           ],
           "templates": [
             "struct.beam-formulas"
@@ -27580,7 +27579,7 @@
             "mm"
           ],
           "descriptions": [
-            "Extreme-fibre distance from the neutral axis (for the stress check)"
+            "Extreme-fibre distance from the neutral axis (optional; blank = no stress check)"
           ],
           "templates": [
             "struct.beam-formulas"
@@ -27688,7 +27687,7 @@
             "mm"
           ],
           "descriptions": [
-            "Lever arm z"
+            "Lever arm between the compression resultant and the bolt row"
           ],
           "templates": [
             "struct.base-plate"
@@ -27706,7 +27705,7 @@
             "mm"
           ],
           "descriptions": [
-            "Compression lever arm z_C"
+            "Distance from the column axis to the compression resultant"
           ],
           "templates": [
             "struct.base-plate"
@@ -27724,7 +27723,7 @@
             "mm"
           ],
           "descriptions": [
-            "Compression resultant distance from the column axis (blank: from the section)"
+            "Compression resultant distance from the column axis (optional; blank = from the section)"
           ],
           "templates": [
             "struct.base-plate"

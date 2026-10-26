@@ -112,12 +112,18 @@
   ]
  },
  "F": {
+  "applied-axial-load": [
+   "struct.column-buckling"
+  ],
   "force": [
    "mech.thermal-expansion",
    "struct.fillet-weld"
   ],
   "lmtd-correction-factor": [
    "bs.heat-exchanger"
+  ],
+  "point-load": [
+   "struct.beam-formulas"
   ]
  },
  "F_a": {
@@ -440,9 +446,6 @@
   ]
  },
  "P": {
-  "applied-axial-load": [
-   "struct.column-buckling"
-  ],
   "deflection-force": [
    "mech.snap-fit"
   ],
@@ -468,9 +471,6 @@
   "motor-rated-output-power": [
    "elec.conductor-sizing",
    "elec.motor-start"
-  ],
-  "point-load": [
-   "struct.beam-formulas"
   ],
   "thread-pitch": [
    "mech.bolted-joint"
@@ -1561,8 +1561,6 @@
   "thickness": [
    "bs.plane-wall",
    "mech.lifting-lug",
-   "struct.base-plate",
-   "struct.connection-ec3",
    "struct.lifting",
    "struct.plate-bending"
   ],
@@ -1606,7 +1604,8 @@
  "t_p": {
   "plate-thickness": [
    "mech.thin-vessel",
-   "struct.base-plate"
+   "struct.base-plate",
+   "struct.connection-ec3"
   ]
  },
  "t_req": {
@@ -1626,6 +1625,12 @@
    "struct.base-plate",
    "struct.en1993-member",
    "struct.section-properties"
+  ]
+ },
+ "t_wall": {
+  "wall-thickness": [
+   "bs.pipe-expansion",
+   "struct.base-plate"
   ]
  },
  "tau": {

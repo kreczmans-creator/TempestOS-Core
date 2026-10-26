@@ -62,6 +62,10 @@ internal static class ProbeInputs
     internal static CalcInputSet PryingBasePlate() =>
         CalcTemplateHasher.DefaultInputs(new BasePlateCalculator().Template).With(CalcInputValue.Switch("prying", true));
 
+    /// <summary>A beam whose span (6 m) is below ten times its half-depth (0.5 m): shear deformation adds to the deflection, and the check that the span is not that of a deep beam fails.</summary>
+    internal static CalcInputSet DeepBeam() =>
+        CalcTemplateHasher.DefaultInputs(new BeamFormulasCalculator().Template).With(CalcInputValue.Quantity("y_c", 500, "mm")).With(CalcInputValue.Quantity("sigma_allow", 235, "MPa"));
+
     /// <summary>A long clamped plate: the Ritz solution stops at the stall rule without converging.</summary>
     internal static CalcInputSet LongClampedPlate() =>
         CalcTemplateHasher.DefaultInputs(new PlateBendingCalculator().Template)

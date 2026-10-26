@@ -11,6 +11,17 @@
     "ValueText": "210"
   },
   {
+    "Symbol": "F",
+    "Number": 50,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Load schedule LS-01: plant load",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "50"
+  },
+  {
     "Symbol": "I",
     "Number": 8503,
     "Unit": "cm^4",
@@ -32,17 +43,6 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "6"
-  },
-  {
-    "Symbol": "P",
-    "Number": 50,
-    "Unit": "kN",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "Load schedule LS-01: plant load",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "50"
   },
   {
     "Symbol": "a",

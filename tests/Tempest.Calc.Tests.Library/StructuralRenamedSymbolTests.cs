@@ -123,4 +123,78 @@ public sealed class StructuralRenamedSymbolTests
         var minor = section.Outputs.Single(o => o.Symbol == "W_el_z").Si!.Value;
         Assert.True(major > minor * 5, "the major-axis modulus of an I-section is many times the minor-axis one");
     }
+
+    [Fact]
+    public async Task The_Old_Load_Symbol_P_Of_The_Beam_And_The_Column_Is_Stored_Under_F_And_The_Old_Column_Outputs_Resolve_By_Their_Old_Symbols()
+    {
+        var host = new LibraryTestHost(calculators: [new BeamFormulasCalculator(), new ColumnBucklingCalculator()]);
+        var project = await host.ProjectAsync();
+
+        // The inputs of the two known-answer cases as they were written before the rename: the load is P.
+        var oldBeam = WithDrawing(new BeamFormulasCalculator().Template.TestCases[1].Inputs.Select(v => v.Symbol == "F" ? CalcInputValue.Quantity("P", 50, "kN") : v));
+        var beam = await host.Service.CreateAsync(BeamFormulasCalculator.Id, project, "Beam (old form)", oldBeam);
+        Assert.Equal(50, beam.Inputs.Single(i => i.Symbol == "F").Number);
+        Assert.DoesNotContain(beam.Inputs, i => i.Symbol == "P");
+        Assert.Equal(16.6667, beam.Outputs.Single(o => o.Symbol == "R_A").Si!.Value / 1e3, 3);
+
+        var oldColumn = WithDrawing(new ColumnBucklingCalculator().Template.TestCases[0].Inputs.Select(v => v.Symbol == "F" ? CalcInputValue.Quantity("P", 150, "kN") : v));
+        var column = await host.Service.CreateAsync(ColumnBucklingCalculator.Id, project, "Strut (old form)", oldColumn);
+        Assert.Equal(150, column.Inputs.Single(i => i.Symbol == "F").Number);
+        Assert.Equal(267.56, column.Outputs.Single(o => o.Symbol == "F_c_Rd").Si!.Value / 1e3, 1);
+
+        // The resistance was P_c and the Euler load P_E: a link by either, or by the public name, resolves to the same value.
+        foreach (var name in new[] { "F_c_Rd", "P_c", "column.resistance_compression" })
+        {
+            var downstream = await host.Service.CreateAsync(BeamFormulasCalculator.Id, project, $"Beam under {name}", WithDrawing(new BeamFormulasCalculator().Template.TestCases[1].Inputs));
+            var bound = await host.Service.BindAsync(downstream.Id, "P", column.Id, name);
+            Assert.True(bound.Succeeded, bound.Reason);
+            Assert.Equal(column.Outputs.Single(o => o.Symbol == "F_c_Rd").Si!.Value / 1e3, bound.Instance!.Inputs.Single(i => i.Symbol == "F").Number!.Value, 6);
+        }
+
+        var template = host.Catalogue.Find(ColumnBucklingCalculator.Id)!.Template;
+        Assert.Same(template.FindPort("F_E"), template.FindPort("P_E"));
+    }
+
+    [Fact]
+    public async Task The_Old_Plate_Thickness_Symbol_Of_The_Connection_Is_Stored_Under_T_p_On_Create_And_On_Update()
+    {
+        var host = new LibraryTestHost(calculators: [new ConnectionCalculator()]);
+        var project = await host.ProjectAsync();
+        var baseline = WithDrawing([.. new ConnectionCalculator().Template.TestCases[2].Inputs.Where(v => v.Symbol != "t_p"), CalcInputValue.Quantity("t_p", 10, "mm")]);
+        var current = await host.Service.CreateAsync(ConnectionCalculator.Id, project, "Splice", baseline);
+        var thickness = 10.0;
+
+        // The form a saved calculation had before the rename: the plate thickness is t.
+        var oldForm = WithDrawing(baseline.Select(v => v.Symbol == "t_p" ? CalcInputValue.Quantity("t", thickness, "mm") : v));
+        var created = await host.Service.CreateAsync(ConnectionCalculator.Id, project, "Splice (old form)", oldForm);
+
+        Assert.Empty(created.Blocks);
+        Assert.Equal(thickness, created.Inputs.Single(i => i.Symbol == "t_p").Number!.Value);
+        Assert.DoesNotContain(created.Inputs, i => i.Symbol == "t");
+        Assert.Equal(current.Outputs.Single(o => o.Symbol == "F_b_Rd").Si!.Value, created.Outputs.Single(o => o.Symbol == "F_b_Rd").Si!.Value, 6);
+
+        var thicker = await host.Service.UpdateInputsAsync(created.Id, [.. oldForm.Where(i => i.Symbol != "t"), CalcInputValue.Quantity("t", thickness + 4, "mm", CalcProvenance.Drawing("DRG-SEC-1", "B"))]);
+        Assert.True(thicker.Succeeded, thicker.Reason);
+        Assert.Equal(thickness + 4, thicker.Instance!.Inputs.Single(i => i.Symbol == "t_p").Number!.Value);
+        Assert.True(thicker.Instance.Outputs.Single(o => o.Symbol == "F_b_Rd").Si!.Value > created.Outputs.Single(o => o.Symbol == "F_b_Rd").Si!.Value);
+    }
+
+    [Fact]
+    public async Task The_Old_Wall_Thickness_Symbol_Of_The_Base_Plate_Column_Is_Stored_Under_T_wall()
+    {
+        var host = new LibraryTestHost(calculators: [new BasePlateCalculator()]);
+        var project = await host.ProjectAsync();
+        var shared = new BasePlateCalculator().Template.TestCases[0].Inputs.Where(v => v.Symbol is not ("column" or "h" or "b" or "D" or "t_wall"));
+        var oldForm = WithDrawing([.. shared, CalcInputValue.Choice("column", BasePlateCalculator.ColumnRhs), CalcInputValue.Quantity("h", 200, "mm"), CalcInputValue.Quantity("b", 200, "mm"), CalcInputValue.Quantity("t", 10, "mm")]);
+
+        var created = await host.Service.CreateAsync(BasePlateCalculator.Id, project, "Base (old form)", oldForm);
+
+        Assert.Empty(created.Blocks);
+        Assert.Equal(10, created.Inputs.Single(i => i.Symbol == "t_wall").Number);
+        Assert.DoesNotContain(created.Inputs, i => i.Symbol == "t");
+
+        var thicker = await host.Service.UpdateInputsAsync(created.Id, [.. oldForm.Where(i => i.Symbol != "t"), CalcInputValue.Quantity("t", 12, "mm", CalcProvenance.Drawing("DRG-SEC-1", "B"))]);
+        Assert.True(thicker.Succeeded, thicker.Reason);
+        Assert.Equal(12, thicker.Instance!.Inputs.Single(i => i.Symbol == "t_wall").Number);
+    }
 }

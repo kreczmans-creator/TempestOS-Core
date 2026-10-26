@@ -25,10 +25,6 @@
     "mech.snap-fit": 2,
     "mech.spring": 7,
     "mech.tolerance-stack": 1,
-    "struct.base-plate": 6,
-    "struct.beam-formulas": 2,
-    "struct.connection-ec3": 6,
-    "struct.fillet-weld": 1,
     "struct.lifting": 14,
     "struct.ltb-interaction": 6,
     "struct.plate-bending": 2
@@ -71,26 +67,16 @@
     "mech.thin-vessel": 2,
     "mech.tolerance-stack": 4,
     "mech.weld-group": 4,
-    "struct.base-plate": 19,
-    "struct.beam-formulas": 8,
-    "struct.column-buckling": 3,
-    "struct.connection-ec3": 11,
-    "struct.fillet-weld": 3,
     "struct.lifting": 26,
     "struct.ltb-interaction": 23,
     "struct.plate-bending": 16
   },
   "B05-youngs-modulus": {
     "mech.thermal-expansion": 1,
-    "struct.beam-formulas": 1,
-    "struct.column-buckling": 1,
     "struct.ltb-interaction": 3,
     "struct.plate-bending": 1
   },
   "B06-strength-words": {
-    "struct.base-plate": 1,
-    "struct.connection-ec3": 3,
-    "struct.fillet-weld": 1,
     "struct.lifting": 1
   },
   "B07-requirement-words": {
@@ -119,9 +105,7 @@
     "mech.shaft": 4,
     "mech.snap-fit": 2,
     "mech.spring": 3,
-    "struct.base-plate": 6,
     "struct.lifting": 9,
-    "struct.load-combinations": 1,
     "struct.ltb-interaction": 21,
     "struct.plate-bending": 4
   },
@@ -147,8 +131,6 @@
     "mech.shaft": 5,
     "mech.snap-fit": 3,
     "mech.spring": 1,
-    "struct.base-plate": 2,
-    "struct.connection-ec3": 5,
     "struct.lifting": 6,
     "struct.ltb-interaction": 5
   },
@@ -175,8 +157,6 @@
     "bs.pipe-pump": 1,
     "bs.plane-wall": 1,
     "mech.lifting-lug": 1,
-    "struct.base-plate": 1,
-    "struct.connection-ec3": 1,
     "struct.lifting": 1,
     "struct.plate-bending": 1
   },
@@ -185,8 +165,7 @@
     "elec.containment": 1,
     "mech.bolted-joint": 2,
     "mech.iso286-fit": 4,
-    "mech.spring": 2,
-    "struct.column-buckling": 2
+    "mech.spring": 2
   },
   "C14-quantity-letters": {
     "bs.heat-exchanger": 3,
@@ -197,8 +176,6 @@
     "mech.lifting-lug": 1,
     "mech.snap-fit": 1,
     "mech.thin-vessel": 1,
-    "struct.beam-formulas": 1,
-    "struct.column-buckling": 1,
     "struct.plate-bending": 1
   },
   "C15-no-bare-p": {
@@ -254,7 +231,6 @@
     "mech.shaft-stress": 2,
     "mech.thermal-expansion": 3,
     "mech.tolerance-stack": 13,
-    "struct.connection-ec3": 1,
     "struct.ltb-interaction": 1,
     "struct.plate-bending": 3
   },
@@ -279,7 +255,6 @@
     "mech.shaft-stress": 1,
     "mech.thick-cylinder": 1,
     "mech.tolerance-stack": 4,
-    "struct.beam-formulas": 1,
     "struct.ltb-interaction": 1
   },
   "F32-missing-input-phrasing": {
@@ -302,8 +277,6 @@
     "mech.fatigue-miner": 1,
     "mech.iso286-fit": 2,
     "mech.shaft": 1,
-    "struct.base-plate": 1,
-    "struct.connection-ec3": 2,
     "struct.ltb-interaction": 5
   },
   "F33-one-idea-per-message": {
@@ -345,12 +318,7 @@
     "mech.thin-vessel": 2,
     "mech.tolerance-stack": 2,
     "mech.weld-group": 1,
-    "struct.base-plate": 13,
-    "struct.beam-formulas": 1,
-    "struct.connection-ec3": 6,
-    "struct.fillet-weld": 1,
     "struct.lifting": 21,
-    "struct.load-combinations": 1,
     "struct.ltb-interaction": 19,
     "struct.plate-bending": 9
   },
@@ -366,8 +334,6 @@
     "mech.mechanism": 1,
     "mech.snap-fit": 1,
     "mech.tolerance-stack": 1,
-    "struct.beam-formulas": 1,
-    "struct.column-buckling": 1,
     "struct.lifting": 1
   },
   "F36-no-input-prefix": {
@@ -388,10 +354,7 @@
     "mech.thick-cylinder": 8,
     "mech.thin-vessel": 7,
     "mech.tolerance-stack": 9,
-    "mech.weld-group": 1,
-    "struct.beam-formulas": 8,
-    "struct.column-buckling": 7,
-    "struct.load-combinations": 2
+    "mech.weld-group": 1
   },
   "G39-setup-group-first": {
     "bs.duct-sizing": 1,
@@ -418,11 +381,7 @@
     "mech.spring": 1,
     "mech.tolerance-stack": 1,
     "mech.weld-group": 1,
-    "struct.base-plate": 1,
-    "struct.beam-formulas": 1,
-    "struct.connection-ec3": 1,
     "struct.lifting": 1,
-    "struct.load-combinations": 1,
     "struct.ltb-interaction": 1,
     "struct.plate-bending": 1
   },
@@ -442,8 +401,6 @@
     "fp.cylinder": 1,
     "mech.lifting-lug": 1,
     "mech.mechanism": 1,
-    "struct.base-plate": 1,
-    "struct.connection-ec3": 3,
     "struct.ltb-interaction": 2,
     "struct.plate-bending": 2
   },
@@ -473,9 +430,6 @@
     "mech.shaft": 3,
     "mech.snap-fit": 2,
     "mech.spring": 1,
-    "struct.base-plate": 1,
-    "struct.connection-ec3": 2,
-    "struct.fillet-weld": 1,
     "struct.ltb-interaction": 2
   },
   "G42-soft-limits": {
@@ -502,10 +456,7 @@
     "mech.shaft": 13,
     "mech.tolerance-stack": 3,
     "mech.weld-group": 9,
-    "struct.base-plate": 35,
-    "struct.connection-ec3": 27,
     "struct.lifting": 21,
-    "struct.load-combinations": 1,
     "struct.ltb-interaction": 42
   },
   "H43-port-names": {
@@ -526,7 +477,6 @@
     "mech.mechanism": 11,
     "mech.snap-fit": 4,
     "mech.spring": 5,
-    "struct.base-plate": 4,
     "struct.lifting": 7,
     "struct.ltb-interaction": 8,
     "struct.plate-bending": 3
@@ -549,10 +499,7 @@
     "mech.thermal-expansion": 1,
     "mech.thick-cylinder": 1,
     "mech.thin-vessel": 1,
-    "mech.tolerance-stack": 1,
-    "struct.beam-formulas": 1,
-    "struct.column-buckling": 1,
-    "struct.fillet-weld": 1
+    "mech.tolerance-stack": 1
   },
   "H45-no-legacy-codes": {
     "bs.pipe-pump": 5,
@@ -627,13 +574,7 @@
     "mech.thin-vessel": 2,
     "mech.tolerance-stack": 1,
     "mech.weld-group": 2,
-    "struct.base-plate": 2,
-    "struct.beam-formulas": 1,
-    "struct.column-buckling": 1,
-    "struct.connection-ec3": 2,
-    "struct.fillet-weld": 1,
     "struct.lifting": 2,
-    "struct.load-combinations": 2,
     "struct.ltb-interaction": 2,
     "struct.plate-bending": 2
   },
@@ -650,8 +591,7 @@
     "fp.cylinder": 1,
     "mech.bolted-joint": 2,
     "mech.mechanism": 2,
-    "mech.snap-fit": 1,
-    "struct.beam-formulas": 1
+    "mech.snap-fit": 1
   },
   "J51-standard-designation": {
     "bs.duct-sizing": 2,
@@ -679,12 +619,8 @@
     "mech.thin-vessel": 1,
     "mech.tolerance-stack": 3,
     "mech.weld-group": 1,
-    "struct.base-plate": 2,
     "struct.column-buckling": 1,
-    "struct.connection-ec3": 1,
-    "struct.fillet-weld": 1,
     "struct.lifting": 3,
-    "struct.load-combinations": 1,
     "struct.ltb-interaction": 2
   },
   "J52-clause-locator": {
@@ -714,10 +650,7 @@
     "mech.spring": 4,
     "mech.thin-vessel": 2,
     "mech.weld-group": 2,
-    "struct.column-buckling": 1,
-    "struct.fillet-weld": 4,
     "struct.lifting": 5,
-    "struct.load-combinations": 1,
     "struct.ltb-interaction": 6,
     "struct.plate-bending": 2
   },
@@ -755,9 +688,7 @@
     "mech.thermal-expansion": 2,
     "mech.thick-cylinder": 2,
     "mech.weld-group": 2,
-    "struct.beam-formulas": 1,
     "struct.lifting": 2,
-    "struct.load-combinations": 1,
     "struct.ltb-interaction": 1,
     "struct.plate-bending": 4
   },
@@ -778,8 +709,6 @@
     "mech.snap-fit": 1,
     "mech.spring": 1,
     "mech.weld-group": 1,
-    "struct.base-plate": 2,
-    "struct.connection-ec3": 3,
     "struct.lifting": 1,
     "struct.ltb-interaction": 1,
     "struct.plate-bending": 2
@@ -824,12 +753,7 @@
     "mech.thin-vessel": 1,
     "mech.tolerance-stack": 1,
     "mech.weld-group": 2,
-    "struct.base-plate": 9,
-    "struct.beam-formulas": 1,
-    "struct.column-buckling": 1,
-    "struct.connection-ec3": 4,
     "struct.lifting": 9,
-    "struct.load-combinations": 4,
     "struct.ltb-interaction": 7,
     "struct.plate-bending": 7
   },
@@ -876,13 +800,7 @@
     "mech.thin-vessel": 7,
     "mech.tolerance-stack": 7,
     "mech.weld-group": 8,
-    "struct.base-plate": 8,
-    "struct.beam-formulas": 7,
-    "struct.column-buckling": 7,
-    "struct.connection-ec3": 8,
-    "struct.fillet-weld": 7,
     "struct.lifting": 8,
-    "struct.load-combinations": 8,
     "struct.ltb-interaction": 8,
     "struct.plate-bending": 8
   },
@@ -929,13 +847,7 @@
     "mech.thin-vessel": 1,
     "mech.tolerance-stack": 1,
     "mech.weld-group": 1,
-    "struct.base-plate": 1,
-    "struct.beam-formulas": 1,
-    "struct.column-buckling": 1,
-    "struct.connection-ec3": 1,
-    "struct.fillet-weld": 1,
     "struct.lifting": 1,
-    "struct.load-combinations": 1,
     "struct.ltb-interaction": 1,
     "struct.plate-bending": 1
   },
@@ -982,13 +894,7 @@
     "mech.thin-vessel": 1,
     "mech.tolerance-stack": 1,
     "mech.weld-group": 1,
-    "struct.base-plate": 1,
-    "struct.beam-formulas": 1,
-    "struct.column-buckling": 1,
-    "struct.connection-ec3": 1,
-    "struct.fillet-weld": 1,
     "struct.lifting": 1,
-    "struct.load-combinations": 1,
     "struct.ltb-interaction": 1,
     "struct.plate-bending": 1
   }

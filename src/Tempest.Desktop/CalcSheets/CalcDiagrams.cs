@@ -525,11 +525,11 @@ public static class CalcDiagrams
                     elements.Add(new DiagramDistributedLoad("load", Left, Right, Y - 6, 30, "w", "w"));
                     break;
                 case "point-at-a":
-                    elements.Add(new DiagramPointLoad("load", new(230, Y - 6), DiagramDirection.Down, 44, "P", "P"));
+                    elements.Add(new DiagramPointLoad("load", new(230, Y - 6), DiagramDirection.Down, 44, "F", "F"));
                     elements.Add(new DiagramDimension("position", new(Left, Y), new(230, Y), -64, "a", "a", new(140, 26)));
                     break;
                 case "point-centre":
-                    elements.Add(new DiagramPointLoad("load", new((Left + Right) / 2, Y - 6), DiagramDirection.Down, 44, "P", "P"));
+                    elements.Add(new DiagramPointLoad("load", new((Left + Right) / 2, Y - 6), DiagramDirection.Down, 44, "F", "F"));
                     break;
                 default:
                     elements.Add(new DiagramMoment("couple", new(Left + 22, Y), 18, Clockwise: true, "M_0", "M_0", new(Left + 22, Y - 38)));
@@ -551,12 +551,12 @@ public static class CalcDiagrams
         return new(BeamFormulasCalculator.Id,
         [
             Variant(BeamFormulasCalculator.SsUdl, "Simply supported, uniformly distributed load w", "pin", "roller", "udl"),
-            Variant(BeamFormulasCalculator.SsPoint, "Simply supported, point load P at a from the left end", "pin", "roller", "point-at-a"),
+            Variant(BeamFormulasCalculator.SsPoint, "Simply supported, point load F at a from the left end", "pin", "roller", "point-at-a"),
             Variant(BeamFormulasCalculator.SsMomentEnd, "Simply supported, couple M_0 at the left end", "pin", "roller", "couple"),
             Variant(BeamFormulasCalculator.CantUdl, "Cantilever fixed at the left, uniformly distributed load w", "fixed", null, "udl"),
-            Variant(BeamFormulasCalculator.CantPoint, "Cantilever fixed at the left, point load P at a from the fixed end", "fixed", null, "point-at-a"),
+            Variant(BeamFormulasCalculator.CantPoint, "Cantilever fixed at the left, point load F at a from the fixed end", "fixed", null, "point-at-a"),
             Variant(BeamFormulasCalculator.FixedUdl, "Fixed at both ends, uniformly distributed load w", "fixed", "fixed", "udl"),
-            Variant(BeamFormulasCalculator.FixedPointCentre, "Fixed at both ends, point load P at midspan", "fixed", "fixed", "point-centre"),
+            Variant(BeamFormulasCalculator.FixedPointCentre, "Fixed at both ends, point load F at midspan", "fixed", "fixed", "point-centre"),
             Variant(BeamFormulasCalculator.ProppedUdl, "Propped cantilever, fixed left and pinned right, uniformly distributed load w", "fixed", "roller", "udl"),
         ]);
     }
@@ -592,7 +592,7 @@ public static class CalcDiagrams
                 new DiagramMember("column", new(200, 62), new(200, 196), 10, "A"),
                 new DiagramSupport("base", new(200, 202), DiagramSupportKind.Pinned, DiagramDirection.Down),
                 new DiagramSupport("head", new(206, 62), DiagramSupportKind.Roller, DiagramDirection.Right),
-                new DiagramPointLoad("load", new(200, 56), DiagramDirection.Down, 34, "P", "P"),
+                new DiagramPointLoad("load", new(200, 56), DiagramDirection.Down, 34, "F", "F"),
                 new DiagramDimension("effective-length", new(200, 62), new(200, 196), -60, "L_E", "L_E", new(90, 129)),
                 new DiagramLabel("area", new(320, 80), "A", "A"),
                 new DiagramLabel("second-moment", new(320, 104), "I", "I"),

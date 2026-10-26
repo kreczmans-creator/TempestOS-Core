@@ -129,7 +129,7 @@ public sealed class PipeworkSupportsChainTests
         Assert.Equal(25e-3, InputSi(s6, "t_p"), 12);
 
         // Geometry, not just values: the S4 run is for S6's own plate and edge (thickness 25 mm, the 40 mm edge distance S6 uses as e_min, S275 plate steel), and for the same M20 8.8 bolt.
-        Assert.Equal(InputSi(s6, "t_p"), InputSi(s4, "t"), 12);
+        Assert.Equal(InputSi(s6, "t_p"), InputSi(s4, "t_p"), 12);
         Assert.Equal(InputSi(s6, "e_min"), InputSi(s4, "e_1"), 12);
         Assert.Equal(40e-3, InputSi(s4, "e_1"), 12);
         Assert.Equal("S275", s4.Inputs.Single(i => i.Symbol == "steel").Text);
