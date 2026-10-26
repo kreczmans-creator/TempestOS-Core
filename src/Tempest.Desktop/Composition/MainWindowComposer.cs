@@ -66,6 +66,8 @@ internal sealed record ComposedViews(
     // `v0.26.0` (ADR-0165): the worksheet calculators (§3.8a form).
     Tempest.Desktop.CalcSheets.CalcSheetView Worksheets,
     Tempest.Desktop.CalcSheets.CalcRegisterView WorksheetRegister,
+    // Addendum C, C-3: the records screen (Engineering, Modules, Calculations, Reference records).
+    Tempest.Desktop.CalcSheets.CalcRecordsView WorksheetRecords,
     LibrariesView LibrariesView,
     OrganisationPicker OrganisationPicker,
     RateCardPicker RateCardPicker,
@@ -805,6 +807,11 @@ internal sealed partial class MainWindowComposer
         var worksheets = new Tempest.Desktop.CalcSheets.CalcSheetView();
         var worksheetRegister = new Tempest.Desktop.CalcSheets.CalcRegisterView();
 
+        // Addendum C, C-3: the records screen. Who entered a record is the signed-in person, read where the author is read.
+        var recordPrincipals = (Tempest.Core.Identity.ICurrentPrincipalAccessor)host.Services!.GetService(typeof(Tempest.Core.Identity.ICurrentPrincipalAccessor));
+        var worksheetRecords = new Tempest.Desktop.CalcSheets.CalcRecordsView(new Tempest.Desktop.CalcSheets.CalcRecordsViewModel(
+            host.CalcInstances!, () => recordPrincipals.Current?.Identity.Id, (Tempest.Core.Logging.ILogger?)host.Services.GetService(typeof(Tempest.Core.Logging.ILogger))));
+
         // `WP 19.6A`: the "cited by" read side — a fresh Evidence scan
         // over the same already-composed domain, holding no state of its
         // own (`Workspace/Evidence/ReferenceCitationIndex.cs`'s own
@@ -924,7 +931,7 @@ internal sealed partial class MainWindowComposer
             host.ShellNavigator!, tasksReadModel, engineeringCalculation, referenceDataLibrariesView,
             engineeringDashboardView, callbacks.EnterEngineeringCalculationAsync, composition.CommandDispatcher, openObjectRightUp,
             engineeringAssetsView, worksheets, callbacks.EnterWorksheetsAsync,
-            worksheetRegister, callbacks.EnterCalcRegisterAsync, callbacks.OpenWorksheetInstanceAsync)
+            worksheetRegister, callbacks.EnterCalcRegisterAsync, callbacks.OpenWorksheetInstanceAsync, worksheetRecords)
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };
@@ -984,7 +991,7 @@ internal sealed partial class MainWindowComposer
             macroManagerDialog, explorerView, inspectorView, statusBar, commandPalette, documentArea, ribbon, commandPrompt, actionReporter,
             citationPicker, subjectPicker, objectPicker, declaredFigureEntry, checkEntry, issueEntry, reviseReferenceRecordEntry, evidenceFilePicker,
             evidenceSupport, kindEditorDeclarations, navigationRail, header, moduleHost, projectDirectory, projectBrowser, projectWorkspace,
-            engineeringCalculation, worksheets, worksheetRegister, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, commercialSupport, personCatalog, personAddPrompt, timesheetEntryPrompt, deliverableCompletionPrompt,
+            engineeringCalculation, worksheets, worksheetRegister, worksheetRecords, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, commercialSupport, personCatalog, personAddPrompt, timesheetEntryPrompt, deliverableCompletionPrompt,
             timesheetWeekView, invoicingView, settingsView, newProjectPrompt, projectPicker, projectQuoteView, quotesView,
             [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
             workspace, manager, principals,
