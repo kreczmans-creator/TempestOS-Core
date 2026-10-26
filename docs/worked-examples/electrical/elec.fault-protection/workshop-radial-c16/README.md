@@ -2,7 +2,7 @@
 
 **Source.** Analytic (C_min relation; derived k), TN-S supply with the declared Z_e of 0.8 Ω; let-through I²t from the MCB datasheet — Confirmed.
 
-A 40 m radial on a 16 A type C MCB. With Z_e = 0.8 Ω the loop reaches 1.403 Ω against a maximum of 1.366 Ω (utilisation 1.03): it fails, narrowly. At the pure-copper resistance it would have passed (1.336 Ω, utilisation 0.98); the conductor resistance used here is the cable standard's maximum (5 to 12 % higher), which is what the tabulated loop impedances assume. The fault current, 155.7 A, is below the 160 A instantaneous trip, so the disconnection time and the adiabatic check are not evaluated. A run of about 37 m or less, larger conductors or a type B device (wide margin) would pass.
+A 40 m radial on a 16 A type C MCB. With Z_e = 0.8 Ω the loop reaches 1.403 Ω against a maximum of 1.366 Ω (utilisation 1.03): it fails, narrowly. At the pure-copper resistance it would have passed (1.336 Ω, utilisation 0.98); the conductor resistance used here is at or above the cable standard's maximum (k_R 1.125; the standard's maxima are 5 to 12 % above pure copper, 4.9 % for these 4 and 2.5 mm² conductors, so the verdict holds at the true maxima), which is what the tabulated loop impedances assume. The fault current, 155.7 A, is below the 160 A instantaneous trip, so the disconnection time and the adiabatic check are not evaluated. A run of about 37 m or less, larger conductors or a type B device (wide margin) would pass.
 
 | Input | Value | Source |
 |---|---|---|

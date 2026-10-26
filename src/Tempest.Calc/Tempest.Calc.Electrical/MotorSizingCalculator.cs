@@ -33,9 +33,9 @@ public sealed class MotorSizingCalculator : ICalcCalculator
     public const string ProfileSCurve = "S-curve (sine acceleration)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.7.0", CalcDiscipline.Electrical, "Motor and actuator sizing",
+        Id, "1.8.0", CalcDiscipline.Electrical, "Motor and actuator sizing",
         "Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.",
-        "Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack).\nLoad inertia reflected to the motor through a linear mechanism: J_refl = m k²/η.\nLoad torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p.\nReflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η).\nMove profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc.\nMove profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap.\nTorque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load; deceleration T_dec = −T_acc + T_load; the peak check is on the larger magnitude, SF·max(|T_pk|, |T_dec|) ≤ T_peak, and the braking power is P_brake = max(0, −T_dec·ω_pk).\nDesign torque for a coupling or any part downstream that must carry what the drive can deliver, on the basis the owner chooses (T_basis): the load peak T_design = T_pk (default), the motor peak T_design = T_peak, a service factor on the rated torque T_design = SF_c·T_rated, or a protective limit T_design = T_lim (a torque limiter or a drive setting).\nHolding torque in the dwell of a linear mechanism that is not held by a brake: T_hold = m g sin θ·k (efficiency not credited: it is a torque to stand still); it is part of the RMS torque for the whole dwell.\nAlternating torque amplitude of a point-to-point cycle about T_load, for a shaft's fatigue: T_alt = (T_pk − T_dec)/2 (0 in continuous duty). Torque behind the ratio on the output shaft of a rotary mechanism: T_out = T·i·η (mean, alternating and peak), n_out = n_pk/i. Peak axial thrust of a ball screw on its support bearings: F_ax_pk = F_load + m a_pk (0 for other mechanisms).\nRMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle), the dwell at T_hold.\nRMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²].\nContinuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i.\nContinuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load.\nPeak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load.\nContinuous power: P_cont = T_load ω; P_rms = P_cont; continuous duty needs the steady load torque T_L (blank or zero is refused: it would size the motor for no load).\nRated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60; check P_cont ≤ P_rated, u_power = P_cont/P_rated.",
+        "Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack).\nLoad inertia reflected to the motor through a linear mechanism: J_refl = m k²/η.\nLoad torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p.\nReflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η).\nMove profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc.\nMove profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap.\nTorque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load; deceleration T_dec = −T_acc + T_load; the peak check is on the larger magnitude, SF·max(|T_pk|, |T_dec|) ≤ T_peak, and the braking power is P_brake = max(0, −T_dec·ω_pk).\nDesign torque for a coupling or any part downstream that must carry what the drive can deliver, on the basis the owner chooses (T_basis): the load peak T_design = max(|T_pk|, |T_dec|) (default; T_pk alone in continuous duty, where there is no deceleration), the motor peak T_design = T_peak, a service factor on the rated torque T_design = SF_c·T_rated, or a protective limit T_design = T_lim (a torque limiter or a drive setting).\nHolding torque in the dwell of a linear mechanism that is not held by a brake: T_hold = m g sin θ·k (efficiency not credited: it is a torque to stand still); it is part of the RMS torque for the whole dwell.\nAlternating torque amplitude of a point-to-point cycle about T_load, for a shaft's fatigue: T_alt = (T_pk − T_dec)/2 (0 in continuous duty). Torque behind the ratio on the output shaft of a rotary mechanism: T_out = T·i·η (mean, alternating and peak), n_out = n_pk/i. Peak axial thrust of a ball screw on its support bearings: F_ax_pk = F_load + m a_pk (0 for other mechanisms).\nRMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle), the dwell at T_hold.\nRMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²].\nContinuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i.\nContinuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load.\nPeak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load.\nContinuous power: P_cont = T_load ω; P_rms = P_cont; continuous duty needs the steady load torque T_L (blank or zero is refused: it would size the motor for no load).\nRated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60; check P_cont ≤ P_rated, u_power = P_cont/P_rated.",
         [
             new CalcInputSpec("mechanism", "Mechanism", CalcInputKind.Choice, Choices: [MechScrew, MechBelt, MechRack, MechGearedRotary, MechDirectRotary], DefaultChoice: MechScrew, Group: "Mechanism"),
             new CalcInputSpec("i", "Gear ratio i (motor : output, 1 = none)", CalcInputKind.Number, Default: 1, Min: 1, Max: 1000, HardMin: 0.01, HardMax: 1e5, Group: "Mechanism"),
@@ -62,7 +62,7 @@ public sealed class MotorSizingCalculator : ICalcCalculator
             new CalcInputSpec("T_rated", "Candidate motor continuous (rated) torque", CalcInputKind.Quantity, "N*m", Default: 2.0, Min: 0.01, Max: 1e5, HardMin: 1e-4, HardMax: 1e7, Group: "Motor"),
             new CalcInputSpec("T_peak", "Candidate motor peak torque", CalcInputKind.Quantity, "N*m", Default: 6.0, Min: 0.01, Max: 1e5, HardMin: 1e-4, HardMax: 1e7, Group: "Motor"),
             new CalcInputSpec("n_rated", "Candidate motor rated (nameplate) speed, with the rated torque the rated power P_rated = T_rated·ω_rated (continuous duty; leave blank if not known: there is then no P_rated)", CalcInputKind.Quantity, "rpm", Min: 10, Max: 1e5, HardMin: 1, HardMax: 1e6, IsOptional: true, Group: "Motor"),
-            new CalcInputSpec("T_basis", "Design torque basis for downstream couplings (T_design): the load's peak, the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter", CalcInputKind.Choice, Choices: [BasisLoadPeak, BasisMotorPeak, BasisServiceFactor, BasisProtectiveLimit], DefaultChoice: BasisLoadPeak, Group: "Motor"),
+            new CalcInputSpec("T_basis", "Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter", CalcInputKind.Choice, Choices: [BasisLoadPeak, BasisMotorPeak, BasisServiceFactor, BasisProtectiveLimit], DefaultChoice: BasisLoadPeak, Group: "Motor"),
             new CalcInputSpec("SF_c", "Service factor on the rated torque for the design torque (needed for the service-factor basis)", CalcInputKind.Number, Min: 1, Max: 10, HardMin: 1, HardMax: 10, IsOptional: true, Group: "Motor"),
             new CalcInputSpec("T_lim", "Protective torque limit at the motor shaft, e.g. a torque limiter or a drive torque setting (needed for the protective-limit basis)", CalcInputKind.Quantity, "N*m", Min: 0.01, Max: 1e5, HardMin: 1e-4, HardMax: 1e7, IsOptional: true, Group: "Motor"),
             new CalcInputSpec("n_max", "Candidate motor maximum speed", CalcInputKind.Quantity, "rpm", Default: 6000, Min: 10, Max: 1e5, HardMin: 1, HardMax: 1e6, Group: "Motor"),
@@ -119,7 +119,7 @@ public sealed class MotorSizingCalculator : ICalcCalculator
             new CalcOutputPort("T_pk", "N*m", "Peak torque"),
             new CalcOutputPort("T_dec", "N*m", "Torque during deceleration (point-to-point)"),
             new CalcOutputPort("T_rms", "N*m", "RMS torque (continuous duty: the load torque)"),
-            new CalcOutputPort("T_design", "N*m", "Design torque at the motor shaft for a coupling or any part downstream that must carry what the drive can deliver, on the basis chosen in T_basis: the load peak T_pk (default), the motor peak T_peak, SF_c·T_rated or the protective limit T_lim (→ M3 T_z)"),
+            new CalcOutputPort("T_design", "N*m", "Design torque at the motor shaft for a coupling or any part downstream that must carry what the drive can deliver, on the basis chosen in T_basis: the load peak max(|T_pk|, |T_dec|) (default; T_pk in continuous duty), the motor peak T_peak, SF_c·T_rated or the protective limit T_lim (→ M3 T_z)"),
             new CalcOutputPort("T_hold", "N*m", "Holding torque the motor must give during the dwell of a linear axis not held by a brake, m g sin θ·k (0 for a rotary mechanism, a horizontal axis or a held axis)"),
             new CalcOutputPort("T_alt", "N*m", "Alternating torque amplitude of the cycle about the load torque T_load: (T_pk − T_dec)/2 on a point-to-point cycle, 0 in continuous duty (→ M4 T_a, with T_load → M4 T as the mean). At the motor shaft"),
             new CalcOutputPort("F_ax_pk", "N", "Peak axial thrust a lead / ball screw puts on its support bearings, F_load + m·a_pk (→ M5 F_a); 0 for every other mechanism (a belt or rack load reaches its bearings as a radial force)"),
@@ -224,7 +224,7 @@ public sealed class MotorSizingCalculator : ICalcCalculator
         c.Assign("T_dec", "-T_acc + T_load", "N*m", "Torque during deceleration");
         c.Assign("T_alt", "(T_pk - T_dec) / 2", "N*m", "Alternating torque amplitude of the cycle about T_load");
 
-        if (!AssignDesignTorque(c))
+        if (!AssignDesignTorque(c, true))
             return;
 
         if (mech == MechScrew)
@@ -273,10 +273,10 @@ public sealed class MotorSizingCalculator : ICalcCalculator
     }
 
     /// <summary>
-    /// The design torque on the basis the owner chose (chain.drive-train-D1): the load peak T_pk, the typed motor peak T_peak, SF_c·T_rated or the protective
+    /// The design torque on the basis the owner chose (chain.drive-train-D1, elec.motor-sizing-N2): the load peak max(|T_pk|, |T_dec|) (T_pk in continuous duty), the typed motor peak T_peak, SF_c·T_rated or the protective
     /// limit T_lim. A basis chosen without its input is blocked, never replaced by another. Returns false when blocked.
     /// </summary>
-    private static bool AssignDesignTorque(CalcRunContext c)
+    private static bool AssignDesignTorque(CalcRunContext c, bool pointToPoint)
     {
         var basis = c.InputText("T_basis");
 
@@ -299,7 +299,10 @@ public sealed class MotorSizingCalculator : ICalcCalculator
                 break;
 
             default:
-                c.Assign("T_design", "T_pk", "N*m", "Design torque: the load's peak torque (run-up included)");
+                if (pointToPoint)
+                    c.Assign("T_design", "max(abs(T_pk), abs(T_dec))", "N*m", "Design torque: the load's peak torque, the larger in magnitude of the accelerating T_pk and the braking T_dec (an overhauling drive brakes harder than it accelerates)");
+                else
+                    c.Assign("T_design", "T_pk", "N*m", "Design torque: the load's peak torque (run-up included; continuous duty has no deceleration)");
                 break;
         }
 
@@ -360,7 +363,7 @@ public sealed class MotorSizingCalculator : ICalcCalculator
         c.Assign("T_rms", "T_load", "N*m", "RMS torque: continuous running at the load torque");
         c.Assign("T_alt", "0 N*m", "N*m", "Alternating torque amplitude: none, continuous running is steady (the run-up is a rare peak, T_pk)");
 
-        if (!AssignDesignTorque(c))
+        if (!AssignDesignTorque(c, false))
             return;
 
         c.Assign("F_ax_pk", "0 N", "N", "Peak axial thrust on the bearings (none for a rotary mechanism)");

@@ -1,4 +1,4 @@
-# E5 — Fault protection: Zs, disconnection, adiabatic, fault level (`elec.fault-protection@1.3.0`)
+# E5 — Fault protection: Zs, disconnection, adiabatic, fault level (`elec.fault-protection@1.3.1`)
 
 **In plain terms.** If a live conductor touches an earthed part, the protective device must open the circuit fast enough that the fault is not dangerous. The worksheet works out the loop impedance and fault current of the circuit, whether the device opens in time, whether the protective and line conductors can carry the fault current without overheating, and whether the device can break the fault level. It demands an independent check.
 
@@ -13,6 +13,8 @@
 **Limitations.** TN only; single earth fault; no motor contribution, arc fault or IT systems; no BS 7671 table embedded.
 
 **Changes in 1.3.0 (elec.fault-protection-01, -03, -09).** `R₁ + R₂ = k_R·ρ₂₀·L·(1/S_line + 1/S_cpc)·[1 + α(θ − 20)]`: the new input `k_R` (default 1.125, range 1 to 1.5) takes the pure-copper resistivity to the cable standard's maximum conductor resistance (5 to 12 % higher), so `Z_s` is no longer understated; `k` still uses the pure `ρ₂₀`. `k_R` below 1.05 warns (rule `resistance`). Below 0.1 s without a let-through `I²t` the protective conductor has not been shown to withstand a fault near the origin, where the earth-fault current is largest: the sheet now fails the check 'Conductors against let-through at the origin' (and says so in the `let-through` warning) until `I2t_let` is entered; with it, both conductors are checked against it. A fault current outside the entered curve points is a Warning under rule `curve-range` (above the highest point the fastest time entered is an upper bound); the Block rule `curve` is the curve that does not bracket `t_req`.
+
+**Changes in 1.3.1 (chain.motor-circuit-06 remainder).** When `S_cpc` equals `S_line` and `S_line` is above 16 mm² the sheet warns (rule `cpc-full-size`): the packs link the cable step's CSA to both `S_line` and `S_cpc`, but above 16 mm² the protective conductor is normally smaller (BS 7671 Table 54.7), and the smaller conductor raises `R₁ + R₂`, `Z_s` and the adiabatic utilisation. The sheet cannot tell a link from a typed value, so the notice is raised on the equal values; enter the real `S_cpc`, or confirm the full-size conductor. No value changes.
 
 **Test cases.** `ka-mcb-b32` (with `k_R` 1, the pure resistivity: Z_s 0.7901 Ω, Z_s,max 1.3656 Ω, S_min 0.7616 mm²), `ka-mcb-b32-maximum-resistance` (the default `k_R` 1.125: Z_s 0.8451 Ω, I_f 258.55 A, u_Zs 0.6188, S_min 0.7120 mm²), `ka-fuse-curve` (t_d 0.1716 s), `ka-fault-level` (I_k3 15.942 kA) — analytic, Confirmed; `ka-wiring-matters-b32` (1.37 Ω, IET Wiring Matters March 2023) and `ka-schneider-k` (k ≈ 143, Schneider guide) — **Unconfirmed** until checked against the articles (values as the addendum quotes them). Eaton Memshield 3 non-trip data (1.13 I_n) is not used by this calculation.
 

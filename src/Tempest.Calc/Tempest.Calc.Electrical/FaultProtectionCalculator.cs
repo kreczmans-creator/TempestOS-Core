@@ -26,7 +26,7 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.Electrical, "Fault protection: Zs, disconnection, adiabatic, fault level",
+        Id, "1.3.1", CalcDiscipline.Electrical, "Fault protection: Zs, disconnection, adiabatic, fault level",
         "Automatic disconnection of supply in a TN system for one circuit: the earth fault loop impedance at the conductor's operating temperature against the device's maximum, the disconnection time, the protective conductor (and line conductor) against the adiabatic minimum, and the prospective three-phase fault at the origin against the device's breaking capacity.",
         "Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/S (k_R = 1.125 takes the pure-copper ρ_20 to the cable standard's maximum conductor resistance; k enters with the pure ρ_20)\n" +
         "Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95\n" +
@@ -169,6 +169,8 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
 
         if (c.Si("k_R") < 1.05)
             c.Warn("resistance", $"k_R: the conductor resistance factor {F(c.Si("k_R"))} leaves R₁ + R₂ at about the pure resistivity, 5 to 12 % below the cable standard's maximum conductor resistances, so Z_s is understated; use 1.125 unless the conductor resistance is measured or taken from the maker's data.");
+        if (c.Si("S_line") > 16e-6 * (1 + 1e-9) && Math.Abs(c.Si("S_cpc") - c.Si("S_line")) <= 1e-9 * c.Si("S_line"))
+            c.Warn("cpc-full-size", $"S_cpc: the protective conductor is entered equal to the line conductor ({F(c.Si("S_line") * 1e6)} mm²), as the pack link from the cable step does. Above 16 mm² the protective conductor is normally smaller (BS 7671 Table 54.7, and the cable's own earth core), and a smaller S_cpc raises R₁ + R₂, Z_s and the adiabatic utilisation; enter the real S_cpc, or confirm that this circuit has a full-size protective conductor.");
         c.Assign("Z_s", "Z_e + R_12", "ohm", "Earth fault loop impedance", "BS 7671 reg. 411.4.4");
         c.Assign("I_f", "C_min * U_0 / Z_s", "A", "Earth fault current");
 

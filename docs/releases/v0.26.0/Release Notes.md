@@ -21,7 +21,7 @@
 
 ## Upgrade
 
-No schema change. Existing databases open unchanged; issued Evidence stays immutable; the Calculation register gains `documentedBy` links as calc instances are created.
+No schema change. A saved `fp.cylinder` sheet reopened on 1.4.0 reads `L_add` as the closed length beyond the stroke (when `L_closed` is blank the buckling length is `2·stroke + L_add`, one more stroke than before): the rod-buckling check becomes more conservative and no notice is raised, so re-run and re-issue such a sheet. Existing databases open unchanged; issued Evidence stays immutable; the Calculation register gains `documentedBy` links as calc instances are created.
 
 See `CHANGELOG.md`, `docs/decisions/v0.26.0-DECISIONS.md`, `docs/reviews/` and `docs/handover/v0.26.0-handover.md`.
 
