@@ -105,7 +105,8 @@ public sealed class ElectricalTests
     public void Enclosure_Bad_Inputs_Block()
     {
         Assert.Contains(CalcRunner.Run(Enclosure, new CalcInputSet([])).Blocks, b => b.Message.StartsWith("loads", StringComparison.Ordinal));
-        Assert.Contains(CalcRunner.Run(Enclosure, With(Enclosure, 0, CalcInputValue.Quantity("T_max", 30, "degC"))).Blocks, b => b.RuleId == "limit");
+        // elec.enclosure-heat-R2: a T_max at or below the ambient is no longer refused; EnclosureHotAmbientTests pins what it gives.
+        Assert.False(CalcRunner.Run(Enclosure, With(Enclosure, 0, CalcInputValue.Quantity("T_max", 30, "degC"))).IsBlocked);
         Assert.Contains(CalcRunner.Run(Enclosure, With(Enclosure, 1, CalcInputValue.VectorOf("V_pts", [100, 50], "m^3/h"))).Blocks, b => b.RuleId == "fan-curve");
     }
 
@@ -171,7 +172,7 @@ public sealed class ElectricalTests
 
         // Every declared port is produced by a run (the fan duty only when a fan curve is given).
         Assert.All(ports.Where(p => p.Symbol is not ("V_duty" or "dp_seal" or "F_seal")), p => Assert.NotNull(r.FindOutput(p.Symbol)));
-        Assert.Equal("1.5.0", Enclosure.Template.Version);
+        Assert.Equal("1.6.0", Enclosure.Template.Version);
     }
 
     [Fact]

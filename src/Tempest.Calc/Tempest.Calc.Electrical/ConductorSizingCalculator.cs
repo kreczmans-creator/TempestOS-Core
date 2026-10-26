@@ -53,7 +53,7 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.1", CalcDiscipline.Electrical, "Conductor sizing and overload coordination",
+        Id, "1.3.0", CalcDiscipline.Electrical, "Conductor sizing and overload coordination",
         "One circuit: the design current, the smallest preferred device rating that carries it, the smallest conductor whose tabulated current-carrying capacity (your own record) carries that rating once the ambient, grouping, installation and semi-enclosed-fuse factors are applied, and the overload coordination checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z. The context (machine wiring or installation) changes the clause citations and, for a gG fuse, MCCB or MPCB entered without I₂, whether the I₂ condition may be deemed satisfied (BS 7671 installation) or I₂ must be entered (machine wiring); every other number is the same in both contexts.",
         "Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b\n" +
         "Protective device rating: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b\n" +
@@ -80,9 +80,9 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
             new CalcInputSpec("system", "Conductor system (AWG: geometry only, no AWG capacities are supplied)", CalcInputKind.Choice, Choices: [Metric, Awg], DefaultChoice: Metric, Group: "Cable"),
             new CalcInputSpec("device", "Protective device", CalcInputKind.Choice, Choices: [McbB, McbC, McbD, GgFuse, SemiEnclosed, Mccb, Mpcb], DefaultChoice: McbC, Group: "Device"),
             new CalcInputSpec("I2", "Conventional operating current I₂ (gG fuse, MCCB, MPCB: required in the machine-wiring context; a semi-enclosed fuse defaults to 2 I_n)", CalcInputKind.Quantity, "A", Min: 0.1, Max: 100000, HardMin: 0.1, HardMax: 100000, IsOptional: true, Group: "Device"),
-            new CalcInputSpec("C_a", "Ambient correction factor", CalcInputKind.Number, Default: 1, Min: 0.1, Max: 1.5, HardMin: 0.1, HardMax: 1.5, Group: "Correction factors"),
-            new CalcInputSpec("C_g", "Grouping correction factor", CalcInputKind.Number, Default: 1, Min: 0.1, Max: 1.5, HardMin: 0.1, HardMax: 1.5, Group: "Correction factors"),
-            new CalcInputSpec("C_i", "Thermal insulation correction factor", CalcInputKind.Number, Default: 1, Min: 0.1, Max: 1.5, HardMin: 0.1, HardMax: 1.5, Group: "Correction factors"),
+            new CalcInputSpec("C_a", "Ambient correction factor (1 does not apply the ambient: enter the factor for θ_a from your licensed table)", CalcInputKind.Number, Default: 1, Min: 0.1, Max: 1.5, HardMin: 0.1, HardMax: 1.5, Group: "Correction factors"),
+            new CalcInputSpec("C_g", "Grouping correction factor (at most 1)", CalcInputKind.Number, Default: 1, Min: 0.1, Max: 1, HardMin: 0.1, HardMax: 1, Group: "Correction factors"),
+            new CalcInputSpec("C_i", "Thermal insulation correction factor (at most 1)", CalcInputKind.Number, Default: 1, Min: 0.1, Max: 1, HardMin: 0.1, HardMax: 1, Group: "Correction factors"),
             new CalcInputSpec("derive_Ca", "Derive C_a from the temperatures instead of the entered factor", CalcInputKind.Boolean, Default: 0, Group: "Correction factors"),
             new CalcInputSpec("theta_ref", "Reference ambient temperature for the derived C_a", CalcInputKind.Quantity, "degC", Default: 30, Min: 0, Max: 60, HardMin: 0, HardMax: 60, Group: "Correction factors"),
             new CalcInputSpec("ratings", "Preferred device ratings", CalcInputKind.Table, Columns: RatingColumns, MaxRows: 60, IsOptional: true, Group: "Records"),
@@ -112,6 +112,9 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
             new CalcApplicabilityRule("CSA", "A conductor in the ampacity record must carry I_t,req.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("I2", "For a gG fuse, MCCB or MPCB in the machine-wiring context, I₂ must be entered (blocked without it); in the BS 7671 installation context a gG fuse to BS 88 is deemed to meet I₂ ≤ 1.45 I_z when I_n ≤ I_z, and an MCCB or MPCB without I₂ is treated the same with a warning.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("C_g", "More than one grouped circuit with C_g = 1 is probably a missing grouping factor.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("theta_a", "An ambient temperature above the reference with C_a left at 1: the ambient has not reached the sizing.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("ampacity-sense", "A cross-section entered twice (the lower capacity is used) or a capacity that falls as the cross-section grows is probably a typing slip or a mix of installation methods.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("theta_a-limit", "An ambient temperature at or above the conductor operating temperature leaves no current-carrying capacity.", CalcNoticeSeverity.Block),
         ],
         [
             new CalcTestCase("ka-three-phase-mcb-c", "Three-phase 7.5 kW (output) load on a type C MCB, θ_a 35 °C with C_a 0.91, two circuits with C_g 0.77",
@@ -147,6 +150,7 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
             new CalcOutputPort("CSA", "mm^2", "Selected conductor cross-section"),
             new CalcOutputPort("I_z", "A", "Current-carrying capacity of the selected conductor"),
             new CalcOutputPort("L", "m", "Circuit length"),
+            new CalcOutputPort("theta_op", "degC", "Conductor operating temperature for the insulation (70 PVC, 90 XLPE, the entered θ_p for 'user'; → E5 θ, E3 T_c)"),
             new CalcOutputPort("device_code", "", "Protective device type code: 1 MCB B, 2 MCB C, 3 MCB D, 4 fuse, MCCB or MPCB (→ E5 device_code)"),
         ],
         RecordKinds:
@@ -269,6 +273,8 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         if (ignored > 0)
             c.Warn("ampacity", $"ampacity: {ignored} row(s) without the {(awgMode ? "AWG gauge" : "cross-section")} for the {(awgMode ? "AWG" : "metric")} system were ignored.");
 
+        table = CheckTable(c, table, awgMode);
+
         var ratings = c.Rows("ratings").Select(r => Cell(r, "I_n", amp)).Where(x => x > 0).Distinct().Order().ToList();
 
         if (ratings.Count == 0)
@@ -332,12 +338,44 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
             }
 
             c.Record("C_a", "√[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table)", $"√[({F(thetaP)} − {F(ta)})/({F(thetaP)} − {F(tref)})]", new ScalarValue(ca), "Ambient factor, derived approximation — compare with the licensed table", sizing);
-            c.Warn("C_a", "C_a: derived approximation — compare with the licensed table.");
+            c.Warn("C_a", $"C_a: derived approximation — compare with the licensed table. It is taken against a reference ambient θ_ref of {F(tref)} °C: that must be the reference ambient of the table your capacities come from (the machine-wiring and installation tables do not all use the same one), or C_a is wrong by the difference.");
         }
         else
         {
             c.Input("C_a");
+
+            // The ambient temperature reaches the sizing only through C_a (elec.conductor-sizing-01): an ambient above the table's reference with
+            // C_a left at 1 sizes the conductor as if the ambient were the reference, so say so; an ambient at or above the conductor's own
+            // operating temperature leaves it no capacity at all.
+            var thetaPLimit = c.InputText("insulation") switch
+            {
+                Pvc => 70.0,
+                Xlpe => 90.0,
+                _ => c.Has("theta_p") ? c.InputSi("theta_p") - 273.15 : double.NaN,
+            };
+            var ambient = c.Si("theta_a") - 273.15;
+            var reference = c.InputSi("theta_ref") - 273.15;
+
+            if (!double.IsNaN(thetaPLimit) && ambient >= thetaPLimit)
+            {
+                c.Block("theta_a-limit", $"theta_a: the ambient ({F(ambient)} °C) is at or above the conductor operating temperature ({F(thetaPLimit)} °C), so the cable has no capacity left to carry current; the sizing is refused.");
+                return;
+            }
+
+            if (Math.Abs(c.Si("C_a") - 1) < 1e-12 && ambient > reference + 0.5)
+                c.Warn("theta_a", $"theta_a: the ambient {F(ambient)} °C is above the reference {F(reference)} °C but C_a is 1, so the ambient has not been applied to the conductor and it is sized as if the ambient were the reference; enter C_a from your licensed table for this ambient, or tick derive_Ca (the approximation) and compare it with the table.");
         }
+
+        // The conductor's operating temperature for its insulation (chain.motor-circuit-R1): the loop-impedance and voltage-drop steps take their resistance at it.
+        var operating = c.InputText("insulation") switch
+        {
+            Pvc => 70.0,
+            Xlpe => 90.0,
+            _ => c.Has("theta_p") ? c.InputSi("theta_p") - 273.15 : double.NaN,
+        };
+
+        if (!double.IsNaN(operating))
+            c.Assign("theta_op", c.InputText("insulation") switch { Pvc => "70 degC", Xlpe => "90 degC", _ => "theta_p" }, "degC", "Conductor operating temperature for the insulation (→ E5 θ, E3 T_c)");
 
         c.Input("C_g");
         c.Input("C_i");
@@ -365,6 +403,9 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         c.Assign("u_In", "I_n / I_z", null, "Device rating utilisation of the conductor", coordination);
 
         var outputs = new List<(string, string)> { ("I_b", "Design current"), ("I_n", "Rated current of the device"), ("C_c", "Semi-enclosed fuse factor"), ("C_a", "Ambient factor"), ("I_t_req", "Required tabulated capacity"), ("CSA", "Selected cross-section"), ("I_z", "Current-carrying capacity"), ("L", "Circuit length"), ("u_Ib", "I_b / I_n"), ("u_In", "I_n / I_z") };
+
+        if (!double.IsNaN(operating))
+            outputs.Add(("theta_op", "Conductor operating temperature for the insulation"));
 
         // I₂: inherent 1.45·I_n for MCBs; 2·I_n by default for a semi-enclosed fuse; an entered I₂ is always checked. A gG fuse (to BS 88),
         // an MCCB or an MPCB without I₂ is deemed to meet I₂ ≤ 1.45·I_z when I_n ≤ I_z only in the BS 7671 installation context: an
@@ -460,6 +501,33 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         }
 
         return list;
+    }
+
+    /// <summary>
+    /// elec.conductor-sizing-05: the ampacity record is checked for sense. A cross-section entered twice keeps its lower capacity (the unconservative reading
+    /// is never taken) and warns; a larger cross-section with a lower capacity than a smaller one warns, because a record that falls with size mixes
+    /// installation methods or has a typing slip.
+    /// </summary>
+    private static List<(double Area, double It, double Gauge)> CheckTable(CalcRunContext c, List<(double Area, double It, double Gauge)> table, bool awgMode)
+    {
+        var merged = table.GroupBy(t => Math.Round(t.Area, 9)).Select(g => g.OrderBy(t => t.It).First()).ToList();
+        var duplicates = table.Count - merged.Count;
+
+        if (duplicates > 0)
+            c.Warn("ampacity-sense", $"ampacity: {duplicates} {(awgMode ? "gauge" : "cross-section")}(s) appear more than once in the record; the lower capacity of each is used. Remove the wrong row.");
+
+        var bySize = merged.OrderBy(t => t.Area).ToList();
+
+        for (var i = 1; i < bySize.Count; i++)
+        {
+            if (bySize[i].It < bySize[i - 1].It * (1 - 1e-9))
+            {
+                c.Warn("ampacity-sense", $"ampacity: the capacity falls from {F(bySize[i - 1].It)} A ({F(bySize[i - 1].Area)} mm²) to {F(bySize[i].It)} A ({F(bySize[i].Area)} mm²) as the cross-section grows; the record probably mixes installation methods or has a typing slip.");
+                break;
+            }
+        }
+
+        return merged;
     }
 
     /// <summary>The SI value of a table cell (0 when absent); a cell without a unit is read in <paramref name="unit"/>.</summary>

@@ -19,7 +19,7 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
     public const string Sizing = "sizing (given duty)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.1", CalcDiscipline.BuildingServices, "Heat exchanger (LMTD and ε-NTU)",
+        Id, "1.3.0", CalcDiscipline.BuildingServices, "Heat exchanger (LMTD and ε-NTU)",
         "Single-phase heat exchanger with constant properties: in rating mode the duty and outlet temperatures for a given area; in sizing mode the area for a given duty. Counterflow, parallel flow, 1-shell-pass shell and tube, crossflow with both fluids unmixed (approximate), and one fluid at constant temperature.",
         "Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with one fluid at constant temperature (C_r = 0) that fluid's capacity rate is infinite, C_min is the other stream's and the constant stream leaves at its inlet temperature\n" +
         "Overall coefficient with fouling: U_f = 1/(1/U + R_f)\n" +
@@ -37,6 +37,7 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
             new CalcInputSpec("m_c", "Cold-side mass flow", CalcInputKind.Quantity, "kg/s", Default: 1, Min: 0.001, Max: 100, HardMin: 0.001, HardMax: 100, Group: "Cold side"),
             new CalcInputSpec("cp_c", "Cold-side specific heat", CalcInputKind.Quantity, "J/(kg*K)", Default: 4180, Min: 500, Max: 10000, HardMin: 1, HardMax: 1e5, Group: "Cold side"),
             new CalcInputSpec("T_c_in", "Cold-side inlet temperature", CalcInputKind.Quantity, "degC", Default: 20, Min: -40, Max: 200, HardMin: -40, HardMax: 200, Group: "Cold side"),
+            new CalcInputSpec("T_dew", "Dew point of the hot-side air, when the hot side is humid air (blank = not checked; the duty here is sensible only)", CalcInputKind.Quantity, "degC", Min: -40, Max: 60, HardMin: -80, HardMax: 100, IsOptional: true, Group: "Hot side"),
             new CalcInputSpec("U", "Overall heat transfer coefficient (clean)", CalcInputKind.Quantity, "W/(m^2*K)", Default: 1000, Min: 10, Max: 10000, HardMin: 10, HardMax: 10000, Group: "Exchanger"),
             new CalcInputSpec("R_f", "Total fouling resistance", CalcInputKind.Quantity, "m^2*K/W", Default: 0, Min: 0, Max: 0.01, HardMin: 0, HardMax: 0.1, Group: "Exchanger"),
             new CalcInputSpec("A", "Heat transfer area (rating)", CalcInputKind.Quantity, "m^2", Default: 4.18, Min: 0.01, Max: 1000, HardMin: 0.01, HardMax: 1000, IsOptional: true, Group: "Exchanger"),
@@ -58,6 +59,7 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
             new CalcApplicabilityRule("duty-unattainable", "The required duty exceeds what any area of this arrangement can transfer.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("lmtd-mismatch", "The ε-NTU duty and the LMTD duty differ by more than 2 %: the arrangement or the temperatures are inconsistent.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("crossflow-approx", "Crossflow both-unmixed effectiveness is an approximate correlation.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("condensation", "The cold-side inlet is below the dew point of the hot-side air: the coil surface can condense water, which this sensible-only duty does not include and which needs a drain.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("pinch", "An end temperature difference is zero: the area is effectively infinite.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("low-F", "F below 0.75: the 1-shell-pass arrangement is used inefficiently; consider more shell passes.", CalcNoticeSeverity.Warning),
         ],
@@ -122,6 +124,14 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
 
         var thi = c.InputSi("T_h_in");
         var tci = c.InputSi("T_c_in");
+
+        if (c.Has("T_dew"))
+        {
+            c.Input("T_dew");
+
+            if (tci < c.Si("T_dew"))
+                c.Warn("condensation", $"T_dew: the cold-side inlet ({F(tci - 273.15)} °C) is below the dew point of the hot-side air ({F(c.Si("T_dew") - 273.15)} °C). The coil surface lies between the water and the air temperature and can be below the dew point, so water condenses on the coil: the duty here is sensible only, the latent load is missing and a condensate drain is needed.");
+        }
 
         if (!(thi > tci))
         {

@@ -9,14 +9,20 @@ namespace Tempest.Calc.Library;
 public static class CalcPackTemplates
 {
     /// <summary>
-    /// Drive train: motor (E1) → shaft (M4) → bearing (M5) → bearing seat fit (M2) → coupling flange bolts (M3). E1's peak torque <c>T_pk</c> is the
-    /// peak torque the load demands at the motor shaft, run-up included (the motor's own limit <c>T_peak</c> is a check on E1, not a design torque): it is the
-    /// torque the flange bolt group (M3b, <c>mech.bolt-group</c>) carries about its centroid (<c>T_z</c>) and the torque the shaft's yield check sees
-    /// (<c>T_pk</c>, M4). The shaft's mesh forces are entered (derived for the E1 torque; re-derive them when it changes). M3 must be given its bolt pattern as an input.
+    /// Drive train: motor (E1) → shaft (M4) → bearing (M5) → bearing seat fit (M2) → coupling flange bolts (M3). The shaft (M4) is the <b>motor-side</b> shaft, the gearbox input shaft behind the
+    /// coupling: it carries the torque at the motor shaft, which E1 reports, so no ratio or efficiency is applied between them (E1 also reports the output-side torques, <c>T_out_m</c>, <c>T_out_a</c>,
+    /// <c>T_out_pk</c> and <c>n_out</c>, T·i·η and n/i, for a shaft after the ratio: bind those instead). The torque on the shaft is split as the fatigue check needs it: E1's load torque <c>T_load</c>
+    /// is the steady (mean) torque <c>T</c> and E1's <c>T_alt</c>, (T_pk − T_dec)/2 on a point-to-point cycle and 0 in continuous duty, is the alternating amplitude <c>T_a</c>; the RMS torque is a thermal
+    /// quantity and is not a shaft torque. E1's peak torque <c>T_pk</c> is the peak torque the load demands at the motor shaft, run-up included (the motor's own limit <c>T_peak</c> is a check on E1); it is the torque the shaft's yield check and key
+    /// see (<c>T_pk</c>, M4). The coupling flange bolt group (M3, <c>mech.bolt-group</c>) carries E1's design torque <c>T_design</c> about its centroid (<c>T_z</c>), on the basis the owner chooses in E1's <c>T_basis</c>:
+    /// the load peak <c>T_pk</c> (the default, as before), the motor's typed peak torque <c>T_peak</c>, a service factor on the rated torque (<c>SF_c</c>·<c>T_rated</c>) or a protective torque limit (<c>T_lim</c>); the basis is a design decision, not a calculation. E1's peak axial
+    /// thrust <c>F_ax_pk</c> (a ball screw's; 0 for a rotary mechanism) is the bearing's axial load <c>F_a</c>, peak rather than the cube-mean equivalent, so conservative for life. The bearing's speed is E1's mean motor speed over the cycle <c>n_mean</c> (the turns per cycle time, dwell included; the
+    /// steady speed in continuous duty), the speed its life in hours is counted at: the peak speed <c>n_pk</c> (still the shaft's, for its critical speed) would understate the life of a cycle with a dwell by the ratio of the two.
+    /// The shaft's mesh forces are entered (derived for the E1 torque; re-derive them when it changes). M3 must be given its bolt pattern as an input.
     /// </summary>
     public static CalcPackTemplate DriveTrain { get; } = new(
         "pack.drive-train", "Drive train",
-        "Motor sizing gives the torque and speed the shaft carries; the shaft gives the bearing load and the seat diameter; the bearing life uses the shaft reaction and the motor speed; the seat fit (a rolling-bearing bore against the shaft seat) uses the shaft diameter; the coupling flange bolts and the shaft's yield check carry the peak torque the load demands at the motor shaft. The gear mesh forces on the shaft are entered for the E1 torque and must be re-derived if it changes.",
+        "Motor sizing gives the torque and speed the shaft carries; the shaft gives the bearing load and the seat diameter; the bearing life uses the shaft reaction and the motor speed; the seat fit (a rolling-bearing bore against the shaft seat) uses the shaft diameter; the coupling flange bolts, the shaft's yield check and its key carry the peak torque the load demands at the motor shaft. The shaft is the motor-side (gearbox input) shaft: it carries the motor-shaft torque, split into a steady part and an alternating part for its fatigue check. The gear mesh forces on the shaft are entered for the E1 torque and must be re-derived if it changes.",
         [
             new CalcPackStep("e1", "elec.motor-sizing", "Motor sizing", CalcPackExamples.DriveE1),
             new CalcPackStep("m4", "mech.shaft", "Shaft", CalcPackExamples.DriveM4),
@@ -25,20 +31,23 @@ public static class CalcPackTemplates
             new CalcPackStep("m3", "mech.bolt-group", "Coupling flange bolts", CalcPackExamples.DriveM3),
         ],
         [
-            new CalcPackBinding("e1", "T_rms", "m4", "T"),
+            new CalcPackBinding("e1", "T_load", "m4", "T"),
+            new CalcPackBinding("e1", "T_alt", "m4", "T_a"),
             new CalcPackBinding("e1", "n_pk", "m4", "n"),
             new CalcPackBinding("m4", "R_A", "m5", "F_r"),
-            new CalcPackBinding("e1", "n_pk", "m5", "n"),
+            new CalcPackBinding("e1", "n_mean", "m5", "n"),
+            new CalcPackBinding("e1", "F_ax_pk", "m5", "F_a"),
             new CalcPackBinding("m4", "d_A", "m2", "D"),
             new CalcPackBinding("e1", "T_pk", "m4", "T_pk"),
-            new CalcPackBinding("e1", "T_pk", "m3", "T_z"),
+            new CalcPackBinding("e1", "T_design", "m3", "T_z"),
         ]);
 
     /// <summary>
     /// Motor circuit: motor (E1) → load budget (E6) → cable (E4) → voltage drop (E3) and fault protection (E5) →
     /// enclosure heat (E2). E1's RMS power (the thermal-equivalent continuous power, not the instantaneous peak) enters E6 as a linked
-    /// load; E6's bus current sizes the cable; the cable's size, length, rated current and device type code feed E3 and E5 (E5 is blocked
-    /// if the device chosen on it is not the one the cable step sized); E6's heat released inside the enclosure enters E2 (the linked
+    /// load, and E1's rated shaft power (<c>P_rated</c>, from the motor's rated speed) as its rating (<c>P_rated_add</c>): the supply carries the larger of the two, so a bigger motor on the same duty draws a bigger cable and device; E6's bus current sizes the cable; the cable's size, length, rated current and device type code feed E3 and E5 (the protective conductor is taken as the same size as the line conductor, <c>S_cpc</c> = the cable's CSA; above 16 mm² a smaller protective conductor is usual: unlink and enter it) (E5 is blocked
+    /// if the device chosen on it is not the one the cable step sized); E6's line voltage and the linked machine's power factor are E3's voltage and power factor, and the cable's conductor operating temperature for its insulation (70 °C PVC, 90 °C XLPE) is E5's loop temperature and E3's conductor temperature. E5's phase-to-earth
+    /// voltage <c>U_0</c> is not linked (the nominal 230 V of a 400 V system is not exactly 400/√3): on a supply other than 230/400 V set it with E6's line voltage; E6's heat released inside the enclosure enters E2 (the linked
     /// motor is outside it). The steps carry example inputs except E4's two record tables, which no build ships: the chain is refused at
     /// E4 until the user supplies his own.
     /// </summary>
@@ -56,14 +65,20 @@ public static class CalcPackTemplates
         ],
         [
             new CalcPackBinding("e1", "P_rms", "e6", "P_add"),
+            new CalcPackBinding("e1", "P_rated", "e6", "P_rated_add"),
             new CalcPackBinding("e6", "I_3ph", "e4", "I_b_in"),
             new CalcPackBinding("e4", "I_b", "e3", "I"),
             new CalcPackBinding("e4", "L", "e3", "L"),
             new CalcPackBinding("e4", "CSA", "e3", "A_c"),
+            new CalcPackBinding("e6", "U_L", "e3", "V_n"),
+            new CalcPackBinding("e6", "pf_link", "e3", "cos_phi"),
+            new CalcPackBinding("e4", "theta_op", "e3", "T_c"),
             new CalcPackBinding("e4", "CSA", "e5", "S_line"),
+            new CalcPackBinding("e4", "CSA", "e5", "S_cpc"),
             new CalcPackBinding("e4", "L", "e5", "L"),
             new CalcPackBinding("e4", "I_n", "e5", "I_n"),
             new CalcPackBinding("e4", "device_code", "e5", "device_code"),
+            new CalcPackBinding("e4", "theta_op", "e5", "theta"),
             new CalcPackBinding("e6", "Phi", "e2", "P_add"),
         ]);
 
@@ -77,7 +92,7 @@ public static class CalcPackTemplates
     /// </summary>
     public static CalcPackTemplate WetHeating { get; } = new(
         "pack.wet-heating", "Wet heating",
-        "Sizes a wet heating circuit from the rooms to the circulator: room heat losses, emitters and expansion vessel, the pipework and pump at the flow that heat needs, and the motor that drives the pump. The loop is closed (no static lift) and the example load is small, so the pump duty is a deliberately tiny illustration. The pipework water content in the sealed system is entered by hand from the pipework's V_pipe, because a link back from B1 would be a cycle.",
+        "Sizes a wet heating circuit from the rooms to the circulator: room heat losses, emitters and expansion vessel, the pipework and pump at the flow that heat needs, and the motor that drives the pump. The loop is closed (no static lift) and the example load is small, so the pump duty is a deliberately tiny illustration. The pipework water content in the sealed system is entered by hand from the pipework's V_pipe, because a link back from B1 would be a cycle (the sealed-system step warns while it is left at its 20 L default). Each room's design temperature (B4's θ_int) is the room temperature of that room's emitter. The pump head covers pipe friction only unless the water-side loss of the boiler or heat exchanger, valves and emitters is entered as the outlet head h_out of the pipework step (the step warns while it is 0). The pipework step is on water: a glycol loop must be given the custom fluid with its density and viscosity (the step warns when the specific heat is not water's).",
         [
             new CalcPackStep("b4a", "bs.room-heat-loss", "Room A heat loss", CalcPackExamples.WetRoomA),
             new CalcPackStep("b4b", "bs.room-heat-loss", "Room B heat loss", CalcPackExamples.WetRoomB),
@@ -88,6 +103,8 @@ public static class CalcPackTemplates
         [
             new CalcPackBinding("b4a", "Phi_HL", "b6", "rooms", Row: 0, Column: "Phi"),
             new CalcPackBinding("b4b", "Phi_HL", "b6", "rooms", Row: 1, Column: "Phi"),
+            new CalcPackBinding("b4a", "theta_int", "b6", "rooms", Row: 0, Column: "t_i"),
+            new CalcPackBinding("b4b", "theta_int", "b6", "rooms", Row: 1, Column: "t_i"),
             new CalcPackBinding("b6", "Phi_tot", "b1", "Phi_load"),
             new CalcPackBinding("b6", "dT_fr", "b1", "dT_load"),
             new CalcPackBinding("b6", "t_m", "b1", "T"),
@@ -106,7 +123,7 @@ public static class CalcPackTemplates
     /// </summary>
     public static CalcPackTemplate Cooling { get; } = new(
         "pack.cooling", "Enclosure cooling",
-        "Takes the heat a control panel dissipates, finds what the enclosure cannot lose naturally, sizes the water-cooled air coil that removes it at the enclosure's temperature limit and the pipework and pump that carry the cooling water.",
+        "Takes the heat a control panel dissipates, finds what the enclosure cannot lose naturally, sizes the water-cooled air coil that removes it at the enclosure's temperature limit and the pipework and pump that carry the cooling water. The coil duty is sensible only: when the water enters below the dew point of the enclosure air the coil condenses water (a latent load and a drain this chain does not size), and the coil step warns when its optional dew point is entered. The pump head covers pipe friction only unless the coil's water-side loss, valves and plant are entered as the outlet head h_out of the pipework step (the step warns while it is 0). The pipework step is on water, so a glycol mixture reaches it as a specific heat and mass flow only: for a glycol cold side give the pipework step the custom fluid with the mixture's density and viscosity (the step warns when the specific heat is not water's). A hot ambient at or above the enclosure's temperature limit does not stop the chain: the enclosure step then gives the duty the unit must remove, the heat inside plus the heat the walls gain from the ambient, P_cool = P + h·A_eff·(T_amb − T_max), and the coil is sized for it (no ventilation airflow or fan duty is given in that case).",
         [
             new CalcPackStep("e6", "elec.load-budget", "Panel load budget", CalcPackExamples.CoolE6),
             new CalcPackStep("e2", "elec.enclosure-heat", "Enclosure heat", CalcPackExamples.CoolE2),
@@ -146,7 +163,7 @@ public static class CalcPackTemplates
     /// </summary>
     public static CalcPackTemplate SteelSupport { get; } = new(
         "pack.steel-support", "Steel support",
-        "Combines the actions on an equipment support, analyses the steel frame, checks the column, designs the bracket's bolted joint and the column base plate, and files the anchorage design done elsewhere as Evidence. The links assume the frame's numbering: nodes 1 (column base, fixed), 2 (column top), 3 (arm tip); member 1 the column, member 2 the arm; the first load row the vertical load at node 3 (filled from the load combinations), the second the horizontal design action at node 2. Signs: the column check takes the axial force tension positive (S2's N_e1), the base plate takes it compression positive (S2's R1_y). One ULS case is analysed (every action unfavourable); the favourable-permanent case is not.",
+        "Combines the actions on an equipment support, analyses the steel frame, checks the column, checks the bolts of the bracket's joint, designs the column base plate and files the anchorage design done elsewhere as Evidence. What it does not do: the arm joint is checked at the bolts only (shear, bearing on the thinner ply, tension, combined and block tearing), not the end plate in bending with prying, the weld, the column flange in bending or the column web; the bolt group must be symmetric with the load concentric, because the per-bolt shear and tension come from the governing bolt; the column is checked in its plane only, with no lateral-torsional buckling check (the column step warns) and the minor-axis moment typed 0; the bolt group's bolt resistances are typed copies of the arm connection step's (change them together; a test guards them); the anchorage is not assessed unless the report's governing utilisation is entered in the base plate step, and the base plate's utilisation excludes it; and nothing checks the frame's numbering below. The links assume the frame's numbering: nodes 1 (column base, fixed), 2 (column top), 3 (arm tip); member 1 the column, member 2 the arm; the first load row the vertical load at node 3 (filled from the load combinations), the second the horizontal design action at node 2. Signs: the column check takes the axial force tension positive (S2's N_e1), the base plate takes it compression positive (S2's R1_y). One ULS case is analysed (every action unfavourable); the favourable-permanent case is not.",
         [
             new CalcPackStep("s5", "struct.load-combinations", "Load combinations", CalcPackExamples.SteelS5),
             new CalcPackStep("s2", "struct.frame-2d", "Support frame", CalcPackExamples.SteelS2),
@@ -181,7 +198,8 @@ public static class CalcPackTemplates
     /// <para>
     /// F1 → F2: the swept volume of the larger stroke (<c>dV</c>, L) is the liquid the accumulator must deliver for an emergency stroke (or store), and the supply
     /// pressure (<c>p</c>, bar gauge) is its highest working pressure <c>p_2</c>: the accumulator charges to the pressure the pump holds. The lowest working pressure
-    /// <c>p_1</c> and the pre-charge are the user's. The linked <c>p</c> is a gauge pressure, so the accumulator's <c>p_basis</c> must stay Gauge (its default): in Absolute mode the
+    /// <c>p_1</c> and the pre-charge are the user's; F1's <c>p_push</c> (the pressure the push load needs at the cylinder, gauge) is F2's <c>p_load</c>, so F2 checks that <c>p_1</c> still carries the push load, and the real-gas factor
+    /// <c>f_rg</c> (the user's, from a gas-property source; 1.311 here) makes the ideal-gas volume the real nitrogen's. The linked <c>p</c> is a gauge pressure, so the accumulator's <c>p_basis</c> must stay Gauge (its default): in Absolute mode the
     /// value would be read one atmosphere low, and the accumulator sheet warns (<c>link-basis</c>). F1 → B1: B1 judges the line F1 judges, the line to the cylinder cap port, so it takes F1's cap-port line flow (<c>Q_prs</c>,
     /// L/min to m³/h: the larger of the two strokes, the retract discharge Q·A_b/A_a), the oil density (<c>rho</c>, to the custom fluid's <c>rho_custom</c>) and the line bore
     /// (<c>d_prs</c>, to the first segment's <c>D</c> by a table-cell link), so revising the cylinder's line bore makes the pressure line stale. B1 is not given a pump, so its
@@ -223,6 +241,7 @@ public static class CalcPackTemplates
         [
             new CalcPackBinding("f1", "dV", "f2", "dV"),
             new CalcPackBinding("f1", "p", "f2", "p_2"),
+            new CalcPackBinding("f1", "p_push", "f2", "p_load"),
             new CalcPackBinding("f1", "Q_prs", "b1", "Q"),
             new CalcPackBinding("f1", "rho", "b1", "rho_custom"),
             new CalcPackBinding("f1", "d_prs", "b1", "segments", Row: 0, Column: "D"),
@@ -232,10 +251,13 @@ public static class CalcPackTemplates
             new CalcPackBinding("e4", "I_b", "e3", "I"),
             new CalcPackBinding("e4", "L", "e3", "L"),
             new CalcPackBinding("e4", "CSA", "e3", "A_c"),
+            new CalcPackBinding("e4", "theta_op", "e3", "T_c"),
             new CalcPackBinding("e4", "CSA", "e5", "S_line"),
+            new CalcPackBinding("e4", "CSA", "e5", "S_cpc"),
             new CalcPackBinding("e4", "L", "e5", "L"),
             new CalcPackBinding("e4", "I_n", "e5", "I_n"),
             new CalcPackBinding("e4", "device_code", "e5", "device_code"),
+            new CalcPackBinding("e4", "theta_op", "e5", "theta"),
             new CalcPackBinding("e1", "P_rated", "e9", "P"),
             new CalcPackBinding("e4", "CSA", "e9", "A_c"),
             new CalcPackBinding("e4", "L", "e9", "L_cab"),
@@ -245,7 +267,7 @@ public static class CalcPackTemplates
 
     /// <summary>
     /// Mechanism review: cam (M9) → return spring (M7), cam shaft (M4) → bearing (M5), geared motor (E1) → supply cable (E4). The cam step is the source of everything: its spring force at full lift (<c>F_spring_max</c>, N) is the spring's working force at full
-    /// lift; its roller contact force (<c>F_pin_pk</c>, N) is the radial load at the cam on the shaft (a table-cell link into the load row, N to kN), its RMS and peak input torque (<c>T_rms_in</c>, <c>input_torque</c>, N·m to kN·m) the torque and the peak
+    /// lift; its roller contact force (<c>F_pin_pk</c>, N) is the radial load at the cam on the shaft (a table-cell link into the load row, N to kN), its peak input torque (<c>input_torque</c>, N·m to kN·m) the alternating torque amplitude and the peak
     /// torque of the shaft, and its speed (<c>n_in</c>) the shaft's, the bearing's and the motor's load speed; the shaft's reaction at bearing A (<c>R_A</c>, kN) is the bearing's radial load; the cam's RMS torque is the motor's continuous load torque (the motor runs at its 1440 rpm nameplate speed through the 9.6:1 gearbox); and the
     /// motor's nameplate rated power (<c>P_rated</c>, from <c>n_rated</c>) sizes the supply cable.
     /// <para>
@@ -257,16 +279,16 @@ public static class CalcPackTemplates
     /// rate no longer matches the spring's makes M7 warn <c>travel-mismatch</c> instead of silently still checking.
     /// </para>
     /// <para>
-    /// The cam's RMS torque enters the shaft's steady-torque input <c>T</c> as a stand-in: M4 models the bending as fully reversed and the torque as steady, whereas the cam's torque (a frictionless spring system) is fully alternating, mean zero,
-    /// ranging −9.61 to +10.11 N·m. In this example bending dominates and a chain test recomputes M4's fatigue factor with the torque taken as fully alternating (σ′ₐ = √(σₐ² + 3τₐ²)) and shows the margin; on a torque-dominated or keyed section the
-    /// RMS-as-steady mapping would understate the alternating stress. M4 is unchanged. The peak input torque is checked against the motor's peak torque by a test (E1 is judged on the RMS torque, as the motor's thermal duty). The motor runs at
+    /// The cam's torque (a frictionless spring system) is fully alternating about a mean of zero, ranging −9.61 to +10.11 N·m, so the shaft takes it as an alternating torque: the cam's peak input torque <c>input_torque</c>
+    /// (the largest |T_in|, a conservative amplitude) is the shaft's alternating amplitude <c>T_a</c> and its peak torque <c>T_pk</c>, and the shaft's steady torque <c>T</c> is left at 0 (a test guards that the cam's mean torque is small). The RMS torque is a thermal quantity
+    /// and goes to the motor only. The peak input torque is checked against the motor's peak torque by a test (E1 is judged on the RMS torque, as the motor's thermal duty). The motor runs at
     /// its 1440 rpm nameplate through a 9.6:1 gearbox. The cable step opens blocked until the user supplies his own cable-capacity and device-rating tables, which no build ships: the pack cannot be checked or issued until then (nothing takes from
     /// the cable step, so the pack is created, not refused).
     /// </para>
     /// </summary>
     public static CalcPackTemplate MechanismReview { get; } = new(
         "pack.mechanism-review", "Mechanism review",
-        "Takes a cam mechanism through to its supply: the cam's motion, pressure angle, undercut and follower force; the return spring that holds the follower on the cam; the cam shaft that carries the contact force and the torque; the bearing on that shaft; the geared motor that drives the cam; and the cable that supplies the motor. The cam's spring force, contact force, torques and speed reach each step by link; the cable tables are entered by the user, as no build ships them.",
+        "Takes a cam mechanism through to its supply: the cam's motion, pressure angle, undercut and follower force; the return spring that holds the follower on the cam; the cam shaft that carries the contact force and the cam's alternating torque; the bearing on that shaft; the geared motor that drives the cam; and the cable that supplies the motor. The cam's spring force, contact force, torques and speed reach each step by link; the cable tables are entered by the user, as no build ships them.",
         [
             new CalcPackStep("m9", "mech.mechanism", "Tamper cam", CalcPackExamples.CamM9),
             new CalcPackStep("m7", "mech.spring", "Follower return spring", CalcPackExamples.CamM7),
@@ -281,7 +303,7 @@ public static class CalcPackTemplates
             new CalcPackBinding("m9", "lift", "m7", "s_work"),
             new CalcPackBinding("m9", "f_in", "m7", "f_op"),
             new CalcPackBinding("m9", "F_pin_pk", "m4", "loads", Row: 0, Column: "F_y"),
-            new CalcPackBinding("m9", "T_rms_in", "m4", "T"),
+            new CalcPackBinding("m9", "input_torque", "m4", "T_a"),
             new CalcPackBinding("m9", "input_torque", "m4", "T_pk"),
             new CalcPackBinding("m9", "n_in", "m4", "n"),
             new CalcPackBinding("m4", "R_A", "m5", "F_r"),
@@ -295,7 +317,7 @@ public static class CalcPackTemplates
     /// Actuated linkage: slider-crank (M9) → hydraulic cylinder (F1) → accumulator (F2). A slider-crank ejector is to be replaced by a cylinder. The linkage's peak slide speed (<c>output_motion</c>, m/s to mm/s) is the extend speed the cylinder must
     /// reach (<c>v_req</c>, which gives the flow and replaces the entered one) and its peak slide-direction force (<c>follower_force</c>, N to kN) is the load to push and, conservatively, to pull. <b>This is a kinematic proxy</b> (DB-04): a cylinder-actuated
     /// linkage runs at about constant cylinder speed, not at constant crank speed, so the crank's peak speed and force are what the cylinder must match, not what it would reproduce through the whole stroke. The cylinder's stroke is the slider's
-    /// (twice the crank radius), typed and guarded, as the linkage has no stroke port. F1 → F2 as in the hydraulic power unit: the swept volume of the larger stroke and the supply pressure (a gauge pressure; the accumulator's basis stays Gauge) size an emergency-stroke accumulator.
+    /// (twice the crank radius), typed and guarded, as the linkage has no stroke port. F1 → F2 as in the hydraulic power unit: the swept volume of the larger stroke and the supply pressure (a gauge pressure; the accumulator's basis stays Gauge) size an emergency-stroke accumulator, whose lowest working pressure is checked against the pressure the push load needs (F1's <c>p_push</c> to F2's <c>p_load</c>).
     /// </summary>
     public static CalcPackTemplate ActuatedLinkage { get; } = new(
         "pack.actuated-linkage", "Actuated linkage",
@@ -311,6 +333,7 @@ public static class CalcPackTemplates
             new CalcPackBinding("m9", "follower_force", "f1", "F_pull"),
             new CalcPackBinding("f1", "dV", "f2", "dV"),
             new CalcPackBinding("f1", "p", "f2", "p_2"),
+            new CalcPackBinding("f1", "p_push", "f2", "p_load"),
         ]);
 
     /// <summary>
@@ -382,7 +405,7 @@ public static class CalcPackTemplates
     /// </summary>
     public static CalcPackTemplate PipeworkSupports { get; } = new(
         "pack.pipework-supports", "Pipework supports",
-        "Takes the force a heated pipe puts on its anchor from the pipe-expansion step to the steel post that holds the anchor and the post's base plate, and files the anchorage design done elsewhere as Evidence. The links assume the post frame's numbering: node 1 the column base (fixed), node 2 the anchor, member 1 the post, the first load row the thermal force along the pipe; the weight in the second row and the load factors are the user's. The pipe step is a screening: a line that fails it needs a formal stress analysis, and its moment is not carried to the post. The holding-down bolt data are typed (no bolt-check step).",
+        "Takes the force a heated pipe puts on its anchor from the pipe-expansion step to the steel post that holds the anchor and the post's base plate, and files the anchorage design done elsewhere as Evidence. The anchor force holds no support friction unless the pipe-expansion step is given the friction coefficient and the weight per metre (it warns when they are not); the force on the post is then the leg's alone. The links assume the post frame's numbering: node 1 the column base (fixed), node 2 the anchor, member 1 the post, the first load row the thermal force along the pipe; the weight in the second row and the load factors are the user's. The pipe step is a screening: a line that fails it needs a formal stress analysis, and its moment is not carried to the post. The holding-down bolt data are typed (no bolt-check step).",
         [
             new CalcPackStep("b8", "bs.pipe-expansion", "Pipe expansion and anchor force", CalcPackExamples.PipeB8),
             new CalcPackStep("s2", "struct.frame-2d", "Anchor post frame", CalcPackExamples.PipeS2),
@@ -399,8 +422,8 @@ public static class CalcPackTemplates
     /// Electronics enclosure: PCB power trace (E7) → load budget (E6) → enclosure heat (E2) → cover latches (M8) and cover plate (S9).
     /// <para>
     /// E7 → E6: the trace's I²R loss (<c>trace_Ploss</c>, W) is the input power of a row of the board's load table (<c>loads</c> row 0, column <c>P</c>, kW), a table-cell link; all of it is released as heat inside the enclosure
-    /// (the row's heat share is 1). E6 → E2: the heat the loads release inside (<c>Phi</c>, kW) is the enclosure's additional load (<c>P_add</c>, W), as in the cooling chain. The supply's own loss is a TYPED row of the load table (E6 counts it
-    /// only if it is a row); a test guards it against the loads. E2 → M8: the enclosure's internal temperature (<c>T_int</c>) is the latches' temperature of use (<c>T_use</c>). The enclosure is sealed (<c>T_seal</c>) with a
+    /// (the row's heat share is 1). E6 → E2: the heat the loads release inside (<c>Phi</c>, kW) is the enclosure's additional load (<c>P_add</c>, W), as in the cooling chain. The supply's own loss is E6's own: with the supply's bus and efficiency entered it adds the DC loads' draw × (1/η − 1)
+    /// to the heat, so it follows the loads. E2 → M8: the enclosure's internal temperature (<c>T_int</c>) is the latches' temperature of use (<c>T_use</c>). The enclosure is sealed (<c>T_seal</c>) with a
     /// pressure-compensation breather (<c>dp_relief</c>), so the air warming from the sealing temperature to <c>T_int</c> at constant volume would put p0·(T_int/T_seal − 1) across the walls (an upper bound) and the breather
     /// limits it: <c>dp_seal</c> = min of the two. E2 → S9: <c>dp_seal</c> is the uniform pressure <c>q</c> on the cover plate. E2 → M8: the force <c>F_seal</c> = <c>dp_seal</c>·<c>A_cover</c> on the cover is the force <c>F_req</c> the
     /// <c>n_latch</c> latches (typed: six) must hold, each by its separation force W′; M8 checks <c>F_req</c> ≤ n·W′. The cover area is typed in E2 and in the plate's dimensions (a test guards the match).

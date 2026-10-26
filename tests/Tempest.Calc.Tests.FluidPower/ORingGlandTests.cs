@@ -263,12 +263,31 @@ public sealed class ORingGlandTests
         CalcInputValue[] Face = [CalcInputValue.Choice("type", ORingGlandCalculator.TypeFace)];
         var face = Run(Face);
         Assert.False(face.IsBlocked, string.Join("; ", face.Blocks.Select(b => b.Message)));
-        // Face depth 2.7 to 2.75 mm, ring section 3.4 to 3.6 mm, before the thermal and reduction effects.
+        // The ring is compressed over the groove depth plus the flange gap (fp.oring-gland-01): depth 2.70 to 2.75 mm plus the 0.05 to 0.10 mm gap, so 2.75 to 2.85 mm, ring section 3.4 to 3.6 mm, before the thermal and reduction effects.
         var plain = Run(Plain(Face));
-        Assert.Equal((1 - 2.75 / 3.4) * 100, Pct(plain, "squeeze_min"), 9);
-        Assert.Equal((1 - 2.70 / 3.6) * 100, Pct(plain, "squeeze_max"), 9);
+        Assert.Equal((1 - 2.85 / 3.4) * 100, Pct(plain, "squeeze_min"), 9);
+        Assert.Equal((1 - 2.75 / 3.6) * 100, Pct(plain, "squeeze_max"), 9);
         Assert.Equal(0.1e-3, plain.OutputSi("gap_max"), 12);
         Assert.Contains(Run(CalcInputValue.Choice("type", ORingGlandCalculator.TypeFace), CalcInputValue.Choice("duty", ORingGlandCalculator.DutyDynamic)).Warnings, w => w.RuleId == "face");
+    }
+
+    [Fact]
+    public void A_Face_Seal_Is_Compressed_Over_The_Groove_Depth_Plus_The_Flange_Gap()
+    {
+        // fp.oring-gland-01: e_f 0.5 mm (+0.05) gave squeeze_min 16.023 % and a pass, the same as e_f 0.05: the ring was taken as squeezed between the groove bottom and a flange that touches. With the flanges
+        // e_f apart the compression height is h_f + e_f (2.70 + 0.5 = 3.20 to 2.75 + 0.55 = 3.30 mm against a 3.4 to 3.6 mm section).
+        CalcInputValue[] Face = [CalcInputValue.Choice("type", ORingGlandCalculator.TypeFace)];
+        var closed = Run(Plain([.. Face, Mm("e_f", 0.05), Mm("e_f_u", 0.05), Mm("e_f_l", 0)]));
+        var open = Run(Plain([.. Face, Mm("e_f", 0.5), Mm("e_f_u", 0.05), Mm("e_f_l", 0)]));
+        Assert.Equal((1 - 2.85 / 3.4) * 100, Pct(closed, "squeeze_min"), 9);
+        Assert.Equal((1 - 3.30 / 3.4) * 100, Pct(open, "squeeze_min"), 9);
+        Assert.Equal((1 - 3.20 / 3.6) * 100, Pct(open, "squeeze_max"), 9);
+        Assert.True(Pct(open, "squeeze_min") < Pct(closed, "squeeze_min"));
+        Assert.Contains(open.Checks, c => c.Name.StartsWith("Squeeze minimum", StringComparison.Ordinal) && !c.Passed);
+        Assert.False(open.Passed);
+
+        // The gap is also the extrusion gap: the same e_f still sets gap_max.
+        Assert.Equal(0.55e-3, open.OutputSi("gap_max"), 12);
     }
 
     [Fact]
@@ -545,8 +564,10 @@ public sealed class ORingGlandTests
         Assert.Null(Run(CalcInputValue.Choice("face_p", ORingGlandCalculator.PressureInternal)).FindOutput("od_comp"));
 
         // The compressed ring thickens (at the hot end the OD compression is 3.86 %): squeeze_max and fill_max exceed those of the same ring without the correction.
-        Assert.Equal(26.9136545944, Pct(internalFace, "squeeze_max"), 7);
-        Assert.Equal(82.6242783141, Pct(internalFace, "fill_max"), 7);
+        // (the depth is h_f + e_f = 2.75 + 0.05 mm at its smallest here, so squeeze_max is 1 − (1 − 0.269136545944)·2.80/2.75 = 25.5848119507 %; it was 26.9136545944 % with the gap left out)
+        Assert.Equal(25.5848119507, Pct(internalFace, "squeeze_max"), 7);
+        // (the groove area b·(h_f + e_f) − 2(1 − π/4)r² grows from 4.9 × 2.75 to 4.9 × 2.80 mm²: fill_max 82.6242783141 × 13.45783/13.70283 = 81.1469962162 %)
+        Assert.Equal(81.1469962162, Pct(internalFace, "fill_max"), 7);
         Assert.Equal(0.0386191240, Step(internalFace, "c_h"), 9);
     }
 
@@ -755,7 +776,7 @@ public sealed class ORingGlandTests
     [Fact]
     public void The_Template_Version_Is_Bumped_For_The_Changed_Model()
     {
-        Assert.Equal("1.2.1", Gland.Template.Version);
+        Assert.Equal("1.4.0", Gland.Template.Version);
     }
 
     [Fact]

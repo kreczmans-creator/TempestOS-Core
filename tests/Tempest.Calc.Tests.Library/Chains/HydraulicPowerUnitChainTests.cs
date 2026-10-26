@@ -53,8 +53,8 @@ public sealed class HydraulicPowerUnitChainTests
         // F1 1.2.0 moved these (independent hand recompute): the rod is judged at the stall thrust p·A_b (125.66 kN, above the 80 kN push), and the 20 mm
         // cap-port line at the retract flow Q·A_b/A_a = 75.63 L/min, 4.01 m/s against the 5 m/s placeholder limit (a 16 mm line read 6.27 m/s and failed, so the pack uses 20 mm).
         var stall = 160e5 * areaBore;
-        Assert.Equal(stall * 3.5 / 1787806.9776735522, Si(f1, "u_buck"), 9);
-        Assert.Equal(0.2460125600778818, Si(f1, "u_buck"), 9);
+        Assert.Equal(stall * 3.5 / 1465707.6880828117, Si(f1, "u_buck"), 9);
+        Assert.Equal(0.3000755028295391, Si(f1, "u_buck"), 9);
         var areaRod = Math.PI * 0.07 * 0.07 / 4;
         var capFlow = 28e-6 * 1450 / 60 * 0.95 * areaBore / (areaBore - areaRod);
         Assert.Equal(capFlow / (Math.PI * 0.02 * 0.02 / 4), Si(f1, "v_prs"), 9);
@@ -77,15 +77,29 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.True(InputSi(f2, "p_1") > 80e3 / (areaBore * 0.95), "the lowest working pressure must still finish the stroke under load");
         Assert.Equal(107.2, 80e3 / (areaBore * 0.95) / 1e5, 1);
 
+        // chain.hydraulic-power-unit-02: F1's p_push (the pressure the push load needs at the cylinder, gauge) is F2's p_load, so F2 checks that its lowest working pressure p_1 still carries the push.
+        Assert.Equal(80e3 / (areaBore * 0.95), Si(f1, "p_push"), 6);
+        Assert.Equal(Si(f1, "p_push"), InputSi(f2, "p_load"), 6);
+        Assert.Equal(Si(f1, "p_push") / 120e5, Si(f2, "u_load"), 9);
+        Assert.Contains(f2.Links, l => l.Input.Symbol == "p_load");
+        Assert.DoesNotContain(f2.Warnings, w => w.RuleId == "load-pressure");
+
         // F2 (1.3.0): an emergency stroke is held at p2, charged slowly (isothermal) and discharged at n = 1.4: V0 = f_T·ΔV·(p2/p0)/[(p2/p1)^(1/n) − 1] on absolute pressures, a 10 to 50 °C range.
         // python3: ΔV 3.926990816987242 L, p0 106.01325, p1 121.01325, p2 161.01325 bar abs, f_T 323.15/283.15: 30.080873024534817 L (the one-exponent form gave 26.695181275084906 L, 12.7 % less).
-        Assert.Equal(30.080873024534817e-3, Si(f2, "V0"), 12);
-        Assert.Equal(26.695181275084906e-3 * 1.1268278238893188, Si(f2, "V0"), 12);
+        // chain.hydraulic-power-unit-01: the ideal gas is short for nitrogen at 161 bar abs; the pack enters the real-gas factor f_rg = 1.311 (reference equation of state for nitrogen, hold at 160 bar gauge at 10 °C then the isentropic stroke:
+        // 39.432 L against the 30.081 L of the ideal gas), so V0 = 1.311 × 30.080873024534817 = 39.4360 L, which covers the 39.43 L the stroke needs.
+        Assert.Equal(1.311, InputSi(f2, "f_rg"), 12);
+        Assert.Equal(30.080873024534817e-3 * 1.311, Si(f2, "V0"), 12);
+        Assert.Equal(26.695181275084906e-3 * 1.1268278238893188 * 1.311, Si(f2, "V0"), 12);
+        Assert.InRange(Si(f2, "V0") * 1e3, 39.432, 39.44);
         Assert.Equal(0.9733851458414678, Si(f2, "u_r0"), 9);
         Assert.Equal(0.43334029084376174, Si(f2, "u_rp"), 9);
-        Assert.Equal(2, f2.Checks.Count);
+        Assert.Equal(3, f2.Checks.Count);
         Assert.All(f2.Checks, c => Assert.True(c.Passed, c.Name));
         Assert.DoesNotContain(f2.Warnings, w => w.RuleId is "exponent" or "realgas" or "shock" or "process");
+
+        // fp.accumulator-R2: n = 1.4 is the ideal-gas exponent; the sheet says its real-gas factor is applied on top and must be the discharge path's.
+        Assert.Contains("applied on top", Assert.Single(f2.Warnings, w => w.RuleId == "exponent-real").Message, StringComparison.Ordinal);
         Assert.Contains("charged slowly to p_2", f2.Outputs.Single(o => o.Symbol == "process").Text, StringComparison.Ordinal);
 
         // F1 → B1: the pressure line B1 judges is the line F1 judges, the line to the cylinder cap port: its flow Q_prs (L/min into m³/h) is the larger of the two strokes,
@@ -152,7 +166,7 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(Si(e1, "T_load") * omega, Si(e1, "P_cont"), 6);
         Assert.Equal(11805.938169574532, Si(e1, "P_cont"), 6);
         Assert.Equal(Si(e1, "P_cont"), Si(e1, "P_rms"), 6);
-        Assert.Equal(3, e1.Checks.Count);
+        Assert.Equal(4, e1.Checks.Count);
         Assert.All(e1.Checks, c => Assert.True(c.Passed, c.Name));
         Assert.Equal(0.8099023351401162, Si(e1, "u_rms"), 9);
 
@@ -180,44 +194,46 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.All(e4.Checks, c => Assert.True(c.Passed, c.Name));
 
         // E4 → E3: the design current I_b (A), the length L (m) and the conductor area CSA (mm²) are the cable the voltage drop is judged on (three-phase, 400 V; the power factor is the motor's, typed equal to E4's).
-        Assert.Equal(["A_c", "I", "L"], e3.Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
+        Assert.Equal(["A_c", "I", "L", "T_c"], e3.Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
+        Assert.Equal(70 + 273.15, InputSi(e3, "T_c"), 9);
         Assert.Equal(Si(e4, "I_b"), InputSi(e3, "I"), 9);
         Assert.Equal(Si(e4, "L"), InputSi(e3, "L"), 9);
         Assert.Equal(Si(e4, "CSA"), InputSi(e3, "A_c"), 15);
         Assert.Equal(InputSi(e4, "cos_phi"), InputSi(e3, "cos_phi"), 15);
         Assert.Equal(InputSi(e4, "U"), InputSi(e3, "V_n"), 12);
 
-        // E3: ρ_70 = 0.01724 (1 + 0.00393 · 50) = 0.0206277 Ω·mm²/m; R = ρ_70 L/A = 0.061883 Ω; X = 0.08 Ω/km · 30 m = 0.0024 Ω; ΔV = √3 I (R cos φ + X sin φ) = 3.1562 V (0.789 % of 400 V).
-        var rho70 = 0.01724 * (1 + 0.00393 * 50);
+        // E3: ρ_70 = 0.0194 (1 + 0.00393 · 50) = 0.0232121 Ω·mm²/m (the default resistivity, the cable standard's largest class 2 maximum); R = ρ_70 L/A = 0.069636 Ω; X = 0.08 Ω/km · 30 m = 0.0024 Ω;
+        // ΔV = √3 I (R cos φ + X sin φ) = 3.5428 V (0.886 % of 400 V) (python3).
+        var rho70 = 0.0194 * (1 + 0.00393 * 50);
         Assert.Equal(rho70 * 30 / 10, Si(e3, "R"), 12);
-        Assert.Equal(0.06188297999999999, Si(e3, "R"), 12);
+        Assert.Equal(0.0696363, Si(e3, "R"), 12);
         Assert.Equal(0.0024, Si(e3, "X"), 12);
         Assert.Equal(Math.Sqrt(3) * Si(e4, "I_b") * (Si(e3, "R") * 0.86 + Si(e3, "X") * Math.Sqrt(1 - 0.86 * 0.86)), Si(e3, "dV"), 9);
-        Assert.Equal(3.1562182118909865, Si(e3, "dV"), 9);
-        Assert.Equal(0.7890545529727465, Si(e3, "dV_pct"), 9);
-        Assert.Equal(207.97164114612576, Si(e3, "P_loss"), 6);
+        Assert.Equal(3.5427654814918457, Si(e3, "dV"), 9);
+        Assert.Equal(0.8856913703729614, Si(e3, "dV_pct"), 9);
+        Assert.Equal(234.028412890652, Si(e3, "P_loss"), 6);
         Assert.Single(e3.Checks);
         Assert.All(e3.Checks, c => Assert.True(c.Passed, c.Name));
 
         // E4 → E5: the conductor area (the line conductor), the length, the device rating and the device type code; the protective conductor is typed the cable's size (guarded), and the transformer is entered here, once.
-        Assert.Equal(["I_n", "L", "S_line", "device_code"], e5.Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
+        Assert.Equal(["I_n", "L", "S_cpc", "S_line", "device_code", "theta"], e5.Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
         Assert.Equal(Si(e4, "CSA"), InputSi(e5, "S_line"), 15);
         Assert.Equal(Si(e4, "CSA"), InputSi(e5, "S_cpc"), 15);
         Assert.Equal(Si(e4, "L"), InputSi(e5, "L"), 9);
         Assert.Equal(Si(e4, "I_n"), InputSi(e5, "I_n"), 9);
         Assert.Equal(Si(e4, "device_code"), InputSi(e5, "device_code"), 9);
 
-        // E5: R1 + R2 = ρ_70 L (1/10 + 1/10) with ρ_20 = 17.241·10⁻⁶ Ω·mm = 0.123773 Ω; Z_s = 0.05 + 0.123773 = 0.173773 Ω (the 0.05 Ω external loop of a close-coupled 400 kVA transformer, invented); I_f = 0.95 · 230/Z_s = 1257.39 A against I_a = 10 · 40 = 400 A; Z_T = 0.04 · (√3 · 230)² / 400 kVA = 0.01587 Ω;
+        // E5: R1 + R2 = k_R ρ_70 L (1/10 + 1/10) with ρ_20 = 17.241·10⁻⁶ Ω·mm and k_R 1.125 (the cable standard's maximum conductor resistance) = 0.139245 Ω; Z_s = 0.05 + 0.139245 = 0.189245 Ω (the 0.05 Ω external loop of a close-coupled 400 kVA transformer, invented); I_f = 0.95 · 230/Z_s = 1257.39 A against I_a = 10 · 40 = 400 A; Z_T = 0.04 · (√3 · 230)² / 400 kVA = 0.01587 Ω;
         // I_k3 = 1.1 · √3 · 230 / (√3 · Z_T) = 15.942 kA, 63.8 % of the 25 kA breaking capacity.
-        var r12 = 17.241e-3 * (1 + 0.00393 * 50) * 30 * (1.0 / 10 + 1.0 / 10);
+        var r12 = 17.241e-3 * 1.125 * (1 + 0.00393 * 50) * 30 * (1.0 / 10 + 1.0 / 10);
         Assert.Equal(r12, Si(e5, "R_12"), 12);
-        Assert.Equal(0.12377313899999998, Si(e5, "R_12"), 12);
+        Assert.Equal(0.13924478137500002, Si(e5, "R_12"), 12);
         Assert.Equal(0.05 + r12, Si(e5, "Z_s"), 12);
         Assert.Equal(0.95 * 230 / (0.05 + r12), Si(e5, "I_f"), 9);
-        Assert.Equal(1257.3865055174035, Si(e5, "I_f"), 9);
+        Assert.Equal(1154.5893018155623, Si(e5, "I_f"), 9);
         Assert.Equal(400, Si(e5, "I_a"), 9);
         Assert.Equal(0.54625, Si(e5, "Z_s_max"), 12);
-        Assert.Equal(0.3181201629290617, Si(e5, "u_Zs"), 9);
+        Assert.Equal(0.3464435356979405, Si(e5, "u_Zs"), 9);
         Assert.Equal(114.83612782557213, Si(e5, "k"), 9);
         Assert.Equal(Math.Sqrt(8e4) / 114.83612782557213, Si(e5, "S_min") * 1e6, 9);
         Assert.Equal(0.04 * (Math.Sqrt(3) * 230) * (Math.Sqrt(3) * 230) / 400e3, Si(e5, "Z_T"), 12);
@@ -303,13 +319,13 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(["f1", "f2", "b1", "e1", "e4", "e3", "e5", "e9"], template.Steps.Select(s => s.Key));
         Assert.Equal(
             [
-                ("f1", "dV", "f2", "dV"), ("f1", "p", "f2", "p_2"), ("f1", "Q_prs", "b1", "Q"), ("f1", "rho", "b1", "rho_custom"), ("f1", "d_prs", "b1", "segments"), ("f1", "T_shaft", "e1", "T_L"), ("f1", "n_shaft", "e1", "n_L"), ("e1", "P_rated", "e4", "P"),
-                ("e4", "I_b", "e3", "I"), ("e4", "L", "e3", "L"), ("e4", "CSA", "e3", "A_c"),
-                ("e4", "CSA", "e5", "S_line"), ("e4", "L", "e5", "L"), ("e4", "I_n", "e5", "I_n"), ("e4", "device_code", "e5", "device_code"),
+                ("f1", "dV", "f2", "dV"), ("f1", "p", "f2", "p_2"), ("f1", "p_push", "f2", "p_load"), ("f1", "Q_prs", "b1", "Q"), ("f1", "rho", "b1", "rho_custom"), ("f1", "d_prs", "b1", "segments"), ("f1", "T_shaft", "e1", "T_L"), ("f1", "n_shaft", "e1", "n_L"), ("e1", "P_rated", "e4", "P"),
+                ("e4", "I_b", "e3", "I"), ("e4", "L", "e3", "L"), ("e4", "CSA", "e3", "A_c"), ("e4", "theta_op", "e3", "T_c"),
+                ("e4", "CSA", "e5", "S_line"), ("e4", "CSA", "e5", "S_cpc"), ("e4", "L", "e5", "L"), ("e4", "I_n", "e5", "I_n"), ("e4", "device_code", "e5", "device_code"), ("e4", "theta_op", "e5", "theta"),
                 ("e1", "P_rated", "e9", "P"), ("e4", "CSA", "e9", "A_c"), ("e4", "L", "e9", "L_cab"), ("e5", "I_k3", "e9", "I_k"), ("e5", "c_k3", "e9", "c_src"),
             ],
             template.Bindings.Select(b => (b.FromStep, b.Output, b.ToStep, b.Input)));
-        Assert.Equal(20, template.Bindings.Count);
+        Assert.Equal(24, template.Bindings.Count); // 20 + E4 CSA → E5 S_cpc (C-1 batch C) + F1 p_push → F2 p_load (C-1 batch D) + the cable's operating temperature → E3 T_c and E5 θ (chain.motor-circuit-R1)
         Assert.Equal((0, "D"), (template.Bindings.Single(b => b.Input == "segments").Row, template.Bindings.Single(b => b.Input == "segments").Column));
 
         foreach (var b in template.Bindings.Where(b => b.Row is null))
@@ -375,13 +391,33 @@ public sealed class HydraulicPowerUnitChainTests
 
         // ... so the whole electrical tail re-pins to the same cable and the same start: the pack is re-checked on current members, not on a different design.
         Assert.Equal(Si(e4, "I_b"), InputSi(e3, "I"), 9);
-        Assert.Equal(3.1562182118909865, Si(e3, "dV"), 9);
+        Assert.Equal(3.5427654814918457, Si(e3, "dV"), 9);
         Assert.Equal(Si(e4, "CSA"), InputSi(e5, "S_line"), 15);
         Assert.Equal(15942.028985507251, Si(e5, "I_k3"), 6);
         Assert.Equal(Si(e5, "I_k3"), InputSi(e9, "I_k"), 6);
         Assert.Equal(Si(e1, "P_rated"), InputSi(e9, "P"), 6);
         Assert.Equal(1.2454973839171712, Si(e9, "start_dip") * 100, 9);
         Assert.All(new[] { f2, b1, e1, e4, e3, e5, e9 }, i => Assert.Empty(i.Blocks));
+    }
+
+    [Fact]
+    public async Task A_Heavier_Push_Load_Fails_The_Accumulator_Because_Its_Lowest_Pressure_No_Longer_Carries_It()
+    {
+        // chain.hydraulic-power-unit-02: F_push 100 kN needs 134.0 bar at the 100 mm bore (100 kN/(78.54 cm² x 0.95)), and the accumulator still ends its stroke at p_1 = 120 bar: before the link F1 passed (u_push 0.838),
+        // F2 sized V0 as before and all 16 checks were green. Now F2 takes the pressure the push needs from F1 and fails.
+        var host = Host();
+        var inputs = ChainInputs.HydraulicPowerUnit(host);
+        inputs["f1"] = [.. inputs["f1"].Select(v => v.Symbol == "F_push" ? CalcInputValue.Quantity("F_push", 100, "kN", v.Provenance) : v)];
+        var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.HydraulicPowerUnit, await host.ProjectAsync(), "Press 7 hydraulic power unit", inputs);
+        Assert.True(refusal is null, refusal);
+        var (f1, f2) = (made!.Instances["f1"], made.Instances["f2"]);
+
+        var needed = 100e3 / (Math.PI * 0.1 * 0.1 / 4 * 0.95);
+        Assert.Equal(needed, Si(f1, "p_push"), 6);
+        Assert.Equal(134.0, Si(f1, "p_push") / 1e5, 1);
+        Assert.True(f1.Checks.Single(c => c.Name.StartsWith("Push load", StringComparison.Ordinal) || c.Name.StartsWith("Extend force", StringComparison.Ordinal)).Passed);
+        Assert.Equal(needed / 120e5, Si(f2, "u_load"), 9);
+        Assert.Contains(f2.Checks, c => c.Name.StartsWith("Lowest working pressure p_1 carries the load", StringComparison.Ordinal) && !c.Passed);
     }
 
     [Fact]

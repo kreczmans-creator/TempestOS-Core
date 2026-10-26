@@ -264,7 +264,7 @@
               "Unit": "kN",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:f8706bc6f0e946c9a8f582d5271d136c#E_d_min",
+                "Reference": "calc:18881a943eb04b5590d3c5502ccad678#E_d_min",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -486,7 +486,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#M_abs_e1",
+        "Reference": "calc:f0b4bf37f97447648b9e54b0405ae729#M_abs_e1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -509,7 +509,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#N_e1",
+        "Reference": "calc:f0b4bf37f97447648b9e54b0405ae729#N_e1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -521,7 +521,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#V_e1",
+        "Reference": "calc:f0b4bf37f97447648b9e54b0405ae729#V_e1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -576,8 +576,8 @@
       "Number": 203.6,
       "Unit": "mm",
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Specification",
+        "Reference": "SPEC-STR-09 \u00A73 (members)",
         "IsSufficientToIssue": true
       },
       "ValueText": "203.6"
@@ -648,8 +648,8 @@
       "Number": 203.2,
       "Unit": "mm",
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Specification",
+        "Reference": "SPEC-STR-09 \u00A73 (members)",
         "IsSufficientToIssue": true
       },
       "ValueText": "203.2"
@@ -679,8 +679,8 @@
       "Number": 10.2,
       "Unit": "mm",
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Specification",
+        "Reference": "SPEC-STR-09 \u00A73 (members)",
         "IsSufficientToIssue": true
       },
       "ValueText": "10.2"
@@ -700,8 +700,8 @@
       "Number": 11,
       "Unit": "mm",
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Specification",
+        "Reference": "SPEC-STR-09 \u00A73 (members)",
         "IsSufficientToIssue": true
       },
       "ValueText": "11"
@@ -711,8 +711,8 @@
       "Number": 7.2,
       "Unit": "mm",
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Specification",
+        "Reference": "SPEC-STR-09 \u00A73 (members)",
         "IsSufficientToIssue": true
       },
       "ValueText": "7.2"
@@ -737,7 +737,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#V_e2",
+        "Reference": "calc:f0b4bf37f97447648b9e54b0405ae729#V_e2",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -749,7 +749,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#M_abs_e2",
+        "Reference": "calc:f0b4bf37f97447648b9e54b0405ae729#M_abs_e2",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -979,7 +979,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:29bf48666bba4afe938261caeaa7fa08#t_max",
+        "Reference": "calc:08f9db1326ab45f6925535620bf31d42#t_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -991,7 +991,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:29bf48666bba4afe938261caeaa7fa08#v_max",
+        "Reference": "calc:08f9db1326ab45f6925535620bf31d42#v_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1003,11 +1003,21 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#V_e2",
+        "Reference": "calc:f0b4bf37f97447648b9e54b0405ae729#V_e2",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
       "ValueText": "28.2"
+    },
+    {
+      "Symbol": "block_load",
+      "Text": "Concentric loading (V_eff,1)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Concentric loading (V_eff,1)"
     },
     {
       "Symbol": "e_1",
@@ -1087,6 +1097,16 @@
       "ValueText": "8.8"
     },
     {
+      "Symbol": "hole_type",
+      "Text": "Normal clearance",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Normal clearance"
+    },
+    {
       "Symbol": "k_e1",
       "Number": 1.2,
       "Provenance": {
@@ -1161,6 +1181,16 @@
       "ValueText": "120"
     },
     {
+      "Symbol": "single_lap",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
+    },
+    {
       "Symbol": "size",
       "Text": "M20",
       "Provenance": {
@@ -1193,6 +1223,18 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "20"
+    },
+    {
+      "Symbol": "t_2",
+      "Number": 11,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-STR-312",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "11"
     },
     {
       "Symbol": "threads",
@@ -1229,6 +1271,16 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "0"
+    },
+    {
+      "Symbol": "block_load",
+      "Text": "Concentric loading (V_eff,1)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Concentric loading (V_eff,1)"
     },
     {
       "Symbol": "e_1",
@@ -1308,6 +1360,16 @@
       "ValueText": "8.8"
     },
     {
+      "Symbol": "hole_type",
+      "Text": "Normal clearance",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Normal clearance"
+    },
+    {
       "Symbol": "k_e1",
       "Number": 1.2,
       "Provenance": {
@@ -1370,6 +1432,16 @@
       "ValueText": "150"
     },
     {
+      "Symbol": "single_lap",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
+    },
+    {
       "Symbol": "size",
       "Text": "M20",
       "Provenance": {
@@ -1421,7 +1493,7 @@
       "Unit": "mm^2",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:acd10929b15b4ce0b4acb2b3dd3108c5#A_s",
+        "Reference": "calc:3f87f255bed441bfad9f547c2c6ab8e0#A_s",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1466,7 +1538,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:acd10929b15b4ce0b4acb2b3dd3108c5#F_b_Rd",
+        "Reference": "calc:3f87f255bed441bfad9f547c2c6ab8e0#F_b_Rd",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1478,7 +1550,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:acd10929b15b4ce0b4acb2b3dd3108c5#F_t_Rd",
+        "Reference": "calc:3f87f255bed441bfad9f547c2c6ab8e0#F_t_Rd",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1502,7 +1574,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#R1_m_abs",
+        "Reference": "calc:f0b4bf37f97447648b9e54b0405ae729#R1_m_abs",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1514,7 +1586,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#R1_y",
+        "Reference": "calc:f0b4bf37f97447648b9e54b0405ae729#R1_y",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1526,7 +1598,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:51f2f1b9fe7f49ec9047ea7b5898df40#R1_x_abs",
+        "Reference": "calc:f0b4bf37f97447648b9e54b0405ae729#R1_x_abs",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1605,7 +1677,7 @@
       "Unit": "MPa",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:acd10929b15b4ce0b4acb2b3dd3108c5#f_ub",
+        "Reference": "calc:3f87f255bed441bfad9f547c2c6ab8e0#f_ub",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1628,7 +1700,7 @@
       "Unit": "MPa",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:acd10929b15b4ce0b4acb2b3dd3108c5#f_yb",
+        "Reference": "calc:3f87f255bed441bfad9f547c2c6ab8e0#f_yb",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1725,7 +1797,7 @@
       "Text": "PROFIS-BP1-PLACEHOLDER.txt",
       "Provenance": {
         "Kind": "Evidence",
-        "Reference": "25ab1eb3d3a64cf7a8df1a5a42b6f193/3478dfcc2a1345f0b6d64ce780dc97ab",
+        "Reference": "330666a6c71c464383a7d5c10c88b667/efcd802c1b1640789b3e251042082e2a",
         "IsSufficientToIssue": true
       },
       "ValueText": "PROFIS-BP1-PLACEHOLDER.txt"

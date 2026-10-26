@@ -123,6 +123,46 @@ public sealed class CoolingChainTests
     }
 
     [Fact]
+    public async Task The_Pack_Says_The_Coil_Is_Sensible_Only_And_Its_Pipework_Step_Warns_About_Plant_Loss_And_A_Glycol_Fluid()
+    {
+        // chain.cooling-01, -02, -03, -04: sensible-only duty, no coil or valve loss, glycol reaching B1 as c_p only, a hot ambient blocking E2. The text says so; the steps warn at run time.
+        var text = CalcPackTemplates.Cooling.Description;
+        Assert.Contains("sensible only", text, StringComparison.Ordinal);
+        Assert.Contains("pipe friction only", text, StringComparison.Ordinal);
+        Assert.Contains("custom fluid", text, StringComparison.Ordinal);
+        Assert.Contains("hot ambient", text, StringComparison.Ordinal);
+
+        var host = Host();
+        var made = await InstantiateAsync(host);
+        Assert.Contains(made.Instances["b1"].Warnings, w => w.RuleId == "plant-loss");
+        Assert.DoesNotContain(made.Instances["b1"].Warnings, w => w.RuleId == "fluid-cp");
+    }
+
+    [Fact]
+    public async Task A_Hot_Ambient_At_Or_Above_The_Limit_Gives_The_Coil_A_Duty_Instead_Of_Stopping_At_The_Enclosure()
+    {
+        // chain.cooling-04 and elec.enclosure-heat-R2: T_amb 46 degC against T_max 45 degC blocked E2 ('T_max must exceed the ambient'), so B5 and B1 got nothing. The enclosure gains h A_eff (T_amb - T_max)
+        // through its walls, so the unit removes P_total + that gain. python3: P_total = 150 + 3510 = 3660 W; h A_eff = 5.5 x 4.32 = 23.76 W/K; P_cool = 3660 + 23.76 x 1 = 3683.76 W.
+        var host = Host();
+        var inputs = ChainInputs.Cooling(host);
+        inputs["e2"] = [.. inputs["e2"].Select(i => i.Symbol switch { "T_amb" => i with { Number = 46 }, _ => i })];
+        var made = await ChainKit.InstantiateAsync(host, CalcPackTemplates.Cooling, "Drive panel cooling", inputs);
+        var (e2, b5, b1) = (made.Instances["e2"], made.Instances["b5"], made.Instances["b1"]);
+
+        Assert.Equal(46, InputSi(e2, "T_amb") - 273.15, 9);
+        Assert.Equal(45, Si(e2, "T_max") - 273.15, 9);
+        Assert.Equal(3660, Si(e2, "P_total"), 6);
+        Assert.Equal(-23.76, Si(e2, "P_nat_max"), 9);
+        Assert.Equal(3683.76, Si(e2, "P_cool"), 6);
+        Assert.Contains(e2.Warnings, w => w.RuleId == "limit");
+
+        Assert.Equal(3683.76, InputSi(b5, "Q_req"), 6);
+        Assert.Equal(3683.76, Si(b5, "Q"), 6);
+        Assert.Equal(Si(b5, "Q"), InputSi(b1, "Phi_load"), 9);
+        Assert.True(Si(b1, "Q_design") > 0);
+    }
+
+    [Fact]
     public async Task A_Glycol_Cold_Side_Changes_The_Pump_Flow_Through_The_Specific_Heat_Link()
     {
         var host = Host();

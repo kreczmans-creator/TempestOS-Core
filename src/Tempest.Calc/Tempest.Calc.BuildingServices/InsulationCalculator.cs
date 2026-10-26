@@ -21,7 +21,7 @@ public sealed class InsulationCalculator : ICalcCalculator
     public const string MaterialKind = "material.properties";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.1", CalcDiscipline.BuildingServices, "Insulation thickness (ISO 12241 formula route)",
+        Id, "1.1.2", CalcDiscipline.BuildingServices, "Insulation thickness (ISO 12241 formula route)",
         "The insulation thickness on a pipe (cylinder) or a flat surface that meets a heat-flow limit, a limit on the surface temperature of a hot surface and an anti-condensation requirement for a cold one, each solved separately and the governing one reported; and for a chosen thickness the heat flow, the surface temperature and PASS/FAIL per criterion. Steady state, one layer, no thickness table of any standard.",
         "Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = D_i + 2t; with the inner film and pipe wall R_oth = 1/(h_i·π·D_p) + ln(D_i/D_p)/(2π·λ_w) added in series\n" +
         "Flat resistance per square metre: R = t/λ + 1/h_se (+ 1/h_i + t_w/λ_w)\n" +
@@ -76,6 +76,7 @@ public sealed class InsulationCalculator : ICalcCalculator
             new CalcApplicabilityRule("wall", "The pipe wall needs both thickness and conductivity, and must be thinner than the pipe radius.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("criterion-na", "A hot-surface limit on a cold pipe, or a dew-point margin on a hot one, is ignored.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("no-criteria", "No criterion applies but a thickness is chosen: only the heat flow and surface temperature at it are reported.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("rh-over-ice", "The ambient air is below 0 °C and the dew point is computed from RH_a: RH_a is read as relative to ice (the dew point is a frost point), whereas weather and hygrometer humidity is relative to water.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("h-se-condensation", "A fixed h_se on a cold surface with a dew-point margin gives a thinner layer than the correlation does: the generic default is not conservative against condensation.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("no-condensation-check", "The surface is colder than the air and no dew-point margin is entered, so condensation is not checked.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("bare-complies", "The bare surface meets a heat-flow limit that thin insulation on a pipe below the critical diameter breaks.", CalcNoticeSeverity.Warning),
@@ -305,6 +306,14 @@ public sealed class InsulationCalculator : ICalcCalculator
                     c.Input("RH_a");
                     dew = GlaserModel.DewPoint(c.InputSi("RH_a") * GlaserModel.SaturationPressure(ta));
                     c.Record("theta_dew", "inverse Magnus of RH·p_sat(θ_a)", $"θ_a = {F(ta)} °C, RH = {F(c.InputSi("RH_a") * 100)} %", ScalarValue.Of(dew, "degC"), "Dew point of the ambient air", "ISO 13788 (Magnus form, as B7)");
+
+                    if (ta < 0)
+                    {
+                        // bs.insulation-01: below 0 °C the Magnus relation is over ice, so RH_a is read as relative to ice (the dew point is the frost point).
+                        var rhWater = c.InputSi("RH_a");
+                        var frostIfWater = GlaserModel.DewPoint(rhWater * GlaserModel.SaturationPressureOverWater(ta));
+                        c.Warn("rh-over-ice", $"RH_a: the ambient air is below 0 °C, so RH_a = {F(rhWater * 100)} % is read as relative to ice and the dew point {F(dew)} °C is a frost point. Weather-station and hygrometer humidity is relative to water; if {F(rhWater * 100)} % is such a reading, the frost point is {F(frostIfWater)} °C, {F(frostIfWater - dew)} K higher, and the required thickness is much larger (at RH_a near saturation no thickness may prevent frost). Enter the dew point (theta_dew) for sub-zero air, or convert the humidity to relative to ice first.");
+                    }
                 }
 
                 dewKnown = true;

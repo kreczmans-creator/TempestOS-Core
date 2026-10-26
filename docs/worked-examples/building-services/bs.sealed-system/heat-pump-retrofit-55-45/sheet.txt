@@ -156,7 +156,7 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
   WARNING record.n: n: a tabulated value not taken from a reference record (Emitter exponent); enter it as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.sealed-system@1.2.1
+  Template: bs.sealed-system@1.3.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 4/4

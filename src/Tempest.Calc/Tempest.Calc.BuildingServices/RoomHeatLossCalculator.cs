@@ -54,7 +54,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.1", CalcDiscipline.BuildingServices, "U-values and room heat loss",
+        Id, "1.4.0", CalcDiscipline.BuildingServices, "U-values and room heat loss",
         "U-values of built-up elements from their layers and surface resistances, and the steady-state design heat loss of one room: fabric loss through each element to its adjacent temperature, a thermal-bridge allowance, ventilation loss (through the outside temperature or an MVHR supply temperature), the room load for sizing emitters, the heat loss coefficient and the loss per floor area; optionally checked against target U-values.",
         "Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing\n" +
         "Element fabric loss: Φ_i = A·U·f·(θ_int − θ_adj), θ_adj = θ_e where the element faces outside\n" +
@@ -76,7 +76,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
             new CalcInputSpec("n", "Air change rate", CalcInputKind.Quantity, "1/h", Default: 0.5, Min: 0.1, Max: 3, HardMin: 0.1, HardMax: 3, Group: "Ventilation"),
             new CalcInputSpec("V", "Room volume", CalcInputKind.Quantity, "m^3", Default: 40, Min: 5, Max: 1000, HardMin: 1, HardMax: 5000, Group: "Ventilation"),
             new CalcInputSpec("theta_supply", "MVHR supply air temperature after heat recovery (blank = natural ventilation, outside air)", CalcInputKind.Quantity, "degC", Min: -15, Max: 24, HardMin: -20, HardMax: 40, IsOptional: true, Group: "Ventilation"),
-            new CalcInputSpec("n_inf", "Infiltration air change rate at outside temperature, with MVHR only (n is then the MVHR rate)", CalcInputKind.Quantity, "1/h", Min: 0, Max: 1, HardMin: 0, HardMax: 3, IsOptional: true, Group: "Ventilation"),
+            new CalcInputSpec("n_inf", "Infiltration air change rate at outside temperature, with MVHR only (n is then the MVHR rate; blank = no infiltration loss, with a warning; 0 = airtight)", CalcInputKind.Quantity, "1/h", Min: 0, Max: 1, HardMin: 0, HardMax: 3, IsOptional: true, Group: "Ventilation"),
             new CalcInputSpec("A_floor", "Floor area, for the loss per floor area", CalcInputKind.Quantity, "m^2", Min: 1, Max: 200, HardMin: 0.1, HardMax: 2000, IsOptional: true, Group: "Result"),
             new CalcInputSpec("f_add", "Additional allowance on the room load (CIBSE DHDG method only)", CalcInputKind.Quantity, "%", Default: 0, Min: 0, Max: 20, HardMin: 0, HardMax: 50, Group: "Result"),
         ],
@@ -102,7 +102,9 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
             new CalcApplicabilityRule("supply", "The MVHR supply temperature must not exceed the internal design temperature.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("u-override-layers", "Layers of an element with a U override are ignored.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("orphan-layers", "Layers naming an element that is not in the elements table are ignored.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("f-and-adjacent", "An element with both a temperature factor f below 1 and an adjacent temperature above θ_e takes both reductions; f is for elements facing the outside only.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("f-add-ignored", "The additional allowance applies to the DHDG method only.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("mvhr-no-infiltration", "An MVHR supply temperature is entered and the infiltration rate n_inf is blank: the room has no infiltration loss at the outside temperature.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("n-inf-ignored", "The infiltration rate applies with an MVHR supply temperature only.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("gain", "The room gains heat from warmer neighbours (Φ_HL ≤ 0).", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("supply-below-external", "The MVHR supply is colder than the outside design temperature.", CalcNoticeSeverity.Warning),
@@ -137,6 +139,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
         OutputPorts:
         [
             new CalcOutputPort("Phi_HL", "W", "Room design heat loss (→ B6 room heat required)"),
+            new CalcOutputPort("theta_int", "degC", "Internal design temperature of the room (→ B6 room temperature of that room's emitter)"),
             new CalcOutputPort("HLC", "W/K", "Heat loss coefficient"),
             new CalcOutputPort("Phi_T", "W", "Fabric heat loss including the thermal-bridge allowance"),
             new CalcOutputPort("Phi_V", "W", "Ventilation heat loss"),
@@ -304,6 +307,9 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
             var external = adjEntered is null || adjEntered <= thetaE + 1e-9;
             var adj = adjEntered ?? thetaE;
             var f = row.Get("f")?.Number ?? 1.0;
+
+            if (f < 1 - 1e-9 && adjEntered is { } adjacent && adjacent > thetaE + 1e-9)
+                c.Warn("f-and-adjacent", $"elements: {name} has both a temperature factor f = {F(f)} and an adjacent temperature of {F(adjacent - 273.15)} °C, so the temperature reduction is counted twice (θ_int − θ_adj and f). Use f for elements facing the outside only (a floor to ground, say) and the adjacent temperature for a neighbouring space; leave one of them blank.");
             var user = Si(row, "U_user", uUnit);
             var flow = row.Get("flow")?.Text is { Length: > 0 } flowText ? Clean(flowText) : Horizontal;
             var mine = new List<(string Layer, double D, double Lambda)>();
@@ -392,11 +398,13 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
         var areaExt = elements.Where(e => e.External).Sum(e => e.Area);
         var areaTb = elements.Where(e => e.External).Sum(e => e.Area * e.F);
         var hT = elements.Sum(e => e.Area * e.U * e.F);
+        var hU = elements.Sum(e => e.Area * e.U);
 
         c.Record("A_fab", "Σ A", $"{F(areaAll)} m²", ScalarValue.Of(areaAll, m2), "Total fabric area");
         c.Record("A_ext", "Σ A facing outside", $"{F(areaExt)} m²", ScalarValue.Of(areaExt, m2), "Fabric area facing outside");
         c.Record("A_tb", "Σ A·f facing outside", $"{F(areaTb)} m²", ScalarValue.Of(areaTb, m2), "Fabric area facing outside weighted by the temperature factor (thermal-bridge allowance applies)", tClause);
-        c.Record("U_m", "Σ A·U·f / Σ A", $"{F(hT)} / {F(areaAll)}", ScalarValue.Of(hT / areaAll, uUnit), "Area-weighted mean U-value of the fabric");
+        c.Record("U_m", "Σ A·U / Σ A", $"{F(hU)} / {F(areaAll)}", ScalarValue.Of(hU / areaAll, uUnit), "Area-weighted mean U-value of the fabric (without the temperature factor f)");
+        c.Record("U_eff", "Σ A·U·f / Σ A", $"{F(hT)} / {F(areaAll)}", ScalarValue.Of(hT / areaAll, uUnit), "Heat-loss weighted mean U-value of the fabric (includes the temperature factor f)");
         c.Assign("dT", "theta_int - theta_e", "K", "Design temperature difference, inside to outside");
         c.Record("Phi_el", "Σ Φ_i", $"{F(sumPhi)} W", ScalarValue.Of(sumPhi, w), "Fabric loss through the elements", tClause);
         c.Assign("Phi_tb", "y_tb * A_tb * dT", "W", "Thermal-bridge allowance", tClause);
@@ -417,6 +425,10 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
         }
 
         var ninf = c.Has("n_inf") ? c.InputSi("n_inf") : 0.0;
+
+        // bs.room-heat-loss-R1: with MVHR the air change rate n is the MVHR rate only; a room still leaks air at the outside temperature.
+        if (mvhr && !c.Has("n_inf"))
+            c.Warn("mvhr-no-infiltration", "n_inf: an MVHR supply temperature is entered but the infiltration rate is blank, so the room has no infiltration loss: n is the MVHR rate only, and a room with MVHR still leaks air at the outside temperature. Enter n_inf (0 if the envelope is taken as airtight).");
 
         if (mvhr && ninf > 0)
         {
@@ -460,7 +472,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
         foreach (var (symbol, text) in outputs)
             c.Output(symbol, text);
 
-        foreach (var (symbol, text) in new[] { ("A_fab", "Total fabric area"), ("A_ext", "Fabric area facing outside"), ("A_tb", "Fabric area facing outside weighted by f"), ("U_m", "Mean fabric U-value"), ("dT", "Design temperature difference"), ("Phi_el", "Element fabric loss"), ("Phi_tb", "Thermal-bridge allowance"), ("Phi_T", "Fabric heat loss"), ("q_v", "Ventilation air flow"), ("Phi_V", "Ventilation heat loss"), ("Phi_HL", "Room design heat loss"), ("HLC", "Heat loss coefficient") })
+        foreach (var (symbol, text) in new[] { ("theta_int", "Internal design temperature"), ("A_fab", "Total fabric area"), ("A_ext", "Fabric area facing outside"), ("A_tb", "Fabric area facing outside weighted by f"), ("U_m", "Mean fabric U-value (area-weighted)"), ("U_eff", "Heat-loss weighted fabric U-value (with f)"), ("dT", "Design temperature difference"), ("Phi_el", "Element fabric loss"), ("Phi_tb", "Thermal-bridge allowance"), ("Phi_T", "Fabric heat loss"), ("q_v", "Ventilation air flow"), ("Phi_V", "Ventilation heat loss"), ("Phi_HL", "Room design heat loss"), ("HLC", "Heat loss coefficient") })
             c.Output(symbol, text);
 
         if (hasFloor)

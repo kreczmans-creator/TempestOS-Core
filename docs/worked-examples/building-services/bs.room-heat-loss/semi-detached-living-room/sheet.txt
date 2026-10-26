@@ -120,59 +120,63 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
       = 35.64 m²
       = 35.64 m²
         Fabric area facing outside weighted by the temperature factor (thermal-bridge allowance applies)
-  [24] U_m = Σ A·U·f / Σ A
+  [24] U_m = Σ A·U / Σ A
       = 21.467 / 44.28
       = 0.48479 W/(m²·K)
-        Area-weighted mean U-value of the fabric
-  [25] dT = theta_int - theta_e
+        Area-weighted mean U-value of the fabric (without the temperature factor f)
+  [25] U_eff = Σ A·U·f / Σ A
+      = 21.467 / 44.28
+      = 0.48479 W/(m²·K)
+        Heat-loss weighted mean U-value of the fabric (includes the temperature factor f)
+  [26] dT = theta_int - theta_e
       = 21 degC − (-3 degC)
       = 24 K
         Design temperature difference, inside to outside
-  [26] Phi_el = Σ Φ_i    « BS EN 12831-1 cl. 6.3.2
+  [27] Phi_el = Σ Φ_i    « BS EN 12831-1 cl. 6.3.2
       = 298.77 W
       = 298.77 W
         Fabric loss through the elements
-  [27] Phi_tb = y_tb * A_tb * dT    « BS EN 12831-1 cl. 6.3.2
+  [28] Phi_tb = y_tb * A_tb * dT    « BS EN 12831-1 cl. 6.3.2
       = 0.1 W/(m²·K) × 35.64 m² × 24 K
       = 85.536 W
         Thermal-bridge allowance
-  [28] Phi_T = Phi_el + Phi_tb    « BS EN 12831-1 cl. 6.3.2
+  [29] Phi_T = Phi_el + Phi_tb    « BS EN 12831-1 cl. 6.3.2
       = 298.77 W + 85.536 W
       = 384.3 W
         Fabric heat loss
-  [29] q_v = n * V
+  [30] q_v = n * V
       = 0.8 1/h × 38.88 m³
       = 31.104 m³/h
         Ventilation air flow
-  [30] dT_v = dT
+  [31] dT_v = dT
       = 24 K
       = 24 K
         Ventilation temperature difference, inside to outside
-  [31] Phi_V = 0.34 Wh/(m^3*K) * q_v * dT_v    « BS EN 12831-1 cl. 6.3.3
+  [32] Phi_V = 0.34 Wh/(m^3*K) * q_v * dT_v    « BS EN 12831-1 cl. 6.3.3
       = 0.34 Wh/(m^3*K) × 31.104 m³/h × 24 K
       = 253.81 W
         Ventilation heat loss (0.34 Wh/m³K = conventional ρ·c_p of air, derived)
-  [32] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
+  [33] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
       = 384.3 W + 253.81 W
       = 638.11 W
         Room design heat loss
-  [33] HLC = Phi_HL / dT
+  [34] HLC = Phi_HL / dT
       = 638.11 W / 24 K
       = 26.588 W/K
         Heat loss coefficient
-  [35] Phi_A = Phi_HL / A_floor
+  [36] Phi_A = Phi_HL / A_floor
       = 638.11 W / 16.2 m²
       = 39.39 W/m²
         Room design heat loss per floor area
-  [36] u_1 = U / U_target
+  [37] u_1 = U / U_target
       = 0.24051 / 0.3
       = 0.8017
         Front wall: utilisation of the target U-value
-  [37] u_3 = U / U_target
+  [38] u_3 = U / U_target
       = 0.24051 / 0.3
       = 0.8017
         Gable wall: utilisation of the target U-value
-  [38] u_4 = U / U_target
+  [39] u_4 = U / U_target
       = 1.1928 / 1.2
       = 0.99404
         Party wall: utilisation of the target U-value
@@ -191,10 +195,12 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   Phi_4 = 30.918 W    Party wall: fabric loss
   U_5 = 0.25 W/(m²·K)    Ground floor: U-value
   Phi_5 = 97.2 W    Ground floor: fabric loss
+  theta_int = 21 degC    Internal design temperature
   A_fab = 44.28 m²    Total fabric area
   A_ext = 35.64 m²    Fabric area facing outside
   A_tb = 35.64 m²    Fabric area facing outside weighted by f
-  U_m = 0.48479 W/(m²·K)    Mean fabric U-value
+  U_m = 0.48479 W/(m²·K)    Mean fabric U-value (area-weighted)
+  U_eff = 0.48479 W/(m²·K)    Heat-loss weighted fabric U-value (with f)
   dT = 24 K    Design temperature difference
   Phi_el = 298.77 W    Element fabric loss
   Phi_tb = 85.536 W    Thermal-bridge allowance
@@ -218,7 +224,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   WARNING input.f_add: f_add (Additional allowance on the room load (CIBSE DHDG method only)) was not entered; the template default 0 % is used.
 
 8. VERIFICATION
-  Template: bs.room-heat-loss@1.2.1
+  Template: bs.room-heat-loss@1.4.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 6/6

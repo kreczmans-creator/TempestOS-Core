@@ -416,7 +416,7 @@
       "Unit": "N",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:7c5262ced81a45f5a91139d2cdf73144#F_spring_max",
+        "Reference": "calc:6cb4c73f3c4d4a59b5052d081869daeb#F_spring_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -540,7 +540,7 @@
       "Unit": "Hz",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:7c5262ced81a45f5a91139d2cdf73144#f_in",
+        "Reference": "calc:6cb4c73f3c4d4a59b5052d081869daeb#f_in",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -734,7 +734,7 @@
       "Unit": "mm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:7c5262ced81a45f5a91139d2cdf73144#lift",
+        "Reference": "calc:6cb4c73f3c4d4a59b5052d081869daeb#lift",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -822,15 +822,26 @@
     },
     {
       "Symbol": "T",
-      "Number": 0.004816164185103693,
+      "Number": 0,
+      "Unit": "kN*m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "T_a",
+      "Number": 0.010111347132931246,
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:7c5262ced81a45f5a91139d2cdf73144#T_rms_in",
+        "Reference": "calc:6cb4c73f3c4d4a59b5052d081869daeb#input_torque",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0.00481616"
+      "ValueText": "0.0101113"
     },
     {
       "Symbol": "T_pk",
@@ -838,7 +849,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:7c5262ced81a45f5a91139d2cdf73144#input_torque",
+        "Reference": "calc:6cb4c73f3c4d4a59b5052d081869daeb#input_torque",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -889,7 +900,7 @@
               "Unit": "kN",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:7c5262ced81a45f5a91139d2cdf73144#F_pin_pk",
+                "Reference": "calc:6cb4c73f3c4d4a59b5052d081869daeb#F_pin_pk",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -919,7 +930,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:7c5262ced81a45f5a91139d2cdf73144#n_in",
+        "Reference": "calc:6cb4c73f3c4d4a59b5052d081869daeb#n_in",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1071,6 +1082,16 @@
       "ValueText": "0.001"
     },
     {
+      "Symbol": "w_masses",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
+    },
+    {
       "Symbol": "x_A",
       "Number": 25,
       "Unit": "mm",
@@ -1170,7 +1191,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:772f6fba2d8e440e852d50777fd01635#R_A",
+        "Reference": "calc:3fee04b8255246a8a85a86d5946cb7df#R_A",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1284,7 +1305,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:7c5262ced81a45f5a91139d2cdf73144#n_in",
+        "Reference": "calc:6cb4c73f3c4d4a59b5052d081869daeb#n_in",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1382,11 +1403,21 @@
       "Unit": "N*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:7c5262ced81a45f5a91139d2cdf73144#T_rms_in",
+        "Reference": "calc:6cb4c73f3c4d4a59b5052d081869daeb#T_rms_in",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
       "ValueText": "4.81616"
+    },
+    {
+      "Symbol": "T_basis",
+      "Text": "Load peak (T_pk)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Load peak (T_pk)"
     },
     {
       "Symbol": "T_peak",
@@ -1409,6 +1440,16 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "1"
+    },
+    {
+      "Symbol": "brake",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
     },
     {
       "Symbol": "duty_mode",
@@ -1487,7 +1528,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:7c5262ced81a45f5a91139d2cdf73144#n_in",
+        "Reference": "calc:6cb4c73f3c4d4a59b5052d081869daeb#n_in",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1649,7 +1690,7 @@
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:9324dbfff61742369ba1a62bbe7f0a52#P_rated",
+        "Reference": "calc:369e29991e69420b9fb5c4989c4ebb98#P_rated",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1732,7 +1773,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:7ad3d244a1e646a8aa128cc3ecd0399c@1 \u00B7 invented values for the worked example",
+        "Reference": "record:3d395afdde1f4a4abffb1232a0d46566@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },
@@ -1886,7 +1927,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:a849cdd16ea048f89c3755d5f1f8b3ea@1 \u00B7 invented values for the worked example",
+        "Reference": "record:92f488186bc54565b94c36b5a4817e4d@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },

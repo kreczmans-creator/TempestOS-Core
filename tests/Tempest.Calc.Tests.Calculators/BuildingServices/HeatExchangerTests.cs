@@ -13,6 +13,18 @@ public sealed class HeatExchangerTests
     private static CalcInputSet Defaults() => CalcTemplateHasher.DefaultInputs(Hx.Template);
 
     [Fact]
+    public void A_Cold_Side_Inlet_Below_The_Air_Dew_Point_Warns_That_The_Duty_Is_Sensible_Only()
+    {
+        // chain.cooling-01: 35 degC air at 60 % RH has a dew point of 26.07 degC (python3, Magnus b = 17.62, c = 243.12: gamma = ln 0.6 + 17.62 x 35/(243.12 + 35); 243.12 gamma/(17.62 - gamma) = 26.072; the
+        // finding quotes 26.07), and the example coil's water enters at 22 degC: the coil surface condenses, the sensible-only duty misses the latent load and no notice was given.
+        var set = Defaults().With(CalcInputValue.Quantity("T_c_in", 22, "degC")).With(CalcInputValue.Quantity("T_dew", 26.07, "degC"));
+        var r = CalcRunner.Run(Hx, set);
+        Assert.Contains(r.Warnings, w => w.RuleId == "condensation");
+        Assert.DoesNotContain(CalcRunner.Run(Hx, Defaults().With(CalcInputValue.Quantity("T_c_in", 28, "degC")).With(CalcInputValue.Quantity("T_dew", 26.07, "degC"))).Warnings, w => w.RuleId == "condensation");
+        Assert.DoesNotContain(CalcRunner.Run(Hx, Defaults().With(CalcInputValue.Quantity("T_c_in", 22, "degC"))).Warnings, w => w.RuleId == "condensation");
+    }
+
+    [Fact]
     public void Inverse_Ntu_Recovers_The_Forward_Relation_For_Every_Arrangement()
     {
         Gen.Select(Gen.Int[0, Arrangements.Length - 1], Gen.Double[0.05, 5], Gen.Double[0, 1]).Sample((i, ntu, cr) =>

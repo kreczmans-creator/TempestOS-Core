@@ -21,10 +21,11 @@ public sealed class SealedSystemCalculator : ICalcCalculator
         new("Phi", "Heat required", CalcInputKind.Quantity, "W", HardMin: 0, HardMax: 1e6),
         new("Phi50", "Selected emitter output at ΔT 50 K", CalcInputKind.Quantity, "W", HardMin: 0, HardMax: 1e6, IsOptional: true),
         new("V_em", "Emitter water content", CalcInputKind.Quantity, "L", HardMin: 0, HardMax: 1e4, IsOptional: true),
+        new("t_i", "Room design temperature (blank = the sheet's room temperature t_i)", CalcInputKind.Quantity, "degC", HardMin: 10, HardMax: 30, IsOptional: true),
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.1", CalcDiscipline.BuildingServices, "Sealed heating system: emitters and expansion vessel",
+        Id, "1.3.0", CalcDiscipline.BuildingServices, "Sealed heating system: emitters and expansion vessel",
         "A closed LTHW system below 100 °C: the catalogue output (at ΔT 50 K) each room's emitter needs at the design flow, return and room temperatures, checked against the selected emitters; and the minimum expansion vessel for the system volume, fill and maximum temperatures, static head and pressures.",
         "Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_f − t_r)/ln((t_f − t_i)/(t_r − t_i))\n" +
         "Output at design: Φ = Φ50·(ΔT/50)^n; required catalogue output Φ50 = Φ_req/(ΔT/50)^n\n" +
@@ -64,6 +65,7 @@ public sealed class SealedSystemCalculator : ICalcCalculator
             new CalcApplicabilityRule("temperatures", "Flow above return above room temperature.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("pressures", "Pre-charge below final pressure below the safety valve setting.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("volume", "System volume between 10 and 10 000 L.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("v-pipe-default", "The pipework water content V_pipe is the template default of 20 L: it is not linked to the pipework, so a larger system gets an undersized expansion vessel.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("t-fill", "The fill temperature must be below the maximum system temperature.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("emitter", "A selected emitter output of 0 W is refused: leave the cell empty for none selected.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("t-max", "The maximum temperature is below the flow temperature: the vessel is sized for the flow temperature.", CalcNoticeSeverity.Warning),
@@ -165,7 +167,28 @@ public sealed class SealedSystemCalculator : ICalcCalculator
             var row = rows[i];
             var name = row.Get("name")?.Text is { Length: > 0 } text ? CalcSheetTextRenderer.Clean(text) : $"Room {i + 1}";
             var phi = Si(row, "Phi", w);
-            var needed = phi / f;
+            var rowF = f;
+            var rowNote = string.Empty;
+
+            if (row.Get("t_i")?.Number is not null)
+            {
+                // The room's own design temperature (B4's θ_int) sets its emitter's temperature difference.
+                var tiRoom = Si(row, "t_i", UnitCatalog.Parse("degC"));
+
+                if (!(c.Si("t_r") > tiRoom))
+                {
+                    c.Block("temperatures", $"rooms: {name}: the room temperature ({F(tiRoom - 273.15)} °C) must be below the return temperature ({F(c.Si("t_r") - 273.15)} °C).");
+                    return;
+                }
+
+                var dTRoom = log && c.Si("t_f") > c.Si("t_r")
+                    ? (c.Si("t_f") - c.Si("t_r")) / Math.Log((c.Si("t_f") - tiRoom) / (c.Si("t_r") - tiRoom))
+                    : (c.Si("t_f") + c.Si("t_r")) / 2 - tiRoom;
+                rowF = Math.Pow(dTRoom / 50, c.Si("n"));
+                rowNote = $" at its room temperature {F(tiRoom - 273.15)} °C (ΔT {F(dTRoom)} K)";
+            }
+
+            var needed = phi / rowF;
             total += phi;
             emitterVolume += Si(row, "V_em", litre);
             var symbol = $"R{i + 1}";
@@ -178,14 +201,14 @@ public sealed class SealedSystemCalculator : ICalcCalculator
 
             if (Si(row, "Phi50", w) is var selected && selected > 0)
             {
-                var u = phi / (selected * f);
+                var u = phi / (selected * rowF);
                 worst = Math.Max(worst, u);
                 anySelected = true;
-                c.Record(symbol, "Φ_req/f_dT", $"{F(phi)} / {F(f)}", ScalarValue.Of(needed, w), $"{name}: catalogue output needed; selected {F(selected)} W gives {F(selected * f)} W (utilisation {CalcValue.FormatNumber(u, 3)})");
+                c.Record(symbol, "Φ_req/f_dT", $"{F(phi)} / {F(rowF)}", ScalarValue.Of(needed, w), $"{name}: catalogue output needed{rowNote}; selected {F(selected)} W gives {F(selected * rowF)} W (utilisation {CalcValue.FormatNumber(u, 3)})");
             }
             else
             {
-                c.Record(symbol, "Φ_req/f_dT", $"{F(phi)} / {F(f)}", ScalarValue.Of(needed, w), $"{name}: catalogue output needed at ΔT 50 K");
+                c.Record(symbol, "Φ_req/f_dT", $"{F(phi)} / {F(rowF)}", ScalarValue.Of(needed, w), $"{name}: catalogue output needed at ΔT 50 K{rowNote}");
             }
 
             outputs.Add((symbol, $"{name}: Φ50 needed"));
@@ -199,6 +222,9 @@ public sealed class SealedSystemCalculator : ICalcCalculator
 
         c.Record("V_em", "Σ V_em", $"{F(litre.FromSi(emitterVolume))} L", ScalarValue.Of(litre.FromSi(emitterVolume), litre), "Emitter water content");
         c.Assign("V_s", "V_em + V_pipe + V_plant", "L", "System water volume");
+
+        if (Math.Abs(litre.FromSi(c.Si("V_pipe")) - 20) < 1e-9)
+            c.Warn("v-pipe-default", "V_pipe: 20 L is the template default, not the water content of this system's pipework (π D² L/4 over the pipe segments; B1 gives it as V_pipe). A larger system holds more water, so the vessel here would be undersized (DN28 × 40 m holds 24.63 L: V_e 2.496 L against 2.800 L).");
 
         var vs = litre.FromSi(c.Si("V_s"));
 

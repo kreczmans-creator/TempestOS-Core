@@ -431,6 +431,17 @@
       "ValueText": "0.6"
     },
     {
+      "Symbol": "n_inf",
+      "Number": 0.1,
+      "Unit": "1/h",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.1"
+    },
+    {
       "Symbol": "theta_e",
       "Number": -3,
       "Unit": "degC",
@@ -575,7 +586,7 @@
               "Unit": "W",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:782c8b97f7da460d835dda92d80be2f7#Phi_HL",
+                "Reference": "calc:751b938c0bc24a61a87bf3f9111a4787#Phi_HL",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -583,6 +594,16 @@
             "V_em": {
               "Number": 4,
               "Unit": "L"
+            },
+            "t_i": {
+              "Number": 21,
+              "Unit": "degC",
+              "Provenance": {
+                "Kind": "Link",
+                "Reference": "calc:751b938c0bc24a61a87bf3f9111a4787#theta_int",
+                "Revision": "A",
+                "IsSufficientToIssue": true
+              }
             }
           }
         },
@@ -592,11 +613,11 @@
               "Text": "Room B"
             },
             "Phi": {
-              "Number": 263.8076918715403,
+              "Number": 304.60769187154034,
               "Unit": "W",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:a36a7c16497d467fa179c9dfd75bf03c#Phi_HL",
+                "Reference": "calc:9897755423c14be5914a86690d58dd13#Phi_HL",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -604,6 +625,16 @@
             "V_em": {
               "Number": 4,
               "Unit": "L"
+            },
+            "t_i": {
+              "Number": 21,
+              "Unit": "degC",
+              "Provenance": {
+                "Kind": "Link",
+                "Reference": "calc:9897755423c14be5914a86690d58dd13#theta_int",
+                "Revision": "A",
+                "IsSufficientToIssue": true
+              }
             }
           }
         }
@@ -673,6 +704,16 @@
   ],
   "b1": [
     {
+      "Symbol": "D_law",
+      "Text": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)"
+    },
+    {
       "Symbol": "D_ratio",
       "Number": 1,
       "Provenance": {
@@ -684,15 +725,15 @@
     },
     {
       "Symbol": "Phi_load",
-      "Number": 643.2517736444315,
+      "Number": 684.0517736444315,
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:1487856b836046b89ad2d9c6dbee4d41#Phi_tot",
+        "Reference": "calc:e28e1a73876649049d9b726dda99c409#Phi_tot",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "643.252"
+      "ValueText": "684.052"
     },
     {
       "Symbol": "T",
@@ -700,7 +741,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:1487856b836046b89ad2d9c6dbee4d41#t_m",
+        "Reference": "calc:e28e1a73876649049d9b726dda99c409#t_m",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -722,7 +763,7 @@
       "Unit": "K",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:1487856b836046b89ad2d9c6dbee4d41#dT_fr",
+        "Reference": "calc:e28e1a73876649049d9b726dda99c409#dT_fr",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -925,15 +966,25 @@
     },
     {
       "Symbol": "T_L",
-      "Number": 0.0002722151503217177,
+      "Number": 0.00032339269586103837,
       "Unit": "N*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:09c35f9154d94e998178314f73101941#T_shaft",
+        "Reference": "calc:4ad4e247d1954a69ab079d3f9e2f8d5d#T_shaft",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0.000272215"
+      "ValueText": "0.000323393"
+    },
+    {
+      "Symbol": "T_basis",
+      "Text": "Load peak (T_pk)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Load peak (T_pk)"
     },
     {
       "Symbol": "T_peak",
@@ -956,6 +1007,16 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "2"
+    },
+    {
+      "Symbol": "brake",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
     },
     {
       "Symbol": "duty_mode",
@@ -1034,7 +1095,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:09c35f9154d94e998178314f73101941#n_shaft",
+        "Reference": "calc:4ad4e247d1954a69ab079d3f9e2f8d5d#n_shaft",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

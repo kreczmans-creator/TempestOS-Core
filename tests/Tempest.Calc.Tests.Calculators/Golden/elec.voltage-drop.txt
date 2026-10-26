@@ -19,7 +19,7 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   cos_phi | Power factor (AC) | 0.85 |  | manual | 0.5 … 1
   n_par | Parallel conductors per phase | 1 |  | manual | 1 … 6
   data | Conductor data from | resistivity and area |  | manual | any
-  rho_20 | Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.01724 | ohm*mm^2/m | manual | 0.01 … 0.05 ohm*mm^2/m
+  rho_20 | Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.01724 | ohm*mm^2/m | manual | 0.01 … 0.05 ohm*mm^2/m
   alpha | Temperature coefficient of resistance | 0.00393 |  | manual | 0.003 … 0.0045
   A_c | Conductor cross-section | 6 | mm^2 | manual | 1 … 1000 mm^2
   T_c | Conductor operating temperature for the resistance | 70 | degC | manual | 20 … 90 degC
@@ -80,5 +80,5 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   No warnings.
 
 8. VERIFICATION
-  Template: elec.voltage-drop@1.0.1
+  Template: elec.voltage-drop@1.2.0
   Known-answer cases passed: 3/3

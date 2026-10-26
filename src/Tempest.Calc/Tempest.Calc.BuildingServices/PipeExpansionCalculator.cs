@@ -42,7 +42,7 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
     private const string ScreeningClause = "ASME B31.3 para. 319.4.1 (screening form; number to be checked against the owner's copy)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.2", CalcDiscipline.BuildingServices, "Pipe expansion, loops and anchor forces (screening)",
+        Id, "1.3.0", CalcDiscipline.BuildingServices, "Pipe expansion, loops and anchor forces (screening)",
         "Screening only — not a piping stress analysis. Thermal growth of a straight run between anchors, the fully restrained stress and force, the leg an offset leg or a U-loop (two guided cantilevers) needs to absorb the growth within the owner's allowable displacement-stress range Sa and whether the available leg is long enough (an offset leg or Z-bend also loads its run or runs with the leg's own growth), the force on the anchors and the largest root moment of the guided-cantilever model, the screening ratio D·Y/(L − U)² against the owner's K1 (PASS, or the line needs a formal stress analysis), and, for an axial bellows, the anchor force P·A_eff plus its spring force. No allowable stress, K1 or code table ships.",
         "Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴ − d_i⁴); Z = I/(OD/2)\n" +
         "Temperature change: ΔT = T_operate − T_install, or as entered; the movement uses |ΔT| and its sign gives the direction\n" +
@@ -75,6 +75,9 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
             new CalcInputSpec("A_eff", "Axial bellows effective area A_eff (manufacturer's data)", CalcInputKind.Quantity, "cm^2", Min: 1, Max: 5000, HardMin: 0.01, HardMax: 1e6, IsOptional: true, Group: "Bellows"),
             new CalcInputSpec("k_b", "Axial bellows spring rate (manufacturer's data; blank = no spring force)", CalcInputKind.Quantity, "N/mm", Min: 1, Max: 5000, HardMin: 0, HardMax: 1e6, IsOptional: true, Group: "Bellows"),
             new CalcInputSpec("dL_rated", "Rated axial movement of the bellows (manufacturer's data; blank = movement not checked)", CalcInputKind.Quantity, "mm", Min: 1, Max: 500, HardMin: 0.01, HardMax: 10000, IsOptional: true, Group: "Bellows"),
+            new CalcInputSpec("mu", "Friction coefficient μ of the slides and guides between the anchor and the loop (blank = friction is not in the anchor force)", CalcInputKind.Number, Min: 0.05, Max: 1.5, HardMin: 0, HardMax: 5, IsOptional: true, Group: "Support friction"),
+            new CalcInputSpec("w_pipe", "Weight of the pipe per metre with its contents, in kg/m (enter with μ)", CalcInputKind.Quantity, "kg/m", Min: 0.1, Max: 2000, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Support friction"),
+            new CalcInputSpec("L_slide", "Length of pipe on sliding supports between the anchor and the loop (blank = the anchor spacing L)", CalcInputKind.Quantity, "m", Min: 1, Max: 500, HardMin: 0, HardMax: 10000, IsOptional: true, Group: "Support friction"),
         ],
         [
             new CalcAssumption("Screening only — not a piping stress analysis. The result tells whether a simple leg or loop is plausible and what it puts on its anchors; it does not replace a flexibility analysis of the real routing (elbow flexibility, intensification, torsion, branches, restraint friction, supports, sustained and occasional loads).", "Stated scope."),
@@ -85,7 +88,7 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
             new CalcAssumption("anchor_moment is the largest root moment of the legs and runs in the guided-cantilever simplification (M = F·L/2 with each end fixed against rotation). It is not the moment on a frame anchor, which depends on the whole frame (the stiffness of the other legs, the elbow rotations, the anchor's own fixity); a formal analysis is needed before an anchor is sized for moment.", "Stated limit."),
             new CalcAssumption("The material properties are single values: α the mean coefficient between the install and operating temperatures; E the modulus at the installation (reference) temperature, used for the stress check, as the piping codes do (ASME B31.3 para. 319.3.2 and 319.5, numbers to be checked against the owner's copy); E_hot, when given, is used only for the reactions on the anchors. Take them from a W3 material applied at the right temperature.", "Material library; code convention to be checked."),
             new CalcAssumption("Sa and K1 are the owner's records from the owner's own copy of the piping code (or the design basis), with their provenance; no allowable stress, K1 or code constant ships. The sheet applies the relation to the numbers entered and does not know which code, material or load case they belong to.", "No table from a standard is shipped."),
-            new CalcAssumption("No friction, weight, spring-hanger or cold-spring effect is included in the leg force. The axial bellows anchor force is the pressure thrust P·A_eff plus the spring force k·ΔL at the governing pressure entered (the design or the test pressure, whichever governs; a bellows' compression and extension ratings can differ): guide friction and any other bellows load come from the manufacturer's data.", "Stated limit."),
+            new CalcAssumption("No friction, weight, spring-hanger or cold-spring effect is included in the leg force; the anchor force adds the friction of the sliding supports, μ·w·L, only when μ and the weight per metre are entered (a warning says so when they are not). The axial bellows anchor force is the pressure thrust P·A_eff plus the spring force k·ΔL at the governing pressure entered (the design or the test pressure, whichever governs; a bellows' compression and extension ratings can differ): guide friction and any other bellows load come from the manufacturer's data.", "Stated limit."),
         ],
         [
             new CalcClauseRef("ASME B31.3", "para. 319.4.1 (screening relation; number to be checked against the owner's copy)", "Process piping — flexibility analysis, exemption from formal analysis"),
@@ -103,6 +106,7 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
             new CalcApplicabilityRule("bellows-unused", "Bellows inputs are given with a leg or loop layout and are not used; choose the axial bellows layout.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("k1-unused", "K1 is given with the axial bellows layout, which has no screening; it is not used.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("l2-unused", "L2 is given with a layout other than the offset leg; it is not used.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("friction", "The anchor force holds no support friction unless both μ and the weight per metre are entered.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("screening-k1", "No K1 was entered: the screening ratio is shown and not judged, and the sheet does not pass.", CalcNoticeSeverity.Warning),
         ],
         [
@@ -236,6 +240,36 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
 
         c.Output("direction", "Direction of the movement", new TextValue(direction));
 
+        // Friction of the sliding supports between the anchor and the loop: μ·w·L_slide, along the run. Without μ and w the force on the anchors is the leg's (or the bellows') alone.
+        var frictionEntered = c.Has("mu") && c.Has("w_pipe");
+
+        if (frictionEntered)
+        {
+            c.Input("mu");
+            c.Input("w_pipe");
+
+            if (c.Has("L_slide"))
+            {
+                c.Input("L_slide");
+                c.Assign("F_friction", "mu * w_pipe * 9.80665 m/s^2 * L_slide", "N", "Friction of the sliding supports on the run, μ·w·g·L_slide");
+            }
+            else
+            {
+                c.Assign("F_friction", "mu * w_pipe * 9.80665 m/s^2 * L", "N", "Friction of the sliding supports on the run, μ·w·g·L (L_slide blank: the anchor spacing)");
+            }
+        }
+        else
+        {
+            c.Warn("friction", c.Has("mu") || c.Has("w_pipe")
+                ? $"{(c.Has("mu") ? "w_pipe" : "mu")}: the support friction needs both μ and the weight per metre; neither is used, and the anchor force holds no support friction."
+                : "mu: the anchor force holds no support friction. Every slide or guide between the anchor and the loop adds μ·w·L to it, which on a long run can exceed the leg force several times; enter μ and the weight per metre (with the length on slides) to include it.");
+        }
+
+        if (!frictionEntered)
+            c.Record("F_friction", "support friction not entered", "μ and w_pipe blank", ScalarValue.Of(0, "N"), "Friction of the sliding supports (not entered: none in the anchor force)");
+
+        c.Output("F_friction", "Support friction on the run");
+
         if (bellows)
         {
             RunBellows(c);
@@ -293,16 +327,16 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
                 c.Assign("M_run2", "F_run * L2 / 2", "N*m", "Moment at the root of the second run");
             }
 
-            c.Assign("F_along_run", "F_leg", "N", "Component of the anchor force along the run: the leg's force");
+            c.Assign("F_along_run", "F_leg + F_friction", "N", "Component of the anchor force along the run: the leg's force plus the support friction");
             c.Assign("F_along_leg", "F_run", "N", "Component of the anchor force along the leg: the runs' force");
-            c.Assign("anchor_force", "sqrt(F_leg^2 + F_run^2)", "N", "Force on the anchors: resultant of the two perpendicular components");
+            c.Assign("anchor_force", "sqrt(F_along_run^2 + F_run^2)", "N", "Force on the anchors: resultant of the two perpendicular components (support friction only if μ and w_pipe are entered)");
             c.Assign("anchor_moment", z ? "max(max(M_leg, M_run), M_run2)" : "max(M_leg, M_run)", "N*m", "Largest root moment of the leg and the run or runs (guided-cantilever model)");
         }
         else
         {
-            c.Assign("F_along_run", "F_leg", "N", "Component of the anchor force along the run: the loop's force");
+            c.Assign("F_along_run", "F_leg + F_friction", "N", "Component of the anchor force along the run: the loop's force plus the support friction");
             c.Record("F_along_leg", "no component along the leg", "a U-loop is in line", ScalarValue.Of(0, "N"), "Component of the anchor force along the leg: none for a U-loop");
-            c.Assign("anchor_force", "F_leg", "N", "Force on the anchors (the force along the loop)");
+            c.Assign("anchor_force", "F_along_run", "N", "Force on the anchors (the force along the loop; support friction only if μ and w_pipe are entered)");
             c.Assign("anchor_moment", "M_leg", "N*m", "Moment at the root of the loop's legs");
         }
 
@@ -397,11 +431,11 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
         {
             c.Input("k_b");
             c.Assign("F_spring", "k_b * dL", "N", "Bellows spring force at the full movement");
-            c.Assign("anchor_force", "F_thrust + F_spring", "N", "Force on the anchors: pressure thrust plus spring force");
+            c.Assign("anchor_force", "F_thrust + F_spring + F_friction", "N", "Force on the anchors: pressure thrust plus spring force (plus support friction if μ and w_pipe are entered)");
         }
         else
         {
-            c.Assign("anchor_force", "F_thrust", "N", "Force on the anchors: pressure thrust (no spring rate given)");
+            c.Assign("anchor_force", "F_thrust + F_friction", "N", "Force on the anchors: pressure thrust (no spring rate given; plus support friction if μ and w_pipe are entered)");
         }
 
         c.Record("anchor_moment", "axial bellows: no bending", "the movement is axial", ScalarValue.Of(0, "N*m"), "Moment at the anchors: none from an axial bellows");

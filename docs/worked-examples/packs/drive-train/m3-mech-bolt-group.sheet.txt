@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Conveyor 7 head drive
 Calc ID: Coupling flange bolts    Revision: A
 Title: Bolt group (elastic method)
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: CNV-DRV-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A pattern of bolts in a plane under in-plane forces (with eccentricity, so torsion), out-of-plane moments and axial load: the shear and tension in every bolt by the elastic (area-weighted) method, the governing bolt, and an optional lever-model prying addition.
@@ -23,7 +23,7 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   F_y | In-plane force, y | 0 | kN | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN
   e_x | Point of application, x | 0 | mm | drawing: DRG-CNV-412 rev B | -100000 … 100000 mm
   e_y | Point of application, y | 0 | mm | drawing: DRG-CNV-412 rev B | -100000 … 100000 mm
-  T_z | Additional in-plane torque about the centroid | 0.159248 | kN*m | link: Motor sizing rev A · T_pk | -1000000 … 1000000 kN*m
+  T_z | Additional in-plane torque about the centroid | 0.159248 | kN*m | link: Motor sizing rev A · T_design | -1000000 … 1000000 kN*m
   N | Axial (out-of-plane) load, tension positive | 0 | kN | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN
   M_x | Out-of-plane moment about x (tension on +y side) | 0 | kN*m | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN*m
   M_y | Out-of-plane moment about y (tension on +x side) | 0 | kN*m | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN*m
@@ -72,57 +72,72 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
       = v = (0.9953, 0) kN, t = 0 kN
       = 0.071093
         Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.0711
-  [20] v_max = governing bolt shear
+  [20] v_max = max over the bolts of v
       = bolt 1
       = 0.9953 kN
-        Maximum bolt shear
-  [21] t_max = governing bolt tension (with prying)
+        Maximum shear on any bolt
+  [21] t_max = max over the bolts of t (with prying)
       = bolt 1
       = 0 kN
-        Maximum bolt tension
-  [22] u_max = √((v/V_R)² + (t/T_R)²)
+        Maximum tension on any bolt
+  [22] bolt_v = bolt with the largest shear
+      = bolt 1
+      = "bolt 1"
+        The bolt carrying the largest shear
+  [23] bolt_t = bolt with the largest tension
+      = bolt 1
+      = "bolt 1"
+        The bolt carrying the largest tension
+  [24] u_max = √((v/V_R)² + (t/T_R)²)
       = √((0.9953/14)² + (0/21)²)
       = 0.071093
         Governing interaction utilisation
-  [23] governing = governing bolt
+  [25] governing = governing bolt
       = bolt 1
       = "bolt 1"
         The bolt with the highest utilisation
-  [24] u_v = v_max / V_R
+  [26] u_v = v_max / V_R
       = 0.9953 kN / 14 kN
       = 0.071093
-        Shear utilisation of the governing bolt
-  [25] u_t = t_max / T_R
+        Shear utilisation of the most sheared bolt
+  [27] u_t = t_max / T_R
       = 0 kN / 21 kN
       = 0
-        Tension utilisation of the governing bolt
-  [26] u_lin = v/V_R + t/(1.4 T_R)
-      = 0.9953/14 + 0/(1.4 × 21)
+        Tension utilisation of the most tensioned bolt
+  [28] governing_lin = bolt with the highest linear utilisation
+      = bolt 1
+      = "bolt 1"
+        The bolt that governs the linear shear–tension check
+  [29] u_lin = max over the bolts of v/V_R + t/(1.4 T_R)
+      = bolt 1: 0.9953/14 + 0/(1.4 × 21)
       = 0.071093
-        Linear shear–tension interaction (governing bolt)
+        Linear shear–tension interaction, the highest over all bolts
 
 5. RESULTS
   T = 0.15925 kN·m    Torque about the centroid
   J = 234240 mm⁴    Polar second moment of bolt areas
-  v_max = 0.9953 kN    Maximum bolt shear
-  t_max = 0 kN    Maximum bolt tension
+  v_max = 0.9953 kN    Maximum shear on any bolt
+  t_max = 0 kN    Maximum tension on any bolt
+  bolt_v = "bolt 1"    Bolt with the largest shear
+  bolt_t = "bolt 1"    Bolt with the largest tension
   u_max = 0.071093    Governing interaction utilisation
   governing = "bolt 1"    Governing bolt
-  u_lin = 0.071093    Linear interaction utilisation
+  u_lin = 0.071093    Linear interaction utilisation (highest over all bolts)
+  governing_lin = "bolt 1"    Bolt governing the linear interaction
 
 6. CHECKS (governing first)
   PASS  Circular shear–tension interaction (governing bolt): u_max = 0.071093 vs u_max ≤ 1  utilisation 0.0711
-  PASS  Linear shear–tension interaction v/V_R + t/(1.4 T_R): u_lin = 0.071093 vs u_lin ≤ 1  utilisation 0.0711  « EN 1993-1-8 Table 3.4
-  PASS  Shear alone: u_v = 0.071093 vs u_v ≤ 1  utilisation 0.0711
-  PASS  Tension alone: u_t = 0 vs u_t ≤ 1  utilisation 0
+  PASS  Linear shear–tension interaction v/V_R + t/(1.4 T_R), every bolt: u_lin = 0.071093 vs u_lin ≤ 1  utilisation 0.0711  « EN 1993-1-8 Table 3.4
+  PASS  Shear alone (largest bolt shear): u_v = 0.071093 vs u_v ≤ 1  utilisation 0.0711
+  PASS  Tension alone (largest bolt tension): u_t = 0 vs u_t ≤ 1  utilisation 0
 
 7. APPLICABILITY
   No warnings.
 
 8. VERIFICATION
-  Template: mech.bolt-group@1.2.0
-  Content hash: 1d9f5c56b95ecdb6
+  Template: mech.bolt-group@1.4.0
+  Content hash: 51d1bceeeb8e14ba
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test

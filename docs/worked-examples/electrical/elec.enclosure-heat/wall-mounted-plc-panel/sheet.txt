@@ -8,7 +8,7 @@ Issued: —
 
 1. SCOPE AND METHOD
 Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.
-Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+ α I A_sun). Effective cooling surface, each face weighted by how freely it sheds heat: A_eff = Σ f_face × A_face. Temperature rise with natural cooling, one coefficient over the exposed faces (the IEC TR 60890 tables are not used): ΔT = P/(h A_eff). Air flow a fan must move to hold the target rise: V = P/(ρ c_p ΔT_target), with ρ = p(z)/(287.055 T) and c_p = 1006 J/(kg·K). Fan duty point, where the fan curve meets the system resistance (found by bisection): p_fan(V) = p_sys (V/V_ref)². Cooling unit capacity, when the surfaces alone cannot reject the heat: P_cool = P − h A_eff (T_max − T_amb). Sealed enclosure (sealing temperature T_seal entered, no breather), pressure difference across the walls when the air warms or cools from the sealing temperature at constant volume, in absolute temperatures (a rise when T_int > T_seal, a suction when below): Δp = p_site·|T_int/T_seal − 1|. A pressure-compensation element (breather or relief) limits it to its cracking pressure: dp_seal = min(Δp, dp_relief). Force of that pressure on a cover of area A_cover: F_seal = dp_seal·A_cover.
+Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+ α I A_sun). Effective cooling surface, each face weighted by how freely it sheds heat: A_eff = Σ f_face × A_face. Temperature rise with natural cooling, one coefficient over the exposed faces (the IEC TR 60890 tables are not used): ΔT = P/(h A_eff). Air flow a fan must move to hold the target rise: V = P/(ρ c_p ΔT_target), with ρ = p(z)/(287.055 T) and c_p = 1006 J/(kg·K). Fan duty point, where the fan curve meets the system resistance (found by bisection): p_fan(V) = p_sys (V/V_ref)². Cooling unit capacity, when the surfaces alone cannot reject the heat: P_cool = P − h A_eff (T_max − T_amb); with T_max at or below T_amb the term is a gain, P_cool = P + h A_eff (T_amb − T_max), and no ventilation airflow or fan duty is given. Sealed enclosure (sealing temperature T_seal entered, no breather), pressure difference across the walls when the air warms or cools from the sealing temperature at constant volume, in absolute temperatures (a rise when T_int > T_seal, a suction when below): Δp = p_site·|T_int/T_seal − 1|. A pressure-compensation element (breather or relief) limits it to its cracking pressure: dp_seal = min(Δp, dp_relief). Force of that pressure on a cover of area A_cover: F_seal = dp_seal·A_cover.
   Ref: IEC TR 60890 — A method of temperature-rise verification of low-voltage switchgear and controlgear assemblies by calculation
   Ref: Manufacturer enclosure climate-control guides (Rittal, nVent Hoffman) — Effective surface, heat-transfer coefficient and fan-sizing practice (cited, not copied)
   Ref: BS EN 61439-1 10.10 — Verification of temperature rise
@@ -41,11 +41,12 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   V_ref | Reference airflow for the system resistance | 100 | m^3/h | spec: Filter datasheet: 20 Pa at 100 m³/h | 1 … 100000 m^3/h
 
 3. ASSUMPTIONS
-  A1. Heat leaves the enclosure through its exposed faces at one overall coefficient h (natural convection plus radiation to surroundings at the ambient temperature); covered faces dissipate nothing. (IEC TR 60890-style effective-surface approach; h is a reference value the user may edit.)
+  A1. Heat leaves the enclosure through its exposed faces at one overall coefficient h (natural convection plus radiation to surroundings at the ambient temperature); covered faces dissipate nothing. (Plain exposed-area method of manufacturer practice, not an IEC TR 60890 verification; h is a reference value the user may edit.)
   A2. Forced ventilation removes the full heat load with air entering at ambient and leaving at the target rise; natural dissipation is neglected for the airflow (conservative). (Manufacturer fan-sizing practice.)
   A3. A sealed enclosure (T_seal entered) is a closed, rigid, leak-free volume of dry air at the site pressure when closed: the pressure difference follows from the ideal-gas relation at constant volume, from the sealing temperature to the internal temperature with natural dissipation T_int (the temperature without a cooling unit); a breather, a seal that leaks or a flexing wall reduces it, so it is an upper bound (a pressure-compensation element is modelled only as a cap at its cracking pressure, with no flow resistance); the site pressure is the standard atmosphere at the altitude. (Ideal gas at constant volume (derived).)
   A4. The fan curve is linear between the entered points; the system resistance scales with airflow squared. (Duty-point idealisation.)
   A5. altitude (Site altitude (air density)) is taken as 0 m. (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A6. The effective surface is the plain exposed-area method of manufacturer practice: each face area weighted by how freely it sheds heat, one overall coefficient h. This is not a verification of temperature rise to IEC TR 60890 or BS EN 61439-1 cl. 10.10 (neither the surface factors nor the standard's temperature-rise correlation is used). (Stated on every run so the result is not read as an assembly verification.)
 
 4. WORKING
   [18] P_loads = Σ P_i × n_i × d_i
@@ -60,7 +61,7 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
       = 300 W + 0 W + 0 W
       = 300 W
         Total heat to remove
-  [21] A_eff = f_top * W * D + f_bottom * W * D + f_front * W * H + f_rear * W * H + f_left * H * D + f_right * H * D    « IEC TR 60890 approach
+  [21] A_eff = f_top * W * D + f_bottom * W * D + f_front * W * H + f_rear * W * H + f_left * H * D + f_right * H * D    « plain exposed-area method (manufacturer practice), not an IEC TR 60890 verification
       = 1 × 0.6 m × 0.3 m + 0 × 0.6 m × 0.3 m + 1 × 0.6 m × 0.8 m + 0 × 0.6 m × 0.8 m + 1 × 0.8 m × 0.3 m + 1 × 0.8 m × 0.3 m
       = 1.14 m²
         Effective dissipating surface
@@ -153,7 +154,7 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   WARNING cooling-unit: T_max: natural dissipation holds 94.05 W of 300 W; ventilate or fit a 206 W cooling unit.
 
 8. VERIFICATION
-  Template: elec.enclosure-heat@1.5.0
+  Template: elec.enclosure-heat@1.6.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 4/4

@@ -39,7 +39,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
     public const string MaterialKind = "material.properties";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.1", CalcDiscipline.Structural, "EN 1993-1-1 LTB and N+M interaction",
+        Id, "1.1.3", CalcDiscipline.Structural, "EN 1993-1-1 LTB and N+M interaction",
         "Lateral-torsional buckling (6.3.2), flexural buckling (6.3.1) and the interaction of axial compression with bending (6.3.3) for a uniform doubly-symmetric I-section member on fork supports, class 1 to 3: M_cr, λ̄_LT, χ_LT and M_b,Rd; χ_y, χ_z and N_b,Rd; the Annex B (or Annex A) interaction factors and both interaction ratios, with the governing check.",
         "Critical moment (NCCI SN003 form): M_cr = C₁·π²E·I_z/(kL)²·[√((k/k_w)²·I_w/I_z + (kL)²·G·I_t/(π²E·I_z) + (C₂z_g)²) − C₂z_g]; C₁ = 1.88 − 1.40ψ + 0.52ψ² ≤ 2.70 (end moments, k = 1) unless entered\n" +
         "LTB slenderness: λ̄_LT = √(W_y·f_y/M_cr), W_y = W_pl,y (class 1, 2) or W_el,y (class 3)\n" +
@@ -140,7 +140,8 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
             new CalcApplicabilityRule("C_m_LT", "Table B.2 divides by C_mLT − 0.25: C_mLT must exceed 0.25.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("curve", "The automatic flexural buckling curve is not defined for this section (f_y above 420 MPa, or a Table 6.2 combination without a row): choose the curve.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("engine", "The elastic critical moment could not be evaluated for these inputs.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("c1-psi", "C₁ from the ψ formula applies to end moments with k = 1; Annex A takes C_my,0 from ψ.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("c1-psi", "C₁ from the ψ formula applies to end moments with k = 1 and can exceed the exact elastic value by up to about 10 % when ψ < 0.25; Annex A takes C_my,0 from ψ.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("table-b1", "Table B.1 is for members not susceptible to torsional deformation; an open I-section whose χ_LT is below 1 is susceptible unless it is restrained against twist.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("zg-c2", "z_g has no effect while C₂ = 0.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("double-curvature", "End moments of opposite sign are taken as double curvature (ψ < 0, C₁ up to its cap): bending-moment-diagram ordinates, not stiffness-analysis end actions.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("use-f", "The f modification belongs to 6.3.2.3 and is not applied with 6.3.2.2.", CalcNoticeSeverity.Warning),
@@ -381,6 +382,9 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
             c1 = LtbInteractionMath.C1FromPsi(psiY);
             c.Record("C_1", "1.88 − 1.40ψ + 0.52ψ² ≤ 2.70", $"ψ = {F(psiY)}", new ScalarValue(c1), "C₁ for end moments (derived)", "NCCI SN003 / ENV 1993-1-1 Annex F");
 
+            if (psiY < 0.25)
+                c.Warn("c1-psi", $"C_1: with ψ = {F(psiY)} the ψ formula (an ENV 1993-1-1 Annex F curve fit) gives C₁ = {F(c1)}, which can exceed the exact elastic value by up to about 10 % for long members and double curvature (more for very long members), so M_cr and M_b,Rd can be unconservative. Check C₁ against an elastic buckling program such as LTBeam and enter it, or treat the result as an upper bound.");
+
             if (Math.Abs(k - 1) > 1e-12)
                 c.Warn("c1-psi", "k: C₁ from the ψ formula applies to k = 1; enter C₁ for the actual end conditions.");
 
@@ -611,6 +615,9 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
         }
 
         var table = annexA ? "Annex A Table A.1" : (torsion ? "Annex B Table B.2" : "Annex B Table B.1");
+
+        if (!annexA && !torsion && chiUsed < 1 - 1e-9)
+            c.Warn("table-b1", $"torsion: Table B.1 (not susceptible to torsional deformation) is chosen, but this I-section buckles laterally (χ_LT = {F(chiUsed)} < 1). An open I-section is susceptible to torsional deformation unless it is restrained against twist, and Table B.1 then gives a k_zy of 0.6·k_yy, far below Table B.2's: the interaction can be about 20 % unconservative. Choose Table B.2 unless the member is restrained against twist.");
         c.Record("k_yy", annexA ? "Annex A: C_my·C_mLT·μ_y/(1 − N/N_cr,y)/C_yy" : "Annex B: C_my(1 + (λ̄_y − 0.2)n_y) ≤ C_my(1 + 0.8n_y) (class 1, 2)", $"n_y = {F(ny)}", new ScalarValue(k2.Kyy), "Interaction factor k_yy", table);
         c.Record("k_yz", annexA ? "Annex A: C_mz·μ_y/(1 − N/N_cr,z)/C_yz·0.6√(w_z/w_y)" : "Annex B: 0.6k_zz (class 1, 2), k_zz (class 3)", "as above", new ScalarValue(k2.Kyz), "Interaction factor k_yz", table);
         c.Record("k_zy", annexA ? "Annex A: C_my·C_mLT·μ_z/(1 − N/N_cr,y)/C_zy·0.6√(w_y/w_z)" : "Annex B: Table B.1 0.6k_yy / 0.8k_yy; Table B.2 from λ̄_z, n_z and C_mLT", $"n_z = {F(nz)}", new ScalarValue(k2.Kzy), "Interaction factor k_zy", table);

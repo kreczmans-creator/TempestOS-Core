@@ -12,7 +12,7 @@ public sealed class Iso286FitCalculator : ICalcCalculator
     public const string BearingBore = "rolling-bearing bore (deviations from the bearing record)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.Mechanical, "ISO 286 limits and fits",
+        Id, "1.5.0", CalcDiscipline.Mechanical, "ISO 286 limits and fits",
         "Hole and shaft limits for a nominal size and tolerance classes, the resulting fit (clearance, transition or interference) and its extreme values, from the ISO 286-1 formulae.",
         "Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^(1/3) + 0.001·D (µm).\nWidth of the tolerance band for the grade: ITn = multiplier × i.\nFundamental deviations by letter from the published formulae, and hole deviations by the general rule: EI = −es (A–H); ES = −ei + Δ (K–ZC).\nLimits of size of the hole and the shaft: limit = nominal + deviation.\nFit extremes, the largest and smallest clearance (negative is interference): c_max = ES − ei; c_min = EI − es.\nRolling-bearing bore mode: a bearing bore is not an ISO 286 hole; it has its own tolerance (ISO 492) lying below nominal, so ES and EI are entered from the bearing record instead of being computed.",
         [
@@ -28,7 +28,7 @@ public sealed class Iso286FitCalculator : ICalcCalculator
             new CalcInputSpec("ei_override", "Shaft lower deviation override", CalcInputKind.Quantity, "µm", IsOptional: true, HardMin: -5000, HardMax: 5000),
         ],
         [
-            new CalcAssumption("IT values and fundamental deviations are the unrounded results of the ISO 286-1 formulae at the geometric mean of the size step.", "The tabulated values apply the standard's own rounding and may differ by about 1 µm; enter overrides from a released reference record where the tabulated value governs."),
+            new CalcAssumption("IT values and fundamental deviations are the unrounded results of the ISO 286-1 formulae at the geometric mean of the size step.", "The tabulated values apply the standard's own rounding and may differ by about 1 µm for the clearance and transition letters (a to n). For the interference letters p to zc the tables also carry the standard's own increments and sub-steps, so the formula value can be several µm below the tabulated one (p6 at 450 mm: 62.2 against 68 µm), and the sheet warns; enter overrides from a released reference record where the tabulated value governs."),
             new CalcAssumption("Hole deviations follow the general rule from the shaft deviations, with Δ = ITn − IT(n−1) where the standard applies it.", "Table-specific departures in the standard are not reproduced; use the overrides where they govern."),
         ],
         [
@@ -38,6 +38,7 @@ public sealed class Iso286FitCalculator : ICalcCalculator
         [
             new CalcApplicabilityRule("bearing-bore", "A rolling-bearing bore needs ES_override and EI_override from the bearing record; it is not an H7 hole.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("large-size", "Nominal size above 500 mm uses the I = 0.004 D + 2.1 tolerance unit.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("interference-letter", "A fundamental deviation from p to zc is evaluated from the formula: the tabulated value can be several µm larger, so the maximum interference is understated; use the overrides where the table governs.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("fine-grade", "IT grades below IT5 are evaluated by geometric interpolation; check against the standard.", CalcNoticeSeverity.Warning),
         ],
         [
@@ -69,6 +70,15 @@ public sealed class Iso286FitCalculator : ICalcCalculator
 
         if (holeGrade < 5 || shaftGrade < 5)
             c.Warn("fine-grade", "grade: IT grades below IT5 are interpolated geometrically between IT1 and IT5.");
+
+        var holeFormula = !bore && !(c.Has("ES_override") || c.Has("EI_override")) && Iso286.IsInterferenceLetter(holeLetter);
+        var shaftFormula = !(c.Has("es_override") || c.Has("ei_override")) && Iso286.IsInterferenceLetter(shaftLetter);
+
+        if (holeFormula || shaftFormula)
+        {
+            var which = holeFormula && shaftFormula ? $"{holeLetter} and {shaftLetter}" : holeFormula ? holeLetter : shaftLetter;
+            c.Warn("interference-letter", $"{(holeFormula ? "hole_letter" : "shaft_letter")}: the deviation of '{which}' is evaluated from the ISO 286-1 formula; " + Iso286.InterferenceLetterNote + ". Enter ES_override/EI_override or es_override/ei_override from a reference record where the table governs.");
+        }
 
         var (lo, hi) = Iso286.Step(dMm);
         var dMean = Iso286.StepMean(dMm);
@@ -102,7 +112,9 @@ public sealed class Iso286FitCalculator : ICalcCalculator
 
             if (fundamental is null)
             {
-                c.Block("input.shaft_letter", $"shaft_letter: no formula gives '{shaftLetter}'; enter es_override and ei_override from a reference record.");
+                c.Block("input.shaft_letter", shaftLetter == "t"
+                    ? $"shaft_letter: the standard has no t shaft at {CalcValue.FormatNumber(dMm)} mm; t starts above {CalcValue.FormatNumber(Iso286.TShaftFromMm)} mm. Choose another letter, or enter es_override and ei_override from a reference record."
+                    : $"shaft_letter: no formula gives '{shaftLetter}'; enter es_override and ei_override from a reference record.");
                 return;
             }
 
@@ -154,7 +166,9 @@ public sealed class Iso286FitCalculator : ICalcCalculator
 
             if (fundamental is null)
             {
-                c.Block("input.hole_letter", $"hole_letter: no formula gives '{holeLetter}'; enter ES_override and EI_override from a reference record.");
+                c.Block("input.hole_letter", holeLetter.Equals("T", StringComparison.OrdinalIgnoreCase)
+                    ? $"hole_letter: the standard has no T hole at {CalcValue.FormatNumber(dMm)} mm; T starts above {CalcValue.FormatNumber(Iso286.TShaftFromMm)} mm. Choose another letter, or enter ES_override and EI_override from a reference record."
+                    : $"hole_letter: no formula gives '{holeLetter}'; enter ES_override and EI_override from a reference record.");
                 return;
             }
 

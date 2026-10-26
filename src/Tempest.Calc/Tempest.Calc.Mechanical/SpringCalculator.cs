@@ -54,14 +54,14 @@ public sealed class SpringCalculator : ICalcCalculator
     private const string Part3 = "EN 13906-3";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.1", CalcDiscipline.Mechanical, "Helical springs: compression, extension, torsion",
+        Id, "1.4.0", CalcDiscipline.Mechanical, "Helical springs: compression, extension, torsion",
         "A cylindrical helical spring of round wire, cold-coiled, with a linear characteristic: compression (rate, working points, solid length by end type, stress at the working points and at solid, buckling, Goodman fatigue, surge frequency), extension (the same with the initial tension and the hook stresses) or torsion (rate with the legs, curvature-corrected bending stress, wound diameter and body length).",
         "Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ = E·d⁴/(64·D·n_a), n_a = n + (l₁ + l₂)/(3π·D) (torsion)\n" +
         "Spring stress: τ_k = k_c·8·F·D/(π·d³), k_c = (C + 0.5)/(C − 0.75) (Bergsträsser) or (4C − 1)/(4C − 4) + 0.615/C (Wahl); torsion σ = q·32·M/(π·d³) with q = (C + 0.07)/(C − 0.75) (EN 13906-3, the default) or K_i = (4C² − C − 1)/(4C·(C − 1)) (Shigley)\n" +
         "Solid length (compression): n_t = n + e_n; EN 13906-1 form L_s = d_max·(n_t + e_s) with (e_n, e_s) = (0, 1) plain, (1, 0) plain and ground, (2, 1.5) squared (closed, unground), (2, 0) squared and ground, and the minimum coil clearance S_a = (0.0015·D²/d + 0.1·d)·n checked at the working length (L₂ ≥ L_s + S_a); Shigley form L_s = d·(n_t + e_s) with e_s = 1 for squared; pitch p = (L₀ − a·d)/(n + b)\n" +
         "Extension spring hook stresses: F = F₀ + k·s; hook bending σ_A = F·[K_A·16·D/(π·d³) + 4/(π·d²)], K_A = (4C₁² − C₁ − 1)/(4C₁·(C₁ − 1)), C₁ = 2r₁/d; hook torsion τ_B = K_B·8·F·D/(π·d³), K_B = (4C₂ − 1)/(4C₂ − 4), C₂ = 2r₂/d\n" +
         "Buckling (compression): λ_eff = ν·L₀/D; y_cr = L₀·C₁′·[1 − √(1 − C₂′/λ_eff²)], C₁′ = E/(2(E − G)), C₂′ = 2π²(E − G)/(2G + E); stable at any deflection when λ_eff² < C₂′\n" +
-        "Fatigue (Goodman, as M4): 1/n_f = a/S_e + m/S_u with a = (x₂ − x₁)/2, m = (x₂ + x₁)/2 of the stresses at the two working points; S_u = f_su·R_m in shear, R_m in bending; R_m typed or R_m = A/d^m from a W3 material (A in MPa, d in mm)\n" +
+        "Fatigue (Goodman, as M4): 1/n_f = a/S_e + m/S_u with a = (x₂ − x₁)/2, m = (x₂ + x₁)/2 of the stresses at the two working points; S_u = f_su·R_m in shear, R_m in bending; the extension hook has its own rows, bending σ_A with S_e_b and R_m, side bend τ_B with S_e and f_su·R_m; R_m typed or R_m = A/d^m from a W3 material (A in MPa, d in mm)\n" +
         "Surge frequency: f_n = (d/(2π·n·D²))·√(G/(2ρ)); warning when f_n/f_op < 13\n" +
         "Torsion body: D_w = D·n/(n + φ/2π); L_w = d·(n + 1 + φ/2π)",
         [
@@ -102,6 +102,7 @@ public sealed class SpringCalculator : ICalcCalculator
             new CalcInputSpec("f_su", "Ultimate shear strength as a fraction of R_m (Goodman, shear; generic textbook default, replace with the licensed EN 13906 value)", CalcInputKind.Number, Default: 0.67, Min: 0.4, Max: 0.9, HardMin: 0.05, HardMax: 1, Group: "Strength"),
             new CalcInputSpec("nu_seat", "End-support coefficient ν (0.5 both ends fixed, 0.7 one fixed one pinned, 1 both pinned, 2 one free)", CalcInputKind.Number, Default: 0.5, Min: 0.5, Max: 2, HardMin: 0.25, HardMax: 5, Group: "Buckling"),
             new CalcInputSpec("S_e", "Endurance strength for the stress kind (shear; bending in torsion) at N_c cycles, alternating (no default: from the wire maker or your fatigue reference)", CalcInputKind.Quantity, "MPa", Min: 50, Max: 2000, HardMin: 1, HardMax: 1e4, Group: "Fatigue and surge"),
+            new CalcInputSpec("S_e_b", "Bending endurance strength of the hook (extension) at N_c cycles, alternating (no default; blank: hook bending fatigue is not assessed)", CalcInputKind.Quantity, "MPa", Min: 50, Max: 3000, HardMin: 1, HardMax: 1e4, IsOptional: true, Group: "Fatigue and surge"),
             new CalcInputSpec("N_c", "Required life the endurance strength belongs to", CalcInputKind.Number, Default: 1e7, Min: 1e4, Max: 1e10, HardMin: 1, HardMax: 1e12, Group: "Fatigue and surge"),
             new CalcInputSpec("n_f_req", "Required Goodman safety factor", CalcInputKind.Number, Default: 1.2, Min: 1, Max: 5, HardMin: 0.5, HardMax: 20, Group: "Fatigue and surge"),
             new CalcInputSpec("f_op", "Operating (excitation) frequency", CalcInputKind.Quantity, "Hz", Default: 10, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e6, IsOptional: true, Group: "Fatigue and surge"),
@@ -112,8 +113,8 @@ public sealed class SpringCalculator : ICalcCalculator
             new CalcAssumption("Solid length: the EN 13906-1 form (default) uses the maximum wire diameter d_max, adds the 1.5 d of an unground squared end and checks the minimum coil clearance S_a at the working length L₂; plain ends have no EN row and keep the geometric form. The Shigley form (nominal d, no clearance) is selectable.", "EN 13906-1 relations written in own notation, to be checked against the owner's copy; Shigley 10th ed. Table 10-1."),
             new CalcAssumption("Torsion bending stress: the EN 13906-3 factor q = (C + 0.07)/(C − 0.75) is the default; Shigley's K_i = (4C² − C − 1)/(4C(C − 1)) is selectable and about 1 % lower at C = 8.", "EN 13906-3 relation written in own notation, to be checked against the owner's copy."),
             new CalcAssumption("R_m(d) and the endurance strength are the user's inputs from the user's own copy of the wire standard and design reference, with no default. The permissible stress fractions f_τ, f_σ and f_su do default (0.45, 0.75, 0.67), to generic textbook fractions that the user replaces with the licensed EN 13906 value. R_m(d) can instead be taken from the curve R_m = A/d^m of a W3 material (revision-pinned; A in MPa for d in mm, the diameter range of the fit is the user's to respect). No wire-strength table and no permissible-stress diagram is shipped.", "No wire-strength table or permissible-stress diagram is shipped."),
-            new CalcAssumption("The stress correction factor k_c is applied to the working and the solid stress alike (conservative for the static check).", "Choose 'None (uncorrected)' for the uncorrected static stress."),
-            new CalcAssumption("Extension: hook fatigue and the hook shape beyond its two radii are not assessed; the initial tension is a force the user enters.", "Shigley 10th ed. Ch. 10, extension springs."),
+            new CalcAssumption("The stress correction factor k_c is applied to the working and the solid stress alike (conservative for the static check).", "Choose 'None (uncorrected)' for the uncorrected static stress; the fatigue stresses (Goodman) always carry the curvature factor, the Bergsträsser one when 'None' is chosen."),
+            new CalcAssumption("Extension: the hook shape beyond its two radii is not assessed; hook fatigue is Goodman on the bending stress (with the bending endurance S_e_b, which has no default) and on the side-bend torsion (with the shear endurance S_e), each between its values at the two working points; the initial tension is a force the user enters.", "Shigley 10th ed. Ch. 10, extension springs."),
             new CalcAssumption("Surge is the first natural frequency of a spring with both ends fixed; a spring with one end free has half of it.", "Shigley 10th ed. Ch. 10, critical frequency."),
         ],
         [
@@ -135,6 +136,7 @@ public sealed class SpringCalculator : ICalcCalculator
             new CalcApplicabilityRule("surge", "The surge frequency is less than 13 times the operating frequency.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("travel-mismatch", "The spring's working travel s₂ − s₁ differs from the expected working travel by more than 1 %.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("s-work-unused", "An expected working travel s_work is given in torsion mode: the travel check applies to compression and extension only, so it is not used.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("hook-fatigue", "An extension spring with no hook bending endurance S_e_b: the hook bending fatigue is not assessed, and it usually governs.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("fatigue-cycles", "The required life is below 10⁴ cycles: the Goodman relation is for high-cycle fatigue.", CalcNoticeSeverity.Warning),
         ],
         [
@@ -288,6 +290,9 @@ public sealed class SpringCalculator : ICalcCalculator
         };
 
         c.Assign("k_c", kc, null, $"Shear stress correction factor ({corr})");
+
+        // "None" is a choice for the static stress alone: the curvature of the wire concentrates the stress on the inside of the coil, and that peak is what a fatigue crack grows from, so the fatigue stresses always carry the curvature factor.
+        c.Assign("k_c_fat", corr == Uncorrected ? "(C + 0.5) / (C - 0.75)" : "k_c", null, corr == Uncorrected ? "Shear stress correction factor for the fatigue stresses (Bergsträsser: 'None' applies to the static stress only)" : "Shear stress correction factor for the fatigue stresses (as the static stress)");
         c.Assign("tau_perm", "f_tau * Rm", "MPa", "Permissible shear stress (fraction of R_m, user input)");
     }
 
@@ -512,7 +517,9 @@ public sealed class SpringCalculator : ICalcCalculator
             c.Output(symbol, text);
 
         Surge(c);
-        Fatigue(c, "tau_1", "tau_2", "S_su", shear: true);
+        Fatigue(c, "tau_1", "tau_2", "S_su", shear: true, bodyOnly: true);
+
+        HookFatigue(c);
 
         c.CheckUtilisation("Static shear stress at working point 2", "u_2", Part2);
         c.CheckUtilisation("Hook bending stress", "u_A", Part2);
@@ -679,8 +686,48 @@ public sealed class SpringCalculator : ICalcCalculator
             c.Warn("surge", $"f_op: the surge frequency is {F(c.Si("r_f"))} times the operating frequency, below {SurgeRatioLimit:0}; the spring may resonate.");
     }
 
+    /// <summary>
+    /// Extension spring hook fatigue (mech.spring-R1): the hook bending stress σ_A and the side-bend torsion stress τ_B follow the force, so they swing between their values at the two
+    /// working points. Each has its own Goodman row counted in the verdict: the side bend with the shear endurance S_e and S_su = f_su·R_m as the body, the bending with its own endurance
+    /// S_e_b and S_u = R_m. A blank S_e_b leaves the bending row out and the sheet says so.
+    /// </summary>
+    private static void HookFatigue(CalcRunContext c)
+    {
+        if (!c.Has("S_e"))
+            return;
+
+        c.Assign("sigma_A1", "F_1 * (K_A * 16 * D / (pi * d^3) + 4 / (pi * d^2))", "MPa", "Hook bending stress at working point 1", Part2);
+        c.Assign("tau_B1", "K_B * 8 * F_1 * D / (pi * d^3)", "MPa", "Hook side-bend torsion stress at working point 1", Part2);
+        c.Assign("tau_Ba", "(tau_B - tau_B1) / 2", "MPa", "Alternating side-bend torsion stress");
+        c.Assign("tau_Bm", "(tau_B + tau_B1) / 2", "MPa", "Mean side-bend torsion stress");
+        var uB = FatigueRelations.GoodmanUtilisation(c.Si("tau_Ba"), c.Si("tau_Bm"), c.Si("S_e"), c.Si("S_su"));
+        c.Record("u_f_B", "tau_Ba/S_e + tau_Bm/S_su", $"{F(c.Si("tau_Ba") / 1e6)} / {F(c.Si("S_e") / 1e6)} + {F(c.Si("tau_Bm") / 1e6)} / {F(c.Si("S_su") / 1e6)}", new ScalarValue(uB), "Goodman utilisation of the hook side bend (1/n_f)", "Goodman, as M4 (Shigley 10th ed. Ch. 6)");
+        c.Record("n_f_B", "1/u_f_B", $"1 / {F(uB)}", new ScalarValue(uB > 1e-12 ? Math.Min(1 / uB, 1e9) : 1e9), "Goodman safety factor of the hook side bend");
+        c.Assign("u_fat_B", "n_f_req * u_f_B", null, "Hook side-bend fatigue utilisation against the required factor");
+        c.Output("u_f_B", "Goodman utilisation, hook side bend");
+        c.Output("n_f_B", "Goodman safety factor, hook side bend");
+        c.CheckUtilisation("Goodman fatigue of the hook side-bend torsion against the required safety factor", "u_fat_B", "Goodman, as M4");
+
+        if (!c.Has("S_e_b"))
+        {
+            c.Warn("hook-fatigue", "S_e_b: the fatigue of the hook bending is not assessed because the bending endurance strength S_e_b is not entered; hook bending usually governs an extension spring (the Goodman row of the body does not cover it), so a pass here is not a pass for the whole spring. Enter S_e_b.");
+            return;
+        }
+
+        c.Input("S_e_b");
+        c.Assign("sigma_Aa", "(sigma_A - sigma_A1) / 2", "MPa", "Alternating hook bending stress");
+        c.Assign("sigma_Am", "(sigma_A + sigma_A1) / 2", "MPa", "Mean hook bending stress");
+        var uA = FatigueRelations.GoodmanUtilisation(c.Si("sigma_Aa"), c.Si("sigma_Am"), c.Si("S_e_b"), c.Si("Rm"));
+        c.Record("u_f_A", "sigma_Aa/S_e_b + sigma_Am/R_m", $"{F(c.Si("sigma_Aa") / 1e6)} / {F(c.Si("S_e_b") / 1e6)} + {F(c.Si("sigma_Am") / 1e6)} / {F(c.Si("Rm") / 1e6)}", new ScalarValue(uA), "Goodman utilisation of the hook bending (1/n_f)", "Goodman, as M4 (Shigley 10th ed. Ch. 6)");
+        c.Record("n_f_A", "1/u_f_A", $"1 / {F(uA)}", new ScalarValue(uA > 1e-12 ? Math.Min(1 / uA, 1e9) : 1e9), "Goodman safety factor of the hook bending");
+        c.Assign("u_fat_A", "n_f_req * u_f_A", null, "Hook bending fatigue utilisation against the required factor");
+        c.Output("u_f_A", "Goodman utilisation, hook bending");
+        c.Output("n_f_A", "Goodman safety factor, hook bending");
+        c.CheckUtilisation("Goodman fatigue of the hook bending against the required safety factor", "u_fat_A", "Goodman, as M4");
+    }
+
     /// <summary>The Goodman check on the stresses at the two working points. The endurance strength has no default: a blank one is refused before the run.</summary>
-    private static void Fatigue(CalcRunContext c, string low, string high, string ultimate, bool shear)
+    private static void Fatigue(CalcRunContext c, string low, string high, string ultimate, bool shear, bool bodyOnly = false)
     {
         if (!Require(c, "S_e"))
             return;
@@ -692,8 +739,10 @@ public sealed class SpringCalculator : ICalcCalculator
             c.Warn("fatigue-cycles", $"N_c: the required life is {F(c.Si("N_c"))} cycles; the Goodman relation is for high-cycle fatigue, so the static check governs.");
 
         var (amplitude, mean, kind) = shear ? ("tau_a", "tau_m", "shear") : ("sigma_a", "sigma_m", "bending");
-        c.Assign(amplitude, $"({high} - {low}) / 2", "MPa", $"Alternating {kind} stress");
-        c.Assign(mean, $"({high} + {low}) / 2", "MPa", $"Mean {kind} stress");
+        // Shear (compression and extension): the fatigue stresses carry k_c_fat/k_c on the sheet's own working stresses, which is 1 unless the correction was set to 'None'.
+        var scale = shear ? "k_c_fat / k_c * " : string.Empty;
+        c.Assign(amplitude, $"{scale}({high} - {low}) / 2", "MPa", $"Alternating {kind} stress");
+        c.Assign(mean, $"{scale}({high} + {low}) / 2", "MPa", $"Mean {kind} stress");
 
         if (shear)
             c.Assign("S_su", "f_su * Rm", "MPa", "Ultimate shear strength (fraction of R_m, user input)");
@@ -706,7 +755,7 @@ public sealed class SpringCalculator : ICalcCalculator
         c.Assign("u_fat", "n_f_req * u_f", null, "Fatigue utilisation against the required factor");
         c.Output("u_f", "Goodman utilisation");
         c.Output("n_f", "Goodman safety factor");
-        c.CheckUtilisation("Goodman fatigue against the required safety factor", "u_fat", "Goodman, as M4");
+        c.CheckUtilisation(bodyOnly ? "Goodman fatigue of the body only against the required safety factor (the hooks have their own rows)" : "Goodman fatigue against the required safety factor", "u_fat", "Goodman, as M4");
     }
 
     private static string F(double v) => double.IsFinite(v) ? CalcValue.FormatNumber(v, 5) : "—";

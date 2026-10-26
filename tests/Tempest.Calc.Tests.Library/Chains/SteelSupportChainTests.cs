@@ -94,8 +94,8 @@ public sealed class SteelSupportChainTests
         Assert.Equal(244.794, Si(s4b, "A_s") * 1e6, 3);
         Assert.Equal(141.0016, Si(s4b, "F_t_Rd") / 1e3, 3);
 
-        // The base plate's bearing value is the 25 mm plate's: 1.25 times the 20 mm arm-joint value (k₁ and α_b are alike), not the arm joint's.
-        Assert.Equal(25.0 / 20.0, Si(s4b, "F_b_Rd") / Si(s4a, "F_b_Rd"), 9);
+        // The base plate's bearing value is the 25 mm plate's: 25/11 times the arm joint's, which bears on the thinner 11 mm column flange behind the 20 mm end plate (chain.steel-support-R1; k₁ and α_b are alike).
+        Assert.Equal(25.0 / 11.0, Si(s4b, "F_b_Rd") / Si(s4a, "F_b_Rd"), 9);
         Assert.NotEqual(Si(s4a, "F_b_Rd"), InputSi(s6, "F_1_vb_Rd"));
 
         // Every design check of the column, both connections, the bolt group and the base plate passes.
@@ -105,6 +105,26 @@ public sealed class SteelSupportChainTests
         Assert.Contains(s6.Warnings, w => w.RuleId == "anchorage");
         Assert.DoesNotContain(s6.Checks, c => c.Name.StartsWith("Anchorage", StringComparison.Ordinal));
         Assert.Equal(7, made.Pack.InstanceIds.Count);
+    }
+
+    [Fact]
+    public async Task The_Pack_States_What_It_Does_Not_Check_And_Bearing_Is_On_The_Thinner_Ply()
+    {
+        // chain.steel-support-03, -04, -05, -13, -R1 (and the limits of -01, -02): the text says what the joint, the column and the anchorage checks leave out, S4a bears on the 11 mm column
+        // flange (F_b,Rd 198.79 -> 109.33 kN, u_b 0.024 -> 0.043), and S6 warns that the anchorage is not assessed.
+        var text = CalcPackTemplates.SteelSupport.Description;
+        Assert.Contains("bolts of the bracket's joint", text, StringComparison.Ordinal);
+        Assert.Contains("end plate in bending", text, StringComparison.Ordinal);
+        Assert.Contains("symmetric", text, StringComparison.Ordinal);
+        Assert.Contains("lateral-torsional buckling", text, StringComparison.Ordinal);
+        Assert.Contains("not assessed", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("designs the bracket's bolted joint", text, StringComparison.Ordinal);
+
+        var host = Host();
+        var made = await InstantiateAsync(host);
+        var s4a = made.Instances["s4a"];
+        Assert.Equal(109.3333, Si(s4a, "F_b_Rd") / 1e3, 3);
+        Assert.Contains(made.Instances["s6"].Warnings, w => w.RuleId == "anchorage-result");
     }
 
     [Fact]

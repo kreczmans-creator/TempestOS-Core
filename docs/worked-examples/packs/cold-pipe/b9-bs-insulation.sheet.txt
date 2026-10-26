@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Plant room 2 chilled water
 Calc ID: Pipe insulation    Revision: A
 Title: Insulation thickness (ISO 12241 formula route)
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: CHW-INS-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: CHW-INS-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The insulation thickness on a pipe (cylinder) or a flat surface that meets a heat-flow limit, a limit on the surface temperature of a hot surface and an anti-condensation requirement for a cold one, each solved separately and the governing one reported; and for a chosen thickness the heat flow, the surface temperature and PASS/FAIL per criterion. Steady state, one layer, no thickness table of any standard.
@@ -106,9 +106,9 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   WARNING record: Tabulated values not taken from a reference record: lambda (Material properties); h_se (Outer surface coefficient); eps (Surface emissivity); dew_margin (Insulation criteria). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.insulation@1.1.1
-  Content hash: 16a3b3c2a998a5e8
+  Template: bs.insulation@1.1.2
+  Content hash: 012dd45846bbfdee
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 14/14
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 09:21 UTC
   Application: TempestOS test

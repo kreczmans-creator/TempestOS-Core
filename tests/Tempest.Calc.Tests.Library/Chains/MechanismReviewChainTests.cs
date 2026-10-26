@@ -90,14 +90,15 @@ public sealed class MechanismReviewChainTests
         Assert.DoesNotContain(m7.Warnings, w => w.RuleId == "travel-mismatch");
         Assert.True(Si(m7, "L_2") > Si(m7, "L_n"), "the spring must not be loaded past its minimum clearance length");
 
-        // M9 → M4: the contact force (N into kN) is the load row at the cam, by a table-cell link; the RMS torque, the peak torque (N·m into kN·m) and the speed are the shaft's.
+        // M9 → M4: the contact force (N into kN) is the load row at the cam, by a table-cell link; the peak input torque (N·m into kN·m) is the shaft's alternating torque amplitude and its peak torque, and the speed is the shaft's.
         var load = Assert.Single(m4.CellLinks);
         Assert.Equal(("loads", 0, "F_y", "F_pin_pk"), (load.Symbol, load.Row, load.Column, load.Link.OutputSymbol));
         Assert.Equal(m9.Id, load.Link.UpstreamId);
         Assert.Equal(Si(m9, "F_pin_pk"), CellSi(m4, "loads", 0, "F_y"), 9);
-        Assert.Equal(["T", "T_pk", "n"], m4.Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
-        Assert.Equal(Si(m9, "T_rms_in"), InputSi(m4, "T"), 9);
+        Assert.Equal(["T_a", "T_pk", "n"], m4.Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
+        Assert.Equal(Si(m9, "input_torque"), InputSi(m4, "T_a"), 9);
         Assert.Equal(Si(m9, "input_torque"), InputSi(m4, "T_pk"), 9);
+        Assert.Equal(0, InputSi(m4, "T"), 12);
         Assert.Equal(Si(m9, "n_in"), InputSi(m4, "n"), 9);
 
         // M4: the cam sits at 150 mm, midway between bearings at 25 and 275 mm, so each reaction is half the contact force (222.48 N) and M_max = F L/4 = 444.96 · 0.25/4 = 27.81 N·m.
@@ -133,7 +134,7 @@ public sealed class MechanismReviewChainTests
         Assert.Equal(84.05792234668907, Si(e1, "P_cont"), 4);
         Assert.Equal(0.0013028163580246913, Si(e1, "J_total"), 12);
         Assert.Equal(0.6556564494972549, Si(e1, "T_pk"), 6);
-        Assert.Equal(3, e1.Checks.Count);
+        Assert.Equal(4, e1.Checks.Count);
         Assert.All(e1.Checks, c => Assert.True(c.Passed, c.Name));
 
         // E1 is judged on the cam's RMS torque; the cam's PEAK torque (10.111 N·m at the cam shaft, 1.1703 N·m at the motor) is inside the candidate motor's 3 N·m peak, which this step cannot see (guarded here).
@@ -168,7 +169,7 @@ public sealed class MechanismReviewChainTests
         Assert.Equal(["m9", "m7", "m4", "m5", "e1", "e4"], template.Steps.Select(s => s.Key));
         Assert.Equal(
             [
-                ("m9", "F_spring_max", "m7", "F_2"), ("m9", "lift", "m7", "s_work"), ("m9", "f_in", "m7", "f_op"), ("m9", "F_pin_pk", "m4", "loads"), ("m9", "T_rms_in", "m4", "T"), ("m9", "input_torque", "m4", "T_pk"), ("m9", "n_in", "m4", "n"),
+                ("m9", "F_spring_max", "m7", "F_2"), ("m9", "lift", "m7", "s_work"), ("m9", "f_in", "m7", "f_op"), ("m9", "F_pin_pk", "m4", "loads"), ("m9", "input_torque", "m4", "T_a"), ("m9", "input_torque", "m4", "T_pk"), ("m9", "n_in", "m4", "n"),
                 ("m4", "R_A", "m5", "F_r"), ("m9", "n_in", "m5", "n"), ("m9", "T_rms_in", "e1", "T_L"), ("m9", "n_in", "e1", "n_L"), ("e1", "P_rated", "e4", "P"),
             ],
             template.Bindings.Select(b => (b.FromStep, b.Output, b.ToStep, b.Input)));
@@ -214,7 +215,7 @@ public sealed class MechanismReviewChainTests
         // ... and the update carried each one to its step.
         Assert.Equal(Si(m9New, "F_spring_max"), InputSi(m7, "F_2"), 9);
         Assert.Equal(Si(m9New, "F_pin_pk"), CellSi(m4, "loads", 0, "F_y"), 9);
-        Assert.Equal(Si(m9New, "T_rms_in"), InputSi(m4, "T"), 9);
+        Assert.Equal(Si(m9New, "input_torque"), InputSi(m4, "T_a"), 9);
         Assert.Equal(Si(m9New, "input_torque"), InputSi(m4, "T_pk"), 9);
         Assert.Equal(Si(m9New, "n_in"), InputSi(m4, "n"), 9);
         Assert.Equal(242.228, Si(m4, "R_A"), 6);
@@ -267,7 +268,7 @@ public sealed class MechanismReviewChainTests
         var m7Reasons = (await host.Service.StalenessAsync(await Fresh(host, made, "m7"))).Reasons;
         Assert.Contains(m7Reasons, r => r.Contains("'F_2'", StringComparison.Ordinal) && r.Contains("different 'F_spring_max'", StringComparison.Ordinal));
         var m4Reasons = (await host.Service.StalenessAsync(await Fresh(host, made, "m4"))).Reasons;
-        Assert.Contains(m4Reasons, r => r.Contains("'T'", StringComparison.Ordinal) && r.Contains("different 'T_rms_in'", StringComparison.Ordinal));
+        Assert.Contains(m4Reasons, r => r.Contains("'T_a'", StringComparison.Ordinal) && r.Contains("different 'input_torque'", StringComparison.Ordinal));
         Assert.Contains(m4Reasons, r => r.Contains("'T_pk'", StringComparison.Ordinal) && r.Contains("different 'input_torque'", StringComparison.Ordinal));
         Assert.Contains(m4Reasons, r => r.Contains("'n'", StringComparison.Ordinal) && r.Contains("different 'n_in'", StringComparison.Ordinal));
         Assert.Contains(m4Reasons, r => r.Contains("loads", StringComparison.Ordinal) && r.Contains("F_pin_pk", StringComparison.Ordinal));
@@ -370,16 +371,16 @@ public sealed class MechanismReviewChainTests
     }
 
     [Fact]
-    public async Task The_Cams_Fully_Alternating_Torque_Entered_As_A_Steady_One_Leaves_The_Shafts_Fatigue_Margin_Intact()
+    public async Task The_Cams_Torque_Reaches_The_Shaft_As_An_Alternating_Torque_About_A_Zero_Mean_Not_As_A_Steady_RMS_One()
     {
         var host = Host();
         var made = await InstantiateAsync(host);
         var (m9, m4) = (made.Instances["m9"], made.Instances["m4"]);
 
-        // M4 models the bending as fully reversed and the torque as steady: 1/n_f = σ_a/S_e + √3 τ_m/S_ut, with τ_m from the torque T. The cam's torque (a frictionless spring system) is fully alternating about a mean of zero
-        // (python3 over the cycle: −9.61 to +10.11 N·m, RMS 4.8162), so T_rms_in is a stand-in. The guard reimplements M4's Marin factors for a ground finish (k_a = 1.58·S_ut^−0.085, k_b = 1.24·d^−0.107, k_e = 1 − 0.08·2.326 at 99 %,
-        // S_e′ = 0.5·S_ut) and the notch factors of the example, first reproducing M4's own n_f (steady torque), then taking the torque as fully alternating with the peak magnitude as the amplitude (bounding the −9.61 … +10.11 swing):
-        // σ′_a = √(σ_a² + 3τ_a²) and n_f = S_e/σ′_a.
+        // chain.drive-train-01 (the same binding, copied into this pack). The cam's torque (a frictionless spring system) swings about a mean of zero (python3 over the cycle: −9.61 to +10.11 N·m, RMS 4.8162), so M4 takes the peak
+        // magnitude as its alternating amplitude T_a and a steady torque of 0, not the RMS torque as a steady one. The guard reimplements M4's Marin factors for a ground finish (k_a = 1.58·S_ut^−0.085, k_b = 1.24·d^−0.107,
+        // k_e = 1 − 0.08·2.326 at 99 %, S_e′ = 0.5·S_ut) and the notch factors of the example: 1/n_f = √(σ_a² + 3τ_a²)/S_e with τ_a from the peak torque, which M4 must reproduce; the old binding
+        // (T_rms_in as a steady torque, 1/n_f = σ_a/S_e + √3τ_m/S_ut) read 8.9713 against the alternating reading 9.00 (bending dominates here, so the two are within 1 %).
         const double sut = 850;
         const double reaction = 222.48;
         var rms = Si(m9, "T_rms_in");
@@ -400,14 +401,15 @@ public sealed class MechanismReviewChainTests
             alternating = Math.Min(alternating, se / Math.Sqrt(sigmaA * sigmaA + 3 * tauA * tauA));
         }
 
-        // The reimplementation reproduces the sheet (so the guard is about the same shaft), and the alternating reading is 0.3 % above it at the governing section (bending dominates), 9.0 against the target 1.5.
-        Assert.Equal(Si(m4, "n_f_min"), steady, 4);
-        Assert.Equal(8.9713, Si(m4, "n_f_min"), 3);
-        Assert.Equal(9.0, alternating, 2);
+        Assert.Equal(8.9713, steady, 3);
+        Assert.Equal(alternating, Si(m4, "n_f_min"), 4);
+        Assert.True(Math.Abs(Si(m4, "n_f_min") - steady) / steady < 0.01, "bending dominates at the governing section: the old steady-RMS stand-in is within 1 % of the alternating reading here (it would not be on a torque-dominated or keyed section)");
         var target = InputSi(m4, "n_target");
         Assert.Equal(1.5, target, 12);
-        Assert.True(alternating >= target, "the fully alternating torque still clears the target safety factor");
-        Assert.Equal(6.0, alternating / target, 1);
-        Assert.True(Math.Abs(alternating - steady) / steady < 0.01, "bending dominates at the governing section: the steady-torque stand-in is within 1 % of the alternating reading");
+        Assert.True(Si(m4, "n_f_min") >= target, "the shaft still clears the target safety factor on the alternating torque");
+
+        // The zero-mean claim behind the unbound steady torque: the cam's mean input torque (mean power over the shaft speed) is a small fraction of the amplitude.
+        var meanTorque = Si(m9, "P_mean") / Si(m9, "n_in");
+        Assert.True(Math.Abs(meanTorque) < 0.05 * peak, $"mean input torque {meanTorque} N·m against an amplitude of {peak} N·m");
     }
 }

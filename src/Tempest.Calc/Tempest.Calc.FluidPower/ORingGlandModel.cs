@@ -126,8 +126,9 @@ public sealed record GlandVar(GlandDim Dim, string Name, double Nominal, double 
 /// <param name="CornerRadius">The groove bottom corner radius, mm.</param>
 /// <param name="AlphaSurface">The linear thermal expansion coefficient of the part that carries the sealing surface (the bore of a piston seal, the rod of a rod seal), 1/K; <see langword="null"/> takes <paramref name="AlphaMetal"/>.</param>
 /// <param name="BoreDilation">The diametral growth of the bore (piston seal) or of the housing bore round the rod (rod seal) under the operating pressure, mm, added to the extrusion gap; 0 if not entered.</param>
+/// <param name="Eccentricity">The one-sided offset of the gland (eccentricity or run-out), mm: it deepens the gland by that much at the loose (cold) end and shallows it at the tight (hot) end, so the minimum squeeze and fill fall and the maximum rise; 0 if not entered.</param>
 /// <param name="InternalPressure">A face seal with the pressure on the inside: the ring outside diameter seats on the groove outer wall (<see cref="GlandDim.Groove"/>) instead of the inside diameter on the groove inner wall. Ignored for radial seals.</param>
-public sealed record GlandEnvironment(SealKind Kind, ReductionRelation Relation, double Nu, double Alpha, double AlphaMetal, double TRef, double TMin, double TMax, double SwellMin, double SwellMax, double CornerRadius, double? AlphaSurface = null, double BoreDilation = 0.0, bool InternalPressure = false)
+public sealed record GlandEnvironment(SealKind Kind, ReductionRelation Relation, double Nu, double Alpha, double AlphaMetal, double TRef, double TMin, double TMax, double SwellMin, double SwellMax, double CornerRadius, double? AlphaSurface = null, double BoreDilation = 0.0, bool InternalPressure = false, double Eccentricity = 0.0)
 {
     /// <summary>The ring outside diameter seats on the reference diameter (an internal-pressure face seal).</summary>
     public bool HeldByOutsideDiameter => Kind == SealKind.Face && InternalPressure;
@@ -234,7 +235,7 @@ public static class ORingGlandModel
         return kind == SealKind.Rod ? x[(int)GlandDim.Surface] : x[(int)GlandDim.Groove];
     }
 
-    /// <summary>The gland depth (before any thermal factor): half the diameter difference, or the face-seal depth.</summary>
+    /// <summary>The gland depth (before any thermal factor): half the diameter difference, or for a face seal the groove depth plus the flange gap (the ring is compressed between the groove bottom and the other flange, over h_f + e_f).</summary>
     public static double Depth(SealKind kind, double[] x)
     {
         ArgumentNullException.ThrowIfNull(x);
@@ -243,7 +244,7 @@ public static class ORingGlandModel
         {
             SealKind.Piston => (x[(int)GlandDim.Surface] - x[(int)GlandDim.Groove]) / 2.0,
             SealKind.Rod => (x[(int)GlandDim.Groove] - x[(int)GlandDim.Surface]) / 2.0,
-            _ => x[(int)GlandDim.FaceDepth],
+            _ => x[(int)GlandDim.FaceDepth] + x[(int)GlandDim.FaceGap],
         };
     }
 
@@ -272,7 +273,7 @@ public static class ORingGlandModel
 
     /// <summary>
     /// The gland depth in a case, mm, with each part at its own temperature: half the difference of the bore (or rod) at the
-    /// sealing-surface factor and the groove root at the groove-metal factor, or the face-seal depth at the groove-metal factor. With one
+    /// sealing-surface factor and the groove root at the groove-metal factor, or the face-seal groove depth plus the flange gap at the groove-metal factor. With one
     /// expansion coefficient this is g·<see cref="Depth"/>.
     /// </summary>
     public static double DepthAt(GlandEnvironment env, GlandCase c, double[] x)
@@ -281,11 +282,14 @@ public static class ORingGlandModel
         ArgumentNullException.ThrowIfNull(x);
         var (gs, gm) = GapFactors(env, c);
 
-        return env.Kind switch
+        // The eccentricity (fp.oring-gland-02) is one-sided: the depth is larger by e where the squeeze is least (the cold end) and smaller by e where it is most (the hot end).
+        var offset = c == GlandCase.Cold ? env.Eccentricity : c == GlandCase.Hot ? -env.Eccentricity : 0.0;
+
+        return offset + env.Kind switch
         {
             SealKind.Piston => (gs * x[(int)GlandDim.Surface] - gm * x[(int)GlandDim.Groove]) / 2.0,
             SealKind.Rod => (gm * x[(int)GlandDim.Groove] - gs * x[(int)GlandDim.Surface]) / 2.0,
-            _ => gm * x[(int)GlandDim.FaceDepth],
+            _ => gm * (x[(int)GlandDim.FaceDepth] + x[(int)GlandDim.FaceGap]),
         };
     }
 

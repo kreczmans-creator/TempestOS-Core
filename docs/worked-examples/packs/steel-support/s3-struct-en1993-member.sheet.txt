@@ -2,13 +2,13 @@ CALCULATION SHEET — ISSUED
 Project: Equipment support ES-4
 Calc ID: Column check    Revision: A
 Title: EN 1993-1-1 member checks (basic)
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: STR-SUP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: STR-SUP-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Resistance checks of a steel member of class 1, 2 or 3 cross-section: tension (6.2.3), compression (6.2.4) and flexural buckling about y and z (6.3.1), bending about y and z (6.2.5), shear with the high-shear reduction (6.2.6, 6.2.8), the linear cross-section interaction (6.2.1(7)) and a simplified member interaction (6.3.3 with user-entered k factors). Lateral-torsional buckling and class 4 sections are outside this sheet.
-Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic modulus for class 1–2 and elastic for class 3: M_c,Rd = W f_y/γ_M0. Shear resistance: V_pl,Rd = A_v f_y/(√3 γ_M0). Bending resistance reduced by high shear, when V_Ed > 0.5 V_pl,Rd: ρ = (2V_Ed/V_pl,Rd − 1)², resistance × (1 − ρ). Elastic critical load and non-dimensional slenderness: N_cr = π²EI/L_cr²; λ̄ = √(A f_y/N_cr). Buckling reduction factor and buckling resistance: Φ = 0.5[1 + α(λ̄ − 0.2) + λ̄²]; χ = 1/(Φ + √(Φ² − λ̄²)) ≤ 1; N_b,Rd = χ A f_y/γ_M1. Cross-section check, linear interaction: N_Ed/N_Rd + M_y,Ed/M_y,Rd + M_z,Ed/M_z,Rd ≤ 1. Member check, axial force and bending with buckling: N_Ed/N_b,Rd,min + k_yy M_y,Ed/M_y,Rd + k_zz M_z,Ed/M_z,Rd ≤ 1.
+Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic modulus for class 1–2 and elastic for class 3: M_c,Rd = W f_y/γ_M0. Shear resistance: V_pl,Rd = A_v f_y/(√3 γ_M0). Bending resistance reduced by high shear, when V_Ed > 0.5 V_pl,Rd: ρ = (2V_Ed/V_pl,Rd − 1)². Class 1–2 I-section with h, t_w, t_f entered: M_y,V,Rd = (W_pl,y − ρ A_w²/(4 t_w)) f_y/γ_M0, A_w = (h − 2t_f) t_w, and M_z,c,Rd is not reduced; otherwise the whole resistance × (1 − ρ). Elastic critical load and non-dimensional slenderness: N_cr = π²EI/L_cr²; λ̄ = √(A f_y/N_cr). Buckling reduction factor and buckling resistance: Φ = 0.5[1 + α(λ̄ − 0.2) + λ̄²]; χ = 1/(Φ + √(Φ² − λ̄²)) ≤ 1; N_b,Rd = χ A f_y/γ_M1. Cross-section check, linear interaction: N_Ed/N_Rd + M_y,Ed/M_y,Rd + M_z,Ed/M_z,Rd ≤ 1. Member check, axial force and bending with buckling (6.61, 6.62): N_Ed/N_b,Rd,min + k_yy M_y,Ed/(W_y f_y/γ_M1) + k_zz M_z,Ed/(W_z f_y/γ_M1) ≤ 1, the characteristic bending resistance M_Rk over γ_M1 without the shear reduction.
   Ref: BS EN 1993-1-1 6.2.3 — Tension
   Ref: BS EN 1993-1-1 6.2.4 — Compression
   Ref: BS EN 1993-1-1 6.2.5 — Bending moment
@@ -37,11 +37,11 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   W_el_z | W_el,z | 152 | cm^3 | assumption: Sheet default value; no project figure given. | 0.1 … 10000000 cm^3
   I_y | I_y | 4568 | cm^4 | assumption: Sheet default value; no project figure given. | 0.1 … 1000000000 cm^4
   I_z | I_z | 1548 | cm^4 | assumption: Sheet default value; no project figure given. | 0.1 … 1000000000 cm^4
-  h | Depth h (shear-area helper) | 203.2 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
-  b | Width b (helper) | 203.6 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
-  t_w | Web thickness (helper) | 7.2 | mm | assumption: Sheet default value; no project figure given. | 0.1 … 500 mm
-  t_f | Flange thickness (helper) | 11 | mm | assumption: Sheet default value; no project figure given. | 0.1 … 500 mm
-  r | Root radius (helper) | 10.2 | mm | assumption: Sheet default value; no project figure given. | 0 … 500 mm
+  h | Depth h (shear-area helper; leave blank when A_v is given) | 203.2 | mm | spec: SPEC-STR-09 §3 (members) | 1 … 5000 mm
+  b | Width b (helper) | 203.6 | mm | spec: SPEC-STR-09 §3 (members) | 1 … 5000 mm
+  t_w | Web thickness (helper) | 7.2 | mm | spec: SPEC-STR-09 §3 (members) | 0.1 … 500 mm
+  t_f | Flange thickness (helper) | 11 | mm | spec: SPEC-STR-09 §3 (members) | 0.1 … 500 mm
+  r | Root radius (helper) | 10.2 | mm | spec: SPEC-STR-09 §3 (members) | 0 … 500 mm
   eta | Shear-area factor η | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.2
   L_cr_y | Buckling length about y-y | 6 | m | spec: SPEC-STR-09 §3 (members) | 0.1 … 100 m
   L_cr_z | Buckling length about z-z | 6 | m | spec: SPEC-STR-09 §3 (members) | 0.1 … 100 m
@@ -66,16 +66,11 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   A13. W_el_z (W_el,z) is taken as 152 cm^3. (Sheet default value; no project figure given.)
   A14. I_y (I_y) is taken as 4568 cm^4. (Sheet default value; no project figure given.)
   A15. I_z (I_z) is taken as 1548 cm^4. (Sheet default value; no project figure given.)
-  A16. h (Depth h (shear-area helper)) is taken as 203.2 mm. (Sheet default value; no project figure given.)
-  A17. b (Width b (helper)) is taken as 203.6 mm. (Sheet default value; no project figure given.)
-  A18. t_w (Web thickness (helper)) is taken as 7.2 mm. (Sheet default value; no project figure given.)
-  A19. t_f (Flange thickness (helper)) is taken as 11 mm. (Sheet default value; no project figure given.)
-  A20. r (Root radius (helper)) is taken as 10.2 mm. (Sheet default value; no project figure given.)
-  A21. eta (Shear-area factor η) is taken as 1. (Sheet default value; no project figure given.)
-  A22. curve_y (Buckling curve about y-y) is taken as b. (Sheet default value; no project figure given.)
-  A23. curve_z (Buckling curve about z-z) is taken as c. (Sheet default value; no project figure given.)
-  A24. k_yy (Interaction factor k_yy (member check)) is taken as 1. (Sheet default value; no project figure given.)
-  A25. k_zz (Interaction factor k_zz (member check)) is taken as 1. (Sheet default value; no project figure given.)
+  A16. eta (Shear-area factor η) is taken as 1. (Sheet default value; no project figure given.)
+  A17. curve_y (Buckling curve about y-y) is taken as b. (Sheet default value; no project figure given.)
+  A18. curve_z (Buckling curve about z-z) is taken as c. (Sheet default value; no project figure given.)
+  A19. k_yy (Interaction factor k_yy (member check)) is taken as 1. (Sheet default value; no project figure given.)
+  A20. k_zz (Interaction factor k_zz (member check)) is taken as 1. (Sheet default value; no project figure given.)
 
 4. WORKING
   [27] r_h = r
@@ -197,7 +192,15 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
       = abs(-28.2 kN) / 636.17 kN
       = 0.044328
         Flexural buckling utilisation
-  [59] u_member = abs(N_Ed) / N_b_Rd + k_yy * M_y_Ed / M_y_c_Rd + k_zz * M_z_Ed / M_z_c_Rd    « 6.3.3(4)
+  [59] M_y_b_Rd = W_y * f_y / gamma_M1    « 6.3.3, Eq. 6.61
+      = 497 cm³ × 355 MPa / 1
+      = 176.44 kN·m
+        Characteristic bending resistance about y over γ_M1 (member check, no shear reduction)
+  [60] M_z_b_Rd = W_z * f_y / gamma_M1    « 6.3.3, Eq. 6.62
+      = 231 cm³ × 355 MPa / 1
+      = 82.005 kN·m
+        Characteristic bending resistance about z over γ_M1 (member check, no shear reduction)
+  [61] u_member = abs(N_Ed) / N_b_Rd + k_yy * M_y_Ed / M_y_b_Rd + k_zz * M_z_Ed / M_z_b_Rd    « 6.3.3(4)
       = abs(-28.2 kN) / 636.17 kN + 1 × 43.2 kN·m / 176.44 kN·m + 1 × 0 kN·m / 82.005 kN·m
       = 0.28918
         Simplified member interaction
@@ -209,6 +212,8 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   rho = 0    ρ
   M_y_c_Rd = 176.44 kN·m    M_y,c,Rd
   M_z_c_Rd = 82.005 kN·m    M_z,c,Rd
+  M_y_b_Rd = 176.44 kN·m    M_y,Rk/γ_M1
+  M_z_b_Rd = 82.005 kN·m    M_z,Rk/γ_M1
   N_cr_y = 2629.9 kN    N_cr,y
   N_cr_z = 891.23 kN    N_cr,z
   lambda_y = 0.89015    λ̄_y
@@ -239,9 +244,9 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   WARNING no-ltb: M_y_Ed: lateral-torsional buckling is not checked by this sheet; restrain the compression flange or check 6.3.2 separately.
 
 8. VERIFICATION
-  Template: struct.en1993-member@1.1.0
-  Content hash: 2cf9aafbdb831be1
+  Template: struct.en1993-member@1.3.0
+  Content hash: 1f18146732985999
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 22:51 UTC
+  Test run: 2026-10-26 11:01 UTC
   Application: TempestOS test

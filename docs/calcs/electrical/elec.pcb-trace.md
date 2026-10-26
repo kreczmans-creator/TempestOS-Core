@@ -1,4 +1,4 @@
-# E7 — PCB trace width, legacy IPC-2221 curve-fit (`elec.pcb-trace@1.0.3`)
+# E7 — PCB trace width, legacy IPC-2221 curve-fit (`elec.pcb-trace@1.1.0`)
 
 **In plain terms.** A copper track on a circuit board heats up when it carries current, and the thinner it is, the hotter it gets. The worksheet uses the old IPC-2221 curve to find the narrowest trace that carries a current without exceeding a chosen temperature rise, and then the resistance, voltage drop and heat of the trace as drawn.
 
@@ -12,7 +12,9 @@
 
 **Limitations.** A curve-fit for steady current, drawn for 1 to 3 oz copper, up to 35 A, 10 to 100 K rise and 10 mm width; conservative for multilayer boards, not a thermal analysis of the board (no planes, vias, neighbouring heat, convection or altitude). Plating build-up and etch-back are not modelled; resistance ignores vias, pads, bends and skin effect. The resistance uses the trace as drawn at the design rise, which is conservative when the drawn trace is wider than the minimum.
 
-**Test cases.** All analytic and recomputed in python3 from the formula (Confirmed): `ka-3a-10k-1oz-external` (A 74.1616 mil², w 1.366985 mm), `ka-3a-10k-1oz-internal` (A 192.9270 mil², w 3.556130 mm), `ka-5a-20k-2oz-resistance` (w 0.907900 mm, R 10.81896 mΩ, ΔV 54.0948 mV, P 270.474 mW), `ka-half-oz-internal-narrow` (u_w 1.6046, R 471.47 mΩ). **Unconfirmed + Secondary:** `ka-published-3a-10k-1oz` (about 1.37 mm external) and `ka-published-3a-10k-1oz-internal` (about 3.56 mm internal), the widths as the addendum quotes them from trace-width calculators, to be checked against the owner's copy of IPC-2221 and a calculator; they agree with the formula to 0.3 %.
+**Changes in 1.1.0 (elec.pcb-trace-02).** When the trace as drawn is narrower than the minimum (`u_w` above 1) it runs hotter than the allowed rise, so its resistance, drop and loss are no longer taken at ambient plus the allowed rise. The curve-fit is solved for the rise at the drawn cross-section, `ΔT_act = [I/(k·A_act^n_A)]^(1/n_dT)` with `A_act` in mil², and `R`, `ΔV`, `P` use `T_amb + ΔT_act`; the output `dT_act` and the warning `narrow` say so. ka-half-oz-internal-narrow (1 A, 0.5 oz, internal, 200 mm at 0.5 mm, 40 °C ambient): the drawn trace runs at 65.392 K, `R` 526.28 mΩ (471.47 mΩ at the allowed 30 K, 10.4 % low). A trace that is wide enough keeps the allowed rise, the higher resistance and so the conservative one.
+
+**Test cases.** All analytic and recomputed in python3 from the formula (Confirmed): `ka-3a-10k-1oz-external` (A 74.1616 mil², w 1.366985 mm), `ka-3a-10k-1oz-internal` (A 192.9270 mil², w 3.556130 mm), `ka-5a-20k-2oz-resistance` (w 0.907900 mm, R 10.81896 mΩ, ΔV 54.0948 mV, P 270.474 mW), `ka-half-oz-internal-narrow` (u_w 1.6046, ΔT_act 65.392 K, R 526.28 mΩ). **Unconfirmed + Secondary:** `ka-published-3a-10k-1oz` (about 1.37 mm external) and `ka-published-3a-10k-1oz-internal` (about 3.56 mm internal), the widths as the addendum quotes them from trace-width calculators, to be checked against the owner's copy of IPC-2221 and a calculator; they agree with the formula to 0.3 %.
 
 <!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
 **Worked example, by hand.** Motor-driver supply rail on a 2 oz outer layer, 5 A at 20 K rise ([sheet](../../worked-examples/electrical/elec.pcb-trace/motor-driver-supply-rail/sheet.txt)).
@@ -25,9 +27,9 @@ A_req = (5 / (0.048 × 20^0.44))^(1 / 0.725) × 1 mil^2 = 98.511 mil²
 t_Cu = 2 × 1.378 mil = 70.002 um
 w_min = 98.511 mil² / 70.002 um = 0.9079 mm
 u_w = 0.9079 mm / 2.5 mm = 0.36316
+A_act = 2.5 mm × 70.002 um = 0.17501 mm²
 T_trace = 25 degC + 20 K = 45 degC
 rho_T = 0.01724 ohm·mm²/m × (1 + 0.00393 1/K × (45 degC − 20 degC)) = 0.018934 ohm·mm²/m
-A_act = 2.5 mm × 70.002 um = 0.17501 mm²
 trace_R = 0.018934 ohm·mm²/m × 100 mm / 0.17501 mm² = 10.819 mohm
 vdrop = 5 A × 10.819 mohm = 54.095 mV
 trace_Ploss = (5 A)^2 × 10.819 mohm = 270.47 mW

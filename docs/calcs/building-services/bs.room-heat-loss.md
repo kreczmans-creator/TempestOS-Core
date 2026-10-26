@@ -1,4 +1,4 @@
-# B4 — U-values and room heat loss (`bs.room-heat-loss@1.2.1`)
+# B4 — U-values and room heat loss (`bs.room-heat-loss@1.4.0`)
 
 **In plain terms.** A room loses heat through its walls, floor, roof and windows and by air leaking or being ventilated out. The worksheet works out the U-value of each construction from its layers (how easily heat flows through it), the heat lost through each element and by ventilation at the design temperatures, and the total heating the room needs, with an allowance for thermal bridges. It also checks each U-value against its target.
 
@@ -11,10 +11,14 @@
 - `layers` table (≤ 200 rows): element, layer name, `d` 1–500 mm, `λ` 0.01–5 W/(m·K) (record `material.conductivity`). Several elements share the table, keyed by the element name, or by the `construction` cell of the elements table where two elements share one build-up.
 - `elements` table (≤ 60 rows, unique names): area 0.1–500 m²; optional adjacent temperature (blank = outside); optional `f` (blank = 1); optional `flow` (heat-flow direction through the element: horizontal, upward for a roof or ceiling, downward for a floor); optional `Rsi`, `Rse`, `Rg`; optional U override (ground floor, glazing); optional per-element target U; optional `construction`.
 - `y_tb` W/(m²·K), default 0 (record `thermal.bridging`); optional `U_target` for built-up elements **facing outside** that have no target of their own (an internal partition or floor is checked only against a target on its own row).
-- `n` 0.1–3 h⁻¹; `V` m³; optional `theta_supply` (MVHR) and `n_inf` 0–3 h⁻¹; optional `A_floor`; `f_add` 0–50 % (DHDG only).
+- `n` 0.1–3 h⁻¹; `V` m³; optional `theta_supply` (MVHR) and `n_inf` 0–3 h⁻¹ (with an MVHR supply temperature and `n_inf` blank the room has no infiltration loss: since 1.2.2 the sheet warns, `mvhr-no-infiltration`; an explicit 0 means airtight; bs.room-heat-loss-R1: V 50 m³, n 0.5, supply 16 °C, 21/−3 °C gives Φ_V 42.5 W blank and 124.1 W with `n_inf` 0.2); optional `A_floor`; `f_add` 0–50 % (DHDG only).
 - Blank `Rsi` is the BS EN ISO 6946 conventional value for the element's heat-flow direction (0.13 m²K/W horizontal, 0.10 upward, 0.17 downward); blank `Rse` is 0.04 outside or the same as `Rsi` for an element facing a heated space. These three values are the only surface-resistance values in the product and are listed on the sheet's assumptions. The elements table is geometry, not a licensed record, so a new sheet keeps it. No conductivity, design temperature or CIBSE/MCS table ships.
 
-**Outputs.** Per element `R_i`, `U_i`, `Phi_i` (and `u_i` against a target); `A_fab`, `A_ext`, `A_tb`, `U_m`, `dT`, `Phi_el`, `Phi_tb`, `Phi_T`, `q_v`, `Phi_V` (with `q_inf` where `n_inf` is used), `Phi_HL`, `HLC`, `Phi_A`. **Ports.** `Phi_HL` (→ B6 room heat required), `HLC`, `Phi_T`, `Phi_V`, `U_1` (U-value of the first element of the elements table, added in 1.2.0 for the envelope-moisture chain: it is the B7 `U_ref` cross-check; it offers no per-layer output, so a wall's layers are typed in B7 as well). **Checks.** One utilisation check per element with a target (U/U_target ≤ 1).
+**Outputs.** Per element `R_i`, `U_i`, `Phi_i` (and `u_i` against a target); `A_fab`, `A_ext`, `A_tb`, `U_m`, `U_eff`, `dT`, `Phi_el`, `Phi_tb`, `Phi_T`, `q_v`, `Phi_V` (with `q_inf` where `n_inf` is used), `Phi_HL`, `HLC`, `Phi_A`. **Ports.** `Phi_HL` (→ B6 room heat required), `HLC`, `Phi_T`, `Phi_V`, `U_1` (U-value of the first element of the elements table, added in 1.2.0 for the envelope-moisture chain: it is the B7 `U_ref` cross-check; it offers no per-layer output, so a wall's layers are typed in B7 as well). **Checks.** One utilisation check per element with a target (U/U_target ≤ 1).
+
+**Changes in 1.3.0.** `U_m` is now the area-weighted mean U-value `Σ A·U / Σ A`, as its label says; the previous value, which included the temperature factor `f`, is the new output `U_eff = Σ A·U·f / Σ A` (probe: wall 18 m² U 0.1967, roof 20 m² U 0.1776, floor 20 m² U 0.22 with f 0.7, window 4 m² U 1.4: `U_m` 0.2544 → 0.2757, `U_eff` 0.2544). No check uses either. An element that has both `f` below 1 and an adjacent temperature above `θ_e` warns that the temperature reduction is counted twice (10 m², U 0.3, θ_adj 10 °C, f 0.5, θ_int 21 °C gives 16.5 W; either reduction alone gives 33 W or 36 W); `f` is for elements facing the outside only.
+
+**Port added in 1.4.0.** `theta_int` (the internal design temperature) is an output port, so the wet-heating pack links each room's design temperature to the room temperature of its emitter in the sealed-system step.
 
 **Limitations.** Steady state, no gains, no thermal mass or dynamic simulation. Homogeneous layers only: no bridged-layer (combined) method, no corrections for fixings, ventilated cavities or inverted roofs. Ground-floor U is user-entered; there is no ground model. The thermal-bridge allowance is a single W/(m²·K) on the area facing outside (a deliberate reading of "total fabric area"): elements to heated or unheated spaces entered with an adjacent temperature above `θ_e` get no bridge allowance. A warning is raised if Φ_HL ≤ 0 (the room gains heat from warmer neighbours). No intermittency or reheat allowance except the DHDG user allowance.
 
@@ -40,7 +44,7 @@ Phi_4 = 8.64 × 1.1928 × 1 × (21 − 18) °C = 30.918 W
 U_5 = Ground floor: 0.25 W/m²K = 0.25 W/(m²·K)
 Phi_5 = 16.2 × 0.25 × 1 × (21 − -3) °C = 97.2 W
 A_fab = 44.28 m²
-… 16 more step(s) on the sheet
+… 17 more step(s) on the sheet
 Governing: PASS  U-value of Party wall against its target (1.2 W/m²K): u_4 = 0.99404 vs u_4 ≤ 1  utilisation 0.994
 ```
 <!-- hand-arithmetic:end -->

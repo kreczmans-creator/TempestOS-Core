@@ -72,55 +72,70 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
       = v = (18.75, 6.25) kN, t = 0 kN
       = 0.49411
         Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.494
-  [20] v_max = governing bolt shear
+  [20] v_max = max over the bolts of v
       = bolt 2
       = 36.443 kN
-        Maximum bolt shear
-  [21] t_max = governing bolt tension (with prying)
-      = bolt 2
+        Maximum shear on any bolt
+  [21] t_max = max over the bolts of t (with prying)
+      = bolt 1
       = 0 kN
-        Maximum bolt tension
-  [22] u_max = √((v/V_R)² + (t/T_R)²)
+        Maximum tension on any bolt
+  [22] bolt_v = bolt with the largest shear
+      = bolt 2
+      = "bolt 2"
+        The bolt carrying the largest shear
+  [23] bolt_t = bolt with the largest tension
+      = bolt 1
+      = "bolt 1"
+        The bolt carrying the largest tension
+  [24] u_max = √((v/V_R)² + (t/T_R)²)
       = √((36.443/40)² + (0/45)²)
       = 0.91109
         Governing interaction utilisation
-  [23] governing = governing bolt
+  [25] governing = governing bolt
       = bolt 2
       = "bolt 2"
         The bolt with the highest utilisation
-  [24] u_v = v_max / V_R
+  [26] u_v = v_max / V_R
       = 36.443 kN / 40 kN
       = 0.91109
-        Shear utilisation of the governing bolt
-  [25] u_t = t_max / T_R
+        Shear utilisation of the most sheared bolt
+  [27] u_t = t_max / T_R
       = 0 kN / 45 kN
       = 0
-        Tension utilisation of the governing bolt
-  [26] u_lin = v/V_R + t/(1.4 T_R)
-      = 36.443/40 + 0/(1.4 × 45)
+        Tension utilisation of the most tensioned bolt
+  [28] governing_lin = bolt with the highest linear utilisation
+      = bolt 2
+      = "bolt 2"
+        The bolt that governs the linear shear–tension check
+  [29] u_lin = max over the bolts of v/V_R + t/(1.4 T_R)
+      = bolt 2: 36.443/40 + 0/(1.4 × 45)
       = 0.91109
-        Linear shear–tension interaction (governing bolt)
+        Linear shear–tension interaction, the highest over all bolts
 
 5. RESULTS
   T = -7.5 kN·m    Torque about the centroid
   J = 1686000 mm⁴    Polar second moment of bolt areas
-  v_max = 36.443 kN    Maximum bolt shear
-  t_max = 0 kN    Maximum bolt tension
+  v_max = 36.443 kN    Maximum shear on any bolt
+  t_max = 0 kN    Maximum tension on any bolt
+  bolt_v = "bolt 2"    Bolt with the largest shear
+  bolt_t = "bolt 1"    Bolt with the largest tension
   u_max = 0.91109    Governing interaction utilisation
   governing = "bolt 2"    Governing bolt
-  u_lin = 0.91109    Linear interaction utilisation
+  u_lin = 0.91109    Linear interaction utilisation (highest over all bolts)
+  governing_lin = "bolt 2"    Bolt governing the linear interaction
 
 6. CHECKS (governing first)
   PASS  Circular shear–tension interaction (governing bolt): u_max = 0.91109 vs u_max ≤ 1  utilisation 0.911
-  PASS  Linear shear–tension interaction v/V_R + t/(1.4 T_R): u_lin = 0.91109 vs u_lin ≤ 1  utilisation 0.911  « EN 1993-1-8 Table 3.4
-  PASS  Shear alone: u_v = 0.91109 vs u_v ≤ 1  utilisation 0.911
-  PASS  Tension alone: u_t = 0 vs u_t ≤ 1  utilisation 0
+  PASS  Linear shear–tension interaction v/V_R + t/(1.4 T_R), every bolt: u_lin = 0.91109 vs u_lin ≤ 1  utilisation 0.911  « EN 1993-1-8 Table 3.4
+  PASS  Shear alone (largest bolt shear): u_v = 0.91109 vs u_v ≤ 1  utilisation 0.911
+  PASS  Tension alone (largest bolt tension): u_t = 0 vs u_t ≤ 1  utilisation 0
 
 7. APPLICABILITY
   No warnings.
 
 8. VERIFICATION
-  Template: mech.bolt-group@1.2.0
+  Template: mech.bolt-group@1.4.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 8/8

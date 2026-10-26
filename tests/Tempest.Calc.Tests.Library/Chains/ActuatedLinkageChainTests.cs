@@ -82,8 +82,10 @@ public sealed class ActuatedLinkageChainTests
         Assert.Equal(1.2408623363295963, Si(f1, "v_rtn"), 8);
         Assert.Equal(0.3380865154648022, Si(f1, "v_suc"), 8);
         Assert.Equal(100e5 * areaBore, Si(f1, "F_stall"), 6);
-        Assert.Equal(155961.72487963346, Si(f1, "F_cr"), 4);
-        Assert.Equal(0.282006993601804, Si(f1, "u_buck"), 9);
+        // fp.cylinder-R1 (1.4.0): the buckling length is the pin-to-pin length at full stroke with the body, 2 x 200 + 100 = 500 mm (it was 300 mm, the rod alone): Johnson F_cr = A_r f_y (1 - f_y lam^2/(4 pi^2 E)), lam = 500/5.5 = 90.909,
+        // F_cr = 380.13 mm2 x 500 MPa x 0.50160 = 95.331 kN (python3: 95331.27036843526 N), u_buck = 12.566 kN x 3.5/95.331 = 0.46136.
+        Assert.Equal(95331.27036843526, Si(f1, "F_cr"), 4);
+        Assert.Equal(0.4613627509659192, Si(f1, "u_buck"), 9);
         Assert.Equal(6, f1.Checks.Count);
         Assert.All(f1.Checks, c => Assert.True(c.Passed, c.Name));
         Assert.DoesNotContain(f1.Warnings, w => w.RuleId == "v-req-q");
@@ -91,7 +93,7 @@ public sealed class ActuatedLinkageChainTests
         // F1 → F2: the swept volume of the larger stroke (0.25133 L) and the supply pressure (100 bar gauge, so the accumulator's pressures stay on the Gauge basis) size the emergency-stroke accumulator:
         // F2 1.3.0, held at p2 and charged slowly: V0 = f_T ΔV (p2/p0)/[(p2/p1)^(1/n) − 1] on absolute pressures, p0 = 50, p1 = 60, p2 = 100 bar gauge, n = 1.4, 10 to 50 °C: 1.3102 L
         // (python3: 1.3102067238305006 L; the one-exponent form gave 1.0778782868400334 L, 21.6 % less).
-        Assert.Equal(["dV", "p_2"], f2.Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
+        Assert.Equal(["dV", "p_2", "p_load"], f2.Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
         Assert.Equal(Si(f1, "dV"), InputSi(f2, "dV"), 15);
         Assert.Equal(Si(f1, "p"), InputSi(f2, "p_2"), 6);
         Assert.Equal("Gauge", f2.Inputs.Single(i => i.Symbol == "p_basis").Text);
@@ -99,10 +101,12 @@ public sealed class ActuatedLinkageChainTests
         Assert.Equal(1.3102067238305006e-3, Si(f2, "V0"), 12);
         Assert.Equal(0.9290013052720334, Si(f2, "u_r0"), 9);
         Assert.Equal(0.564966835088001, Si(f2, "u_rp"), 9);
-        Assert.Equal(2, f2.Checks.Count);
+        Assert.Equal(3, f2.Checks.Count);
         Assert.All(f2.Checks, c => Assert.True(c.Passed, c.Name));
 
-        // The lowest working pressure (60 bar) still finishes the stroke under the peak force: 3.0526 kN/(A_b · 0.95) = 25.6 bar.
+        // The lowest working pressure (60 bar) still finishes the stroke under the peak force: 3.0526 kN/(A_b · 0.95) = 25.6 bar, which F1 gives F2 as p_push (hydraulic-power-unit-02 for this pack).
+        Assert.Equal(Si(f1, "p_push"), InputSi(f2, "p_load"), 6);
+        Assert.Equal(Si(f1, "p_push") / 60e5, Si(f2, "u_load"), 9);
         Assert.True(InputSi(f2, "p_1") > Si(m9, "follower_force") / (areaBore * 0.95));
         Assert.Equal(25.57, Si(m9, "follower_force") / (areaBore * 0.95) / 1e5, 2);
         Assert.All(made.Instances.Values, i => Assert.Empty(i.Blocks));
@@ -117,7 +121,7 @@ public sealed class ActuatedLinkageChainTests
 
         Assert.Equal(["m9", "f1", "f2"], template.Steps.Select(s => s.Key));
         Assert.Equal(
-            [("m9", "output_motion", "f1", "v_req"), ("m9", "follower_force", "f1", "F_push"), ("m9", "follower_force", "f1", "F_pull"), ("f1", "dV", "f2", "dV"), ("f1", "p", "f2", "p_2")],
+            [("m9", "output_motion", "f1", "v_req"), ("m9", "follower_force", "f1", "F_push"), ("m9", "follower_force", "f1", "F_pull"), ("f1", "dV", "f2", "dV"), ("f1", "p", "f2", "p_2"), ("f1", "p_push", "f2", "p_load")],
             template.Bindings.Select(b => (b.FromStep, b.Output, b.ToStep, b.Input)));
         Assert.Contains(template.Steps, s => s.Key == "f1" && s.Omit is ["Q"]);
 

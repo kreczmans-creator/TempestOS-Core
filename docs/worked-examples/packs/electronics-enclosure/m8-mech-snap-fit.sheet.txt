@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Controller box 7
 Calc ID: Cover latches    Revision: A
 Title: Snap-fits: cantilever, annular, torsion
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: ELX-ENC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: ELX-ENC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A plastic snap-fit joint of one of five forms: a cantilever lug of constant section, of tapered thickness or of tapered width, an annular (closed ring) snap, or a torsion bar. The strain at the critical section against the permissible strain of the plastic (one-time or repeated joining), the deflection force with the secant modulus, the assembly force (inclined entry face) and the separation force (return face) with Coulomb friction, and whether the joint is self-locking.
@@ -35,7 +35,7 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
   eps_perm_once | Permissible strain for one-time joining, as a fraction (0.04 is 4 %) at the temperature of use (no default: from the plastic's data) | 0.03 |  | spec: SPEC-ELX-02 §6 (latch plastic: Es and eps_perm at 60 C) | 0.001 … 0.3
   n_latch | Number of identical latches that share a holding load (a whole number; blank = the holding force is not worked out) | 6 |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | 1 … 100
   F_req | Force the latches must hold against, for example the pressure on a cover (blank = no check; needs n_latch; may be linked from E2 F_seal) | 300 | N | link: Enclosure temperature rev A · F_seal | 0 … 100000 N
-  T_use | Temperature of use. Recorded: Es and the permissible strain must be the values at this temperature | 56.8771 | degC | link: Enclosure temperature rev A · T_int | -40 … 120 degC
+  T_use | Temperature of use. Recorded: Es and the permissible strain must be the values at this temperature | 56.8773 | degC | link: Enclosure temperature rev A · T_int | -40 … 120 degC
 
 3. ASSUMPTIONS
   A1. Beam theory (Euler–Bernoulli) for the cantilever: a rigid root, a linear taper, a constant secant modulus Es at the design strain over the whole beam, small deflection. The strain is the nominal surface strain at the critical section, with no local concentration from the root fillet; the geometry factors are derived by integration (the 0.67 of the design guides is the constant-section 2/3 rounded). (Euler–Bernoulli beam theory (derived); the guide's closed forms for the constant section are to be checked against the owner's copy.)
@@ -145,9 +145,9 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
   WARNING record: Tabulated values not taken from a reference record: eps_perm_once (Material properties); mu (Coefficient of friction); Es (Secant modulus at the design strain). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: mech.snap-fit@1.3.0
-  Content hash: 1df7e5a03f212571
+  Template: mech.snap-fit@1.3.1
+  Content hash: 0d39506ffeadbb9c
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 11/11
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test

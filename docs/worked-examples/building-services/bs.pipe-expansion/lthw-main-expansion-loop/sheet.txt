@@ -37,7 +37,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   A6. anchor_moment is the largest root moment of the legs and runs in the guided-cantilever simplification (M = F·L/2 with each end fixed against rotation). It is not the moment on a frame anchor, which depends on the whole frame (the stiffness of the other legs, the elbow rotations, the anchor's own fixity); a formal analysis is needed before an anchor is sized for moment. (Stated limit.)
   A7. The material properties are single values: α the mean coefficient between the install and operating temperatures; E the modulus at the installation (reference) temperature, used for the stress check, as the piping codes do (ASME B31.3 para. 319.3.2 and 319.5, numbers to be checked against the owner's copy); E_hot, when given, is used only for the reactions on the anchors. Take them from a W3 material applied at the right temperature. (Material library; code convention to be checked.)
   A8. Sa and K1 are the owner's records from the owner's own copy of the piping code (or the design basis), with their provenance; no allowable stress, K1 or code constant ships. The sheet applies the relation to the numbers entered and does not know which code, material or load case they belong to. (No table from a standard is shipped.)
-  A9. No friction, weight, spring-hanger or cold-spring effect is included in the leg force. The axial bellows anchor force is the pressure thrust P·A_eff plus the spring force k·ΔL at the governing pressure entered (the design or the test pressure, whichever governs; a bellows' compression and extension ratings can differ): guide friction and any other bellows load come from the manufacturer's data. (Stated limit.)
+  A9. No friction, weight, spring-hanger or cold-spring effect is included in the leg force; the anchor force adds the friction of the sliding supports, μ·w·L, only when μ and the weight per metre are entered (a warning says so when they are not). The axial bellows anchor force is the pressure thrust P·A_eff plus the spring force k·ΔL at the governing pressure entered (the design or the test pressure, whichever governs; a bellows' compression and extension ratings can differ): guide friction and any other bellows load come from the manufacturer's data. (Stated limit.)
   A10. E (Young's modulus of the pipe material at the installation (reference) temperature, for the stress check, in GPa (steel 210, copper 120, PE and PP about 1; not MPa)) is taken as 210 GPa. (W3 seed 'Carbon steel (generic)', indicative; replace with the project's material record.)
   A11. alpha (Mean coefficient of thermal expansion between the install and operating temperatures) is taken as 12 um/(m*K). (W3 seed 'Carbon steel (generic)' (12e-6 1/K), indicative; replace with the project's material record.)
   A12. temp_mode (Temperature change from) is taken as install and operating temperatures. (Install and operating temperatures are both known.)
@@ -91,75 +91,79 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
       = 210 GPa × 12 um/(m·K) × abs(70 K) × 861.55 mm²
       = 151.98 kN
         Force on the anchors of the fully restrained pipe
-  [23] u_res = sigma_res / Sa
+  [21] F_friction = support friction not entered
+      = μ and w_pipe blank
+      = 0 N
+        Friction of the sliding supports (not entered: none in the anchor force)
+  [24] u_res = sigma_res / Sa
       = 176.4 MPa / 100 MPa
       = 1.764
         Fully restrained stress as a fraction of Sa (above 1: the movement has to be absorbed)
-  [24] Delta = dL / 2
+  [25] Delta = dL / 2
       = 42 mm / 2
       = 21 mm
         Movement each leg of the U-loop absorbs (half of it)
-  [25] L_req = sqrt(3 * E * OD * Delta / Sa)
+  [26] L_req = sqrt(3 * E * OD * Delta / Sa)
       = sqrt(3 × 210 GPa × 88.9 mm × 21 mm / 100 MPa)
       = 3.4295 m
         Leg length at which the guided-cantilever bending stress reaches Sa
-  [26] u_leg = L_req / H
+  [27] u_leg = L_req / H
       = 3.4295 m / 4 m
       = 0.85737
         Required leg over available leg
-  [27] F_leg = 12 * E_r * I_x * Delta / H^3
+  [28] F_leg = 12 * E_r * I_x * Delta / H^3
       = 12 × 210 GPa × 79.206 cm⁴ × 21 mm / (4 m)^3
       = 654.93 N
         Force of the available leg on its anchors or guides
-  [28] M_leg = 6 * E_r * I_x * Delta / H^2
+  [29] M_leg = 6 * E_r * I_x * Delta / H^2
       = 6 × 210 GPa × 79.206 cm⁴ × 21 mm / (4 m)^2
       = 1309.9 N·m
         Moment at the root of the available leg
-  [29] sigma_leg = 3 * E * OD * Delta / H^2
+  [30] sigma_leg = 3 * E * OD * Delta / H^2
       = 3 × 210 GPa × 88.9 mm × 21 mm / (4 m)^2
       = 73.509 MPa
         Bending stress at the root of the available leg (E at the installation temperature)
-  [30] u_sigma = sigma_leg / Sa
+  [31] u_sigma = sigma_leg / Sa
       = 73.509 MPa / 100 MPa
       = 0.73509
         Bending stress over Sa (= u_leg²)
-  [31] F_along_run = F_leg
+  [32] F_along_run = F_leg + F_friction
+      = 654.93 N + 0 N
       = 654.93 N
-      = 654.93 N
-        Component of the anchor force along the run: the loop's force
-  [32] F_along_leg = no component along the leg
+        Component of the anchor force along the run: the loop's force plus the support friction
+  [33] F_along_leg = no component along the leg
       = a U-loop is in line
       = 0 N
         Component of the anchor force along the leg: none for a U-loop
-  [33] anchor_force = F_leg
+  [34] anchor_force = F_along_run
       = 654.93 N
       = 654.93 N
-        Force on the anchors (the force along the loop)
-  [34] anchor_moment = M_leg
+        Force on the anchors (the force along the loop; support friction only if μ and w_pipe are entered)
+  [35] anchor_moment = M_leg
       = 1309.9 N·m
       = 1309.9 N·m
         Moment at the root of the loop's legs
-  [35] L_dev = L + 2 * H
+  [36] L_dev = L + 2 * H
       = 50 m + 2 × 4 m
       = 58 m
         Developed length between the anchors, run plus two legs
-  [36] U_a = L
+  [37] U_a = L
       = 50 m
       = 50 m
         Straight distance between the anchors (the loop is in line)
-  [37] Y_scr = alpha * abs(dT) * U_a
+  [38] Y_scr = alpha * abs(dT) * U_a
       = 12 um/(m·K) × abs(70 K) × 50 m
       = 42 mm
         Resultant displacement Y: the free growth between the anchors
-  [38] scr = OD * Y_scr / (L_dev - U_a)^2
+  [39] scr = OD * Y_scr / (L_dev - U_a)^2
       = 88.9 mm × 42 mm / (58 m − 50 m)^2
       = 58.341 mm²/m²
         Screening ratio OD·Y/(L − U)²
-  [40] u_scr = scr / K_scr
+  [41] u_scr = scr / K_scr
       = 58.341 mm²/m² / 120 mm²/m²
       = 0.48617
         Screening ratio over the K1 record
-  [41] pass = K1 given and every check passes
+  [42] pass = K1 given and every check passes
       = 2 check(s)
       = 1
         1 when the leg, the run (offset leg) and the screening checks all pass; 0 when one fails or when no K1 was entered
@@ -176,6 +180,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   sigma_res = 176.4 MPa    Fully restrained stress
   F_res = 151.98 kN    Fully restrained force
   direction = "growth: the pipe lengthens; fully restrained it presses on its anchors (compression)"    Direction of the movement
+  F_friction = 0 N    Support friction on the run
   u_res = 1.764    Fully restrained stress over Sa
   Delta = 21 mm    Movement absorbed by each leg
   L_req = 3.4295 m    Required leg length
@@ -202,9 +207,10 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: E, alpha (Material properties); OD, t_wall (Pipe outside diameter and wall); Sa (Allowable displacement-stress range); K_scr (Screening limit K1). Enter each as one so its source, edition and licence travel with it.
+  WARNING friction: mu: the anchor force holds no support friction. Every slide or guide between the anchor and the loop adds μ·w·L to it, which on a long run can exceed the leg force several times; enter μ and the weight per metre (with the length on slides) to include it.
 
 8. VERIFICATION
-  Template: bs.pipe-expansion@1.2.2
+  Template: bs.pipe-expansion@1.3.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5

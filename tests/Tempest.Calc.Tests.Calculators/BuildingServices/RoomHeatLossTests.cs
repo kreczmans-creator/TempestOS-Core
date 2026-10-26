@@ -20,6 +20,36 @@ public sealed class RoomHeatLossTests
             .With(RoomHeatLossCalculator.Elements(("Wall", 20, null, null, null, null, null, null, null)));
 
     [Fact]
+    public void The_Mean_U_Value_Is_Area_Weighted_Without_The_Temperature_Factor()
+    {
+        // bs.room-heat-loss-01: wall 18 m2 U 0.1967, roof 20 m2 U 0.1776, floor 20 m2 U 0.22 f 0.7, window 4 m2 U 1.4. U_m held sum(A U f)/sum(A) = 0.2544, 8 % under the true area-weighted
+        // mean sum(A U)/sum(A) = (3.5406 + 3.552 + 4.4 + 5.6)/62 = 0.2757 (python3). The heat-loss weighted figure stays as U_eff.
+        var set = new CalcInputSet().With(Q("theta_int", 21, "degC")).With(Q("theta_e", -3, "degC")).With(RoomHeatLossCalculator.Elements(
+            ("Wall", 18, null, null, null, null, null, 0.1967, null), ("Roof", 20, null, null, null, null, null, 0.1776, null),
+            ("Floor", 20, null, 0.7, null, null, null, 0.22, null), ("Window", 4, null, null, null, null, null, 1.4, null)));
+        var r = CalcRunner.Run(Room, set);
+        Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+        Assert.Equal(0.2757, r.OutputSi("U_m"), 4);
+        Assert.Equal(0.2544, r.OutputSi("U_eff"), 4);
+    }
+
+    [Fact]
+    public void A_Temperature_Factor_Below_One_On_An_Element_With_An_Adjacent_Temperature_Warns_Of_A_Double_Reduction()
+    {
+        // bs.room-heat-loss-R2: 10 m2, U 0.3, theta_adj 10 degC, f 0.5, theta_int 21 degC gave Phi_1 16.5 W; either reduction alone gives 33 W (f only: 0.3 x 10 x 0.5 x 24 = 36 W; theta_adj only: 0.3 x 10 x 11 = 33 W).
+        var both = new CalcInputSet().With(Q("theta_int", 21, "degC")).With(Q("theta_e", -3, "degC")).With(RoomHeatLossCalculator.Elements(("Wall", 10, 10, 0.5, null, null, null, 0.3, null)));
+        var r = CalcRunner.Run(Room, both);
+        Assert.Equal(16.5, r.OutputSi("Phi_1"), 6);
+        var warning = Assert.Single(r.Warnings, w => w.RuleId == "f-and-adjacent");
+        Assert.Contains("Wall", warning.Message, StringComparison.Ordinal);
+
+        var adjOnly = CalcRunner.Run(Room, new CalcInputSet().With(Q("theta_int", 21, "degC")).With(Q("theta_e", -3, "degC")).With(RoomHeatLossCalculator.Elements(("Wall", 10, 10, null, null, null, null, 0.3, null))));
+        Assert.DoesNotContain(adjOnly.Warnings, w => w.RuleId == "f-and-adjacent");
+        var fOnly = CalcRunner.Run(Room, new CalcInputSet().With(Q("theta_int", 21, "degC")).With(Q("theta_e", -3, "degC")).With(RoomHeatLossCalculator.Elements(("Wall", 10, null, 0.5, null, null, null, 0.3, null))));
+        Assert.DoesNotContain(fOnly.Warnings, w => w.RuleId == "f-and-adjacent");
+    }
+
+    [Fact]
     public void Adding_Insulation_Lowers_U_Monotonically()
     {
         Gen.Select(Gen.Double[1, 250], Gen.Double[0.5, 250], Gen.Double[0.015, 0.05]).Sample((d, extra, lambda) =>
@@ -197,6 +227,26 @@ public sealed class RoomHeatLossTests
         Assert.Contains(natural.Warnings, w => w.RuleId == "n-inf-ignored");
         Assert.Equal(CalcRunner.Run(Room, Defaults()).OutputSi("Phi_V"), natural.OutputSi("Phi_V"), 9);
         Assert.True(CalcRunner.Run(Room, Defaults().With(Q("n_inf", 3.5, "1/h"))).IsBlocked);
+    }
+
+    [Fact]
+    public void An_Mvhr_Supply_With_A_Blank_Infiltration_Rate_Warns_That_The_Room_Has_No_Infiltration_Loss()
+    {
+        // bs.room-heat-loss-R1: 21 / -3 C, n 0.5 h-1, V 50 m3, MVHR supply 16 C. Blank n_inf: Phi_V = 0.34 * 25 m3/h * 5 K = 42.5 W (no infiltration, no notice before);
+        // n_inf 0.2: + 0.34 * 0.2 * 50 * 24 = 81.6 W, Phi_V 124.1 W (python3 arithmetic).
+        var mvhr = Defaults().With(Q("V", 50, "m^3")).With(Q("theta_supply", 16, "degC"));
+        var blank = CalcRunner.Run(Room, mvhr);
+        Assert.Equal(42.5, blank.OutputSi("Phi_V"), 9);
+        var warning = Assert.Single(blank.Warnings, w => w.RuleId == "mvhr-no-infiltration");
+        Assert.StartsWith("n_inf:", warning.Message, StringComparison.Ordinal);
+
+        var typed = CalcRunner.Run(Room, mvhr.With(Q("n_inf", 0.2, "1/h")));
+        Assert.Equal(124.1, typed.OutputSi("Phi_V"), 9);
+        Assert.DoesNotContain(typed.Warnings, w => w.RuleId == "mvhr-no-infiltration");
+
+        // An explicit zero is the user's statement that the envelope is airtight: no warning. Natural ventilation has no MVHR rate to qualify, so none either.
+        Assert.DoesNotContain(CalcRunner.Run(Room, mvhr.With(Q("n_inf", 0, "1/h"))).Warnings, w => w.RuleId == "mvhr-no-infiltration");
+        Assert.DoesNotContain(CalcRunner.Run(Room, Defaults()).Warnings, w => w.RuleId == "mvhr-no-infiltration");
     }
 
     [Fact]

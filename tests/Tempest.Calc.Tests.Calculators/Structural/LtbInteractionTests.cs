@@ -25,6 +25,51 @@ public sealed class LtbInteractionTests
     private const double It = 702133.3333333334;
     private const double Iw = 1249365333333.3333;
 
+    [Theory]
+    [InlineData(-0.5, 12.0, 2.70)]
+    [InlineData(0.0, 20.0, 1.88)]
+    [InlineData(-1.0, 6.0, 2.70)]
+    public void A_Derived_C1_For_Long_Or_Double_Curvature_Members_Warns_That_The_Curve_Fit_Can_Exceed_The_Exact_Value(double psi, double lengthM, double expectedC1)
+    {
+        // P1-struct.ltb-interaction-01. The ENV Annex F fit gives C1 = min(2.70, 1.88 - 1.40 psi + 0.52 psi^2) (python3: psi -0.5 -> 2.71 -> 2.70; psi 0 -> 1.88; psi -1 -> 3.80 -> 2.70),
+        // against exact elastic values of 2.459 (psi -0.5, L 12 m, UB 457x191x98) and 1.789 (psi 0, L 20 m): the value is unchanged, the sheet now says so.
+        var r = Run(N("psi_y", psi), Q("L", lengthM, "m"));
+        Assert.Equal(expectedC1, r.OutputSi("C_1"), 9);
+        var warning = Assert.Single(r.Warnings, w => w.RuleId == "c1-psi" && w.Message.StartsWith("C_1:", StringComparison.Ordinal));
+        Assert.Contains("exceed the exact elastic value by up to about 10 %", warning.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Table_B1_Chosen_For_An_Open_I_Section_That_Buckles_Laterally_Warns_That_It_Is_Not_Susceptible()
+    {
+        // struct.ltb-interaction-R2: the Annex B Table B.1 choice ("not susceptible to torsional deformation") with chi_LT below 1 gave k_zy = 0.6 k_yy = 0.509 against 0.918 from Table B.2
+        // (u_62 1.008 against 1.248, -19 %) and no notice. An open I-section is susceptible unless restrained against twist.
+        var b1 = Run(Choice("torsion", LtbInteractionCalculator.NotSusceptible));
+        Assert.True(b1.OutputSi("chi_LT") < 1);
+        var warning = Assert.Single(b1.Warnings, w => w.RuleId == "table-b1");
+        Assert.Contains("susceptible", warning.Message, StringComparison.Ordinal);
+
+        Assert.DoesNotContain(Run().Warnings, w => w.RuleId == "table-b1");
+        // No lateral-torsional buckling (chi_LT = 1: a very short member): Table B.1 is not contradicted.
+        Assert.DoesNotContain(Run(Choice("torsion", LtbInteractionCalculator.NotSusceptible), Q("L", 0.5, "m")).Warnings, w => w.RuleId == "table-b1");
+    }
+
+    [Theory]
+    [InlineData(1.0)]
+    [InlineData(0.5)]
+    [InlineData(0.25)]
+    public void A_Derived_C1_For_A_Single_Curvature_Diagram_Does_Not_Carry_The_Curve_Fit_Warning(double psi)
+    {
+        Assert.DoesNotContain(Run(N("psi_y", psi)).Warnings, w => w.RuleId == "c1-psi");
+    }
+
+    [Fact]
+    public void An_Entered_C1_Does_Not_Carry_The_Curve_Fit_Warning()
+    {
+        var r = Run(N("psi_y", -0.5), N("C_1", 2.459), N("C_m_y", 0.4), N("k_c", 0.75));
+        Assert.DoesNotContain(r.Warnings, w => w.RuleId == "c1-psi" && w.Message.StartsWith("C_1:", StringComparison.Ordinal));
+    }
+
     [Fact]
     public void Uniform_Moment_Gives_The_Classical_Critical_Moment()
     {

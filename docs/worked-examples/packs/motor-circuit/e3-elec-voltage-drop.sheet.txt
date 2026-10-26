@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Voltage drop    Revision: A
 Title: Voltage drop and I²R loss
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Voltage drop along a circuit in volts and per cent of the nominal voltage, the conductor power loss, and an estimate of the conductor operating temperature, for DC, single-phase and three-phase AC, from resistivity and cross-section (with temperature correction), from tabulated R and X per kilometre, or from a mV/A/m figure; parallel conductors per phase; the drop limit is a user input (the regulatory limits live in BS 7671 Appendix 4 and Regulation 525 and are not embedded).
@@ -16,16 +16,16 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
 2. INPUTS
   Symbol | Description | Value | Unit | Source | Valid range
   system | System | AC three-phase |  | spec: SPEC-LINE-12 §5 (cabling) | any
-  V_n | Nominal voltage (line-to-line for three-phase) | 400 | V | spec: SPEC-LINE-12 §5 (cabling) | 12 … 1000 V
+  V_n | Nominal voltage (line-to-line for three-phase) | 400 | V | link: Load budget rev A · U_L | 12 … 1000 V
   I | Design current | 1.37273 | A | link: Cable and device rev A · I_b | 0.1 … 5000 A
   L | Route length (one way) | 25 | m | link: Cable and device rev A · L | 0.1 … 5000 m
-  cos_phi | Power factor (AC) | 0.85 |  | spec: SPEC-LINE-12 §5 (cabling) | 0.5 … 1
+  cos_phi | Power factor (AC) | 0.85 |  | link: Load budget rev A · pf_link | 0.5 … 1
   n_par | Parallel conductors per phase | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 6
   data | Conductor data from | resistivity and area |  | assumption: Sheet default value; no project figure given. | any
-  rho_20 | Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.01724 | ohm*mm^2/m | assumption: Sheet default value; no project figure given. | 0.01 … 0.05 ohm*mm^2/m
+  rho_20 | Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.0194 | ohm*mm^2/m | assumption: Sheet default value; no project figure given. | 0.01 … 0.05 ohm*mm^2/m
   alpha | Temperature coefficient of resistance | 0.00393 |  | assumption: Sheet default value; no project figure given. | 0.003 … 0.0045
   A_c | Conductor cross-section | 1.5 | mm^2 | link: Cable and device rev A · CSA | 1 … 1000 mm^2
-  T_c | Conductor operating temperature for the resistance | 70 | degC | assumption: Sheet default value; no project figure given. | 20 … 90 degC
+  T_c | Conductor operating temperature for the resistance | 70 | degC | link: Cable and device rev A · theta_op | 20 … 90 degC
   X_km | Reactance per km per conductor | 0.08 | ohm/km | assumption: Sheet default value; no project figure given. | 0 … 1 ohm/km
   dv_limit | Voltage-drop limit | 5 |  | assumption: Sheet default value; no project figure given. | 1 … 10
   T_rated | Conductor rated temperature | 70 | degC | assumption: Sheet default value; no project figure given. | 60 … 90 degC
@@ -37,12 +37,11 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   A3. The conductor temperature estimate scales the rated rise with (I/I_z)²; I_z is the user's tabulated value for the installation method and corrections. (BS 7671 Appendix 4 approach, formula only.)
   A4. n_par (Parallel conductors per phase) is taken as 1. (Sheet default value; no project figure given.)
   A5. data (Conductor data from) is taken as resistivity and area. (Sheet default value; no project figure given.)
-  A6. rho_20 (Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m)) is taken as 0.01724 ohm*mm^2/m. (Sheet default value; no project figure given.)
+  A6. rho_20 (Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m)) is taken as 0.0194 ohm*mm^2/m. (Sheet default value; no project figure given.)
   A7. alpha (Temperature coefficient of resistance) is taken as 0.00393. (Sheet default value; no project figure given.)
-  A8. T_c (Conductor operating temperature for the resistance) is taken as 70 degC. (Sheet default value; no project figure given.)
-  A9. X_km (Reactance per km per conductor) is taken as 0.08 ohm/km. (Sheet default value; no project figure given.)
-  A10. dv_limit (Voltage-drop limit) is taken as 5. (Sheet default value; no project figure given.)
-  A11. T_rated (Conductor rated temperature) is taken as 70 degC. (Sheet default value; no project figure given.)
+  A8. X_km (Reactance per km per conductor) is taken as 0.08 ohm/km. (Sheet default value; no project figure given.)
+  A9. dv_limit (Voltage-drop limit) is taken as 5. (Sheet default value; no project figure given.)
+  A10. T_rated (Conductor rated temperature) is taken as 70 degC. (Sheet default value; no project figure given.)
 
 4. WORKING
   [9] sin_phi = sqrt(1 - cos_phi^2)
@@ -50,51 +49,51 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
       = 0.52678
         sin φ
   [15] rho_T = rho_20 * (1 + alpha * (T_c - 20 degC) / (1 K))
-      = 0.01724 ohm·mm²/m × (1 + 0.00393 × (70 degC − 20 degC) / 1 K)
-      = 0.020628 ohm·mm²/m
+      = 0.0194 ohm·mm²/m × (1 + 0.00393 × (70 degC − 20 degC) / 1 K)
+      = 0.023212 ohm·mm²/m
         Resistivity at the operating temperature
   [16] R = rho_T * L / (A_c * n_par)
-      = 0.020628 ohm·mm²/m × 25 m / (1.5 mm² × 1)
-      = 0.34379 ohm
+      = 0.023212 ohm·mm²/m × 25 m / (1.5 mm² × 1)
+      = 0.38687 ohm
         Conductor resistance (one conductor, parallel paths combined)
   [17] X = X_km * L / n_par
       = 0.08 ohm/km × 25 m / 1
       = 0.002 ohm
         Conductor reactance
   [18] dV = sqrt(3) * I * (R * cos_phi + X * sin_phi)
-      = sqrt(3) × 1.3727 A × (0.34379 ohm × 0.85 + 0.002 ohm × 0.52678)
-      = 0.69731 V
+      = sqrt(3) × 1.3727 A × (0.38687 ohm × 0.85 + 0.002 ohm × 0.52678)
+      = 0.78436 V
         Voltage drop
   [19] dV_pct = 100 * dV / V_n
-      = 100 × 0.69731 V / 400 V
-      = 0.17433
+      = 100 × 0.78436 V / 400 V
+      = 0.19609
         Voltage drop, per cent
   [20] P_loss = 3 * I^2 * R
-      = 3 × (1.3727 A)^2 × 0.34379 ohm
-      = 1.9435 W
+      = 3 × (1.3727 A)^2 × 0.38687 ohm
+      = 2.187 W
         Conductor power loss
   [21] u_dv = dV_pct / dv_limit
-      = 0.17433 / 5
-      = 0.034865
+      = 0.19609 / 5
+      = 0.039218
         Drop utilisation against the limit
 
 5. RESULTS
-  R = 0.34379 ohm    Resistance
+  R = 0.38687 ohm    Resistance
   X = 0.002 ohm    Reactance
-  dV = 0.69731 V    Voltage drop
-  dV_pct = 0.17433    Voltage drop (%)
-  P_loss = 1.9435 W    Power loss
+  dV = 0.78436 V    Voltage drop
+  dV_pct = 0.19609    Voltage drop (%)
+  P_loss = 2.187 W    Power loss
 
 6. CHECKS (governing first)
-  PASS  Voltage drop ≤ limit: u_dv = 0.034865 vs u_dv ≤ 1  utilisation 0.0349  « BS 7671 525
+  PASS  Voltage drop ≤ limit: u_dv = 0.039218 vs u_dv ≤ 1  utilisation 0.0392  « BS 7671 525
 
 7. APPLICABILITY
   No warnings.
 
 8. VERIFICATION
-  Template: elec.voltage-drop@1.0.1
-  Content hash: 2c07193ab8ffc91f
+  Template: elec.voltage-drop@1.2.0
+  Content hash: c20fe1c4471c778d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test

@@ -5,7 +5,7 @@ Title: Column base plate (EN 1993-1-8)
 
 1. SCOPE AND METHOD
 An unstiffened rectangular base plate under an I/H, RHS or CHS column on grouted concrete: bearing resistance, the force regime and holding-down bolt tension for a major-axis moment, the tension T-stub of the plate and the compression T-stub, shear by friction and anchor bolts, and the plate thickness that satisfies them together. The bolt tension and shear per anchor go to Hilti PROFIS for the anchorage, which is done outside this sheet.
-Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3; c = t_p·√[f_y/(3·f_jd·γ_M0)] Axial (cl. 6.2.8.2): N_j,Rd = f_jd·A_eff, A_eff the bearing strips of width c round the column footprint (full rectangle when they overlap); u_N = N_c,Ed/N_j,Rd Moment (cl. 6.2.8.3, Table 6.7): z_C from the section ((h − t_f)/2, (h − t)/2, half-annulus centroid) or entered, x_b the bolt row from the axis, z = z_C + x_b; C_Ed = (M_Ed + N_Ed·x_b)/z and T_Ed = C_Ed − N_Ed when both are ≥ 0; with N_Ed > 0 and T_Ed < 0 both sides are in compression, C = N_Ed/2 ± M_Ed/(2z_C); with N_Ed < 0 and C_Ed < 0 both rows are in tension, T = −N_Ed/2 ± M_Ed/(2x_b); F_t,Ed = T_Ed/n_t at the more loaded row Plate T-stub (cl. 6.2.6.11, 6.2.4, Table 6.2): M_pl,Rd = 0.25·l_eff·t_p²·f_y/γ_M0; without prying min(2·M_pl,Rd/m, n_t·F_t,Rd); with prying the modes 4·M_pl,Rd/m, (2·M_pl,Rd + n·ΣF_t,Rd)/(m + n) with n = min(e_min, 1.25m), and n_t·F_t,Rd; l_eff is the total for the n_t bolts Compression T-stub (cl. 6.2.6.9, 6.2.6.10): C_Rd = f_jd·A_flange, checked when M_Ed > 0 and the resultant is in compression Shear (cl. 6.2.2): F_2,vb,Rd = α_bc·f_ub·A_s/γ_M2, α_bc = 0.44 − 0.0003·f_yb; F_vb,Rd = min(F_1,vb,Rd, F_2,vb,Rd); V_Rd = C_f,d·N_c,Ed + n_b·F_vb,Rd; V_b,Ed = max(V_Ed − C_f,d·N_c,Ed, 0)/n_b Required thickness: the smallest t_p in 10–100 mm with u_N, u_C and u_T all ≤ 1 (each falls as t_p rises)
+Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3; c = t_p·√[f_y/(3·f_jd·γ_M0)] Axial (cl. 6.2.8.2): N_j,Rd = f_jd·A_eff, A_eff the bearing strips of width c round the column footprint (full rectangle when they overlap); u_N = N_c,Ed/N_j,Rd Moment (cl. 6.2.8.3, Table 6.7): z_C from the section ((h − t_f)/2, (h − t)/2, half-annulus centroid) or entered, x_b the bolt row from the axis, z = z_C + x_b; C_Ed = (M_Ed + N_Ed·x_b)/z and T_Ed = C_Ed − N_Ed when both are ≥ 0; with N_Ed > 0 and T_Ed < 0 both sides are in compression, C = N_Ed/2 ± M_Ed/(2z_C); with N_Ed < 0 and C_Ed < 0 both rows are in tension, T = −N_Ed/2 ± M_Ed/(2x_b); F_t,Ed = T_Ed/n_t at the more loaded row Plate T-stub (cl. 6.2.6.11, 6.2.4, Table 6.2): M_pl,Rd = 0.25·l_eff·t_p²·f_y/γ_M0; without prying min(2·M_pl,Rd/m, n_t·F_t,Rd); with prying the modes 4·M_pl,Rd/m, (2·M_pl,Rd + n·ΣF_t,Rd)/(m + n) with n = min(e_min, 1.25m), and n_t·F_t,Rd; l_eff is the total for the n_t bolts Compression T-stub (cl. 6.2.6.9, 6.2.6.10): C_Rd = f_jd·A_flange, checked when M_Ed > 0 and the resultant is in compression Shear (cl. 6.2.2): F_2,vb,Rd = α_bc·f_ub·A_s/γ_M2, α_bc = 0.44 − 0.0003·f_yb; F_vb,Rd = min(F_1,vb,Rd, F_2,vb,Rd); V_Rd = C_f,d·N_c,Ed + n_b·F_vb,Rd; V_b,Ed = max(V_Ed − C_f,d·N_c,Ed, 0)/n_b Required thickness: the smallest t_p in 10–100 mm with u_N, u_C and u_T all ≤ 1, z_C, C_Ed and T_Ed re-evaluated at every trial t_p
   Ref: EN 1993-1-8:2005 cl. 6.2.2 — Design resistance of column bases in shear
   Ref: EN 1993-1-8:2005 cl. 6.2.4, Table 6.2 — Equivalent T-stub in tension
   Ref: EN 1993-1-8:2005 cl. 6.2.5 — Equivalent T-stub in compression
@@ -166,7 +166,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
       = 110.91 kN / 141 kN
       = 0.78658
         Holding-down bolt tension utilisation
-  [56] t_req = smallest t_p in 10–100 mm with u_N, u_C, u_T ≤ 1 (bisection)    « EN 1993-1-8 cl. 6.2.5, 6.2.6.9, 6.2.6.11
+  [56] t_req = smallest t_p in 10–100 mm with u_N, u_C, u_T ≤ 1, with z_C, C_Ed and T_Ed recomputed at every trial t_p (scan and bisection)    « EN 1993-1-8 cl. 6.2.5, 6.2.6.9, 6.2.6.11
       = N_c,Ed = 300 kN, C_Ed = 521.82 kN, T_Ed = 221.82 kN
       = 17.609 mm
         Plate thickness required
@@ -249,9 +249,11 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: alpha_cc, gamma_c (EN 1992-1-1 National Annex factors); gamma_M2 (EN 1993-1-8 National Annex factor); gamma_M0 (EN 1993-1-1 National Annex factor); C_fd (Friction coefficient plate to grout); f_y (Plate strength). Enter each as one so its source, edition and licence travel with it.
+  WARNING f_y_thickness: f_y: one yield strength (275 MPa) is used at every plate thickness, but EN 10025-2 lowers the yield strength of a grade as the thickness passes 16 mm and again above 40 mm. t_p = 20 mm and t_req = 17.609 mm are above the first step: enter the yield strength for the plate thickness in use (steel.strengths record), so M_pl,Rd and the T-stub are not overstated.
   WARNING alpha_basis: alpha_basis: α above 1 needs the foundation geometry it rests on (A_c1/A_c0, α ≤ 3, EN 1992-1-1 cl. 6.7) stated.
+  WARNING anchorage-result: u_profis: the anchorage is not assessed on this sheet. The concrete failure modes of the anchors (cone, pull-out, edge, shear, interaction), which usually govern, are designed in PROFIS; u_max covers the steel parts only, whether or not a report is attached. Enter the report's governing utilisation to include it.
   WARNING anchorage: profis_ref: not attached. The anchorage is designed outside this sheet; attach the Hilti PROFIS report as Evidence and enter its reference.
 
 8. VERIFICATION
-  Template: struct.base-plate@1.1.1
+  Template: struct.base-plate@1.5.0
   Known-answer cases passed: 9/9

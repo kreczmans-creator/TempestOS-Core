@@ -15,6 +15,65 @@ public sealed class MemberChecksTests
         return new CalcInputSet([.. baseline.Values]);
     }
 
+    private static CalcInputSet Shs(params CalcInputValue[] more) =>
+        Uc([
+            CalcInputValue.Quantity("N_Ed", -700, "kN"), CalcInputValue.Quantity("M_y_Ed", 20, "kN*m"), CalcInputValue.Quantity("M_z_Ed", 0, "kN*m"), CalcInputValue.Quantity("V_Ed", 0, "kN"),
+            CalcInputValue.Quantity("A", 40, "cm^2"), CalcInputValue.Quantity("W_pl_y", 150, "cm^3"), CalcInputValue.Quantity("W_pl_z", 150, "cm^3"),
+            CalcInputValue.Quantity("I_y", 1200, "cm^4"), CalcInputValue.Quantity("I_z", 1200, "cm^4"), CalcInputValue.Quantity("A_v", 20, "cm^2"),
+            CalcInputValue.Quantity("L_cr_y", 3, "m"), CalcInputValue.Quantity("L_cr_z", 3, "m"), CalcInputValue.Choice("curve_y", "a"), CalcInputValue.Choice("curve_z", "a"),
+            .. more]);
+
+    [Fact]
+    public void A_Member_Interaction_With_The_Default_K_Of_One_Under_Heavy_Compression_Warns_And_Shows_The_Annex_B_Bound()
+    {
+        // P1-struct.en1993-member-02. SHS 40 cm2, W_pl 150 cm3, I 1200 cm4, S355, curve a, L 3 m, N -700, uniform M_y 20.
+        // python3: lambda 0.71683, chi 0.83970, N_b 1192.37 kN, n 0.58707; u_member 0.96265 with k_yy = 1; with 1 + 0.8n = 1.46965 it is 1.13905; with k_yy 1.3034 it is 1.07661.
+        var r = CalcRunner.Run(Calc, Shs());
+        Assert.Equal(0.9626522, r.OutputSi("u_member"), 6);
+        var warning = Assert.Single(r.Notices, n => n.RuleId == "k-default");
+        Assert.Contains("1.470", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("1.139", warning.Message, StringComparison.Ordinal);
+
+        var entered = CalcRunner.Run(Calc, Shs(CalcInputValue.Of("k_yy", 1.3034)));
+        Assert.Equal(1.0766052, entered.OutputSi("u_member"), 6);
+        Assert.DoesNotContain(entered.Notices, n => n.RuleId == "k-default");
+
+        // Light compression (N/N_b,Rd <= 0.3), no moment about the axis, or tension: no warning.
+        Assert.DoesNotContain(CalcRunner.Run(Calc, Shs(CalcInputValue.Quantity("N_Ed", -300, "kN"))).Notices, n => n.RuleId == "k-default");
+        Assert.DoesNotContain(CalcRunner.Run(Calc, Shs(CalcInputValue.Quantity("M_y_Ed", 0, "kN*m"))).Notices, n => n.RuleId == "k-default");
+        Assert.DoesNotContain(CalcRunner.Run(Calc, Shs(CalcInputValue.Quantity("N_Ed", 700, "kN"))).Notices, n => n.RuleId == "k-default");
+    }
+
+    [Fact]
+    public void The_Shear_Area_Helper_Has_No_Section_Defaults_So_A_New_Sheet_Cannot_Borrow_Another_Sections_Shear_Area()
+    {
+        // P1-struct.en1993-member-R1. Before: A 252 cm2 with the seeded UC 203 helper gave A_v 210.24 cm2, V_pl,Rd 4309 kN and u_V 0.348 for V_Ed 1500 kN.
+        var opened = CalcTemplateHasher.NewSheetInputs(Calc.Template);
+
+        foreach (var symbol in new[] { "h", "b", "t_w", "t_f", "r" })
+            Assert.Null(opened.Find(symbol));
+
+        var blocked = CalcRunner.Run(Calc, opened.With(CalcInputValue.Quantity("A", 252, "cm^2")).With(CalcInputValue.Quantity("V_Ed", 1500, "kN")));
+        Assert.True(blocked.IsBlocked);
+        Assert.Equal("shear-area", blocked.Blocks[0].RuleId);
+    }
+
+    [Fact]
+    public void Helper_Dimensions_That_Do_Not_Match_The_Entered_Area_Warn()
+    {
+        // The UC 203x203x46 helper (2bt_f + (h - 2t_f)t_w = 57.84 cm2 by python3) against A = 252 cm2 gives the old A_v of 210.24 cm2 and u_V 0.348.
+        var r = CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("A", 252, "cm^2"), CalcInputValue.Quantity("V_Ed", 1500, "kN")));
+        Assert.Equal(210.244e-4, r.OutputSi("A_v"), 8);
+        var warning = Assert.Single(r.Notices, n => n.RuleId == "helper-area");
+        Assert.Contains("57.8", warning.Message, StringComparison.Ordinal);
+
+        // The matching section raises none.
+        Assert.DoesNotContain(CalcRunner.Run(Calc, Uc()).Notices, n => n.RuleId == "helper-area");
+
+        // A_v entered: the helper is not used and not checked.
+        Assert.DoesNotContain(CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("A", 252, "cm^2"), CalcInputValue.Quantity("A_v", 70, "cm^2"))).Notices, n => n.RuleId == "helper-area");
+    }
+
     [Fact]
     public void Reduction_Factor_Is_One_For_Stocky_And_Falls_With_Slenderness()
     {
@@ -56,6 +115,56 @@ public sealed class MemberChecksTests
         Assert.True(high.OutputSi("rho") > 0);
         Assert.True(high.OutputSi("M_y_c_Rd") < low.OutputSi("M_y_c_Rd"));
         Assert.Contains(high.Notices, n => n.RuleId == "high-shear");
+    }
+
+    private static CalcInputSet Ub(params CalcInputValue[] overrides)
+    {
+        var baseline = Calc.Template.TestCases.Single(t => t.Id == "ka-ub-bending-shear").Inputs.ToDictionary(v => v.Symbol);
+        foreach (var o in overrides) baseline[o.Symbol] = o;
+        return new CalcInputSet([.. baseline.Values]);
+    }
+
+    [Fact]
+    public void High_Shear_Reduces_Only_The_Web_Part_Of_The_Plastic_Modulus_About_The_Major_Axis()
+    {
+        // struct.en1993-member-01: UB 305x165x40 S275, M_y 120 kN.m, V 250 kN (0.785 V_pl,Rd, rho 0.3241): the sheet cut M_y,c,Rd to (1 - rho) W_pl,y f_y = 115.80 kN.m (u 1.036, FAIL).
+        // Eq. 6.30 gives (W_pl,y - rho A_w^2/(4 t_w)) f_y = 160.62 kN.m (u 0.747). python3: A_w = (303.4 - 2 * 10.2) * 6 = 1698 mm2.
+        var r = CalcRunner.Run(Calc, Ub(CalcInputValue.Quantity("V_Ed", 250, "kN")));
+        Assert.Equal(0.324088, r.OutputSi("rho"), 6);
+        Assert.Equal(160.618, r.OutputSi("M_y_c_Rd") / 1e3, 3);
+        Assert.Equal(0.74711, r.OutputSi("u_M_y"), 4);
+
+        // The minor-axis moment is carried by the flanges: no reduction for load in the web plane (W_pl,z f_y = 142 cm3 x 275 MPa = 39.05 kN.m).
+        Assert.Equal(39.05, r.OutputSi("M_z_c_Rd") / 1e3, 6);
+    }
+
+    [Fact]
+    public void High_Shear_Without_The_Web_Dimensions_Keeps_The_Whole_Section_Reduction_And_Says_So()
+    {
+        var noDims = new CalcInputSet(Ub(CalcInputValue.Quantity("V_Ed", 250, "kN"), CalcInputValue.Quantity("A_v", 20.0676, "cm^2")).Values.Where(v => v.Symbol is not ("h" or "b" or "t_w" or "t_f" or "r")));
+        var r = CalcRunner.Run(Calc, noDims);
+        Assert.Equal((1 - 0.324088) * 623 * 275 / 1e3, r.OutputSi("M_y_c_Rd") / 1e3, 2);
+        var warning = Assert.Single(r.Notices, n => n.RuleId == "high-shear");
+        Assert.Contains("whole", warning.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_Member_Interaction_Divides_The_Moments_By_The_Characteristic_Resistance_Over_Gamma_M1()
+    {
+        // struct.en1993-member-R2: UC 203x203x46, N -900, M_y 40, gamma_M0 1.05, gamma_M1 1.1: u_member 1.1365 (moments over W f_y/gamma_M0) against 1.1479 (EN 6.61, M_Rk/gamma_M1).
+        // python3: chi_z 0.5288 (curve c); N_b,z,Rd = chi A f_y/1.1; M_Rk/1.1 = 497e3 * 355/1.1 N.mm = 160.395 kN.m.
+        var r = CalcRunner.Run(Calc, Uc(CalcInputValue.Of("gamma_M0", 1.05), CalcInputValue.Of("gamma_M1", 1.1), CalcInputValue.Quantity("N_Ed", -900, "kN"), CalcInputValue.Quantity("M_y_Ed", 40, "kN*m")));
+        var nb = r.OutputSi("N_b_Rd") / 1e3;
+        Assert.Equal(900 / nb + 40 / (497e3 * 355 / 1.1 / 1e6), r.OutputSi("u_member"), 6);
+        Assert.Equal(1.1479, r.OutputSi("u_member"), 3);
+    }
+
+    [Fact]
+    public void A_Tension_Member_Warns_That_The_Net_Section_Fracture_Is_Not_Checked()
+    {
+        // struct.en1993-member-06: only gross-section yielding was checked and nothing warned about bolt holes (N_u,Rd = 0.9 A_net f_u/gamma_M2 governs many bolted ties).
+        Assert.Contains(CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("N_Ed", 500, "kN"))).Notices, n => n.RuleId == "net-section");
+        Assert.DoesNotContain(CalcRunner.Run(Calc, Uc()).Notices, n => n.RuleId == "net-section");
     }
 
     [Fact]

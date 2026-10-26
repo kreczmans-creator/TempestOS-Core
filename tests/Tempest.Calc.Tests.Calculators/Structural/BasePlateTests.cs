@@ -226,6 +226,37 @@ public sealed class BasePlateTests
         Assert.Contains(r.Checks, c => c.Name.StartsWith("Compression-side half annulus", StringComparison.Ordinal));
     }
 
+    private static CalcInputSet ChsMoment(double tp, double alpha) =>
+        Column(Loads(100, 150), BasePlateCalculator.ColumnChs)
+            .With(CalcInputValue.Quantity("D", 219.1, "mm")).With(CalcInputValue.Quantity("t", 8, "mm"))
+            .With(CalcInputValue.Quantity("B", 500, "mm")).With(CalcInputValue.Quantity("L", 500, "mm"))
+            .With(CalcInputValue.Quantity("x_b", 200, "mm")).With(CalcInputValue.Quantity("m", 25, "mm"))
+            .With(CalcInputValue.Quantity("l_eff", 400, "mm")).With(CalcInputValue.Quantity("F_t_Rd", 250, "kN"))
+            .With(CalcInputValue.Of("alpha", alpha)).With(CalcInputValue.Quantity("t_p", tp, "mm"));
+
+    [Theory]
+    [InlineData(60.0, 1.0, 29.24365869)]
+    [InlineData(25.0, 1.0, 29.24365869)]
+    [InlineData(60.0, 1.5, 33.64871534)]
+    [InlineData(40.0, 1.5, 33.64871534)]
+    public void A_Chs_Required_Thickness_Does_Not_Depend_On_The_Entered_Thickness_And_Passes_Its_Own_Checks(double enteredTp, double alpha, double expected)
+    {
+        // P1-struct.base-plate-01: z_C, C_Ed and T_Ed move with t_p, so t_req must re-evaluate them at every trial thickness.
+        // Independent check (python3): bisection over t with the half-annulus centroid, C_Ed and T_Ed re-evaluated at each t.
+        // The entered-thickness search gave 27.18 mm (alpha 1) and 21.67 mm (alpha 1.5) at t_p 60, both failing their own checks.
+        var r = CalcRunner.Run(Plate, ChsMoment(enteredTp, alpha));
+        var tReq = r.OutputSi("t_req") * 1e3;
+        Assert.Equal(expected, tReq, 6);
+
+        var again = CalcRunner.Run(Plate, ChsMoment(tReq + 1e-6, alpha));
+
+        foreach (var u in new[] { "u_N", "u_C", "u_T" })
+            Assert.True(again.OutputSi(u) <= 1 + 1e-6, $"{u} = {again.OutputSi(u)} at t_p = t_req");
+
+        var below = CalcRunner.Run(Plate, ChsMoment(tReq - 0.01, alpha));
+        Assert.True(new[] { below.OutputSi("u_N"), below.OutputSi("u_C"), below.OutputSi("u_T") }.Max() > 1);
+    }
+
     [Fact]
     public void A_Lever_Arm_Can_Be_Entered_And_Overrides_The_Section()
     {
@@ -468,5 +499,153 @@ public sealed class BasePlateTests
         Assert.Equal(r.Checks.Where(c => c.Utilisation < double.PositiveInfinity).Max(c => c.Utilisation), r.OutputSi("u_max"), 9);
         Assert.Contains(Plate.Template.OutputPorts!, p => p.Symbol == "F_t_Ed" && p.Unit == "kN");
         Assert.All(Plate.Template.OutputPorts!, p => Assert.NotNull(r.FindOutput(p.Symbol)));
+    }
+
+    private static CalcInputSet Q2(CalcInputSet set, string symbol, double value, string unit) => set.With(CalcInputValue.Quantity(symbol, value, unit));
+
+    [Fact]
+    public void The_Anchorage_Result_Is_Not_Assessed_Unless_The_Report_Utilisation_Is_Entered()
+    {
+        // chain.steel-support-04 (T4): an attached Evidence placeholder passed the anchorage check with u 0 while no concrete failure mode of the anchors was computed; u_max covers the steel parts only.
+        // Now the sheet warns that the anchorage is not assessed until the governing utilisation of the PROFIS report is entered, and then checks it and counts it in u_max.
+        var none = CalcRunner.Run(Plate, Defaults());
+        var warning = Assert.Single(none.Warnings, w => w.RuleId == "anchorage-result");
+        Assert.Contains("u_max", warning.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(none.Checks, c => c.Name.StartsWith("Anchorage (PROFIS", StringComparison.Ordinal));
+
+        var pass = CalcRunner.Run(Plate, Defaults().With(CalcInputValue.Of("u_profis", 0.8)));
+        Assert.DoesNotContain(pass.Warnings, w => w.RuleId == "anchorage-result");
+        Assert.Contains(pass.Checks, c => c.Name.StartsWith("Anchorage (PROFIS", StringComparison.Ordinal) && c.Passed);
+
+        var fail = CalcRunner.Run(Plate, Defaults().With(CalcInputValue.Of("u_profis", 1.25)));
+        Assert.Contains(fail.Checks, c => c.Name.StartsWith("Anchorage (PROFIS", StringComparison.Ordinal) && !c.Passed);
+        Assert.Equal(1.25, fail.OutputSi("u_max"), 9);
+        Assert.False(fail.Passed);
+    }
+
+    [Fact]
+    public void An_Entered_Lever_Arm_Beyond_The_Plate_Half_Length_Is_Blocked()
+    {
+        // struct.base-plate-02: z_C_in 1000 mm put the compression resultant outside the plate and gave T_Ed 128.76 kN (u_T 0.457, pass) against 370.24 kN
+        // (u_T 1.313, FAIL) for the section's own z_C = 121.5 mm. python3: T = (M + N x_b)/(z_C + x_b) - N with N -50, M 100, x_b 165.
+        var set = Loads(-50, 100);
+        var blank = CalcRunner.Run(Plate, set);
+        Assert.Equal(370.2, Kn(blank, "T_Ed"), 1);
+
+        var r = CalcRunner.Run(Plate, Q2(set, "z_C_in", 1000, "mm"));
+        Assert.True(r.IsBlocked);
+        Assert.Contains(r.Blocks, b => b.RuleId == "z_C" && b.Message.StartsWith("z_C_in:", StringComparison.Ordinal));
+
+        // Just inside the half-length is accepted; the plate here is L = 400, so 199 mm is the last whole millimetre.
+        Assert.False(CalcRunner.Run(Plate, Q2(set, "z_C_in", 199, "mm")).IsBlocked);
+    }
+
+    [Fact]
+    public void An_Entered_Lever_Arm_Far_From_The_Section_Value_Warns_That_It_Is_Not_The_Lever_Arm_Z()
+    {
+        // The user who enters z (286.5 mm) instead of z_C (121.5 mm) got a smaller T_Ed with no notice.
+        var r = CalcRunner.Run(Plate, Q2(Loads(300, 100), "z_C_in", 190, "mm"));
+        Assert.False(r.IsBlocked);
+        var warning = Assert.Single(r.Warnings, w => w.RuleId == "z_C_entered");
+        Assert.Contains("121.5", warning.Message, StringComparison.Ordinal);
+
+        Assert.DoesNotContain(CalcRunner.Run(Plate, Q2(Loads(300, 100), "z_C_in", 150, "mm")).Warnings, w => w.RuleId == "z_C_entered");
+    }
+
+    [Fact]
+    public void An_Anchor_Bolt_Strength_Above_800_MPa_Is_Blocked_Unless_The_Anchor_Design_Is_Entered()
+    {
+        // struct.base-plate-03 (and its verification): f_ub 1000 with f_yb capped at 640 gave alpha_bc 0.248 and u_V 0.983 (pass) with only a warning; at the f_yb of 900 MPa a
+        // class 10.9 bolt has, the same formula gives 0.17 and u_V 1.29 (FAIL). python3: 0.44 - 0.0003*900 = 0.17; V_Rd = 0.2*300 + 4*0.17*1000*244.79/1.25/1e3 = 193.2 kN, u_V = 250/193.2 = 1.294.
+        // alpha_bc is not defined above 800 MPa, so the sheet is blocked; entering the anchor design's governing utilisation (u_profis) lets it run with a warning that u_V is not reliable.
+        var set = Q2(Q2(Loads(300, 100, 250), "f_ub", 1000, "MPa"), "f_yb", 640, "MPa");
+        var r = CalcRunner.Run(Plate, set);
+        Assert.True(r.IsBlocked);
+        var block = Assert.Single(r.Blocks, b => b.RuleId == "alpha_bc");
+        Assert.Contains("not defined above 800 MPa", block.Message, StringComparison.Ordinal);
+        Assert.Contains("u_profis", block.Message, StringComparison.Ordinal);
+
+        var withReport = CalcRunner.Run(Plate, set.With(CalcInputValue.Of("u_profis", 0.9)));
+        Assert.False(withReport.IsBlocked);
+        Assert.Equal(0.248, withReport.OutputSi("alpha_bc"), 9);
+        Assert.Single(withReport.Warnings, w => w.RuleId == "alpha_bc_profis" && w.Message.Contains("640", StringComparison.Ordinal));
+
+        var atLimit = CalcRunner.Run(Plate, Q2(Loads(300, 100, 250), "f_ub", 800, "MPa"));
+        Assert.False(atLimit.IsBlocked);
+        Assert.DoesNotContain(atLimit.Warnings, w => w.RuleId is "alpha_bc" or "alpha_bc_profis");
+    }
+
+    [Fact]
+    public void A_Plate_Thicker_Than_16_Mm_Warns_That_One_Yield_Strength_Is_Used_At_Every_Thickness()
+    {
+        // struct.base-plate-R1: S275 is 275 MPa to 16 mm, 265 MPa above it and 255 MPa above 40 mm (EN 10025-2); the sheet used the entered 275 MPa at t_p 50 mm
+        // (M_pl,Rd 6.875 against 6.375 kN.m, 7.8 % high). python3: 0.25 * 40 mm * (50 mm)^2 * 275 MPa = 6.875 kN.m; at 255 MPa 6.375 kN.m.
+        var thick = CalcRunner.Run(Plate, Q2(Q2(Defaults(), "t_p", 50, "mm"), "l_eff", 40, "mm"));
+        Assert.Equal(6.875, thick.OutputSi("M_pl_Rd") / 1e3, 6);
+        var warning = Assert.Single(thick.Warnings, w => w.RuleId == "f_y_thickness");
+        Assert.Contains("50", warning.Message, StringComparison.Ordinal);
+
+        var thin = CalcRunner.Run(Plate, Q2(Loads(100, 0), "t_p", 12, "mm"));
+        Assert.DoesNotContain(thin.Warnings, w => w.RuleId == "f_y_thickness");
+    }
+
+    [Fact]
+    public void The_Thickness_Warning_Names_Only_The_Thicknesses_Above_16_Mm()
+    {
+        // struct.base-plate-R1 (verification): steel-support S6 printed "t_p = 25 mm and t_req = 15.423 mm pass the first step" although t_req is below 16 mm.
+        var r = CalcRunner.Run(Plate, Q2(Loads(100, 0), "t_p", 25, "mm"));
+        var tReq = r.OutputSi("t_req") * 1e3;
+        Assert.InRange(tReq, 10, 16);
+
+        var warning = Assert.Single(r.Warnings, w => w.RuleId == "f_y_thickness");
+        Assert.Contains("t_p = 25 mm", warning.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("t_req", warning.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_Anchorage_Check_Cites_The_Report_And_EN_1992_4_Not_The_Steel_Anchor_Bolt_Clause()
+    {
+        // chain.steel-support-04 (verification): the anchorage is designed to EN 1992-4 or taken from the PROFIS report, not to EN 1993-1-8 cl. 6.2.6.12 (steel anchor bolts in tension).
+        var r = CalcRunner.Run(Plate, Defaults().With(CalcInputValue.Of("u_profis", 0.8)));
+        var check = Assert.Single(r.Checks, c => c.Name.StartsWith("Anchorage (PROFIS", StringComparison.Ordinal));
+        Assert.Equal("PROFIS report (EN 1992-4)", check.Clause);
+        Assert.Equal("EN 1993-1-8 cl. 6.2.6.12", r.Checks.Single(c => c.Name == "Holding-down bolt tension").Clause);
+    }
+
+    private static CalcInputSet E1(string column, double tp) => column == "ih"
+        ? Q2(Q2(Q2(Q2(Q2(Loads(500, 100), "B", 360, "mm"), "L", 360, "mm"), "t_p", tp, "mm"), "m", 28, "mm"), "l_eff", 200, "mm").With(CalcInputValue.Of("alpha", 1.5))
+        : Q2(Q2(Q2(Q2(Q2(Q2(Q2(Column(Loads(300, 60), BasePlateCalculator.ColumnRhs), "B", 230, "mm"), "L", 300, "mm"), "t_p", tp, "mm"), "x_b", 140, "mm"), "m", 28, "mm"), "l_eff", 200, "mm"), "F_t_Rd", 141, "kN").With(CalcInputValue.Of("alpha", 1.5));
+
+    [Fact]
+    public void A_Required_Thickness_Passes_Its_Own_Checks_On_I_H_And_RHS_Columns_Whatever_Thickness_Is_Entered()
+    {
+        // struct.base-plate-E1: I/H 260x256x17x10 on a 360x360 plate, N 500, M 100, x_b 165, m 28, l_eff 200, alpha 1.5: t_p 20 gave t_req 22.84 mm and u_C 1.013 at 22.84.
+        foreach (var column in new[] { "ih", "rhs" })
+        {
+            var tReqs = new List<double>();
+
+            foreach (var tp in new[] { 20.0, 40.0, 60.0 })
+                tReqs.Add(CalcRunner.Run(Plate, E1(column, tp)).OutputSi("t_req") * 1e3);
+
+            Assert.All(tReqs, t => Assert.Equal(tReqs[0], t, 6));
+            var again = CalcRunner.Run(Plate, E1(column, tReqs[0] + 1e-6));
+
+            foreach (var u in new[] { "u_N", "u_C", "u_T" })
+                Assert.True(again.OutputSi(u) <= 1 + 1e-6, $"{column}: {u} = {again.OutputSi(u)} at t_p = t_req");
+        }
+    }
+
+    [Fact]
+    public void A_Thicker_Plate_That_Raises_The_Compression_Utilisation_Because_The_Outstand_Is_Cut_Warns()
+    {
+        // struct.base-plate-E1: RHS 200x200x10 on a 230x300 plate, N 300, M 60: u_C is 0.998 at t_p 40 and 1.063 at 50, 1.136 at 60 (FAIL) because the strip's lever arm
+        // shortens as c grows against the plate edge; t_req 32.79 mm is the thinnest passing plate, not a lower bound for every thicker one.
+        var r40 = CalcRunner.Run(Plate, E1("rhs", 40));
+        Assert.Equal(0.998, r40.OutputSi("u_C"), 3);
+        Assert.Contains(r40.Warnings, w => w.RuleId == "outstand-cut");
+
+        // Uncut outstand (a long, wide plate): u_C falls with t_p, so there is nothing to warn about.
+        var uncut = Q2(Q2(E1("rhs", 40), "L", 700, "mm"), "B", 600, "mm");
+        Assert.DoesNotContain(CalcRunner.Run(Plate, uncut).Warnings, w => w.RuleId == "outstand-cut");
     }
 }

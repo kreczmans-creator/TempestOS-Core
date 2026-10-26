@@ -69,6 +69,52 @@ public sealed class SectionPropertiesTests
     }
 
     [Fact]
+    public void Composite_Tube_Part_Added_Is_A_Ring_Not_A_Disc()
+    {
+        // struct.section-properties-01: the bore of a hollow part was turned into solid material when the part was added.
+        var tube = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeTube), CalcInputValue.Quantity("d", 200, "mm"), CalcInputValue.Quantity("t", 10, "mm"));
+        var composite = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeComposite), SectionPropertiesCalculator.Parts(
+            (SectionPropertiesCalculator.ShapeTube, 0, 200, 10, 0, 0, 0, 0, 0, "add")));
+        Assert.False(composite.IsBlocked, string.Join("; ", composite.Blocks.Select(b => b.Message)));
+
+        // Independent (python): A = pi/4 (200^2 - 180^2) = 59.690 cm2; I = pi/64 (200^4 - 180^4) = 2700.98 cm4.
+        Assert.Equal(59.690, composite.OutputSi("A") * 1e4, 0.01);
+        Assert.Equal(2700.98, composite.OutputSi("I_xx") * 1e8, 0.5);
+
+        foreach (var symbol in new[] { "A", "I_xx", "I_yy", "W_el_x", "W_pl_x" })
+            Assert.Equal(tube.OutputSi(symbol), composite.OutputSi(symbol), tube.OutputSi(symbol) * 5e-4);
+    }
+
+    [Fact]
+    public void Composite_Hollow_Rectangle_Part_Added_Matches_The_Primitive()
+    {
+        var shs = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeHollowRectangle), CalcInputValue.Quantity("b", 100, "mm"), CalcInputValue.Quantity("h", 100, "mm"), CalcInputValue.Quantity("t", 5, "mm"), CalcInputValue.Quantity("r", 7.5, "mm"), CalcInputValue.Quantity("r_i", 5, "mm"));
+        var composite = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeComposite), SectionPropertiesCalculator.Parts(
+            (SectionPropertiesCalculator.ShapeHollowRectangle, 100, 100, 5, 0, 7.5, 0, 0, 0, "add")));
+        Assert.False(composite.IsBlocked, string.Join("; ", composite.Blocks.Select(b => b.Message)));
+
+        // Independent (python): A = (100^2 - (4 - pi) 7.5^2) - (90^2 - (4 - pi) 5^2) = 18.732 cm2 (the flipped bore gave 180.3 cm2).
+        Assert.Equal(18.732, composite.OutputSi("A") * 1e4, 0.001);
+
+        foreach (var symbol in new[] { "A", "I_xx", "I_yy", "W_pl_x" })
+            Assert.Equal(shs.OutputSi(symbol), composite.OutputSi(symbol), shs.OutputSi(symbol) * 1e-6);
+    }
+
+    [Fact]
+    public void Composite_Tube_Part_Subtracted_Leaves_The_Bore_Solid()
+    {
+        // Rectangle 300 x 300 minus a tube d 200 t 10: the ring is removed and the 180 mm bore stays solid.
+        var composite = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeComposite), SectionPropertiesCalculator.Parts(
+            (SectionPropertiesCalculator.ShapeRectangle, 300, 300, 0, 0, 0, 0, 0, 0, "add"),
+            (SectionPropertiesCalculator.ShapeTube, 0, 200, 10, 0, 0, 0, 0, 0, "subtract")));
+        Assert.False(composite.IsBlocked, string.Join("; ", composite.Blocks.Select(b => b.Message)));
+
+        // Independent (python): A = 300^2 - pi/4 (200^2 - 180^2) = 840.31 cm2; I = 300^4/12 - pi/64 (200^4 - 180^4) = 64799.0 cm4.
+        Assert.Equal(840.31, composite.OutputSi("A") * 1e4, 0.01);
+        Assert.Equal(64799.0, composite.OutputSi("I_xx") * 1e8, 0.5);
+    }
+
+    [Fact]
     public void Polygon_With_Hole_Matches_The_Tube()
     {
         var hole = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(
@@ -105,6 +151,54 @@ public sealed class SectionPropertiesTests
             ("mm", [(0, 0), (10, 0), (10, 10), (0, 10)]),
             ("mm", [(-5, -5), (20, -5), (20, 20), (-5, 20)])));
         Assert.True(r.IsBlocked);
+    }
+
+    [Fact]
+    public void A_Self_Crossing_Outline_Blocks_With_A_Plain_Message()
+    {
+        // struct.section-properties-04: the loop (0,0), (100,100), (100,0), (0,60) crosses itself and ended in the engine's "sqrt of a negative number is undefined".
+        var r = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(("mm", [(0, 0), (100, 100), (100, 0), (0, 60)])));
+        Assert.True(r.IsBlocked);
+        var block = Assert.Single(r.Blocks);
+        Assert.Equal("geometry", block.RuleId);
+        Assert.Contains("crosses itself", block.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("sqrt", block.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_Hole_Outside_Or_Across_The_Outline_Blocks_Instead_Of_Running_With_The_Wrong_Area()
+    {
+        // struct.section-properties-04: a square 100 outline with a 10 x 10 "hole" at x 200 to 210 ran with no notice and gave A = 99 cm2 (the hole subtracted as if it lay in the section).
+        var square = ("mm", (IReadOnlyList<(double, double)>)[(0, 0), (100, 0), (100, 100), (0, 100)]);
+        var outside = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(square, ("mm", [(200, 0), (210, 0), (210, 10), (200, 10)])));
+        Assert.True(outside.IsBlocked);
+        Assert.Contains("outside the outline", Assert.Single(outside.Blocks).Message, StringComparison.Ordinal);
+
+        var across = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(square, ("mm", [(90, 40), (120, 40), (120, 60), (90, 60)])));
+        Assert.True(across.IsBlocked);
+        Assert.Contains("crosses", Assert.Single(across.Blocks).Message, StringComparison.Ordinal);
+
+        // A hole inside the outline still runs (the tube-like polygon of Polygon_With_Hole_Matches_The_Tube).
+        Assert.False(Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(square, ("mm", [(10, 10), (20, 10), (20, 20), (10, 20)]))).IsBlocked);
+    }
+
+    [Theory]
+    [InlineData("channel", 4.3, "low")]
+    [InlineData("angle", 8.9, "low")]
+    [InlineData("tee", 2.8, "high")]
+    public void The_Torsion_Constant_Of_A_Channel_Angle_Or_Tee_States_How_Far_Ignoring_The_Fillet_Errs(string shape, double percent, string direction)
+    {
+        // struct.section-properties-03: J = sum b t^3/3 against a finite-element value (channel 200x75, t 6, t_f 11, r 12: 4.3 % low; angle 100x75, t 10, r 12: 8.9 % low; sharp tee 150x150: 2.8 % high).
+        var dims = shape switch
+        {
+            "channel" => new[] { CalcInputValue.Quantity("h", 200, "mm"), CalcInputValue.Quantity("b", 75, "mm"), CalcInputValue.Quantity("t", 6, "mm"), CalcInputValue.Quantity("t_f", 11, "mm"), CalcInputValue.Quantity("r", 12, "mm") },
+            "angle" => [CalcInputValue.Quantity("h", 100, "mm"), CalcInputValue.Quantity("b", 75, "mm"), CalcInputValue.Quantity("t", 10, "mm"), CalcInputValue.Quantity("r", 12, "mm")],
+            _ => [CalcInputValue.Quantity("h", 150, "mm"), CalcInputValue.Quantity("b", 150, "mm"), CalcInputValue.Quantity("t", 10, "mm"), CalcInputValue.Quantity("t_f", 15, "mm")],
+        };
+        var r = Run([CalcInputValue.Choice("shape", shape), .. dims]);
+        Assert.False(r.IsBlocked);
+        var warning = Assert.Single(r.Warnings, w => w.RuleId == "thin-walled-torsion");
+        Assert.Contains($"about {percent:0.#} % {direction}", warning.Message, StringComparison.Ordinal);
     }
 
     [Fact]

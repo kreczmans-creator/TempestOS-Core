@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Plant room heating
 Calc ID: Room B heat loss    Revision: A
 Title: U-values and room heat loss
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: HTG-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: HTG-001    Client: Client Co
 
 1. SCOPE AND METHOD
 U-values of built-up elements from their layers and surface resistances, and the steady-state design heat loss of one room: fabric loss through each element to its adjacent temperature, a thermal-bridge allowance, ventilation loss (through the outside temperature or an MVHR supply temperature), the room load for sizing emitters, the heat loss coefficient and the loss per floor area; optionally checked against target U-values.
@@ -34,6 +34,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   n | Air change rate | 0.6 | 1/h | spec: SPEC-HTG-01 §3 | 0.1 … 3 1/h
   V | Room volume | 50 | m^3 | spec: SPEC-HTG-01 §3 | 5 … 1000 m^3
   theta_supply | MVHR supply air temperature after heat recovery (blank = natural ventilation, outside air) | 16 | degC | spec: SPEC-HTG-01 §3 | -15 … 24 degC
+  n_inf | Infiltration air change rate at outside temperature, with MVHR only (n is then the MVHR rate; blank = no infiltration loss, with a warning; 0 = airtight) | 0.1 | 1/h | spec: SPEC-HTG-01 §3 | 0 … 1 1/h
   f_add | Additional allowance on the room load (CIBSE DHDG method only) | 0 | % | assumption: Sheet default value; no project figure given. | 0 … 20 %
 
 3. ASSUMPTIONS
@@ -93,45 +94,53 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
       = 21 m²
       = 21 m²
         Fabric area facing outside weighted by the temperature factor (thermal-bridge allowance applies)
-  [19] U_m = Σ A·U·f / Σ A
+  [19] U_m = Σ A·U / Σ A
+      = 27.783 / 37
+      = 0.75088 W/(m²·K)
+        Area-weighted mean U-value of the fabric (without the temperature factor f)
+  [20] U_eff = Σ A·U·f / Σ A
       = 26.783 / 37
       = 0.72385 W/(m²·K)
-        Area-weighted mean U-value of the fabric
-  [20] dT = theta_int - theta_e
+        Heat-loss weighted mean U-value of the fabric (includes the temperature factor f)
+  [21] dT = theta_int - theta_e
       = 21 degC − (-3 degC)
       = 24 K
         Design temperature difference, inside to outside
-  [21] Phi_el = Σ Φ_i    « BS EN 12831-1 cl. 6.3.2
+  [22] Phi_el = Σ Φ_i    « BS EN 12831-1 cl. 6.3.2
       = 187.61 W
       = 187.61 W
         Fabric loss through the elements
-  [22] Phi_tb = y_tb * A_tb * dT    « BS EN 12831-1 cl. 6.3.2
+  [23] Phi_tb = y_tb * A_tb * dT    « BS EN 12831-1 cl. 6.3.2
       = 0.05 W/(m²·K) × 21 m² × 24 K
       = 25.2 W
         Thermal-bridge allowance
-  [23] Phi_T = Phi_el + Phi_tb    « BS EN 12831-1 cl. 6.3.2
+  [24] Phi_T = Phi_el + Phi_tb    « BS EN 12831-1 cl. 6.3.2
       = 187.61 W + 25.2 W
       = 212.81 W
         Fabric heat loss
-  [24] q_v = n * V
+  [25] q_v = n * V
       = 0.6 1/h × 50 m³
       = 30 m³/h
         Ventilation air flow
-  [25] dT_v = theta_int - theta_supply    « BS EN 12831-1 cl. 6.3.3
+  [26] dT_v = theta_int - theta_supply    « BS EN 12831-1 cl. 6.3.3
       = 21 degC − 16 degC
       = 5 K
         Ventilation temperature difference, inside to MVHR supply
-  [26] Phi_V = 0.34 Wh/(m^3*K) * q_v * dT_v    « BS EN 12831-1 cl. 6.3.3
-      = 0.34 Wh/(m^3*K) × 30 m³/h × 5 K
-      = 51 W
-        Ventilation heat loss (0.34 Wh/m³K = conventional ρ·c_p of air, derived)
-  [28] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
-      = 212.81 W + 51 W
-      = 263.81 W
+  [28] q_inf = n_inf * V
+      = 0.1 1/h × 50 m³
+      = 5 m³/h
+        Infiltration air flow at the outside temperature (not through the MVHR)
+  [29] Phi_V = 0.34 Wh/(m^3*K) * (q_v * dT_v + q_inf * dT)    « BS EN 12831-1 cl. 6.3.3
+      = 0.34 Wh/(m^3*K) × (30 m³/h × 5 K + 5 m³/h × 24 K)
+      = 91.8 W
+        Ventilation heat loss: MVHR flow to the supply temperature plus infiltration to outside (0.34 Wh/m³K = conventional ρ·c_p of air, derived)
+  [31] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
+      = 212.81 W + 91.8 W
+      = 304.61 W
         Room design heat loss
-  [29] HLC = Phi_HL / dT
-      = 263.81 W / 24 K
-      = 10.992 W/K
+  [32] HLC = Phi_HL / dT
+      = 304.61 W / 24 K
+      = 12.692 W/K
         Heat loss coefficient
 
 5. RESULTS
@@ -143,18 +152,20 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   Phi_2 = 65.025 W    Partition: fabric loss
   U_3 = 0.25 W/(m²·K)    Ground floor: U-value
   Phi_3 = 36 W    Ground floor: fabric loss
+  theta_int = 21 degC    Internal design temperature
   A_fab = 37 m²    Total fabric area
   A_ext = 25 m²    Fabric area facing outside
   A_tb = 21 m²    Fabric area facing outside weighted by f
-  U_m = 0.72385 W/(m²·K)    Mean fabric U-value
+  U_m = 0.75088 W/(m²·K)    Mean fabric U-value (area-weighted)
+  U_eff = 0.72385 W/(m²·K)    Heat-loss weighted fabric U-value (with f)
   dT = 24 K    Design temperature difference
   Phi_el = 187.61 W    Element fabric loss
   Phi_tb = 25.2 W    Thermal-bridge allowance
   Phi_T = 212.81 W    Fabric heat loss
   q_v = 30 m³/h    Ventilation air flow
-  Phi_V = 51 W    Ventilation heat loss
-  Phi_HL = 263.81 W    Room design heat loss
-  HLC = 10.992 W/K    Heat loss coefficient
+  Phi_V = 91.8 W    Ventilation heat loss
+  Phi_HL = 304.61 W    Room design heat loss
+  HLC = 12.692 W/K    Heat loss coefficient
 
 6. CHECKS (governing first)
   No pass/fail checks in this calculation.
@@ -163,9 +174,9 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   WARNING record: Tabulated values not taken from a reference record: theta_e (External design temperature); layers (Layer thermal conductivity); y_tb (Thermal-bridge allowance). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.room-heat-loss@1.2.1
-  Content hash: fd9944b78380fa3a
+  Template: bs.room-heat-loss@1.4.0
+  Content hash: 3e4b1ea3ce5d1522
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 11:01 UTC
   Application: TempestOS test

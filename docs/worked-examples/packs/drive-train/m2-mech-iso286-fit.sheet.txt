@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Conveyor 7 head drive
 Calc ID: Bearing A seat fit    Revision: A
 Title: ISO 286 limits and fits
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: CNV-DRV-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Hole and shaft limits for a nominal size and tolerance classes, the resulting fit (clearance, transition or interference) and its extreme values, from the ISO 286-1 formulae.
@@ -24,7 +24,7 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
   EI_override | Hole lower deviation override | -9 | µm | drawing: DRG-CNV-411 rev B | -5000 … 5000 µm
 
 3. ASSUMPTIONS
-  A1. IT values and fundamental deviations are the unrounded results of the ISO 286-1 formulae at the geometric mean of the size step. (The tabulated values apply the standard's own rounding and may differ by about 1 µm; enter overrides from a released reference record where the tabulated value governs.)
+  A1. IT values and fundamental deviations are the unrounded results of the ISO 286-1 formulae at the geometric mean of the size step. (The tabulated values apply the standard's own rounding and may differ by about 1 µm for the clearance and transition letters (a to n). For the interference letters p to zc the tables also carry the standard's own increments and sub-steps, so the formula value can be several µm below the tabulated one (p6 at 450 mm: 62.2 against 68 µm), and the sheet warns; enter overrides from a released reference record where the tabulated value governs.)
   A2. Hole deviations follow the general rule from the shaft deviations, with Δ = ITn − IT(n−1) where the standard applies it. (Table-specific departures in the standard are not reproduced; use the overrides where they govern.)
   A3. hole_letter (Hole fundamental deviation letter) is taken as H. (Sheet default value; no project figure given.)
   A4. hole_grade (Hole IT grade) is taken as 7. (Sheet default value; no project figure given.)
@@ -128,9 +128,9 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
   No warnings.
 
 8. VERIFICATION
-  Template: mech.iso286-fit@1.2.0
-  Content hash: 014da7adc9760013
+  Template: mech.iso286-fit@1.5.0
+  Content hash: b34c0b5649e90593
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 13:51 UTC
   Application: TempestOS test

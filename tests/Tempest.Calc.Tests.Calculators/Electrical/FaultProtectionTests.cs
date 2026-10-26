@@ -178,7 +178,7 @@ public sealed class FaultProtectionTests
             .With(FaultProtectionCalculator.Points((5, 60), (0.4, 120), (0.1, 180))).With(CalcInputValue.Quantity("L", 2, "m")));
         Assert.Equal(0.1, r.OutputSi("t_d"), 12);
         Assert.NotNull(r.FindOutput("S_min"));
-        Assert.Contains(r.Warnings, w => w.RuleId == "curve" && w.Message.Contains("upper bound", StringComparison.Ordinal));
+        Assert.Contains(r.Warnings, w => w.RuleId == "curve-range" && w.Message.Contains("upper bound", StringComparison.Ordinal));
         Assert.DoesNotContain(r.Checks, c => c.Name == "Disconnection achieved");
     }
 

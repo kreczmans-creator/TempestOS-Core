@@ -2,7 +2,7 @@
 
 **Chain.** Room A heat loss (`bs.room-heat-loss`) → Sealed system; Room B heat loss (`bs.room-heat-loss`) → Sealed system; Sealed system (`bs.sealed-system`) → Primary pipework and pump; Primary pipework and pump (`bs.pipe-pump`) → Circulator motor.
 
-**Purpose.** Sizes a wet heating circuit from the rooms to the circulator: room heat losses, emitters and expansion vessel, the pipework and pump at the flow that heat needs, and the motor that drives the pump. The loop is closed (no static lift) and the example load is small, so the pump duty is a deliberately tiny illustration. The pipework water content in the sealed system is entered by hand from the pipework's V_pipe, because a link back from B1 would be a cycle.
+**Purpose.** Sizes a wet heating circuit from the rooms to the circulator: room heat losses, emitters and expansion vessel, the pipework and pump at the flow that heat needs, and the motor that drives the pump. The loop is closed (no static lift) and the example load is small, so the pump duty is a deliberately tiny illustration. The pipework water content in the sealed system is entered by hand from the pipework's V_pipe, because a link back from B1 would be a cycle (the sealed-system step warns while it is left at its 20 L default). Each room's design temperature (B4's θ_int) is the room temperature of that room's emitter. The pump head covers pipe friction only unless the water-side loss of the boiler or heat exchanger, valves and emitters is entered as the outlet head h_out of the pipework step (the step warns while it is 0). The pipework step is on water: a glycol loop must be given the custom fluid with its density and viscosity (the step warns when the specific heat is not water's).
 
 Two rooms' design heat losses are the two rows of the sealed system's room table (table-cell links); the sealed system's total heat, flow-to-return difference and mean water temperature give the primary pipework its flow and fluid; the pump's shaft torque and speed are the circulator motor's load. The loop is closed, so there is no static lift, and the 40 m of 10 mm microbore carries about 57 L/h for a 0.64 kW load: the pump duty is a deliberately tiny illustration. The sealed system's pipework water content (3.14 L) is entered, equal to the pipework's own V_pipe, because a link back from the pipework would be a cycle.
 
@@ -16,7 +16,7 @@ Two rooms' design heat losses are the two rows of the sealed system's room table
 | Room B heat loss | `bs.room-heat-loss` | A | none |
 | Sealed system | `bs.sealed-system` | A | none |
 | Primary pipework and pump | `bs.pipe-pump` | A | 1 of 1 PASS |
-| Circulator motor | `elec.motor-sizing` | A | 3 of 3 PASS |
+| Circulator motor | `elec.motor-sizing` | A | 4 of 4 PASS |
 
 ## Links
 
@@ -25,11 +25,13 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|
 | Room A heat loss | `Phi_HL` | Sealed system | `rooms` row 1 (`Phi`), a table-cell link | 379.444 W |
-| Room B heat loss | `Phi_HL` | Sealed system | `rooms` row 2 (`Phi`), a table-cell link | 263.808 W |
-| Sealed system | `Phi_tot` | Primary pipework and pump | `Phi_load` | 643.252 W |
+| Room B heat loss | `Phi_HL` | Sealed system | `rooms` row 2 (`Phi`), a table-cell link | 304.608 W |
+| Room A heat loss | `theta_int` | Sealed system | `rooms` row 1 (`t_i`), a table-cell link | 21 degC |
+| Room B heat loss | `theta_int` | Sealed system | `rooms` row 2 (`t_i`), a table-cell link | 21 degC |
+| Sealed system | `Phi_tot` | Primary pipework and pump | `Phi_load` | 684.052 W |
 | Sealed system | `dT_fr` | Primary pipework and pump | `dT_load` | 10 K |
 | Sealed system | `t_m` | Primary pipework and pump | `T` | 70 degC |
-| Primary pipework and pump | `T_shaft` | Circulator motor | `T_L` | 0.000272215 N*m |
+| Primary pipework and pump | `T_shaft` | Circulator motor | `T_L` | 0.000323393 N*m |
 | Primary pipework and pump | `n_shaft` | Circulator motor | `n_L` | 2800 rpm |
 
 ## Inputs and provenance

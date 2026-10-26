@@ -43,7 +43,7 @@ internal static class CalcPackExamples
     /// <summary>
     /// The gearbox input shaft: coupling at one end, a pinion of 60 mm pitch RADIUS (120 mm pitch diameter) at mid-span. T and n arrive by link, but the
     /// mesh forces are entered, derived for T = 151.58 N·m: F_t = T/r_p = 2.53 kN (horizontal plane) and F_r = F_t·tan 20° = 0.92 kN (vertical plane).
-    /// They do not follow a change of E1 by themselves: re-derive them when T_rms changes.
+    /// They do not follow a change of E1 by themselves: re-derive them when the E1 torque (T_load) changes.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> DriveM4 { get; } =
     [
@@ -86,7 +86,7 @@ internal static class CalcPackExamples
     public static IReadOnlyList<CalcInputValue> MotorE1 { get; } =
     [
         C("mechanism", "lead / ball screw"), Q("p_screw", 10, "mm"), Q("m", 50, "kg"), N("mu", 0.1), N("s", 0.5), Q("t_move", 0.5, "s"),
-        Q("n_max", 10000, "rpm"),
+        Q("n_max", 10000, "rpm"), Q("n_rated", 3000, "rpm"),
     ];
 
     /// <summary>
@@ -114,11 +114,11 @@ internal static class CalcPackExamples
 
     /// <summary>
     /// The device is the type C MCB the cable step sizes (the choice must agree with it or the step is blocked); the protective conductor is
-    /// the same size as the line conductor; the let-through energy is an invented figure for a small MCB, to be replaced from its datasheet.
+    /// the same size as the line conductor (linked: S_cpc is the cable step's CSA, so it follows the cable); the let-through energy is an invented figure for a small MCB, to be replaced from its datasheet.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> MotorE5 { get; } =
     [
-        Q("U_0", 230, "V"), Q("Z_e", 0.35, "ohm"), Q("S_cpc", 1.5, "mm^2"), C("device", "MCB type C (I_a = 10 I_n)"), Q("t_req", 0.4, "s"), Q("I2t_let", 1.5e4, "A^2*s"),
+        Q("U_0", 230, "V"), Q("Z_e", 0.35, "ohm"), C("device", "MCB type C (I_a = 10 I_n)"), Q("t_req", 0.4, "s"), Q("I2t_let", 1.5e4, "A^2*s"),
     ];
 
     /// <summary>A 1000 × 1200 × 300 enclosure against a wall.</summary>
@@ -150,7 +150,7 @@ internal static class CalcPackExamples
         Q("U_target", 0.3, "W/(m^2*K)"), Q("n", 0.5, "1/h"), Q("V", 40, "m^3"),
     ];
 
-    /// <summary>A room with MVHR, a partition to an 18 °C space and a ground floor with a user U (Φ about 264 W). The partition is not held to the outside target U.</summary>
+    /// <summary>A room with MVHR, a partition to an 18 °C space and a ground floor with a user U (Φ about 305 W). The partition is not held to the outside target U. The envelope leaks 0.1 h⁻¹ at the outside temperature besides the MVHR rate (an invented, illustrative value; blank would drop the infiltration loss, bs.room-heat-loss-R1).</summary>
     public static IReadOnlyList<CalcInputValue> WetRoomB { get; } =
     [
         Q("theta_int", 21, "degC"), Q("theta_e", -3, "degC"),
@@ -159,19 +159,19 @@ internal static class CalcPackExamples
             CalcRow.Of(Txt("name", "Cavity wall"), ("area", new CalcCell(15, "m^2"))),
             CalcRow.Of(Txt("name", "Partition"), ("area", new CalcCell(12, "m^2")), ("theta_adj", new CalcCell(18, "degC")), ("Rg", new CalcCell(0.18, "m^2*K/W"))),
             CalcRow.Of(Txt("name", "Ground floor"), ("area", new CalcCell(10, "m^2")), Num("f", 0.6), ("U_user", new CalcCell(0.25, "W/(m^2*K)")))),
-        Q("y_tb", 0.05, "W/(m^2*K)"), Q("n", 0.6, "1/h"), Q("V", 50, "m^3"), Q("theta_supply", 16, "degC"),
+        Q("y_tb", 0.05, "W/(m^2*K)"), Q("n", 0.6, "1/h"), Q("V", 50, "m^3"), Q("theta_supply", 16, "degC"), Q("n_inf", 0.1, "1/h"),
     ];
 
     /// <summary>
-    /// The sealed system is given its two rooms (instantiating never creates rows); each room's Φ is a placeholder the cell links replace. The pipework
+    /// The sealed system is given its two rooms (instantiating never creates rows); each room's Φ and design temperature t_i are placeholders the cell links replace. The pipework
     /// water content is B1's V_pipe (π/4 × 0.010² × 40 m = 3.14 L), entered by hand: B1 takes its heat load from B6, so a link back from B1 would be a cycle.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> WetB6 { get; } =
     [
         Q("V_pipe", 3.14, "L"),
         Table("rooms",
-            CalcRow.Of(Txt("name", "Room A"), ("Phi", new CalcCell(1, "W")), ("V_em", new CalcCell(4, "L"))),
-            CalcRow.Of(Txt("name", "Room B"), ("Phi", new CalcCell(1, "W")), ("V_em", new CalcCell(4, "L")))),
+            CalcRow.Of(Txt("name", "Room A"), ("Phi", new CalcCell(1, "W")), ("V_em", new CalcCell(4, "L")), ("t_i", new CalcCell(21, "degC"))),
+            CalcRow.Of(Txt("name", "Room B"), ("Phi", new CalcCell(1, "W")), ("V_em", new CalcCell(4, "L")), ("t_i", new CalcCell(21, "degC")))),
     ];
 
     /// <summary>
@@ -268,10 +268,11 @@ internal static class CalcPackExamples
         CalcRow.Of(Num("case", @case), Txt("kind", "nodal"), Num("target", node), ("a", new CalcCell(0, "m")), ("b", new CalcCell(0, "m")), ("w1", new CalcCell(0, "kN/m")), ("w2", new CalcCell(0, "kN/m")),
             ("F_x", new CalcCell(fx, "kN")), ("F_y", new CalcCell(fy, "kN")), ("M", new CalcCell(0, "kN*m")));
 
-    /// <summary>The column: 203 × 203 UC in S355 (properties as in S3's defaults), fixed base and free top, buckling length 2 × 3 m.</summary>
+    /// <summary>The column: 203 × 203 UC in S355 (A, W and I as in S3's defaults; the shear-area helper dimensions h, b, t_w, t_f, r of the UC 203×203×46 are stated here, since S3 no longer seeds them), fixed base and free top, buckling length 2 × 3 m.</summary>
     public static IReadOnlyList<CalcInputValue> SteelS3 { get; } =
     [
         Q("M_z_Ed", 0, "kN*m"), Q("f_y", 355, "MPa"), Q("L_cr_y", 6, "m"), Q("L_cr_z", 6, "m"),
+        Q("h", 203.2, "mm"), Q("b", 203.6, "mm"), Q("t_w", 7.2, "mm"), Q("t_f", 11, "mm"), Q("r", 10.2, "mm"),
     ];
 
     /// <summary>
@@ -286,10 +287,10 @@ internal static class CalcPackExamples
         Q("V_R", 94.0, "kN"), Q("T_R", 141.0, "kN"),
     ];
 
-    /// <summary>The arm joint's bolt checks: M20 8.8 through a 20 mm S275 end plate; the bolt forces arrive by link from the bolt group.</summary>
+    /// <summary>The arm joint's bolt checks: M20 8.8 through a 20 mm S275 end plate against the 11 mm flange of the UC 203 × 203 × 46 column (bearing is on the thinner ply); the bolt forces arrive by link from the bolt group.</summary>
     public static IReadOnlyList<CalcInputValue> SteelS4A { get; } =
     [
-        C("grade", "8.8"), C("size", "M20"), C("steel", "S275"), Q("t", 20, "mm"),
+        C("grade", "8.8"), C("size", "M20"), C("steel", "S275"), Q("t", 20, "mm"), Q("t_2", 11, "mm"),
         Q("e_1", 40, "mm"), Q("e_2", 40, "mm"), Q("p_1", 150, "mm"), Q("p_2", 120, "mm"),
         Q("A_nt", 1200, "mm^2"), Q("A_nv", 2400, "mm^2"),
     ];
@@ -335,10 +336,11 @@ internal static class CalcPackExamples
     /// An emergency stroke: the accumulator carries the whole stroke volume (linked) from the system pressure (linked) down to 120 bar gauge, above the 107 bar the 80 kN
     /// push needs on the 100 mm bore (80 kN / (78.5 cm² × 0.95)). The accumulator is held at the system pressure (charged slowly, isothermally, by the duty default) and discharged fast, so n = 1.4 for the discharge; 105 bar gauge pre-charge (at 50 °C) from the manufacturer's rule of
     /// p0 below 0.9 p1 on absolute pressures; a cold shed at 10 °C. These are invented illustrations.
+    /// The real-gas factor f_rg = 1.311 takes the ideal-gas 30.08 L to the 39.43 L that nitrogen needs for this duty (held at 160 bar gauge at ambient, 10 °C, then the 3.927 L stroke at the isentropic path; reference equation of state for nitrogen, Span et al. 2000, as the verification re-derivation computes it): ideal gas at n = 1.4 is about 30 % short at these pressures, and the factor is the user's, from a gas-property source. The lowest working pressure p_1 is checked against the pressure the 80 kN push needs, linked from the cylinder step (<c>p_push</c> to <c>p_load</c>).
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuF2 { get; } =
     [
-        C("mode", "Emergency stroke"), Q("p_0", 105, "bar"), Q("p_1", 120, "bar"), N("n", 1.4), Q("T_max", 50, "degC"), Q("T_min", 10, "degC"),
+        C("mode", "Emergency stroke"), Q("p_0", 105, "bar"), Q("p_1", 120, "bar"), N("n", 1.4), N("f_rg", 1.311), Q("T_max", 50, "degC"), Q("T_min", 10, "degC"),
     ];
 
     /// <summary>
@@ -511,8 +513,7 @@ internal static class CalcPackExamples
     /// <summary>
     /// The board's loads (24 V DC, fed from the single-phase mains through a 90 % efficient supply that sits INSIDE the enclosure). Row 0 is the power trace itself: its input power is a 1 W placeholder that the trace
     /// step's I²R loss replaces by cell link, all of it released as heat inside the enclosure. The gate drivers and logic and the display release all their input as heat; the power stage releases its loss
-    /// only (the share is left blank, so 1 − η). The last row is the supply's own loss, which the sheet counts only if it is a row (E6's convention): 26.5 W = the 238.5 W the DC loads draw × (1/0.9 − 1), typed
-    /// (a test guards it against the loads; it does not follow them automatically). The loads, efficiencies and the supply are invented illustrations.
+    /// only (the share is left blank, so 1 − η). The supply's own loss is counted by the sheet itself (E6 1.4.0): the DC loads' 238.5 W × (1/0.9 − 1) = 26.5 W, because the supply's bus is chosen and its efficiency is entered, so it follows the loads. The loads, efficiencies and the supply are invented illustrations.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> ElxE6 { get; } =
     [
@@ -520,9 +521,8 @@ internal static class CalcPackExamples
             DcLoad("Power trace loss (PCB)", 0.001, 1, 1, 1),
             DcLoad("Gate drivers and logic", 0.025, 0.9, 1, 1),
             CalcRow.Of(Txt("name", "Power stage"), Txt("supply", "DC"), ("P", new CalcCell(0.2, "kW")), Num("cosphi", 1), Num("eta", 0.96), Num("d", 1), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false))),
-            DcLoad("Display and sensors", 0.012, 1, 1, 1),
-            CalcRow.Of(Txt("name", "24 V supply loss"), Txt("supply", "AC single-phase"), ("P", new CalcCell(0.0265, "kW")), Num("cosphi", 1), Num("eta", 1), Num("heat", 1), Num("d", 1), Num("k", 1), Num("inrush", 1), ("backed", new CalcCell(Flag: false)))),
-        C("psu_bus", "AC single-phase"),
+            DcLoad("Display and sensors", 0.012, 1, 1, 1)),
+        C("psu_bus", "AC single-phase"), N("eta_psu", 0.9),
     ];
 
     private static CalcRow DcLoad(string name, double kw, double eta, double heat, double duty) =>
@@ -579,14 +579,14 @@ internal static class CalcPackExamples
 
     /// <summary>
     /// Earth-fault disconnection of the motor supply: a 230 V to earth system (the 398 V line voltage the fault-level route uses is √3 × 230), a 0.05 Ω external loop impedance (INVENTED: a close-coupled 400 kVA transformer, whose own
-    /// impedance is 0.0159 Ω; the figure is coherent with the transformer data below, which a 0.35 Ω loop was not), a 10 mm² protective conductor (the cable step's size by hand), the type C MCB the cable step sizes (the choice must agree with it or
+    /// impedance is 0.0159 Ω; the figure is coherent with the transformer data below, which a 0.35 Ω loop was not), the protective conductor the size of the cable step's conductor (linked: S_cpc is E4's CSA), the type C MCB the cable step sizes (the choice must agree with it or
     /// the step is blocked) and a 0.4 s disconnection time. The supply transformer (400 kVA, 4 %: INVENTED) is entered here, once: its three-phase fault current <c>I_k3</c> (with the factor <c>c_k3</c> it was computed with) is the source of the
     /// motor-start step. <b>That source is the fault level at the transformer terminals, a lower bound on the dip:</b> the supply cabling and the upstream network are not in it (E9's <c>S_kQ</c> is where an upstream network is added; for a remote
     /// board enter a lower fault level). The 25 kA breaking capacity and the 8·10⁴ A²s let-through are invented illustrations, to be replaced from the device datasheet.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuE5 { get; } =
     [
-        Q("U_0", 230, "V"), Q("Z_e", 0.05, "ohm"), Q("S_cpc", 10, "mm^2"), C("device", "MCB type C (I_a = 10 I_n)"), Q("t_req", 0.4, "s"), Q("I2t_let", 8e4, "A^2*s"),
+        Q("U_0", 230, "V"), Q("Z_e", 0.05, "ohm"), C("device", "MCB type C (I_a = 10 I_n)"), Q("t_req", 0.4, "s"), Q("I2t_let", 8e4, "A^2*s"),
         Q("S_r", 400, "kVA"), Q("u_k", 4, "%"), Q("I_cn", 25, "kA"),
     ];
 

@@ -22,7 +22,7 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
   shaft_grade | Shaft IT grade | 6 |  | spec: DRG-SHAFT-12 note 3 | 4 … 11
 
 3. ASSUMPTIONS
-  A1. IT values and fundamental deviations are the unrounded results of the ISO 286-1 formulae at the geometric mean of the size step. (The tabulated values apply the standard's own rounding and may differ by about 1 µm; enter overrides from a released reference record where the tabulated value governs.)
+  A1. IT values and fundamental deviations are the unrounded results of the ISO 286-1 formulae at the geometric mean of the size step. (The tabulated values apply the standard's own rounding and may differ by about 1 µm for the clearance and transition letters (a to n). For the interference letters p to zc the tables also carry the standard's own increments and sub-steps, so the formula value can be several µm below the tabulated one (p6 at 450 mm: 62.2 against 68 µm), and the sheet warns; enter overrides from a released reference record where the tabulated value governs.)
   A2. Hole deviations follow the general rule from the shaft deviations, with Δ = ITn − IT(n−1) where the standard applies it. (Table-specific departures in the standard are not reproduced; use the overrides where they govern.)
 
 4. WORKING
@@ -124,7 +124,7 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
   WARNING input.hole_kind: hole_kind (Hole: an ISO 286 class, or a rolling-bearing bore (ES and EI from the bearing record, ISO 492)) was not entered; the template default 'ISO 286 hole class' is used.
 
 8. VERIFICATION
-  Template: mech.iso286-fit@1.2.0
+  Template: mech.iso286-fit@1.5.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

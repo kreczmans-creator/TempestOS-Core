@@ -46,7 +46,7 @@ public sealed class AccumulatorTests
         var all = Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), CalcInputValue.Quantity("p_0", 90, "bar", link), CalcInputValue.Quantity("p_1", 100, "bar", link), linked);
         Assert.Equal(3, all.Warnings.Count(w => w.RuleId == "link-basis"));
         Assert.Contains(Accumulator.Template.ApplicabilityRules, r => r.Id == "link-basis");
-        Assert.Equal("1.3.2", Accumulator.Template.Version);
+        Assert.Equal("1.5.1", Accumulator.Template.Version);
     }
 
     [Fact]
@@ -77,8 +77,10 @@ public sealed class AccumulatorTests
             if (p2 > 700)
                 return true;
 
-            var r = Run(CalcInputValue.Quantity("dV", dv, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", p0), Bars("p_1", p1), Bars("p_2", p2), CalcInputValue.Of("n", n));
-            var v0 = r.OutputSi("V0") / Litre;
+            // Above the block pressure the ideal gas is refused (fp.accumulator-01), so a real-gas factor is entered there and divided out again.
+            var frg = p2 > AccumulatorCalculator.RealGasBlockBar ? 1.5 : 1.0;
+            var r = Run(CalcInputValue.Quantity("dV", dv, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", p0), Bars("p_1", p1), Bars("p_2", p2), CalcInputValue.Of("n", n), CalcInputValue.Of("f_rg", frg));
+            var v0 = r.OutputSi("V0") / Litre / frg;
             var delivered = v0 * Math.Pow(p0 / p1, 1 / n) - v0 * Math.Pow(p0 / p2, 1 / n);
             return Math.Abs(delivered - dv) <= 1e-9 * dv;
         }, iter: 80);
@@ -139,7 +141,7 @@ public sealed class AccumulatorTests
             Assert.Equal(spec.Max, spec.HardMax);
         });
 
-        foreach (var (symbol, value, unit) in new[] { ("n", 1.5, ""), ("n", 0.9, ""), ("dV", 0.0, "L"), ("dV", 2000.0, "L"), ("p_2", 800.0, "bar"), ("p_0", -1.0, "bar"), ("f_rg", 2.0, ""), ("f_rg", 0.95, ""), ("T_min", -50.0, "degC"), ("T_min", 200.0, "degC"), ("PS", -1.0, "bar"), ("V_vessel", 0.0, "L"), ("T_max", 200.0, "degC"), ("r_0", 1.5, ""), ("r_p", 25.0, "") })
+        foreach (var (symbol, value, unit) in new[] { ("n", 1.5, ""), ("n", 0.9, ""), ("dV", 0.0, "L"), ("dV", 2000.0, "L"), ("p_2", 800.0, "bar"), ("p_0", -1.0, "bar"), ("f_rg", 3.1, ""), ("f_rg", 0.95, ""), ("T_min", -50.0, "degC"), ("T_min", 200.0, "degC"), ("PS", -1.0, "bar"), ("V_vessel", 0.0, "L"), ("T_max", 200.0, "degC"), ("r_0", 1.5, ""), ("r_p", 25.0, "") })
         {
             var value1 = unit.Length > 0 ? CalcInputValue.Quantity(symbol, value, unit) : CalcInputValue.Of(symbol, value);
             Assert.Contains(CalcInputValidator.Validate(Accumulator.Template, With(value1)), n => n.Severity == CalcNoticeSeverity.Block);
@@ -265,8 +267,9 @@ public sealed class AccumulatorTests
             if (p2 > 700)
                 return true;
 
-            var r = Run(CalcInputValue.Quantity("dV", dv, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", p0), Bars("p_1", p1), Bars("p_2", p2), CalcInputValue.Quantity("T_min", tMin, "degC"), CalcInputValue.Quantity("T_max", tMax, "degC"));
-            var v0 = r.OutputSi("V0") / Litre;
+            var frg = p2 > AccumulatorCalculator.RealGasBlockBar ? 1.5 : 1.0;
+            var r = Run(CalcInputValue.Quantity("dV", dv, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", p0), Bars("p_1", p1), Bars("p_2", p2), CalcInputValue.Quantity("T_min", tMin, "degC"), CalcInputValue.Quantity("T_max", tMax, "degC"), CalcInputValue.Of("f_rg", frg));
+            var v0 = r.OutputSi("V0") / Litre / frg;
             var cold = p0 * (tMin + 273.15) / (tMax + 273.15);
             var delivered = v0 * (cold / p1 - cold / p2);
             return Math.Abs(delivered - dv) <= 1e-9 * dv && Math.Abs(r.OutputSi("p0_min") / Bar - cold) <= 1e-9 * cold;
@@ -297,7 +300,7 @@ public sealed class AccumulatorTests
     public void Above_200_Bar_The_Sheet_Warns_And_The_Real_Gas_Factor_Scales_The_Volume()
     {
         Assert.Contains(Run().Warnings, w => w.RuleId == "realgas");
-        Assert.DoesNotContain(Run(Bars("p_0", 60), Bars("p_1", 80), Bars("p_2", 150)).Warnings, w => w.RuleId == "realgas");
+        Assert.DoesNotContain(Run(Bars("p_0", 40), Bars("p_1", 50), Bars("p_2", 80)).Warnings, w => w.RuleId == "realgas");
 
         var ideal = Run().OutputSi("V0");
         var real = Run(CalcInputValue.Of("f_rg", 1.08));
@@ -323,6 +326,125 @@ public sealed class AccumulatorTests
         var emergency = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Of("n", 1.4));
         Assert.DoesNotContain(emergency.Warnings, w => w.RuleId == "exponent");
         Assert.Contains(emergency.RunAssumptions, a => a.Statement.Contains("Emergency stroke", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_Real_Gas_Factor_Takes_The_Value_A_High_Pressure_Window_Needs_Not_Only_Up_To_One_And_A_Half()
+    {
+        // fp.accumulator-01: reference-EOS nitrogen at 20 °C needs 2.007 times the ideal volume for a 600/650/700 bar abs window; the factor was capped at 1.5, so no valid input gave a safe V0.
+        var spec = Accumulator.Template.Inputs.Single(i => i.Symbol == "f_rg");
+        Assert.True(spec.HardMax >= 2.007, $"the f_rg limit {spec.HardMax} must admit the 2.007 a 600 to 700 bar window needs");
+        var window = new[] { CalcInputValue.Quantity("dV", 5, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 600), Bars("p_1", 650), Bars("p_2", 700) };
+
+        var ideal = Run(window);
+        Assert.True(ideal.IsBlocked, "f_rg left at 1 above 300 bar absolute is refused (fp.accumulator-01 remainder)");
+        var real = Run([.. window, CalcInputValue.Of("f_rg", 2.007)]);
+        Assert.DoesNotContain(CalcInputValidator.Validate(Accumulator.Template, With([.. window, CalcInputValue.Of("f_rg", 2.007)])), n => n.Severity == CalcNoticeSeverity.Block);
+        Assert.False(real.IsBlocked);
+        Assert.Equal(5 / (600.0 / 650 - 600.0 / 700) * 2.007, real.OutputSi("V0") / Litre, 9);
+
+        // The ideal volume above 300 bar is refused, and the message points at the factor.
+        Assert.Contains(ideal.Blocks, b => b.RuleId == "realgas-ideal" && b.Message.Contains("f_rg", StringComparison.Ordinal));
+        Assert.Contains(real.Warnings, w => w.RuleId == "realgas" && w.Message.Contains("your real-gas factor", StringComparison.Ordinal));
+        Assert.Contains(CalcInputValidator.Validate(Accumulator.Template, With(CalcInputValue.Of("f_rg", 3.1))), n => n.Severity == CalcNoticeSeverity.Block);
+    }
+
+    [Fact]
+    public void An_Ideal_Gas_Volume_Above_300_Bar_Absolute_Is_Refused_Until_The_Real_Gas_Factor_Is_Entered()
+    {
+        // fp.accumulator-01 remainder: at 450/500/700 bar abs reference-EOS nitrogen needs 1.7457 times the ideal volume (CoolProp, isothermal 20 degC), so f_rg left at 1 sized
+        // an accumulator about half as big as the duty needs, under a warning only. 10 L between 450 and 500 bar abs, pre-charge 450: ideal V0 = 10/(450/500 - 450/700) = 38.889 L, real 38.889 x 1.7457 = 67.89 L (python3).
+        var window = new[] { CalcInputValue.Quantity("dV", 10, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 450), Bars("p_1", 500), Bars("p_2", 700) };
+        var ideal = Run(window);
+        var block = Assert.Single(ideal.Blocks);
+        Assert.Equal("realgas-ideal", block.RuleId);
+        Assert.StartsWith("f_rg:", block.Message, StringComparison.Ordinal);
+        Assert.Contains("700 bar absolute", block.Message, StringComparison.Ordinal);
+        Assert.Contains("Enter the real-gas factor", block.Message, StringComparison.Ordinal);
+        Assert.Null(ideal.FindOutput("V0"));
+        Assert.Contains(Accumulator.Template.ApplicabilityRules, r => r.Id == "realgas-ideal" && r.Severity == CalcNoticeSeverity.Block);
+
+        var real = Run([.. window, CalcInputValue.Of("f_rg", 1.7457)]);
+        Assert.False(real.IsBlocked);
+        Assert.Equal(10 / (450.0 / 500 - 450.0 / 700) * 1.7457, real.OutputSi("V0") / Litre, 9);
+    }
+
+    [Fact]
+    public void The_Block_Starts_Above_300_Bar_Absolute_And_Between_100_And_300_The_Ideal_Gas_Is_Only_Warned()
+    {
+        // 300 bar abs exactly is not above the threshold; 300.5 is. The Parker reference case (90/100/210 bar abs, f_rg 1; real factor 1.0535, CoolProp) stays a warning.
+        Assert.False(Run(CalcInputValue.Quantity("dV", 10, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 250), Bars("p_1", 270), Bars("p_2", 300)).IsBlocked);
+        Assert.True(Run(CalcInputValue.Quantity("dV", 10, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 250), Bars("p_1", 270), Bars("p_2", 300.5)).IsBlocked);
+        Assert.False(Run().IsBlocked);
+        Assert.Contains(Run().Warnings, w => w.RuleId == "realgas");
+
+        // The block is on absolute pressure: 300 bar gauge is 301.01 abs and blocks, 298 bar gauge does not.
+        Assert.True(Run(CalcInputValue.Quantity("dV", 10, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Gauge), Bars("p_0", 250), Bars("p_1", 270), Bars("p_2", 300)).IsBlocked);
+        Assert.False(Run(CalcInputValue.Quantity("dV", 10, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Gauge), Bars("p_0", 250), Bars("p_1", 270), Bars("p_2", 298)).IsBlocked);
+    }
+
+    [Fact]
+    public void A_Narrow_Window_Between_100_And_200_Bar_Warns_That_The_Ideal_Gas_Volume_Is_Too_Small()
+    {
+        // fp.accumulator-02: 10 L between 170/190/200 bar abs gave 223.53 L with no real-gas notice (the warning started above 200 bar abs); the reference EOS needs 1.134 times that.
+        var narrow = Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 170), Bars("p_1", 190), Bars("p_2", 200), CalcInputValue.Quantity("dV", 10, "L"));
+        Assert.Equal(10 / (170.0 / 190 - 170.0 / 200), narrow.OutputSi("V0") / Litre, 9);
+        Assert.Equal(223.529, narrow.OutputSi("V0") / Litre, 3);
+        Assert.Contains(narrow.Warnings, w => w.RuleId == "realgas" && w.Message.Contains("real-gas factor is left at 1", StringComparison.Ordinal));
+        var window = Assert.Single(narrow.Warnings, w => w.RuleId == "realgas-window");
+        Assert.Contains("larger than the compressibility factor", window.Message, StringComparison.Ordinal);
+
+        // A factor entered silences the left-at-1 notice (the window notice stays: the factor must be the bracket ratio, not Z at p_2) and below 100 bar nothing is said.
+        var entered = Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 170), Bars("p_1", 190), Bars("p_2", 200), CalcInputValue.Quantity("dV", 10, "L"), CalcInputValue.Of("f_rg", 1.134));
+        Assert.DoesNotContain(entered.Warnings, w => w.RuleId == "realgas");
+        Assert.Contains(entered.Warnings, w => w.RuleId == "realgas-window");
+        Assert.Equal(1.134, entered.OutputSi("V0") / narrow.OutputSi("V0"), 12);
+        var low = Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 50), Bars("p_1", 60), Bars("p_2", 90));
+        Assert.DoesNotContain(low.Warnings, w => w.RuleId is "realgas" or "realgas-window");
+        Assert.Contains(Accumulator.Template.ApplicabilityRules, r => r.Id == "realgas-window");
+    }
+
+    [Fact]
+    public void An_Exponent_Above_One_Warns_From_50_Bar_That_Real_Nitrogen_Is_Stiffer_Than_The_Ideal_Gas()
+    {
+        // fp.accumulator-R2: 10 L, 90/100/200 bar abs, n 1.4 gave 27.61 L and no notice; real nitrogen (effective exponent about 1.5 to 2.1) needs 13 to 24 % more.
+        var adiabatic = Run(CalcInputValue.Quantity("dV", 10, "L"), CalcInputValue.Choice("process", AccumulatorCalculator.ProcessSame), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 90), Bars("p_1", 100), Bars("p_2", 200), CalcInputValue.Of("n", 1.4));
+        Assert.Equal(V0(10, 90, 100, 200, 1.4), adiabatic.OutputSi("V0") / Litre, 9);
+        Assert.Equal(27.61, adiabatic.OutputSi("V0") / Litre, 2);
+        var warning = Assert.Single(adiabatic.Warnings, w => w.RuleId == "exponent-real");
+        Assert.Contains("stiffer", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("real-gas factor", warning.Message, StringComparison.Ordinal);
+
+        // With your factor entered the warning says it is applied on top; an isothermal discharge, or a low pressure, is not warned.
+        var withFactor = Run(CalcInputValue.Quantity("dV", 10, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 90), Bars("p_1", 100), Bars("p_2", 200), CalcInputValue.Of("n", 1.4), CalcInputValue.Of("f_rg", 1.144));
+        Assert.Contains("applied on top", Assert.Single(withFactor.Warnings, w => w.RuleId == "exponent-real").Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 90), Bars("p_1", 100), Bars("p_2", 200), CalcInputValue.Of("n", 1)).Warnings, w => w.RuleId == "exponent-real");
+        Assert.DoesNotContain(Run(CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 20), Bars("p_1", 25), Bars("p_2", 45), CalcInputValue.Of("n", 1.4)).Warnings, w => w.RuleId == "exponent-real");
+    }
+
+    [Fact]
+    public void An_Emergency_Stroke_Fails_When_The_Lowest_Pressure_Is_Below_What_The_Push_Load_Needs()
+    {
+        // chain.hydraulic-power-unit-02: nothing tied p_1 to the push load; a 100 kN push needs 134.0 bar at the 100 mm bore (100 kN/(78.54 cm² × 0.95)) and p_1 stayed 120 bar with every check green.
+        var emergency = new[] { CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Gauge), CalcInputValue.Quantity("dV", 3.927, "L"), Bars("p_0", 105), Bars("p_1", 120), Bars("p_2", 160), CalcInputValue.Of("n", 1.4), CalcInputValue.Quantity("T_min", 10, "degC") };
+        var needed = 100e3 / (Math.PI * 0.1 * 0.1 / 4 * 0.95) / Bar;
+        Assert.Equal(134.0, needed, 1);
+
+        var weak = Run([.. emergency, Bars("p_load", needed)]);
+        Assert.Equal(needed / 120, weak.OutputSi("u_load"), 9);
+        Assert.Contains(weak.Checks, c => c.Name.StartsWith("Lowest working pressure p_1 carries the load", StringComparison.Ordinal) && !c.Passed);
+        Assert.False(weak.Passed);
+
+        var enough = Run([.. emergency, Bars("p_load", 107.2)]);
+        Assert.Contains(enough.Checks, c => c.Name.StartsWith("Lowest working pressure p_1 carries the load", StringComparison.Ordinal) && c.Passed);
+
+        // Absolute basis: p_load is a gauge pressure, p_1 is compared on the same gauge basis (p_1 abs − p_atm).
+        var absolute = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", 106.01325), Bars("p_1", 121.01325), Bars("p_2", 161.01325), CalcInputValue.Of("n", 1.4), Bars("p_load", 120));
+        Assert.Equal(1.0, absolute.OutputSi("u_load"), 9);
+
+        // No load pressure entered: an emergency stroke says so; other duties stay silent.
+        Assert.Contains(Run(emergency).Warnings, w => w.RuleId == "load-pressure");
+        Assert.DoesNotContain(Run().Warnings, w => w.RuleId == "load-pressure");
     }
 
     private static double Held(double dv, double p0, double p1, double p2, double n) => dv * (p2 / p0) / (Math.Pow(p2 / p1, 1 / n) - 1);
@@ -411,8 +533,9 @@ public sealed class AccumulatorTests
             if (p2 > 700)
                 return true;
 
-            var r = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Quantity("dV", dv, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", p0), Bars("p_1", p1), Bars("p_2", p2), CalcInputValue.Of("n", n));
-            var v0 = r.OutputSi("V0") / Litre;
+            var frg = p2 > AccumulatorCalculator.RealGasBlockBar ? 1.5 : 1.0;
+            var r = Run(CalcInputValue.Choice("mode", AccumulatorCalculator.ModeEmergency), CalcInputValue.Quantity("dV", dv, "L"), CalcInputValue.Choice("p_basis", AccumulatorCalculator.Absolute), Bars("p_0", p0), Bars("p_1", p1), Bars("p_2", p2), CalcInputValue.Of("n", n), CalcInputValue.Of("f_rg", frg));
+            var v0 = r.OutputSi("V0") / Litre / frg;
             var held = v0 * p0 / p2;
             var delivered = held * Math.Pow(p2 / p1, 1 / n) - held;
             return Math.Abs(delivered - dv) <= 1e-8 * dv;

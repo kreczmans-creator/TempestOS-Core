@@ -1,4 +1,4 @@
-# S2b — Beam formulas, single span (`struct.beam-formulas@1.0.1`)
+# S2b — Beam formulas, single span (`struct.beam-formulas@1.1.0`)
 
 **In plain terms.** For a single span with standard supports and loads, the reactions, the largest bending moment and the deflection have closed-form answers worked out once in the textbooks. This worksheet applies those formulae directly, which makes it the quickest way to size or check a simple beam and a useful cross-check on a frame model.
 
