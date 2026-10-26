@@ -30,7 +30,7 @@ public sealed class BoltGroupCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.Mechanical, "Bolt group (elastic method)",
+        Id, "1.4.0", CalcDiscipline.Mechanical, "Bolt group (elastic method)",
         "A pattern of bolts in a plane under in-plane forces (with eccentricity, so torsion), out-of-plane moments and axial load: the shear and tension in every bolt by the elastic (area-weighted) method, the governing bolt, and an optional lever-model prying addition.",
         "Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A (y_c likewise).\nTorsion about the centroid from the eccentric load: T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z.\nPolar moment of the bolt areas about the centroid: J = Σ A r².\nShear on each bolt, its direct share plus the torsion (vector sum): v = A (F/ΣA) + T·A·r/J.\nTension on each bolt, its direct share plus the moments, with the product of inertia so that an unsymmetric pattern is right: t = A N/ΣA + A·[(M_x I_y − M_y I_xy) y' + (M_y I_x − M_x I_xy) x']/(I_x I_y − I_xy²), where I_x = Σ A y'², I_y = Σ A x'², I_xy = Σ A x'y' (this reduces to M_x A y'/Σ A y'² + M_y A x'/Σ A x'² only for a pattern symmetric about a centroidal axis).\nTension with prying, when the distances a and b are given: t_p = t (1 + b/a).\nCombined shear and tension, circular interaction (elastic method, Shigley-style): (v/V_R)² + (t_p/T_R)² ≤ 1.\nCombined shear and tension, EN 1993-1-8 linear form (each is also checked alone; the highest governs): v/V_R + t_p/(1.4 T_R) ≤ 1.",
         [
@@ -184,6 +184,8 @@ public sealed class BoltGroupCalculator : ICalcCalculator
         var tR = c.Si("T_R");
         var worst = (Index: 0, V: 0.0, T: 0.0, U: -1.0);
         var worstLin = (Index: 0, V: 0.0, T: 0.0, U: -1.0);
+        var maxShear = (Index: 0, V: -1.0);
+        var maxTension = (Index: 0, T: -1.0);
         var shear = new List<(double X, double Y)>();
 
         foreach (var bolt in bolts)
@@ -202,6 +204,13 @@ public sealed class BoltGroupCalculator : ICalcCalculator
             if (u > worst.U)
                 worst = (bolt.Index, v, tp, u);
 
+            // The group maxima of shear and of tension, each at its own bolt (mech.bolt-group-04): they are not the values at the governing bolt.
+            if (v > maxShear.V)
+                maxShear = (bolt.Index, v);
+
+            if (tp > maxTension.T)
+                maxTension = (bolt.Index, tp);
+
             // The linear form of EN 1993-1-8 Table 3.4 is a different surface from the circular one: another bolt can govern it, so it is evaluated at every bolt.
             var uLin = v / vR + tp / (1.4 * tR);
 
@@ -209,17 +218,21 @@ public sealed class BoltGroupCalculator : ICalcCalculator
                 worstLin = (bolt.Index, v, tp, uLin);
         }
 
-        c.Record("v_max", "governing bolt shear", $"bolt {worst.Index}", ScalarValue.Of(worst.V / 1e3, kN), "Maximum bolt shear");
-        c.Record("t_max", "governing bolt tension (with prying)", $"bolt {worst.Index}", ScalarValue.Of(worst.T / 1e3, kN), "Maximum bolt tension");
+        c.Record("v_max", "max over the bolts of v", $"bolt {maxShear.Index}", ScalarValue.Of(maxShear.V / 1e3, kN), "Maximum shear on any bolt");
+        c.Record("t_max", "max over the bolts of t (with prying)", $"bolt {maxTension.Index}", ScalarValue.Of(maxTension.T / 1e3, kN), "Maximum tension on any bolt");
+        c.Record("bolt_v", "bolt with the largest shear", $"bolt {maxShear.Index}", new TextValue($"bolt {maxShear.Index}"), "The bolt carrying the largest shear");
+        c.Record("bolt_t", "bolt with the largest tension", $"bolt {maxTension.Index}", new TextValue($"bolt {maxTension.Index}"), "The bolt carrying the largest tension");
         c.Record("u_max", "√((v/V_R)² + (t/T_R)²)", $"√(({F(worst.V, 1e3)}/{F(vR, 1e3)})² + ({F(worst.T, 1e3)}/{F(tR, 1e3)})²)", new ScalarValue(worst.U), "Governing interaction utilisation");
         c.Record("governing", "governing bolt", $"bolt {worst.Index}", new TextValue($"bolt {worst.Index}"), "The bolt with the highest utilisation");
-        c.Assign("u_v", "v_max / V_R", null, "Shear utilisation of the governing bolt");
-        c.Assign("u_t", "t_max / T_R", null, "Tension utilisation of the governing bolt");
+        c.Assign("u_v", "v_max / V_R", null, "Shear utilisation of the most sheared bolt");
+        c.Assign("u_t", "t_max / T_R", null, "Tension utilisation of the most tensioned bolt");
 
         c.Output("T", "Torque about the centroid");
         c.Output("J", "Polar second moment of bolt areas");
-        c.Output("v_max", "Maximum bolt shear");
-        c.Output("t_max", "Maximum bolt tension");
+        c.Output("v_max", "Maximum shear on any bolt");
+        c.Output("t_max", "Maximum tension on any bolt");
+        c.Output("bolt_v", "Bolt with the largest shear");
+        c.Output("bolt_t", "Bolt with the largest tension");
         c.Output("u_max", "Governing interaction utilisation");
         c.Output("governing", "Governing bolt");
         c.Record("governing_lin", "bolt with the highest linear utilisation", $"bolt {worstLin.Index}", new TextValue($"bolt {worstLin.Index}"), "The bolt that governs the linear shear–tension check");
@@ -228,8 +241,8 @@ public sealed class BoltGroupCalculator : ICalcCalculator
         c.Output("governing_lin", "Bolt governing the linear interaction");
         c.CheckUtilisation("Circular shear–tension interaction (governing bolt)", "u_max");
         c.CheckUtilisation("Linear shear–tension interaction v/V_R + t/(1.4 T_R), every bolt", "u_lin", "EN 1993-1-8 Table 3.4");
-        c.CheckUtilisation("Shear alone", "u_v");
-        c.CheckUtilisation("Tension alone", "u_t");
+        c.CheckUtilisation("Shear alone (largest bolt shear)", "u_v");
+        c.CheckUtilisation("Tension alone (largest bolt tension)", "u_t");
         c.Series(new CalcSeries("Bolt pattern", "x", "mm", "y", "mm", bolts.Select(bb => (mm.FromSi(bb.X), mm.FromSi(bb.Y))).ToList()));
     }
 
