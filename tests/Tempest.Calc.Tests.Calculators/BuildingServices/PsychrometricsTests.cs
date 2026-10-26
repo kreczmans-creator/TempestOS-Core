@@ -59,6 +59,47 @@ public sealed class PsychrometricsTests
     }
 
     [Fact]
+    public void Cooling_With_Dehumidification_Splits_Sensible_And_Latent_The_Right_Way_Round()
+    {
+        // bs.psychrometrics-01. Independent (python, Hyland-Wexler + ASHRAE Ch. 1 relations): 28 degC 50 % -> 12 degC saturated, 1 kg/s:
+        // W1 11.829, W2 8.730 g/kg; sensible = h1 - h(12, W1) = 16.448 kW; latent = h(12, W1) - h2 = 7.818 kW; SHR 0.6778; Q_total 24.111 kW.
+        var r = Run(CalcInputValue.Quantity("t_db", 28, "degC"), CalcInputValue.Of("RH", 50), CalcInputValue.Quantity("m_da", 1, "kg/s"),
+            CalcInputValue.Choice("process", PsychrometricsCalculator.ProcessCoolingDehum), CalcInputValue.Quantity("t_2", 12, "degC"), CalcInputValue.Of("RH_2", 100));
+        Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+        Assert.Equal(16.448, r.OutputSi("Q_sensible") / 1e3, 0.005);
+        Assert.Equal(7.818, r.OutputSi("Q_latent") / 1e3, 0.005);
+        Assert.Equal(0.6778, r.OutputSi("SHR"), 0.0005);
+        Assert.Equal(24.111, r.OutputSi("Q_total") / 1e3, 0.005);
+    }
+
+    [Fact]
+    public void Dry_Coil_Leaving_State_Keeps_The_Entering_Moisture_And_Is_Sensible_Only()
+    {
+        // bs.psychrometrics-R1. 28 degC 50 % -> 20 degC with RH_2 blank: W_sat(20) = 14.695 g/kg is above W1 = 11.829 g/kg, so the coil is dry.
+        // Independent (python): sensible = h(28, W1) - h(20, W1) = 8.224 kW.
+        var r = Run(CalcInputValue.Quantity("t_db", 28, "degC"), CalcInputValue.Of("RH", 50), CalcInputValue.Quantity("m_da", 1, "kg/s"),
+            CalcInputValue.Choice("process", PsychrometricsCalculator.ProcessCoolingDehum), CalcInputValue.Quantity("t_2", 20, "degC"));
+        Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+        Assert.Contains(r.Warnings, w => w.RuleId == "dry-coil");
+        Assert.Equal(r.OutputSi("W_1"), r.OutputSi("W_2"), 1e-12);
+        Assert.Equal(0, r.OutputSi("m_w"), 12);
+        Assert.Equal(8.224, r.OutputSi("Q_total") / 1e3, 0.005);
+        Assert.Equal(8.224, r.OutputSi("Q_sensible") / 1e3, 0.005);
+        Assert.Equal(0, r.OutputSi("Q_latent"), 1e-6);
+        Assert.Equal(1.0, r.OutputSi("SHR"), 1e-9);
+    }
+
+    [Fact]
+    public void Cooling_With_A_Leaving_State_Wetter_Than_The_Entering_State_Is_Blocked()
+    {
+        // bs.psychrometrics-R1: an explicit RH_2 that puts more moisture in the air than entered cannot be a cooling coil.
+        var r = Run(CalcInputValue.Quantity("t_db", 28, "degC"), CalcInputValue.Of("RH", 50), CalcInputValue.Quantity("m_da", 1, "kg/s"),
+            CalcInputValue.Choice("process", PsychrometricsCalculator.ProcessCoolingDehum), CalcInputValue.Quantity("t_2", 20, "degC"), CalcInputValue.Of("RH_2", 100));
+        Assert.True(r.IsBlocked);
+        Assert.Contains(r.Blocks, b => b.RuleId == "process-input" && b.Message.StartsWith("RH_2:", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Steam_Humidification_Raises_W_At_Nearly_Constant_Temperature()
     {
         var r = Run(CalcInputValue.Quantity("t_db", 20, "degC"), CalcInputValue.Of("RH", 30), CalcInputValue.Quantity("m_da", 1, "kg/s"),

@@ -45,21 +45,22 @@ public sealed class ShaftCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.1", CalcDiscipline.Mechanical, "Shaft: static, fatigue, keys, critical speed",
-        "A stepped (optionally hollow) shaft on two bearings carrying radial loads in two planes and a steady torque: bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections the user marks, slopes at the bearings, deflection at the loads, the first lateral critical speed and parallel keys.",
+        Id, "1.2.0", CalcDiscipline.Mechanical, "Shaft: static, fatigue, keys, critical speed",
+        "A stepped (optionally hollow) shaft on two bearings carrying radial loads in two planes and a torque with a steady (mean) part and an optional alternating part: bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections the user marks, slopes at the bearings, deflection at the loads, the first lateral critical speed and parallel keys.",
         "Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(M_y² + M_z²)\n" +
-        "Stress at a section: σ_a = K_f·32M_a·d/(π(d⁴ − d_i⁴)), τ_m = K_fs·16T_m·d/(π(d⁴ − d_i⁴)); K_f = 1 + q(K_t − 1)\n" +
+        "Stress at a section: σ_a = K_f·32M_a·d/(π(d⁴ − d_i⁴)), τ_m = K_fs·16T_m·d/(π(d⁴ − d_i⁴)), τ_a = K_fs·16T_a·d/(π(d⁴ − d_i⁴)); K_f = 1 + q(K_t − 1)\n" +
         "Endurance limit: S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e1, S_e1 (the rotating-beam limit S_e′) = 0.5·S_ut (S_ut ≤ 1400 MPa, else 700 MPa); k_a = a·S_ut^b, k_b = 1.24d^−0.107 or 1.51d^−0.157, k_e = 1 − 0.08·z_R\n" +
-        "Fatigue (DE-Goodman): 1/n_f = σ_a/S_e + √3·τ_m/S_ut; yield n_y = S_y/√((σ_a)² + 3τ_pk²), τ_pk from the larger of T and the peak torque T_pk when given\n" +
+        "Fatigue (DE-Goodman, bending fully reversed, torque T_m ± T_a): 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3·τ_m/S_ut; yield n_y = S_y/√((σ_a)² + 3τ_pk²), τ_pk from the larger of T_m + T_a and the peak torque T_pk when given\n" +
         "Critical speed: Rayleigh ω = √(g·Σm·y/Σm·y²) (upper bound); Dunkerley 1/ω² = Σ m_i·δ_ii (lower bound, used for the ratio to the operating speed)\n" +
-        "Parallel key: τ = 2T/(d·w·L), σ = 4T/(d·h·L); required length L = max(2T·n_target/(d·w·0.577·S_y), 4T·n_target/(d·h·S_y))",
+        "Parallel key, on the peak torque T_k = the larger of T_m + T_a and T_pk: τ = 2T_k/(d·w·L), σ = 4T_k/(d·h·L); required length L = max(2T_k·n_target/(d·w·0.577·S_y), 4T_k·n_target/(d·h·S_y))",
         [
             new CalcInputSpec("segments", "Shaft segments (left to right)", CalcInputKind.Table, Columns: SegmentColumns, MaxRows: 20, Group: "Geometry"),
             new CalcInputSpec("x_A", "Bearing A position", CalcInputKind.Quantity, "mm", Default: 0, Min: 0, Max: 3000, HardMin: 0, HardMax: 3000, Group: "Geometry"),
             new CalcInputSpec("x_B", "Bearing B position", CalcInputKind.Quantity, "mm", Default: 400, Min: 1, Max: 3000, HardMin: 1, HardMax: 3000, Group: "Geometry"),
             new CalcInputSpec("loads", "Radial loads and masses", CalcInputKind.Table, Columns: LoadColumns, MaxRows: 20, Group: "Loads"),
-            new CalcInputSpec("T", "Torque transmitted", CalcInputKind.Quantity, "kN*m", Default: 0, Min: 0, Max: 50, HardMin: 0, HardMax: 50, Group: "Loads"),
-            new CalcInputSpec("T_pk", "Peak torque for the yield check (blank: the torque T)", CalcInputKind.Quantity, "kN*m", Min: 0, Max: 50, HardMin: 0, HardMax: 50, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("T", "Torque transmitted, steady or mean part T_m", CalcInputKind.Quantity, "kN*m", Default: 0, Min: 0, Max: 50, HardMin: 0, HardMax: 50, Group: "Loads"),
+            new CalcInputSpec("T_a", "Alternating torque amplitude T_a about the mean (blank: 0, a steady torque; a reversing or cyclic drive needs it)", CalcInputKind.Quantity, "kN*m", Min: 0, Max: 50, HardMin: 0, HardMax: 50, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("T_pk", "Peak torque for the yield check and the key (blank: T + T_a)", CalcInputKind.Quantity, "kN*m", Min: 0, Max: 50, HardMin: 0, HardMax: 50, IsOptional: true, Group: "Loads"),
             new CalcInputSpec("x_T1", "Torque enters at", CalcInputKind.Quantity, "mm", Default: 0, Min: 0, Max: 3000, HardMin: 0, HardMax: 3000, Group: "Loads"),
             new CalcInputSpec("x_T2", "Torque leaves at", CalcInputKind.Quantity, "mm", Default: 400, Min: 0, Max: 3000, HardMin: 0, HardMax: 3000, Group: "Loads"),
             new CalcInputSpec("n", "Operating speed", CalcInputKind.Quantity, "rpm", Default: 1500, Min: 0, Max: 30000, HardMin: 0, HardMax: 30000, Group: "Loads"),
@@ -83,7 +84,7 @@ public sealed class ShaftCalculator : ICalcCalculator
             new CalcInputSpec("S_y_key", "Key yield strength", CalcInputKind.Quantity, "MPa", Min: 150, Max: 1500, HardMin: 50, HardMax: 2000, IsOptional: true, Group: "Key"),
         ],
         [
-            new CalcAssumption("Linear elastic, two simple bearing supports (pin at A, roller at B); bending fully reversed by rotation, torque steady.", "Shigley 10th ed. §7-4."),
+            new CalcAssumption("Linear elastic, two simple bearing supports (pin at A, roller at B); bending fully reversed by rotation; torque a steady part T_m plus an alternating part T_a about it (fully alternating when T_m = 0), both acting between the torque-in and torque-out positions.", "Shigley 10th ed. §7-4."),
             new CalcAssumption("No torsional vibration; only the first lateral mode, by Rayleigh with Dunkerley as a lower bound.", "Shigley 10th ed. §7-6."),
             new CalcAssumption("K_t and K_ts come from user records or published fit equations; no stress-concentration chart is reproduced.", "No stress-concentration chart is shipped; the factors are entered or derived."),
             new CalcAssumption("At a shoulder the smaller diameter governs; k_c = 1 because the stresses are combined by von Mises.", "Shigley 10th ed. §6-9, §7-4."),
@@ -317,7 +318,8 @@ public sealed class ShaftCalculator : ICalcCalculator
         c.Record("k_e", "1 − 0.08·z_R", $"1 − 0.08 × {F(z)}", new ScalarValue(ke), "Reliability factor", "Shigley 10th ed. §6-9");
         c.Record("S_e1", sut <= 1400 ? "0.5·S_ut (S_e′)" : "700 MPa (S_ut > 1400 MPa, S_e′)", $"{F(sut)} MPa", ScalarValue.Of(sePrime, "MPa"), "Rotating-beam endurance limit");
         var torque = c.Si("T");
-        var peakTorque = c.Has("T_pk") ? c.InputSi("T_pk") : torque;
+        var alternatingTorque = c.Has("T_a") ? c.InputSi("T_a") : 0;
+        var peakTorque = Math.Max(torque + alternatingTorque, c.Has("T_pk") ? c.InputSi("T_pk") : 0);
         var tLo = Math.Min(c.Si("x_T1"), c.Si("x_T2"));
         var tHi = Math.Max(c.Si("x_T1"), c.Si("x_T2"));
         var worstF = double.PositiveInfinity;
@@ -342,16 +344,18 @@ public sealed class ShaftCalculator : ICalcCalculator
             var ma = At(s.X).M;
             var inTorqueZone = s.X >= tLo - 1e-12 && s.X <= tHi + 1e-12;
             var tm = inTorqueZone ? torque : 0;
-            var tPeak = inTorqueZone ? Math.Max(torque, peakTorque) : 0;
+            var ta = inTorqueZone ? alternatingTorque : 0;
+            var tPeak = inTorqueZone ? peakTorque : 0;
             var sa = kf * 32 * ma / modulus / 1e6;
             var taum = kfs * 16 * tm / modulus / 1e6;
+            var taua = kfs * 16 * ta / modulus / 1e6;
             var taupk = kfs * 16 * tPeak / modulus / 1e6;
-            var inverse = sa / se + Math.Sqrt(3) * taum / sut;
+            var inverse = Math.Sqrt(sa * sa + 3 * taua * taua) / se + Math.Sqrt(3) * taum / sut;
             var nf = inverse > 0 ? 1 / inverse : double.PositiveInfinity;
             var vm = Math.Sqrt(sa * sa + 3 * taupk * taupk);
             var ny = vm > 0 ? sy / vm : double.PositiveInfinity;
-            c.Record($"X{index}", "σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut",
-                $"x = {F(s.X * 1e3)} mm, d = {F(dmm)} mm, k_b = {F(kb)}, S_e = {F(se)} MPa, K_f = {F(kf)}, K_fs = {F(kfs)}, M = {F(ma)} N·m, T = {F(tm)} N·m, σ_a = {F(sa)} MPa, τ_m = {F(taum)} MPa{(tPeak > tm ? $", T_pk = {F(tPeak)} N·m, τ_pk = {F(taupk)} MPa" : string.Empty)}, n_y = {(double.IsInfinity(ny) ? "—" : F(ny))}",
+            c.Record($"X{index}", "σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T_m/(πd³′), τ_a = K_fs·16T_a/(πd³′); 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3τ_m/S_ut",
+                $"x = {F(s.X * 1e3)} mm, d = {F(dmm)} mm, k_b = {F(kb)}, S_e = {F(se)} MPa, K_f = {F(kf)}, K_fs = {F(kfs)}, M = {F(ma)} N·m, T = {F(tm)} N·m, σ_a = {F(sa)} MPa, τ_m = {F(taum)} MPa{(ta > 0 ? $", T_a = {F(ta)} N·m, τ_a = {F(taua)} MPa" : string.Empty)}{(tPeak > tm ? $", T_pk = {F(tPeak)} N·m, τ_pk = {F(taupk)} MPa" : string.Empty)}, n_y = {(double.IsInfinity(ny) ? "—" : F(ny))}",
                 new ScalarValue(double.IsInfinity(nf) ? 1e9 : nf), $"Section at {F(s.X * 1e3)} mm: fatigue safety factor (DE-Goodman)", "Shigley 10th ed. §7-4");
 
             if (nf < worstF)
@@ -451,10 +455,10 @@ public sealed class ShaftCalculator : ICalcCalculator
                 c.Input(s);
 
             var dk = Smallest(segments, c.Si("x_key")).D;
-            var tauKey = 2 * torque / (dk * c.Si("w") * c.Si("L_key")) / 1e6;
-            var sigmaKey = 4 * torque / (dk * c.Si("h") * c.Si("L_key")) / 1e6;
-            c.Record("tau_key", "2T/(d·w·L)", $"2 × {F(torque)} N·m / ({F(dk * 1e3)} × {F(c.Si("w") * 1e3)} × {F(c.Si("L_key") * 1e3)}) mm³", ScalarValue.Of(tauKey, "MPa"), "Key shear stress", "Shigley 10th ed. §7-7");
-            c.Record("sigma_key", "4T/(d·h·L)", $"4 × {F(torque)} N·m / ({F(dk * 1e3)} × {F(c.Si("h") * 1e3)} × {F(c.Si("L_key") * 1e3)}) mm³", ScalarValue.Of(sigmaKey, "MPa"), "Key bearing stress", "Shigley 10th ed. §7-7");
+            var tauKey = 2 * peakTorque / (dk * c.Si("w") * c.Si("L_key")) / 1e6;
+            var sigmaKey = 4 * peakTorque / (dk * c.Si("h") * c.Si("L_key")) / 1e6;
+            c.Record("tau_key", "2T/(d·w·L)", $"2 × {F(peakTorque)} N·m / ({F(dk * 1e3)} × {F(c.Si("w") * 1e3)} × {F(c.Si("L_key") * 1e3)}) mm³", ScalarValue.Of(tauKey, "MPa"), "Key shear stress", "Shigley 10th ed. §7-7");
+            c.Record("sigma_key", "4T/(d·h·L)", $"4 × {F(peakTorque)} N·m / ({F(dk * 1e3)} × {F(c.Si("h") * 1e3)} × {F(c.Si("L_key") * 1e3)}) mm³", ScalarValue.Of(sigmaKey, "MPa"), "Key bearing stress", "Shigley 10th ed. §7-7");
             outputs.AddRange([("tau_key", "Key shear"), ("sigma_key", "Key bearing")]);
 
             if (c.Has("S_y_key"))
@@ -462,7 +466,7 @@ public sealed class ShaftCalculator : ICalcCalculator
                 c.Input("S_y_key");
                 var syk = c.Si("S_y_key") / 1e6;
                 var target = c.InputSi("n_target");
-                var lReq = Math.Max(2 * torque * target / (dk * c.Si("w") * 0.577 * syk * 1e6), 4 * torque * target / (dk * c.Si("h") * syk * 1e6));
+                var lReq = Math.Max(2 * peakTorque * target / (dk * c.Si("w") * 0.577 * syk * 1e6), 4 * peakTorque * target / (dk * c.Si("h") * syk * 1e6));
                 c.Record("L_key_req", "max(2T·n_target/(d·w·0.577S_y), 4T·n_target/(d·h·S_y))", $"n_target = {F(target)}", ScalarValue.Of(lReq * 1e3, mm), "Key length required");
                 c.Record("u_key", "L_req/L", $"{F(lReq * 1e3)} / {F(c.Si("L_key") * 1e3)}", new ScalarValue(lReq / c.Si("L_key")), "Key utilisation");
                 outputs.AddRange([("L_key_req", "Key length required"), ("u_key", "Key utilisation")]);

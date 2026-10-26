@@ -9,14 +9,18 @@ namespace Tempest.Calc.Library;
 public static class CalcPackTemplates
 {
     /// <summary>
-    /// Drive train: motor (E1) → shaft (M4) → bearing (M5) → bearing seat fit (M2) → coupling flange bolts (M3). E1's peak torque <c>T_pk</c> is the
-    /// peak torque the load demands at the motor shaft, run-up included (the motor's own limit <c>T_peak</c> is a check on E1, not a design torque): it is the
-    /// torque the flange bolt group (M3b, <c>mech.bolt-group</c>) carries about its centroid (<c>T_z</c>) and the torque the shaft's yield check sees
-    /// (<c>T_pk</c>, M4). The shaft's mesh forces are entered (derived for the E1 torque; re-derive them when it changes). M3 must be given its bolt pattern as an input.
+    /// Drive train: motor (E1) → shaft (M4) → bearing (M5) → bearing seat fit (M2) → coupling flange bolts (M3). The shaft (M4) is the <b>motor-side</b> shaft, the gearbox input shaft behind the
+    /// coupling: it carries the torque at the motor shaft, which E1 reports, so no ratio or efficiency is applied between them (E1 also reports the output-side torques, <c>T_out_m</c>, <c>T_out_a</c>,
+    /// <c>T_out_pk</c> and <c>n_out</c>, T·i·η and n/i, for a shaft after the ratio: bind those instead). The torque on the shaft is split as the fatigue check needs it: E1's load torque <c>T_load</c>
+    /// is the steady (mean) torque <c>T</c> and E1's <c>T_alt</c>, (T_pk − T_dec)/2 on a point-to-point cycle and 0 in continuous duty, is the alternating amplitude <c>T_a</c>; the RMS torque is a thermal
+    /// quantity and is not a shaft torque. E1's peak torque <c>T_pk</c> is the peak torque the load demands at the motor shaft, run-up included (the motor's own limit <c>T_peak</c> is a check on E1, not a design
+    /// torque): it is the torque the flange bolt group (M3b, <c>mech.bolt-group</c>) carries about its centroid (<c>T_z</c>) and the torque the shaft's yield check and key see (<c>T_pk</c>, M4). E1's peak axial
+    /// thrust <c>F_ax_pk</c> (a ball screw's; 0 for a rotary mechanism) is the bearing's axial load <c>F_a</c>, peak rather than the cube-mean equivalent, so conservative for life.
+    /// The shaft's mesh forces are entered (derived for the E1 torque; re-derive them when it changes). M3 must be given its bolt pattern as an input.
     /// </summary>
     public static CalcPackTemplate DriveTrain { get; } = new(
         "pack.drive-train", "Drive train",
-        "Motor sizing gives the torque and speed the shaft carries; the shaft gives the bearing load and the seat diameter; the bearing life uses the shaft reaction and the motor speed; the seat fit (a rolling-bearing bore against the shaft seat) uses the shaft diameter; the coupling flange bolts and the shaft's yield check carry the peak torque the load demands at the motor shaft. The gear mesh forces on the shaft are entered for the E1 torque and must be re-derived if it changes.",
+        "Motor sizing gives the torque and speed the shaft carries; the shaft gives the bearing load and the seat diameter; the bearing life uses the shaft reaction and the motor speed; the seat fit (a rolling-bearing bore against the shaft seat) uses the shaft diameter; the coupling flange bolts, the shaft's yield check and its key carry the peak torque the load demands at the motor shaft. The shaft is the motor-side (gearbox input) shaft: it carries the motor-shaft torque, split into a steady part and an alternating part for its fatigue check. The gear mesh forces on the shaft are entered for the E1 torque and must be re-derived if it changes.",
         [
             new CalcPackStep("e1", "elec.motor-sizing", "Motor sizing", CalcPackExamples.DriveE1),
             new CalcPackStep("m4", "mech.shaft", "Shaft", CalcPackExamples.DriveM4),
@@ -25,10 +29,12 @@ public static class CalcPackTemplates
             new CalcPackStep("m3", "mech.bolt-group", "Coupling flange bolts", CalcPackExamples.DriveM3),
         ],
         [
-            new CalcPackBinding("e1", "T_rms", "m4", "T"),
+            new CalcPackBinding("e1", "T_load", "m4", "T"),
+            new CalcPackBinding("e1", "T_alt", "m4", "T_a"),
             new CalcPackBinding("e1", "n_pk", "m4", "n"),
             new CalcPackBinding("m4", "R_A", "m5", "F_r"),
             new CalcPackBinding("e1", "n_pk", "m5", "n"),
+            new CalcPackBinding("e1", "F_ax_pk", "m5", "F_a"),
             new CalcPackBinding("m4", "d_A", "m2", "D"),
             new CalcPackBinding("e1", "T_pk", "m4", "T_pk"),
             new CalcPackBinding("e1", "T_pk", "m3", "T_z"),
@@ -245,7 +251,7 @@ public static class CalcPackTemplates
 
     /// <summary>
     /// Mechanism review: cam (M9) → return spring (M7), cam shaft (M4) → bearing (M5), geared motor (E1) → supply cable (E4). The cam step is the source of everything: its spring force at full lift (<c>F_spring_max</c>, N) is the spring's working force at full
-    /// lift; its roller contact force (<c>F_pin_pk</c>, N) is the radial load at the cam on the shaft (a table-cell link into the load row, N to kN), its RMS and peak input torque (<c>T_rms_in</c>, <c>input_torque</c>, N·m to kN·m) the torque and the peak
+    /// lift; its roller contact force (<c>F_pin_pk</c>, N) is the radial load at the cam on the shaft (a table-cell link into the load row, N to kN), its peak input torque (<c>input_torque</c>, N·m to kN·m) the alternating torque amplitude and the peak
     /// torque of the shaft, and its speed (<c>n_in</c>) the shaft's, the bearing's and the motor's load speed; the shaft's reaction at bearing A (<c>R_A</c>, kN) is the bearing's radial load; the cam's RMS torque is the motor's continuous load torque (the motor runs at its 1440 rpm nameplate speed through the 9.6:1 gearbox); and the
     /// motor's nameplate rated power (<c>P_rated</c>, from <c>n_rated</c>) sizes the supply cable.
     /// <para>
@@ -257,16 +263,16 @@ public static class CalcPackTemplates
     /// rate no longer matches the spring's makes M7 warn <c>travel-mismatch</c> instead of silently still checking.
     /// </para>
     /// <para>
-    /// The cam's RMS torque enters the shaft's steady-torque input <c>T</c> as a stand-in: M4 models the bending as fully reversed and the torque as steady, whereas the cam's torque (a frictionless spring system) is fully alternating, mean zero,
-    /// ranging −9.61 to +10.11 N·m. In this example bending dominates and a chain test recomputes M4's fatigue factor with the torque taken as fully alternating (σ′ₐ = √(σₐ² + 3τₐ²)) and shows the margin; on a torque-dominated or keyed section the
-    /// RMS-as-steady mapping would understate the alternating stress. M4 is unchanged. The peak input torque is checked against the motor's peak torque by a test (E1 is judged on the RMS torque, as the motor's thermal duty). The motor runs at
+    /// The cam's torque (a frictionless spring system) is fully alternating about a mean of zero, ranging −9.61 to +10.11 N·m, so the shaft takes it as an alternating torque: the cam's peak input torque <c>input_torque</c>
+    /// (the largest |T_in|, a conservative amplitude) is the shaft's alternating amplitude <c>T_a</c> and its peak torque <c>T_pk</c>, and the shaft's steady torque <c>T</c> is left at 0 (a test guards that the cam's mean torque is small). The RMS torque is a thermal quantity
+    /// and goes to the motor only. The peak input torque is checked against the motor's peak torque by a test (E1 is judged on the RMS torque, as the motor's thermal duty). The motor runs at
     /// its 1440 rpm nameplate through a 9.6:1 gearbox. The cable step opens blocked until the user supplies his own cable-capacity and device-rating tables, which no build ships: the pack cannot be checked or issued until then (nothing takes from
     /// the cable step, so the pack is created, not refused).
     /// </para>
     /// </summary>
     public static CalcPackTemplate MechanismReview { get; } = new(
         "pack.mechanism-review", "Mechanism review",
-        "Takes a cam mechanism through to its supply: the cam's motion, pressure angle, undercut and follower force; the return spring that holds the follower on the cam; the cam shaft that carries the contact force and the torque; the bearing on that shaft; the geared motor that drives the cam; and the cable that supplies the motor. The cam's spring force, contact force, torques and speed reach each step by link; the cable tables are entered by the user, as no build ships them.",
+        "Takes a cam mechanism through to its supply: the cam's motion, pressure angle, undercut and follower force; the return spring that holds the follower on the cam; the cam shaft that carries the contact force and the cam's alternating torque; the bearing on that shaft; the geared motor that drives the cam; and the cable that supplies the motor. The cam's spring force, contact force, torques and speed reach each step by link; the cable tables are entered by the user, as no build ships them.",
         [
             new CalcPackStep("m9", "mech.mechanism", "Tamper cam", CalcPackExamples.CamM9),
             new CalcPackStep("m7", "mech.spring", "Follower return spring", CalcPackExamples.CamM7),
@@ -281,7 +287,7 @@ public static class CalcPackTemplates
             new CalcPackBinding("m9", "lift", "m7", "s_work"),
             new CalcPackBinding("m9", "f_in", "m7", "f_op"),
             new CalcPackBinding("m9", "F_pin_pk", "m4", "loads", Row: 0, Column: "F_y"),
-            new CalcPackBinding("m9", "T_rms_in", "m4", "T"),
+            new CalcPackBinding("m9", "input_torque", "m4", "T_a"),
             new CalcPackBinding("m9", "input_torque", "m4", "T_pk"),
             new CalcPackBinding("m9", "n_in", "m4", "n"),
             new CalcPackBinding("m4", "R_A", "m5", "F_r"),

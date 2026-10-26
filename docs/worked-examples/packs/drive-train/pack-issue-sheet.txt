@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Conveyor 7 head drive
 Calc ID: Conveyor head drive calc pack    Revision: A
 Title: Calculation pack
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: CNV-DRV-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
 
 PACK INDEX
   1. Motor sizing — Motor and actuator sizing — rev A — ISSUED — RMS torque SF·T_rms ≤ T_rated PASS
@@ -14,7 +14,7 @@ PACK INDEX
   5. Coupling flange bolts — Bolt group (elastic method) — rev A — ISSUED — Circular shear–tension interaction (governing bolt) PASS
 
 REVISIONS
-  A  2026-10-25  test.engineer  First issue
+  A  2026-10-26  test.engineer  First issue
 
 1. SCOPE AND METHOD
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -40,20 +40,20 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 22/22
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 08:42 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
 Project: Conveyor 7 head drive
 Calc ID: Motor sizing    Revision: A
 Title: Motor and actuator sizing
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: CNV-DRV-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
-Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack). Load inertia reflected to the motor through a linear mechanism: J_refl = m k²/η. Load torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p. Reflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η). Move profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc. Move profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap. Torque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load. RMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle). RMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²]. Continuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i. Continuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load. Peak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load. Continuous power: P_cont = T_load ω; P_rms = P_cont. Rated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60.
+Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack). Load inertia reflected to the motor through a linear mechanism: J_refl = m k²/η. Load torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p. Reflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η). Move profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc. Move profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap. Torque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load. Alternating torque amplitude of a point-to-point cycle about T_load, for a shaft's fatigue: T_alt = (T_pk − T_dec)/2 (0 in continuous duty). Torque behind the ratio on the output shaft of a rotary mechanism: T_out = T·i·η (mean, alternating and peak), n_out = n_pk/i. Peak axial thrust of a ball screw on its support bearings: F_ax_pk = F_load + m a_pk (0 for other mechanisms). RMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle). RMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²]. Continuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i. Continuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load. Peak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load. Continuous power: P_cont = T_load ω; P_rms = P_cont. Rated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60.
   Ref: Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection — Load torque, inertia referred to the motor, duty cycles
   Ref: Manufacturer servo-sizing guides (Kollmorgen, Parker) — Reflected inertia, RMS torque, inertia ratio practice
 
@@ -141,43 +141,65 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
       = 151.58 N·m
       = 151.58 N·m
         RMS torque: continuous running at the load torque
-  [28] n_pk = omega_pk
+  [28] T_alt = 0 N*m
+      = 0 N·m
+        Alternating torque amplitude: none, continuous running is steady (the run-up is a rare peak, T_pk)
+  [29] F_ax_pk = 0 N
+      = 0 N
+        Peak axial thrust on the bearings (none for a rotary mechanism)
+  [30] n_pk = omega_pk
       = 154.46 rad/s
       = 1475 rpm
         Motor speed
-  [29] P_cont = T_load * omega_pk
+  [31] T_out_m = T_load * i * eta
+      = 151.58 N·m × 12.5 × 0.95
+      = 1800 N·m
+        Mean torque on the output shaft (the constant load torque)
+  [32] T_out_a = T_alt * i * eta
+      = 0 N·m × 12.5 × 0.95
+      = 0 N·m
+        Alternating torque amplitude on the output shaft
+  [33] T_out_pk = T_pk * i * eta
+      = 159.25 N·m × 12.5 × 0.95
+      = 1891.1 N·m
+        Peak torque on the output shaft (the motor rotor's inertia torque is counted, so conservative)
+  [34] n_out = n_pk / i
+      = 1475 rpm / 12.5
+      = 118 rpm
+        Output shaft speed
+  [35] P_cont = T_load * omega_pk
       = 151.58 N·m × 154.46 rad/s
       = 23413 W
         Continuous shaft power at the motor
-  [31] P_rated = T_rated * n_rated
+  [37] P_rated = T_rated * n_rated
       = 200 N·m × 1480 rpm
       = 30997 W
         Rated (nameplate) shaft power of the candidate motor: its rated torque times its rated speed
-  [32] P_pk = T_pk * omega_pk
+  [38] P_pk = T_pk * omega_pk
       = 159.25 N·m × 154.46 rad/s
       = 24.598 kW
         Peak mechanical power (end of the run-up)
-  [33] P_rms = P_cont
+  [39] P_rms = P_cont
       = 23413 W
       = 23.413 kW
         RMS mechanical power: the steady running power (thermal-equivalent continuous power)
-  [34] J_ratio = (J_refl + J_mech) / J_motor
+  [40] J_ratio = (J_refl + J_mech) / J_motor
       = (0.026947 kg·m² + 0.002 kg·m²) / 0.12 kg·m²
       = 0.24123
         Inertia ratio (load : motor)
-  [35] u_peak = SF * T_pk / T_peak
+  [41] u_peak = SF * T_pk / T_peak
       = 1.25 × 159.25 N·m / 400 N·m
       = 0.49765
         Peak torque utilisation with safety margin
-  [36] u_rms = SF * T_rms / T_rated
+  [42] u_rms = SF * T_rms / T_rated
       = 1.25 × 151.58 N·m / 200 N·m
       = 0.94737
         Continuous torque utilisation with safety margin
-  [37] u_speed = n_pk / n_max
+  [43] u_speed = n_pk / n_max
       = 1475 rpm / 3000 rpm
       = 0.49167
         Speed utilisation
-  [38] duty = T_rms / T_rated
+  [44] duty = T_rms / T_rated
       = 151.58 N·m / 200 N·m
       = 0.75789
         Thermal duty (without margin)
@@ -190,6 +212,8 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   alpha_pk = 51.487 rad/s²    Run-up angular acceleration
   T_acc = 7.6689 N·m    Run-up torque
   T_pk = 159.25 N·m    Peak torque
+  T_alt = 0 N·m    Alternating torque amplitude
+  F_ax_pk = 0 N    Peak axial thrust on a screw's bearings
   T_rms = 151.58 N·m    RMS torque
   n_pk = 1475 rpm    Motor speed
   P_cont = 23413 W    Continuous power
@@ -200,6 +224,10 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   u_peak = 0.49765    Peak utilisation
   u_rms = 0.94737    Continuous utilisation
   u_speed = 0.49167    Speed utilisation
+  T_out_m = 1800 N·m    Output shaft mean torque
+  T_out_a = 0 N·m    Output shaft alternating torque
+  T_out_pk = 1891.1 N·m    Output shaft peak torque
+  n_out = 118 rpm    Output shaft speed
   P_rated = 30997 W    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
 
 6. CHECKS (governing first)
@@ -212,11 +240,11 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   WARNING continuous-ignored: duty_mode: continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.
 
 8. VERIFICATION
-  Template: elec.motor-sizing@1.5.0
-  Content hash: e27e82fd084979ba
+  Template: elec.motor-sizing@1.6.0
+  Content hash: 4ea5e25d0b648caa
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 08:42 UTC
   Application: TempestOS test
 
 
@@ -224,13 +252,13 @@ CALCULATION SHEET — ISSUED
 Project: Conveyor 7 head drive
 Calc ID: Shaft    Revision: A
 Title: Shaft: static, fatigue, keys, critical speed
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: CNV-DRV-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
 
 1. SCOPE AND METHOD
-A stepped (optionally hollow) shaft on two bearings carrying radial loads in two planes and a steady torque: bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections the user marks, slopes at the bearings, deflection at the loads, the first lateral critical speed and parallel keys.
-Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(M_y² + M_z²) Stress at a section: σ_a = K_f·32M_a·d/(π(d⁴ − d_i⁴)), τ_m = K_fs·16T_m·d/(π(d⁴ − d_i⁴)); K_f = 1 + q(K_t − 1) Endurance limit: S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e1, S_e1 (the rotating-beam limit S_e′) = 0.5·S_ut (S_ut ≤ 1400 MPa, else 700 MPa); k_a = a·S_ut^b, k_b = 1.24d^−0.107 or 1.51d^−0.157, k_e = 1 − 0.08·z_R Fatigue (DE-Goodman): 1/n_f = σ_a/S_e + √3·τ_m/S_ut; yield n_y = S_y/√((σ_a)² + 3τ_pk²), τ_pk from the larger of T and the peak torque T_pk when given Critical speed: Rayleigh ω = √(g·Σm·y/Σm·y²) (upper bound); Dunkerley 1/ω² = Σ m_i·δ_ii (lower bound, used for the ratio to the operating speed) Parallel key: τ = 2T/(d·w·L), σ = 4T/(d·h·L); required length L = max(2T·n_target/(d·w·0.577·S_y), 4T·n_target/(d·h·S_y))
+A stepped (optionally hollow) shaft on two bearings carrying radial loads in two planes and a torque with a steady (mean) part and an optional alternating part: bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections the user marks, slopes at the bearings, deflection at the loads, the first lateral critical speed and parallel keys.
+Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(M_y² + M_z²) Stress at a section: σ_a = K_f·32M_a·d/(π(d⁴ − d_i⁴)), τ_m = K_fs·16T_m·d/(π(d⁴ − d_i⁴)), τ_a = K_fs·16T_a·d/(π(d⁴ − d_i⁴)); K_f = 1 + q(K_t − 1) Endurance limit: S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e1, S_e1 (the rotating-beam limit S_e′) = 0.5·S_ut (S_ut ≤ 1400 MPa, else 700 MPa); k_a = a·S_ut^b, k_b = 1.24d^−0.107 or 1.51d^−0.157, k_e = 1 − 0.08·z_R Fatigue (DE-Goodman, bending fully reversed, torque T_m ± T_a): 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3·τ_m/S_ut; yield n_y = S_y/√((σ_a)² + 3τ_pk²), τ_pk from the larger of T_m + T_a and the peak torque T_pk when given Critical speed: Rayleigh ω = √(g·Σm·y/Σm·y²) (upper bound); Dunkerley 1/ω² = Σ m_i·δ_ii (lower bound, used for the ratio to the operating speed) Parallel key, on the peak torque T_k = the larger of T_m + T_a and T_pk: τ = 2T_k/(d·w·L), σ = 4T_k/(d·h·L); required length L = max(2T_k·n_target/(d·w·0.577·S_y), 4T_k·n_target/(d·h·S_y))
   Ref: Shigley's Mechanical Engineering Design 10th ed., Ch. 6 (§6-9, Table 6-2 Marin surface factors), Ch. 7 (§7-4 to §7-7) — Fatigue, shaft stresses, deflection, critical speeds, keys
   Ref: Mott, Machine Elements in Mechanical Design 6th ed., Ch. 12 — Shaft design
 
@@ -244,8 +272,9 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   x_B | Bearing B position | 275 | mm | drawing: DRG-CNV-410 rev B | 1 … 3000 mm
   loads | Radial loads and masses | 1 row(s) |  | drawing: DRG-CNV-410 rev B | any
   loads[1] |  | x = 150 mm; F_y = -0.92 kN; F_z = 2.53 kN; m = 3 kg |  |  | 
-  T | Torque transmitted | 0.151579 | kN*m | link: Motor sizing rev A · T_rms | 0 … 50 kN*m
-  T_pk | Peak torque for the yield check (blank: the torque T) | 0.159248 | kN*m | link: Motor sizing rev A · T_pk | 0 … 50 kN*m
+  T | Torque transmitted, steady or mean part T_m | 0.151579 | kN*m | link: Motor sizing rev A · T_load | 0 … 50 kN*m
+  T_a | Alternating torque amplitude T_a about the mean (blank: 0, a steady torque; a reversing or cyclic drive needs it) | 0 | kN*m | link: Motor sizing rev A · T_alt | 0 … 50 kN*m
+  T_pk | Peak torque for the yield check and the key (blank: T + T_a) | 0.159248 | kN*m | link: Motor sizing rev A · T_pk | 0 … 50 kN*m
   x_T1 | Torque enters at | 0 | mm | drawing: DRG-CNV-410 rev B | 0 … 3000 mm
   x_T2 | Torque leaves at | 150 | mm | drawing: DRG-CNV-410 rev B | 0 … 3000 mm
   n | Operating speed | 1475 | rpm | link: Motor sizing rev A · n_pk | 0 … 30000 rpm
@@ -265,7 +294,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   y_max | Deflection limit at the loads | 0.13 | mm | assumption: Sheet default value; no project figure given. | 0.001 … 10 mm
 
 3. ASSUMPTIONS
-  A1. Linear elastic, two simple bearing supports (pin at A, roller at B); bending fully reversed by rotation, torque steady. (Shigley 10th ed. §7-4.)
+  A1. Linear elastic, two simple bearing supports (pin at A, roller at B); bending fully reversed by rotation; torque a steady part T_m plus an alternating part T_a about it (fully alternating when T_m = 0), both acting between the torque-in and torque-out positions. (Shigley 10th ed. §7-4.)
   A2. No torsional vibration; only the first lateral mode, by Rayleigh with Dunkerley as a lower bound. (Shigley 10th ed. §7-6.)
   A3. K_t and K_ts come from user records or published fit equations; no stress-concentration chart is reproduced. (No stress-concentration chart is shipped; the factors are entered or derived.)
   A4. At a shoulder the smaller diameter governs; k_c = 1 because the stresses are combined by von Mises. (Shigley 10th ed. §6-9, §7-4.)
@@ -322,51 +351,51 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
       = 850 MPa
       = 425 MPa
         Rotating-beam endurance limit
-  [30] X1 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
+  [31] X1 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T_m/(πd³′), τ_a = K_fs·16T_a/(πd³′); 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
       = x = 50 mm, d = 35 mm, k_b = 0.84763, S_e = 261.11 MPa, K_f = 1.595, K_fs = 1.45, M = 33.651 N·m, T = 151.58 N·m, σ_a = 12.751 MPa, τ_m = 26.108 MPa, T_pk = 159.25 N·m, τ_pk = 27.429 MPa, n_y = 13.214
       = 9.8005
         Section at 50 mm: fatigue safety factor (DE-Goodman)
-  [31] X2 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
+  [32] X2 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T_m/(πd³′), τ_a = K_fs·16T_a/(πd³′); 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
       = x = 150 mm, d = 45 mm, k_b = 0.82514, S_e = 254.18 MPa, K_f = 1.595, K_fs = 1.45, M = 168.26 N·m, T = 151.58 N·m, σ_a = 29.998 MPa, τ_m = 12.284 MPa, T_pk = 159.25 N·m, τ_pk = 12.905 MPa, n_y = 17.375
       = 6.9906
         Section at 150 mm: fatigue safety factor (DE-Goodman)
-  [32] S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e′ (governing section)
+  [33] S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e′ (governing section)
       = k_c = 1
       = 254.18 MPa
         Endurance limit at the governing section
-  [33] n_f_min = min over sections
+  [34] n_f_min = min over sections
       = 2 section(s)
       = 6.9906
         Lowest fatigue safety factor
-  [34] n_y_min = min over sections S_y/σ′_max
+  [35] n_y_min = min over sections S_y/σ′_max
       = 2 section(s)
       = 13.214
         Lowest yield safety factor
-  [35] n_c = √(g·Σm·y/Σm·y²) (Rayleigh)    « Shigley 10th ed. §7-6
+  [36] n_c = √(g·Σm·y/Σm·y²) (Rayleigh)    « Shigley 10th ed. §7-6
       = Σm = 6.2522 kg over 25 nodes
       = 51038 rpm
         First lateral critical speed (Rayleigh)
-  [36] n_c_D = 1/ω² = Σ m_i·δ_ii (Dunkerley, lower bound)    « Shigley 10th ed. §7-6
+  [37] n_c_D = 1/ω² = Σ m_i·δ_ii (Dunkerley, lower bound)    « Shigley 10th ed. §7-6
       = 25 masses
       = 49494 rpm
         First critical speed, Dunkerley lower bound
-  [37] r_c = n_c,D/n
+  [38] r_c = n_c,D/n
       = 49494 / 1475
       = 33.555
         Critical-speed ratio (Dunkerley lower bound over operating speed)
-  [38] u_f = n_target/n_f,min
+  [39] u_f = n_target/n_f,min
       = 1.5 / 6.9906
       = 0.21457
         Fatigue utilisation
-  [39] u_y = n_target/n_y,min
+  [40] u_y = n_target/n_y,min
       = 1.5 / 13.214
       = 0.11351
         Yield utilisation
-  [40] u_slope = max(θ_A, θ_B)/θ_max
+  [41] u_slope = max(θ_A, θ_B)/θ_max
       = 0.00026987 / 0.001
       = 0.26987
         Slope utilisation
-  [41] u_defl = y_load/y_max
+  [42] u_defl = y_load/y_max
       = 0.021323 / 0.13 mm
       = 0.16403
         Deflection utilisation
@@ -397,11 +426,11 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   WARNING record: Tabulated values not taken from a reference record: S_ut, S_y, E (Shaft material); theta_max, y_max (Slope and deflection limits). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: mech.shaft@1.1.1
-  Content hash: 47130117080eab34
+  Template: mech.shaft@1.2.0
+  Content hash: 626bfcd60a318f2c
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 08:42 UTC
   Application: TempestOS test
 
 
@@ -409,9 +438,9 @@ CALCULATION SHEET — ISSUED
 Project: Conveyor 7 head drive
 Calc ID: Bearing A life    Revision: A
 Title: Rolling bearing life (ISO 281)
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: CNV-DRV-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The basic and modified rating life of a rolling bearing under a steady load or a duty cycle, at a chosen reliability, against a required life; and the static safety factor against a required value.
@@ -425,7 +454,7 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
   Symbol | Description | Value | Unit | Source | Valid range
   type | Bearing type | ball (p = 3) |  | spec: SPEC-CNV-07 §6 (bearing schedule) | any
   F_r | Radial load | 1.34604 | kN | link: Shaft rev A · R_A | 0 … 2000 kN
-  F_a | Axial load | 0 | kN | assumption: Sheet default value; no project figure given. | 0 … 2000 kN
+  F_a | Axial load | 0 | kN | link: Motor sizing rev A · F_ax_pk | 0 … 2000 kN
   n | Speed | 1475 | rpm | link: Motor sizing rev A · n_pk | 1 … 50000 rpm
   C | Basic dynamic load rating | 25.5 | kN | spec: SPEC-CNV-07 §6 (bearing schedule) | 0.1 … 10000 kN
   C_0 | Basic static load rating | 15.3 | kN | spec: SPEC-CNV-07 §6 (bearing schedule) | 0.1 … 10000 kN
@@ -445,16 +474,15 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
   A1. Ratings C and C₀, factors X, Y, e, X₀, Y₀ and a_ISO are the manufacturer's values for the bearing, entered as reference records. (No catalogue table ships with TempestOS.)
   A2. a₁ uses the ISO 281:2007 Weibull form (0.64 at 95 %, 0.25 at 99 %); ISO 281:1990 gave 0.62 and 0.21. (Edition stated on the sheet.)
   A3. Loads are steady within each duty step; speed is constant. (Duty steps weighted by share of revolutions.)
-  A4. F_a (Axial load) is taken as 0 kN. (Sheet default value; no project figure given.)
-  A5. e_lim (Load ratio limit e) is taken as 0.3. (Sheet default value; no project figure given.)
-  A6. X_1 (Radial factor X₁ for F_a/F_r ≤ e (1 for a single-row radial ball bearing)) is taken as 1. (Sheet default value; no project figure given.)
-  A7. Y_1 (Axial factor Y₁ for F_a/F_r ≤ e (0 for a single-row radial ball bearing; above 0 for double-row and paired bearings)) is taken as 0. (Sheet default value; no project figure given.)
-  A8. X (Radial factor X for F_a/F_r > e) is taken as 1. (Sheet default value; no project figure given.)
-  A9. Y (Axial factor Y for F_a/F_r > e (from the manufacturer; Y = 0 makes the axial load count for nothing and is refused when one acts)) is taken as 0. (Sheet default value; no project figure given.)
-  A10. X_0 (Static radial factor X₀) is taken as 0.6. (Sheet default value; no project figure given.)
-  A11. Y_0 (Static axial factor Y₀) is taken as 0.5. (Sheet default value; no project figure given.)
-  A12. a_iso (Life modification factor a_ISO (from the manufacturer's tool)) is taken as 1. (Sheet default value; no project figure given.)
-  A13. s_0_req (Required static safety factor) is taken as 1. (Sheet default value; no project figure given.)
+  A4. e_lim (Load ratio limit e) is taken as 0.3. (Sheet default value; no project figure given.)
+  A5. X_1 (Radial factor X₁ for F_a/F_r ≤ e (1 for a single-row radial ball bearing)) is taken as 1. (Sheet default value; no project figure given.)
+  A6. Y_1 (Axial factor Y₁ for F_a/F_r ≤ e (0 for a single-row radial ball bearing; above 0 for double-row and paired bearings)) is taken as 0. (Sheet default value; no project figure given.)
+  A7. X (Radial factor X for F_a/F_r > e) is taken as 1. (Sheet default value; no project figure given.)
+  A8. Y (Axial factor Y for F_a/F_r > e (from the manufacturer; Y = 0 makes the axial load count for nothing and is refused when one acts)) is taken as 0. (Sheet default value; no project figure given.)
+  A9. X_0 (Static radial factor X₀) is taken as 0.6. (Sheet default value; no project figure given.)
+  A10. Y_0 (Static axial factor Y₀) is taken as 0.5. (Sheet default value; no project figure given.)
+  A11. a_iso (Life modification factor a_ISO (from the manufacturer's tool)) is taken as 1. (Sheet default value; no project figure given.)
+  A12. s_0_req (Required static safety factor) is taken as 1. (Sheet default value; no project figure given.)
 
 4. WORKING
   [18] p = 3    « ISO 281:2007 cl. 6–7
@@ -525,7 +553,7 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
   Content hash: 555757395aab4030
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 08:42 UTC
   Application: TempestOS test
 
 
@@ -533,9 +561,9 @@ CALCULATION SHEET — ISSUED
 Project: Conveyor 7 head drive
 Calc ID: Bearing A seat fit    Revision: A
 Title: ISO 286 limits and fits
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: CNV-DRV-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Hole and shaft limits for a nominal size and tolerance classes, the resulting fit (clearance, transition or interference) and its extreme values, from the ISO 286-1 formulae.
@@ -663,7 +691,7 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
   Content hash: 014da7adc9760013
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 08:42 UTC
   Application: TempestOS test
 
 
@@ -671,9 +699,9 @@ CALCULATION SHEET — ISSUED
 Project: Conveyor 7 head drive
 Calc ID: Coupling flange bolts    Revision: A
 Title: Bolt group (elastic method)
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: CNV-DRV-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A pattern of bolts in a plane under in-plane forces (with eccentricity, so torsion), out-of-plane moments and axial load: the shear and tension in every bolt by the elastic (area-weighted) method, the governing bolt, and an optional lever-model prying addition.
@@ -793,5 +821,5 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   Content hash: 1d9f5c56b95ecdb6
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 08:42 UTC
   Application: TempestOS test
