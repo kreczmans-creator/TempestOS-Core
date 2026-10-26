@@ -2287,7 +2287,7 @@
       ]
     },
     {
-      "symbol": "EI",
+      "symbol": "EI_hole",
       "meanings": [
         {
           "meaning": "",
@@ -2305,7 +2305,7 @@
       ]
     },
     {
-      "symbol": "EI_override",
+      "symbol": "EI_hole_override",
       "meanings": [
         {
           "meaning": "",
@@ -2314,7 +2314,7 @@
             "µm"
           ],
           "descriptions": [
-            "Hole lower deviation override"
+            "Hole lower deviation override (optional; blank = the formula value)"
           ],
           "templates": [
             "mech.iso286-fit"
@@ -2323,7 +2323,7 @@
       ]
     },
     {
-      "symbol": "ES",
+      "symbol": "ES_hole",
       "meanings": [
         {
           "meaning": "",
@@ -2341,7 +2341,7 @@
       ]
     },
     {
-      "symbol": "ES_override",
+      "symbol": "ES_hole_override",
       "meanings": [
         {
           "meaning": "",
@@ -2350,7 +2350,7 @@
             "µm"
           ],
           "descriptions": [
-            "Hole upper deviation override (from a reference record)"
+            "Hole upper deviation override (optional; blank = the formula value, or a reference record)"
           ],
           "templates": [
             "mech.iso286-fit"
@@ -15869,7 +15869,7 @@
       ]
     },
     {
-      "symbol": "ei",
+      "symbol": "ei_shaft",
       "meanings": [
         {
           "meaning": "",
@@ -15887,7 +15887,7 @@
       ]
     },
     {
-      "symbol": "ei_override",
+      "symbol": "ei_shaft_override",
       "meanings": [
         {
           "meaning": "",
@@ -15896,7 +15896,7 @@
             "µm"
           ],
           "descriptions": [
-            "Shaft lower deviation override"
+            "Shaft lower deviation override (optional; blank = the formula value)"
           ],
           "templates": [
             "mech.iso286-fit"
@@ -16021,7 +16021,7 @@
       ]
     },
     {
-      "symbol": "es",
+      "symbol": "es_shaft",
       "meanings": [
         {
           "meaning": "",
@@ -16039,7 +16039,7 @@
       ]
     },
     {
-      "symbol": "es_override",
+      "symbol": "es_shaft_override",
       "meanings": [
         {
           "meaning": "",
@@ -16048,7 +16048,7 @@
             "µm"
           ],
           "descriptions": [
-            "Shaft upper deviation override"
+            "Shaft upper deviation override (optional; blank = the formula value)"
           ],
           "templates": [
             "mech.iso286-fit"

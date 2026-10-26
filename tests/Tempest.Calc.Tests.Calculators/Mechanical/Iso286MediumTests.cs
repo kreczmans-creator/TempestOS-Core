@@ -23,8 +23,8 @@ public sealed class Iso286MediumTests
         Assert.Equal(10.054194, Iso286.HoleFundamentalDeviation("K", 25, 8)!.Value, 5);
 
         var r = Fit286(25, "K", 8, "h", 7);
-        Assert.Equal(10.054194, r.OutputSi("ES") * 1e6, 4);
-        Assert.Equal(-22.630187, r.OutputSi("EI") * 1e6, 4);
+        Assert.Equal(10.054194, r.OutputSi("ES_hole") * 1e6, 4);
+        Assert.Equal(-22.630187, r.OutputSi("EI_hole") * 1e6, 4);
     }
 
     [Fact]
@@ -38,12 +38,12 @@ public sealed class Iso286MediumTests
         Assert.Equal(1.859554, Iso286.HoleFundamentalDeviation("K", 25, 5)!.Value, 5);
 
         var k3 = Fit286(25, "K", 3, "h", 3);
-        Assert.Equal(-0.384379, k3.OutputSi("ES") * 1e6, 4);
-        Assert.Equal(-3.786524, k3.OutputSi("EI") * 1e6, 4);
+        Assert.Equal(-0.384379, k3.OutputSi("ES_hole") * 1e6, 4);
+        Assert.Equal(-3.786524, k3.OutputSi("EI_hole") * 1e6, 4);
 
         var k5 = Fit286(25, "K", 5, "h", 5);
-        Assert.Equal(1.859554, k5.OutputSi("ES") * 1e6, 4);
-        Assert.Equal(-7.292072, k5.OutputSi("EI") * 1e6, 4);
+        Assert.Equal(1.859554, k5.OutputSi("ES_hole") * 1e6, 4);
+        Assert.Equal(-7.292072, k5.OutputSi("EI_hole") * 1e6, 4);
     }
 
     [Fact]
@@ -82,8 +82,8 @@ public sealed class Iso286MediumTests
         var r = Fit286(28, "H", 7, "t", 6);
 
         Assert.False(r.IsBlocked);
-        Assert.Equal(37.822678, r.OutputSi("ei") * 1e6, 4);
-        Assert.Equal(37.822678 + 13.073752, r.OutputSi("es") * 1e6, 4);
+        Assert.Equal(37.822678, r.OutputSi("ei_shaft") * 1e6, 4);
+        Assert.Equal(37.822678 + 13.073752, r.OutputSi("es_shaft") * 1e6, 4);
     }
 
     [Fact]
@@ -92,6 +92,6 @@ public sealed class Iso286MediumTests
         // 45 mm: step 30 to 50, D = 38.730 mm, IT7 = 24.97989 um, t = IT7 + 0.63 D = 49.37968 um (python3).
         var r = Fit286(45, "H", 7, "t", 6);
 
-        Assert.Equal(49.379683, r.OutputSi("ei") * 1e6, 4);
+        Assert.Equal(49.379683, r.OutputSi("ei_shaft") * 1e6, 4);
     }
 }

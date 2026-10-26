@@ -324,10 +324,10 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `DoD` | — | Plain number | — | Allowed depth of discharge | elec.load-budget | ok |
 | `Dp` | — | Length | mm | Pin diameter D_p (not larger than the hole) | struct.lifting | ok |
 | `E` | `E:youngs-modulus` | Stress, pressure | GPa | Default modulus of elasticity; E (blank = sheet default); Modulus of elasticity; … (7 descriptions) | bs.pipe-expansion, fp.cylinder, mech.shaft, mech.spring, mech.thermal-expansion, mech.thick-cylinder, struct.beam-formulas, struct.column-buckling, struct.en1993-member, struct.frame-2d, struct.ltb-interaction, struct.plate-bending | ok |
-| `EI` | — | Length | µm | Hole lower deviation | mech.iso286-fit | ok |
-| `EI_override` | — | Length | µm | Hole lower deviation override | mech.iso286-fit | ok |
-| `ES` | — | Length | µm | Hole upper deviation | mech.iso286-fit | ok |
-| `ES_override` | — | Length | µm | Hole upper deviation override (from a reference record) | mech.iso286-fit | ok |
+| `EI_hole` | — | Length | µm | Hole lower deviation | mech.iso286-fit | ok |
+| `EI_hole_override` | — | Length | µm | Hole lower deviation override (optional; blank = the formula value) | mech.iso286-fit | ok |
+| `ES_hole` | — | Length | µm | Hole upper deviation | mech.iso286-fit | ok |
+| `ES_hole_override` | — | Length | µm | Hole upper deviation override (optional; blank = the formula value, o… | mech.iso286-fit | ok |
 | `E_P` | — | Stress, pressure | GPa | Clamped members' Young's modulus | mech.bolted-joint | ok |
 | `E_S` | — | Stress, pressure | GPa | Bolt Young's modulus | mech.bolted-joint | ok |
 | `E_d_max` | — | Force | kN | ULS design effect, maximum | struct.load-combinations | ok |
@@ -1096,8 +1096,8 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `e_y` | `e_y:point-of-application-y` | Length | mm | Point of application, y | mech.bolt-group, mech.weld-group | ok |
 | `ecc` | — | Length | mm | Gland eccentricity or run-out (one-sided offset; it deepens the gland… | fp.oring-gland | ok |
 | `eff` | — | Plain number | — | Saturation efficiency (evaporative, blank = use RH_2) | bs.psychrometrics | ok |
-| `ei` | — | Length | µm | Shaft lower deviation | mech.iso286-fit | ok |
-| `ei_override` | — | Length | µm | Shaft lower deviation override | mech.iso286-fit | ok |
+| `ei_shaft` | — | Length | µm | Shaft lower deviation | mech.iso286-fit | ok |
+| `ei_shaft_override` | — | Length | µm | Shaft lower deviation override (optional; blank = the formula value) | mech.iso286-fit | ok |
 | `eps` | `eps:roughness` | Length | mm | Duct roughness; Roughness | bs.duct-sizing, bs.pipe-pump | RESOLVE (5 meanings) |
 | `eps` | `eps:effectiveness` | Plain number | — | Effectiveness | bs.heat-exchanger | RESOLVE (5 meanings) |
 | `eps` | `eps:emissivity` | Plain number | — | Emissivity of the outer surface (for the correlation; with h_se as gi… | bs.insulation | RESOLVE (5 meanings) |
@@ -1106,8 +1106,8 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `eps_perm` | — | Percent quantity | % | Permissible strain | mech.snap-fit | ok |
 | `eps_perm_once` | — | Plain number | — | Permissible strain for one-time joining, as a fraction (0.04 is 4 %) … | mech.snap-fit | ok |
 | `eps_perm_repeated` | — | Plain number | — | Permissible strain for repeated joining, as a fraction (no default) | mech.snap-fit | ok |
-| `es` | — | Length | µm | Shaft upper deviation | mech.iso286-fit | ok |
-| `es_override` | — | Length | µm | Shaft upper deviation override | mech.iso286-fit | ok |
+| `es_shaft` | — | Length | µm | Shaft upper deviation | mech.iso286-fit | ok |
+| `es_shaft_override` | — | Length | µm | Shaft upper deviation override (optional; blank = the formula value) | mech.iso286-fit | ok |
 | `eta` | `eta:efficiency` | Plain number | — | Efficiency; Efficiency (not used for DC); Mechanism efficiency (overall); … (4 descriptions) | elec.conductor-sizing, elec.load-budget, elec.motor-sizing, elec.motor-start | RESOLVE (3 meanings) |
 | `eta` | `eta:perry-factor` | Plain number | — | Perry factor | struct.column-buckling | RESOLVE (3 meanings) |
 | `eta` | `eta:shear-area-factor` | Plain number | — | Shear-area factor η | struct.en1993-member | RESOLVE (3 meanings) |

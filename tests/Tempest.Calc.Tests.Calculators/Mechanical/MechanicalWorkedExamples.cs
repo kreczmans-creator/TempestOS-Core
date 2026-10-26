@@ -60,7 +60,7 @@ public static class MechanicalWorkedExamples
                 CalcInputValue.Choice("shaft_letter", "g", CalcProvenance.Specification("DRG-SHAFT-12 note 3")),
                 CalcInputValue.Of("shaft_grade", 6, CalcProvenance.Specification("DRG-SHAFT-12 note 3")),
             ]),
-            [new CalcExpectedValue("IT_hole", 21, "µm", 0.03), new CalcExpectedValue("es", -7, "µm", 0.06), new CalcExpectedValue("c_min", 7, "µm", 0.06), new CalcExpectedValue("c_max", 41, "µm", 0.03)],
+            [new CalcExpectedValue("IT_hole", 21, "µm", 0.03), new CalcExpectedValue("es_shaft", -7, "µm", 0.06), new CalcExpectedValue("c_min", 7, "µm", 0.06), new CalcExpectedValue("c_max", 41, "µm", 0.03)],
             "A close-running fit from the formulae: IT7 = 20.9 µm, IT6 = 13.1 µm, g = −7.3 µm; clearance 7.3–41.3 µm against the tabulated 7–41 µm.",
             CalcReferenceStatus.Unconfirmed),
 

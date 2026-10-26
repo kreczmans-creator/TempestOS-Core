@@ -28,13 +28,13 @@ public sealed class Iso286FitTests
         var r = CalcRunner.Run(Fit, Seat().With(CalcInputValue.Choice("hole_kind", Iso286FitCalculator.BearingBore)));
         Assert.True(r.IsBlocked);
         Assert.Equal("bearing-bore", r.Blocks[0].RuleId);
-        Assert.StartsWith("ES_override:", r.Blocks[0].Message, StringComparison.Ordinal);
+        Assert.StartsWith("ES_hole_override:", r.Blocks[0].Message, StringComparison.Ordinal);
     }
 
     [Fact]
     public void A_Bearing_Bore_Below_Nominal_On_A_k6_Seat_Is_An_Interference_Fit_At_Every_Size_Combination()
     {
-        var r = CalcRunner.Run(Fit, Seat().With(CalcInputValue.Choice("hole_kind", Iso286FitCalculator.BearingBore)).With(CalcInputValue.Quantity("ES_override", 0, "µm")).With(CalcInputValue.Quantity("EI_override", -9, "µm")));
+        var r = CalcRunner.Run(Fit, Seat().With(CalcInputValue.Choice("hole_kind", Iso286FitCalculator.BearingBore)).With(CalcInputValue.Quantity("ES_hole_override", 0, "µm")).With(CalcInputValue.Quantity("EI_hole_override", -9, "µm")));
         Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
         Assert.Equal("interference", Kind(r));
         Assert.True(r.OutputSi("c_max") < 0);
@@ -69,12 +69,12 @@ public sealed class Iso286FitTests
         // mech.iso286-fit-02: ISO 286-1 sets ES = 0 for N above IT8 (sizes over 3 mm); the sheet used ES = -5 D^0.34: 25 mm N9 read ES -14.571, EI -66.866 um, against 0 and -IT9.
         // python3: D = sqrt(18 x 30) = 23.2379 mm, i = 1.307375 um, IT9 = 40 i = 52.2950 um.
         var n9 = Fit286(25, "N", 9, "h", 9);
-        Assert.Equal(0.0, n9.OutputSi("ES") * 1e6, 9);
-        Assert.Equal(-52.2950, n9.OutputSi("EI") * 1e6, 3);
+        Assert.Equal(0.0, n9.OutputSi("ES_hole") * 1e6, 9);
+        Assert.Equal(-52.2950, n9.OutputSi("EI_hole") * 1e6, 3);
 
         // N up to IT8 keeps its formula (N8 at 25 mm: -5 D^0.34 + (IT8 - IT7) = -2.804 um, the tabulated -3), and the rule holds at the top of the range.
-        Assert.Equal(-2.8042, Fit286(25, "N", 8, "h", 8).OutputSi("ES") * 1e6, 3);
-        Assert.Equal(0.0, Fit286(500, "N", 10, "h", 9).OutputSi("ES") * 1e6, 9);
+        Assert.Equal(-2.8042, Fit286(25, "N", 8, "h", 8).OutputSi("ES_hole") * 1e6, 3);
+        Assert.Equal(0.0, Fit286(500, "N", 10, "h", 9).OutputSi("ES_hole") * 1e6, 9);
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public sealed class Iso286FitTests
     {
         // mech.iso286-fit-05: p6 at 450 mm gave ei 62.216 um against the tabulated 68 (the standard's tables add their own increments and sub-steps for p to zc), with no notice.
         var p6 = Fit286(450, "H", 7, "p", 6);
-        Assert.Equal(62.2156, p6.OutputSi("ei") * 1e6, 3);
+        Assert.Equal(62.2156, p6.OutputSi("ei_shaft") * 1e6, 3);
         var warning = Assert.Single(p6.Warnings, w => w.RuleId == "interference-letter");
         Assert.Contains("62.2", warning.Message, StringComparison.Ordinal);
         Assert.Contains("68", warning.Message, StringComparison.Ordinal);
@@ -94,10 +94,10 @@ public sealed class Iso286FitTests
         Assert.DoesNotContain(Fit286(25, "H", 7, "g", 6).Warnings, w => w.RuleId == "interference-letter");
         Assert.DoesNotContain(Fit286(25, "K", 7, "n", 6).Warnings, w => w.RuleId == "interference-letter");
         var overridden = CalcRunner.Run(Fit, CalcTemplateHasher.DefaultInputs(Fit.Template).With(CalcInputValue.Quantity("D", 450, "mm")).With(CalcInputValue.Choice("shaft_letter", "p")).With(CalcInputValue.Of("shaft_grade", 6))
-            .With(CalcInputValue.Quantity("es_override", 131, "µm")).With(CalcInputValue.Quantity("ei_override", 68, "µm")));
+            .With(CalcInputValue.Quantity("es_shaft_override", 131, "µm")).With(CalcInputValue.Quantity("ei_shaft_override", 68, "µm")));
         Assert.DoesNotContain(overridden.Warnings, w => w.RuleId == "interference-letter");
 
         // Above 500 mm the published formula for p is 0.072 D + 37.8 um (the 500 to 630 mm step: 78.2 um, the tabulated 78), not IT7.
-        Assert.Equal(78.2099, Fit286(565, "H", 7, "p", 6).OutputSi("ei") * 1e6, 3);
+        Assert.Equal(78.2099, Fit286(565, "H", 7, "p", 6).OutputSi("ei_shaft") * 1e6, 3);
     }
 }

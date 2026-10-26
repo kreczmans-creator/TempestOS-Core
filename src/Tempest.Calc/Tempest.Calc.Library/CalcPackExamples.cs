@@ -68,7 +68,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> DriveM2 { get; } =
     [
-        C("hole_kind", "rolling-bearing bore (deviations from the bearing record)"), Q("ES_override", 0, "µm"), Q("EI_override", -9, "µm"), C("shaft_letter", "k"), N("shaft_grade", 6),
+        C("hole_kind", "rolling-bearing bore (deviations from the bearing record)"), Q("ES_hole_override", 0, "µm"), Q("EI_hole_override", -9, "µm"), C("shaft_letter", "k"), N("shaft_grade", 6),
     ];
 
     /// <summary>Four M8 8.8 bolts (stress area 36.6 mm², shear resistance 14.0 kN, tension 21.0 kN) on an 80 mm circle carry the torque by shear.</summary>

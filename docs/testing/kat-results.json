@@ -284,7 +284,7 @@
     },
     {
       "id": "mech.iso286-fit",
-      "version": "1.5.1",
+      "version": "1.6.0",
       "kats": 3,
       "katsPassed": 3,
       "failedKats": [],
