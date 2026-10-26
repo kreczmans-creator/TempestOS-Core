@@ -122,6 +122,19 @@ public sealed class ConnectionTests
     }
 
     [Fact]
+    public void An_Eccentric_Block_Tearing_Group_Uses_The_Halved_Tension_Term()
+    {
+        // struct.connection-ec3-02: A_nt 300, A_nv 900, f_u 410, f_y 275: V_eff,1 = 98.4 + 142.89 = 241.29 kN (concentric); V_eff,2 = 0.5 * 98.4 + 142.89 = 192.09 kN (eccentric).
+        // python3: 410*300/1.25/1e3 = 98.4; 275*900/sqrt(3)/1e3 = 142.894.
+        var set = Defaults().With(CalcInputValue.Quantity("V_Ed", 100, "kN")).With(CalcInputValue.Quantity("A_nt", 300, "mm^2")).With(CalcInputValue.Quantity("A_nv", 900, "mm^2"));
+        Assert.Equal(241.2942, CalcRunner.Run(Ec3, set).OutputSi("V_eff_Rd") / 1e3, 3);
+
+        var eccentric = CalcRunner.Run(Ec3, set.With(CalcInputValue.Choice("block_load", ConnectionCalculator.BlockEccentric)));
+        Assert.Equal(192.0942, eccentric.OutputSi("V_eff_Rd") / 1e3, 3);
+        Assert.Equal(100 / 192.0942, eccentric.OutputSi("u_block"), 4);
+    }
+
+    [Fact]
     public void Bolt_Values_That_Feed_The_Base_Plate_Are_Ports()
     {
         var r = CalcRunner.Run(Ec3, Defaults());

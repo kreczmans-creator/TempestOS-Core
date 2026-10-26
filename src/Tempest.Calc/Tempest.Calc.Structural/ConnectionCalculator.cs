@@ -15,6 +15,8 @@ public sealed class ConnectionCalculator : ICalcCalculator
     public const string HoleNormal = "Normal clearance";
     public const string HoleOversize = "Oversize";
     public const string HoleSlot = "Slot across the load";
+    public const string BlockConcentric = "Concentric loading (V_eff,1)";
+    public const string BlockEccentric = "Eccentric loading (V_eff,2)";
 
     /// <summary>Metric coarse sizes M12–M36: (d, pitch, nut across-flats) in mm, ISO 261 / ISO 4032.</summary>
     public static IReadOnlyList<(string Name, double D, double Pitch, double AcrossFlats)> Sizes { get; } =
@@ -29,13 +31,13 @@ public sealed class ConnectionCalculator : ICalcCalculator
     public static IReadOnlyList<(string Grade, double BetaW)> Steels { get; } = [("S235", 0.8), ("S275", 0.85), ("S355", 0.9), ("S420", 1.0), ("S460", 1.0)];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
+        Id, "1.4.0", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
         "The design resistances of one bolt in a plate (shear, bearing, tension, punching, combined shear and tension), an optional block-tearing check of the bolt group, the spacing limits, and a fillet weld by the simplified and the directional method, each against its design force.",
         "Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P\n" +
         "Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane)\n" +
         "Bolt bearing resistance: F_b,Rd = k_h·min(k₁·α_b·f_u·d·t/γ_M2, [single lap, one bolt row: 1.5·f_u·d·t/γ_M2]); α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5); k_h = 1 (normal holes), 0.8 (oversize), 0.6 (slot across the load)\n" +
         "Bolt tension resistance: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1\n" +
-        "Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0)\n" +
+        "Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for a group loaded concentrically; V_eff,2,Rd = 0.5·f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for an eccentrically loaded group\n" +
         "Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2",
         [
             new CalcInputSpec("grade", "Bolt property class", CalcInputKind.Choice, Choices: Grades, DefaultChoice: "8.8", Group: "Bolt"),
@@ -62,6 +64,7 @@ public sealed class ConnectionCalculator : ICalcCalculator
             new CalcInputSpec("gamma_M0", "γ_M0", CalcInputKind.Number, Default: 1.0, Min: 1, Max: 1.2, HardMin: 1, HardMax: 1.2, Group: "Factors"),
             new CalcInputSpec("F_v_Ed", "Shear per bolt", CalcInputKind.Quantity, "kN", Default: 50, Min: 0, Max: 2000, HardMin: 0, HardMax: 2000, Group: "Forces"),
             new CalcInputSpec("F_t_Ed", "Tension per bolt", CalcInputKind.Quantity, "kN", Default: 0, Min: 0, Max: 2000, HardMin: 0, HardMax: 2000, Group: "Forces"),
+            new CalcInputSpec("block_load", "Block tearing loading: concentric (V_eff,1) or eccentric (V_eff,2, the tension term halved)", CalcInputKind.Choice, Choices: [BlockConcentric, BlockEccentric], DefaultChoice: BlockConcentric, Group: "Block tearing"),
             new CalcInputSpec("V_Ed", "Group force for block tearing", CalcInputKind.Quantity, "kN", Min: 0, Max: 1e4, HardMin: 0, HardMax: 1e4, IsOptional: true, Group: "Block tearing"),
             new CalcInputSpec("A_nt", "Net area in tension", CalcInputKind.Quantity, "mm^2", Min: 1, Max: 1e5, HardMin: 1, HardMax: 1e5, IsOptional: true, Group: "Block tearing"),
             new CalcInputSpec("A_nv", "Net area in shear", CalcInputKind.Quantity, "mm^2", Min: 1, Max: 1e5, HardMin: 1, HardMax: 1e5, IsOptional: true, Group: "Block tearing"),
@@ -280,7 +283,8 @@ public sealed class ConnectionCalculator : ICalcCalculator
                 c.Input("V_Ed");
                 c.Input("A_nt");
                 c.Input("A_nv");
-                c.Assign("V_eff_Rd", "f_u * A_nt / gamma_M2 + f_y * A_nv / (sqrt(3) * gamma_M0)", "kN", "Block tearing resistance (concentric)", "EN 1993-1-8 cl. 3.10.2");
+                var eccentric = c.InputText("block_load") == BlockEccentric;
+                c.Assign("V_eff_Rd", eccentric ? "0.5 * f_u * A_nt / gamma_M2 + f_y * A_nv / (sqrt(3) * gamma_M0)" : "f_u * A_nt / gamma_M2 + f_y * A_nv / (sqrt(3) * gamma_M0)", "kN", eccentric ? "Block tearing resistance V_eff,2 (eccentric loading)" : "Block tearing resistance V_eff,1 (concentric loading)", "EN 1993-1-8 cl. 3.10.2");
                 c.Assign("u_block", "V_Ed / V_eff_Rd", null, "Block tearing utilisation");
                 outputs.AddRange([("V_eff_Rd", "Block tearing resistance"), ("u_block", "Block tearing utilisation")]);
             }
