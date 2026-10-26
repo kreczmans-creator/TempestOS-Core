@@ -78,6 +78,9 @@ internal sealed class GuidedKit : IAsyncDisposable
 
     public GuidedTestViewModel Model { get; }
 
+    /// <summary>The steps of the embedded script the kit's runs use; a tally's "not run" is this less the results recorded (the script grows with the runbook).</summary>
+    public static int ScriptSteps => GuidedTestScript.Current.Steps.Count;
+
     public static GuidedKit Create()
     {
         var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();

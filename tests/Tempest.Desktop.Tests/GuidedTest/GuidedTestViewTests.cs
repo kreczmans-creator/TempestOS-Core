@@ -75,7 +75,7 @@ public sealed class GuidedTestViewTests
 
         await Click(view, GuidedTestView.StartCaption);
         Assert.Contains("Steven Kreczman", Named<TextBlock>(view, "Test run").Text, StringComparison.Ordinal);
-        Assert.Equal("0 pass, 0 fail, 0 blocked, 0 skipped, 109 not run", Named<TextBlock>(view, "Run tally").Text);
+        Assert.Equal($"0 pass, 0 fail, 0 blocked, 0 skipped, {GuidedKit.ScriptSteps} not run", Named<TextBlock>(view, "Run tally").Text);
 
         var steps = Named<ListBox>(view, "Test steps");
         kit.Model.Select(BearingExample);
@@ -94,7 +94,7 @@ public sealed class GuidedTestViewTests
         Assert.Equal("Shows 3.94 kN.", kit.Model.DraftNote);
 
         await Click(view, GuidedTestView.RecordCaption);
-        Assert.Equal("0 pass, 1 fail, 0 blocked, 0 skipped, 108 not run", Named<TextBlock>(view, "Run tally").Text);
+        Assert.Equal($"0 pass, 1 fail, 0 blocked, 0 skipped, {GuidedKit.ScriptSteps - 1} not run", Named<TextBlock>(view, "Run tally").Text);
         Assert.StartsWith("Recorded: Fail", Named<TextBlock>(view, "Recorded result").Text, StringComparison.Ordinal);
         Assert.Contains("Recorded Fail", Named<TextBlock>(view, "Guided test status").Text, StringComparison.Ordinal);
 
@@ -123,11 +123,11 @@ public sealed class GuidedTestViewTests
         Assert.True(Named<RadioButton>(view, "Pass").IsChecked);
         Assert.Contains("P = 3.93 kN", Named<TextBox>(view, "Values shown").Text, StringComparison.Ordinal);
         Assert.Null(kit.Model.Recorded);
-        Assert.Equal("0 pass, 0 fail, 0 blocked, 0 skipped, 109 not run", Named<TextBlock>(view, "Run tally").Text);
+        Assert.Equal($"0 pass, 0 fail, 0 blocked, 0 skipped, {GuidedKit.ScriptSteps} not run", Named<TextBlock>(view, "Run tally").Text);
         Assert.Contains(Named<StackPanel>(view, "Expected outputs").GetLogicalDescendants().OfType<TextBlock>(), t => t.Text == "agrees");
 
         await Click(view, GuidedTestView.RecordCaption);
-        Assert.Equal("1 pass, 0 fail, 0 blocked, 0 skipped, 108 not run", Named<TextBlock>(view, "Run tally").Text);
+        Assert.Equal($"1 pass, 0 fail, 0 blocked, 0 skipped, {GuidedKit.ScriptSteps - 1} not run", Named<TextBlock>(view, "Run tally").Text);
     }
 
     [AvaloniaFact]

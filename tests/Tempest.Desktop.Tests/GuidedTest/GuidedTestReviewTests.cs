@@ -166,7 +166,7 @@ public sealed class GuidedTestReviewTests
         Assert.Null(model.Recorded);
         Assert.Null(model.DraftOutcome);
         Assert.Empty(model.DraftValues);
-        Assert.Equal("0 pass, 0 fail, 0 blocked, 0 skipped, 109 not run", model.TallyText);
+        Assert.Equal($"0 pass, 0 fail, 0 blocked, 0 skipped, {GuidedKit.ScriptSteps} not run", model.TallyText);
 
         // Pressing Record again records nothing either: the stale tick was taken back, not just refused once.
         await model.RecordAsync();

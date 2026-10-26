@@ -26,7 +26,7 @@ public sealed class GuidedTestViewModelTests
         Assert.Contains("Steven Kreczman", model.RunText, StringComparison.Ordinal);
         Assert.Contains("0.26.0 (1a2b3c4)", model.RunText, StringComparison.Ordinal);
         Assert.Contains("not finished", model.RunText, StringComparison.Ordinal);
-        Assert.Equal("0 pass, 0 fail, 0 blocked, 0 skipped, 109 not run", model.TallyText);
+        Assert.Equal($"0 pass, 0 fail, 0 blocked, 0 skipped, {GuidedKit.ScriptSteps} not run", model.TallyText);
         Assert.True(model.CanRecord);
         Assert.Equal(GuidedTestScript.Current.Steps[0].Id, model.Current!.Id);
         Assert.Equal(0, model.CurrentIndex);
@@ -60,7 +60,7 @@ public sealed class GuidedTestViewModelTests
         await model.RecordAsync();
 
         Assert.Contains("Recorded Fail", model.Status, StringComparison.Ordinal);
-        Assert.Equal("0 pass, 1 fail, 0 blocked, 0 skipped, 108 not run", model.TallyText);
+        Assert.Equal($"0 pass, 1 fail, 0 blocked, 0 skipped, {GuidedKit.ScriptSteps - 1} not run", model.TallyText);
         var first = model.Current!.Id;
 
         model.Next();
@@ -123,12 +123,12 @@ public sealed class GuidedTestViewModelTests
         Assert.Equal(run, restarted.Run!.Id);
         Assert.Null(restarted.Resumable);
         Assert.Equal(GuidedTestScript.Current.Steps[2].Id, restarted.Current!.Id);
-        Assert.Equal("1 pass, 0 fail, 1 blocked, 0 skipped, 107 not run", restarted.TallyText);
+        Assert.Equal($"1 pass, 0 fail, 1 blocked, 0 skipped, {GuidedKit.ScriptSteps - 2} not run", restarted.TallyText);
         Assert.True(restarted.CanRecord);
 
         restarted.SetDraftOutcome(ManualTestOutcome.Pass);
         await restarted.RecordAsync();
-        Assert.Equal("2 pass, 0 fail, 1 blocked, 0 skipped, 106 not run", restarted.TallyText);
+        Assert.Equal($"2 pass, 0 fail, 1 blocked, 0 skipped, {GuidedKit.ScriptSteps - 3} not run", restarted.TallyText);
     }
 
     [Fact]
@@ -409,7 +409,7 @@ public sealed class GuidedTestViewModelTests
 
         // Nothing is recorded until the tester confirms; recording keeps the shown values and the tester's note.
         Assert.Null(model.Recorded);
-        Assert.Equal("0 pass, 0 fail, 0 blocked, 0 skipped, 109 not run", model.TallyText);
+        Assert.Equal($"0 pass, 0 fail, 0 blocked, 0 skipped, {GuidedKit.ScriptSteps} not run", model.TallyText);
         model.SetDraftNote("Agrees with the sheet.");
         await model.RecordAsync();
         Assert.Equal(ManualTestOutcome.Pass, model.Recorded!.Outcome);
