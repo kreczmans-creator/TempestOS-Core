@@ -123,6 +123,22 @@ public sealed class CoolingChainTests
     }
 
     [Fact]
+    public async Task The_Pack_Says_The_Coil_Is_Sensible_Only_And_Its_Pipework_Step_Warns_About_Plant_Loss_And_A_Glycol_Fluid()
+    {
+        // chain.cooling-01, -02, -03, -04: sensible-only duty, no coil or valve loss, glycol reaching B1 as c_p only, a hot ambient blocking E2. The text says so; the steps warn at run time.
+        var text = CalcPackTemplates.Cooling.Description;
+        Assert.Contains("sensible only", text, StringComparison.Ordinal);
+        Assert.Contains("pipe friction only", text, StringComparison.Ordinal);
+        Assert.Contains("custom fluid", text, StringComparison.Ordinal);
+        Assert.Contains("hot ambient", text, StringComparison.Ordinal);
+
+        var host = Host();
+        var made = await InstantiateAsync(host);
+        Assert.Contains(made.Instances["b1"].Warnings, w => w.RuleId == "plant-loss");
+        Assert.DoesNotContain(made.Instances["b1"].Warnings, w => w.RuleId == "fluid-cp");
+    }
+
+    [Fact]
     public async Task A_Glycol_Cold_Side_Changes_The_Pump_Flow_Through_The_Specific_Heat_Link()
     {
         var host = Host();

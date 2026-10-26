@@ -21,7 +21,7 @@ public sealed class BeamFormulasCalculator : ICalcCalculator
     public const string ProppedUdl = "propped cantilever (fixed left, pinned right), UDL";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.1", CalcDiscipline.Structural, "Beam formulas (single span)",
+        Id, "1.1.0", CalcDiscipline.Structural, "Beam formulas (single span)",
         "Closed-form reactions, maximum moment and its position, maximum shear and maximum deflection for the standard single-span beam cases, as a quick check. Left end at x = 0; loads downward; sagging moments positive; deflection downward positive.",
         "Formulas from Roark Table 8.1, in this sheet's own notation, for the chosen support and load case.\nSimply supported beam, point load at a (b = L − a), reaction and largest moment: R_A = Pb/L; M_max = Pab/L.\nSimply supported beam, point load at a, largest deflection when a ≥ b: δ_max = Pb(L² − b²)^(3/2)/(9√3 L EI) at x = √((L² − b²)/3).\nPropped cantilever, uniform load, reaction and moments: R_B = 3wL/8; M_A = −wL²/8; sagging M_max = 9wL²/128 at x = 5L/8.",
         [
@@ -194,7 +194,7 @@ public sealed class BeamFormulasCalculator : ICalcCalculator
                 c.Assign("M_max", "9 * w * L^2 / 128", "kN*m", "Maximum sagging moment");
                 c.Assign("x_M", "5 * L / 8", "m", "Position of the maximum sagging moment");
                 c.Assign("V_max", "5 * w * L / 8", "kN", "Maximum shear");
-                c.Assign("x_delta", "L * (1 + sqrt(33)) / 16", "m", "Position of the maximum deflection");
+                c.Assign("x_delta", "L * (15 - sqrt(33)) / 16", "m", "Position of the maximum deflection, from the fixed end");
                 c.Assign("delta_max", "w * L^4 / (185 * EI)", "mm", "Maximum deflection");
                 break;
 

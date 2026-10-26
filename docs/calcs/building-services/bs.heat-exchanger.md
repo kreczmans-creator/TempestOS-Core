@@ -1,4 +1,4 @@
-# B5 — Heat exchanger, LMTD and ε-NTU (`bs.heat-exchanger@1.2.1`)
+# B5 — Heat exchanger, LMTD and ε-NTU (`bs.heat-exchanger@1.3.0`)
 
 **In plain terms.** A heat exchanger passes heat from a hot stream to a cold one through a wall, and how much it passes depends on the area, how well the wall conducts, and the flow arrangement. The worksheet gives either the duty and outlet temperatures of a given exchanger, or the area needed for a given duty, by the effectiveness-NTU method, and cross-checks the answer with the log-mean temperature difference.
 
@@ -9,6 +9,8 @@
 **Inputs.** `arrangement`, `const_side` (C_r = 0 only), `mode`; `m_h`, `m_c` 0.001–100 kg/s; `cp_h`, `cp_c` (record kind `fluid.properties`, or B2 for air); `T_h_in`, `T_c_in` −40 to 200 °C; `U` 10–10 000 W/m²K; `R_f`; `A` 0.01–1000 m² (rating); `Q_req` kW (sizing, optional in rating); `dT_min`.
 
 **Outputs.** `C_r`, `NTU`, `eps`, `Q`, `T_h_out`, `T_c_out`, `dT_lm`, `F`, `Q_lmtd`, `dT_app`, `UA`, `A_req` (sizing), and from 1.1.0 `dT_c` (cold-side rise, K) and `T_c_m` (mean cold-side temperature, °C). **Ports.** `Q`, `T_h_out`, `T_c_out`, `A_req`, `dT_c`, `T_c_m`, `cp_c` → B1: `Q` is its `Phi_load`, `dT_c` its `dT_load`, `T_c_m` its fluid temperature `T` and `cp_c` its `cp_load` (the cooling chain, `pack.cooling`); `Q_req` takes E2's `P_cool` and `T_h_in` E2's `T_max` (the enclosure air enters the coil at its limit; hot-side c_p 1006 J/(kg·K) is the conventional dry-air value E2 uses). **Checks.** approach against the minimum; duty against required (rating).
+
+**Dew point (1.3.0).** The duty is sensible only. The optional input `T_dew` (the dew point of the hot-side air, from the site's humidity) makes the sheet warn (rule `condensation`) when the cold-side inlet is below it: the coil surface lies between the water and the air temperature and can condense water, which this duty does not include and which needs a drain (35 °C and 60 % RH give a dew point of 26.07 °C, and the example coil's water enters at 22 °C). Blank: not checked.
 
 **Limitations.** Single phase; constant properties; no pressure drop.
 

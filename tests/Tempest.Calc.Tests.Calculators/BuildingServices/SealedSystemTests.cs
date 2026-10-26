@@ -22,6 +22,38 @@ public sealed class SealedSystemTests
         }, iter: 60);
     }
 
+    private static CalcInputValue Room(double? tRoom) => CalcInputValue.Table("rooms", [CalcRow.Of(
+        [("name", new CalcCell(Text: "W4")), ("Phi", new CalcCell(350.4, "W")), ("Phi50", new CalcCell(400, "W")), ("V_em", new CalcCell(2, "L")), .. tRoom is { } t ? new[] { ("t_i", new CalcCell(t, "degC")) } : []])]);
+
+    [Fact]
+    public void A_Room_Temperature_On_The_Room_Row_Sets_That_Emitters_Temperature_Difference()
+    {
+        // chain.wet-heating-05 (W4): 350.4 W room, 400 W emitter at DN 50 K, 75/65 degC. The sheet's t_i 20 gives dT 50 K and u 0.876; the room's own 21 degC (B4's theta_int) gives dT 49 K and
+        // u = 350.4/(400 x (49/50)^1.3) = 0.899 (+2.7 %, python3). A blank room cell takes the sheet's t_i.
+        var sheet = Defaults().With(CalcInputValue.Quantity("t_f", 75, "degC")).With(CalcInputValue.Quantity("t_r", 65, "degC")).With(CalcInputValue.Quantity("t_i", 20, "degC")).With(CalcInputValue.Of("n", 1.3));
+        var blank = CalcRunner.Run(Sealed, sheet.With(Room(null)));
+        Assert.False(blank.IsBlocked, string.Join("; ", blank.Blocks.Select(b => b.Message)));
+        Assert.Equal(0.876, blank.OutputSi("u_emit"), 3);
+
+        var warm = CalcRunner.Run(Sealed, sheet.With(Room(21)));
+        Assert.Equal(350.4 / (400 * Math.Pow(49.0 / 50, 1.3)), warm.OutputSi("u_emit"), 6);
+        Assert.Equal(0.899, warm.OutputSi("u_emit"), 3);
+
+        // A room at or above the return temperature cannot be heated by it.
+        Assert.True(CalcRunner.Run(Sealed, sheet.With(Room(66))).IsBlocked);
+    }
+
+    [Fact]
+    public void The_Default_Pipework_Volume_Warns_That_It_Is_Not_The_Systems_Water_Content()
+    {
+        // chain.wet-heating-04: V_pipe is typed, not linked to B1's pipe segments; at the 20 L default a DN28 x 40 m system (24.63 L, python3: pi/4 x 0.028^2 x 40 = 24.630 L) gets V_e 2.496 L instead of 2.800 L.
+        Assert.Contains(CalcRunner.Run(Sealed, Defaults().With(CalcInputValue.Quantity("V_pipe", 20, "L"))).Warnings, w => w.RuleId == "v-pipe-default");
+        Assert.DoesNotContain(CalcRunner.Run(Sealed, Defaults().With(CalcInputValue.Quantity("V_pipe", 24.63, "L"))).Warnings, w => w.RuleId == "v-pipe-default");
+        var small = CalcRunner.Run(Sealed, Defaults().With(CalcInputValue.Quantity("V_pipe", 20, "L"))).OutputSi("V_e");
+        var real = CalcRunner.Run(Sealed, Defaults().With(CalcInputValue.Quantity("V_pipe", 24.63, "L"))).OutputSi("V_e");
+        Assert.True(real > small);
+    }
+
     [Fact]
     public void Lower_Flow_Temperature_Needs_Bigger_Emitters()
     {

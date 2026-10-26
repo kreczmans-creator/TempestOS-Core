@@ -8,7 +8,7 @@ Issued: 2026-10-26    Issue: STR-SUP-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The design resistances of one bolt in a plate (shear, bearing, tension, punching, combined shear and tension), an optional block-tearing check of the bolt group, the spacing limits, and a fillet weld by the simplified and the directional method, each against its design force.
-Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane) Bolt bearing resistance: F_b,Rd = k_h·min(k₁·α_b·f_u·d·t/γ_M2, [single lap, one bolt row: 1.5·f_u·d·t/γ_M2]); α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5); k_h = 1 (normal holes), 0.8 (oversize), 0.6 (slot across the load) Bolt tension resistance: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1 Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2
+Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane) Bolt bearing resistance: F_b,Rd = k_h·min(k₁·α_b·f_u·d·t/γ_M2, [single lap, one bolt row: 1.5·f_u·d·t/γ_M2]); α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5); k_h = 1 (normal holes), 0.8 (oversize), 0.6 (slot across the load) Bolt tension resistance: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1 Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for a group loaded concentrically; V_eff,2,Rd = 0.5·f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for an eccentrically loaded group Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2
   Ref: EN 1993-1-8:2005 cl. 3.5, Table 3.3 — Positioning of holes for bolts
   Ref: EN 1993-1-8:2005 cl. 3.6.1, Table 3.4 — Design resistance of individual fasteners
   Ref: EN 1993-1-8:2005 cl. 3.10.2 — Block tearing
@@ -25,6 +25,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   threads | Threads in the shear plane | yes |  | assumption: Sheet default value; no project figure given. | any
   steel | Plate steel grade (β_w) | S275 |  | drawing: DRG-STR-312 rev B | any
   t | Plate thickness | 20 | mm | drawing: DRG-STR-312 rev B | 3 … 50 mm
+  t_2 | Thickness of the other ply the bolt bears on (the column flange behind an end plate; blank = one ply only): bearing is taken on the thinner ply, with this sheet's f_u, edge distances and spacings | 11 | mm | drawing: DRG-STR-312 rev B | 3 … 50 mm
   f_y | Plate yield strength | 275 | MPa | assumption: Sheet default value; no project figure given. | 235 … 460 MPa
   f_u | Plate ultimate strength | 410 | MPa | assumption: Sheet default value; no project figure given. | 340 … 720 MPa
   e_1 | End distance (load direction) | 40 | mm | drawing: DRG-STR-312 rev B | 10 … 500 mm
@@ -39,6 +40,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   gamma_M0 | γ_M0 | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.2
   F_v_Ed | Shear per bolt | 4.7 | kN | link: Arm joint bolt group rev A · v_max | 0 … 2000 kN
   F_t_Ed | Tension per bolt | 47 | kN | link: Arm joint bolt group rev A · t_max | 0 … 2000 kN
+  block_load | Block tearing loading: concentric (V_eff,1) or eccentric (V_eff,2, the tension term halved) | Concentric loading (V_eff,1) |  | assumption: Sheet default value; no project figure given. | any
   V_Ed | Group force for block tearing | 28.2 | kN | link: Support frame rev A · V_e2 | 0 … 10000 kN
   A_nt | Net area in tension | 1200 | mm^2 | drawing: DRG-STR-312 rev B | 1 … 100000 mm^2
   A_nv | Net area in shear | 2400 | mm^2 | drawing: DRG-STR-312 rev B | 1 … 100000 mm^2
@@ -61,73 +63,75 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   A15. k_p2 (Minimum p₂/d₀) is taken as 2.4. (Sheet default value; no project figure given.)
   A16. gamma_M2 (γ_M2) is taken as 1.25. (Sheet default value; no project figure given.)
   A17. gamma_M0 (γ_M0) is taken as 1. (Sheet default value; no project figure given.)
+  A18. block_load (Block tearing loading: concentric (V_eff,1) or eccentric (V_eff,2, the tension term halved)) is taken as Concentric loading (V_eff,1). (Sheet default value; no project figure given.)
+  A19. Bearing is taken on the thinner ply: 11 mm (t = 20 mm, t_2 = 11 mm), with this sheet's f_u, edge distances and spacings for both plies; where the other ply has different distances or a lower strength, run the sheet for it as well. (EN 1993-1-8 cl. 3.6.1, Table 3.4.)
 
 4. WORKING
-  [20] f_ub = class first figure × 100    « EN 1993-1-8 Table 3.1
+  [21] f_ub = class first figure × 100    « EN 1993-1-8 Table 3.1
       = class 8.8
       = 800 MPa
         Bolt ultimate strength
-  [21] f_yb = f_ub × second figure / 10    « EN 1993-1-8 Table 3.1
+  [22] f_yb = f_ub × second figure / 10    « EN 1993-1-8 Table 3.1
       = class 8.8
       = 640 MPa
         Bolt yield strength
-  [22] A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P    « ISO 898-1 cl. 9.1
+  [23] A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P    « ISO 898-1 cl. 9.1
       = d = 20, P = 2.5 mm
       = 244.79 mm²
         Tensile stress area
-  [23] d_0 = d + 2 (≤ M24), d + 3 (≥ M27) unless entered
+  [24] d_0 = d + 2 (≤ M24), d + 3 (≥ M27) unless entered
       = 22 mm
       = 22 mm
         Hole diameter
-  [24] alpha_v = α_v (threads in the shear plane)    « EN 1993-1-8 Table 3.4
+  [25] alpha_v = α_v (threads in the shear plane)    « EN 1993-1-8 Table 3.4
       = class 8.8
       = 0.6
         Shear factor
-  [25] F_v_Rd = α_v·f_ub·A·n_s/γ_M2    « EN 1993-1-8 Table 3.4
+  [26] F_v_Rd = α_v·f_ub·A·n_s/γ_M2    « EN 1993-1-8 Table 3.4
       = 0.6 × 800 × 244.79 × 1 / 1.25
       = 94.001 kN
         Shear resistance per bolt
-  [26] alpha_b = min(α_d, f_ub/f_u, 1), α_d = min(e₁/3d₀, p₁/3d₀ − 1/4)    « EN 1993-1-8 Table 3.4
+  [27] alpha_b = min(α_d, f_ub/f_u, 1), α_d = min(e₁/3d₀, p₁/3d₀ − 1/4)    « EN 1993-1-8 Table 3.4
       = min(0.60606, 2.0227, 1.9512, 1)
       = 0.60606
         Bearing factor α_b
-  [27] k_1 = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5)    « EN 1993-1-8 Table 3.4
+  [28] k_1 = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5)    « EN 1993-1-8 Table 3.4
       = e₂ = 40, p₂ = 120, d₀ = 22
       = 2.5
         Bearing factor k₁
-  [30] F_b_Rd = k₁·α_b·f_u·d·t/γ_M2    « EN 1993-1-8 cl. 3.6.1, Table 3.4
-      = 2.5 × 0.60606 × 410 × 20 × 20 / 1.25
-      = 198.79 kN
+  [31] F_b_Rd = k₁·α_b·f_u·d·t/γ_M2    « EN 1993-1-8 cl. 3.6.1, Table 3.4
+      = 2.5 × 0.60606 × 410 × 20 × 11 / 1.25
+      = 109.33 kN
         Bearing resistance per bolt
-  [31] F_t_Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9    « EN 1993-1-8 Table 3.4
+  [32] F_t_Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9    « EN 1993-1-8 Table 3.4
       = 0.9 × 800 × 244.79 / 1.25
       = 141 kN
         Tension resistance per bolt
-  [32] B_p_Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = s (e not entered)    « EN 1993-1-8 Table 3.4
+  [33] B_p_Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = s (e not entered)    « EN 1993-1-8 Table 3.4
       = 0.6π × 30 × 20 × 410 / 1.25
       = 370.96 kN
         Punching shear resistance
-  [33] u_v = F_v_Ed / F_v_Rd
+  [34] u_v = F_v_Ed / F_v_Rd
       = 4.7 kN / 94.001 kN
       = 0.049999
         Shear utilisation
-  [34] u_b = F_v_Ed / F_b_Rd
-      = 4.7 kN / 198.79 kN
-      = 0.023643
+  [35] u_b = F_v_Ed / F_b_Rd
+      = 4.7 kN / 109.33 kN
+      = 0.042988
         Bearing utilisation
-  [35] u_t = F_t_Ed / min(F_t_Rd, B_p_Rd)
+  [36] u_t = F_t_Ed / min(F_t_Rd, B_p_Rd)
       = 47 kN / min(141 kN, 370.96 kN)
       = 0.33333
         Tension utilisation (tension or punching)
-  [36] u_vt = F_v_Ed / F_v_Rd + F_t_Ed / (1.4 * F_t_Rd)    « EN 1993-1-8 Table 3.4
+  [37] u_vt = F_v_Ed / F_v_Rd + F_t_Ed / (1.4 * F_t_Rd)    « EN 1993-1-8 Table 3.4
       = 4.7 kN / 94.001 kN + 47 kN / (1.4 × 141 kN)
       = 0.28809
         Combined shear and tension
-  [40] V_eff_Rd = f_u * A_nt / gamma_M2 + f_y * A_nv / (sqrt(3) * gamma_M0)    « EN 1993-1-8 cl. 3.10.2
+  [42] V_eff_Rd = f_u * A_nt / gamma_M2 + f_y * A_nv / (sqrt(3) * gamma_M0)    « EN 1993-1-8 cl. 3.10.2
       = 410 MPa × 1200 mm² / 1.25 + 275 MPa × 2400 mm² / (sqrt(3) × 1)
       = 774.65 kN
-        Block tearing resistance (concentric)
-  [41] u_block = V_Ed / V_eff_Rd
+        Block tearing resistance V_eff,1 (concentric loading)
+  [43] u_block = V_Ed / V_eff_Rd
       = 28.2 kN / 774.65 kN
       = 0.036403
         Block tearing utilisation
@@ -140,11 +144,11 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   F_v_Rd = 94.001 kN    Shear resistance
   alpha_b = 0.60606    Bearing factor
   k_1 = 2.5    Bearing factor k₁
-  F_b_Rd = 198.79 kN    Bearing resistance
+  F_b_Rd = 109.33 kN    Bearing resistance
   F_t_Rd = 141 kN    Tension resistance
   B_p_Rd = 370.96 kN    Punching resistance
   u_v = 0.049999    Shear utilisation
-  u_b = 0.023643    Bearing utilisation
+  u_b = 0.042988    Bearing utilisation
   u_t = 0.33333    Tension utilisation
   u_vt = 0.28809    Combined utilisation
   V_eff_Rd = 774.65 kN    Block tearing resistance
@@ -155,18 +159,18 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   PASS  Bolt tension and punching: u_t = 0.33333 vs u_t ≤ 1  utilisation 0.333  « EN 1993-1-8 Table 3.4
   PASS  Combined shear and tension: u_vt = 0.28809 vs u_vt ≤ 1  utilisation 0.288  « EN 1993-1-8 Table 3.4
   PASS  Bolt shear: u_v = 0.049999 vs u_v ≤ 1  utilisation 0.05  « EN 1993-1-8 Table 3.4
+  PASS  Bolt bearing: u_b = 0.042988 vs u_b ≤ 1  utilisation 0.043  « EN 1993-1-8 Table 3.4
   PASS  Block tearing: u_block = 0.036403 vs u_block ≤ 1  utilisation 0.0364  « EN 1993-1-8 cl. 3.10.2
-  PASS  Bolt bearing: u_b = 0.023643 vs u_b ≤ 1  utilisation 0.0236  « EN 1993-1-8 Table 3.4
   PASS  Spacing and edge distances (Table 3.3 minima): e₁ 40, e₂ 40, p₁ 150, p₂ 120 mm vs ≥ 26.4, 26.4, 48.4, 52.8 mm  utilisation 0  « EN 1993-1-8 Table 3.3
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: gamma_M2, gamma_M0, k_e1, k_e2, k_p1, k_p2 (EN 1993-1-8 National Annex factors); f_y, f_u (Plate strengths). Enter each as one so its source, edition and licence travel with it.
-  WARNING single_lap: single_lap: k₁·α_b = 1.5152 exceeds 1.5, so for a single-lap joint with only one bolt row the bearing resistance is limited to 196.8 kN (1.5·f_u·d·t/γ_M2, cl. 3.6.1) against the 198.79 kN shown. Switch 'single lap, one bolt row' on if that is the joint.
+  WARNING single_lap: single_lap: k₁·α_b = 1.5152 exceeds 1.5, so for a single-lap joint with only one bolt row the bearing resistance is limited to 108.24 kN (1.5·f_u·d·t/γ_M2, cl. 3.6.1) against the 109.33 kN shown. Switch 'single lap, one bolt row' on if that is the joint.
 
 8. VERIFICATION
-  Template: struct.connection-ec3@1.3.0
-  Content hash: 98d5d1a33491feda
+  Template: struct.connection-ec3@1.6.0
+  Content hash: 19e0a5764920a66d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 08:39 UTC
+  Test run: 2026-10-26 11:01 UTC
   Application: TempestOS test

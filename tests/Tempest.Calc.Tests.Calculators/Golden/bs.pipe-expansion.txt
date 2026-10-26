@@ -34,7 +34,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   A6. anchor_moment is the largest root moment of the legs and runs in the guided-cantilever simplification (M = F·L/2 with each end fixed against rotation). It is not the moment on a frame anchor, which depends on the whole frame (the stiffness of the other legs, the elbow rotations, the anchor's own fixity); a formal analysis is needed before an anchor is sized for moment. (Stated limit.)
   A7. The material properties are single values: α the mean coefficient between the install and operating temperatures; E the modulus at the installation (reference) temperature, used for the stress check, as the piping codes do (ASME B31.3 para. 319.3.2 and 319.5, numbers to be checked against the owner's copy); E_hot, when given, is used only for the reactions on the anchors. Take them from a W3 material applied at the right temperature. (Material library; code convention to be checked.)
   A8. Sa and K1 are the owner's records from the owner's own copy of the piping code (or the design basis), with their provenance; no allowable stress, K1 or code constant ships. The sheet applies the relation to the numbers entered and does not know which code, material or load case they belong to. (No table from a standard is shipped.)
-  A9. No friction, weight, spring-hanger or cold-spring effect is included in the leg force. The axial bellows anchor force is the pressure thrust P·A_eff plus the spring force k·ΔL at the governing pressure entered (the design or the test pressure, whichever governs; a bellows' compression and extension ratings can differ): guide friction and any other bellows load come from the manufacturer's data. (Stated limit.)
+  A9. No friction, weight, spring-hanger or cold-spring effect is included in the leg force; the anchor force adds the friction of the sliding supports, μ·w·L, only when μ and the weight per metre are entered (a warning says so when they are not). The axial bellows anchor force is the pressure thrust P·A_eff plus the spring force k·ΔL at the governing pressure entered (the design or the test pressure, whichever governs; a bellows' compression and extension ratings can differ): guide friction and any other bellows load come from the manufacturer's data. (Stated limit.)
   A10. Layout: the offset leg of 6 m takes the whole movement of 42 mm as a guided cantilever fixed against rotation at both ends, and the run of 50 m bends for the leg's growth of 5.04 mm. Screening only — not a piping stress analysis. (Guided-cantilever model.)
 
 4. WORKING
@@ -82,103 +82,107 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
       = 210 GPa × 12 um/(m·K) × abs(70 K) × 861.55 mm²
       = 151.98 kN
         Force on the anchors of the fully restrained pipe
-  [23] u_res = sigma_res / Sa
+  [21] F_friction = support friction not entered
+      = μ and w_pipe blank
+      = 0 N
+        Friction of the sliding supports (not entered: none in the anchor force)
+  [24] u_res = sigma_res / Sa
       = 176.4 MPa / 100 MPa
       = 1.764
         Fully restrained stress as a fraction of Sa (above 1: the movement has to be absorbed)
-  [24] Delta = dL
+  [25] Delta = dL
       = 42 mm
       = 42 mm
         Movement the offset leg absorbs (all of it)
-  [25] L_req = sqrt(3 * E * OD * Delta / Sa)
+  [26] L_req = sqrt(3 * E * OD * Delta / Sa)
       = sqrt(3 × 210 GPa × 88.9 mm × 42 mm / 100 MPa)
       = 4.85 m
         Leg length at which the guided-cantilever bending stress reaches Sa
-  [26] u_leg = L_req / H
+  [27] u_leg = L_req / H
       = 4.85 m / 6 m
       = 0.80834
         Required leg over available leg
-  [27] F_leg = 12 * E_r * I_x * Delta / H^3
+  [28] F_leg = 12 * E_r * I_x * Delta / H^3
       = 12 × 210 GPa × 79.206 cm⁴ × 42 mm / (6 m)^3
       = 388.11 N
         Force of the available leg on its anchors or guides
-  [28] M_leg = 6 * E_r * I_x * Delta / H^2
+  [29] M_leg = 6 * E_r * I_x * Delta / H^2
       = 6 × 210 GPa × 79.206 cm⁴ × 42 mm / (6 m)^2
       = 1164.3 N·m
         Moment at the root of the available leg
-  [29] sigma_leg = 3 * E * OD * Delta / H^2
+  [30] sigma_leg = 3 * E * OD * Delta / H^2
       = 3 × 210 GPa × 88.9 mm × 42 mm / (6 m)^2
       = 65.342 MPa
         Bending stress at the root of the available leg (E at the installation temperature)
-  [30] u_sigma = sigma_leg / Sa
+  [31] u_sigma = sigma_leg / Sa
       = 65.342 MPa / 100 MPa
       = 0.65342
         Bending stress over Sa (= u_leg²)
-  [31] Delta_run = alpha * abs(dT) * H
+  [32] Delta_run = alpha * abs(dT) * H
       = 12 um/(m·K) × abs(70 K) × 6 m
       = 5.04 mm
         Growth of the leg, which the run or runs have to absorb
-  [32] S_run = L^3
+  [33] S_run = L^3
       = (50 m)^3
       = 125000 m³
         Cube of the run (its flexibility)
-  [33] F_run = 12 * E_r * I_x * Delta_run / S_run
+  [34] F_run = 12 * E_r * I_x * Delta_run / S_run
       = 12 × 210 GPa × 79.206 cm⁴ × 5.04 mm / 125000 m³
       = 0.080478 N
         Force of the run or runs, along the leg
-  [34] sigma_run = 3 * E * OD * Delta_run * L / S_run
+  [35] sigma_run = 3 * E * OD * Delta_run * L / S_run
       = 3 × 210 GPa × 88.9 mm × 5.04 mm × 50 m / 125000 m³
       = 0.11291 MPa
         Bending stress at the root of the run
-  [35] u_run = sqrt(sigma_run / Sa)
+  [36] u_run = sqrt(sigma_run / Sa)
       = sqrt(0.11291 MPa / 100 MPa)
       = 0.033602
         Required run over available run (= √(σ/Sa))
-  [36] L_req_run = L * u_run
+  [37] L_req_run = L * u_run
       = 50 m × 0.033602
       = 1.6801 m
         Cantilever length for this run's share of the leg's growth
-  [37] M_run = F_run * L / 2
+  [38] M_run = F_run * L / 2
       = 0.080478 N × 50 m / 2
       = 2.012 N·m
         Moment at the root of the run
-  [38] F_along_run = F_leg
+  [39] F_along_run = F_leg + F_friction
+      = 388.11 N + 0 N
       = 388.11 N
-      = 388.11 N
-        Component of the anchor force along the run: the leg's force
-  [39] F_along_leg = F_run
+        Component of the anchor force along the run: the leg's force plus the support friction
+  [40] F_along_leg = F_run
       = 0.080478 N
       = 0.080478 N
         Component of the anchor force along the leg: the runs' force
-  [40] anchor_force = sqrt(F_leg^2 + F_run^2)
+  [41] anchor_force = sqrt(F_along_run^2 + F_run^2)
       = sqrt((388.11 N)^2 + (0.080478 N)^2)
       = 388.11 N
-        Force on the anchors: resultant of the two perpendicular components
-  [41] anchor_moment = max(M_leg, M_run)
+        Force on the anchors: resultant of the two perpendicular components (support friction only if μ and w_pipe are entered)
+  [42] anchor_moment = max(M_leg, M_run)
       = max(1164.3 N·m, 2.012 N·m)
       = 1164.3 N·m
         Largest root moment of the leg and the run or runs (guided-cantilever model)
-  [42] L_dev = L_tot + H
+  [43] L_dev = L_tot + H
       = 50 m + 6 m
       = 56 m
         Developed length between the anchors, run or runs plus leg
-  [43] U_a = sqrt(L_tot^2 + H^2)
+  [44] U_a = sqrt(L_tot^2 + H^2)
       = sqrt((50 m)^2 + (6 m)^2)
       = 50.359 m
         Straight distance between the anchors
-  [44] Y_scr = alpha * abs(dT) * U_a
+  [45] Y_scr = alpha * abs(dT) * U_a
       = 12 um/(m·K) × abs(70 K) × 50.359 m
       = 42.301 mm
         Resultant displacement Y: the free growth between the anchors
-  [45] scr = OD * Y_scr / (L_dev - U_a)^2
+  [46] scr = OD * Y_scr / (L_dev - U_a)^2
       = 88.9 mm × 42.301 mm / (56 m − 50.359 m)^2
       = 118.17 mm²/m²
         Screening ratio OD·Y/(L − U)²
-  [47] u_scr = scr / K_scr
+  [48] u_scr = scr / K_scr
       = 118.17 mm²/m² / 100 mm²/m²
       = 1.1817
         Screening ratio over the K1 record
-  [48] pass = K1 given and every check passes
+  [49] pass = K1 given and every check passes
       = 3 check(s)
       = 0
         1 when the leg, the run (offset leg) and the screening checks all pass; 0 when one fails or when no K1 was entered
@@ -195,6 +199,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   sigma_res = 176.4 MPa    Fully restrained stress
   F_res = 151.98 kN    Fully restrained force
   direction = "growth: the pipe lengthens; fully restrained it presses on its anchors (compression)"    Direction of the movement
+  F_friction = 0 N    Support friction on the run
   u_res = 1.764    Fully restrained stress over Sa
   Delta = 42 mm    Movement absorbed by each leg
   L_req = 4.85 m    Required leg length
@@ -229,7 +234,8 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: E, alpha (Material properties); OD, t_wall (Pipe outside diameter and wall); Sa (Allowable displacement-stress range); K_scr (Screening limit K1). Enter each as one so its source, edition and licence travel with it.
+  WARNING friction: mu: the anchor force holds no support friction. Every slide or guide between the anchor and the loop adds μ·w·L to it, which on a long run can exceed the leg force several times; enter μ and the weight per metre (with the length on slides) to include it.
 
 8. VERIFICATION
-  Template: bs.pipe-expansion@1.2.2
+  Template: bs.pipe-expansion@1.3.0
   Known-answer cases passed: 5/5

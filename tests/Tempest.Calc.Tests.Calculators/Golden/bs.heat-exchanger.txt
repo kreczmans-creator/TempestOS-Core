@@ -134,5 +134,5 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with 
   WARNING record: Tabulated values not taken from a reference record: cp_h, cp_c (Fluid specific heats). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.heat-exchanger@1.2.1
+  Template: bs.heat-exchanger@1.3.0
   Known-answer cases passed: 7/7

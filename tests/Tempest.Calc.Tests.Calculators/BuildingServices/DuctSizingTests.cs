@@ -42,6 +42,20 @@ public sealed class DuctSizingTests
         }, iter: 60);
     }
 
+    [Theory]
+    [InlineData(DuctSizingCalculator.ShapeRectangular, 170, 5.882)]
+    [InlineData(DuctSizingCalculator.ShapeFlatOval, 190, 5.730)]
+    public void Velocity_Method_Sizes_A_Rectangular_Or_Flat_Oval_Duct_From_The_Area_Not_The_Equivalent_Diameter(string shape, double expectedB, double expectedV)
+    {
+        // bs.duct-sizing-01: Q 0.5 m3/s, a 500 mm, 6 m/s, 10 mm steps. Sizing b from D_e of the round duct at 6 m/s gave b 190 mm (v 5.26 m/s) for the rectangle and 200 mm (5.47 m/s) for the oval.
+        // python3: A = Q/v = 0.08333 m2; rectangle b = A/a = 166.7 mm -> 170 mm, v = 0.5/(0.5 x 0.17) = 5.882; flat oval (1 - pi/4) b^2 - a b + A = 0 -> b = 180.7 mm -> 190 mm, v = 0.5/0.087253 = 5.730.
+        var r = Run(CalcInputValue.Choice("method", DuctSizingCalculator.MethodVelocity), CalcInputValue.Quantity("v_target", 6, "m/s"), CalcInputValue.Quantity("round_to", 10, "mm"),
+            DuctSizingCalculator.Sections(("s", 0.5, 10, shape, 500, 0, 0, 0, true)));
+        Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+        Assert.Equal(expectedB, r.OutputSi("b_s1") * 1e3, 6);
+        Assert.Equal(expectedV, r.OutputSi("v_s1"), 3);
+    }
+
     [Fact]
     public void Rectangular_And_Flat_Oval_Equivalents_Match_Round_For_A_Circle_Like_Shape()
     {

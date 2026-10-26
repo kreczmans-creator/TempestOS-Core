@@ -85,7 +85,7 @@ public static class CalcPackTemplates
     /// </summary>
     public static CalcPackTemplate WetHeating { get; } = new(
         "pack.wet-heating", "Wet heating",
-        "Sizes a wet heating circuit from the rooms to the circulator: room heat losses, emitters and expansion vessel, the pipework and pump at the flow that heat needs, and the motor that drives the pump. The loop is closed (no static lift) and the example load is small, so the pump duty is a deliberately tiny illustration. The pipework water content in the sealed system is entered by hand from the pipework's V_pipe, because a link back from B1 would be a cycle.",
+        "Sizes a wet heating circuit from the rooms to the circulator: room heat losses, emitters and expansion vessel, the pipework and pump at the flow that heat needs, and the motor that drives the pump. The loop is closed (no static lift) and the example load is small, so the pump duty is a deliberately tiny illustration. The pipework water content in the sealed system is entered by hand from the pipework's V_pipe, because a link back from B1 would be a cycle (the sealed-system step warns while it is left at its 20 L default). Each room's design temperature (B4's θ_int) is the room temperature of that room's emitter. The pump head covers pipe friction only unless the water-side loss of the boiler or heat exchanger, valves and emitters is entered as the outlet head h_out of the pipework step (the step warns while it is 0). The pipework step is on water: a glycol loop must be given the custom fluid with its density and viscosity (the step warns when the specific heat is not water's).",
         [
             new CalcPackStep("b4a", "bs.room-heat-loss", "Room A heat loss", CalcPackExamples.WetRoomA),
             new CalcPackStep("b4b", "bs.room-heat-loss", "Room B heat loss", CalcPackExamples.WetRoomB),
@@ -96,6 +96,8 @@ public static class CalcPackTemplates
         [
             new CalcPackBinding("b4a", "Phi_HL", "b6", "rooms", Row: 0, Column: "Phi"),
             new CalcPackBinding("b4b", "Phi_HL", "b6", "rooms", Row: 1, Column: "Phi"),
+            new CalcPackBinding("b4a", "theta_int", "b6", "rooms", Row: 0, Column: "t_i"),
+            new CalcPackBinding("b4b", "theta_int", "b6", "rooms", Row: 1, Column: "t_i"),
             new CalcPackBinding("b6", "Phi_tot", "b1", "Phi_load"),
             new CalcPackBinding("b6", "dT_fr", "b1", "dT_load"),
             new CalcPackBinding("b6", "t_m", "b1", "T"),
@@ -114,7 +116,7 @@ public static class CalcPackTemplates
     /// </summary>
     public static CalcPackTemplate Cooling { get; } = new(
         "pack.cooling", "Enclosure cooling",
-        "Takes the heat a control panel dissipates, finds what the enclosure cannot lose naturally, sizes the water-cooled air coil that removes it at the enclosure's temperature limit and the pipework and pump that carry the cooling water.",
+        "Takes the heat a control panel dissipates, finds what the enclosure cannot lose naturally, sizes the water-cooled air coil that removes it at the enclosure's temperature limit and the pipework and pump that carry the cooling water. The coil duty is sensible only: when the water enters below the dew point of the enclosure air the coil condenses water (a latent load and a drain this chain does not size), and the coil step warns when its optional dew point is entered. The pump head covers pipe friction only unless the coil's water-side loss, valves and plant are entered as the outlet head h_out of the pipework step (the step warns while it is 0). The pipework step is on water, so a glycol mixture reaches it as a specific heat and mass flow only: for a glycol cold side give the pipework step the custom fluid with the mixture's density and viscosity (the step warns when the specific heat is not water's). A hot ambient at or above the enclosure's temperature limit blocks the enclosure step, so the chain gives no duty and no coil in that case.",
         [
             new CalcPackStep("e6", "elec.load-budget", "Panel load budget", CalcPackExamples.CoolE6),
             new CalcPackStep("e2", "elec.enclosure-heat", "Enclosure heat", CalcPackExamples.CoolE2),
@@ -154,7 +156,7 @@ public static class CalcPackTemplates
     /// </summary>
     public static CalcPackTemplate SteelSupport { get; } = new(
         "pack.steel-support", "Steel support",
-        "Combines the actions on an equipment support, analyses the steel frame, checks the column, designs the bracket's bolted joint and the column base plate, and files the anchorage design done elsewhere as Evidence. The links assume the frame's numbering: nodes 1 (column base, fixed), 2 (column top), 3 (arm tip); member 1 the column, member 2 the arm; the first load row the vertical load at node 3 (filled from the load combinations), the second the horizontal design action at node 2. Signs: the column check takes the axial force tension positive (S2's N_e1), the base plate takes it compression positive (S2's R1_y). One ULS case is analysed (every action unfavourable); the favourable-permanent case is not.",
+        "Combines the actions on an equipment support, analyses the steel frame, checks the column, checks the bolts of the bracket's joint, designs the column base plate and files the anchorage design done elsewhere as Evidence. What it does not do: the arm joint is checked at the bolts only (shear, bearing on the thinner ply, tension, combined and block tearing), not the end plate in bending with prying, the weld, the column flange in bending or the column web; the bolt group must be symmetric with the load concentric, because the per-bolt shear and tension come from the governing bolt; the column is checked in its plane only, with no lateral-torsional buckling check (the column step warns) and the minor-axis moment typed 0; the bolt group's bolt resistances are typed copies of the arm connection step's (change them together; a test guards them); the anchorage is not assessed unless the report's governing utilisation is entered in the base plate step, and the base plate's utilisation excludes it; and nothing checks the frame's numbering below. The links assume the frame's numbering: nodes 1 (column base, fixed), 2 (column top), 3 (arm tip); member 1 the column, member 2 the arm; the first load row the vertical load at node 3 (filled from the load combinations), the second the horizontal design action at node 2. Signs: the column check takes the axial force tension positive (S2's N_e1), the base plate takes it compression positive (S2's R1_y). One ULS case is analysed (every action unfavourable); the favourable-permanent case is not.",
         [
             new CalcPackStep("s5", "struct.load-combinations", "Load combinations", CalcPackExamples.SteelS5),
             new CalcPackStep("s2", "struct.frame-2d", "Support frame", CalcPackExamples.SteelS2),
@@ -394,7 +396,7 @@ public static class CalcPackTemplates
     /// </summary>
     public static CalcPackTemplate PipeworkSupports { get; } = new(
         "pack.pipework-supports", "Pipework supports",
-        "Takes the force a heated pipe puts on its anchor from the pipe-expansion step to the steel post that holds the anchor and the post's base plate, and files the anchorage design done elsewhere as Evidence. The links assume the post frame's numbering: node 1 the column base (fixed), node 2 the anchor, member 1 the post, the first load row the thermal force along the pipe; the weight in the second row and the load factors are the user's. The pipe step is a screening: a line that fails it needs a formal stress analysis, and its moment is not carried to the post. The holding-down bolt data are typed (no bolt-check step).",
+        "Takes the force a heated pipe puts on its anchor from the pipe-expansion step to the steel post that holds the anchor and the post's base plate, and files the anchorage design done elsewhere as Evidence. The anchor force holds no support friction unless the pipe-expansion step is given the friction coefficient and the weight per metre (it warns when they are not); the force on the post is then the leg's alone. The links assume the post frame's numbering: node 1 the column base (fixed), node 2 the anchor, member 1 the post, the first load row the thermal force along the pipe; the weight in the second row and the load factors are the user's. The pipe step is a screening: a line that fails it needs a formal stress analysis, and its moment is not carried to the post. The holding-down bolt data are typed (no bolt-check step).",
         [
             new CalcPackStep("b8", "bs.pipe-expansion", "Pipe expansion and anchor force", CalcPackExamples.PipeB8),
             new CalcPackStep("s2", "struct.frame-2d", "Anchor post frame", CalcPackExamples.PipeS2),

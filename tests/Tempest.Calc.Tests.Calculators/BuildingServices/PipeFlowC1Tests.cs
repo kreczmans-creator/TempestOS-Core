@@ -96,4 +96,100 @@ public sealed class PipeFlowC1Tests
         Assert.Equal(0.10653, faster.OutputSi("T_shaft"), 4);
         Assert.Equal(3360 * 2 * Math.PI / 60, faster.OutputSi("n_shaft"), 6);
     }
+
+    private static CalcRunResult HeatLoad(double hOut, double? cp = null)
+    {
+        var inputs = new List<CalcInputValue>
+        {
+            CalcInputValue.Quantity("T", 40, "degC"), CalcInputValue.Quantity("Phi_load", 24, "kW"), CalcInputValue.Quantity("dT_load", 10, "K"),
+            PipeFlowCalculator.Segments(("loop", 40, 28, 0.045, 6, 0, 0, "discharge")), CalcInputValue.Quantity("h_out", hOut, "m"),
+        };
+
+        if (cp is { } value)
+            inputs.Add(CalcInputValue.Quantity("cp_load", value, "J/(kg*K)"));
+
+        return Run([.. inputs]);
+    }
+
+    [Fact]
+    public void A_Heat_Load_Sheet_With_No_Outlet_Head_Warns_That_The_Plant_Loss_Is_Missing()
+    {
+        // chain.wet-heating-03 and chain.cooling-02: the pack's pump head was pipe friction alone (H_sys 3.002 m of which 0.002 m friction in the reference case); the boiler, coil, valves and emitters add their own loss.
+        // Chain probe: h_out 1 m raises T_shaft 3.7 times with no notice either way.
+        Assert.Contains(HeatLoad(0).Warnings, w => w.RuleId == "plant-loss");
+        Assert.DoesNotContain(HeatLoad(2).Warnings, w => w.RuleId == "plant-loss");
+        // A flow entered directly is not a heat-load sheet.
+        Assert.DoesNotContain(Run(CalcInputValue.Quantity("Q", 1, "m^3/h"), PipeFlowCalculator.Segments(("loop", 40, 28, 0.045, 6, 0, 0, "discharge"))).Warnings, w => w.RuleId == "plant-loss");
+    }
+
+    [Fact]
+    public void A_Heat_Load_With_A_Glycol_Specific_Heat_On_Water_Warns_That_The_Fluid_Is_Not_Water()
+    {
+        // chain.cooling-03 and chain.wet-heating-06: cp 3600 reached B1 as c_p only, the density and viscosity stayed water's: Q 3.3 % high, friction about 20 % low (0.6606 m against 0.7894 m for rho 1030, mu 3.5 mPa.s).
+        Assert.Contains(HeatLoad(1, 3600).Warnings, w => w.RuleId == "fluid-cp");
+        Assert.DoesNotContain(HeatLoad(1, 4186).Warnings, w => w.RuleId == "fluid-cp");
+        Assert.DoesNotContain(HeatLoad(1, 4200).Warnings, w => w.RuleId == "fluid-cp");
+        Assert.DoesNotContain(Run(CalcInputValue.Choice("fluid", PipeFlowCalculator.FluidCustom), CalcInputValue.Quantity("rho_custom", 1030, "kg/m^3"), CalcInputValue.Quantity("mu_custom", 3.5, "mPa*s"), CalcInputValue.Quantity("T", 40, "degC"),
+            CalcInputValue.Quantity("Phi_load", 24, "kW"), CalcInputValue.Quantity("dT_load", 10, "K"), CalcInputValue.Quantity("cp_load", 3600, "J/(kg*K)"), PipeFlowCalculator.Segments(("loop", 40, 28, 0.045, 6, 0, 0, "discharge")), CalcInputValue.Quantity("h_out", 1, "m")).Warnings, w => w.RuleId == "fluid-cp");
+    }
+
+    [Fact]
+    public void Laminar_Friction_Scales_With_Q_In_The_System_Curve()
+    {
+        // bs.pipe-pump-03 (probe W): oil rho 900, mu 200 mPa.s, 100 m DN50, rise 2 m, 5 m3/h (Re 159), pump (0,30) (5,27) (10,22) (15,14) (20,4) m3/h and m.
+        // python3: h_f(5 m3/h) = 20.517 m and h_f proportional to Q: duty 5.8784 m3/h, H 26.1216 m; the Q^2 law gave 5.4674 m3/h (7 % low) and 5.5 % less shaft power.
+        var r = Run(CalcInputValue.Choice("fluid", PipeFlowCalculator.FluidCustom), CalcInputValue.Quantity("rho_custom", 900, "kg/m^3"), CalcInputValue.Quantity("mu_custom", 200, "mPa*s"),
+            CalcInputValue.Quantity("Q", 5, "m^3/h"), PipeFlowCalculator.Segments(("oil", 100, 50, 0.045, 0, 0, 2, "discharge")),
+            CalcInputValue.VectorOf("Q_pump", [0, 5, 10, 15, 20], "m^3/h"), CalcInputValue.VectorOf("H_pump", [30, 27, 22, 14, 4], "m"));
+        Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+        Assert.Equal(20.517, r.OutputSi("h_f_total"), 2);
+        Assert.Equal(5.8784, r.OutputSi("Q_duty") * 3600, 3);
+        Assert.Equal(26.1216, r.OutputSi("H_duty"), 3);
+        Assert.Equal(1.0585, r.OutputSi("Q_duty") * 3600 * r.OutputSi("H_duty") / (5.467442 * (2 + 20.517025 * 5.467442 * 5.467442 / 25)), 2);
+    }
+
+    [Fact]
+    public void A_Pump_Curve_That_Crosses_The_System_Curve_Twice_Reports_The_Stable_Crossing_And_Lists_Both()
+    {
+        // bs.pipe-pump-04 (probe R): DN80 100 m (eps 0.045, K 2), rise 10 m, 30 m3/h, water 20 C, pump (0,8) (10,14) (40,18) (70,2). The curve crosses at 3.41 m3/h (the pump curve rising: unstable)
+        // and 41.48 m3/h (falling: stable); the test of the two curve ends saw no crossing and failed the duty check. python3 scan: 3.4147 and 41.4835 m3/h.
+        var r = Run(CalcInputValue.Quantity("T", 20, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"), PipeFlowCalculator.Segments(("riser", 100, 80, 0.045, 2, 0, 10, "discharge")),
+            CalcInputValue.VectorOf("Q_pump", [0, 10, 40, 70], "m^3/h"), CalcInputValue.VectorOf("H_pump", [8, 14, 18, 2], "m"));
+        Assert.DoesNotContain(r.Warnings, w => w.RuleId == "no-duty");
+        Assert.Equal(41.48, r.OutputSi("Q_duty") * 3600, 1);
+        var warning = Assert.Single(r.Warnings, w => w.RuleId == "multi-duty");
+        Assert.Contains("3.41", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("unstable", warning.Message, StringComparison.Ordinal);
+        Assert.Contains(r.Checks, k => k.Name.StartsWith("Duty point exists", StringComparison.Ordinal) && k.Passed);
+    }
+
+    [Fact]
+    public void The_Default_Efficiency_For_A_Small_Pump_Warns()
+    {
+        // bs.pipe-pump-C2: the default eta 0.7 for a small circulator (shaft power well under 1 kW) lowers the torque handed to the motor; at eta 0.2 it is 3.5 times higher.
+        CalcRunResult At(double eta) => Run(CalcInputValue.Quantity("Q", 1, "m^3/h"), PipeFlowCalculator.Segments(("loop", 20, 20, 0.045, 2, 0, 0, "discharge")), CalcInputValue.Quantity("n_pump", 2800, "rpm"), CalcInputValue.Of("eta_pump", eta));
+        var d = At(0.7);
+        Assert.Contains(d.Warnings, w => w.RuleId == "eta-default");
+        Assert.Equal(3.5, At(0.2).OutputSi("T_shaft") / d.OutputSi("T_shaft"), 6);
+        Assert.DoesNotContain(At(0.2).Warnings, w => w.RuleId == "eta-default");
+
+        // A pump of over 1 kW: no warning.
+        Assert.DoesNotContain(Run(CalcInputValue.Quantity("Q", 100, "m^3/h"), PipeFlowCalculator.Segments(("main", 100, 100, 0.045, 5, 0, 30, "discharge")), CalcInputValue.Quantity("n_pump", 2900, "rpm")).Warnings, w => w.RuleId == "eta-default");
+    }
+
+    [Fact]
+    public void NPSH_Available_Is_Taken_At_The_Larger_Of_The_Design_And_The_Duty_Flow()
+    {
+        // bs.pipe-pump-R2: water 60 C, design 30 m3/h, 10 m DN65 suction (K 4), 100 m DN65 discharge (K 6), lift 3 m, pump (0,30) (20,28) (40,22) (60,10): duty 38.54 m3/h. NPSH_a at the design flow
+        // 3.21 m passed against 3 m; at the duty flow the suction friction is higher: NPSH_a 1.76 m (python3, water properties from the same correlations) and the check fails.
+        CalcInputValue[] Sheet(params CalcInputValue[] more) => [CalcInputValue.Quantity("T", 60, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"),
+            PipeFlowCalculator.Segments(("suction", 10, 65, 0.045, 4, 0, 0, "suction"), ("discharge", 100, 65, 0.045, 6, 0, 0, "discharge")), CalcInputValue.Quantity("z_s", -3, "m"), CalcInputValue.Quantity("NPSH_r", 3, "m"), .. more];
+        var noCurve = Run(Sheet());
+        Assert.Equal(3.2102, noCurve.OutputSi("NPSH_a"), 2);
+
+        var curve = Run(Sheet(CalcInputValue.VectorOf("Q_pump", [0, 20, 40, 60], "m^3/h"), CalcInputValue.VectorOf("H_pump", [30, 28, 22, 10], "m")));
+        Assert.Equal(38.54, curve.OutputSi("Q_duty") * 3600, 1);
+        Assert.Equal(1.76, curve.OutputSi("NPSH_a"), 1);
+        Assert.Contains(curve.Checks, k => k.Name.StartsWith("NPSH_r", StringComparison.Ordinal) && !k.Passed);
+    }
 }

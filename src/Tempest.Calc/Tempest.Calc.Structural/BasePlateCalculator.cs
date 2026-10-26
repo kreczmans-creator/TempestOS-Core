@@ -27,6 +27,9 @@ public sealed class BasePlateCalculator : ICalcCalculator
 
     public const double MaxThickness = 100;
 
+    /// <summary>The thickness, mm, above which EN 10025-2 lowers the yield strength of the usual grades (the first step).</summary>
+    public const double FirstYieldStepMm = 16;
+
     /// <summary>The column footprint, mm: depth h along the plate length L, width b along the plate width B.</summary>
     public readonly record struct Section(string Column, double H, double B, double Tf, double Tw, double T, double D)
     {
@@ -49,7 +52,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
     public readonly record struct Required(double? Value, string? Text);
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.Structural, "Column base plate (EN 1993-1-8)",
+        Id, "1.4.0", CalcDiscipline.Structural, "Column base plate (EN 1993-1-8)",
         "An unstiffened rectangular base plate under an I/H, RHS or CHS column on grouted concrete: bearing resistance, the force regime and holding-down bolt tension for a major-axis moment, the tension T-stub of the plate and the compression T-stub, shear by friction and anchor bolts, and the plate thickness that satisfies them together. The bolt tension and shear per anchor go to Hilti PROFIS for the anchorage, which is done outside this sheet.",
         "Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3; c = t_p·√[f_y/(3·f_jd·γ_M0)]\n" +
         "Axial (cl. 6.2.8.2): N_j,Rd = f_jd·A_eff, A_eff the bearing strips of width c round the column footprint (full rectangle when they overlap); u_N = N_c,Ed/N_j,Rd\n" +
@@ -96,6 +99,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
             new CalcInputSpec("f_yb", "Anchor bolt yield strength (α_bc is valid for 235–640 MPa)", CalcInputKind.Quantity, "MPa", Default: 640, Min: 235, Max: 640, HardMin: 235, HardMax: 640, Group: "Holding-down bolts"),
             new CalcInputSpec("A_s", "Anchor bolt tensile stress area (from S4)", CalcInputKind.Quantity, "mm^2", Default: 244.79, Min: 50, Max: 1500, HardMin: 50, HardMax: 1500, Group: "Holding-down bolts"),
             new CalcInputSpec("F_1_vb_Rd", "Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd)", CalcInputKind.Quantity, "kN", Default: 198.8, Min: 1, Max: 2000, HardMin: 1, HardMax: 2000, Group: "Holding-down bolts"),
+            new CalcInputSpec("u_profis", "Governing utilisation reported by the PROFIS anchorage design (from the attached report; blank = the anchorage is not assessed here)", CalcInputKind.Number, Min: 0, Max: 10, HardMin: 0, HardMax: 10, IsOptional: true, Group: "Anchorage"),
             new CalcInputSpec("profis_ref", "Hilti PROFIS report reference (the report is filed as Evidence)", CalcInputKind.Text, IsOptional: true, Group: "Anchorage"),
         ],
         [
@@ -126,10 +130,16 @@ public sealed class BasePlateCalculator : ICalcCalculator
             new CalcApplicabilityRule("section", "The wall or flange thickness must be less than half the section, and the section's dimensions must be entered.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("bolts", "The bolt counts must be whole numbers with n_b at least 2·n_t.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("x_b", "The bolt row must lie outside the column face and inside the plate edge, with m and e_min fitting between.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("z_C", "An entered compression lever arm z_C must lie inside the plate (below L/2).", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("z_C_entered", "An entered compression lever arm that differs from the section's by more than the outstand c is probably the lever arm z, not z_C.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("alpha_bc", "α_bc is defined for f_yb of 235–640 MPa; an anchor bolt strength above 800 MPa has a higher yield strength than the formula covers.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("f_y_thickness", "One plate yield strength is used at every thickness; EN 10025-2 lowers it for thicker plate.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("outstand-cut", "With the bearing outstand cut at the plate edge a thicker plate can raise the compression utilisation.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("alpha_basis", "A concentration factor above 1 needs its foundation geometry stated.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("grout", "β_j = 2/3 needs the grout at least 0.2·f_ck and no thicker than 0.2 of the smaller plate dimension.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("prying", "With prying the prying force is not in F_t,Ed.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("anchorage", "The PROFIS report is not attached as Evidence (a typed reference is not enough).", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("anchorage-result", "The anchorage (concrete cone, pull-out, edge and shear failure of the anchors) is not assessed on this sheet and u_max excludes it, unless the report's governing utilisation u_profis is entered.", CalcNoticeSeverity.Warning),
         ],
         [
             new CalcTestCase("ka-ih-moment-bolts", "The 260×256 I-section with N = 300 kN, M = 100 kN·m, V = 80 kN; two bolts a row, bolt rows at 165 mm from the axis, no prying",
@@ -358,6 +368,14 @@ public sealed class BasePlateCalculator : ICalcCalculator
         return tAtMax > nT * ftRd * (1 + 1e-9)
             ? new Required(null, "bolts govern (T_Ed exceeds n_t·F_t,Rd at the 100 mm end of the range, so no thickness helps)")
             : new Required(null, "> 100 mm");
+    }
+
+    /// <summary>The compression T-stub utilisation u_C at a trial plate thickness (mm), with z_C and C_Ed re-evaluated at that thickness.</summary>
+    private static double CompressionUtilisation(Section s, double plateB, double plateL, double fy, double fjd, double gammaM0, double nEdKn, double mEdKnm, double xB, double? zCEntered, double t)
+    {
+        var area = Effective(s, Outstand(t, fy, fjd, gammaM0), plateB, plateL);
+        var forces = Statics(nEdKn, mEdKnm, zCEntered ?? area.Centroid, xB);
+        return forces.C / (fjd * area.FlangeArea / 1e3);
     }
 
     /// <summary>The first passing thickness of a 0.05 mm scan of 10–100 mm, refined by bisection inside that step; <see langword="null"/> when none passes.</summary>
@@ -598,6 +616,16 @@ public sealed class BasePlateCalculator : ICalcCalculator
         {
             c.Input("z_C_in");
             zC = c.Si("z_C_in") * 1e3;
+
+            if (zC >= plateL / 2)
+            {
+                c.Block("z_C", $"z_C_in: the compression resultant ({F(zC)} mm from the column axis) must lie inside the plate, below L/2 = {F(plateL / 2)} mm. z_C is the distance to the centre of the compression flange (or wall), not the lever arm z to the bolt row.");
+                return;
+            }
+
+            if (Math.Abs(zC - bearing.Centroid) > cMm)
+                c.Warn("z_C_entered", $"z_C_in: {F(zC)} mm differs from the section's own z_C = {F(bearing.Centroid)} mm by more than the outstand c = {F(cMm)} mm. z_C is the distance from the column axis to the centre of the compression flange (or wall), not the lever arm z = z_C + x_b; check that the entered value is z_C.");
+
             c.Record("z_C", "z_C entered", $"{F(zC)} mm", ScalarValue.Of(zC, mm), "Compression resultant distance from the column axis", "EN 1993-1-8 cl. 6.2.8.3");
         }
         else
@@ -683,6 +711,22 @@ public sealed class BasePlateCalculator : ICalcCalculator
 
         // Required thickness for bearing, the compression T-stub and the tension T-stub together.
         var required = RequiredThicknessAll(section, plateB, plateL, fy, fjd, gM0, nEd, mEd, xB, c.Has("z_C_in") ? zC : null, c.Si("l_eff") * 1e3, mDist, eMin, nT, c.Si("F_t_Rd") / 1e3, prying);
+        var tpMm = c.Si("t_p") * 1e3;
+
+        // One f_y at every thickness: EN 10025-2 steps the yield strength down for thicker product (the first step is above 16 mm).
+        if (tpMm > FirstYieldStepMm || required.Value is > FirstYieldStepMm)
+            c.Warn("f_y_thickness", $"f_y: one yield strength ({F(fy)} MPa) is used at every plate thickness, but EN 10025-2 lowers the yield strength of a grade as the thickness passes {F(FirstYieldStepMm)} mm and again above 40 mm. t_p = {F(tpMm)} mm" + (required.Value is { } rq ? $" and t_req = {F(rq)} mm" : string.Empty) + " pass the first step: enter the yield strength for the plate thickness in use (steel.strengths record), so M_pl,Rd and the T-stub are not overstated.");
+
+        // With the outstand cut at the plate edge the lever arm shortens as c grows, so a thicker plate can raise u_C (the required-thickness search takes the thinnest passing plate).
+        if (checkCompression && bearing.Clipped && tpMm < MaxThickness)
+        {
+            var uHere = CompressionUtilisation(section, plateB, plateL, fy, fjd, gM0, nEd, mEd, xB, c.Has("z_C_in") ? zC : null, tpMm);
+            var tThicker = Math.Min(1.25 * tpMm, MaxThickness);
+            var uThicker = CompressionUtilisation(section, plateB, plateL, fy, fjd, gM0, nEd, mEd, xB, c.Has("z_C_in") ? zC : null, tThicker);
+
+            if (uThicker > uHere * (1 + 1e-9))
+                c.Warn("outstand-cut", $"t_p: the bearing outstand is cut back at the plate edge, so the compression lever arm shortens as the plate gets thicker and a thicker plate does not lower u_C here (u_C = {F(uHere)} at t_p = {F(tpMm)} mm, {F(uThicker)} at {F(tThicker)} mm). t_req is the thinnest plate that passes, not a lower bound for every thicker plate.");
+        }
 
         if (required.Value is { } tReq)
             c.Record("t_req", "smallest t_p in 10–100 mm with u_N, u_C, u_T ≤ 1, with z_C, C_Ed and T_Ed recomputed at every trial t_p (scan and bisection)", $"N_c,Ed = {F(nCompression)} kN, C_Ed = {F(forces.C)} kN, T_Ed = {F(forces.T)} kN" + (tReq <= MinThickness + 1e-9 ? "; carried at the 10 mm minimum" : string.Empty), ScalarValue.Of(tReq, mm), "Plate thickness required", "EN 1993-1-8 cl. 6.2.5, 6.2.6.9, 6.2.6.11");
@@ -691,6 +735,9 @@ public sealed class BasePlateCalculator : ICalcCalculator
         var fyb = c.Si("f_yb") / 1e6;
         var alphaBc = 0.44 - 0.0003 * fyb;
         c.Record("alpha_bc", "0.44 − 0.0003·f_yb", $"0.44 − 0.0003 × {F(fyb)}", new ScalarValue(alphaBc), "Anchor bolt shear factor α_bc", "EN 1993-1-8 cl. 6.2.2");
+
+        if (c.Si("f_ub") / 1e6 > 800 + 1e-9)
+            c.Warn("alpha_bc", $"f_ub: α_bc is defined for an anchor bolt yield strength of 235–640 MPa, so f_yb is limited to 640 MPa, but a bolt of f_ub = {F(c.Si("f_ub") / 1e6)} MPa (class 10.9 and above) has a higher yield strength (about 900 MPa). The formula would give α_bc = {F(0.44 - 0.0003 * 900)} there, not {F(alphaBc)}: F_2,vb,Rd and u_V are overstated. Take the anchor shear resistance from the anchor design (PROFIS).");
         c.Assign("F_2_vb_Rd", "alpha_bc * f_ub * A_s / gamma_M2", "kN", "Anchor bolt shear resistance F_2,vb,Rd", "EN 1993-1-8 cl. 6.2.2");
         c.Assign("F_vb_Rd", "min(F_1_vb_Rd, F_2_vb_Rd)", "kN", "Anchor bolt shear resistance per bolt (bearing or shear)", "EN 1993-1-8 cl. 6.2.2");
         c.Assign("F_f_Rd", "C_fd * N_c_Ed", "kN", "Friction resistance, compression only", "EN 1993-1-8 cl. 6.2.2");
@@ -700,6 +747,14 @@ public sealed class BasePlateCalculator : ICalcCalculator
         c.Record("V_b_Ed", "max(V_Ed − F_f,Rd, 0)/n_b", $"max({F(c.Si("V_Ed") / 1e3)} − {F(c.Si("F_f_Rd") / 1e3)}, 0)/{F(nB)}", ScalarValue.Of(vb, kN), "Shear per anchor bolt after friction (→ PROFIS)", "EN 1993-1-8 cl. 6.2.2");
         outputs.AddRange([("alpha_bc", "Anchor shear factor α_bc"), ("F_2_vb_Rd", "Anchor shear resistance F_2,vb,Rd"), ("F_vb_Rd", "Anchor shear resistance per bolt"), ("F_f_Rd", "Friction resistance"), ("V_Rd", "Shear resistance"), ("u_V", "Shear utilisation"), ("V_b_Ed", "Shear per anchor bolt (to PROFIS)")]);
         utilisations.Add("u_V");
+
+        if (c.Has("u_profis"))
+        {
+            c.Input("u_profis");
+            c.Assign("u_anchorage", "u_profis", null, "Anchorage utilisation (governing value of the PROFIS report)");
+            utilisations.Add("u_anchorage");
+            outputs.Add(("u_anchorage", "Anchorage utilisation (PROFIS)"));
+        }
 
         var uMax = utilisations.Max(sym => c.Si(sym));
         c.Record("u_max", "max(" + string.Join(", ", utilisations) + ")", string.Join(", ", utilisations.Select(sym => $"{sym} = {F(c.Si(sym))}")), new ScalarValue(uMax), "Governing utilisation");
@@ -738,6 +793,11 @@ public sealed class BasePlateCalculator : ICalcCalculator
         c.CheckUtilisation("Base plate tension T-stub (bending at the bolts)", "u_T", "EN 1993-1-8 cl. 6.2.6.11");
         c.CheckUtilisation("Holding-down bolt tension", "u_bt", "EN 1993-1-8 cl. 6.2.6.12");
         c.CheckUtilisation("Shear: friction plus anchor bolts", "u_V", "EN 1993-1-8 cl. 6.2.2");
+
+        if (c.Has("u_profis"))
+            c.CheckUtilisation("Anchorage (PROFIS report, governing utilisation)", "u_anchorage", "EN 1993-1-8 cl. 6.2.6.12");
+        else
+            c.Warn("anchorage-result", "u_profis: the anchorage is not assessed on this sheet. The concrete failure modes of the anchors (cone, pull-out, edge, shear, interaction), which usually govern, are designed in PROFIS; u_max covers the steel parts only, whether or not a report is attached. Enter the report's governing utilisation to include it.");
 
         var profis = c.Has("profis_ref") ? c.InputText("profis_ref").Trim() : string.Empty;
 

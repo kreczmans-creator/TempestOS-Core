@@ -29,9 +29,9 @@ public sealed class MemberChecksCalculator : ICalcCalculator
     };
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.Structural, "EN 1993-1-1 member checks (basic)",
+        Id, "1.3.0", CalcDiscipline.Structural, "EN 1993-1-1 member checks (basic)",
         "Resistance checks of a steel member of class 1, 2 or 3 cross-section: tension (6.2.3), compression (6.2.4) and flexural buckling about y and z (6.3.1), bending about y and z (6.2.5), shear with the high-shear reduction (6.2.6, 6.2.8), the linear cross-section interaction (6.2.1(7)) and a simplified member interaction (6.3.3 with user-entered k factors). Lateral-torsional buckling and class 4 sections are outside this sheet.",
-        "Axial plastic resistance: N_pl,Rd = A f_y/γ_M0.\nBending resistance, plastic modulus for class 1–2 and elastic for class 3: M_c,Rd = W f_y/γ_M0.\nShear resistance: V_pl,Rd = A_v f_y/(√3 γ_M0).\nBending resistance reduced by high shear, when V_Ed > 0.5 V_pl,Rd: ρ = (2V_Ed/V_pl,Rd − 1)², resistance × (1 − ρ).\nElastic critical load and non-dimensional slenderness: N_cr = π²EI/L_cr²; λ̄ = √(A f_y/N_cr).\nBuckling reduction factor and buckling resistance: Φ = 0.5[1 + α(λ̄ − 0.2) + λ̄²]; χ = 1/(Φ + √(Φ² − λ̄²)) ≤ 1; N_b,Rd = χ A f_y/γ_M1.\nCross-section check, linear interaction: N_Ed/N_Rd + M_y,Ed/M_y,Rd + M_z,Ed/M_z,Rd ≤ 1.\nMember check, axial force and bending with buckling: N_Ed/N_b,Rd,min + k_yy M_y,Ed/M_y,Rd + k_zz M_z,Ed/M_z,Rd ≤ 1.",
+        "Axial plastic resistance: N_pl,Rd = A f_y/γ_M0.\nBending resistance, plastic modulus for class 1–2 and elastic for class 3: M_c,Rd = W f_y/γ_M0.\nShear resistance: V_pl,Rd = A_v f_y/(√3 γ_M0).\nBending resistance reduced by high shear, when V_Ed > 0.5 V_pl,Rd: ρ = (2V_Ed/V_pl,Rd − 1)². Class 1–2 I-section with h, t_w, t_f entered: M_y,V,Rd = (W_pl,y − ρ A_w²/(4 t_w)) f_y/γ_M0, A_w = (h − 2t_f) t_w, and M_z,c,Rd is not reduced; otherwise the whole resistance × (1 − ρ).\nElastic critical load and non-dimensional slenderness: N_cr = π²EI/L_cr²; λ̄ = √(A f_y/N_cr).\nBuckling reduction factor and buckling resistance: Φ = 0.5[1 + α(λ̄ − 0.2) + λ̄²]; χ = 1/(Φ + √(Φ² − λ̄²)) ≤ 1; N_b,Rd = χ A f_y/γ_M1.\nCross-section check, linear interaction: N_Ed/N_Rd + M_y,Ed/M_y,Rd + M_z,Ed/M_z,Rd ≤ 1.\nMember check, axial force and bending with buckling (6.61, 6.62): N_Ed/N_b,Rd,min + k_yy M_y,Ed/(W_y f_y/γ_M1) + k_zz M_z,Ed/(W_z f_y/γ_M1) ≤ 1, the characteristic bending resistance M_Rk over γ_M1 without the shear reduction.",
         [
             new CalcInputSpec("N_Ed", "Design axial force, TENSION positive and compression negative (the opposite sign to S6's N_Ed, which is compression positive; S2's N_e1 is tension positive)", CalcInputKind.Quantity, "kN", Default: -800, Min: -1e5, Max: 1e5, HardMin: -1e8, HardMax: 1e8, Group: "Actions"),
             new CalcInputSpec("M_y_Ed", "Design moment about y-y (major)", CalcInputKind.Quantity, "kN*m", Default: 60, Min: 0, Max: 1e5, HardMin: 0, HardMax: 1e8, Group: "Actions"),
@@ -88,6 +88,7 @@ public sealed class MemberChecksCalculator : ICalcCalculator
             new CalcApplicabilityRule("helper-area", "The rolled-I helper dimensions give a web-and-flange area that differs from A by more than 10 %: the helper dimensions probably belong to another section.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("k-default", "k_yy or k_zz is left at 1.0 although N_Ed/N_b,Rd exceeds 0.3: Annex A or B give k above 1 and the member interaction is then unconservative.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("high-shear", "V_Ed exceeds half the plastic shear resistance: the bending resistance is reduced (6.2.8).", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("net-section", "Tension is checked for gross-section yielding only; the net-section fracture resistance N_u,Rd (6.2.3(2)(b)) is not computed, so bolt holes are not accounted for.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("no-ltb", "Lateral-torsional buckling is not checked by this sheet.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("slender", "Non-dimensional slenderness above 2.0: check the member is intended to be this slender.", CalcNoticeSeverity.Warning),
         ],
@@ -125,6 +126,9 @@ public sealed class MemberChecksCalculator : ICalcCalculator
         var plastic = cls is "1" or "2";
         c.Warn("no-ltb", "M_y_Ed: lateral-torsional buckling is not checked by this sheet; restrain the compression flange or check 6.3.2 separately.");
 
+        if (c.Si("N_Ed") > 0)
+            c.Warn("net-section", "N_Ed: the tension check is gross-section yielding only (N_pl,Rd, 6.2.3(2)(a)). The net-section fracture resistance N_u,Rd = 0.9 A_net f_u/γ_M2 (6.2.3(2)(b)) is not computed here and governs a tie with bolt holes: check it separately for any bolted or pinned member.");
+
         // Shear area.
         if (c.Has("A_v"))
         {
@@ -159,10 +163,13 @@ public sealed class MemberChecksCalculator : ICalcCalculator
         c.Assign("u_V", "V_Ed / V_pl_Rd", null, "Shear utilisation");
 
         var highShear = c.Si("V_Ed") > 0.5 * c.Si("V_pl_Rd");
+        var iSection = c.Has("h") && c.Has("t_w") && c.Has("t_f");
 
         if (highShear)
         {
-            c.Warn("high-shear", "V_Ed: more than half the plastic shear resistance; the bending resistance is reduced by (1 − ρ).");
+            c.Warn("high-shear", iSection && plastic
+                ? "V_Ed: more than half the plastic shear resistance; the major-axis bending resistance is reduced for the web part of the plastic modulus only, (W_pl,y − ρ A_w²/(4 t_w)) f_y/γ_M0 (6.2.8(5), Eq. 6.30), and the minor-axis resistance is not reduced."
+                : "V_Ed: more than half the plastic shear resistance; the bending resistance of the whole section is reduced by (1 − ρ), a conservative simplification (the I-section web dimensions h, t_w and t_f are not entered, or the section is class 3, so the web-only reduction of 6.2.8 is not applied).");
             c.Assign("rho", "(2 * V_Ed / V_pl_Rd - 1)^2", null, "Shear reduction factor", "6.2.8(3)");
         }
         else
@@ -170,8 +177,21 @@ public sealed class MemberChecksCalculator : ICalcCalculator
             c.Assign("rho", "0", null, "Shear reduction factor (V_Ed ≤ 0.5 V_pl,Rd)", "6.2.8(2)");
         }
 
-        c.Assign("M_y_c_Rd", "(1 - rho) * W_y * f_y / gamma_M0", "kN*m", "Bending resistance about y", "6.2.5(2), 6.2.8");
-        c.Assign("M_z_c_Rd", "(1 - rho) * W_z * f_y / gamma_M0", "kN*m", "Bending resistance about z", "6.2.5(2)");
+
+        if (highShear && iSection && plastic)
+        {
+            // Class 1-2 I section: only the web part of the plastic modulus is reduced, W_pl,y - rho A_w^2/(4 t_w) (Eq. 6.30); the flanges carry the minor-axis moment, so M_z is not reduced.
+            c.Input("h"); c.Input("t_w"); c.Input("t_f");
+            c.Assign("A_w", "(h - 2 * t_f) * t_w", "mm^2", "Web area A_w = h_w t_w", "6.2.8(5)");
+            c.Assign("M_y_c_Rd", "(W_y - rho * A_w^2 / (4 * t_w)) * f_y / gamma_M0", "kN*m", "Bending resistance about y, reduced by high shear (web part only)", "6.2.8(5), Eq. 6.30");
+            c.Assign("M_z_c_Rd", "W_z * f_y / gamma_M0", "kN*m", "Bending resistance about z (no shear reduction: the web carries almost no minor-axis moment)", "6.2.5(2)");
+        }
+        else
+        {
+            c.Assign("M_y_c_Rd", "(1 - rho) * W_y * f_y / gamma_M0", "kN*m", "Bending resistance about y", "6.2.5(2), 6.2.8");
+            c.Assign("M_z_c_Rd", "(1 - rho) * W_z * f_y / gamma_M0", "kN*m", "Bending resistance about z", "6.2.5(2)");
+        }
+
         c.Assign("u_M_y", "M_y_Ed / M_y_c_Rd", null, "Bending utilisation, y");
         c.Assign("u_M_z", "M_z_Ed / M_z_c_Rd", null, "Bending utilisation, z");
         c.Assign("u_N", "abs(N_Ed) / N_pl_Rd", null, c.Si("N_Ed") >= 0 ? "Tension utilisation" : "Compression (cross-section) utilisation");
@@ -198,7 +218,9 @@ public sealed class MemberChecksCalculator : ICalcCalculator
 
         c.Assign("N_b_Rd", "min(N_b_y_Rd, N_b_z_Rd)", "kN", "Governing buckling resistance");
         c.Assign("u_buckling", compression ? "abs(N_Ed) / N_b_Rd" : "0", null, compression ? "Flexural buckling utilisation" : "Flexural buckling utilisation (tension: not applicable)", "6.3.1.1(1)");
-        c.Assign("u_member", compression ? "abs(N_Ed) / N_b_Rd + k_yy * M_y_Ed / M_y_c_Rd + k_zz * M_z_Ed / M_z_c_Rd" : "u_M_y + u_M_z", null, "Simplified member interaction", "6.3.3(4)");
+        c.Assign("M_y_b_Rd", "W_y * f_y / gamma_M1", "kN*m", "Characteristic bending resistance about y over γ_M1 (member check, no shear reduction)", "6.3.3, Eq. 6.61");
+        c.Assign("M_z_b_Rd", "W_z * f_y / gamma_M1", "kN*m", "Characteristic bending resistance about z over γ_M1 (member check, no shear reduction)", "6.3.3, Eq. 6.62");
+        c.Assign("u_member", compression ? "abs(N_Ed) / N_b_Rd + k_yy * M_y_Ed / M_y_b_Rd + k_zz * M_z_Ed / M_z_b_Rd" : "u_M_y + u_M_z", null, "Simplified member interaction", "6.3.3(4)");
 
         if (compression)
         {
@@ -212,14 +234,14 @@ public sealed class MemberChecksCalculator : ICalcCalculator
                 var nZ = Math.Abs(c.Si("N_Ed")) / c.Si("N_b_z_Rd");
                 var kyBound = kyDefault ? 1 + 0.8 * nY : c.InputSi("k_yy");
                 var kzBound = kzDefault ? 1 + 0.8 * nZ : c.InputSi("k_zz");
-                var uBound = nBuckling + kyBound * c.Si("u_M_y") + kzBound * c.Si("u_M_z");
+                var uBound = nBuckling + kyBound * c.Si("M_y_Ed") / c.Si("M_y_b_Rd") + kzBound * c.Si("M_z_Ed") / c.Si("M_z_b_Rd");
                 var which = kyDefault && kzDefault ? "k_yy and k_zz are" : kyDefault ? "k_yy is" : "k_zz is";
                 var bounds = kyDefault && kzDefault ? $"k_yy = {kyBound:0.000} and k_zz = {kzBound:0.000}" : kyDefault ? $"k_yy = {kyBound:0.000}" : $"k_zz = {kzBound:0.000}";
                 c.Warn("k-default", $"k_yy, k_zz: {which} left at 1.0 although N_Ed/N_b,Rd = {nBuckling:0.000} exceeds 0.3. Annex A or B give k above 1 here (at most C_m(1 + 0.8n), which is {bounds} with C_m = 1); with those values the member interaction would be {uBound:0.000} against {c.Si("u_member"):0.000} shown. Enter k from Annex A or B.");
             }
         }
 
-        foreach (var (symbol, text) in new[] { ("A_v", "Shear area"), ("N_pl_Rd", "N_pl,Rd"), ("V_pl_Rd", "V_pl,Rd"), ("rho", "ρ"), ("M_y_c_Rd", "M_y,c,Rd"), ("M_z_c_Rd", "M_z,c,Rd"), ("N_cr_y", "N_cr,y"), ("N_cr_z", "N_cr,z"), ("lambda_y", "λ̄_y"), ("lambda_z", "λ̄_z"), ("chi_y", "χ_y"), ("chi_z", "χ_z"), ("N_b_y_Rd", "N_b,y,Rd"), ("N_b_z_Rd", "N_b,z,Rd"), ("N_b_Rd", "N_b,Rd"), ("u_N", "Axial utilisation"), ("u_M_y", "Bending y utilisation"), ("u_M_z", "Bending z utilisation"), ("u_V", "Shear utilisation"), ("u_section", "Cross-section interaction"), ("u_buckling", "Buckling utilisation"), ("u_member", "Member interaction") })
+        foreach (var (symbol, text) in new[] { ("A_v", "Shear area"), ("N_pl_Rd", "N_pl,Rd"), ("V_pl_Rd", "V_pl,Rd"), ("rho", "ρ"), ("M_y_c_Rd", "M_y,c,Rd"), ("M_z_c_Rd", "M_z,c,Rd"), ("M_y_b_Rd", "M_y,Rk/γ_M1"), ("M_z_b_Rd", "M_z,Rk/γ_M1"), ("N_cr_y", "N_cr,y"), ("N_cr_z", "N_cr,z"), ("lambda_y", "λ̄_y"), ("lambda_z", "λ̄_z"), ("chi_y", "χ_y"), ("chi_z", "χ_z"), ("N_b_y_Rd", "N_b,y,Rd"), ("N_b_z_Rd", "N_b,z,Rd"), ("N_b_Rd", "N_b,Rd"), ("u_N", "Axial utilisation"), ("u_M_y", "Bending y utilisation"), ("u_M_z", "Bending z utilisation"), ("u_V", "Shear utilisation"), ("u_section", "Cross-section interaction"), ("u_buckling", "Buckling utilisation"), ("u_member", "Member interaction") })
             c.Output(symbol, text);
 
         c.CheckUtilisation(c.Si("N_Ed") >= 0 ? "Tension N_Ed ≤ N_pl,Rd" : "Compression N_Ed ≤ N_c,Rd", "u_N", c.Si("N_Ed") >= 0 ? "6.2.3" : "6.2.4");

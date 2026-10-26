@@ -73,7 +73,7 @@ public sealed class FrameCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.Structural, "Beam and 2D frame analysis",
+        Id, "1.4.0", CalcDiscipline.Structural, "Beam and 2D frame analysis",
         "Linear elastic analysis of a plane frame or continuous beam by the direct stiffness method: reactions, member end forces, axial force, shear, bending moment and deflection along every member with their extremes and positions, for each load combination and as an envelope. Global x to the right, y up; moments and couples anticlockwise positive; sagging moments positive along a member from node i to node j.",
         "Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L and bending EI/L³ terms.\nEnd releases (pins) are taken out by static condensation; supports remove freedoms or add spring stiffness.\nSpan loads become equivalent nodal loads, the exact fixed-end forces.\nDisplacements, by banded LDLᵀ after a reverse Cuthill–McKee ordering (a non-positive pivot is reported as a mechanism): K u = F.\nInternal forces and deflections follow from the member end actions and Macaulay functions of the span loads.\nExtremes are found at stations along each member, plus the zero-shear and zero-slope points found by bisection.",
         [
@@ -272,8 +272,16 @@ public sealed class FrameCalculator : ICalcCalculator
                 c.Series(new CalcSeries($"δ member {e}", "x", "m", "δ", "mm", stations.Select(x => (x, s.Member.At(x).Vy * 1e3)).ToList()));
             }
 
+            // A beam cut into short elements is judged against the length of its straight chain of elements, not each element's own length.
             if (s.Dabs > s.Member.Length / 50)
-                c.Warn("large-deflection", $"elements: member {s.Member.Element.Id} deflects {Fmt(s.Dabs * 1e3)} mm, more than L/50.");
+            {
+                var chain = ChainLength(model, s.Member.Element);
+
+                if (s.Dabs > chain / 50)
+                    c.Warn("large-deflection", chain > s.Member.Length * (1 + 1e-9)
+                        ? $"elements: member {s.Member.Element.Id} deflects {Fmt(s.Dabs * 1e3)} mm, more than L/50 of the {Fmt(chain)} m straight chain of members it belongs to."
+                        : $"elements: member {s.Member.Element.Id} deflects {Fmt(s.Dabs * 1e3)} mm, more than L/50.");
+            }
         }
 
         c.Record("M_max", "max sagging moment", $"member {summary.MmaxMember} at x = {Fmt(summary.XMmax)} m", ScalarValue.Of(summary.Mmax / 1e3, kNm), "Maximum moment in the reported combination");
@@ -306,6 +314,48 @@ public sealed class FrameCalculator : ICalcCalculator
         }
 
         c.Series(new CalcSeries("Geometry", "x", "m", "y", "m", model.Elements.SelectMany(e => new[] { (model.NodeById[e.I].X, model.NodeById[e.I].Y), (model.NodeById[e.J].X, model.NodeById[e.J].Y) }).ToList()));
+    }
+
+    /// <summary>The length of the straight chain of members that <paramref name="start"/> belongs to: members joined end to end in a line through unsupported nodes that join exactly two members.</summary>
+    private static double ChainLength(FrameModel model, FrameElement start)
+    {
+        var seen = new HashSet<int> { start.Id };
+        var queue = new Queue<FrameElement>();
+        queue.Enqueue(start);
+        var total = 0.0;
+
+        while (queue.Count > 0)
+        {
+            var e = queue.Dequeue();
+            total += model.Length(e);
+
+            foreach (var nodeId in new[] { e.I, e.J })
+            {
+                if (model.NodeById[nodeId].IsSupported)
+                    continue;
+
+                var attached = model.Elements.Where(x => x.I == nodeId || x.J == nodeId).ToList();
+
+                if (attached.Count != 2)
+                    continue;
+
+                var other = attached.Single(x => x.Id != e.Id);
+
+                if (seen.Contains(other.Id))
+                    continue;
+
+                var (ax, ay) = model.Delta(e);
+                var (bx, by) = model.Delta(other);
+
+                if (Math.Abs(ax * by - ay * bx) > 1e-6 * model.Length(e) * model.Length(other))
+                    continue;
+
+                seen.Add(other.Id);
+                queue.Enqueue(other);
+            }
+        }
+
+        return total;
     }
 
     private sealed record MemberSummary(MemberResult Member, double Mmax, double XMmax, double Mmin, double XMmin, double Vabs, double Nsigned, double Nmax, double Nmin, double Dabs, double Xd);
@@ -379,6 +429,21 @@ public sealed class FrameCalculator : ICalcCalculator
 
             if (kind is FrameLoadKind.Point or FrameLoadKind.Moment && row.Get("a")?.Number is null)
                 throw new FrameModelException($"loads: the {(kind == FrameLoadKind.Moment ? "couple" : "point load")} in case {Int(row, "case")} on element {Int(row, "target")} has no position; enter a, its distance from end i (0 for the start of the member).");
+
+            // A blank magnitude is not zero: a trapezoid with w2 blank would silently become a triangle, a udl with w1 blank would carry nothing.
+            var missing = kind switch
+            {
+                FrameLoadKind.Udl when row.Get("w1")?.Number is null => "w1",
+                FrameLoadKind.Trapezoid when row.Get("w1")?.Number is null => "w1",
+                FrameLoadKind.Trapezoid when row.Get("w2")?.Number is null => "w2",
+                FrameLoadKind.Moment when row.Get("M")?.Number is null => "M",
+                FrameLoadKind.Point when row.Get("F_x")?.Number is null && row.Get("F_y")?.Number is null => "F_x or F_y",
+                FrameLoadKind.Nodal when row.Get("F_x")?.Number is null && row.Get("F_y")?.Number is null && row.Get("M")?.Number is null => "F_x, F_y or M",
+                _ => null,
+            };
+
+            if (missing is not null)
+                throw new FrameModelException($"loads: the {row.Get("kind")?.Text ?? "point"} load in case {Int(row, "case")} on {(kind == FrameLoadKind.Nodal ? "node" : "element")} {Int(row, "target")} has no magnitude: {missing} is blank. A blank is not zero; enter the value (0 for none).");
 
             return new FrameLoad(Int(row, "case"), kind, Int(row, "target"), Si(row, "a", "m"), Si(row, "b", "m"), Si(row, "w1", "kN/m"), Si(row, "w2", "kN/m"), Si(row, "F_x", "kN"), Si(row, "F_y", "kN"), Si(row, "M", "kN*m"), row.Get("gravity")?.Flag ?? false);
         }).ToList();

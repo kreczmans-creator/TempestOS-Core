@@ -53,10 +53,10 @@ Formulas from Roark Table 8.1, in this sheet's own notation, for the chosen supp
       = 5 × 12 kN/m × 8 m / 8
       = 60 kN
         Maximum shear
-  [13] x_delta = L * (1 + sqrt(33)) / 16
-      = 8 m × (1 + sqrt(33)) / 16
-      = 3.3723 m
-        Position of the maximum deflection
+  [13] x_delta = L * (15 - sqrt(33)) / 16
+      = 8 m × (15 − sqrt(33)) / 16
+      = 4.6277 m
+        Position of the maximum deflection, from the fixed end
   [14] delta_max = w * L^4 / (185 * EI)
       = 12 kN/m × (8 m)^4 / (185 × 42000 kN·m²)
       = 6.3259 mm
@@ -70,7 +70,7 @@ Formulas from Roark Table 8.1, in this sheet's own notation, for the chosen supp
   M_min = -96 kN·m    Minimum (hogging) moment
   V_max = 60 kN    Maximum shear
   delta_max = 6.3259 mm    Maximum deflection
-  x_delta = 3.3723 m    Position of δ_max
+  x_delta = 4.6277 m    Position of δ_max
 
 6. CHECKS (governing first)
   No pass/fail checks in this calculation.
@@ -79,7 +79,7 @@ Formulas from Roark Table 8.1, in this sheet's own notation, for the chosen supp
   No warnings.
 
 8. VERIFICATION
-  Template: struct.beam-formulas@1.0.1
+  Template: struct.beam-formulas@1.1.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 8/8

@@ -38,7 +38,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 12/12
-  Test run: 2026-10-26 09:59 UTC
+  Test run: 2026-10-26 11:01 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -175,7 +175,7 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
   Content hash: ab00ab9413e55979
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-26 09:59 UTC
+  Test run: 2026-10-26 11:01 UTC
   Application: TempestOS test
 
 
@@ -423,7 +423,7 @@ Tensile stress area of the thread: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d
   Content hash: 1605cb9b0b97fce8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 09:59 UTC
+  Test run: 2026-10-26 11:01 UTC
   Application: TempestOS test
 
 
@@ -562,9 +562,9 @@ Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − 
   No warnings.
 
 8. VERIFICATION
-  Template: struct.section-properties@1.1.0
-  Content hash: 985ed28ba222c801
+  Template: struct.section-properties@1.1.1
+  Content hash: 18d6536f1f7df3e1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 09:59 UTC
+  Test run: 2026-10-26 11:01 UTC
   Application: TempestOS test

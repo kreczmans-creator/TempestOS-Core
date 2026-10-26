@@ -154,6 +154,54 @@ public sealed class SectionPropertiesTests
     }
 
     [Fact]
+    public void A_Self_Crossing_Outline_Blocks_With_A_Plain_Message()
+    {
+        // struct.section-properties-04: the loop (0,0), (100,100), (100,0), (0,60) crosses itself and ended in the engine's "sqrt of a negative number is undefined".
+        var r = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(("mm", [(0, 0), (100, 100), (100, 0), (0, 60)])));
+        Assert.True(r.IsBlocked);
+        var block = Assert.Single(r.Blocks);
+        Assert.Equal("geometry", block.RuleId);
+        Assert.Contains("crosses itself", block.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("sqrt", block.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_Hole_Outside_Or_Across_The_Outline_Blocks_Instead_Of_Running_With_The_Wrong_Area()
+    {
+        // struct.section-properties-04: a square 100 outline with a 10 x 10 "hole" at x 200 to 210 ran with no notice and gave A = 99 cm2 (the hole subtracted as if it lay in the section).
+        var square = ("mm", (IReadOnlyList<(double, double)>)[(0, 0), (100, 0), (100, 100), (0, 100)]);
+        var outside = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(square, ("mm", [(200, 0), (210, 0), (210, 10), (200, 10)])));
+        Assert.True(outside.IsBlocked);
+        Assert.Contains("outside the outline", Assert.Single(outside.Blocks).Message, StringComparison.Ordinal);
+
+        var across = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(square, ("mm", [(90, 40), (120, 40), (120, 60), (90, 60)])));
+        Assert.True(across.IsBlocked);
+        Assert.Contains("crosses", Assert.Single(across.Blocks).Message, StringComparison.Ordinal);
+
+        // A hole inside the outline still runs (the tube-like polygon of Polygon_With_Hole_Matches_The_Tube).
+        Assert.False(Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(square, ("mm", [(10, 10), (20, 10), (20, 20), (10, 20)]))).IsBlocked);
+    }
+
+    [Theory]
+    [InlineData("channel", 4.3, "low")]
+    [InlineData("angle", 8.9, "low")]
+    [InlineData("tee", 2.8, "high")]
+    public void The_Torsion_Constant_Of_A_Channel_Angle_Or_Tee_States_How_Far_Ignoring_The_Fillet_Errs(string shape, double percent, string direction)
+    {
+        // struct.section-properties-03: J = sum b t^3/3 against a finite-element value (channel 200x75, t 6, t_f 11, r 12: 4.3 % low; angle 100x75, t 10, r 12: 8.9 % low; sharp tee 150x150: 2.8 % high).
+        var dims = shape switch
+        {
+            "channel" => new[] { CalcInputValue.Quantity("h", 200, "mm"), CalcInputValue.Quantity("b", 75, "mm"), CalcInputValue.Quantity("t", 6, "mm"), CalcInputValue.Quantity("t_f", 11, "mm"), CalcInputValue.Quantity("r", 12, "mm") },
+            "angle" => [CalcInputValue.Quantity("h", 100, "mm"), CalcInputValue.Quantity("b", 75, "mm"), CalcInputValue.Quantity("t", 10, "mm"), CalcInputValue.Quantity("r", 12, "mm")],
+            _ => [CalcInputValue.Quantity("h", 150, "mm"), CalcInputValue.Quantity("b", 150, "mm"), CalcInputValue.Quantity("t", 10, "mm"), CalcInputValue.Quantity("t_f", 15, "mm")],
+        };
+        var r = Run([CalcInputValue.Choice("shape", shape), .. dims]);
+        Assert.False(r.IsBlocked);
+        var warning = Assert.Single(r.Warnings, w => w.RuleId == "thin-walled-torsion");
+        Assert.Contains($"about {percent:0.#} % {direction}", warning.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Polygon_And_Parametric_Angle_Agree()
     {
         var shape = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeAngle), CalcInputValue.Quantity("h", 150, "mm"), CalcInputValue.Quantity("b", 90, "mm"), CalcInputValue.Quantity("t", 12, "mm"), CalcInputValue.Quantity("r", 0, "mm"));

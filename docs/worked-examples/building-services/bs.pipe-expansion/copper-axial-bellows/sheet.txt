@@ -38,7 +38,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   A6. anchor_moment is the largest root moment of the legs and runs in the guided-cantilever simplification (M = F·L/2 with each end fixed against rotation). It is not the moment on a frame anchor, which depends on the whole frame (the stiffness of the other legs, the elbow rotations, the anchor's own fixity); a formal analysis is needed before an anchor is sized for moment. (Stated limit.)
   A7. The material properties are single values: α the mean coefficient between the install and operating temperatures; E the modulus at the installation (reference) temperature, used for the stress check, as the piping codes do (ASME B31.3 para. 319.3.2 and 319.5, numbers to be checked against the owner's copy); E_hot, when given, is used only for the reactions on the anchors. Take them from a W3 material applied at the right temperature. (Material library; code convention to be checked.)
   A8. Sa and K1 are the owner's records from the owner's own copy of the piping code (or the design basis), with their provenance; no allowable stress, K1 or code constant ships. The sheet applies the relation to the numbers entered and does not know which code, material or load case they belong to. (No table from a standard is shipped.)
-  A9. No friction, weight, spring-hanger or cold-spring effect is included in the leg force. The axial bellows anchor force is the pressure thrust P·A_eff plus the spring force k·ΔL at the governing pressure entered (the design or the test pressure, whichever governs; a bellows' compression and extension ratings can differ): guide friction and any other bellows load come from the manufacturer's data. (Stated limit.)
+  A9. No friction, weight, spring-hanger or cold-spring effect is included in the leg force; the anchor force adds the friction of the sliding supports, μ·w·L, only when μ and the weight per metre are entered (a warning says so when they are not). The axial bellows anchor force is the pressure thrust P·A_eff plus the spring force k·ΔL at the governing pressure entered (the design or the test pressure, whichever governs; a bellows' compression and extension ratings can differ): guide friction and any other bellows load come from the manufacturer's data. (Stated limit.)
   A10. E (Young's modulus of the pipe material at the installation (reference) temperature, for the stress check, in GPa (steel 210, copper 120, PE and PP about 1; not MPa)) is taken as 120 GPa. (W3 seed 'Copper (generic)', indicative; replace with the project's material record.)
   A11. alpha (Mean coefficient of thermal expansion between the install and operating temperatures) is taken as 17 um/(m*K). (W3 seed 'Copper (generic)' (17e-6 1/K), indicative; replace with the project's material record.)
   A12. temp_mode (Temperature change from) is taken as install and operating temperatures. (Install and operating temperatures are both known.)
@@ -93,27 +93,31 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
       = 120 GPa × 17 um/(m·K) × abs(60 K) × 247.4 mm²
       = 30.282 kN
         Force on the anchors of the fully restrained pipe
-  [23] F_thrust = P_b * A_eff
+  [21] F_friction = support friction not entered
+      = μ and w_pipe blank
+      = 0 N
+        Friction of the sliding supports (not entered: none in the anchor force)
+  [24] F_thrust = P_b * A_eff
       = 6 bar × 40 cm²
       = 2.4 kN
         Bellows pressure thrust on the anchors, at the governing (design or test) pressure
-  [25] F_spring = k_b * dL
+  [26] F_spring = k_b * dL
       = 80 N/mm × 24.48 mm
       = 1958.4 N
         Bellows spring force at the full movement
-  [26] anchor_force = F_thrust + F_spring
-      = 2.4 kN + 1958.4 N
+  [27] anchor_force = F_thrust + F_spring + F_friction
+      = 2.4 kN + 1958.4 N + 0 N
       = 4358.4 N
-        Force on the anchors: pressure thrust plus spring force
-  [27] anchor_moment = axial bellows: no bending
+        Force on the anchors: pressure thrust plus spring force (plus support friction if μ and w_pipe are entered)
+  [28] anchor_moment = axial bellows: no bending
       = the movement is axial
       = 0 N·m
         Moment at the anchors: none from an axial bellows
-  [29] u_bellows = dL / dL_rated
+  [30] u_bellows = dL / dL_rated
       = 24.48 mm / 40 mm
       = 0.612
         Movement over the bellows' rated axial movement
-  [30] pass = the rated movement is given and met
+  [31] pass = the rated movement is given and met
       = 1 check(s)
       = 1
         1 when the movement is within the bellows' rated axial movement; 0 when it is not or when no rating was entered
@@ -130,6 +134,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   sigma_res = 122.4 MPa    Fully restrained stress
   F_res = 30.282 kN    Fully restrained force
   direction = "growth: the pipe lengthens; fully restrained it presses on its anchors (compression)"    Direction of the movement
+  F_friction = 0 N    Support friction on the run
   F_thrust = 2.4 kN    Bellows pressure thrust
   anchor_force = 4358.4 N    Force on the anchors
   anchor_moment = 0 N·m    Moment at the anchors
@@ -143,9 +148,10 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: E, alpha (Material properties); OD, t_wall (Pipe outside diameter and wall); A_eff, k_b, dL_rated (Axial bellows data). Enter each as one so its source, edition and licence travel with it.
+  WARNING friction: mu: the anchor force holds no support friction. Every slide or guide between the anchor and the loop adds μ·w·L to it, which on a long run can exceed the leg force several times; enter μ and the weight per metre (with the length on slides) to include it.
 
 8. VERIFICATION
-  Template: bs.pipe-expansion@1.2.2
+  Template: bs.pipe-expansion@1.3.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5

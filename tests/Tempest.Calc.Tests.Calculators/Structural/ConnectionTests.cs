@@ -121,6 +121,54 @@ public sealed class ConnectionTests
         Assert.Equal(410 * 300 / 1.25 + 275 * 1200 / Math.Sqrt(3), full.OutputSi("V_eff_Rd"), 3);
     }
 
+    [Theory]
+    [InlineData(ConnectionCalculator.HoleOversize)]
+    [InlineData(ConnectionCalculator.HoleSlot)]
+    public void An_Oversize_Or_Slotted_Hole_Type_Without_The_Hole_Size_Is_Blocked(string holeType)
+    {
+        // C-1 verification N1: M20, e1 = e2 = 40, hole type Oversize and d_0 blank kept the normal 22 mm hole in alpha_d and k_1: F_b,Rd 79.52 kN against 72.89 kN at the real 24 mm oversize hole
+        // (9 % unconservative, silent). python3: alpha_b = min(40/(3 x 22), 800/410, 1) = 0.6061 -> k_1 = min(2.8 x 40/22 - 1.7, 2.5) = 2.5, 2.5 x 0.6061 x 410 x 20 x 10/1.25 x 0.8 = 79.52 kN;
+        // at d_0 = 24: alpha_b = 0.5556, k_1 = 2.5 (2.8 x 40/24 - 1.7 = 2.967), 2.5 x 0.5556 x 410 x 20 x 10/1.25 x 0.8 = 72.89 kN.
+        var blank = CalcRunner.Run(Ec3, EdgeOnly().With(CalcInputValue.Choice("hole_type", holeType)));
+        Assert.True(blank.IsBlocked);
+        var block = Assert.Single(blank.Blocks);
+        Assert.Equal("hole", block.RuleId);
+        Assert.StartsWith("d_0:", block.Message, StringComparison.Ordinal);
+
+        var entered = CalcRunner.Run(Ec3, EdgeOnly().With(CalcInputValue.Quantity("d_0", 24, "mm")).With(CalcInputValue.Choice("hole_type", holeType)));
+        Assert.False(entered.IsBlocked);
+
+        // Normal clearance with d_0 blank still takes d + 2.
+        Assert.Equal(99.39, CalcRunner.Run(Ec3, EdgeOnly()).OutputSi("F_b_Rd") / 1e3, 2);
+    }
+
+    [Fact]
+    public void Bearing_Is_Taken_On_The_Thinner_Of_Two_Plies()
+    {
+        // chain.steel-support-R1: M20 8.8, S275, e1 = e2 = 40, p1 150, p2 120: bearing on the 20 mm end plate F_b,Rd 198.79 kN; the bolts also bear on the 11 mm column flange: 109.33 kN (45 % lower).
+        // python3: alpha_b = min(40/66, 150/66 - 0.25, 800/410, 1) = 0.60606, k_1 = min(2.8 x 40/22 - 1.7, 1.4 x 120/22 - 1.7, 2.5) = 2.5, F_b = 2.5 x 0.60606 x 410 x 20 x t/1.25/1e3 kN with t 20 and 11.
+        var set = Defaults().With(CalcInputValue.Quantity("t", 20, "mm")).With(CalcInputValue.Quantity("p_1", 150, "mm")).With(CalcInputValue.Quantity("p_2", 120, "mm"));
+        Assert.Equal(198.788, CalcRunner.Run(Ec3, set).OutputSi("F_b_Rd") / 1e3, 2);
+        var two = CalcRunner.Run(Ec3, set.With(CalcInputValue.Quantity("t_2", 11, "mm")));
+        Assert.Equal(109.333, two.OutputSi("F_b_Rd") / 1e3, 2);
+
+        // A thicker second ply changes nothing.
+        Assert.Equal(198.788, CalcRunner.Run(Ec3, set.With(CalcInputValue.Quantity("t_2", 30, "mm"))).OutputSi("F_b_Rd") / 1e3, 2);
+    }
+
+    [Fact]
+    public void An_Eccentric_Block_Tearing_Group_Uses_The_Halved_Tension_Term()
+    {
+        // struct.connection-ec3-02: A_nt 300, A_nv 900, f_u 410, f_y 275: V_eff,1 = 98.4 + 142.89 = 241.29 kN (concentric); V_eff,2 = 0.5 * 98.4 + 142.89 = 192.09 kN (eccentric).
+        // python3: 410*300/1.25/1e3 = 98.4; 275*900/sqrt(3)/1e3 = 142.894.
+        var set = Defaults().With(CalcInputValue.Quantity("V_Ed", 100, "kN")).With(CalcInputValue.Quantity("A_nt", 300, "mm^2")).With(CalcInputValue.Quantity("A_nv", 900, "mm^2"));
+        Assert.Equal(241.2942, CalcRunner.Run(Ec3, set).OutputSi("V_eff_Rd") / 1e3, 3);
+
+        var eccentric = CalcRunner.Run(Ec3, set.With(CalcInputValue.Choice("block_load", ConnectionCalculator.BlockEccentric)));
+        Assert.Equal(192.0942, eccentric.OutputSi("V_eff_Rd") / 1e3, 3);
+        Assert.Equal(100 / 192.0942, eccentric.OutputSi("u_block"), 4);
+    }
+
     [Fact]
     public void Bolt_Values_That_Feed_The_Base_Plate_Are_Ports()
     {

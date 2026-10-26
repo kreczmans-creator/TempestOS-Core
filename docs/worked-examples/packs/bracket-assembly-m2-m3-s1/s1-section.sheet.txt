@@ -133,9 +133,9 @@ Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − 
   No warnings.
 
 8. VERIFICATION
-  Template: struct.section-properties@1.1.0
-  Content hash: 985ed28ba222c801
+  Template: struct.section-properties@1.1.1
+  Content hash: 18d6536f1f7df3e1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 08:42 UTC
+  Test run: 2026-10-26 11:01 UTC
   Application: TempestOS test

@@ -1,4 +1,4 @@
-# B8 — Pipe expansion, loops and anchor forces (`bs.pipe-expansion@1.2.2`)
+# B8 — Pipe expansion, loops and anchor forces (`bs.pipe-expansion@1.3.0`)
 
 **In plain terms.** A hot pipe grows longer, and if its ends are held it pushes on its anchors or buckles; a cold pipe shrinks and pulls. The worksheet works out the growth between anchors from the temperature change, the force and stress if the pipe is fully restrained, and the length of an offset or loop that absorbs the growth within a stress range you allow. It is a quick screening, not a piping stress analysis.
 
@@ -42,6 +42,8 @@
 
 **Version 1.2.0 (second review).** `anchor_force` is the resultant `√(F_leg² + F_run²)` of the perpendicular components (also reported separately); `anchor_moment` is stated as the guided-cantilever simplification and not a frame anchor moment; the optional second run `L2` makes the offset-leg layout a Z-bend, each run checked as its own cantilever (replacing the earlier advice to enter a combined spacing); the method text is reworded; `k1-unused` is its own warning and the warnings are prefixed with the input they are about; `P_b` is the governing pressure and the compression/extension rating note is added.
 
+**Version 1.3.0 (support friction).** The anchor force holds the leg's (or runs', or bellows') force alone; the slides and guides between the anchor and the loop add `μ·w·L_slide` along the run (88.9 × 3.2 steel, water-filled 12.1 kg/m, 50 m on slides at μ 0.3: 1.78 kN against the leg's 388 N). New optional inputs `mu`, `w_pipe` (kg/m) and `L_slide` (blank: the anchor spacing `L`) give the output `F_friction` and fold it into `F_along_run` and `anchor_force` (the resultant for an offset leg or Z-bend, the sum for a U-loop or bellows); when `μ` and `w_pipe` are not both entered `F_friction` is 0 and the sheet warns (rule `friction`) that the anchor force holds no support friction. The pack `pack.pipework-supports` binds `anchor_force` to the post's `F_x`; its example enters no friction, so it carries the warning.
+
 <!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
 **Worked example, by hand.** Low-temperature hot-water main, 50 m between anchors: a U-loop of two 4 m legs ([sheet](../../worked-examples/building-services/bs.pipe-expansion/lthw-main-expansion-loop/sheet.txt)).
 
@@ -57,10 +59,10 @@ dL = 12 um/(m·K) × 50 m × abs(70 K) = 42 mm
 dL_signed = 12 um/(m·K) × 50 m × 70 K = 42 mm
 sigma_res = 210 GPa × 12 um/(m·K) × abs(70 K) = 176.4 MPa
 F_res = 210 GPa × 12 um/(m·K) × abs(70 K) × 861.55 mm² = 151.98 kN
+F_friction = μ and w_pipe blank = 0 N
 u_res = 176.4 MPa / 100 MPa = 1.764
 Delta = 42 mm / 2 = 21 mm
-L_req = sqrt(3 × 210 GPa × 88.9 mm × 21 mm / 100 MPa) = 3.4295 m
-… 15 more step(s) on the sheet
+… 16 more step(s) on the sheet
 Governing: PASS  Available leg against the required leg (3.4295 m): u_leg = 0.85737 vs u_leg ≤ 1  utilisation 0.857
 ```
 <!-- hand-arithmetic:end -->
