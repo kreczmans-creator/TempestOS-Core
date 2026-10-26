@@ -49,6 +49,9 @@ public sealed class DemoProjectViewModel
     /// <summary>Whether the demonstration project is in this database now.</summary>
     public bool IsInstalled { get; private set; }
 
+    /// <summary>No demonstration is installed, but a removed one still holds calculations made in it after its removal; Remove clears them (SEC-C-05).</summary>
+    public bool HasLeftOver { get; private set; }
+
     /// <summary>The project's id when it is installed.</summary>
     public Guid? ProjectId { get; private set; }
 
@@ -58,8 +61,8 @@ public sealed class DemoProjectViewModel
     /// <summary>The install can be asked for: it is not installed and nothing is running.</summary>
     public bool CanInstall => !_busy && !IsInstalled;
 
-    /// <summary>The removal can be asked for: it is installed and nothing is running.</summary>
-    public bool CanRemove => !_busy && IsInstalled;
+    /// <summary>The removal can be asked for: it is installed (or a removed one left rows behind) and nothing is running.</summary>
+    public bool CanRemove => !_busy && (IsInstalled || HasLeftOver);
 
     /// <summary>One plain sentence: what is installed, what is running, or what the last act did.</summary>
     public string Status { get; private set; } = string.Empty;
@@ -74,11 +77,14 @@ public sealed class DemoProjectViewModel
     {
         var status = await _service.StatusAsync(cancellationToken).ConfigureAwait(true);
         IsInstalled = status.Installed;
+        HasLeftOver = !status.Installed && status.LeftOver;
         ProjectId = status.ProjectId;
         _installRefusal = status.InstallRefusal;
 
         if (!_busy && Status.Length == 0)
-            Status = IsInstalled ? $"The demo project '{CalcDemoProject.DisplayName}' is installed." : "The demo project is not installed.";
+            Status = IsInstalled ? $"The demo project '{CalcDemoProject.DisplayName}' is installed."
+                : HasLeftOver ? "The demo project was removed, but calculations made in it afterwards are still stored; press Remove demo project to clear them."
+                : "The demo project is not installed.";
 
         RaiseChanged();
     }
@@ -155,7 +161,7 @@ public sealed class DemoProjectViewModel
         Status = string.Empty;
         await RefreshAsync(cancellationToken).ConfigureAwait(true);
 
-        if (!IsInstalled)
+        if (!IsInstalled && !HasLeftOver)
         {
             Finish("There is no demo project to remove.", ActionOutcome.Failed);
             return;

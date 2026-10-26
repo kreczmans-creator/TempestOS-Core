@@ -22,7 +22,9 @@ public sealed record CalcDemoOutcome(bool Succeeded, string Message, int Calcula
 /// <param name="Installed">A live project is the demonstration (it carries the flag and the number).</param>
 /// <param name="ProjectId">That project's id, when installed.</param>
 /// <param name="InstallRefusal">Why an install would be refused (it is installed already, or another project holds the number), or <see langword="null"/> when it would go ahead.</param>
-public sealed record CalcDemoStatus(bool Installed, Guid? ProjectId, string? InstallRefusal);
+/// <param name="LeftOver">No demonstration is live, but a removed one still holds calculation or pack rows (made in it after it was removed, by a window that
+/// still showed it): Remove demo project clears them (security review SEC-C-05).</param>
+public sealed record CalcDemoStatus(bool Installed, Guid? ProjectId, string? InstallRefusal, bool LeftOver = false);
 
 /// <summary>
 /// Addendum C, C-6: installs and removes the demonstration project (<see cref="CalcDemoProject"/>) through the services a person uses — a project made as the
@@ -75,7 +77,7 @@ public class CalcDemoProjectService
         if (demo is not null)
             return new CalcDemoStatus(true, demo.Id, $"The demo project '{CalcDemoProject.DisplayName}' is installed already; remove it before installing it again.");
 
-        return new CalcDemoStatus(false, null, other is null ? null : NumberTaken(other));
+        return new CalcDemoStatus(false, null, other is null ? null : NumberTaken(other), (await LeftOversAsync(cancellationToken).ConfigureAwait(false)).Count > 0);
     }
 
     private static string NumberTaken(IEngineeringObject other) =>
@@ -317,6 +319,9 @@ public class CalcDemoProjectService
         {
             var (demo, other) = await FindAsync(cancellationToken).ConfigureAwait(false);
 
+            if (demo is null && await LeftOversAsync(cancellationToken).ConfigureAwait(false) is { Count: > 0 } leftOvers)
+                return await ClearLeftOversAsync(leftOvers, cancellationToken).ConfigureAwait(false);
+
             if (demo is null)
             {
                 return CalcDemoOutcome.Refused(other is null
@@ -432,6 +437,62 @@ public class CalcDemoProjectService
     }
 
     // ------------------------------------------------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// The removed demonstrations (deleted, with the flag and the number) that still hold calculation or pack rows: a calculation made in one after its
+    /// removal, from a window that still showed it (SEC-C-05). Their rows are the demonstration's, so Remove demo project clears them.
+    /// </summary>
+    private async Task<IReadOnlyList<Guid>> LeftOversAsync(CancellationToken cancellationToken)
+    {
+        var found = new List<Guid>();
+
+        foreach (var entry in await _domain.Repository.ListByKindAsync(CalcDemoProject.ProjectKind, cancellationToken).ConfigureAwait(false))
+        {
+            if (!entry.IsDeleted || !string.Equals(entry.Identifier, CalcDemoProject.Identifier, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (!CalcDemoProject.IsTheDemonstration(await _domain.Repository.FindAsync(entry.Id, cancellationToken).ConfigureAwait(false)))
+                continue;
+
+            if ((await _service.Store.ListInstancesAsync(entry.Id, cancellationToken).ConfigureAwait(false)).Count > 0
+                || (await _service.Store.ListPacksAsync(entry.Id, cancellationToken).ConfigureAwait(false)).Count > 0)
+                found.Add(entry.Id);
+        }
+
+        return found;
+    }
+
+    /// <summary>Clears the rows left in removed demonstrations, through the same removal (issued rows refused, one row transaction, audit row, soft delete of what is under it).</summary>
+    private async Task<CalcDemoOutcome> ClearLeftOversAsync(IReadOnlyList<Guid> projects, CancellationToken cancellationToken)
+    {
+        int calculations = 0, packs = 0;
+
+        foreach (var id in projects)
+        {
+            CalcDemoOutcome outcome;
+
+            try
+            {
+                outcome = await RemoveProjectAsync(id, cancellationToken).ConfigureAwait(false);
+            }
+            catch (CalcInstanceImmutableException ex)
+            {
+                return CalcDemoOutcome.Refused($"What was left of the removed demo project was not cleared, because an issued calculation or pack in it is never deleted ({Sentence(ex.Message)}).");
+            }
+            catch (Exception ex) when (ex is EngineeringDomainException or InvalidOperationException or IOException or PersistenceException)
+            {
+                return CalcDemoOutcome.Refused($"What was left of the removed demo project was not cleared ({Sentence(ex.Message)}).");
+            }
+
+            if (!outcome.Succeeded)
+                return outcome;
+
+            calculations += outcome.Calculations;
+            packs += outcome.Packs;
+        }
+
+        return new CalcDemoOutcome(true, $"Cleared what was left of the removed demo project: {calculations} calculations and {packs} packs made in it after it was removed.", calculations, packs);
+    }
 
     /// <summary>The live project that is the demonstration, and a live project that merely holds its number.</summary>
     private async Task<(IEngineeringObject? Demo, IEngineeringObject? Other)> FindAsync(CancellationToken cancellationToken)

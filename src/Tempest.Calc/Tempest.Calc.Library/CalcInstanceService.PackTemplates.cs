@@ -126,6 +126,9 @@ public sealed partial class CalcInstanceService
         if (ValidatePackTemplate(template) is { } invalid)
             return (null, invalid);
 
+        if (await DeletedProjectRefusalAsync(projectId, cancellationToken).ConfigureAwait(false) is { } deleted)
+            return (null, deleted);
+
         // Run the whole chain in memory first, so a refusal leaves no stray drafts behind.
         if (DryRunRefusal(template, inputs, cancellationToken) is { } refused)
             return (null, refused);
@@ -145,7 +148,7 @@ public sealed partial class CalcInstanceService
             {
                 instance = await CreateAsync(step.TemplateId, projectId, step.Name, given, cancellationToken).ConfigureAwait(false);
             }
-            catch (CalcLinkRefusedException ex)
+            catch (Exception ex) when (ex is CalcLinkRefusedException or CalcProjectDeletedException)
             {
                 return (null, $"Step '{step.Key}': {ex.Message}");
             }

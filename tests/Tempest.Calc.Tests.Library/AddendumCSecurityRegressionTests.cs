@@ -150,4 +150,61 @@ public sealed class AddendumCSecurityRegressionTests
         Assert.Contains(problems, p => p.StartsWith("Line 2: origin must be", StringComparison.Ordinal));
         Assert.NotNull((Provenance() with { Origin = (CalcDataOrigin)7 }).Problem());
     }
+
+    // ------------------------------------------------------------------ SEC-C-05 / R-C-05: a late create into the removed demonstration
+
+    /// <summary>After the demonstration is removed, a window that still shows it could make a calculation in it, and the row was then out of reach of Remove.</summary>
+    [Fact]
+    public async Task SEC_C_05_Nothing_New_Can_Be_Made_In_A_Deleted_Project()
+    {
+        var host = DemoHost.New();
+        var demo = DemoHost.Service(host);
+        Assert.True((await demo.InstallAsync()).Succeeded);
+        var id = (await demo.StatusAsync()).ProjectId!.Value;
+        var kept = (await DemoHost.InstancesAsync(host, id))[0];
+        Assert.True((await demo.RemoveAsync()).Succeeded);
+
+        var create = await Assert.ThrowsAsync<CalcProjectDeletedException>(() => host.Service.CreateAsync("mech.tolerance-stack", id, "late write", CalcDemoProject.SealStackInputs()));
+        Assert.Contains("has been deleted", create.Message, StringComparison.Ordinal);
+        await Assert.ThrowsAsync<CalcProjectDeletedException>(() => host.Service.CreatePackAsync(id, "late pack", [kept.Id]));
+        var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.All[0], id, "late chain");
+        Assert.Null(made);
+        Assert.Contains("has been deleted", refusal, StringComparison.Ordinal);
+
+        Assert.Empty(await host.Store.ListInstancesAsync(id));
+        Assert.Empty(await host.Store.ListPacksAsync(id));
+        Assert.False((await demo.StatusAsync()).LeftOver);
+
+        // A live project is unaffected.
+        Assert.NotNull(await host.Service.CreateAsync("mech.tolerance-stack", await host.ProjectAsync(), "real", CalcDemoProject.SealStackInputs()));
+    }
+
+    /// <summary>A row that still lands in the removed demonstration (a create that passed its check while the removal ran) is cleared by Remove demo project.</summary>
+    [Fact]
+    public async Task SEC_C_05_Remove_Clears_Rows_Left_In_A_Removed_Demo_Project()
+    {
+        var host = DemoHost.New();
+        var demo = DemoHost.Service(host);
+        Assert.True((await demo.InstallAsync()).Succeeded);
+        var id = (await demo.StatusAsync()).ProjectId!.Value;
+        var late = (await DemoHost.InstancesAsync(host, id))[0];
+        Assert.True((await demo.RemoveAsync()).Succeeded);
+
+        // The row a racing create writes after the removal's transaction committed.
+        await host.Store.SaveInstanceAsync(late);
+        var status = await demo.StatusAsync();
+        Assert.False(status.Installed);
+        Assert.True(status.LeftOver);
+        Assert.Null(status.InstallRefusal);
+
+        var cleared = await demo.RemoveAsync();
+        Assert.True(cleared.Succeeded, cleared.Message);
+        Assert.Equal(1, cleared.Calculations);
+        Assert.Contains("Cleared what was left", cleared.Message, StringComparison.Ordinal);
+        Assert.Empty(await host.Store.ListInstancesAsync(id));
+        Assert.False((await demo.StatusAsync()).LeftOver);
+
+        // Nothing left: Remove says so, as before.
+        Assert.False((await demo.RemoveAsync()).Succeeded);
+    }
 }
