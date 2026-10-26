@@ -150,7 +150,7 @@ internal static class CalcPackExamples
         Q("U_target", 0.3, "W/(m^2*K)"), Q("n", 0.5, "1/h"), Q("V", 40, "m^3"),
     ];
 
-    /// <summary>A room with MVHR, a partition to an 18 °C space and a ground floor with a user U (Φ about 264 W). The partition is not held to the outside target U.</summary>
+    /// <summary>A room with MVHR, a partition to an 18 °C space and a ground floor with a user U (Φ about 305 W). The partition is not held to the outside target U. The envelope leaks 0.1 h⁻¹ at the outside temperature besides the MVHR rate (an invented, illustrative value; blank would drop the infiltration loss, bs.room-heat-loss-R1).</summary>
     public static IReadOnlyList<CalcInputValue> WetRoomB { get; } =
     [
         Q("theta_int", 21, "degC"), Q("theta_e", -3, "degC"),
@@ -159,7 +159,7 @@ internal static class CalcPackExamples
             CalcRow.Of(Txt("name", "Cavity wall"), ("area", new CalcCell(15, "m^2"))),
             CalcRow.Of(Txt("name", "Partition"), ("area", new CalcCell(12, "m^2")), ("theta_adj", new CalcCell(18, "degC")), ("Rg", new CalcCell(0.18, "m^2*K/W"))),
             CalcRow.Of(Txt("name", "Ground floor"), ("area", new CalcCell(10, "m^2")), Num("f", 0.6), ("U_user", new CalcCell(0.25, "W/(m^2*K)")))),
-        Q("y_tb", 0.05, "W/(m^2*K)"), Q("n", 0.6, "1/h"), Q("V", 50, "m^3"), Q("theta_supply", 16, "degC"),
+        Q("y_tb", 0.05, "W/(m^2*K)"), Q("n", 0.6, "1/h"), Q("V", 50, "m^3"), Q("theta_supply", 16, "degC"), Q("n_inf", 0.1, "1/h"),
     ];
 
     /// <summary>
