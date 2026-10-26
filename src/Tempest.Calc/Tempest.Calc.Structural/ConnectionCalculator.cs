@@ -31,7 +31,7 @@ public sealed class ConnectionCalculator : ICalcCalculator
     public static IReadOnlyList<(string Grade, double BetaW)> Steels { get; } = [("S235", 0.8), ("S275", 0.85), ("S355", 0.9), ("S420", 1.0), ("S460", 1.0)];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.4.0", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
+        Id, "1.5.0", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
         "The design resistances of one bolt in a plate (shear, bearing, tension, punching, combined shear and tension), an optional block-tearing check of the bolt group, the spacing limits, and a fillet weld by the simplified and the directional method, each against its design force.",
         "Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P\n" +
         "Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane)\n" +
@@ -89,7 +89,7 @@ public sealed class ConnectionCalculator : ICalcCalculator
             new CalcClauseRef("ISO 898-1:2013", "cl. 9.1", "Nominal stress area (formula)"),
         ],
         [
-            new CalcApplicabilityRule("hole", "The hole must be larger than the bolt.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("hole", "The hole must be larger than the bolt; an oversize or slotted hole type needs its hole size d_0 entered.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("hole_clearance", "A d₀ above the normal clearance with the hole type left at normal is treated as oversize (bearing × 0.8).", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("single_lap", "With one shear plane and k₁·α_b above 1.5 the bearing resistance is capped for a single-lap joint with one bolt row; the sheet warns until the joint type is stated.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("spacing", "The edge distance e₂, the gauge p₂ and the pitch p₁ must leave a positive bearing factor (k₁ and α_b above 0).", CalcNoticeSeverity.Block),
@@ -183,6 +183,16 @@ public sealed class ConnectionCalculator : ICalcCalculator
         var threads = c.InputFlag("threads");
         var (fub, fyb) = Strengths(grade);
         var d = size.D;
+        var holeTypeEntered = c.InputText("hole_type");
+
+        // An oversize or slotted hole has no size the sheet may assume (the clearance of an oversize hole is a table of the execution standard, not shipped here): with d_0 blank the normal hole
+        // would be used in alpha_d, k_1 and the edge checks and the bearing resistance would be overstated (M20: 79.52 kN against 72.89 kN at 24 mm).
+        if (holeTypeEntered != HoleNormal && !c.Has("d_0"))
+        {
+            c.Block("hole", $"d_0: the hole type is '{holeTypeEntered}', so the hole diameter (for a slot, its width across the load) must be entered; the normal clearance would overstate the bearing resistance.");
+            return;
+        }
+
         var d0 = c.Has("d_0") ? c.InputSi("d_0") * 1e3 : d + (d >= 27 ? 3 : 2);
 
         if (!(d0 > d))

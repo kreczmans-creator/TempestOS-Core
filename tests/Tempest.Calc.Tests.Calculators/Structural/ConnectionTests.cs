@@ -121,6 +121,27 @@ public sealed class ConnectionTests
         Assert.Equal(410 * 300 / 1.25 + 275 * 1200 / Math.Sqrt(3), full.OutputSi("V_eff_Rd"), 3);
     }
 
+    [Theory]
+    [InlineData(ConnectionCalculator.HoleOversize)]
+    [InlineData(ConnectionCalculator.HoleSlot)]
+    public void An_Oversize_Or_Slotted_Hole_Type_Without_The_Hole_Size_Is_Blocked(string holeType)
+    {
+        // C-1 verification N1: M20, e1 = e2 = 40, hole type Oversize and d_0 blank kept the normal 22 mm hole in alpha_d and k_1: F_b,Rd 79.52 kN against 72.89 kN at the real 24 mm oversize hole
+        // (9 % unconservative, silent). python3: alpha_b = min(40/(3 x 22), 800/410, 1) = 0.6061 -> k_1 = min(2.8 x 40/22 - 1.7, 2.5) = 2.5, 2.5 x 0.6061 x 410 x 20 x 10/1.25 x 0.8 = 79.52 kN;
+        // at d_0 = 24: alpha_b = 0.5556, k_1 = 2.5 (2.8 x 40/24 - 1.7 = 2.967), 2.5 x 0.5556 x 410 x 20 x 10/1.25 x 0.8 = 72.89 kN.
+        var blank = CalcRunner.Run(Ec3, EdgeOnly().With(CalcInputValue.Choice("hole_type", holeType)));
+        Assert.True(blank.IsBlocked);
+        var block = Assert.Single(blank.Blocks);
+        Assert.Equal("hole", block.RuleId);
+        Assert.StartsWith("d_0:", block.Message, StringComparison.Ordinal);
+
+        var entered = CalcRunner.Run(Ec3, EdgeOnly().With(CalcInputValue.Quantity("d_0", 24, "mm")).With(CalcInputValue.Choice("hole_type", holeType)));
+        Assert.False(entered.IsBlocked);
+
+        // Normal clearance with d_0 blank still takes d + 2.
+        Assert.Equal(99.39, CalcRunner.Run(Ec3, EdgeOnly()).OutputSi("F_b_Rd") / 1e3, 2);
+    }
+
     [Fact]
     public void An_Eccentric_Block_Tearing_Group_Uses_The_Halved_Tension_Term()
     {

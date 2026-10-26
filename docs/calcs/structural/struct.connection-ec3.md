@@ -1,4 +1,4 @@
-# S4 — Bolts and fillet welds, EN 1993-1-8 (`struct.connection-ec3@1.4.0`)
+# S4 — Bolts and fillet welds, EN 1993-1-8 (`struct.connection-ec3@1.5.0`)
 
 **In plain terms.** A bolted joint can fail by the bolt shearing, the plate tearing or crushing at the hole, or the bolt pulling through or stretching, and a fillet weld can fail along its throat. The worksheet takes the bolt, plate and weld you describe and the loads on them, works out how much each failure mode can carry under Eurocode 3, and divides the load by the smallest capacity. A ratio under 1 passes, and the mode with the highest ratio governs.
 
@@ -9,6 +9,8 @@
 **Inputs.** `grade`, `size`, optional `d_0`, `hole_type`, `single_lap`, `n_s`, `threads`, `e_head`; `steel`, `t`, `f_y`, `f_u` (record `steel.strengths`); `e_1`, `e_2`, optional `p_1`, `p_2`; Table 3.3 minima `k_e1`, `k_e2`, `k_p1`, `k_p2` and `gamma_M2`, `gamma_M0` (record `ec3.national-annex`); `F_v_Ed`, `F_t_Ed`; optional block tearing `block_load`, `V_Ed`, `A_nt`, `A_nv`; optional weld `a`, `F_w_Ed`, `sigma_perp`, `tau_perp`, `tau_par`.
 
 **Outputs.** `f_ub`, `A_s`, `alpha_v`, `F_v_Rd`, `alpha_b`, `k_1`, `F_b_Rd`, `F_t_Rd`, `B_p_Rd`, utilisations, `governing`, `V_eff_Rd`, `f_vw_d`, `F_w_Rd`. **Ports.** `F_v_Rd`, `F_b_Rd` (→ S6 `F_1_vb_Rd`), `F_t_Rd` (→ S6 `F_t_Rd`), `A_s` (→ S6 `A_s`), `f_ub`, `f_yb` (→ S6 `f_ub`, `f_yb`; ports added in 1.1.0; in the steel-support chain a second S4 run for the base plate's thickness and edge distances feeds S6), `f_vw_d` (→ M6). Links in: M3 bolt forces, M6 weld force per length, S3, S5.
+
+**Hole type (1.5.0).** A hole type of "Oversize" or "Slot across the load" with `d_0` blank is blocked (rule `hole`): the sheet does not ship the oversize clearances of the execution standard, and the normal hole d + 2 (d + 3 from M27) in `α_d`, `k₁` and the edge checks overstated the bearing resistance (M20, e₁ = e₂ = 40 mm: 79.52 kN against 72.89 kN at the 24 mm oversize hole, 9 % unconservative). Enter `d_0` (for a slot, its width across the load).
 
 **Limitations.** A spacing that leaves no bearing resistance (`e_2` or `p_2` so small that `k_1 ≤ 0`, or `p_1` so small that `α_d ≤ 0`) blocks naming the input and the Table 3.3 minimum, instead of failing with a division by zero. The M12 hole of d + 2 = 14 mm carries no 0.85 reduction of `F_v,Rd` (an open owner decision on the clause, not applied). Static; categories A and D only; no slip-resistant joints, no moment end plates, no countersunk or long joints.
 
