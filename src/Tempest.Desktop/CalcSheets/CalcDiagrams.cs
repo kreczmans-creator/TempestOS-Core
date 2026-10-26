@@ -152,14 +152,14 @@ public static class CalcDiagrams
                 new DiagramCircle("bolt-4", new(170, 106), 8, Filled: true, "bolts", "bolts", new(135, 26), Solid: true),
                 new DiagramCircle("bolt-5", new(100, 150), 8, Filled: true, "bolts", Solid: true),
                 new DiagramCircle("bolt-6", new(170, 150), 8, Filled: true, "bolts", Solid: true),
-                new DiagramMoment("torque", new(135, 106), 14, Clockwise: false, "T_z", "T_z", new(135, 186)),
+                new DiagramMoment("torque", new(135, 106), 14, Clockwise: false, "M_z", "M_z", new(135, 186)),
                 new DiagramDimension("load-point-y", new(290, 200), new(290, 80), 0, "e_y", "e_y", new(340, 150)),
                 new DiagramDimension("load-point-x", new(40, 200), new(290, 200), 18, "e_x", "e_x"),
                 new DiagramCircle("load-point", new(290, 80), 4, Filled: true, "e_x", Solid: true),
                 new DiagramPointLoad("load-y", new(290, 36), DiagramDirection.Up, 44, "F_y", "F_y", new(290, 24)),
                 new DiagramPointLoad("load-x", new(342, 80), DiagramDirection.Right, 52, "F_x", "F_x", new(344, 96)),
-                new DiagramLabel("shear-resistance", new(60, 230), "V_R", "V_R"),
-                new DiagramLabel("tension-resistance", new(300, 230), "T_R", "T_R"),
+                new DiagramLabel("shear-resistance", new(60, 230), "F_v_Rd", "F_v_Rd"),
+                new DiagramLabel("tension-resistance", new(300, 230), "F_t_Rd", "F_t_Rd"),
             ]),
         ]);
 

@@ -34,12 +34,12 @@ public sealed class DriveTrainChainTests
 
         // E1 → M3: E1's design torque is the torque about the coupling flange's bolt-circle centre, N·m into kN·m. On the default basis (the load peak) it is T_pk, as before (chain.drive-train-D1).
         Assert.Equal(Si(e1, "T_pk"), Si(e1, "T_design"), 12);
-        Assert.Equal(Si(e1, "T_pk"), InputSi(m3, "T_z"), 9);
+        Assert.Equal(Si(e1, "T_pk"), InputSi(m3, "M_z"), 9);
         Assert.Equal(Si(e1, "T_pk"), Si(m3, "T"), 9);
-        Assert.Contains(m3.Inputs, i => i.Symbol == "T_z" && CalcLink.From(i.Provenance) is { OutputSymbol: "T_design" });
+        Assert.Contains(m3.Inputs, i => i.Symbol == "M_z" && CalcLink.From(i.Provenance) is { OutputSymbol: "T_design" });
 
         // Four bolts on a 40 mm radius share that torque equally in shear: v = T / (n r).
-        Assert.Equal(Si(e1, "T_pk") / (4 * 0.040), Si(m3, "v_max"), 6);
+        Assert.Equal(Si(e1, "T_pk") / (4 * 0.040), Si(m3, "F_v_Ed_max"), 6);
 
         // The chain's physical figures: a 12.5:1 gearbox at 118 rpm on the drum puts 1475 rpm on the motor and the shaft, just below the motor's 1480 rpm nameplate
         // (the induction motor runs under its synchronous 1500 rpm), so E1 does not warn speed-above-rated.
@@ -156,9 +156,9 @@ public sealed class DriveTrainChainTests
 
         Assert.Equal(InputSi(e1, "T_peak"), Si(e1, "T_design"), 9);
         Assert.True(Si(e1, "T_design") > Si(e1, "T_pk"));
-        Assert.Equal(Si(e1, "T_design"), InputSi(m3, "T_z"), 9);
+        Assert.Equal(Si(e1, "T_design"), InputSi(m3, "M_z"), 9);
         Assert.Equal(Si(e1, "T_pk"), InputSi(m4, "T_pk"), 9);
-        Assert.Equal(Si(e1, "T_design") / (4 * 0.040), Si(m3, "v_max"), 6);
+        Assert.Equal(Si(e1, "T_design") / (4 * 0.040), Si(m3, "F_v_Ed_max"), 6);
     }
 
     [Fact]
@@ -175,8 +175,8 @@ public sealed class DriveTrainChainTests
         Assert.True(Si(e1New, "T_load") > Si(e1, "T_load"));
         Assert.Equal(Si(e1New, "T_load"), InputSi(m4, "T"), 9);
         Assert.Equal(Si(m4, "R_A"), InputSi(m5, "F_r"), 9);
-        Assert.Equal(Si(e1New, "T_design"), InputSi(m3, "T_z"), 9);
-        Assert.Equal(Si(e1New, "T_pk"), InputSi(m3, "T_z"), 9);
+        Assert.Equal(Si(e1New, "T_design"), InputSi(m3, "M_z"), 9);
+        Assert.Equal(Si(e1New, "T_pk"), InputSi(m3, "M_z"), 9);
     }
 
     [Fact]

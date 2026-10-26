@@ -39,7 +39,7 @@ public static class CalcPackTemplates
             new CalcPackBinding("e1", "F_ax_pk", "m5", "F_a"),
             new CalcPackBinding("m4", "d_A", "m2", "D"),
             new CalcPackBinding("e1", "T_pk", "m4", "T_pk"),
-            new CalcPackBinding("e1", "T_design", "m3", "T_z"),
+            new CalcPackBinding("e1", "T_design", "m3", "M_z"),
         ]);
 
     /// <summary>
@@ -180,8 +180,8 @@ public static class CalcPackTemplates
             new CalcPackBinding("s2", "V_e1", "s3", "V_Ed"),
             new CalcPackBinding("s2", "V_e2", "m3", "F_y"),
             new CalcPackBinding("s2", "M_abs_e2", "m3", "M_x"),
-            new CalcPackBinding("m3", "v_max", "s4a", "F_v_Ed"),
-            new CalcPackBinding("m3", "t_max", "s4a", "F_t_Ed"),
+            new CalcPackBinding("m3", "F_v_Ed_max", "s4a", "F_v_Ed"),
+            new CalcPackBinding("m3", "F_t_Ed_max", "s4a", "F_t_Ed"),
             new CalcPackBinding("s2", "V_e2", "s4a", "V_Ed"),
             new CalcPackBinding("s2", "R1_y", "s6", "N_Ed"),
             new CalcPackBinding("s2", "R1_m_abs", "s6", "M_Ed"),

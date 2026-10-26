@@ -32,8 +32,8 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 | Support frame | `V_e1` | Column check | `V_Ed` | 5 kN |
 | Support frame | `V_e2` | Arm joint bolt group | `F_y` | 28.2 kN |
 | Support frame | `M_abs_e2` | Arm joint bolt group | `M_x` | 28.2 kN*m |
-| Arm joint bolt group | `v_max` | Arm connection bolts | `F_v_Ed` | 4.7 kN |
-| Arm joint bolt group | `t_max` | Arm connection bolts | `F_t_Ed` | 47 kN |
+| Arm joint bolt group | `F_v_Ed_max` | Arm connection bolts | `F_v_Ed` | 4.7 kN |
+| Arm joint bolt group | `F_t_Ed_max` | Arm connection bolts | `F_t_Ed` | 47 kN |
 | Support frame | `V_e2` | Arm connection bolts | `V_Ed` | 28.2 kN |
 | Support frame | `R1_y` | Column base plate | `N_Ed` | 28.2 kN |
 | Support frame | `R1_m_abs` | Column base plate | `M_Ed` | 43.2 kN*m |

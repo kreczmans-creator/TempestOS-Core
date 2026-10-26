@@ -76,7 +76,7 @@ internal static class CalcPackExamples
     [
         Table("bolts", Bolt(40, 0, 36.6), Bolt(0, 40, 36.6), Bolt(-40, 0, 36.6), Bolt(0, -40, 36.6)),
         Q("F_x", 0, "kN"), Q("F_y", 0, "kN"), Q("e_x", 0, "mm"), Q("e_y", 0, "mm"), Q("N", 0, "kN"), Q("M_x", 0, "kN*m"), Q("M_y", 0, "kN*m"),
-        Q("V_R", 14.0, "kN"), Q("T_R", 21.0, "kN"),
+        Q("F_v_Rd", 14.0, "kN"), Q("F_t_Rd", 21.0, "kN"),
     ];
 
     private static CalcRow Bolt(double x, double y, double area) => CalcRow.Of(Mm("x", x), Mm("y", y), ("A", new CalcCell(area, "mm^2")));
@@ -290,8 +290,8 @@ internal static class CalcPackExamples
     public static IReadOnlyList<CalcInputValue> SteelM3 { get; } =
     [
         Table("bolts", Bolt(-60, 150, 245), Bolt(60, 150, 245), Bolt(-60, 0, 245), Bolt(60, 0, 245), Bolt(-60, -150, 245), Bolt(60, -150, 245)),
-        Q("F_x", 0, "kN"), Q("e_x", 0, "mm"), Q("e_y", 0, "mm"), Q("T_z", 0, "kN*m"), Q("N", 0, "kN"), Q("M_y", 0, "kN*m"),
-        Q("V_R", 94.0, "kN"), Q("T_R", 141.0, "kN"),
+        Q("F_x", 0, "kN"), Q("e_x", 0, "mm"), Q("e_y", 0, "mm"), Q("M_z", 0, "kN*m"), Q("N", 0, "kN"), Q("M_y", 0, "kN*m"),
+        Q("F_v_Rd", 94.0, "kN"), Q("F_t_Rd", 141.0, "kN"),
     ];
 
     /// <summary>The arm joint's bolt checks: M20 8.8 through a 20 mm S275 end plate against the 11 mm flange of the UC 203 × 203 × 46 column (bearing is on the thinner ply); the bolt forces arrive by link from the bolt group.</summary>

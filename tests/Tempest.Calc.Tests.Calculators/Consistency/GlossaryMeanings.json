@@ -154,7 +154,14 @@
  },
  "F_t_Rd": {
   "bolt-tension-resistance": [
+   "mech.bolt-group",
    "struct.base-plate",
+   "struct.connection-ec3"
+  ]
+ },
+ "F_v_Rd": {
+  "bolt-shear-resistance": [
+   "mech.bolt-group",
    "struct.connection-ec3"
   ]
  },
@@ -387,6 +394,12 @@
   "design-moment-major-axis": [
    "struct.en1993-member",
    "struct.ltb-interaction"
+  ]
+ },
+ "M_z": {
+  "in-plane-torque": [
+   "mech.bolt-group",
+   "mech.weld-group"
   ]
  },
  "M_z_Ed": {
@@ -1590,14 +1603,6 @@
    "bs.sealed-system"
   ]
  },
- "t_max": {
-  "maximum-bolt-tension": [
-   "mech.bolt-group"
-  ],
-  "maximum-system-temperature": [
-   "bs.sealed-system"
-  ]
- },
  "t_p": {
   "plate-thickness": [
    "mech.thin-vessel",
@@ -1783,14 +1788,6 @@
   "shear-utilisation": [
    "struct.connection-ec3",
    "struct.lifting"
-  ]
- },
- "v_max": {
-  "maximum-bolt-shear": [
-   "mech.bolt-group"
-  ],
-  "velocity-limit": [
-   "bs.pipe-pump"
   ]
  },
  "v_peak": {

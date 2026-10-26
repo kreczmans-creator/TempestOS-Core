@@ -126,7 +126,7 @@ public sealed class BoltTests
         var bolts = Bolts((0, 0), (80, 0), (160, 0), (0, 100), (80, 100), (160, 100));
         var r = CalcRunner.Run(Group, GroupInputs(bolts)
             .With(CalcInputValue.Quantity("F_x", 25, "kN")).With(CalcInputValue.Quantity("F_y", -75, "kN")).With(CalcInputValue.Quantity("e_x", 300, "mm")).With(CalcInputValue.Quantity("e_y", 100, "mm"))
-            .With(CalcInputValue.Quantity("N", 55, "kN")).With(CalcInputValue.Quantity("M_x", -5, "kN*m")).With(CalcInputValue.Quantity("V_R", 60, "kN")).With(CalcInputValue.Quantity("T_R", 90, "kN")));
+            .With(CalcInputValue.Quantity("N", 55, "kN")).With(CalcInputValue.Quantity("M_x", -5, "kN*m")).With(CalcInputValue.Quantity("F_v_Rd", 60, "kN")).With(CalcInputValue.Quantity("F_t_Rd", 90, "kN")));
 
         Assert.False(r.IsBlocked);
         Assert.Equal("bolt 6", ((Tempest.Calc.Engine.Values.TextValue)r.FindOutput("governing")!.Value).Value);
@@ -140,7 +140,7 @@ public sealed class BoltTests
 
         // Property: u_lin is never below the linear form at the circular-governing bolt (the old value), and for a single-row pattern with no torque the two bolts agree.
         var square = CalcRunner.Run(Group, GroupInputs(Bolts((0, 0), (100, 0), (100, 100), (0, 100))).With(CalcInputValue.Quantity("e_x", 50, "mm")).With(CalcInputValue.Quantity("e_y", 50, "mm")));
-        Assert.Equal(square.OutputSi("v_max") / 40_000 + square.OutputSi("t_max") / (1.4 * 45_000), square.OutputSi("u_lin"), 9);
+        Assert.Equal(square.OutputSi("F_v_Ed_max") / 40_000 + square.OutputSi("F_t_Ed_max") / (1.4 * 45_000), square.OutputSi("u_lin"), 9);
     }
 
     [Fact]
@@ -169,7 +169,7 @@ public sealed class BoltTests
     {
         var r = CalcRunner.Run(Group, GroupInputs(Bolts((0, 0), (100, 0), (100, 100), (0, 100))).With(CalcInputValue.Quantity("e_x", 50, "mm")).With(CalcInputValue.Quantity("e_y", 50, "mm")));
         Assert.Equal(0, r.OutputSi("T"), 9);
-        Assert.Equal(12.5e3, r.OutputSi("v_max"), 6);
+        Assert.Equal(12.5e3, r.OutputSi("F_v_Ed_max"), 6);
     }
 
     [Fact]
@@ -178,7 +178,7 @@ public sealed class BoltTests
         var baseline = GroupInputs(Bolts((0, -100), (100, -100), (0, 100), (100, 100))).With(CalcInputValue.Quantity("M_x", 20, "kN*m")).With(CalcInputValue.Quantity("F_y", 0, "kN"));
         var without = CalcRunner.Run(Group, baseline);
         var with = CalcRunner.Run(Group, baseline.With(CalcInputValue.Quantity("a", 30, "mm")).With(CalcInputValue.Quantity("b", 15, "mm")));
-        Assert.Equal(1.5 * without.OutputSi("t_max"), with.OutputSi("t_max"), 6);
+        Assert.Equal(1.5 * without.OutputSi("F_t_Ed_max"), with.OutputSi("F_t_Ed_max"), 6);
     }
 
     [Fact]
@@ -194,8 +194,8 @@ public sealed class BoltTests
         var through = GroupInputs(Bolts((0, 0))).With(CalcInputValue.Quantity("e_x", 0, "mm")).With(CalcInputValue.Quantity("e_y", 0, "mm"));
         var r = CalcRunner.Run(Group, through);
         Assert.False(r.IsBlocked);
-        Assert.Equal(50e3, r.OutputSi("v_max"), 3);
-        Assert.Contains(CalcRunner.Run(Group, through.With(CalcInputValue.Quantity("T_z", 1, "kN*m"))).Blocks, b => b.RuleId == "few-bolts");
+        Assert.Equal(50e3, r.OutputSi("F_v_Ed_max"), 3);
+        Assert.Contains(CalcRunner.Run(Group, through.With(CalcInputValue.Quantity("M_z", 1, "kN*m"))).Blocks, b => b.RuleId == "few-bolts");
     }
 
     [Fact]
@@ -215,7 +215,7 @@ public sealed class BoltTests
             var bolts = Bolts((0, 0), (80, 0), (80, 120), (0, 120));
             var a = CalcRunner.Run(Group, GroupInputs(bolts).With(CalcInputValue.Quantity("F_y", -f, "kN")).With(CalcInputValue.Quantity("e_x", e, "mm")));
             var b = CalcRunner.Run(Group, GroupInputs(bolts).With(CalcInputValue.Quantity("F_y", -2 * f, "kN")).With(CalcInputValue.Quantity("e_x", e, "mm")));
-            return Math.Abs(b.OutputSi("v_max") - 2 * a.OutputSi("v_max")) < 1e-6 * b.OutputSi("v_max");
+            return Math.Abs(b.OutputSi("F_v_Ed_max") - 2 * a.OutputSi("F_v_Ed_max")) < 1e-6 * b.OutputSi("F_v_Ed_max");
         }, iter: 40);
     }
 
@@ -224,7 +224,7 @@ public sealed class BoltTests
 
     private static CalcInputSet BendingOnly(params (double X, double Y)[] points) =>
         CalcTemplateHasher.DefaultInputs(Group.Template).With(BoltTable(points)).With(CalcInputValue.Quantity("F_y", 0, "kN")).With(CalcInputValue.Quantity("e_x", 0, "mm")).With(CalcInputValue.Quantity("e_y", 0, "mm"))
-            .With(CalcInputValue.Quantity("V_R", 1000, "kN")).With(CalcInputValue.Quantity("T_R", 1000, "kN"));
+            .With(CalcInputValue.Quantity("F_v_Rd", 1000, "kN")).With(CalcInputValue.Quantity("F_t_Rd", 1000, "kN"));
 
     [Fact]
     public void An_Unsymmetric_Pattern_Uses_The_Product_Moment_In_Bending()
@@ -233,7 +233,7 @@ public sealed class BoltTests
         // t = A(a·x' + b·y') solved in python3 gives 62.5 kN at the top bolt; the symmetric-axes form gave 68.18 kN.
         var r = CalcRunner.Run(Group, BendingOnly((0, 0), (120, 0), (60, 80), (0, 160)).With(CalcInputValue.Quantity("M_x", 12, "kN*m")));
         Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
-        Assert.Equal(62.5, r.OutputSi("t_max") / 1e3, 6);
+        Assert.Equal(62.5, r.OutputSi("F_t_Ed_max") / 1e3, 6);
     }
 
     [Fact]
@@ -247,6 +247,6 @@ public sealed class BoltTests
         // M_x bends the line: t = M y'/(A Σ y'²) × A, y' = 100 mm, Σ y'² = 20000: 10e6 × 100/20000 = 50 kN.
         var across = CalcRunner.Run(Group, BendingOnly((0, 0), (0, 100), (0, 200)).With(CalcInputValue.Quantity("M_x", 10, "kN*m")));
         Assert.False(across.IsBlocked, string.Join("; ", across.Blocks.Select(b => b.Message)));
-        Assert.Equal(50, across.OutputSi("t_max") / 1e3, 6);
+        Assert.Equal(50, across.OutputSi("F_t_Ed_max") / 1e3, 6);
     }
 }

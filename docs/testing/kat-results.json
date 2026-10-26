@@ -254,7 +254,7 @@
     },
     {
       "id": "mech.bolt-group",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "kats": 8,
       "katsPassed": 8,
       "failedKats": [],

@@ -147,13 +147,13 @@ public static class MechanicalWorkedExamples
         new(BoltGroupCalculator.Id, "four-bolt-bracket", "Four-bolt bracket, 50 kN at 150 mm eccentricity",
             new CalcReferenceSource("Analytic (elastic method; AISC Manual Part 7 procedure)", null, "governing bolt resultant 36.44 kN"),
             GroupInputs([(0, 0), (100, 0), (100, 100), (0, 100)], fy: -50, ex: 200, ey: 50, mx: 0, vr: 40, tr: 45),
-            [new CalcExpectedValue("v_max", 36.443, "kN", 1e-3), new CalcExpectedValue("u_max", 0.91109, "", 1e-3)],
+            [new CalcExpectedValue("F_v_Ed_max", 36.443, "kN", 1e-3), new CalcExpectedValue("u_max", 0.91109, "", 1e-3)],
             "A 100 mm square pattern carrying 50 kN downward 150 mm from its centroid: 12.5 kN direct plus 26.5 kN torsional shear per bolt; the two bolts on the far side govern at 36.4 kN, 91 % of a 40 kN shear resistance."),
 
         new(BoltGroupCalculator.Id, "end-plate-moment", "End-plate with two bolt rows under 20 kN·m",
             new CalcReferenceSource("Analytic (elastic method)", null, "t = M_x y / Σ y² = 20e6 × 100 / 40000 per unit area = 50 kN per bolt"),
             GroupInputs([(0, -100), (100, -100), (0, 100), (100, 100)], fy: 0, ex: 0, ey: 0, mx: 20, vr: 40, tr: 60),
-            [new CalcExpectedValue("t_max", 50, "kN", 1e-6), new CalcExpectedValue("u_max", 0.83333, "", 1e-4)],
+            [new CalcExpectedValue("F_t_Ed_max", 50, "kN", 1e-6), new CalcExpectedValue("u_max", 0.83333, "", 1e-4)],
             "Four bolts in two rows 200 mm apart under a 20 kN·m moment: the tension row sees 50 kN per bolt, 83 % of a 60 kN tension resistance; no shear."),
         new(BearingLifeCalculator.Id, "skf-6206-pump", "Pump shaft bearing, SKF 6206 at 1500 rpm, 95 % reliability",
             new CalcReferenceSource("SKF Rolling bearings catalogue (PUB BU/P1 17000)", "2018", "6206 ratings C = 20.3 kN, C_0 = 11.2 kN (distributor listing; check against SKF's own product page)"),
@@ -357,8 +357,8 @@ public static class MechanicalWorkedExamples
         CalcInputValue.Table("bolts", points.Select(p => CalcRow.Of(("x", new CalcCell(p.X, "mm")), ("y", new CalcCell(p.Y, "mm")), ("A", new CalcCell(84.3, "mm^2")))).ToList(), CalcProvenance.Drawing("DRG-BRK-09", "B")),
         CalcInputValue.Quantity("F_x", 0, "kN", CalcProvenance.Specification("LOAD-CASE-1")), CalcInputValue.Quantity("F_y", fy, "kN", CalcProvenance.Specification("LOAD-CASE-1")),
         CalcInputValue.Quantity("e_x", ex, "mm", CalcProvenance.Drawing("DRG-BRK-09", "B")), CalcInputValue.Quantity("e_y", ey, "mm", CalcProvenance.Drawing("DRG-BRK-09", "B")),
-        CalcInputValue.Quantity("T_z", 0, "kN*m", CalcProvenance.Specification("LOAD-CASE-1")), CalcInputValue.Quantity("N", 0, "kN", CalcProvenance.Specification("LOAD-CASE-1")),
+        CalcInputValue.Quantity("M_z", 0, "kN*m", CalcProvenance.Specification("LOAD-CASE-1")), CalcInputValue.Quantity("N", 0, "kN", CalcProvenance.Specification("LOAD-CASE-1")),
         CalcInputValue.Quantity("M_x", mx, "kN*m", CalcProvenance.Specification("LOAD-CASE-1")), CalcInputValue.Quantity("M_y", 0, "kN*m", CalcProvenance.Specification("LOAD-CASE-1")),
-        CalcInputValue.Quantity("V_R", vr, "kN", CalcProvenance.Specification("M12 8.8 shear resistance, EN 1993-1-8 Table 3.4 per project calc")), CalcInputValue.Quantity("T_R", tr, "kN", CalcProvenance.Specification("M12 8.8 tension resistance per project calc")),
+        CalcInputValue.Quantity("F_v_Rd", vr, "kN", CalcProvenance.Specification("M12 8.8 shear resistance, EN 1993-1-8 Table 3.4 per project calc")), CalcInputValue.Quantity("F_t_Rd", tr, "kN", CalcProvenance.Specification("M12 8.8 tension resistance per project calc")),
     ]);
 }

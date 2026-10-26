@@ -3556,6 +3556,24 @@
       ]
     },
     {
+      "symbol": "F_t_Ed_max",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Maximum tension on any bolt"
+          ],
+          "templates": [
+            "mech.bolt-group"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "F_t_Rd",
       "meanings": [
         {
@@ -3566,9 +3584,11 @@
           ],
           "descriptions": [
             "Tension resistance",
+            "Tension resistance per bolt",
             "Tension resistance per bolt (from S4)"
           ],
           "templates": [
+            "mech.bolt-group",
             "struct.base-plate",
             "struct.connection-ec3"
           ]
@@ -3612,7 +3632,7 @@
       ]
     },
     {
-      "symbol": "F_v_Rd",
+      "symbol": "F_v_Ed_max",
       "meanings": [
         {
           "meaning": "",
@@ -3621,9 +3641,29 @@
             "kN"
           ],
           "descriptions": [
-            "Shear resistance"
+            "Maximum shear on any bolt"
           ],
           "templates": [
+            "mech.bolt-group"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "F_v_Rd",
+      "meanings": [
+        {
+          "meaning": "bolt-shear-resistance",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Shear resistance",
+            "Shear resistance per bolt"
+          ],
+          "templates": [
+            "mech.bolt-group",
             "struct.connection-ec3"
           ]
         }
@@ -6158,15 +6198,17 @@
       "symbol": "M_z",
       "meanings": [
         {
-          "meaning": "",
+          "meaning": "in-plane-torque",
           "quantity": "Moment, torque",
           "units": [
             "kN·m"
           ],
           "descriptions": [
-            "Additional in-plane torque"
+            "Additional in-plane torque",
+            "Additional in-plane torque about the centroid"
           ],
           "templates": [
+            "mech.bolt-group",
             "mech.weld-group"
           ]
         }
@@ -9997,24 +10039,6 @@
       ]
     },
     {
-      "symbol": "T_R",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Tension resistance per bolt"
-          ],
-          "templates": [
-            "mech.bolt-group"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "T_Rd",
       "meanings": [
         {
@@ -10825,24 +10849,6 @@
       ]
     },
     {
-      "symbol": "T_z",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Moment, torque",
-          "units": [
-            "kN·m"
-          ],
-          "descriptions": [
-            "Additional in-plane torque about the centroid"
-          ],
-          "templates": [
-            "mech.bolt-group"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "U",
       "meanings": [
         {
@@ -11272,24 +11278,6 @@
           ],
           "templates": [
             "struct.connection-ec3"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "V_R",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Shear resistance per bolt"
-          ],
-          "templates": [
-            "mech.bolt-group"
           ]
         }
       ]
@@ -12378,7 +12366,7 @@
             "mm"
           ],
           "descriptions": [
-            "Prying lever: bolt to flange edge"
+            "Prying lever: bolt to flange edge (optional; blank = no prying)"
           ],
           "templates": [
             "mech.bolt-group"
@@ -13157,7 +13145,7 @@
             "mm"
           ],
           "descriptions": [
-            "Prying lever: bolt to the loaded line"
+            "Prying lever: bolt to the loaded line (optional; blank = no prying)"
           ],
           "templates": [
             "mech.bolt-group"
@@ -24005,20 +23993,7 @@
       "symbol": "t_max",
       "meanings": [
         {
-          "meaning": "maximum-bolt-tension",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Maximum tension on any bolt"
-          ],
-          "templates": [
-            "mech.bolt-group"
-          ]
-        },
-        {
-          "meaning": "maximum-system-temperature",
+          "meaning": "",
           "quantity": "Temperature",
           "units": [
             "°C"
@@ -26692,20 +26667,7 @@
       "symbol": "v_max",
       "meanings": [
         {
-          "meaning": "maximum-bolt-shear",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Maximum shear on any bolt"
-          ],
-          "templates": [
-            "mech.bolt-group"
-          ]
-        },
-        {
-          "meaning": "velocity-limit",
+          "meaning": "",
           "quantity": "Velocity",
           "units": [
             "m/s"

@@ -33,8 +33,8 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   k_p2 | Minimum p₂/d₀ | 2.4 |  | assumption: Sheet default value; no project figure given. | 2 … 4
   gamma_M2 | γ_M2 | 1.25 |  | assumption: Sheet default value; no project figure given. | 1.1 … 1.5
   gamma_M0 | γ_M0 | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.2
-  F_v_Ed | Shear per bolt | 4.7 | kN | link: Arm joint bolt group rev A · v_max | 0 … 2000 kN
-  F_t_Ed | Tension per bolt | 47 | kN | link: Arm joint bolt group rev A · t_max | 0 … 2000 kN
+  F_v_Ed | Shear per bolt | 4.7 | kN | link: Arm joint bolt group rev A · F_v_Ed_max | 0 … 2000 kN
+  F_t_Ed | Tension per bolt | 47 | kN | link: Arm joint bolt group rev A · F_t_Ed_max | 0 … 2000 kN
   block_load | Block tearing loading: concentric (V_eff,1) or eccentric (V_eff,2, the tension term halved) | Concentric loading (V_eff,1) |  | assumption: Sheet default value; no project figure given. | any
   V_Ed | Group force for block tearing | 28.2 | kN | link: Support frame rev A · V_e2 | 0 … 10000 kN
   A_nt | Net area in tension | 1200 | mm² | drawing: DRG-STR-312 rev B | 1 … 100000 mm²
@@ -167,7 +167,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: e5ff72f057654ae1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 23:04 UTC
   Application: TempestOS test
 
 9. References

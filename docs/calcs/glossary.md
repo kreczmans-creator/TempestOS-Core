@@ -123,7 +123,7 @@ A bare symbol that means one kind of quantity wherever it appears. Another quant
 | `D` | A diameter or a depth | 17 |
 | `L` | Length | 17 |
 
-## Symbols with more than one meaning today (100)
+## Symbols with more than one meaning today (98)
 
 Each of these symbols is used for different quantities in different templates. Every use of a symbol that two or more templates share declares its meaning (`symbol:meaning`, in `GlossaryMeanings.json`), so two meanings of one quantity type (an efficiency and a Perry factor, both plain numbers) are told apart. Phases B and C resolve every one: give each quantity its own symbol (keeping the old symbol as an input or port alias), or make the templates agree. Status `RESOLVE` marks the rows in the full table below.
 
@@ -212,7 +212,6 @@ Each of these symbols is used for different quantities in different templates. E
 - `t`: `t:thickness` Length (plane-wall, lifting-lug, base-plate, connection-ec3, …); `t:time` Time (fault-protection)
 - `t_2`: `t_2:leaving-dry-bulb-temperature` Temperature (psychrometrics); `t_2:other-ply-thickness` Length (connection-ec3)
 - `t_f`: `t_f:flange-thickness` Length (base-plate, en1993-member, ltb-interaction, section-properties); `t_f:flow-temperature` Temperature (sealed-system)
-- `t_max`: `t_max:maximum-bolt-tension` Force (bolt-group); `t_max:maximum-system-temperature` Temperature (sealed-system)
 - `t_req`: `t_req:required-thickness` Length (thin-vessel, base-plate); `t_req:required-disconnection-time` Time (fault-protection)
 - `t_w`: `t_w:web-thickness` Length (base-plate, en1993-member); `t_w:pipe-wall-thickness` Length (insulation)
 - `tau`: `tau:throat-stress` Stress, pressure (weld-group); `tau:torsional-shear-stress` Stress, pressure (shaft-stress)
@@ -224,11 +223,10 @@ Each of these symbols is used for different quantities in different templates. E
 - `u_T`: `u_T:cable-tension-utilisation` Plain number (containment); `u_T:t-stub-tension-utilisation` Plain number (base-plate)
 - `u_b`: `u_b:bearing-utilisation` Plain number (connection-ec3, lifting); `u_b:buckling-deflection-ratio` Plain number (spring); `u_b:pin-bending-utilisation` Plain number (lifting-lug)
 - `u_f`: `u_f:goodman-utilisation` Plain number (spring); `u_f:surface-factor-utilisation` Plain number (glaser)
-- `v_max`: `v_max:maximum-bolt-shear` Force (bolt-group); `v_max:velocity-limit` Velocity (pipe-pump)
 - `w`: `w:distributed-load` Line force, distributed load, stiffness (beam-formulas); `w:key-width` Length (shaft); `w:mass-per-metre` Mass per length (containment)
 - `y_c`: `y_c:centroid-y` Length (weld-group, section-properties); `y_c:extreme-fibre-distance` Length (beam-formulas)
 
-## All symbols (1407 symbols in 54 templates)
+## All symbols (1406 symbols in 54 templates)
 
 One row per symbol, declared meaning and quantity type. Status `ok` is a symbol with one meaning; `RESOLVE` a symbol with several (phases B and C).
 
@@ -395,10 +393,12 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `F_s` | — | Force | kN | Sling force on each lug | struct.lifting | ok |
 | `F_stall` | — | Force | kN | Stall thrust p·A_b | fp.cylinder | ok |
 | `F_t_Ed` | `F_t_Ed:bolt-tension-per-bolt` | Force | kN | Bolt tension per bolt (to PROFIS); Tension per bolt | struct.base-plate, struct.connection-ec3 | ok |
-| `F_t_Rd` | `F_t_Rd:bolt-tension-resistance` | Force | kN | Tension resistance; Tension resistance per bolt (from S4) | struct.base-plate, struct.connection-ec3 | ok |
+| `F_t_Ed_max` | — | Force | kN | Maximum tension on any bolt | mech.bolt-group | ok |
+| `F_t_Rd` | `F_t_Rd:bolt-tension-resistance` | Force | kN | Tension resistance; Tension resistance per bolt; Tension resistance per bolt (from S4) | mech.bolt-group, struct.base-plate, struct.connection-ec3 | ok |
 | `F_tr` | — | Force | kN | Force transverse to the weld axis, in the plane of the parts | struct.fillet-weld | ok |
 | `F_v_Ed` | — | Force | kN | Shear per bolt | struct.connection-ec3 | ok |
-| `F_v_Rd` | — | Force | kN | Shear resistance | struct.connection-ec3 | ok |
+| `F_v_Ed_max` | — | Force | kN | Maximum shear on any bolt | mech.bolt-group | ok |
+| `F_v_Rd` | `F_v_Rd:bolt-shear-resistance` | Force | kN | Shear resistance; Shear resistance per bolt | mech.bolt-group, struct.connection-ec3 | ok |
 | `F_vb_Rd` | — | Force | kN | Anchor shear resistance per bolt | struct.base-plate | ok |
 | `F_w_Ed` | — | Line force, distributed load, stiffness | N/mm | Weld force per unit length | struct.connection-ec3 | ok |
 | `F_w_Rd` | — | Force | kN | Weld resistance | struct.fillet-weld | ok |
@@ -539,7 +539,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `M_y_Rk` | — | Moment, torque | kN·m | M_y,Rk | struct.ltb-interaction | ok |
 | `M_y_b_Rd` | — | Moment, torque | kN·m | M_y,Rk/γ_M1 | struct.en1993-member | ok |
 | `M_y_c_Rd` | — | Moment, torque | kN·m | M_y,c,Rd | struct.en1993-member | ok |
-| `M_z` | — | Moment, torque | kN·m | Additional in-plane torque | mech.weld-group | ok |
+| `M_z` | `M_z:in-plane-torque` | Moment, torque | kN·m | Additional in-plane torque; Additional in-plane torque about the centroid | mech.bolt-group, mech.weld-group | ok |
 | `M_z_Ed` | `M_z_Ed:design-moment-minor-axis` | Moment, torque | kN·m | Design moment about z-z (minor); Greatest design moment about z-z | struct.en1993-member, struct.ltb-interaction | ok |
 | `M_z_Rk` | — | Moment, torque | kN·m | M_z,Rk | struct.ltb-interaction | ok |
 | `M_z_b_Rd` | — | Moment, torque | kN·m | M_z,Rk/γ_M1 | struct.en1993-member | ok |
@@ -757,7 +757,6 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `T_Ed` | — | Force | kN | Tension resultant, more loaded row | struct.base-plate | ok |
 | `T_Ed_2` | — | Force | kN | Tension resultant, other row | struct.base-plate | ok |
 | `T_L` | — | Moment, torque | N·m | Constant load torque at the output (rotary; continuous duty needs it:… | elec.motor-sizing | ok |
-| `T_R` | — | Force | kN | Tension resistance per bolt | mech.bolt-group | ok |
 | `T_Rd` | — | Force | kN | Tension T-stub resistance | struct.base-plate | ok |
 | `T_Rd_1` | — | Force | kN | T-stub mode 1-2, no prying | struct.base-plate | ok |
 | `T_Rd_3` | — | Force | kN | T-stub mode 3 | struct.base-plate | ok |
@@ -803,7 +802,6 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `T_seal` | — | Temperature | °C | Temperature at which the enclosure was closed with no breather or ven… | elec.enclosure-heat | ok |
 | `T_shaft` | — | Moment, torque | N·m | Pump shaft torque | fp.cylinder | ok |
 | `T_use` | — | Temperature | °C | Temperature of use. Recorded: Es and the permissible strain must be t… | mech.snap-fit | ok |
-| `T_z` | — | Moment, torque | kN·m | Additional in-plane torque about the centroid | mech.bolt-group | ok |
 | `U` | `U:overall-heat-transfer-coefficient` | Heat transfer coefficient, U-value | W/(m²·K) | Overall heat transfer coefficient; Overall heat transfer coefficient (clean) | bs.heat-exchanger, bs.plane-wall | RESOLVE (3 meanings) |
 | `U` | `U:supply-voltage` | Voltage | V | Supply and motor rated voltage (line-to-line); Supply voltage (line voltage for three-phase) | elec.conductor-sizing, elec.motor-start | RESOLVE (3 meanings) |
 | `U` | `U:share-of-revolutions` | Plain number | — | Share of revolutions | mech.bearing-life | RESOLVE (3 meanings) |
@@ -829,7 +827,6 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `V0` | — | Volume, section modulus | L | Accumulator gas volume required | fp.accumulator | ok |
 | `V_Ed` | `V_Ed:shear-force` | Force | kN | Design shear force; Shear force | struct.base-plate, struct.en1993-member | RESOLVE (2 meanings) |
 | `V_Ed` | `V_Ed:block-tearing-group-force` | Force | kN | Group force for block tearing | struct.connection-ec3 | RESOLVE (2 meanings) |
-| `V_R` | — | Force | kN | Shear resistance per bolt | mech.bolt-group | ok |
 | `V_Rd` | — | Force | kN | Shear resistance | struct.base-plate | ok |
 | `V_b_Ed` | — | Force | kN | Shear per anchor bolt (to PROFIS) | struct.base-plate | ok |
 | `V_e` | — | Volume, section modulus | L | Minimum vessel volume | bs.sealed-system | ok |
@@ -892,7 +889,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `a` | `a:end-distance` | Length | mm | End distance a from the hole edge to the plate edge along the load li… | struct.lifting | RESOLVE (8 meanings) |
 | `a` | `a:inner-radius` | Length | mm | Inner radius | mech.thick-cylinder | RESOLVE (8 meanings) |
 | `a` | `a:plate-radius-or-side` | Length | mm | Radius a (circular) or side a (rectangular) | struct.plate-bending | RESOLVE (8 meanings) |
-| `a` | `a:prying-lever` | Length | mm | Prying lever: bolt to flange edge | mech.bolt-group | RESOLVE (8 meanings) |
+| `a` | `a:prying-lever` | Length | mm | Prying lever: bolt to flange edge (optional; blank = no prying) | mech.bolt-group | RESOLVE (8 meanings) |
 | `a_1` | `a_1:reliability-factor` | Plain number | — | Life modification factor for reliability; Reliability factor | mech.bearing-life, mech.bearing-life-basic | ok |
 | `a_arm` | — | Length | mm | Length of the lever on the torsion bar | mech.snap-fit | ok |
 | `a_calc` | — | Length | mm | Throat needed | struct.fillet-weld | ok |
@@ -938,7 +935,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `b` | `b:width` | Length | mm | Column width, along the plate width B (I/H and RHS); Flange width b; Groove width b; … (8 descriptions) | fp.oring-gland, mech.snap-fit, struct.base-plate, struct.en1993-member, struct.ltb-interaction, struct.plate-bending, struct.section-properties | RESOLVE (4 meanings) |
 | `b` | `b:load-position` | Length | m | b from end i (distributed) | struct.frame-2d | RESOLVE (4 meanings) |
 | `b` | `b:outer-radius` | Length | mm | Outer radius | mech.thick-cylinder | RESOLVE (4 meanings) |
-| `b` | `b:prying-lever` | Length | mm | Prying lever: bolt to the loaded line | mech.bolt-group | RESOLVE (4 meanings) |
+| `b` | `b:prying-lever` | Length | mm | Prying lever: bolt to the loaded line (optional; blank = no prying) | mech.bolt-group | RESOLVE (4 meanings) |
 | `b_l` | — | Length | mm | Groove width, lower deviation | fp.oring-gland | ok |
 | `b_ratio` | — | Plain number | — | Tip width / root width (tapered width) | mech.snap-fit | ok |
 | `b_u` | — | Length | mm | Groove width, upper deviation | fp.oring-gland | ok |
@@ -1576,8 +1573,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `t_i` | — | Temperature | °C | Room design temperature (blank = the sheet's room temperature t_i); Room temperature | bs.sealed-system | ok |
 | `t_l` | — | Length | mm | Thickness, longitudinal stress | mech.thin-vessel | ok |
 | `t_m` | — | Temperature | °C | Mean water temperature | bs.sealed-system | ok |
-| `t_max` | `t_max:maximum-bolt-tension` | Force | kN | Maximum tension on any bolt | mech.bolt-group | RESOLVE (2 meanings) |
-| `t_max` | `t_max:maximum-system-temperature` | Temperature | °C | Maximum system temperature | bs.sealed-system | RESOLVE (2 meanings) |
+| `t_max` | — | Temperature | °C | Maximum system temperature | bs.sealed-system | ok |
 | `t_move` | — | Time | s | Move time | elec.motor-sizing | ok |
 | `t_mrss` | — | Length | in | Modified RSS tolerance (±) | mech.tolerance-stack | ok |
 | `t_oz` | — | Length | mil | Copper thickness per oz/ft² (35 µm = 1.378 mil, derived) | elec.pcb-trace | ok |
@@ -1737,8 +1733,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `v_1` | — | Specific volume | m³/kg | v 1 | bs.psychrometrics | ok |
 | `v_ext` | — | Velocity | mm/s | Extend speed | fp.cylinder | ok |
 | `v_limit` | — | Velocity | m/s | Velocity limit (warning and check) | bs.duct-sizing | ok |
-| `v_max` | `v_max:maximum-bolt-shear` | Force | kN | Maximum shear on any bolt | mech.bolt-group | RESOLVE (2 meanings) |
-| `v_max` | `v_max:velocity-limit` | Velocity | m/s | Velocity limit (warning) | bs.pipe-pump | RESOLVE (2 meanings) |
+| `v_max` | — | Velocity | m/s | Velocity limit (warning) | bs.pipe-pump | ok |
 | `v_peak` | `v_peak:peak-velocity` | Velocity | m/s | Highest velocity | bs.duct-sizing, bs.pipe-pump | ok |
 | `v_pk` | — | Velocity | m/s | Peak velocity | elec.motor-sizing | ok |
 | `v_prs` | — | Velocity | m/s | Pressure line velocity (cap-port line, worst stroke) | fp.cylinder | ok |
