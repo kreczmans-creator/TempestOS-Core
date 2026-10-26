@@ -290,5 +290,5 @@ Critical moment (NCCI SN003 form): M_cr = C₁·π²E·I_z/(kL)²·[√((k/k_w)�
   WARNING record: Tabulated values not taken from a reference record: E, G, f_y (Material properties); gamma_M1 (EN 1993-1-1 National Annex factors); alpha_a0, alpha_a, alpha_b, alpha_c, alpha_d, lambda_LT0, beta_LT (Imperfection factors and 6.3.2.3 parameters); C_2 (C₁, C₂ and k_c for the moment diagram). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: struct.ltb-interaction@1.1.2
+  Template: struct.ltb-interaction@1.1.3
   Known-answer cases passed: 8/8

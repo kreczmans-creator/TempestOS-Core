@@ -39,6 +39,21 @@ public sealed class LtbInteractionTests
         Assert.Contains("exceed the exact elastic value by up to about 10 %", warning.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Table_B1_Chosen_For_An_Open_I_Section_That_Buckles_Laterally_Warns_That_It_Is_Not_Susceptible()
+    {
+        // struct.ltb-interaction-R2: the Annex B Table B.1 choice ("not susceptible to torsional deformation") with chi_LT below 1 gave k_zy = 0.6 k_yy = 0.509 against 0.918 from Table B.2
+        // (u_62 1.008 against 1.248, -19 %) and no notice. An open I-section is susceptible unless restrained against twist.
+        var b1 = Run(Choice("torsion", LtbInteractionCalculator.NotSusceptible));
+        Assert.True(b1.OutputSi("chi_LT") < 1);
+        var warning = Assert.Single(b1.Warnings, w => w.RuleId == "table-b1");
+        Assert.Contains("susceptible", warning.Message, StringComparison.Ordinal);
+
+        Assert.DoesNotContain(Run().Warnings, w => w.RuleId == "table-b1");
+        // No lateral-torsional buckling (chi_LT = 1: a very short member): Table B.1 is not contradicted.
+        Assert.DoesNotContain(Run(Choice("torsion", LtbInteractionCalculator.NotSusceptible), Q("L", 0.5, "m")).Warnings, w => w.RuleId == "table-b1");
+    }
+
     [Theory]
     [InlineData(1.0)]
     [InlineData(0.5)]
