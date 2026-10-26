@@ -203,16 +203,16 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
 
 5. Results
   F_t_Ed = 113.35 kN    Bolt tension per bolt (to PROFIS)
-  V_b_Ed = 4.50 kN    Shear per anchor bolt (to PROFIS)
+  V_b_Ed = 4.500 kN    Shear per anchor bolt (to PROFIS)
   N_j_Rd = 1888.7 kN    Axial bearing resistance
   u_max = 0.56    Governing utilisation
-  f_cd = 17.0 MPa    Concrete design strength
+  f_cd = 17 MPa    Concrete design strength
   beta_j = 0.66667    Joint coefficient β_j
-  f_jd = 17.0 MPa    Bearing strength f_jd
-  c = 57.0 mm    Bearing outstand c
+  f_jd = 17 MPa    Bearing strength f_jd
+  c = 56.99 mm    Bearing outstand c
   A_eff = 111100 mm²    Effective bearing area
-  t_req_N = 10.0 mm    Plate thickness required for axial bearing alone
-  t_req = 15.1 mm    Plate thickness required (bearing, compression and tension T-stubs)
+  t_req_N = 10 mm    Plate thickness required for axial bearing alone
+  t_req = 15.14 mm    Plate thickness required (bearing, compression and tension T-stubs)
   z_C = 121.5 mm    Compression lever arm z_C
   z = 306.5 mm    Lever arm z
   C_Ed = 436.70 kN    Compression resultant
@@ -223,12 +223,12 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   C_Rd = 826.33 kN    Compression-side resistance
   M_pl_Rd = 14.49 kN·m    Plate plastic moment
   T_Rd_1 = 618.00 kN    T-stub mode 1-2, no prying
-  T_Rd_3 = 406.00 kN    T-stub mode 3
-  T_Rd = 406.00 kN    Tension T-stub resistance
+  T_Rd_3 = 406 kN    T-stub mode 3
+  T_Rd = 406 kN    Tension T-stub resistance
   alpha_bc = 0.248    Anchor shear factor α_bc
   F_2_vb_Rd = 55.95 kN    Anchor shear resistance F_2,vb,Rd
   F_vb_Rd = 55.95 kN    Anchor shear resistance per bolt
-  F_f_Rd = 42.00 kN    Friction resistance
+  F_f_Rd = 42 kN    Friction resistance
   V_Rd = 265.80 kN    Shear resistance
   regime = "tension at one bolt row, compression under the other flange (Table 6.7, z = z_C + x_b)"    Force regime (Table 6.7)
   T_mode = "mode 3 (bolt failure)"    Governing T-stub mode

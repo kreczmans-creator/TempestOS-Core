@@ -207,33 +207,33 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
         Fatigue utilisation against the required factor
 
 5. Results
-  k = 4.9 N/mm    Rate
-  F_1 = 10.0 N    Force at point 1
-  F_2 = 40.0 N    Force at point 2
-  L_s = 20.0 mm    Solid length
+  k = 4.883 N/mm    Rate
+  F_1 = 10 N    Force at point 1
+  F_2 = 40 N    Force at point 2
+  L_s = 20 mm    Solid length
   f_n = 350.85 Hz    Surge frequency
   C = 8    Spring index
-  Rm = 1800.0 MPa    Wire tensile strength R_m(d)
+  Rm = 1800 MPa    Wire tensile strength R_m(d)
   k_c = 1.1724    Stress correction factor
   n_t = 10    Total coils
-  p = 5.1 mm    Pitch
-  s_1 = 2.0 mm    Deflection at point 1
-  s_2 = 8.2 mm    Deflection at point 2
-  L_1 = 43.0 mm    Length at point 1
-  L_2 = 36.8 mm    Length at point 2
-  s_c = 25.0 mm    Travel to solid
+  p = 5.125 mm    Pitch
+  s_1 = 2.048 mm    Deflection at point 1
+  s_2 = 8.192 mm    Deflection at point 2
+  L_1 = 42.95 mm    Length at point 1
+  L_2 = 36.81 mm    Length at point 2
+  s_c = 25 mm    Travel to solid
   F_c = 122.1 N    Force at solid
-  tau_1 = 59.7 MPa    Stress at point 1
+  tau_1 = 59.71 MPa    Stress at point 1
   tau_2 = 238.8 MPa    Stress at point 2
   tau_c = 728.9 MPa    Stress at solid
-  d_max = 2.0 mm    Maximum wire diameter
-  S_a = 3.1 mm    Minimum sum of coil clearances
-  L_n = 23.1 mm    Minimum length L_n
-  s_n = 21.9 mm    Travel to L_n
+  d_max = 2 mm    Maximum wire diameter
+  S_a = 3.136 mm    Minimum sum of coil clearances
+  L_n = 23.14 mm    Minimum length L_n
+  s_n = 21.86 mm    Travel to L_n
   y_cr = "— (stable at any deflection)"    Buckling deflection
   buckling = "PASS"    Buckling
-  r_f = 35.085    Surge ratio f_n/f_op
-  n_f = 2.88    Goodman safety factor
+  r_f = 35.084    Surge ratio f_n/f_op
+  n_f = 2.8761    Goodman safety factor
   u_2 = 0.29    Utilisation at point 2
   u_c = 0.90    Utilisation at solid (governing)
   u_s = 0.33    Working deflection / travel to solid
@@ -246,12 +246,13 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ 
   PASS  Goodman fatigue against the required safety factor: u_fat = 0.42 vs u_fat ≤ 1  utilisation 0.42  « Goodman, as M4
   PASS  Minimum coil clearance at L₂: working deflection within the travel to L_n = L_s + S_a: u_n = 0.37 vs u_n ≤ 1  utilisation 0.37  « EN 13906-1
   PASS  Working deflection within the travel to solid: u_s = 0.33 vs u_s ≤ 1  utilisation 0.33  « EN 13906-1
+  PASS  Working deflection against the buckling deflection: stable at any deflection vs λ_eff² < C₂′  « Shigley 10th ed. Ch. 10, buckling
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are G, E, rho (Material properties); Rm (Wire tensile strength R_m(d)); f_tau, f_sigma, f_su (Permissible and ultimate stress fractions); nu_seat (End-support coefficient); S_e (Endurance strength). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: mech.spring@1.3.2
+  Template: mech.spring@1.4.0
   Known-answer cases passed: 8/8
 
 9. References

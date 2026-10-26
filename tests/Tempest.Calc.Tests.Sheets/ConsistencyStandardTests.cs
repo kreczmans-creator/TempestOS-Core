@@ -22,7 +22,7 @@ public sealed class RenamedCalculator : ICalcCalculator
         ],
         [new CalcAssumption("The load acts through the centroid.", "No bending from eccentricity.")],
         [new CalcClauseRef("EN 1993-1-1", "6.2.3", "Tension")],
-        [new CalcApplicabilityRule("high-stress", "Stress above 80 % of allowable is flagged.", CalcNoticeSeverity.Warning)],
+        [new CalcApplicabilityRule("high-stress", "Stress above 80 % of allowable is flagged.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative)],
         [
             new CalcTestCase("ka-1", "12 kN on 200 mm²", new CalcReferenceSource("Hand calculation", null, "σ = 12 000 / 200 = 60 MPa"),
                 [CalcInputValue.Quantity("F_axial", 12, "kN"), CalcInputValue.Quantity("A", 200, "mm^2")],
@@ -177,79 +177,7 @@ public sealed class ConsistencyStandardTests
         Assert.Contains("A | Cross-section area | 200 | mm² | manual | ≥ 1 mm²", text, StringComparison.Ordinal);
     }
 
-    // ---- rows 29 and 30: display precision -------------------------
-
-    [Theory]
-    [InlineData(144.93187, "MPa", "144.9 MPa")]
-    [InlineData(2194.8, "N*m", "2194.8 N·m")]
-    [InlineData(2194.8000001, "N*m", "2194.8 N·m")]
-    [InlineData(2.0, "kN", "2.00 kN")]
-    [InlineData(321190.4, "kN/m", "321190 kN/m")]
-    [InlineData(12.34, "mm", "12.3 mm")]
-    [InlineData(0.01234, "mm", "0.012 mm")]
-    [InlineData(20.918, "µm", "20.9 µm")]
-    [InlineData(57.947, "kPa", "57.9 kPa")]
-    [InlineData(57947.0, "Pa", "57947 Pa")]
-    [InlineData(16667.0, "h", "16667 h")]
-    [InlineData(4.4, "m^3/h", "4.4 m³/h")]
-    [InlineData(61.5, "degC", "61.5 °C")]
-    [InlineData(0.0, "kN", "0 kN")]
-    [InlineData(1.5, "furlong/fortnight", "1.5 furlong/fortnight")]
-    public void A_Scalar_Is_Shown_At_The_Decimals_Of_Its_Quantity_Type(double displayed, string unit, string expected)
-    {
-        var shown = UnitCatalog.TryParse(unit, out _, out _) ? ScalarValue.Of(displayed, unit) : new ScalarValue(displayed, Dimension.None, new Unit(unit, Dimension.None, 1.0));
-        Assert.Equal(expected, CalcDisplay.Format(shown));
-    }
-
-    [Fact]
-    public void Display_Rounds_The_Text_Only_And_Never_The_Value()
-    {
-        var value = ScalarValue.Of(144.93187, "MPa");
-        var output = new CalcOutput("sigma", "Stress", value);
-        var before = value.Si;
-        Assert.Equal("144.9 MPa", output.ValueText);
-        Assert.Equal(before, ((ScalarValue)output.Value).Si);
-        Assert.Equal(144.93187e6, ((ScalarValue)output.Value).Si, 3);
-
-        // An override of the decimals is for one output.
-        Assert.Equal("144.93 MPa", new CalcOutput("sigma", "Stress", value, 2).ValueText);
-        Assert.Equal("145 MPa", new CalcOutput("sigma", "Stress", value, 0).ValueText);
-    }
-
-    [Fact]
-    public void A_Value_Below_A_Billionth_Of_The_Largest_Of_Its_Dimension_Is_Shown_As_Zero()
-    {
-        var outputs = new[]
-        {
-            new CalcOutput("sigma_t_a", "Hoop stress, bore", ScalarValue.Of(144.9, "MPa")),
-            new CalcOutput("sigma_r_b", "Radial stress, outside", ScalarValue.Of(1.8626e-15, "MPa")),
-            new CalcOutput("d", "Diameter", ScalarValue.Of(1.8626e-15, "mm")),
-        };
-
-        Assert.Equal(["144.9 MPa", "0 MPa", "1.8626e-15 mm"], CalcDisplay.Texts(outputs));
-        Assert.Equal(1.8626e-9, ((ScalarValue)outputs[1].Value).Si, 12);
-    }
-
-    [Theory]
-    [InlineData(0.94057, "0.94")]
-    [InlineData(0.375, "0.38")]
-    [InlineData(1.0, "1.00")]
-    [InlineData(1.004, "1.01")]
-    [InlineData(1.2481, "1.25")]
-    [InlineData(0.0, "0.00")]
-    [InlineData(double.PositiveInfinity, "∞")]
-    public void A_Utilisation_Is_Shown_To_Two_Decimals_And_A_Failing_One_Is_Rounded_Up(double u, string expected) => Assert.Equal(expected, CalcDisplay.Utilisation(u));
-
-    [Fact]
-    public void A_Utilisation_Output_And_A_Safety_Factor_Output_Use_Two_Decimals_And_Other_Plain_Numbers_Keep_Five_Figures()
-    {
-        Assert.Equal("0.94", new CalcOutput("u_life", "Life utilisation", new ScalarValue(0.94057)).ValueText);
-        Assert.Equal("0.18", new CalcOutput("x", "Static utilisation", new ScalarValue(0.18182)).ValueText);
-        Assert.Equal("2.31", new CalcOutput("n_f_min", "Lowest fatigue safety factor", new ScalarValue(2.3086)).ValueText);
-        Assert.Equal("7.8516", new CalcOutput("Re_s1", "Reynolds number", new ScalarValue(7.8516)).ValueText);
-        Assert.Equal("84.1 %", new CalcOutput("yield", "Yield", ScalarValue.Of(84.134, "%")).ValueText);
-        Assert.Equal("30.00°", new CalcOutput("theta", "Angle", ScalarValue.Of(30, "deg")).ValueText);
-    }
+    // ---- rows 29 and 30: display precision (the rules are tested in DisplayRulesTests) -------
 
     [Fact]
     public void Every_Rule_Of_The_Table_Names_A_Unit_The_Engine_Parses_In_Its_Dimension_And_Is_Listed_Once()
@@ -344,12 +272,49 @@ public sealed class ConsistencyStandardTests
     }
 
     [Fact]
-    public void When_Both_Symbols_Are_Given_The_Current_One_Wins()
+    public void An_Input_Given_Under_Its_Old_And_Its_Current_Symbol_With_The_Same_Value_Is_Kept_Once()
     {
-        var both = new CalcInputSet([CalcInputValue.Quantity("F", 99, "kN"), CalcInputValue.Quantity("F_axial", 12, "kN")]);
+        var both = new CalcInputSet([CalcInputValue.Quantity("F", 12, "kN"), CalcInputValue.Quantity("F_axial", 12, "kN", CalcProvenance.Manual)]);
         var set = CalcInputAliases.Canonicalise(Calculator.Template, both);
         Assert.Equal(12, set.Find("F_axial")!.Number);
         Assert.Null(set.Find("F"));
+        Assert.Single(set.Values, v => v.Symbol == "F_axial");
+    }
+
+    [Fact]
+    public void An_Input_Given_Under_Its_Old_And_Its_Current_Symbol_With_Different_Values_Is_Refused_And_Neither_Is_Dropped()
+    {
+        var both = new CalcInputSet([CalcInputValue.Quantity("F", 99, "kN"), CalcInputValue.Quantity("F_axial", 12, "kN")]);
+        var refused = Assert.Throws<CalcInputAliasConflictException>(() => CalcInputAliases.Canonicalise(Calculator.Template, both));
+        Assert.Equal("F", refused.Alias);
+        Assert.Equal("F_axial", refused.Symbol);
+        Assert.StartsWith("F_axial:", refused.Message, StringComparison.Ordinal);
+
+        // Two old symbols of one input with different values are refused too, whichever order they come in.
+        var twoOld = new CalcInputSet([CalcInputValue.Quantity("F", 99, "kN"), CalcInputValue.Quantity("F_old", 12, "kN")]);
+        Assert.Throws<CalcInputAliasConflictException>(() => CalcInputAliases.Canonicalise(Calculator.Template, twoOld));
+        Assert.Throws<CalcInputAliasConflictException>(() => CalcInputAliases.Canonicalise(Calculator.Template, [CalcInputValue.Quantity("F_axial", 12, "kN"), CalcInputValue.Quantity("F_old", 13, "kN")]));
+
+        // The reporting form says no and leaves the values as they were given.
+        Assert.False(CalcInputAliases.TryCanonicalise(Calculator.Template, both.Values.ToList(), out var unchanged, out var message));
+        Assert.Equal(2, unchanged.Count);
+        Assert.Equal(refused.Message, message);
+
+        // A run, an inputs file and a CSV file say so as a block, not as a silent choice.
+        var run = CalcRunner.Run(Calculator, new CalcInputSet([.. both.Values, CalcInputValue.Quantity("A", 200, "mm^2")]));
+        Assert.True(run.IsBlocked);
+        Assert.Equal("input-alias", run.Blocks[0].RuleId);
+        Assert.StartsWith("F_axial:", run.Blocks[0].Message, StringComparison.Ordinal);
+
+        var json = CalcInputJson.Write(both);
+        var (read, notices) = CalcInputJson.Read(json, Calculator.Template);
+        Assert.Empty(read.Values);
+        Assert.Contains(notices, n => n.Severity == CalcNoticeSeverity.Block && n.Message.StartsWith("F_axial:", StringComparison.Ordinal));
+
+        var csv = "symbol,value,unit\nF,99,kN\nF_axial,12,kN\nA,200,mm^2\n";
+        var (imported, csvNotices) = CalcCsv.ImportInputs(Calculator.Template, csv);
+        Assert.Contains(csvNotices, n => n.Severity == CalcNoticeSeverity.Block && n.Message.Contains("F_axial", StringComparison.Ordinal) && n.Message.Contains("keep one", StringComparison.Ordinal));
+        Assert.Equal(99, imported.Find("F_axial")!.Number);
     }
 
     [Fact]

@@ -7,13 +7,13 @@ namespace Tempest.Calc.Tests.Calculators.Consistency;
 
 /// <summary>
 /// C-2: the catalogue-wide contract of <c>docs/calcs/sheet-standard.md</c>. Each rule (<see cref="ConsistencyRules"/>) is run over all 54 templates.
-/// A template that does not meet a rule yet is named in <c>ConsistencyAllowList.json</c> (one entry per template and rule); the allow-list only
-/// shrinks. The test fails when a template breaks a rule and is not on the list (a new offender), and when a template is on the list and now
-/// meets the rule (remove the entry). Phases B and C empty the list; nothing may be added to it.
+/// A template that does not meet a rule yet is named in <c>ConsistencyAllowList.json</c> with the number of offences it has today: the entry is keyed by
+/// rule, template and count, so a template that is on the list and gains a new offence fails (the count rose), and so does one that has fixed an offence and
+/// not lowered its entry. The allow-list only shrinks: the write mode lowers or removes entries and refuses to add one, or to raise a count.
 ///
-/// To rewrite the list and the work list after fixing templates, run
+/// To lower the list and rewrite the work list after fixing templates, run
 /// <c>TEMPEST_WRITE_CONSISTENCY_ALLOWLIST=1 dotnet test tests/Tempest.Calc.Tests.Calculators --filter ConsistencyContractTests</c>
-/// and commit <c>ConsistencyAllowList.json</c> and <c>docs/calcs/consistency-work-list.md</c>. A reviewer rejects a change that adds an entry.
+/// and commit <c>ConsistencyAllowList.json</c> and <c>docs/calcs/consistency-work-list.md</c>. A reviewer rejects a change that raises a number.
 /// </summary>
 public sealed class ConsistencyContractTests
 {
@@ -52,16 +52,17 @@ public sealed class ConsistencyContractTests
         return result;
     }
 
-    private static SortedDictionary<string, SortedSet<string>> LoadAllowList()
+    /// <summary>The allow-list: rule id, then template id, then the number of offences the template has today.</summary>
+    private static SortedDictionary<string, SortedDictionary<string, int>> LoadAllowList()
     {
         var path = AllowListPath();
-        var raw = File.Exists(path) ? JsonSerializer.Deserialize<Dictionary<string, List<string>>>(File.ReadAllText(path)) ?? [] : [];
-        return new(raw.ToDictionary(p => p.Key, p => new SortedSet<string>(p.Value, StringComparer.Ordinal), StringComparer.Ordinal), StringComparer.Ordinal);
+        var raw = File.Exists(path) ? JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, int>>>(File.ReadAllText(path)) ?? [] : [];
+        return new(raw.ToDictionary(p => p.Key, p => new SortedDictionary<string, int>(p.Value, StringComparer.Ordinal), StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     [Theory]
     [MemberData(nameof(RuleIds))]
-    public void Every_Template_Meets_The_Rule_Or_Is_On_The_Allow_List_And_The_List_Names_No_Template_That_Now_Meets_It(string ruleId)
+    public void Every_Template_Meets_The_Rule_Or_Is_On_The_Allow_List_With_Its_Count_And_Gains_No_Offence(string ruleId)
     {
         if (Environment.GetEnvironmentVariable(WriteVariable) == "1")
         {
@@ -73,21 +74,26 @@ public sealed class ConsistencyContractTests
         var offenders = Found.Value[ruleId];
         var allowed = LoadAllowList().GetValueOrDefault(ruleId) ?? [];
 
-        var newOffenders = offenders.Keys.Where(id => !allowed.Contains(id)).Select(id => $"  {id}: {offenders[id][0]}").ToList();
-        var nowConform = allowed.Where(id => !offenders.ContainsKey(id)).ToList();
+        var newOffenders = offenders.Where(p => !allowed.ContainsKey(p.Key)).Select(p => $"  {p.Key}: {p.Value[0]} ({p.Value.Count} offence(s))").ToList();
+        var moreOffences = offenders.Where(p => allowed.TryGetValue(p.Key, out var count) && p.Value.Count > count).Select(p => $"  {p.Key}: {p.Value.Count} offences, the allow-list has {allowed[p.Key]}; the new one is among: {string.Join(" | ", p.Value.Select(Short).Take(4))}").ToList();
+        var fewerOffences = allowed.Where(p => (offenders.TryGetValue(p.Key, out var o) ? o.Count : 0) < p.Value).Select(p => $"{p.Key} ({p.Value} → {(offenders.TryGetValue(p.Key, out var o) ? o.Count : 0)})").ToList();
 
         Assert.True(newOffenders.Count == 0,
             $"{rule.Id} (audit row {rule.Rows}: {rule.Summary}) is broken by templates not on the allow-list; fix them (the list may not grow):{Environment.NewLine}{string.Join(Environment.NewLine, newOffenders)}");
-        Assert.True(nowConform.Count == 0,
-            $"{rule.Id}: {string.Join(", ", nowConform)} now meet the rule; remove them from ConsistencyAllowList.json ({WriteVariable}=1 rewrites it).");
+        Assert.True(moreOffences.Count == 0,
+            $"{rule.Id} is broken more often than the allow-list says; fix the new offence (the count may not rise):{Environment.NewLine}{string.Join(Environment.NewLine, moreOffences)}");
+        Assert.True(fewerOffences.Count == 0,
+            $"{rule.Id}: {string.Join(", ", fewerOffences)} have fewer offences than the allow-list says; lower the entry ({WriteVariable}=1 rewrites it, lowering only).");
     }
 
+    private static string Short(string offence) => offence.Length <= 90 ? offence : offence[..89] + "…";
+
     [Fact]
-    public void The_Allow_List_Names_Only_Known_Rules_And_Templates_In_Sorted_Order()
+    public void The_Allow_List_Is_Keyed_By_Rule_Template_And_Count_And_Names_Only_Known_Ones_In_Sorted_Order()
     {
         var path = AllowListPath();
-        Assert.True(File.Exists(path), $"{path} is missing; run with {WriteVariable}=1 to create it.");
-        var raw = JsonSerializer.Deserialize<Dictionary<string, List<string>>>(File.ReadAllText(path))!;
+        Assert.True(File.Exists(path), $"{path} is missing; it is the committed list of templates that do not meet a rule yet.");
+        var raw = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, int>>>(File.ReadAllText(path))!;
         var rules = ConsistencyRules.All.Select(r => r.Id).ToHashSet(StringComparer.Ordinal);
         var templates = AllCalculators.All.Select(c => c.Template.Id).ToHashSet(StringComparer.Ordinal);
 
@@ -95,10 +101,28 @@ public sealed class ConsistencyContractTests
         {
             Assert.Contains(pair.Key, rules);
             Assert.NotEmpty(pair.Value);
-            Assert.Equal(pair.Value.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal), pair.Value);
-            Assert.All(pair.Value, id => Assert.Contains(id, templates));
+            Assert.Equal(pair.Value.Keys.Order(StringComparer.Ordinal), pair.Value.Keys);
+            Assert.All(pair.Value, entry =>
+            {
+                Assert.Contains(entry.Key, templates);
+                Assert.True(entry.Value > 0, $"{pair.Key} / {entry.Key}: a count of {entry.Value} is not an entry; remove it.");
+            });
         });
         Assert.Equal(raw.Keys.Order(StringComparer.Ordinal), raw.Keys);
+    }
+
+    [Fact]
+    public void The_Write_Mode_Never_Adds_An_Entry_And_Never_Raises_A_Count()
+    {
+        // The rule the write mode applies (so the list can only shrink): an offender with no entry, or with more offences than its entry, is refused.
+        var allowed = new SortedDictionary<string, SortedDictionary<string, int>> { ["X01-rule"] = new(StringComparer.Ordinal) { ["a.template"] = 2 } };
+
+        Assert.Empty(Refusals(allowed, new Dictionary<string, IReadOnlyDictionary<string, int>> { ["X01-rule"] = new Dictionary<string, int> { ["a.template"] = 2 } }));
+        Assert.Empty(Refusals(allowed, new Dictionary<string, IReadOnlyDictionary<string, int>> { ["X01-rule"] = new Dictionary<string, int> { ["a.template"] = 1 } }));
+        Assert.Empty(Refusals(allowed, new Dictionary<string, IReadOnlyDictionary<string, int>> { ["X01-rule"] = new Dictionary<string, int>() }));
+        Assert.Single(Refusals(allowed, new Dictionary<string, IReadOnlyDictionary<string, int>> { ["X01-rule"] = new Dictionary<string, int> { ["a.template"] = 3 } }));
+        Assert.Single(Refusals(allowed, new Dictionary<string, IReadOnlyDictionary<string, int>> { ["X01-rule"] = new Dictionary<string, int> { ["b.template"] = 1 } }));
+        Assert.Single(Refusals(allowed, new Dictionary<string, IReadOnlyDictionary<string, int>> { ["X02-rule"] = new Dictionary<string, int> { ["a.template"] = 1 } }));
     }
 
     [Fact]
@@ -123,13 +147,39 @@ public sealed class ConsistencyContractTests
         Assert.All(holding, id => Assert.False(allowList.ContainsKey(id), $"{id} must hold for every template."));
     }
 
+    /// <summary>What the write mode would have to add or raise: an offender with no entry, or with more offences than its entry. Lowering and removing are always allowed.</summary>
+    private static List<string> Refusals(IReadOnlyDictionary<string, SortedDictionary<string, int>> allowed, IReadOnlyDictionary<string, IReadOnlyDictionary<string, int>> now)
+    {
+        var refused = new List<string>();
+
+        foreach (var (rule, templates) in now)
+        {
+            foreach (var (template, count) in templates.Where(p => p.Value > 0))
+            {
+                if (!allowed.TryGetValue(rule, out var entries) || !entries.TryGetValue(template, out var before))
+                    refused.Add($"{rule}: {template} has {count} offence(s) and is not on the allow-list (an entry may not be added)");
+                else if (count > before)
+                    refused.Add($"{rule}: {template} has {count} offences against {before} on the allow-list (a count may not be raised)");
+            }
+        }
+
+        return refused;
+    }
+
     private static void WriteFiles()
     {
         var found = Found.Value;
-        var allow = new SortedDictionary<string, List<string>>(StringComparer.Ordinal);
+        var before = LoadAllowList();
+        var now = found.ToDictionary(p => p.Key, p => (IReadOnlyDictionary<string, int>)p.Value.ToDictionary(t => t.Key, t => t.Value.Count, StringComparer.Ordinal), StringComparer.Ordinal);
+        var refused = Refusals(before, now);
+
+        // The write mode only lowers: a new offender or a higher count is a defect to fix, not an entry to write.
+        Assert.True(refused.Count == 0, $"{WriteVariable}=1 refuses to add an entry or raise a count; fix these first:{Environment.NewLine}{string.Join(Environment.NewLine, refused)}");
+
+        var allow = new SortedDictionary<string, SortedDictionary<string, int>>(StringComparer.Ordinal);
 
         foreach (var (rule, offenders) in found.Where(p => p.Value.Count > 0))
-            allow[rule] = [.. offenders.Keys];
+            allow[rule] = new SortedDictionary<string, int>(offenders.ToDictionary(p => p.Key, p => p.Value.Count, StringComparer.Ordinal), StringComparer.Ordinal);
 
         File.WriteAllText(AllowListPath(), JsonSerializer.Serialize(allow, new JsonSerializerOptions { WriteIndented = true }) + "\n");
         File.WriteAllText(WorkListPath(), WorkList(found));
@@ -139,16 +189,16 @@ public sealed class ConsistencyContractTests
     {
         var sb = new StringBuilder();
         sb.Append("# Consistency work list\n\n");
-        sb.Append("Generated by `ConsistencyContractTests` (`").Append(WriteVariable).Append("=1`); do not edit. It lists, per rule of [the sheet standard](sheet-standard.md), the templates that do not meet it yet and what is wrong in each. `tests/Tempest.Calc.Tests.Calculators/Consistency/ConsistencyAllowList.json` holds the same templates; it only shrinks. Phases B and C work these lists to empty.\n\n");
+        sb.Append("Generated by `ConsistencyContractTests` (`").Append(WriteVariable).Append("=1`); do not edit. It lists, per rule of [the sheet standard](sheet-standard.md), the templates that do not meet it yet and what is wrong in each. `tests/Tempest.Calc.Tests.Calculators/Consistency/ConsistencyAllowList.json` holds the same templates with the number of offences each has today; it only shrinks. Phases B and C work these lists to empty.\n\n");
 
         var perRule = found.Where(p => p.Value.Count > 0).OrderBy(p => p.Key, StringComparer.Ordinal).ToList();
-        sb.Append("## Counts\n\n| Rule | Audit row | Templates | Mechanical | Structural | Building services | Electrical | Fluid power |\n|---|---|---|---|---|---|---|---|\n");
+        sb.Append("## Counts\n\n| Rule | Audit row | Templates | Offences | Mechanical | Structural | Building services | Electrical | Fluid power |\n|---|---|---|---|---|---|---|---|---|\n");
 
         foreach (var (rule, offenders) in perRule)
         {
             var row = ConsistencyRules.All.Single(r => r.Id == rule).Rows;
             int Of(CalcDiscipline d) => offenders.Keys.Count(id => AllCalculators.Get(id).Template.Discipline == d);
-            sb.Append($"| `{rule}` | {row} | {offenders.Count} | {Of(CalcDiscipline.Mechanical)} | {Of(CalcDiscipline.Structural)} | {Of(CalcDiscipline.BuildingServices)} | {Of(CalcDiscipline.Electrical)} | {Of(CalcDiscipline.FluidPower)} |\n");
+            sb.Append($"| `{rule}` | {row} | {offenders.Count} | {offenders.Values.Sum(v => v.Count)} | {Of(CalcDiscipline.Mechanical)} | {Of(CalcDiscipline.Structural)} | {Of(CalcDiscipline.BuildingServices)} | {Of(CalcDiscipline.Electrical)} | {Of(CalcDiscipline.FluidPower)} |\n");
         }
 
         sb.Append("\n## By template\n\n");
@@ -165,7 +215,7 @@ public sealed class ConsistencyContractTests
             sb.Append($"\n### `{rule}` — audit row {def.Rows}\n\n{def.Summary}\n\n");
 
             foreach (var (id, offences) in offenders)
-                sb.Append($"- `{id}`: {string.Join("; ", offences.Take(3).Select(o => o.Replace("\n", " ", StringComparison.Ordinal).Replace("|", "/", StringComparison.Ordinal)))}{(offences.Count > 3 ? $"; … ({offences.Count} in all)" : string.Empty)}\n");
+                sb.Append($"- `{id}` ({offences.Count}): {string.Join("; ", offences.Take(3).Select(o => o.Replace("\n", " ", StringComparison.Ordinal).Replace("|", "/", StringComparison.Ordinal)))}{(offences.Count > 3 ? $"; … ({offences.Count} in all)" : string.Empty)}\n");
         }
 
         return sb.ToString();

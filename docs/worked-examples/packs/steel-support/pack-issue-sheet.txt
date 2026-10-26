@@ -45,7 +45,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 47/47
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -155,14 +155,14 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
         SLS quasi-permanent effect, minimum
 
 5. Results
-  E_d_max = -12.00 kN    ULS design effect, maximum
+  E_d_max = -12 kN    ULS design effect, maximum
   E_d_min = -28.20 kN    ULS design effect, minimum
-  E_k_max = -12.00 kN    SLS characteristic effect, maximum
-  E_qp_max = -12.00 kN    SLS quasi-permanent effect, maximum
+  E_k_max = -12 kN    SLS characteristic effect, maximum
+  E_qp_max = -12 kN    SLS quasi-permanent effect, maximum
   E_d_gov = "ULS 6.10, no variable action"    ULS design effect, governing (max)
-  E_k_min = -20.00 kN    SLS characteristic effect, minimum
+  E_k_min = -20 kN    SLS characteristic effect, minimum
   E_k_gov = "SLS characteristic 6.14b, no variable action"    SLS characteristic effect, governing (max)
-  E_fr_max = -12.00 kN    SLS frequent effect, maximum
+  E_fr_max = -12 kN    SLS frequent effect, maximum
   E_fr_min = -19.20 kN    SLS frequent effect, minimum
   E_fr_gov = "SLS frequent 6.15b, no variable action"    SLS frequent effect, governing (max)
   E_qp_min = -18.40 kN    SLS quasi-permanent effect, minimum
@@ -179,7 +179,7 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   Content hash: 28f3ed111e112df1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -210,11 +210,11 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   nodes[2] |  | id = 2; x = 0 m; y = 3 m; support = free |  |  | 
   nodes[3] |  | id = 3; x = 1 m; y = 3 m; support = free |  |  | 
   elements | Elements | 2 row(s) |  | drawing: DRG-STR-310 rev B | any
-  elements[1] |  | id = 1; i = 1; j = 2; A = 58.7 cm^2; I = 4568 cm^4; rel_i = no; rel_j = no |  |  | 
-  elements[2] |  | id = 2; i = 2; j = 3; A = 58.7 cm^2; I = 4568 cm^4; rel_i = no; rel_j = no |  |  | 
+  elements[1] |  | id = 1; i = 1; j = 2; A = 58.7 cm²; I = 4568 cm⁴; rel_i = no; rel_j = no |  |  | 
+  elements[2] |  | id = 2; i = 2; j = 3; A = 58.7 cm²; I = 4568 cm⁴; rel_i = no; rel_j = no |  |  | 
   loads | Loads | 2 row(s) |  | drawing: DRG-STR-310 rev B | any
-  loads[1] |  | case = 1; kind = nodal; target = 3; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = -28.2 kN; M = 0 kN*m |  | F_y: link: Load combinations rev A · E_d_min | 
-  loads[2] |  | case = 2; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 5 kN; F_y = 0 kN; M = 0 kN*m |  |  | 
+  loads[1] |  | case = 1; kind = nodal; target = 3; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = -28.2 kN; M = 0 kN·m |  | F_y: link: Load combinations rev A · E_d_min | 
+  loads[2] |  | case = 2; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 5 kN; F_y = 0 kN; M = 0 kN·m |  |  | 
   combinations | Combinations (blank = each case alone) | 2 row(s) |  | drawing: DRG-STR-310 rev B | any
   combinations[1] |  | name = ULS; case = 1; factor = 1 |  |  | 
   combinations[2] |  | name = ULS; case = 2; factor = 1 |  |  | 
@@ -350,32 +350,32 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
         Maximum transverse deflection
 
 5. Results
-  R1_x = -5.00 kN    R_x node 1
+  R1_x = -5 kN    R_x node 1
   R1_y = 28.20 kN    R_y node 1
   R1_m = 43.20 kN·m    M node 1
-  R1_x_abs = 5.00 kN    |R_x| node 1
+  R1_x_abs = 5 kN    |R_x| node 1
   R1_m_abs = 43.20 kN·m    |M| node 1
   N_e1 = -28.20 kN    N, member 1
-  V_e1 = 5.00 kN    |V| max, member 1
+  V_e1 = 5 kN    |V| max, member 1
   M_abs_e1 = 43.20 kN·m    |M| max, member 1
   M_max_e1 = -28.20 kN·m    M max, member 1
   M_min_e1 = -43.20 kN·m    M min, member 1
   V_e2 = 28.20 kN    |V| max, member 2
   M_abs_e2 = 28.20 kN·m    |M| max, member 2
   sum_R_y = 28.20 kN    Σ R_y
-  sum_R_x = -5.00 kN    Σ R_x
+  sum_R_x = -5 kN    Σ R_x
   M_max = 0 kN·m    M max
   M_min = -43.20 kN·m    M min
   V_max = 28.20 kN    |V| max
   N_max = 0 kN    N max (tension)
   N_min = -28.20 kN    N min (compression)
-  d_max = 17.9 mm    δ max
-  d_e1 = 17.9 mm    δ max, member 1
+  d_max = 17.92 mm    δ max
+  d_e1 = 17.92 mm    δ max, member 1
   M_max_e2 = 0 kN·m    M max, member 2
   M_min_e2 = -28.20 kN·m    M min, member 2
   N_e2 = 0 kN    N, member 2
-  d_e2 = 12.2 mm    δ max, member 2
-  x_Mmax = 1.00 m    x of M max
+  d_e2 = 12.21 mm    δ max, member 2
+  x_Mmax = 1 m    x of M max
 
 6. Checks (governing first)
   None.
@@ -388,7 +388,7 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   Content hash: a6389d664ba5a5eb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -439,11 +439,13 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   curve_z | Buckling curve about z-z | c |  | assumption: Sheet default value; no project figure given. | any
   k_yy | Interaction factor k_yy (member check) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 2
   k_zz | Interaction factor k_zz (member check) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 2
+  ltb | Compression flange against lateral-torsional buckling (not restrained: outside this sheet) | Restrained |  | assumption: Sheet default value; no project figure given. | any
+  gamma_M2 | Partial factor γ_M2 (net-section fracture) | 1.1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.35
 
 3. Assumptions
   A1. The cross-section class is as stated by the user (1, 2 or 3); class 4 effective properties are not derived here. (6.2.2.5 effective widths are outside this sheet.)
-  A2. Lateral-torsional buckling is not checked: the compression flange is assumed restrained, or LTB is checked elsewhere. (6.3.2 not implemented.)
-  A3. The member interaction uses the user's k_yy and k_zz (default 1.0) with the smaller flexural-buckling reduction on the axial term; the Annex A/B interaction factors are not derived. (6.3.3 simplified.)
+  A2. The compression flange is restrained against lateral-torsional buckling, as the input ltb says. (6.3.2 is outside this sheet: a member that is not restrained is checked on the LTB interaction sheet.)
+  A3. A k left at 1.0 under N_Ed/N_b,Rd above 0.3 is replaced by the Annex A/B upper bound C_m(1 + 0.8n). (6.3.3 simplified: the smaller flexural-buckling reduction is used on the axial term and the factors are not derived.)
   A4. Imperfection factors per curve are the textbook values and may be overridden; partial factors default to 1.0 (UK National Annex) and may be overridden. (User-editable with provenance.)
   A5. E (Modulus of elasticity) is taken as 210 GPa. (Sheet default value; no project figure given.)
   A6. gamma_M0 (Partial factor γ_M0 (cross-section resistance)) is taken as 1. (Sheet default value; no project figure given.)
@@ -461,136 +463,139 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   A18. curve_z (Buckling curve about z-z) is taken as c. (Sheet default value; no project figure given.)
   A19. k_yy (Interaction factor k_yy (member check)) is taken as 1. (Sheet default value; no project figure given.)
   A20. k_zz (Interaction factor k_zz (member check)) is taken as 1. (Sheet default value; no project figure given.)
+  A21. ltb (Compression flange against lateral-torsional buckling (not restrained: outside this sheet)) is taken as Restrained. (Sheet default value; no project figure given.)
+  A22. gamma_M2 (Partial factor γ_M2 (net-section fracture)) is taken as 1.1. (Sheet default value; no project figure given.)
+  A23. The compression flange is restrained against lateral-torsional buckling, as the input ltb says. (Input ltb.)
 
 4. Working
-  [27] r_h = r
+  [28] r_h = r
       = 10.2 mm
       = 10.2 mm
         Root radius used by the helper
-  [28] A_v_rolled = A - 2 * b * t_f + (t_w + 2 * r_h) * t_f    « 6.2.6(3)
+  [29] A_v_rolled = A - 2 * b * t_f + (t_w + 2 * r_h) * t_f    « 6.2.6(3)
       = 58.7 cm² − 2 × 203.6 mm × 11 mm + (7.2 mm + 2 × 10.2 mm) × 11 mm
       = 16.944 cm²
         Rolled I shear area, load parallel to the web
-  [29] A_v_min = eta * (h - 2 * t_f) * t_w    « 6.2.6(3)
+  [30] A_v_min = eta * (h - 2 * t_f) * t_w    « 6.2.6(3)
       = 1 × (203.2 mm − 2 × 11 mm) × 7.2 mm
       = 13.046 cm²
         Lower bound η h_w t_w
-  [30] A_v = max(A_v_rolled, A_v_min)
+  [31] A_v = max(A_v_rolled, A_v_min)
       = max(16.944 cm², 13.046 cm²)
       = 16.944 cm²
         Shear area
-  [31] N_pl_Rd = A * f_y / gamma_M0    « 6.2.3(2), 6.2.4(2)
+  [32] N_pl_Rd = A * f_y / gamma_M0    « 6.2.3(2), 6.2.4(2)
       = 58.7 cm² × 355 MPa / 1
       = 2083.8 kN
         Plastic axial resistance
-  [32] W_y = W_pl_y    « 6.2.5(2)
+  [33] W_y = W_pl_y    « 6.2.5(2)
       = 497 cm³
       = 497 cm³
         Section modulus about y (plastic, class 1–2)
-  [33] W_z = W_pl_z    « 6.2.5(2)
+  [34] W_z = W_pl_z    « 6.2.5(2)
       = 231 cm³
       = 231 cm³
         Section modulus about z (plastic)
-  [34] V_pl_Rd = A_v * f_y / (sqrt(3) * gamma_M0)    « 6.2.6(2)
+  [35] V_pl_Rd = A_v * f_y / (sqrt(3) * gamma_M0)    « 6.2.6(2)
       = 16.944 cm² × 355 MPa / (sqrt(3) × 1)
       = 347.28 kN
         Plastic shear resistance
-  [35] u_V = V_Ed / V_pl_Rd
+  [36] u_V = V_Ed / V_pl_Rd
       = 5 kN / 347.28 kN
       = 0.014397
         Shear utilisation
-  [36] rho = 0    « 6.2.8(2)
+  [37] rho = 0    « 6.2.8(2)
       = 0
         Shear reduction factor (V_Ed ≤ 0.5 V_pl,Rd)
-  [37] M_y_c_Rd = (1 - rho) * W_y * f_y / gamma_M0    « 6.2.5(2), 6.2.8
+  [38] M_y_c_Rd = (1 - rho) * W_y * f_y / gamma_M0    « 6.2.5(2), 6.2.8
       = (1 − 0) × 497 cm³ × 355 MPa / 1
       = 176.44 kN·m
         Bending resistance about y
-  [38] M_z_c_Rd = (1 - rho) * W_z * f_y / gamma_M0    « 6.2.5(2)
+  [39] M_z_c_Rd = (1 - rho) * W_z * f_y / gamma_M0    « 6.2.5(2)
       = (1 − 0) × 231 cm³ × 355 MPa / 1
       = 82.005 kN·m
         Bending resistance about z
-  [39] u_M_y = M_y_Ed / M_y_c_Rd
+  [40] u_M_y = M_y_Ed / M_y_c_Rd
       = 43.2 kN·m / 176.44 kN·m
       = 0.24485
         Bending utilisation, y
-  [40] u_M_z = M_z_Ed / M_z_c_Rd
+  [41] u_M_z = M_z_Ed / M_z_c_Rd
       = 0 kN·m / 82.005 kN·m
       = 0
         Bending utilisation, z
-  [41] u_N = abs(N_Ed) / N_pl_Rd
+  [42] u_N = abs(N_Ed) / N_pl_Rd
       = abs(-28.2 kN) / 2083.8 kN
       = 0.013533
         Compression (cross-section) utilisation
-  [42] u_section = u_N + u_M_y + u_M_z    « 6.2.1(7)
+  [43] u_section = u_N + u_M_y + u_M_z    « 6.2.1(7)
       = 0.013533 + 0.24485 + 0
       = 0.25838
         Linear cross-section interaction
-  [45] alpha_y = imperfection factor, curve b    « 6.3.1.2
+  [46] alpha_y = imperfection factor, curve b    « 6.3.1.2
       = Designers' Guide §6.3.1
       = 0.34
         Imperfection factor about y
-  [46] alpha_z = imperfection factor, curve c    « 6.3.1.2
+  [47] alpha_z = imperfection factor, curve c    « 6.3.1.2
       = Designers' Guide §6.3.1
       = 0.49
         Imperfection factor about z
-  [47] N_cr_y = pi^2 * E * I_y / L_cr_y^2    « 6.3.1.2(1)
+  [48] N_cr_y = pi^2 * E * I_y / L_cr_y^2    « 6.3.1.2(1)
       = π^2 × 210 GPa × 4568 cm⁴ / (6 m)^2
       = 2629.9 kN
         Elastic critical force about y
-  [48] lambda_y = sqrt(A * f_y / N_cr_y)    « 6.3.1.2(1)
+  [49] lambda_y = sqrt(A * f_y / N_cr_y)    « 6.3.1.2(1)
       = sqrt(58.7 cm² × 355 MPa / 2629.9 kN)
       = 0.89015
         Non-dimensional slenderness about y
-  [49] Phi_y = 0.5 * (1 + alpha_y * (lambda_y - 0.2) + lambda_y^2)    « 6.3.1.2(1)
+  [50] Phi_y = 0.5 * (1 + alpha_y * (lambda_y - 0.2) + lambda_y^2)    « 6.3.1.2(1)
       = 0.5 × (1 + 0.34 × (0.89015 − 0.2) + 0.89015^2)
       = 1.0135
         Φ about y
-  [50] chi_y = min(1, 1 / (Phi_y + sqrt(Phi_y^2 - lambda_y^2)))    « 6.3.1.2(1)
+  [51] chi_y = min(1, 1 / (Phi_y + sqrt(Phi_y^2 - lambda_y^2)))    « 6.3.1.2(1)
       = min(1, 1 / (1.0135 + sqrt(1.0135^2 − 0.89015^2)))
       = 0.66751
         Reduction factor χ about y
-  [51] N_b_y_Rd = chi_y * A * f_y / gamma_M1    « 6.3.1.1(3)
+  [52] N_b_y_Rd = chi_y * A * f_y / gamma_M1    « 6.3.1.1(3)
       = 0.66751 × 58.7 cm² × 355 MPa / 1
       = 1391 kN
         Buckling resistance about y
-  [52] N_cr_z = pi^2 * E * I_z / L_cr_z^2    « 6.3.1.2(1)
+  [53] N_cr_z = pi^2 * E * I_z / L_cr_z^2    « 6.3.1.2(1)
       = π^2 × 210 GPa × 1548 cm⁴ / (6 m)^2
       = 891.23 kN
         Elastic critical force about z
-  [53] lambda_z = sqrt(A * f_y / N_cr_z)    « 6.3.1.2(1)
+  [54] lambda_z = sqrt(A * f_y / N_cr_z)    « 6.3.1.2(1)
       = sqrt(58.7 cm² × 355 MPa / 891.23 kN)
       = 1.5291
         Non-dimensional slenderness about z
-  [54] Phi_z = 0.5 * (1 + alpha_z * (lambda_z - 0.2) + lambda_z^2)    « 6.3.1.2(1)
+  [55] Phi_z = 0.5 * (1 + alpha_z * (lambda_z - 0.2) + lambda_z^2)    « 6.3.1.2(1)
       = 0.5 × (1 + 0.49 × (1.5291 − 0.2) + 1.5291^2)
       = 1.9947
         Φ about z
-  [55] chi_z = min(1, 1 / (Phi_z + sqrt(Phi_z^2 - lambda_z^2)))    « 6.3.1.2(1)
+  [56] chi_z = min(1, 1 / (Phi_z + sqrt(Phi_z^2 - lambda_z^2)))    « 6.3.1.2(1)
       = min(1, 1 / (1.9947 + sqrt(1.9947^2 − 1.5291^2)))
       = 0.30528
         Reduction factor χ about z
-  [56] N_b_z_Rd = chi_z * A * f_y / gamma_M1    « 6.3.1.1(3)
+  [57] N_b_z_Rd = chi_z * A * f_y / gamma_M1    « 6.3.1.1(3)
       = 0.30528 × 58.7 cm² × 355 MPa / 1
       = 636.17 kN
         Buckling resistance about z
-  [57] N_b_Rd = min(N_b_y_Rd, N_b_z_Rd)
+  [58] N_b_Rd = min(N_b_y_Rd, N_b_z_Rd)
       = min(1391 kN, 636.17 kN)
       = 636.17 kN
         Governing buckling resistance
-  [58] u_buckling = abs(N_Ed) / N_b_Rd    « 6.3.1.1(1)
+  [59] u_buckling = abs(N_Ed) / N_b_Rd    « 6.3.1.1(1)
       = abs(-28.2 kN) / 636.17 kN
       = 0.044328
         Flexural buckling utilisation
-  [59] M_y_b_Rd = W_y * f_y / gamma_M1    « 6.3.3, Eq. 6.61
+  [60] M_y_b_Rd = W_y * f_y / gamma_M1    « 6.3.3, Eq. 6.61
       = 497 cm³ × 355 MPa / 1
       = 176.44 kN·m
         Characteristic bending resistance about y over γ_M1 (member check, no shear reduction)
-  [60] M_z_b_Rd = W_z * f_y / gamma_M1    « 6.3.3, Eq. 6.62
+  [61] M_z_b_Rd = W_z * f_y / gamma_M1    « 6.3.3, Eq. 6.62
       = 231 cm³ × 355 MPa / 1
       = 82.005 kN·m
         Characteristic bending resistance about z over γ_M1 (member check, no shear reduction)
-  [61] u_member = abs(N_Ed) / N_b_Rd + k_yy * M_y_Ed / M_y_b_Rd + k_zz * M_z_Ed / M_z_b_Rd    « 6.3.3(4)
+  [62] u_member = abs(N_Ed) / N_b_Rd + k_yy * M_y_Ed / M_y_b_Rd + k_zz * M_z_Ed / M_z_b_Rd    « 6.3.3(4)
       = abs(-28.2 kN) / 636.17 kN + 1 × 43.2 kN·m / 176.44 kN·m + 1 × 0 kN·m / 82.005 kN·m
       = 0.28918
         Simplified member interaction
@@ -631,14 +636,14 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   PASS  Bending z M_z,Ed ≤ M_z,c,Rd: u_M_z = 0.00 vs u_M_z ≤ 1  utilisation 0.00  « 6.2.5
 
 7. Applicability
-  WARNING  M_y_Ed: lateral-torsional buckling is not checked by this sheet; restrain the compression flange or check 6.3.2 separately.  [no-ltb]
+  None.
 
 8. Verification
-  Template: struct.en1993-member@1.3.1
-  Content hash: a2e6114eb2412c02
+  Template: struct.en1993-member@1.4.0
+  Content hash: fdf55f0878a74ece
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -668,12 +673,12 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   bolts | Bolt positions and areas | 6 row(s) |  | drawing: DRG-STR-312 rev B | any
-  bolts[1] |  | x = -60 mm; y = 150 mm; A = 245 mm^2 |  |  | 
-  bolts[2] |  | x = 60 mm; y = 150 mm; A = 245 mm^2 |  |  | 
-  bolts[3] |  | x = -60 mm; y = 0 mm; A = 245 mm^2 |  |  | 
-  bolts[4] |  | x = 60 mm; y = 0 mm; A = 245 mm^2 |  |  | 
-  bolts[5] |  | x = -60 mm; y = -150 mm; A = 245 mm^2 |  |  | 
-  bolts[6] |  | x = 60 mm; y = -150 mm; A = 245 mm^2 |  |  | 
+  bolts[1] |  | x = -60 mm; y = 150 mm; A = 245 mm² |  |  | 
+  bolts[2] |  | x = 60 mm; y = 150 mm; A = 245 mm² |  |  | 
+  bolts[3] |  | x = -60 mm; y = 0 mm; A = 245 mm² |  |  | 
+  bolts[4] |  | x = 60 mm; y = 0 mm; A = 245 mm² |  |  | 
+  bolts[5] |  | x = -60 mm; y = -150 mm; A = 245 mm² |  |  | 
+  bolts[6] |  | x = 60 mm; y = -150 mm; A = 245 mm² |  |  | 
   F_x | In-plane force, x | 0 | kN | drawing: DRG-STR-312 rev B | -1000000 … 1000000 kN
   F_y | In-plane force, y | 28.2 | kN | link: Support frame rev A · V_e2 | -1000000 … 1000000 kN
   e_x | Point of application, x | 0 | mm | drawing: DRG-STR-312 rev B | -100000 … 100000 mm
@@ -779,8 +784,8 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
 5. Results
   T = 0 kN·m    Torque about the centroid
   J = 27342000 mm⁴    Polar second moment of bolt areas
-  v_max = 4.70 kN    Maximum shear on any bolt
-  t_max = 47.00 kN    Maximum tension on any bolt
+  v_max = 4.700 kN    Maximum shear on any bolt
+  t_max = 47 kN    Maximum tension on any bolt
   bolt_v = "bolt 1"    Bolt with the largest shear
   bolt_t = "bolt 1"    Bolt with the largest tension
   governing = "bolt 1"    Governing bolt
@@ -802,7 +807,7 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   Content hash: 51d1bceeeb8e14ba
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -948,8 +953,8 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   F_b_Rd = 109.33 kN    Bearing resistance
   F_t_Rd = 141.00 kN    Tension resistance
   A_s = 244.8 mm²    Stress area
-  f_ub = 800.0 MPa    Bolt ultimate strength
-  f_yb = 640.0 MPa    Bolt yield strength
+  f_ub = 800 MPa    Bolt ultimate strength
+  f_yb = 640 MPa    Bolt yield strength
   alpha_v = 0.6    Shear factor
   alpha_b = 0.60606    Bearing factor
   k_1 = 2.5    Bearing factor k₁
@@ -979,7 +984,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: e5ff72f057654ae1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -1114,8 +1119,8 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   F_b_Rd = 248.48 kN    Bearing resistance
   F_t_Rd = 141.00 kN    Tension resistance
   A_s = 244.8 mm²    Stress area
-  f_ub = 800.0 MPa    Bolt ultimate strength
-  f_yb = 640.0 MPa    Bolt yield strength
+  f_ub = 800 MPa    Bolt ultimate strength
+  f_yb = 640 MPa    Bolt yield strength
   alpha_v = 0.6    Shear factor
   alpha_b = 0.60606    Bearing factor
   k_1 = 2.5    Bearing factor k₁
@@ -1142,7 +1147,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: e5ff72f057654ae1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -1200,7 +1205,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | link: Holding-down bolts rev A · f_yb | 235 … 640 MPa
   A_s | Anchor bolt tensile stress area (from S4) | 244.794 | mm² | link: Holding-down bolts rev A · A_s | 50 … 1500 mm²
   F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 248.485 | kN | link: Holding-down bolts rev A · F_b_Rd | 1 … 2000 kN
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 9443e530577144548eaa3070cfbbe6a4/b30edfddbfe24a228e7697711962a6bb | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: bf05da497e0c4cdd8ebae36b969908f1/b7abddda99dc4a76a2513f7df3a8fbd4 | any
 
 3. Assumptions
   A1. N_Ed is positive in compression here, the opposite of S3 (tension positive): a link from S2 must take the reaction R1_y (up positive, compression into the base), never the member force N_e1. (Sign convention.)
@@ -1370,14 +1375,14 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   V_b_Ed = 0 kN    Shear per anchor bolt (to PROFIS)
   N_j_Rd = 958.76 kN    Axial bearing resistance
   u_max = 0.63    Governing utilisation
-  f_cd = 14.2 MPa    Concrete design strength
+  f_cd = 14.17 MPa    Concrete design strength
   beta_j = 0.66667    Joint coefficient β_j
-  f_jd = 9.4 MPa    Bearing strength f_jd
-  c = 77.9 mm    Bearing outstand c
+  f_jd = 9.444 MPa    Bearing strength f_jd
+  c = 77.89 mm    Bearing outstand c
   A_eff = 101516 mm²    Effective bearing area
-  t_req_N = 10.0 mm    Plate thickness required for axial bearing alone
-  t_req = 15.4 mm    Plate thickness required (bearing, compression and tension T-stubs)
-  z_C = 93.9 mm    Compression lever arm z_C
+  t_req_N = 10 mm    Plate thickness required for axial bearing alone
+  t_req = 15.42 mm    Plate thickness required (bearing, compression and tension T-stubs)
+  z_C = 93.86 mm    Compression lever arm z_C
   z = 228.9 mm    Lever arm z
   C_Ed = 205.40 kN    Compression resultant
   C_Ed_2 = 0 kN    Compression resultant, other side
@@ -1385,14 +1390,14 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   T_Ed_2 = 0 kN    Tension resultant, other row
   A_flange = 48686 mm²    Compression-side bearing area
   C_Rd = 459.81 kN    Compression-side resistance
-  M_pl_Rd = 6.45 kN·m    Plate plastic moment
+  M_pl_Rd = 6.445 kN·m    Plate plastic moment
   T_Rd_1 = 460.38 kN    T-stub mode 1-2, no prying
   T_Rd_3 = 282.00 kN    T-stub mode 3
   T_Rd = 282.00 kN    Tension T-stub resistance
   alpha_bc = 0.248    Anchor shear factor α_bc
   F_2_vb_Rd = 38.85 kN    Anchor shear resistance F_2,vb,Rd
   F_vb_Rd = 38.85 kN    Anchor shear resistance per bolt
-  F_f_Rd = 5.64 kN    Friction resistance
+  F_f_Rd = 5.640 kN    Friction resistance
   V_Rd = 161.06 kN    Shear resistance
   regime = "tension at one bolt row, compression under the other flange (Table 6.7, z = z_C + x_b)"    Force regime (Table 6.7)
   T_mode = "mode 3 (bolt failure)"    Governing T-stub mode
@@ -1420,7 +1425,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   Content hash: cf631b3ae895bf39
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

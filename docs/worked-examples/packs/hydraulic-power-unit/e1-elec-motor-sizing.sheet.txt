@@ -175,17 +175,21 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
       = 1450 rpm / 3000 rpm
       = 0.48333
         Speed utilisation
-  [50] duty = T_rms / T_rated
+  [50] u_rated_speed = n_pk / n_rated
+      = 1450 rpm / 1460 rpm
+      = 0.99315
+        Motor speed over the rated (nameplate) speed
+  [51] duty = T_rms / T_rated
       = 77.751 N·m / 120 N·m
       = 0.64792
         Thermal duty (without margin)
 
 5. Results
   T_load = 77.75 N·m    Load torque at motor
-  J_refl = 0.0040 kg·m²    Reflected load inertia
+  J_refl = 0.004040 kg·m²    Reflected load inertia
   J_total = 0.1050 kg·m²    Total inertia
   alpha_pk = 75.92 rad/s²    Run-up angular acceleration
-  T_acc = 7.97 N·m    Run-up torque
+  T_acc = 7.975 N·m    Run-up torque
   T_pk = 85.73 N·m    Peak torque
   T_rms = 77.75 N·m    RMS torque
   T_design = 85.73 N·m    Design torque for downstream couplings
@@ -196,7 +200,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   T_out_a = 0 N·m    Output shaft alternating torque
   T_out_pk = 84.87 N·m    Output shaft peak torque
   n_out = 1450 rpm    Output shaft speed
-  n_pk = 1450 rpm    Motor speed
+  n_pk = 1450 rpm    Motor speed (governing)
   n_mean = 1450 rpm    Mean motor speed (the steady speed)
   P_pk = 13.02 kW    Peak power
   P_brake = 0 kW    Peak braking power
@@ -207,11 +211,13 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   duty = 0.64792    Thermal duty
   u_peak = 0.39    Peak utilisation
   u_power = 0.64    Rated power utilisation P_cont/P_rated
-  u_rms = 0.81    Continuous utilisation (governing)
+  u_rms = 0.81    Continuous utilisation
   u_speed = 0.48    Speed utilisation
   k = 1    Transmission constant
+  u_rated_speed = 0.99315    Motor speed over the rated speed
 
 6. Checks (governing first)
+  PASS  Motor speed against the rated speed: 1450 rpm vs 1460 rpm  utilisation 0.99
   PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.81 vs u_rms ≤ 1  utilisation 0.81
   PASS  Rated power P_cont ≤ P_rated: u_power = 0.64 vs u_power ≤ 1  utilisation 0.64
   PASS  Speed n_pk ≤ n_max: u_speed = 0.48 vs u_speed ≤ 1  utilisation 0.48
@@ -222,11 +228,11 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   WARNING  duty_mode: continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.  [continuous-ignored]
 
 8. Verification
-  Template: elec.motor-sizing@1.9.0
-  Content hash: b13348936aa53b72
+  Template: elec.motor-sizing@1.10.0
+  Content hash: 3989917de380d03f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

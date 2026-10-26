@@ -16,7 +16,7 @@ internal sealed class TestWorksheetCalculator : ICalcCalculator
         ],
         [new CalcAssumption("The load acts through the centroid.")],
         [new CalcClauseRef("EN 1993-1-1", "6.2.3", "Tension")],
-        [new CalcApplicabilityRule("high-stress", "Stress above 80 % of allowable is flagged.", CalcNoticeSeverity.Warning)],
+        [new CalcApplicabilityRule("high-stress", "Stress above 80 % of allowable is flagged.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative)],
         [
             new CalcTestCase("ka-1", "12 kN on 200 mm²", new CalcReferenceSource("Hand calculation", null, "σ = 60 MPa"),
                 [CalcInputValue.Quantity("F", 12, "kN"), CalcInputValue.Quantity("A", 200, "mm^2"), CalcInputValue.Quantity("sigma_allow", 160, "MPa")],
@@ -38,4 +38,24 @@ internal sealed class TestWorksheetCalculator : ICalcCalculator
         if (c.Si("u") > 0.8)
             c.Warn("high-stress", "u: the stress is above 80 % of the allowable.");
     }
+}
+
+/// <summary>The same worksheet after its load input was renamed <c>F_old</c> to <c>F</c> (C-2): a saved calculation that still says <c>F_old</c> must open on <c>F</c>.</summary>
+internal sealed class AliasedWorksheetCalculator : ICalcCalculator
+{
+    private readonly TestWorksheetCalculator _inner = new();
+
+    public CalcTemplate Template { get; }
+
+    public AliasedWorksheetCalculator()
+    {
+        var original = _inner.Template;
+        Template = original with
+        {
+            Id = "test.desktop-aliased",
+            Inputs = [.. original.Inputs.Select(i => i.Symbol == "F" ? i with { Aliases = ["F_old"] } : i)],
+        };
+    }
+
+    public void Run(CalcRunContext c) => _inner.Run(c);
 }

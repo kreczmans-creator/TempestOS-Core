@@ -100,11 +100,11 @@ Tension across the net section beside the hole: σ_t = P/((W − d_h)·t). Beari
         Pin bending utilisation
 
 5. Results
-  sigma_t = 36.8 MPa    Net-section tension
-  sigma_br = 83.3 MPa    Bearing stress
-  tau_to = 31.2 MPa    Tear-out shear
-  tau_p = 35.4 MPa    Pin shear
-  M_p = 325.00 N·m    Pin bending moment
+  sigma_t = 36.76 MPa    Net-section tension
+  sigma_br = 83.33 MPa    Bearing stress
+  tau_to = 31.25 MPa    Tear-out shear
+  tau_p = 35.37 MPa    Pin shear
+  M_p = 325 N·m    Pin bending moment
   sigma_b = 122.6 MPa    Pin bending stress
   sheet_notice = "This is a design calculation, not a thorough examination. It does not replace the thorough examination by a competent person (LOLER reg 9) or the marking, testing and certification that the regulations require. Signatures are not authenticated by TempestOS: the signed-in names of the author, the checkers and the competent person are as entered into this installation."    Status of this sheet
   u_t = 0.25    Net-section utilisation

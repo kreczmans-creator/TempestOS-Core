@@ -13,8 +13,8 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   rooms | Rooms and emitters | 2 row(s) |  | spec: SPEC-HTG-01 §3 | any
-  rooms[1] |  | name = Room A; Phi = 379.44 W; V_em = 4 L; t_i = 21 degC |  | Phi: link: Room A heat loss rev A · Phi_HL; t_i: link: Room A heat loss rev A · theta_int | 
-  rooms[2] |  | name = Room B; Phi = 304.61 W; V_em = 4 L; t_i = 21 degC |  | Phi: link: Room B heat loss rev A · Phi_HL; t_i: link: Room B heat loss rev A · theta_int | 
+  rooms[1] |  | name = Room A; Phi = 379.44 W; V_em = 4 L; t_i = 21 °C |  | Phi: link: Room A heat loss rev A · Phi_HL; t_i: link: Room A heat loss rev A · theta_int | 
+  rooms[2] |  | name = Room B; Phi = 304.61 W; V_em = 4 L; t_i = 21 °C |  | Phi: link: Room B heat loss rev A · Phi_HL; t_i: link: Room B heat loss rev A · theta_int | 
   t_f | Flow temperature | 75 | °C | assumption: Sheet default value; no project figure given. | 30 … 90 °C
   t_r | Return temperature | 65 | °C | assumption: Sheet default value; no project figure given. | 30 … 90 °C
   t_i | Room temperature | 20 | °C | assumption: Sheet default value; no project figure given. | 16 … 24 °C
@@ -111,17 +111,17 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
 
 5. Results
   Phi_tot = 684.1 W    Total heat required
-  V_s = 21.1 L    System water volume
-  V_e = 1.4 L    Minimum vessel volume
-  dT = 50.0 K    Mean temperature difference
-  dT_fr = 10.0 K    Flow-to-return temperature difference
-  t_m = 70.0 °C    Mean water temperature
+  V_s = 21.14 L    System water volume
+  V_e = 1.388 L    Minimum vessel volume
+  dT = 50 K    Mean temperature difference
+  dT_fr = 10 K    Flow-to-return temperature difference
+  t_m = 70 °C    Mean water temperature
   f_dT = 1    Output correction factor
   R1 = 389.5 W    Room A: Φ50 needed
   R2 = 312.7 W    Room B: Φ50 needed
-  V_em = 8.0 L    Emitter water content
+  V_em = 8 L    Emitter water content
   e_x = 0.032086    Expansion coefficient
-  p_i = 0.79 bar    Pre-charge pressure
+  p_i = 0.7902 bar    Pre-charge pressure
 
 6. Checks (governing first)
   None.
@@ -134,7 +134,7 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
   Content hash: 8f4c0fb390c63009
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

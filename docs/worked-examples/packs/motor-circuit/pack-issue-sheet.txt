@@ -44,7 +44,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 26/26
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -244,32 +244,32 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
         Thermal duty (without margin)
 
 5. Results
-  T_load = 0.087 N·m    Load torque at motor
-  J_refl = 0.00014 kg·m²    Reflected load inertia
-  J_total = 0.00044 kg·m²    Total inertia
+  T_load = 0.08671 N·m    Load torque at motor
+  J_refl = 0.0001407 kg·m²    Reflected load inertia
+  J_total = 0.0004407 kg·m²    Total inertia
   alpha_pk = 5654.9 rad/s²    Motor angular acceleration
-  T_acc = 2.49 N·m    Acceleration torque
-  T_pk = 2.58 N·m    Peak torque
-  T_dec = -2.41 N·m    Deceleration torque
-  T_rms = 1.44 N·m    RMS torque
-  T_design = 2.58 N·m    Design torque for downstream couplings
+  T_acc = 2.492 N·m    Acceleration torque
+  T_pk = 2.579 N·m    Peak torque
+  T_dec = -2.406 N·m    Deceleration torque
+  T_rms = 1.440 N·m    RMS torque
+  T_design = 2.579 N·m    Design torque for downstream couplings
   T_hold = 0 N·m    Holding torque in the dwell
-  T_alt = 2.49 N·m    Alternating torque amplitude
+  T_alt = 2.492 N·m    Alternating torque amplitude
   F_ax_pk = 499.0 N    Peak axial thrust on a screw's bearings
   n_pk = 9000 rpm    Peak speed
   n_mean = 3000 rpm    Mean motor speed over the cycle
-  P_pk = 2.43 kW    Peak power
-  P_brake = 2.27 kW    Peak braking power
+  P_pk = 2.431 kW    Peak power
+  P_brake = 2.267 kW    Peak braking power
   P_rated = 628.3 W    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
-  P_rms = 0.78 kW    RMS power (continuous equivalent)
+  P_rms = 0.7841 kW    RMS power (continuous equivalent)
   J_ratio = 1.2036    Inertia ratio
   duty = 0.7201    Thermal duty
   u_peak = 0.54    Peak utilisation
   u_rms = 0.90    Continuous utilisation (governing)
   u_speed = 0.90    Speed utilisation
-  k = 1.6 mm    Transmission constant
-  v_pk = 1.50 m/s    Peak velocity
-  a_pk = 9.00 m/s²    Peak acceleration
+  k = 1.592 mm    Transmission constant
+  v_pk = 1.500 m/s    Peak velocity
+  a_pk = 9 m/s²    Peak acceleration
 
 6. Checks (governing first)
   PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.90 vs u_rms ≤ 1  utilisation 0.90
@@ -282,11 +282,11 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   WARNING  T_dec: the motor brakes during deceleration (negative torque); the drive must absorb the regenerated energy.  [overhauling]
 
 8. Verification
-  Template: elec.motor-sizing@1.9.0
-  Content hash: b13348936aa53b72
+  Template: elec.motor-sizing@1.10.0
+  Content hash: 3989917de380d03f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -434,20 +434,20 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
         Power factor of the linked machine
 
 5. Results
-  P_dem = 0.95 kW    Demand active power
-  S_dem = 1.11 kVA    Demand apparent power
-  I_3ph = 1.37 A    Three-phase bus current
-  I_1ph = 0.68 A    Single-phase bus current
-  I_DC = 5.00 A    DC bus current
-  Phi = 0.15 kW    Heat dissipated inside the enclosure
-  U_L = 400.0 V    Three-phase line voltage
+  P_dem = 0.9484 kW    Demand active power
+  S_dem = 1.107 kVA    Demand apparent power
+  I_3ph = 1.373 A    Three-phase bus current
+  I_1ph = 0.6763 A    Single-phase bus current
+  I_DC = 5 A    DC bus current
+  Phi = 0.1533 kW    Heat dissipated inside the enclosure
+  U_L = 400 V    Three-phase line voltage
   pf_link = 0.85    Power factor of the linked machine
-  P_conn = 0.95 kW    Connected load
-  P_PSU_req = 150.0 W    Minimum PSU rating
-  S_T_req = 1.38 kVA    Minimum transformer rating, running load
-  S_peak = 1.11 kVA    Peak apparent power at start
-  S_T_req_start = 0.37 kVA    Minimum transformer rating, starting peak
-  S_T_min = 1.38 kVA    Minimum transformer rating, running and starting
+  P_conn = 0.9484 kW    Connected load
+  P_PSU_req = 150 W    Minimum PSU rating
+  S_T_req = 1.383 kVA    Minimum transformer rating, running load
+  S_peak = 1.107 kVA    Peak apparent power at start
+  S_T_req_start = 0.3689 kVA    Minimum transformer rating, starting peak
+  S_T_min = 1.383 kVA    Minimum transformer rating, running and starting
 
 6. Checks (governing first)
   None.
@@ -460,7 +460,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   Content hash: 63496058c8dcaccb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -512,11 +512,11 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   ratings[8] |  | I_n = 50 A |  |  | 
   ratings[9] |  | I_n = 63 A |  |  | 
   ampacity | Current-carrying capacities for the installation method | 5 row(s) |  | record: SYNTHETIC cable capacities (test values, not a regulation table) — Synthetic test data, not from any standard, n/a, invented values for the worked example rev 1 | any
-  ampacity[1] |  | CSA = 1.5 mm^2; I_t = 12.3 A |  |  | 
-  ampacity[2] |  | CSA = 2.5 mm^2; I_t = 17.7 A |  |  | 
-  ampacity[3] |  | CSA = 4 mm^2; I_t = 24.1 A |  |  | 
-  ampacity[4] |  | CSA = 6 mm^2; I_t = 31.9 A |  |  | 
-  ampacity[5] |  | CSA = 10 mm^2; I_t = 44.6 A |  |  | 
+  ampacity[1] |  | CSA = 1.5 mm²; I_t = 12.3 A |  |  | 
+  ampacity[2] |  | CSA = 2.5 mm²; I_t = 17.7 A |  |  | 
+  ampacity[3] |  | CSA = 4 mm²; I_t = 24.1 A |  |  | 
+  ampacity[4] |  | CSA = 6 mm²; I_t = 31.9 A |  |  | 
+  ampacity[5] |  | CSA = 10 mm²; I_t = 44.6 A |  |  | 
 
 3. Assumptions
   A1. Every tabulated value (the capacities, the device ratings, the correction factors) is entered from the user's own licensed copy or a manufacturer datasheet; none ships with the calculator. (No table from a standard or a manufacturer is shipped.)
@@ -596,17 +596,17 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
         I₂ utilisation of 1.45 I_z
 
 5. Results
-  I_b = 1.37 A    Design current
-  I_n = 6.00 A    Rated current of the device
-  CSA = 1.5 mm²    Selected cross-section
+  I_b = 1.373 A    Design current
+  I_n = 6 A    Rated current of the device
+  CSA = 1.500 mm²    Selected cross-section
   I_z = 12.30 A    Current-carrying capacity
-  L = 25.00 m    Circuit length
-  theta_op = 70.0 °C    Conductor operating temperature for the insulation
+  L = 25 m    Circuit length
+  theta_op = 70 °C    Conductor operating temperature for the insulation
   device_code = 2    Protective device type code
   C_c = 1    Semi-enclosed fuse factor
   C_a = 1    Ambient factor
-  I_t_req = 6.00 A    Required tabulated capacity
-  I2 = 8.70 A    Conventional operating current
+  I_t_req = 6 A    Required tabulated capacity
+  I2 = 8.700 A    Conventional operating current
   u_Ib = 0.23    I_b / I_n
   u_In = 0.49    I_n / I_z (governing)
   u_I2 = 0.49    I₂ / (1.45 I_z)
@@ -624,7 +624,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: 549b80a7a72f70a5
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -669,7 +669,7 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
 3. Assumptions
   A1. Balanced load; conductor reactance from the stated X′ (zero when using resistivity alone unless X_km is given); the drop is the arithmetic (R cos φ + X sin φ) form. (Standard engineering approximation.)
   A2. A mV/A/m figure is used as tabulated, with its own temperature and system convention. (Cable table convention.)
-  A3. The conductor temperature estimate scales the rated rise with (I/I_z)²; I_z is the user's tabulated value for the installation method and corrections. (BS 7671 Appendix 4 approach, formula only.)
+  A3. The conductor temperature estimate scales the rated rise with (I/I_z)²; I_z is the user's tabulated value for the installation method and corrections. When the estimate is above T_c the resistance and the drop are computed at the estimate. (BS 7671 Appendix 4 approach, formula only.)
   A4. n_par (Parallel conductors per phase) is taken as 1. (Sheet default value; no project figure given.)
   A5. data (Conductor data from) is taken as resistivity and area. (Sheet default value; no project figure given.)
   A6. rho_20 (Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m)) is taken as 0.0194 Ω·mm²/m. (Sheet default value; no project figure given.)
@@ -714,10 +714,10 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
 
 5. Results
   R = 0.3869 Ω    Resistance
-  X = 0.0020 Ω    Reactance
-  dV = 0.78 V    Voltage drop
+  X = 0.002000 Ω    Reactance
+  dV = 0.7844 V    Voltage drop
   dV_pct = 0.19609    Voltage drop (%)
-  P_loss = 2.2 W    Power loss
+  P_loss = 2.187 W    Power loss
 
 6. Checks (governing first)
   PASS  Voltage drop ≤ limit: u_dv = 0.04 vs u_dv ≤ 1  utilisation 0.04  « BS 7671 525
@@ -726,11 +726,11 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   None.
 
 8. Verification
-  Template: elec.voltage-drop@1.2.0
-  Content hash: c20fe1c4471c778d
+  Template: elec.voltage-drop@1.3.0
+  Content hash: 1dc7d4b34be3c142
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -848,10 +848,10 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
 5. Results
   Z_s = 1.1236 Ω    Loop impedance
   I_f = 194.47 A    Earth fault current
-  S_min = 1.1 mm²    Minimum cross-section
+  S_min = 1.067 mm²    Minimum cross-section
   R_12 = 0.7736 Ω    R₁ + R₂
-  I_a = 60.00 A    Disconnection current
-  t_d = 0.10 s    Disconnection time
+  I_a = 60 A    Disconnection current
+  t_d = 0.1000 s    Disconnection time
   Z_s_max = 3.6417 Ω    Maximum loop impedance
   Z_test = 2.9133 Ω    Field-test maximum (rule of thumb)
   k = 114.84    Adiabatic k (derived)
@@ -863,7 +863,7 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   PASS  Protective conductor against adiabatic minimum: u_cpc = 0.71 vs u_cpc ≤ 1  utilisation 0.71  « BS 7671 reg. 543.1.3
   PASS  Line conductor against adiabatic minimum: u_line = 0.71 vs u_line ≤ 1  utilisation 0.71  « BS 7671 reg. 434.5.2
   PASS  Loop impedance within maximum (disconnection in time): u_Zs = 0.31 vs u_Zs ≤ 1  utilisation 0.31  « BS 7671 reg. 411.4.4
-  PASS  Disconnection time within required: 0.10 s vs 0.40 s  utilisation 0.25  « BS 7671 reg. 411.3.2.2
+  PASS  Disconnection time within required: 0.1000 s vs 0.4000 s  utilisation 0.25  « BS 7671 reg. 411.3.2.2
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are rho_20, k_R, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let (Device time–current points). Enter each as one so its source, edition and licence travel with it.  [record]
@@ -873,7 +873,7 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   Content hash: 33b657ca63c7d15d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -1002,14 +1002,14 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   P_total = 233.3 W    Total heat
   P_cool = 0 W    Cooling unit needed
   P_nat_max = 244.2 W    Natural dissipation at the limit
-  T_max = 55.0 °C    Internal temperature limit
-  dT_nat = 19.1 K    Natural temperature rise
-  T_int = 54.1 °C    Internal temperature (natural)
-  V_req = 36.4 m³/h    Required airflow
-  P_loads = 80.0 W    Internal heat load
+  T_max = 55 °C    Internal temperature limit
+  dT_nat = 19.11 K    Natural temperature rise
+  T_int = 54.11 °C    Internal temperature (natural)
+  V_req = 36.45 m³/h    Required airflow
+  P_loads = 80 W    Internal heat load
   P_solar = 0 W    Solar gain
-  A_eff = 2.22 m²    Effective surface
-  rho_air = 1.1 kg/m³    Air density
+  A_eff = 2.220 m²    Effective surface
+  rho_air = 1.145 kg/m³    Air density
   V_req_net = 0 m³/h    Required airflow (net)
 
 6. Checks (governing first)
@@ -1023,7 +1023,7 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   Content hash: 6c68c61c7df7f4fe
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

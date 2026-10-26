@@ -116,20 +116,20 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
         Airflow utilisation (required / delivered)
 
 5. Results
-  P_total = 300.0 W    Total heat
+  P_total = 300 W    Total heat
   P_cool = 206.0 W    Cooling unit needed
-  P_nat_max = 94.0 W    Natural dissipation at the limit
-  T_max = 50.0 °C    Internal temperature limit
-  dT_nat = 47.8 K    Natural temperature rise
-  T_int = 82.8 °C    Internal temperature (natural)
-  V_req = 62.5 m³/h    Required airflow
+  P_nat_max = 94.05 W    Natural dissipation at the limit
+  T_max = 50 °C    Internal temperature limit
+  dT_nat = 47.85 K    Natural temperature rise
+  T_int = 82.85 °C    Internal temperature (natural)
+  V_req = 62.48 m³/h    Required airflow
   V_duty = 113.7 m³/h    Fan duty airflow
-  P_loads = 300.0 W    Internal heat load
+  P_loads = 300 W    Internal heat load
   P_solar = 0 W    Solar gain
-  A_eff = 1.14 m²    Effective surface
-  rho_air = 1.1 kg/m³    Air density
-  V_req_net = 42.9 m³/h    Required airflow (net)
-  p_duty = 26 Pa    Fan duty pressure
+  A_eff = 1.140 m²    Effective surface
+  rho_air = 1.145 kg/m³    Air density
+  V_req_net = 42.89 m³/h    Required airflow (net)
+  p_duty = 25.88 Pa    Fan duty pressure
   u_fan = 0.55    Airflow utilisation
 
 6. Checks (governing first)

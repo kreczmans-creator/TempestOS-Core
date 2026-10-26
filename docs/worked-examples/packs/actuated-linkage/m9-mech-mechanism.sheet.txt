@@ -208,14 +208,14 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
 
 5. Results
   input_torque = 316.43 N·m    Peak input (crank) torque by virtual work (mech.input_torque → E1 peak torque)
-  output_motion = 0.33 m/s    Peak slider velocity (mech.output_motion; the cylinder speed of F1 for a slider driven at constant crank speed, a kinematic proxy)
-  peak_accel = 1.32 m/s²    Peak slider acceleration (mech.peak_accel)
+  output_motion = 0.3313 m/s    Peak slider velocity (mech.output_motion; the cylinder speed of F1 for a slider driven at constant crank speed, a kinematic proxy)
+  peak_accel = 1.316 m/s²    Peak slider acceleration (mech.peak_accel)
   follower_force = 3052.6 N    Peak force on the slider in the slide direction, the rod's component along the slide line (mech.follower_force)
   F_pin_pk = 3198.7 N    Peak force in the connecting rod, also the crank-pin load (mech.F_pin_pk → M4, M5)
   T_rms_in = 215.24 N·m    RMS input torque over the swept range (mech.T_rms_in → E1 thermal sizing)
   n_in = 30 rpm    Input (crank) speed, passed through for E1's load speed (mech.n_in)
-  f_in = 0.50 Hz    Input (crank) frequency, for the spring surge check of M7 (mech.f_in)
-  P_mean = 600.0 W    Mean input power over the swept range (negative: the mechanism returns energy) (mech.P_mean)
+  f_in = 0.5000 Hz    Input (crank) frequency, for the spring surge check of M7 (mech.f_in)
+  P_mean = 600 W    Mean input power over the swept range (negative: the mechanism returns energy) (mech.P_mean)
   slider_class = "Crank-slider: the crank can turn through 360° (l ≥ r + |e|)"    Class of the slider-crank
   theta_sw = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, … (73 items)] deg    Table: crank angle
   x_sw = [400, 399.49, 397.98, 395.47, 392.01, 387.64, 382.41, 376.38, 369.64, 362.26, 354.33, 345.96, … (73 items)] mm    Table: slider position
@@ -225,26 +225,26 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   omega3_sw = [-1.0472, -1.0437, -1.033, -1.0153, -0.9905, -0.95864, -0.91976, -0.87394, -0.82127, -0.76195, -0.69621, -0.62437, … (73 items)] rad/s    Table: connecting-rod angular velocity
   mu_sw = [90, 88.335, 86.682, 85.051, 83.454, 81.902, 80.406, 78.978, 77.628, 76.367, 75.206, 74.154, … (73 items)] deg    Table: transmission angle
   T_in_sw = [0, 35.44, 70.408, 104.44, 137.09, 167.93, 196.58, 222.67, 245.92, 266.07, 282.93, 296.39, … (73 items)] N·m    Table: input torque by virtual work
-  x_0 = 400.0 mm    Slider position at the first input angle
+  x_0 = 400 mm    Slider position at the first input angle
   v_0 = 0 m/s    Slider velocity at the first input angle
-  a_0 = -1.32 m/s²    Slider acceleration at the first input angle
+  a_0 = -1.316 m/s²    Slider acceleration at the first input angle
   theta3_0 = 0°    Connecting-rod angle at the first input angle
-  omega3_0 = -1.05 rad/s    Connecting-rod angular velocity at the first input angle
+  omega3_0 = -1.047 rad/s    Connecting-rod angular velocity at the first input angle
   alpha3_0 = 0 rad/s²    Connecting-rod angular acceleration at the first input angle
-  mu_0 = 90.00°    Transmission angle at the first input angle
+  mu_0 = 90°    Transmission angle at the first input angle
   T_in_0 = 0 N·m    Input torque at the first input angle
-  x_alt = -200.0 mm    Slider position on the other circuit at the first input angle
-  x_max = 400.0 mm    Largest slider position over the sweep
-  x_min = 200.0 mm    Smallest slider position over the sweep
-  stroke = 200.0 mm    Slider stroke over the sweep (the full stroke when the sweep covers 360°)
+  x_alt = -200 mm    Slider position on the other circuit at the first input angle
+  x_max = 400 mm    Largest slider position over the sweep
+  x_min = 200 mm    Smallest slider position over the sweep
+  stroke = 200 mm    Slider stroke over the sweep (the full stroke when the sweep covers 360°)
   mu_min = 70.53°    Smallest transmission angle over the sweep
   res_max = 0 mm    Largest loop-closure residual
-  res_vel_max = 1.3508e-16    Largest velocity-loop residual, relative to the size of its terms
+  res_vel_max = 0    Largest velocity-loop residual, relative to the size of its terms
   dead_centres = "outer at θ = 0°; inner at θ = 180°"    Dead centres (crank and rod collinear, slider velocity zero)
   limit_angles = "none: the crank turns fully"    Limit angles (rod perpendicular to the slide line): the bounds of the crank's assemblable range
-  stroke_closed = 200.0 mm    Full slider stroke between the dead centres (closed form)
-  omega3_pk = 1.05 rad/s    Peak connecting-rod angular velocity
-  alpha3_pk = 3.49 rad/s²    Peak connecting-rod angular acceleration
+  stroke_closed = 200 mm    Full slider stroke between the dead centres (closed form)
+  omega3_pk = 1.047 rad/s    Peak connecting-rod angular velocity
+  alpha3_pk = 3.489 rad/s²    Peak connecting-rod angular acceleration
   F_guide_pk = 1065.7 N    Peak side reaction of the guide on the slider (frictionless)
   u_mu = 0.57    Required against smallest transmission angle (governing)
 
@@ -261,7 +261,7 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   Content hash: ec0fa964408ca211
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 16/16
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

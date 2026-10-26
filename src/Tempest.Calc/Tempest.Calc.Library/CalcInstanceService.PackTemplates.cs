@@ -218,7 +218,10 @@ public sealed partial class CalcInstanceService
         foreach (var step in template.Steps)
         {
             var entry = _catalogue.Get(step.TemplateId);
-            var values = CalcInputAliases.Canonicalise(entry.Template, (inputs is not null && inputs.TryGetValue(step.Key, out var given) ? given : ExampleInputs(template, step) ?? DefaultInputs(entry.Template)).ToList()).ToList();
+            if (!CalcInputAliases.TryCanonicalise(entry.Template, (inputs is not null && inputs.TryGetValue(step.Key, out var given) ? given : ExampleInputs(template, step) ?? DefaultInputs(entry.Template)).ToList(), out var canonicalValues, out var aliasConflict))
+                return aliasConflict;
+
+            var values = canonicalValues.ToList();
 
             foreach (var b in template.Bindings.Where(b => string.Equals(b.ToStep, step.Key, StringComparison.Ordinal)))
             {

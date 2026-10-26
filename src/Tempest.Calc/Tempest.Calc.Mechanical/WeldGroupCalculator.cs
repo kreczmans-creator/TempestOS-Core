@@ -50,8 +50,8 @@ public sealed class WeldGroupCalculator : ICalcCalculator
             new CalcClauseRef("EN 1993-1-8:2005", "cl. 4.5.3.3", "Simplified method for design resistance of fillet welds (resistance input)"),
         ],
         [
-            new CalcApplicabilityRule("few-welds", "No weld of non-zero length.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("collinear", "All welds on one line: an out-of-plane moment about that line cannot be resisted (direct shear and in-plane torsion still can).", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("few-welds", "No weld of non-zero length.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("collinear", "All welds on one line: an out-of-plane moment about that line cannot be resisted (direct shear and in-plane torsion still can).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-two-vertical", "Two vertical welds under an eccentric vertical load (Shigley Table 9-1 case 2)",
@@ -87,6 +87,7 @@ public sealed class WeldGroupCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u");
         foreach (var s in new[] { "s", "f_w", "F_x", "F_y", "F_z", "e_x", "e_y", "M_x", "M_y", "M_z" })
             c.Input(s);
 

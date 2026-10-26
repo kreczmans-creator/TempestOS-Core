@@ -34,10 +34,10 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   R_r | Roller radius R_r (roller follower) | 15 | mm | drawing: DRG-TMP-410 rev B | 1 … 200 mm
   phi_max | Maximum pressure angle allowed (roller follower) | 30 | ° | drawing: DRG-TMP-410 rev B | 5 … 45 °
   segs | Cam segments: rise, dwell or return, with motion law, angle and lift; the angles add to 360° and the rises equal the returns | 4 row(s) |  | drawing: DRG-TMP-410 rev B | any
-  segs[1] |  | kind = Rise; law = Cycloidal; beta = 120 deg; h = 40 mm |  |  | 
-  segs[2] |  | kind = Dwell; law = —; beta = 60 deg; h = 0 mm |  |  | 
-  segs[3] |  | kind = Return; law = Modified trapezoid; beta = 120 deg; h = 40 mm |  |  | 
-  segs[4] |  | kind = Dwell; law = —; beta = 60 deg; h = 0 mm |  |  | 
+  segs[1] |  | kind = Rise; law = Cycloidal; beta = 120°; h = 40 mm |  |  | 
+  segs[2] |  | kind = Dwell; law = —; beta = 60°; h = 0 mm |  |  | 
+  segs[3] |  | kind = Return; law = Modified trapezoid; beta = 120°; h = 40 mm |  |  | 
+  segs[4] |  | kind = Dwell; law = —; beta = 60°; h = 0 mm |  |  | 
   m_f | Follower mass (all moving parts that follow the cam) | 4 | kg | drawing: DRG-TMP-410 rev B | 0 … 1000 kg
   k_sp | Return spring rate (link M7 rate k) | 9.874 | N/mm | drawing: DRG-TMP-410 rev B | 0 … 1000 N/mm
   F_pre | Spring preload at the base circle (link an M7 force) | 50 | N | drawing: DRG-TMP-410 rev B | 0 … 100000 N
@@ -210,15 +210,15 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
 
 5. Results
   input_torque = 10.11 N·m    Peak input torque by virtual work (mech.input_torque)
-  output_motion = 0.60 m/s    Peak follower velocity (mech.output_motion)
+  output_motion = 0.6000 m/s    Peak follower velocity (mech.output_motion)
   peak_accel = 14.14 m/s²    Peak follower acceleration (mech.peak_accel)
   follower_force = 445.0 N    Peak axial force of the follower on the cam (mech.follower_force)
   F_pin_pk = 445.0 N    Peak contact normal force on the cam, the load on the cam shaft's bearings (mech.F_pin_pk → M4, M5)
-  T_rms_in = 4.82 N·m    RMS input torque over the cam revolution (mech.T_rms_in → E1 thermal sizing)
+  T_rms_in = 4.816 N·m    RMS input torque over the cam revolution (mech.T_rms_in → E1 thermal sizing)
   n_in = 150 rpm    Cam-shaft speed, passed through for E1's load speed (mech.n_in)
-  f_in = 2.50 Hz    Cam-shaft frequency, for the spring surge check of M7 (mech.f_in)
+  f_in = 2.500 Hz    Cam-shaft frequency, for the spring surge check of M7 (mech.f_in)
   P_mean = 4.885e-14 W    Mean input power over the cam revolution (mech.P_mean)
-  lift = 40.0 mm    Greatest follower displacement
+  lift = 40 mm    Greatest follower displacement
   F_spring_max = 445.0 N    Spring force at full lift (mech.F_spring_max → M7 working force)
   theta_sw = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, … (73 items)] deg    Table: cam angle
   s_sw = [0, 0.018973, 0.15023, 0.49842, 1.1534, 2.1841, 3.6338, 5.5174, 7.82, 10.498, 13.484, 16.686, … (73 items)] mm    Table: follower displacement
@@ -236,14 +236,14 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   seg_a_pk = [14.137, 0, 10.998, 0] m/s²    Segments: peak acceleration
   seg_j_pk = [666.2, 0, 1036.6, 0] m/s³    Segments: peak jerk
   seg_law = "1: rise (Cycloidal); 2: dwell; 3: return (Modified trapezoid); 4: dwell"    Segments: kind and motion law
-  v_pk = 0.60 m/s    Peak follower velocity
+  v_pk = 0.6000 m/s    Peak follower velocity
   a_pk = 14.14 m/s²    Peak follower acceleration
   j_pk = 1036.6 m/s³    Peak follower jerk
   F_max = 445.0 N    Greatest follower force on the cam
-  F_min = 50.0 N    Smallest follower force on the cam (negative: the follower leaves the cam)
+  F_min = 50 N    Smallest follower force on the cam (negative: the follower leaves the cam)
   phi_max_pk = 22.27°    Largest pressure angle
-  Rb_min_phi = 33.6 mm    Smallest base-circle radius that keeps the pressure angle within its limit (roller follower)
-  rho_min = 73.3 mm    Smallest radius of curvature of the pitch curve
+  Rb_min_phi = 33.58 mm    Smallest base-circle radius that keeps the pressure angle within its limit (roller follower)
+  rho_min = 73.34 mm    Smallest radius of curvature of the pitch curve
   u_rho = 0.20    Roller radius against the smallest radius of curvature
   u_phi = 0.74    Largest pressure angle against the allowed one (governing)
 
@@ -260,7 +260,7 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   Content hash: ec0fa964408ca211
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 16/16
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

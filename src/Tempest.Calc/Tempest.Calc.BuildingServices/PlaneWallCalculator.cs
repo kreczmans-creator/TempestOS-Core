@@ -59,8 +59,8 @@ public sealed class PlaneWallCalculator : ICalcCalculator
             new CalcClauseRef("BS EN ISO 6946", "§6", "Thermal resistance of building components (method)"),
         ],
         [
-            new CalcApplicabilityRule("no-layers", "At least one conducting layer is needed.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("reversed", "Side 2 is warmer than side 1: the heat flows from side 2 to side 1 and Q is negative.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("no-layers", "At least one conducting layer is needed.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("reversed", "Side 2 is warmer than side 1: the heat flows from side 2 to side 1 and Q is negative.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-legacy-single-pane", "Legacy example 1: single-pane window", Legacy(1, ", after Çengel & Ghajar"), Window(Layers(("glass", 8, 0.78))),

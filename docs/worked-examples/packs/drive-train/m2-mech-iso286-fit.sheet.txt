@@ -102,22 +102,22 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
         Mean clearance
 
 5. Results
-  IT_hole = 25.0 µm    Hole tolerance
-  IT_shaft = 15.6 µm    Shaft tolerance
+  IT_hole = 24.98 µm    Hole tolerance
+  IT_shaft = 15.61 µm    Shaft tolerance
   ES = 0 µm    Hole upper deviation
-  EI = -9.0 µm    Hole lower deviation
-  es = 17.6 µm    Shaft upper deviation
-  ei = 2.0 µm    Shaft lower deviation
-  D_hole_max = 35.0 mm    Hole maximum
-  D_hole_min = 35.0 mm    Hole minimum
-  d_shaft_max = 35.0 mm    Shaft maximum
-  d_shaft_min = 35.0 mm    Shaft minimum
+  EI = -9 µm    Hole lower deviation
+  es = 17.64 µm    Shaft upper deviation
+  ei = 2.030 µm    Shaft lower deviation
+  D_hole_max = 35 mm    Hole maximum
+  D_hole_min = 34.99 mm    Hole minimum
+  d_shaft_max = 35.02 mm    Shaft maximum
+  d_shaft_min = 35.00 mm    Shaft minimum
   fit = "interference"    Fit kind
-  c_max = -2.0 µm    Maximum clearance
-  c_min = -26.6 µm    Minimum clearance
-  i_max = 26.6 µm    Maximum interference
-  i_min = 2.0 µm    Minimum interference
-  c_mean = -14.3 µm    Mean clearance
+  c_max = -2.030 µm    Maximum clearance
+  c_min = -26.64 µm    Minimum clearance
+  i_max = 26.64 µm    Maximum interference
+  i_min = 2.030 µm    Minimum interference
+  c_mean = -14.34 µm    Mean clearance
 
 6. Checks (governing first)
   PASS  Fit classified: bearing bore/k6 vs interference
@@ -130,7 +130,7 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
   Content hash: 42c6d2c30c0bc9d4
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

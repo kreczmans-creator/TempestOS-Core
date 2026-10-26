@@ -109,10 +109,10 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
         Deflection utilisation
 
 5. Results
-  w_max = 0.53 mm    Maximum deflection
-  sigma_max = 33.3 MPa    Greatest von Mises stress
+  w_max = 0.5332 mm    Maximum deflection
+  sigma_max = 33.33 MPa    Greatest von Mises stress
   f1 = 198.68 Hz    Fundamental frequency
-  sigma_principal = 37.5 MPa    Greatest principal stress
+  sigma_principal = 37.50 MPa    Greatest principal stress
   w_over_t = 0.10664    Deflection over thickness
   D = 2289.4 N·m    Flexural rigidity
   M_edge = -156.25 N·m/m    Edge moment

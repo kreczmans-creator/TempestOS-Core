@@ -93,9 +93,9 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
 5. Results
   L_nmh = 432602 h    Modified rating life
   L_10h = 432602 h    Basic rating life
-  P = 0.22 kN    Equivalent dynamic load
-  P_0 = 0.22 kN    Equivalent static load
-  s_0 = 8.09    Static safety factor
+  P = 0.2225 kN    Equivalent dynamic load
+  P_0 = 0.2225 kN    Equivalent static load
+  s_0 = 8.0906    Static safety factor
   L_10 = 3893.4    Basic rating life (Mrev)
   a_1 = 1    Reliability factor
   L_nm = 3893.4    Modified rating life (Mrev)
@@ -114,7 +114,7 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
   Content hash: 53a676ddb446057a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

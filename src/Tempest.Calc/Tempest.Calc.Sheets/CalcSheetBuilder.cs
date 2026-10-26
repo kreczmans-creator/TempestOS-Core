@@ -21,7 +21,8 @@ public static class CalcSheetBuilder
         ArgumentNullException.ThrowIfNull(footer);
 
         // C-2: a symbol an input had before it was renamed is read as the input it has become.
-        inputs = CalcInputAliases.Canonicalise(template, inputs);
+        // (An input given under two of its names with different values has blocked the run; the sheet then lists the inputs as they were given.)
+        CalcInputAliases.TryCanonicalise(template, inputs, out inputs, out _);
 
         var inputRows = new List<CalcSheetInputRow>();
         var assumptions = new List<CalcAssumption>(template.Assumptions);
@@ -147,7 +148,7 @@ public static class CalcSheetBuilder
 
             var text = cell switch
             {
-                { Number: { } n } => CalcValue.FormatNumber(n) + ((cell.Unit ?? col.DefaultUnit) is { Length: > 0 } u ? " " + u : string.Empty),
+                { Number: { } n } => CalcValue.FormatNumber(n) + ((cell.Unit ?? col.DefaultUnit) is { Length: > 0 } u ? (CalcUnitText.Pretty(u) is "°" ? "°" : " " + CalcUnitText.Pretty(u)) : string.Empty),
                 { Text: { } t } => t,
                 { Flag: { } f } => f ? "yes" : "no",
                 _ => "—",
@@ -177,12 +178,12 @@ public static class CalcSheetBuilder
             var hi = spec.Max ?? spec.HardMax;
 
             if (lo is null)
-                return $"≤ {F(hi!.Value)} {unit}";
+                return $"≤ {F(hi!.Value)} {CalcUnitText.Pretty(unit)}";
 
             if (hi is null)
-                return $"≥ {F(lo.Value)} {unit}";
+                return $"≥ {F(lo.Value)} {CalcUnitText.Pretty(unit)}";
 
-            return $"{F(lo.Value)} … {F(hi.Value)} {unit}";
+            return $"{F(lo.Value)} … {F(hi.Value)} {CalcUnitText.Pretty(unit)}";
         }
         catch (CalcUnitException)
         {

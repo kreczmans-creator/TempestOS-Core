@@ -222,6 +222,43 @@ public sealed class AliasCompatibilityTests
         Assert.NotNull(new CalcCatalogue([new RenamedCalculator()]).Find("test.renamed"));
     }
 
+    [Fact]
+    public void A_Port_Name_Or_Alias_Equal_To_The_Symbol_Of_Another_Output_Of_The_Template_Is_Refused_When_It_Is_Registered()
+    {
+        // 'margin' and 'u' are outputs of the template that are not ports: a link by that symbol would name two outputs.
+        var alias = RenamedWith(ports: [new CalcOutputPort("sigma", "MPa", "Stress", "stress.axial", ["sigma_old", "margin"]), new CalcOutputPort("A_req", "mm^2", "Area", "stress.area_required")]);
+        var refused = Assert.Throws<ArgumentException>(() => new CalcCatalogue([alias]));
+        Assert.Contains("'margin'", refused.Message, StringComparison.Ordinal);
+        Assert.Contains("another output", refused.Message, StringComparison.Ordinal);
+
+        var name = RenamedWith(ports: [new CalcOutputPort("sigma", "MPa", "Stress", "u"), new CalcOutputPort("A_req", "mm^2", "Area", "stress.area_required")]);
+        Assert.Contains("'u'", Assert.Throws<ArgumentException>(() => new CalcCatalogue([name])).Message, StringComparison.Ordinal);
+
+        // The symbol of a port itself, and an alias that names no output, are fine.
+        Assert.NotNull(new CalcCatalogue([RenamedWith(ports: [new CalcOutputPort("sigma", "MPa", "Stress", "stress.axial", ["sigma_old", "sigma_before"]), new CalcOutputPort("A_req", "mm^2", "Area", "stress.area_required")])]).Find("test.renamed"));
+    }
+
+    [Fact]
+    public async Task An_Input_Given_Under_Its_Old_And_Its_Current_Symbol_With_Different_Values_Is_Refused_On_Create_And_On_Update()
+    {
+        var (host, project, stress) = await StressAsync();
+        var conflicting = Renamed.Append(CalcInputValue.Quantity("F", 99, "kN", CalcProvenance.Drawing("DRG-1", "A"))).ToList();
+
+        var created = await Assert.ThrowsAsync<CalcLinkRefusedException>(() => host.Service.CreateAsync("test.renamed", project, "Twice", conflicting));
+        Assert.StartsWith("F_axial:", created.Message, StringComparison.Ordinal);
+
+        var updated = await host.Service.UpdateInputsAsync(stress.Id, conflicting);
+        Assert.False(updated.Succeeded);
+        Assert.StartsWith("F_axial:", updated.Reason, StringComparison.Ordinal);
+
+        // The same value under both is one input.
+        var same = Renamed.Append(CalcInputValue.Quantity("F", 12, "kN", CalcProvenance.Drawing("DRG-1", "A"))).ToList();
+        var ok = await host.Service.UpdateInputsAsync(stress.Id, same);
+        Assert.True(ok.Succeeded, ok.Reason);
+        Assert.Single(ok.Instance!.Inputs, i => i.Symbol == "F_axial");
+        Assert.DoesNotContain(ok.Instance.Inputs, i => i.Symbol == "F");
+    }
+
     private static ICalcCalculator RenamedWith(IReadOnlyList<CalcInputSpec>? inputs = null, IReadOnlyList<CalcOutputPort>? ports = null)
     {
         var original = new RenamedCalculator();

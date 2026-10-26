@@ -201,18 +201,18 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
         Transmission angle: required minimum against the smallest over the sweep
 
 5. Results
-  input_torque = 2.27 N·m    Peak input (crank) torque by virtual work (mech.input_torque → E1 peak torque)
-  output_motion = 0.35 m/s    Peak speed of the output pin at the rocker length c (mech.output_motion; a kinematic proxy for F1 only if the cylinder acts perpendicular to the rocker at that radius; the angular velocity is omega_out_pk)
-  peak_accel = 3.16 m/s²    Peak acceleration of the output pin (mech.peak_accel)
-  follower_force = 43.5 N    Peak force perpendicular to the rocker at the output pin, the drive force of the output (mech.follower_force)
-  F_pin_pk = 53.7 N    Peak force in the coupler, which is also the force at the crank pin and the pin loads on the bearings (mech.F_pin_pk → M4, M5)
-  T_rms_in = 1.37 N·m    RMS input torque over the swept range (mech.T_rms_in → E1 thermal sizing)
+  input_torque = 2.265 N·m    Peak input (crank) torque by virtual work (mech.input_torque → E1 peak torque)
+  output_motion = 0.3543 m/s    Peak speed of the output pin at the rocker length c (mech.output_motion; a kinematic proxy for F1 only if the cylinder acts perpendicular to the rocker at that radius; the angular velocity is omega_out_pk)
+  peak_accel = 3.162 m/s²    Peak acceleration of the output pin (mech.peak_accel)
+  follower_force = 43.48 N    Peak force perpendicular to the rocker at the output pin, the drive force of the output (mech.follower_force)
+  F_pin_pk = 53.69 N    Peak force in the coupler, which is also the force at the crank pin and the pin loads on the bearings (mech.F_pin_pk → M4, M5)
+  T_rms_in = 1.374 N·m    RMS input torque over the swept range (mech.T_rms_in → E1 thermal sizing)
   n_in = 60 rpm    Input (crank) speed, passed through for E1's load speed (mech.n_in)
-  f_in = 1.00 Hz    Input (crank) frequency, for the spring surge check of M7 (mech.f_in)
-  P_mean = 7.6 W    Mean input power over the swept range (negative: the mechanism returns energy) (mech.P_mean)
+  f_in = 1 Hz    Input (crank) frequency, for the spring surge check of M7 (mech.f_in)
+  P_mean = 7.650 W    Mean input power over the swept range (negative: the mechanism returns energy) (mech.P_mean)
   grashof = "Grashof crank-rocker, input link shortest"    Grashof classification
-  S_plus_L = 195.0 mm    Shortest plus longest link
-  P_plus_Q = 240.0 mm    Sum of the other two links
+  S_plus_L = 195 mm    Shortest plus longest link
+  P_plus_Q = 240 mm    Sum of the other two links
   theta2_sw = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, … (73 items)] deg    Table: crank angle
   theta3_sw = [45.45, 43.305, 41.183, 39.119, 37.143, 35.277, 33.533, 31.922, 30.446, 29.103, 27.892, 26.806, … (73 items)] deg    Table: coupler angle
   theta4_sw = [93.891, 91.886, 90.182, 88.806, 87.774, 87.09, 86.749, 86.738, 87.038, 87.625, 88.475, 89.561, … (73 items)] deg    Table: rocker angle
@@ -224,23 +224,23 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   T_in_sw = [1.5919, 1.3661, 1.1246, 0.87436, 0.62126, 0.37043, 0.1261, 0.12823, 0.38586, 0.61929, 0.82764, 1.0113, … (73 items)] N·m    Table: input torque by virtual work
   theta3_0 = 45.45°    Coupler angle at the first input angle
   theta4_0 = 93.89°    Rocker angle at the first input angle
-  omega3_0 = -2.69 rad/s    Coupler angular velocity at the first input angle
-  omega4_0 = -2.69 rad/s    Rocker angular velocity at the first input angle
-  alpha3_0 = -1.64 rad/s²    Coupler angular acceleration at the first input angle
+  omega3_0 = -2.693 rad/s    Coupler angular velocity at the first input angle
+  omega4_0 = -2.693 rad/s    Rocker angular velocity at the first input angle
+  alpha3_0 = -1.644 rad/s²    Coupler angular acceleration at the first input angle
   alpha4_0 = 23.79 rad/s²    Rocker angular acceleration at the first input angle
   mu_0 = 48.44°    Transmission angle at the first input angle
-  T_in_0 = 1.59 N·m    Input torque at the first input angle
+  T_in_0 = 1.592 N·m    Input torque at the first input angle
   theta4_alt = 266.11°    Rocker angle on the other circuit at the first input angle
   theta4_min = 86.70°    Smallest rocker angle
   theta4_max = 141.49°    Largest rocker angle
   swing = 54.79°    Rocker swing over the sweep
   mu_min = 48.44°    Smallest transmission angle over the sweep
   res_max = 0 mm    Largest loop-closure residual
-  res_vel_max = 2.1412e-16    Largest velocity-loop residual, relative to the size of its terms
+  res_vel_max = 0    Largest velocity-loop residual, relative to the size of its terms
   toggle_angles = "none: coupler and rocker are never collinear"    Toggle crank angles (coupler and rocker collinear, μ = 0): the limits of the crank's assemblable range
   limit_positions = "θ₂ = 32.66° with θ₄ = 86.704°; θ₂ = 220.95° with θ₄ = 141.49°"    Crank and coupler collinear (the rocker's dead-centre positions)
-  omega3_pk = 2.70 rad/s    Peak coupler angular velocity
-  omega_out_pk = 3.54 rad/s    Peak output (rocker) angular velocity
+  omega3_pk = 2.698 rad/s    Peak coupler angular velocity
+  omega_out_pk = 3.543 rad/s    Peak output (rocker) angular velocity
   alpha3_pk = 22.72 rad/s²    Peak coupler angular acceleration
   alpha_out_pk = 31.60 rad/s²    Peak output (rocker) angular acceleration
   u_mu = 0.83    Required against smallest transmission angle (governing)

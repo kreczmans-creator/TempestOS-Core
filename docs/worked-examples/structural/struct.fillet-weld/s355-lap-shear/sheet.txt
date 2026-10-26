@@ -60,13 +60,13 @@ Resultant force on the weld: F = √(F_∥² + F_⊥² + F_n²). Design shear st
         Leg length of the throat provided (equal legs)
 
 5. Results
-  F = 150.00 kN    Resultant force
+  F = 150 kN    Resultant force
   f_vw_d = 251.5 MPa    Design shear strength
-  tau_w = 150.0 MPa    Throat stress
+  tau_w = 150 MPa    Throat stress
   F_w_Rd = 251.47 kN    Weld resistance
-  a_calc = 3.0 mm    Throat needed
-  a_req = 3.0 mm    Required throat
-  s_leg = 7.1 mm    Leg length provided
+  a_calc = 2.982 mm    Throat needed
+  a_req = 3 mm    Required throat
+  s_leg = 7.071 mm    Leg length provided
   u = 0.60    Utilisation (governing)
 
 6. Checks (governing first)

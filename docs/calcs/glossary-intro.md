@@ -2,13 +2,13 @@
 
 One glossary for all 54 worksheet templates (mechanical, structural, building services, electrical and fluid power). It is part of the
 [sheet standard](sheet-standard.md) (Addendum C, item C-2): the terms below are the words a description uses, the quantity-type table fixes the
-unit and the decimals of each kind of number, the reserved symbols say what a bare letter means, and the last table lists every input, table
+unit and the least decimals of each kind of number (a result shows at least four and at most five significant figures), the reserved symbols say what a bare letter means, and the last table lists every input, table
 column and output symbol of every template, so an engineer who sees `F_r` or `T_amb` on one sheet reads the same thing on the next.
 
 The tables from "Quantity types" on are generated: the contract tests write `glossary-data.json` from the live catalogue
 (`TEMPEST_WRITE_GLOSSARY=1 dotnet test tests/Tempest.Calc.Tests.Calculators --filter GlossaryTests`) and `scripts/generate-glossary.py`
 turns it into this file. `GlossaryTests` fails when a template adds a symbol the glossary lacks, or uses a glossary symbol for another quantity type,
-until both are regenerated and committed with the change. Edit this introduction by hand; never edit the generated tables.
+until both are regenerated and committed with the change. A symbol that two or more templates use also declares what it means in each (`symbol:meaning`, in `GlossaryMeanings.json`), so two meanings of one symbol in one quantity type are listed apart. Edit this introduction by hand; never edit the generated tables.
 
 ## Terms
 
@@ -22,8 +22,8 @@ until both are regenerated and committed with the change. Edit this introduction
 | Required X | A demand the result must meet. The input ends `_req`. | `X_req` |
 | X limit | A bound that must not be crossed. The input ends `_limit`. | `X_limit` |
 | Target X | An aim for sizing only; nothing fails against it. The input ends `_target`. | `X_target` |
-| Safety factor | A ratio of capacity to demand, written to 2 decimals. The word "margin" is not used. | `n_<part>`, `s_<part>` |
-| Utilisation | Demand divided by capacity, written to 2 decimals; above 1 fails. | `u_<part>` |
+| Safety factor | A ratio of capacity to demand, shown to at least four significant figures and rounded down, so it never reads at its target when it is below it. The word "margin" is not used. | `n_<part>`, `s_<part>` |
+| Utilisation | Demand divided by capacity, written to 2 decimals (two significant figures below 0.005) and rounded up when it exceeds its limit; above 1 fails. A template declares which of its outputs are utilisations. | `u_<part>` |
 | Governing | The check with the highest utilisation. The sheet prints it first and marks its result "(governing)". | |
 | Headline result | A result another calculation links to: an output port. Results list these first. | |
 | Port | An output offered for linking, named `<area>.<quantity>` (for example `bearing.life_modified`). Its output symbol stays as its symbol and as an alias. | |

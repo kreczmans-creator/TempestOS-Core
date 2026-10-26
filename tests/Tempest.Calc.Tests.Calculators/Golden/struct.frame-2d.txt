@@ -14,9 +14,9 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   nodes[1] |  | id = 1; x = 0 m; y = 0 m; support = pin |  |  | 
   nodes[2] |  | id = 2; x = 6 m; y = 0 m; support = roller (vertical) |  |  | 
   elements | Elements | 1 row(s) |  | manual | any
-  elements[1] |  | id = 1; i = 1; j = 2; A = 100 cm^2; I = 8000 cm^4; rel_i = no; rel_j = no |  |  | 
+  elements[1] |  | id = 1; i = 1; j = 2; A = 100 cm²; I = 8000 cm⁴; rel_i = no; rel_j = no |  |  | 
   loads | Loads | 1 row(s) |  | manual | any
-  loads[1] |  | case = 1; kind = udl; target = 1; a = 0 m; b = 6 m; w1 = -10 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = 0 kN; M = 0 kN*m |  |  | 
+  loads[1] |  | case = 1; kind = udl; target = 1; a = 0 m; b = 6 m; w1 = -10 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = 0 kN; M = 0 kN·m |  |  | 
   n_div | Stations per member | 20 |  | manual | 4 … 100
 
 3. Assumptions
@@ -144,30 +144,30 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
 
 5. Results
   R1_x = 0 kN    R_x node 1
-  R1_y = 30.00 kN    R_y node 1
+  R1_y = 30 kN    R_y node 1
   R1_m = 0 kN·m    M node 1
   R1_x_abs = 0 kN    |R_x| node 1
   R1_m_abs = 0 kN·m    |M| node 1
   N_e1 = 0 kN    N, member 1
-  V_e1 = 30.00 kN    |V| max, member 1
-  M_abs_e1 = 45.00 kN·m    |M| max, member 1
-  M_max_e1 = 45.00 kN·m    M max, member 1
+  V_e1 = 30 kN    |V| max, member 1
+  M_abs_e1 = 45 kN·m    |M| max, member 1
+  M_max_e1 = 45 kN·m    M max, member 1
   M_min_e1 = 0 kN·m    M min, member 1
-  sum_R_y = 60.00 kN    Σ R_y
+  sum_R_y = 60 kN    Σ R_y
   sum_R_x = 0 kN    Σ R_x
-  M_max = 45.00 kN·m    M max
+  M_max = 45 kN·m    M max
   M_min = 0 kN·m    M min
-  V_max = 30.00 kN    |V| max
+  V_max = 30 kN    |V| max
   N_max = 0 kN    N max (tension)
   N_min = 0 kN    N min (compression)
-  d_max = 10.0 mm    δ max
+  d_max = 10.04 mm    δ max
   R2_x = 0 kN    R_x node 2
-  R2_y = 30.00 kN    R_y node 2
+  R2_y = 30 kN    R_y node 2
   R2_m = 0 kN·m    M node 2
   R2_x_abs = 0 kN    |R_x| node 2
   R2_m_abs = 0 kN·m    |M| node 2
-  d_e1 = 10.0 mm    δ max, member 1
-  x_Mmax = 3.00 m    x of M max
+  d_e1 = 10.04 mm    δ max, member 1
+  x_Mmax = 3 m    x of M max
 
 6. Checks (governing first)
   None.

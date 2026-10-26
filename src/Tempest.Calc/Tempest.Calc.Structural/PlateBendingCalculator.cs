@@ -100,19 +100,19 @@ public sealed class PlateBendingCalculator : ICalcCalculator
             new CalcClauseRef("BS EN 1993-1-1:2005+A1:2014", "6.2.1(5)", "Yield criterion for the cross-section"),
         ],
         [
-            new CalcApplicabilityRule("ring-rect", "A ring load applies to a circular plate.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("aspect", "The long side of a rectangle can be at most 10 times the short side (beyond that the plate is a one-way strip).", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("patch-size", "The patch cannot be larger than the plate.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("patch-min", "The patch must be at least 1 % (circular), 2 % (simply supported rectangle) or 25 % (clamped rectangle) of the plate size for the solution to resolve it.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("ring-radius", "The ring radius must lie between 1 % and 99 % of the plate radius.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("engine", "The solution could not be evaluated for these inputs.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("large-deflection", "w/t above 0.5: the small-deflection theory is not valid.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("thin-plate", "span/t below 10: shear deformation matters and the thin-plate theory over-states the stiffness.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("patch-thin", "A patch smaller than the thickness is a concentrated load: the local stress is not given by thin-plate theory.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("navier-converge", "The Navier series reached its cap without changing by less than the tolerance.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("ritz-converge", "The Ritz solution reached its highest order without changing by less than the tolerance.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("ritz-frequency", "The inverse iteration for the clamped rectangle's fundamental frequency did not settle.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("ritz-approx", "The clamped rectangle is a Ritz approximation.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("ring-rect", "A ring load applies to a circular plate.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("aspect", "The long side of a rectangle can be at most 10 times the short side (beyond that the plate is a one-way strip).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("patch-size", "The patch cannot be larger than the plate.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("patch-min", "The patch must be at least 1 % (circular), 2 % (simply supported rectangle) or 25 % (clamped rectangle) of the plate size for the solution to resolve it.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("ring-radius", "The ring radius must lie between 1 % and 99 % of the plate radius.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("engine", "The solution could not be evaluated for these inputs.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("large-deflection", "w/t above 0.5: the small-deflection theory is not valid.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("thin-plate", "span/t below 10: shear deformation matters and the thin-plate theory over-states the stiffness.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("patch-thin", "A patch smaller than the thickness is a concentrated load: the local stress is not given by thin-plate theory.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("navier-converge", "The Navier series reached its cap without changing by less than the tolerance.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("ritz-converge", "The Ritz solution reached its highest order without changing by less than the tolerance.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("ritz-frequency", "The inverse iteration for the clamped rectangle's fundamental frequency did not settle.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("ritz-approx", "The clamped rectangle is a Ritz approximation.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-circular-clamped-uniform", "Circular plate, clamped, uniform pressure: w = q·a⁴/(64D), edge stress 3q·a²/(4t²)",
@@ -230,6 +230,7 @@ public sealed class PlateBendingCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u", "u_defl", "u_stress");
         var circular = c.InputText("shape") == Circular;
         var clamped = c.InputText("support") == Clamped;
         var load = c.InputText("load_type");

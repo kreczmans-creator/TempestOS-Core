@@ -102,14 +102,14 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
         SLS quasi-permanent effect, minimum
 
 5. Results
-  E_d_max = -12.00 kN    ULS design effect, maximum
+  E_d_max = -12 kN    ULS design effect, maximum
   E_d_min = -28.20 kN    ULS design effect, minimum
-  E_k_max = -12.00 kN    SLS characteristic effect, maximum
-  E_qp_max = -12.00 kN    SLS quasi-permanent effect, maximum
+  E_k_max = -12 kN    SLS characteristic effect, maximum
+  E_qp_max = -12 kN    SLS quasi-permanent effect, maximum
   E_d_gov = "ULS 6.10, no variable action"    ULS design effect, governing (max)
-  E_k_min = -20.00 kN    SLS characteristic effect, minimum
+  E_k_min = -20 kN    SLS characteristic effect, minimum
   E_k_gov = "SLS characteristic 6.14b, no variable action"    SLS characteristic effect, governing (max)
-  E_fr_max = -12.00 kN    SLS frequent effect, maximum
+  E_fr_max = -12 kN    SLS frequent effect, maximum
   E_fr_min = -19.20 kN    SLS frequent effect, minimum
   E_fr_gov = "SLS frequent 6.15b, no variable action"    SLS frequent effect, governing (max)
   E_qp_min = -18.40 kN    SLS quasi-permanent effect, minimum
@@ -126,7 +126,7 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   Content hash: 28f3ed111e112df1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

@@ -112,20 +112,20 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with 
         Approach utilisation (minimum / actual)
 
 5. Results
-  Q = 3.42 kW    Heat duty
-  T_h_out = 36.5 °C    Hot outlet
-  T_c_out = 25.3 °C    Cold outlet
-  dT_c = 3.3 K    Cold-side rise
-  T_c_m = 23.6 °C    Cold-side mean
+  Q = 3.422 kW    Heat duty
+  T_h_out = 36.50 °C    Hot outlet
+  T_c_out = 25.28 °C    Cold outlet
+  dT_c = 3.275 K    Cold-side rise
+  T_c_m = 23.64 °C    Cold-side mean
   cp_c = 4180 J/(kg·K)    Cold-side specific heat
-  A_req = 3.38 m²    Required area
+  A_req = 3.380 m²    Required area
   C_r = 0.38507    Capacity ratio
   NTU = 0.501    Transfer units
   eps = 0.36978    Effectiveness
-  dT_app = 14.5 K    Approach
+  dT_app = 14.50 K    Approach
   UA = 201.60 W/K    UA
-  dT_lm = 17.0 K    Log-mean temperature difference
-  Q_lmtd = 3.42 kW    Duty by the LMTD method
+  dT_lm = 16.98 K    Log-mean temperature difference
+  Q_lmtd = 3.422 kW    Duty by the LMTD method
   F = 1    LMTD correction factor
 
 6. Checks (governing first)
@@ -139,7 +139,7 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with 
   Content hash: 8d62e82011847f79
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

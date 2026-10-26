@@ -73,7 +73,7 @@ public sealed class MechanismReviewChainTests
         Assert.Equal(1.164835164835165 * 8 * 444.96 * 50 / (Math.PI * 216) * 1e6, Si(m7, "tau_2"), 3);
         Assert.Equal(305.5215241630442e6, Si(m7, "tau_2"), 2);
         Assert.Equal(82.11778786253618, Si(m7, "f_n"), 9);
-        Assert.Equal(4, m7.Checks.Count);
+        Assert.Equal(5, m7.Checks.Count);
         Assert.All(m7.Checks, c => Assert.True(c.Passed, c.Name));
 
         // M9 → M7 at run time: the cam's lift (mm) is the spring's expected working travel and the cam's frequency in Hz (f_in; n_in is an angular velocity and cannot be linked to a frequency) its operating frequency.
@@ -107,7 +107,7 @@ public sealed class MechanismReviewChainTests
         Assert.Equal(Si(m9, "F_pin_pk") / 2, Si(m4, "R_A"), 6);
         Assert.Equal(444.96 * 0.250 / 4, Si(m4, "M_max"), 6);
         Assert.Equal(0.020, Si(m4, "d_A"), 12);
-        Assert.Equal(4, m4.Checks.Count);
+        Assert.Equal(5, m4.Checks.Count);
         Assert.All(m4.Checks, c => Assert.True(c.Passed, c.Name));
 
         // M4 → M5 (the bearing reaction, N into kN) and M9 → M5 (the speed).
@@ -134,7 +134,7 @@ public sealed class MechanismReviewChainTests
         Assert.Equal(84.05792234668907, Si(e1, "P_cont"), 4);
         Assert.Equal(0.0013028163580246913, Si(e1, "J_total"), 12);
         Assert.Equal(0.6556564494972549, Si(e1, "T_pk"), 6);
-        Assert.Equal(4, e1.Checks.Count);
+        Assert.Equal(5, e1.Checks.Count);
         Assert.All(e1.Checks, c => Assert.True(c.Passed, c.Name));
 
         // E1 is judged on the cam's RMS torque; the cam's PEAK torque (10.111 N·m at the cam shaft, 1.1703 N·m at the motor) is inside the candidate motor's 3 N·m peak, which this step cannot see (guarded here).

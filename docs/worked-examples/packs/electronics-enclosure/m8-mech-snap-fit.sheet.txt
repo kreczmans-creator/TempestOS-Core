@@ -117,15 +117,15 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
         Utilisation of the latches' holding force
 
 5. Results
-  assembly_force = 4.4 N    Assembly force
-  retention_force = 71.9 N    Separation force
+  assembly_force = 4.402 N    Assembly force
+  retention_force = 71.93 N    Separation force
   strain_util = 0.56    Strain / permissible strain
   F_hold = 431.6 N    Holding force of the latches
-  eps = 1.7 %    Maximum strain
-  eps_perm = 3.0 %    Permissible strain
-  Es = 1400.0 MPa    Secant modulus used
-  P = 4.1 N    Deflection force
-  y_perm = 1.8 mm    Permissible deflection
+  eps = 1.667 %    Maximum strain
+  eps_perm = 3 %    Permissible strain
+  Es = 1400 MPa    Secant modulus used
+  P = 4.148 N    Deflection force
+  y_perm = 1.800 mm    Permissible deflection
   l_h = 7.5    Slenderness l/h
   K_y = 0.66667    Deflection factor K_y
   phi_max = 1    Strain shape maximum
@@ -147,7 +147,7 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
   Content hash: 5f5ba7b76701c269
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 11/11
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

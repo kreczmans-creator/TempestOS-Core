@@ -107,17 +107,17 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
         Airflow crediting natural dissipation
 
 5. Results
-  P_total = 3660.0 W    Total heat
+  P_total = 3660 W    Total heat
   P_cool = 3422.4 W    Cooling unit needed
   P_nat_max = 237.6 W    Natural dissipation at the limit
-  T_max = 45.0 °C    Internal temperature limit
+  T_max = 45 °C    Internal temperature limit
   dT_nat = 154.0 K    Natural temperature rise
   T_int = 189.0 °C    Internal temperature (natural)
   V_req = 1143.4 m³/h    Required airflow
-  P_loads = 150.0 W    Internal heat load
+  P_loads = 150 W    Internal heat load
   P_solar = 0 W    Solar gain
-  A_eff = 4.32 m²    Effective surface
-  rho_air = 1.1 kg/m³    Air density
+  A_eff = 4.320 m²    Effective surface
+  rho_air = 1.145 kg/m³    Air density
   V_req_net = 1069.2 m³/h    Required airflow (net)
 
 6. Checks (governing first)
@@ -131,7 +131,7 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   Content hash: 6c68c61c7df7f4fe
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

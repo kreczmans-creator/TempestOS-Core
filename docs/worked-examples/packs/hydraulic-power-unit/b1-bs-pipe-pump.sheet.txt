@@ -118,17 +118,17 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
         Velocity utilisation
 
 5. Results
-  Q_design = 4.5 m³/h    Design flow
+  Q_design = 4.538 m³/h    Design flow
   H_static = 0 m    Static head
-  V_pipe = 3.8 L    Water held in the pipes
+  V_pipe = 3.770 L    Water held in the pipes
   H_sys = 29.01 m    System head at Q
   h_f_total = 29.01 m    Σ h_f
   dp_total = 247.5 kPa    Friction Δp
   dp_sys = 247.5 kPa    System Δp
-  P_hyd = 0.31 kW    Hydraulic power
-  v_peak = 4.01 m/s    Highest velocity
-  T_line = 50.0 °C    Line design temperature
-  v_s1 = 4.01 m/s    Velocity, pressure line to cylinder
+  P_hyd = 0.3120 kW    Hydraulic power
+  v_peak = 4.012 m/s    Highest velocity
+  T_line = 50 °C    Line design temperature
+  v_s1 = 4.012 m/s    Velocity, pressure line to cylinder
   Re_s1 = 2327.1    Re, pressure line to cylinder
   f_s1 = 0.048912    f, pressure line to cylinder
   f_sj_s1 = 0.050521    f (Swamee–Jain), pressure line to cylinder
@@ -146,7 +146,7 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
   Content hash: 4723d62a61e80298
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

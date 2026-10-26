@@ -41,11 +41,11 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   ratings[8] |  | I_n = 50 A |  |  | 
   ratings[9] |  | I_n = 63 A |  |  | 
   ampacity | Current-carrying capacities for the installation method | 5 row(s) |  | reference: record: owner's licensed table (not shipped); capacities are synthetic values invented for this example | any
-  ampacity[1] |  | CSA = 1.5 mm^2; I_t = 12.3 A |  |  | 
-  ampacity[2] |  | CSA = 2.5 mm^2; I_t = 17.7 A |  |  | 
-  ampacity[3] |  | CSA = 4 mm^2; I_t = 24.1 A |  |  | 
-  ampacity[4] |  | CSA = 6 mm^2; I_t = 31.9 A |  |  | 
-  ampacity[5] |  | CSA = 10 mm^2; I_t = 44.6 A |  |  | 
+  ampacity[1] |  | CSA = 1.5 mm²; I_t = 12.3 A |  |  | 
+  ampacity[2] |  | CSA = 2.5 mm²; I_t = 17.7 A |  |  | 
+  ampacity[3] |  | CSA = 4 mm²; I_t = 24.1 A |  |  | 
+  ampacity[4] |  | CSA = 6 mm²; I_t = 31.9 A |  |  | 
+  ampacity[5] |  | CSA = 10 mm²; I_t = 44.6 A |  |  | 
 
 3. Assumptions
   A1. Every tabulated value (the capacities, the device ratings, the correction factors) is entered from the user's own licensed copy or a manufacturer datasheet; none ships with the calculator. (No table from a standard or a manufacturer is shipped.)
@@ -114,12 +114,12 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
         I₂ utilisation of 1.45 I_z
 
 5. Results
-  I_b = 8.28 A    Design current
-  I_n = 10.00 A    Rated current of the device
-  CSA = 2.5 mm²    Selected cross-section
+  I_b = 8.283 A    Design current
+  I_n = 10 A    Rated current of the device
+  CSA = 2.500 mm²    Selected cross-section
   I_z = 12.40 A    Current-carrying capacity
-  L = 35.00 m    Circuit length
-  theta_op = 70.0 °C    Conductor operating temperature for the insulation
+  L = 35 m    Circuit length
+  theta_op = 70 °C    Conductor operating temperature for the insulation
   device_code = 2    Protective device type code
   C_c = 1    Semi-enclosed fuse factor
   C_a = 0.91    Ambient factor

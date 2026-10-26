@@ -62,14 +62,14 @@ Formulas from Roark Table 8.1, in this sheet's own notation, for the chosen supp
         Maximum deflection
 
 5. Results
-  R_A = 60.00 kN    Left reaction
-  R_B = 36.00 kN    Right reaction
-  M_max = 54.00 kN·m    Maximum sagging moment
-  x_M = 5.00 m    Position of M_max
-  M_min = -96.00 kN·m    Minimum (hogging) moment
-  V_max = 60.00 kN    Maximum shear
-  delta_max = 6.3 mm    Maximum deflection
-  x_delta = 4.63 m    Position of δ_max
+  R_A = 60 kN    Left reaction
+  R_B = 36 kN    Right reaction
+  M_max = 54 kN·m    Maximum sagging moment
+  x_M = 5 m    Position of M_max
+  M_min = -96 kN·m    Minimum (hogging) moment
+  V_max = 60 kN    Maximum shear
+  delta_max = 6.326 mm    Maximum deflection
+  x_delta = 4.628 m    Position of δ_max
 
 6. Checks (governing first)
   None.

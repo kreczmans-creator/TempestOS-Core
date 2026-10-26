@@ -72,8 +72,8 @@ public sealed class LiftingLugCalculator : ICalcCalculator
             new CalcClauseRef("Shigley's Mechanical Engineering Design", "Ch. 3", "Shear, bearing and bending stresses"),
         ],
         [
-            new CalcApplicabilityRule("geometry", "The lug must be wider than the hole and the pin must fit the hole.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("loose-pin", "A pin smaller than 0.9 of the hole concentrates bearing; the uniform-bearing method does not apply.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("geometry", "The lug must be wider than the hole and the pin must fit the hole.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("loose-pin", "A pin smaller than 0.9 of the hole concentrates bearing; the uniform-bearing method does not apply.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-legacy-pass", "Legacy example 1: a lug that passes (pin bending governs)", Legacy(1),
@@ -91,6 +91,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_b", "u_br", "u_p", "u_t", "u_to");
         foreach (var s in new[] { "P", "t", "W", "d_h", "a", "d_p", "t_s", "g", "f_t", "f_br", "f_v", "f_b_pin", "f_v_pin" })
             c.Input(s);
 

@@ -41,7 +41,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 20/20
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -244,26 +244,26 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   A_m = 4211.7 mm²    Metal cross-section
   I_x = 2386.1 cm⁴    Second moment of area
   Z_x = 217.8 cm³    Section modulus
-  dT = 140.0 K    Temperature change
-  L_tot = 60.00 m    Length that grows
+  dT = 140 K    Temperature change
+  L_tot = 60 m    Length that grows
   dL_signed = 100.8 mm    Thermal movement, signed
   sigma_res = 352.8 MPa    Fully restrained stress
   F_res = 1485.9 kN    Fully restrained force
   direction = "growth: the pipe lengthens; fully restrained it presses on its anchors (compression)"    Direction of the movement
   F_friction = 0 N    Support friction on the run
   Delta = 100.8 mm    Movement absorbed by each leg
-  L_req = 9.33 m    Required leg length
+  L_req = 9.325 m    Required leg length
   F_leg = 7069.5 N    Force of the leg
   M_leg = 33580 N·m    Moment at the leg root
   sigma_leg = 154.2 MPa    Bending stress at the leg root
-  Delta_run = 16.0 mm    Leg growth absorbed by the run or runs
+  Delta_run = 15.96 mm    Leg growth absorbed by the run or runs
   S_run = 216000 m³    Flexibility of the runs
-  F_run = 4.4 N    Force of the runs
-  sigma_run = 0.61 MPa    Bending stress at the first run root
-  L_req_run = 3.71 m    Required length of the first run
+  F_run = 4.443 N    Force of the runs
+  sigma_run = 0.6119 MPa    Bending stress at the first run root
+  L_req_run = 3.711 m    Required length of the first run
   M_run = 133.29 N·m    Moment at the first run root
   F_along_run = 7069.5 N    Anchor force component along the run
-  F_along_leg = 4.4 N    Anchor force component along the leg
+  F_along_leg = 4.443 N    Anchor force component along the leg
   L_dev = 69.50 m    Developed length
   U_a = 60.75 m    Anchor distance
   Y_scr = 102.1 mm    Resultant displacement Y
@@ -290,7 +290,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   Content hash: 8dd3b0517fce49e5
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -318,10 +318,10 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   nodes[1] |  | id = 1; x = 0 m; y = 0 m; support = fixed |  |  | 
   nodes[2] |  | id = 2; x = 0 m; y = 2.5 m; support = free |  |  | 
   elements | Elements | 1 row(s) |  | drawing: DRG-PIP-610 rev B | any
-  elements[1] |  | id = 1; i = 1; j = 2; A = 58.7 cm^2; I = 4568 cm^4; rel_i = no; rel_j = no |  |  | 
+  elements[1] |  | id = 1; i = 1; j = 2; A = 58.7 cm²; I = 4568 cm⁴; rel_i = no; rel_j = no |  |  | 
   loads | Loads | 2 row(s) |  | drawing: DRG-PIP-610 rev B | any
-  loads[1] |  | case = 1; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 7.0695 kN; F_y = 0 kN; M = 0 kN*m |  | F_x: link: Pipe expansion and anchor force rev A · anchor_force | 
-  loads[2] |  | case = 2; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = -6 kN; M = 0 kN*m |  |  | 
+  loads[1] |  | case = 1; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 7.0695 kN; F_y = 0 kN; M = 0 kN·m |  | F_x: link: Pipe expansion and anchor force rev A · anchor_force | 
+  loads[2] |  | case = 2; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = -6 kN; M = 0 kN·m |  |  | 
   combinations | Combinations (blank = each case alone) | 2 row(s) |  | drawing: DRG-PIP-610 rev B | any
   combinations[1] |  | name = ULS; case = 1; factor = 1.5 |  |  | 
   combinations[2] |  | name = ULS; case = 2; factor = 1.35 |  |  | 
@@ -434,25 +434,25 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
 
 5. Results
   R1_x = -10.60 kN    R_x node 1
-  R1_y = 8.10 kN    R_y node 1
+  R1_y = 8.100 kN    R_y node 1
   R1_m = 26.51 kN·m    M node 1
   R1_x_abs = 10.60 kN    |R_x| node 1
   R1_m_abs = 26.51 kN·m    |M| node 1
-  N_e1 = -8.10 kN    N, member 1
+  N_e1 = -8.100 kN    N, member 1
   V_e1 = 10.60 kN    |V| max, member 1
   M_abs_e1 = 26.51 kN·m    |M| max, member 1
   M_max_e1 = 0 kN·m    M max, member 1
   M_min_e1 = -26.51 kN·m    M min, member 1
-  sum_R_y = 8.10 kN    Σ R_y
+  sum_R_y = 8.100 kN    Σ R_y
   sum_R_x = -10.60 kN    Σ R_x
   M_max = 0 kN·m    M max
   M_min = -26.51 kN·m    M min
   V_max = 10.60 kN    |V| max
-  N_max = -8.10 kN    N max (tension)
-  N_min = -8.10 kN    N min (compression)
-  d_max = 5.8 mm    δ max
-  d_e1 = 5.8 mm    δ max, member 1
-  x_Mmax = 2.50 m    x of M max
+  N_max = -8.100 kN    N max (tension)
+  N_min = -8.100 kN    N min (compression)
+  d_max = 5.757 mm    δ max
+  d_e1 = 5.757 mm    δ max, member 1
+  x_Mmax = 2.500 m    x of M max
 
 6. Checks (governing first)
   None.
@@ -465,7 +465,7 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   Content hash: a6389d664ba5a5eb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -521,7 +521,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | drawing: DRG-PIP-611 rev B | 235 … 640 MPa
   A_s | Anchor bolt tensile stress area (from S4) | 244.79 | mm² | drawing: DRG-PIP-611 rev B | 50 … 1500 mm²
   F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 248.48 | kN | drawing: DRG-PIP-611 rev B | 1 … 2000 kN
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 9963247e34a0419b9c0290a3be8a9553/a37be04a9b8a4fb58807572ef115124a | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: da9ff4e00363424cbb056085e6b83e26/adbe75c4fd1c48ae84e837b039e87f97 | any
 
 3. Assumptions
   A1. N_Ed is positive in compression here, the opposite of S3 (tension positive): a link from S2 must take the reaction R1_y (up positive, compression into the base), never the member force N_e1. (Sign convention.)
@@ -688,17 +688,17 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
 
 5. Results
   F_t_Ed = 56.26 kN    Bolt tension per bolt (to PROFIS)
-  V_b_Ed = 2.25 kN    Shear per anchor bolt (to PROFIS)
+  V_b_Ed = 2.246 kN    Shear per anchor bolt (to PROFIS)
   N_j_Rd = 958.76 kN    Axial bearing resistance
   u_max = 0.40    Governing utilisation
-  f_cd = 14.2 MPa    Concrete design strength
+  f_cd = 14.17 MPa    Concrete design strength
   beta_j = 0.66667    Joint coefficient β_j
-  f_jd = 9.4 MPa    Bearing strength f_jd
-  c = 77.9 mm    Bearing outstand c
+  f_jd = 9.444 MPa    Bearing strength f_jd
+  c = 77.89 mm    Bearing outstand c
   A_eff = 101516 mm²    Effective bearing area
-  t_req_N = 10.0 mm    Plate thickness required for axial bearing alone
-  t_req = 12.3 mm    Plate thickness required (bearing, compression and tension T-stubs)
-  z_C = 93.9 mm    Compression lever arm z_C
+  t_req_N = 10 mm    Plate thickness required for axial bearing alone
+  t_req = 12.29 mm    Plate thickness required (bearing, compression and tension T-stubs)
+  z_C = 93.86 mm    Compression lever arm z_C
   z = 228.9 mm    Lever arm z
   C_Ed = 120.62 kN    Compression resultant
   C_Ed_2 = 0 kN    Compression resultant, other side
@@ -706,14 +706,14 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   T_Ed_2 = 0 kN    Tension resultant, other row
   A_flange = 48686 mm²    Compression-side bearing area
   C_Rd = 459.81 kN    Compression-side resistance
-  M_pl_Rd = 6.45 kN·m    Plate plastic moment
+  M_pl_Rd = 6.445 kN·m    Plate plastic moment
   T_Rd_1 = 460.38 kN    T-stub mode 1-2, no prying
-  T_Rd_3 = 282.00 kN    T-stub mode 3
-  T_Rd = 282.00 kN    Tension T-stub resistance
+  T_Rd_3 = 282 kN    T-stub mode 3
+  T_Rd = 282 kN    Tension T-stub resistance
   alpha_bc = 0.248    Anchor shear factor α_bc
   F_2_vb_Rd = 38.85 kN    Anchor shear resistance F_2,vb,Rd
   F_vb_Rd = 38.85 kN    Anchor shear resistance per bolt
-  F_f_Rd = 1.62 kN    Friction resistance
+  F_f_Rd = 1.620 kN    Friction resistance
   V_Rd = 157.03 kN    Shear resistance
   regime = "tension at one bolt row, compression under the other flange (Table 6.7, z = z_C + x_b)"    Force regime (Table 6.7)
   T_mode = "mode 3 (bolt failure)"    Governing T-stub mode
@@ -741,7 +741,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   Content hash: cf631b3ae895bf39
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

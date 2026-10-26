@@ -45,8 +45,8 @@ public sealed class BeamFormulasCalculator : ICalcCalculator
             new CalcClauseRef("Roark's Formulas for Stress and Strain", "Ch. 8, Table 8.1", "Shear, moment, slope and deflection formulas for elastic straight beams"),
         ],
         [
-            new CalcApplicabilityRule("position", "The load position must lie on the span.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("deflection-position", "For a simply supported point load the deflection formula assumes the load is at or right of midspan; the beam is mirrored when it is not.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("position", "The load position must lie on the span.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("deflection-position", "For a simply supported point load the deflection formula assumes the load is at or right of midspan; the beam is mirrored when it is not.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-ss-udl", "Simply supported UDL", new CalcReferenceSource("Roark's Formulas for Stress and Strain", "8th ed.", "Table 8.1 case 2e: R = wL/2, M = wL²/8, δ = 5wL⁴/384EI"),
@@ -80,6 +80,7 @@ public sealed class BeamFormulasCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_deflection", "u_stress");
         var kase = c.InputText("case");
         c.Input("L");
         c.Input("E");

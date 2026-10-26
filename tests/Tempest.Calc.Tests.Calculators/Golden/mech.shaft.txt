@@ -115,43 +115,48 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
       = 5305.2 / 1500
       = 3.5368
         Critical-speed ratio (Dunkerley lower bound over operating speed)
-  [36] u_f = n_target/n_f,min
+  [36] n_c_req = 2·n
+      = 2 × 1500 rpm
+      = 3000 rpm
+        Critical speed required, twice the operating speed
+  [37] u_f = n_target/n_f,min
       = 1.5 / 2.3086
       = 0.64973
         Fatigue utilisation
-  [37] u_y = n_target/n_y,min
+  [38] u_y = n_target/n_y,min
       = 1.5 / 5.9641
       = 0.2515
         Yield utilisation
-  [38] u_slope = max(θ_A, θ_B)/θ_max
+  [39] u_slope = max(θ_A, θ_B)/θ_max
       = 0.00243 / 0.001
       = 2.43
         Slope utilisation
-  [39] u_defl = y_load/y_max
+  [40] u_defl = y_load/y_max
       = 0.324 / 0.13 mm
       = 2.4923
         Deflection utilisation
 
 5. Results
-  R_A = 1.00 kN    Reaction at A
-  R_B = 1.00 kN    Reaction at B
-  d_A = 30.0 mm    Seat diameter at A
-  d_B = 30.0 mm    Seat diameter at B
-  n_f_min = 2.31    Lowest fatigue safety factor
+  R_A = 1 kN    Reaction at A
+  R_B = 1 kN    Reaction at B
+  d_A = 30 mm    Seat diameter at A
+  d_B = 30 mm    Seat diameter at B
+  n_f_min = 2.3086    Lowest fatigue safety factor
   n_c = 5305 rpm    First critical speed (Rayleigh)
-  M_max = 0.20 kN·m    Largest bending moment
-  theta_A = 0.0024 rad    Slope at A
-  theta_B = 0.0024 rad    Slope at B
-  y_load = 0.32 mm    Deflection at the loads
+  M_max = 0.2000 kN·m    Largest bending moment
+  theta_A = 0.002430 rad    Slope at A
+  theta_B = 0.002430 rad    Slope at B
+  y_load = 0.3240 mm    Deflection at the loads
   S_e = 174.2 MPa    Endurance limit
-  n_y_min = 5.96    Lowest yield safety factor
+  n_y_min = 5.9641    Lowest yield safety factor
   n_c_D = 5305 rpm    Dunkerley lower bound
-  r_c = 3.5368    Critical-speed ratio
+  r_c = 3.5367    Critical-speed ratio
 
 6. Checks (governing first)
   FAIL  Deflection at the loads against limit: u_defl = 2.50 vs u_defl ≤ 1  utilisation 2.50
   FAIL  Slope at the bearings against limit: u_slope = 2.43 vs u_slope ≤ 1  utilisation 2.43
   PASS  Fatigue safety factor against target (DE-Goodman): u_f = 0.65 vs u_f ≤ 1  utilisation 0.65  « Shigley 10th ed. §7-4
+  PASS  Critical speed against the operating speed: 3000 rpm vs 5305 rpm  utilisation 0.57  « Shigley 10th ed. §7-6
   PASS  Yield safety factor against target: u_y = 0.25 vs u_y ≤ 1  utilisation 0.25
 
 7. Applicability
@@ -159,7 +164,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   WARNING  m: the carried mass (20 kg) adds no weight to the reactions, the moment or the deflection, and neither does the shaft's own weight; switch w_masses on to add them, or enter the weights as forces in F_y.  [mass-weight]
 
 8. Verification
-  Template: mech.shaft@1.4.0
+  Template: mech.shaft@1.5.0
   Known-answer cases passed: 3/3
 
 9. References

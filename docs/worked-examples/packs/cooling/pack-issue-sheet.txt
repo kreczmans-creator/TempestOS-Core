@@ -42,7 +42,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 20/20
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -203,8 +203,8 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   I_3ph = 179.66 A    Three-phase bus current
   I_1ph = 0 A    Single-phase bus current
   I_DC = 0 A    DC bus current
-  Phi = 3.51 kW    Heat dissipated inside the enclosure
-  U_L = 400.0 V    Three-phase line voltage
+  Phi = 3.510 kW    Heat dissipated inside the enclosure
+  U_L = 400 V    Three-phase line voltage
   pf_link = 0.85    Power factor of the linked machine
   P_conn = 116.50 kW    Connected load
   P_PSU_req = 0 W    Minimum PSU rating
@@ -224,7 +224,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   Content hash: 63496058c8dcaccb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -341,17 +341,17 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
         Airflow crediting natural dissipation
 
 5. Results
-  P_total = 3660.0 W    Total heat
+  P_total = 3660 W    Total heat
   P_cool = 3422.4 W    Cooling unit needed
   P_nat_max = 237.6 W    Natural dissipation at the limit
-  T_max = 45.0 °C    Internal temperature limit
+  T_max = 45 °C    Internal temperature limit
   dT_nat = 154.0 K    Natural temperature rise
   T_int = 189.0 °C    Internal temperature (natural)
   V_req = 1143.4 m³/h    Required airflow
-  P_loads = 150.0 W    Internal heat load
+  P_loads = 150 W    Internal heat load
   P_solar = 0 W    Solar gain
-  A_eff = 4.32 m²    Effective surface
-  rho_air = 1.1 kg/m³    Air density
+  A_eff = 4.320 m²    Effective surface
+  rho_air = 1.145 kg/m³    Air density
   V_req_net = 1069.2 m³/h    Required airflow (net)
 
 6. Checks (governing first)
@@ -365,7 +365,7 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   Content hash: 6c68c61c7df7f4fe
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -488,20 +488,20 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with 
         Approach utilisation (minimum / actual)
 
 5. Results
-  Q = 3.42 kW    Heat duty
-  T_h_out = 36.5 °C    Hot outlet
-  T_c_out = 25.3 °C    Cold outlet
-  dT_c = 3.3 K    Cold-side rise
-  T_c_m = 23.6 °C    Cold-side mean
+  Q = 3.422 kW    Heat duty
+  T_h_out = 36.50 °C    Hot outlet
+  T_c_out = 25.28 °C    Cold outlet
+  dT_c = 3.275 K    Cold-side rise
+  T_c_m = 23.64 °C    Cold-side mean
   cp_c = 4180 J/(kg·K)    Cold-side specific heat
-  A_req = 3.38 m²    Required area
+  A_req = 3.380 m²    Required area
   C_r = 0.38507    Capacity ratio
   NTU = 0.501    Transfer units
   eps = 0.36978    Effectiveness
-  dT_app = 14.5 K    Approach
+  dT_app = 14.50 K    Approach
   UA = 201.60 W/K    UA
-  dT_lm = 17.0 K    Log-mean temperature difference
-  Q_lmtd = 3.42 kW    Duty by the LMTD method
+  dT_lm = 16.98 K    Log-mean temperature difference
+  Q_lmtd = 3.422 kW    Duty by the LMTD method
   F = 1    LMTD correction factor
 
 6. Checks (governing first)
@@ -515,7 +515,7 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with 
   Content hash: 8d62e82011847f79
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References
@@ -672,25 +672,25 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
         Velocity utilisation
 
 5. Results
-  Q_design = 0.90 m³/h    Design flow
+  Q_design = 0.9024 m³/h    Design flow
   H_static = 0 m    Static head
-  V_pipe = 14.7 L    Water held in the pipes
-  H_sys = 0.66 m    System head at Q
-  h_f_total = 0.66 m    Σ h_f
-  dp_total = 6.5 kPa    Friction Δp
-  dp_sys = 6.5 kPa    System Δp
-  P_hyd = 0.0016 kW    Hydraulic power
-  P_shaft_design = 0.0023 kW    Shaft power at the design flow
-  T_shaft = 0.0079 N·m    Shaft torque
+  V_pipe = 14.73 L    Water held in the pipes
+  H_sys = 0.6606 m    System head at Q
+  h_f_total = 0.6606 m    Σ h_f
+  dp_total = 6.462 kPa    Friction Δp
+  dp_sys = 6.462 kPa    System Δp
+  P_hyd = 0.001620 kW    Hydraulic power
+  P_shaft_design = 0.002314 kW    Shaft power at the design flow
+  T_shaft = 0.007891 N·m    Shaft torque
   n_shaft = 2800 rpm    Shaft speed
-  v_peak = 0.51 m/s    Highest velocity
-  T_line = 23.6 °C    Line design temperature
+  v_peak = 0.5106 m/s    Highest velocity
+  T_line = 23.64 °C    Line design temperature
   NPSH_a = 10.06 m    NPSH available
-  v_s1 = 0.51 m/s    Velocity, cooling water supply and return
+  v_s1 = 0.5106 m/s    Velocity, cooling water supply and return
   Re_s1 = 13842    Re, cooling water supply and return
   f_s1 = 0.031412    f, cooling water supply and return
   f_sj_s1 = 0.031748    f (Swamee–Jain), cooling water supply and return
-  h_f_s1 = 0.66 m    h_f, cooling water supply and return
+  h_f_s1 = 0.6606 m    h_f, cooling water supply and return
 
 6. Checks (governing first)
   PASS  Velocity ≤ limit: u_v = 0.17 vs u_v ≤ 1  utilisation 0.17
@@ -704,7 +704,7 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
   Content hash: 4723d62a61e80298
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

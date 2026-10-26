@@ -252,39 +252,39 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
         Pressure at the cylinder the push load needs: (F_push/η_m + p_back·A_a)/A_b
 
 5. Results
-  Q = 25.5 L/min    Flow into the cylinder
-  p = 100.00 bar g    Supply pressure
-  P_pump = 4.83 kW    Pump shaft power
+  Q = 25.49 L/min    Flow into the cylinder
+  p = 100 bar g    Supply pressure
+  P_pump = 4.828 kW    Pump shaft power
   u_buck = 0.46    Rod buckling utilisation (screening)
   F_ext = 11.94 kN    Extend force
-  dV = 0.25 L    Swept volume per stroke (the larger)
+  dV = 0.2513 L    Swept volume per stroke (the larger)
   p_push = 25.57 bar    Pressure the push load needs at the cylinder
-  Q_prs = 36.5 L/min    Flow in the line to the cap port (worst stroke)
-  rho = 870.0 kg/m³    Fluid density
-  d_prs = 16.0 mm    Pressure line inside diameter
+  Q_prs = 36.55 L/min    Flow in the line to the cap port (worst stroke)
+  rho = 870 kg/m³    Fluid density
+  d_prs = 16 mm    Pressure line inside diameter
   A_b = 12.57 cm²    Bore area
-  A_r = 3.80 cm²    Rod area
-  A_a = 8.77 cm²    Annulus area
+  A_r = 3.801 cm²    Rod area
+  A_a = 8.765 cm²    Annulus area
   phi = 1.4337    Area ratio A_b/A_a
-  F_ret = 8.33 kN    Retract force
+  F_ret = 8.327 kN    Retract force
   v_ext = 331.3 mm/s    Extend speed
   v_ret = 475.0 mm/s    Retract speed
-  t_ext = 0.60 s    Extend time
-  t_ret = 0.42 s    Retract time
-  t_cycle = 1.02 s    Cycle time
-  dV_ext = 0.25 L    Extend swept volume
-  dV_ret = 0.18 L    Retract swept volume
-  Q_line = 25.5 L/min    Flow in the pressure and return lines before the area ratio
-  Q_suc = 25.5 L/min    Flow in the suction line
-  Q_rtn = 36.5 L/min    Flow in the return line
-  v_suc = 0.34 m/s    Suction line velocity
-  v_prs = 3.03 m/s    Pressure line velocity (cap-port line, worst stroke)
-  v_rtn = 1.24 m/s    Return line velocity
-  d_min_suc = 21.2 mm    Smallest suction line bore
-  d_min_prs = 12.5 mm    Smallest pressure line bore
-  d_min_rtn = 16.1 mm    Smallest return line bore
-  L_b = 500.0 mm    Buckling length (pin to pin at full stroke)
-  L_eff = 500.0 mm    Effective length
+  t_ext = 0.6036 s    Extend time
+  t_ret = 0.4210 s    Retract time
+  t_cycle = 1.025 s    Cycle time
+  dV_ext = 0.2513 L    Extend swept volume
+  dV_ret = 0.1753 L    Retract swept volume
+  Q_line = 25.49 L/min    Flow in the pressure and return lines before the area ratio
+  Q_suc = 25.49 L/min    Flow in the suction line
+  Q_rtn = 36.55 L/min    Flow in the return line
+  v_suc = 0.3381 m/s    Suction line velocity
+  v_prs = 3.029 m/s    Pressure line velocity (cap-port line, worst stroke)
+  v_rtn = 1.241 m/s    Return line velocity
+  d_min_suc = 21.23 mm    Smallest suction line bore
+  d_min_prs = 12.45 mm    Smallest pressure line bore
+  d_min_rtn = 16.08 mm    Smallest return line bore
+  L_b = 500 mm    Buckling length (pin to pin at full stroke)
+  L_eff = 500 mm    Effective length
   lam = 90.909    Slenderness
   lam_c = 91.052    Transition slenderness
   F_cr = 95.33 kN    Critical load (screening)
@@ -315,7 +315,7 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
   Content hash: e9d829e843189b74
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

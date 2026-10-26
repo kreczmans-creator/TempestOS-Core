@@ -89,8 +89,8 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
 5. Results
   L_nmh = 7590 h    Modified rating life
   L_10h = 5949 h    Basic rating life
-  P = 2.50 kN    Equivalent dynamic load
-  P_0 = 2.50 kN    Equivalent static load
+  P = 2.500 kN    Equivalent dynamic load
+  P_0 = 2.500 kN    Equivalent static load
   s_0 = 4.48    Static safety factor
   L_10 = 535.39    Basic rating life (Mrev)
   a_1 = 0.63791    Reliability factor

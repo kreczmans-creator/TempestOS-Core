@@ -121,12 +121,12 @@ public sealed partial class MechanismCalculator : ICalcCalculator
     {
         var rules = new List<CalcApplicabilityRule>
         {
-            new("missing", "An input the chosen mechanism needs is blank.", CalcNoticeSeverity.Block),
-            new("geometry", "The mechanism cannot be assembled at any angle of the swept range, or the links are not a valid mechanism.", CalcNoticeSeverity.Block),
-            new("reach", "Some rows of the sweep cannot be assembled (the crank cannot turn fully) or sit at a toggle with no defined velocity: they are left out of the table.", CalcNoticeSeverity.Warning),
-            new("limit", "The requested sweep reaches an assembly limit (a toggle, or the rod perpendicular to the slide line) or passes a change point: the sweep is cut where the mechanism cannot be assembled, and when the limit is inside it the speed, acceleration, torque and force peaks, which are unbounded at constant input speed, and the ports are not reported.", CalcNoticeSeverity.Warning),
-            new("closure", "The loop-closure residual reached 1e-9 mm.", CalcNoticeSeverity.Warning),
-            new("grashof", "The linkage is not a Grashof crank (the input link cannot turn through 360°) but the swept range is 360° or more.", CalcNoticeSeverity.Warning),
+            new("missing", "An input the chosen mechanism needs is blank.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new("geometry", "The mechanism cannot be assembled at any angle of the swept range, or the links are not a valid mechanism.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new("reach", "Some rows of the sweep cannot be assembled (the crank cannot turn fully) or sit at a toggle with no defined velocity: they are left out of the table.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new("limit", "The requested sweep reaches an assembly limit (a toggle, or the rod perpendicular to the slide line) or passes a change point: the sweep is cut where the mechanism cannot be assembled, and when the limit is inside it the speed, acceleration, torque and force peaks, which are unbounded at constant input speed, and the ports are not reported.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new("closure", "The loop-closure residual reached 1e-9 mm.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new("grashof", "The linkage is not a Grashof crank (the input link cannot turn through 360°) but the swept range is 360° or more.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         };
 
         AddCamRules(rules);
@@ -139,6 +139,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_mu", "u_phi", "u_rho");
         var mode = c.InputText("mode");
 
         c.Input("steps");
@@ -204,7 +205,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
     private static void Scalar(CalcRunContext c, string symbol, string formula, string substitution, double value, string unit, string description, string? clause = null)
     {
         c.Record(symbol, formula, substitution, unit.Length == 0 ? new ScalarValue(value) : ScalarValue.Of(value, unit), description, clause);
-        c.Output(symbol, description);
+        c.Output(symbol, description, noiseProne: true);
     }
 
     private static double Sgn(double x) => x > 0 ? 1 : x < 0 ? -1 : 0;

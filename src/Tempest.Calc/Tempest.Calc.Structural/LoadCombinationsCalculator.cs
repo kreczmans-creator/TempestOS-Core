@@ -91,9 +91,9 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
             new CalcClauseRef("UK NA to BS EN 1990:2002+A1:2005", "NA.A1.2(A)–(C)", "UK values of partial factors"),
         ],
         [
-            new CalcApplicabilityRule("no-actions", "No actions: nothing to combine.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("psi-missing", "A variable action's category has no ψ factors in the ψ record.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("no-permanent", "No permanent action: check the combinations are what you intend.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("no-actions", "No actions: nothing to combine.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("psi-missing", "A variable action's category has no ψ factors in the ψ record.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("no-permanent", "No permanent action: check the combinations are what you intend.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-610-single", "Permanent plus office imposed, 6.10",

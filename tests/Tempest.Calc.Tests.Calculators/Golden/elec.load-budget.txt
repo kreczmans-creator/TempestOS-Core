@@ -137,23 +137,23 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
         Power factor of the linked machine
 
 5. Results
-  P_dem = 9.12 kW    Demand active power
+  P_dem = 9.120 kW    Demand active power
   S_dem = 10.74 kVA    Demand apparent power
   I_3ph = 16.70 A    Three-phase bus current
-  I_1ph = 1.83 A    Single-phase bus current
-  I_DC = 5.00 A    DC bus current
-  Phi = 0.93 kW    Heat dissipated inside the enclosure
-  U_L = 400.0 V    Three-phase line voltage
+  I_1ph = 1.831 A    Single-phase bus current
+  I_DC = 5 A    DC bus current
+  Phi = 0.9270 kW    Heat dissipated inside the enclosure
+  U_L = 400 V    Three-phase line voltage
   pf_link = 0.85    Power factor of the linked machine
   C_req = 32.89 A·h    Minimum battery capacity
   P_conn = 10.32 kW    Connected load
-  P_PSU_req = 150.0 W    Minimum PSU rating
+  P_PSU_req = 150 W    Minimum PSU rating
   S_T_req = 13.42 kVA    Minimum transformer rating, running load
   S_peak = 54.86 kVA    Peak apparent power at start
   S_T_req_start = 18.29 kVA    Minimum transformer rating, starting peak
   S_T_min = 18.29 kVA    Minimum transformer rating, running and starting
-  I_b = 5.00 A    Battery discharge current
-  Ah = 20.00 A·h    Discharge capacity
+  I_b = 5 A    Battery discharge current
+  Ah = 20 A·h    Discharge capacity
 
 6. Checks (governing first)
   None.

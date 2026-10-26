@@ -71,16 +71,16 @@ Temperature rise across each stage: ΔT_i = P·R_i. Total resistance of the chai
         Largest total resistance the limit allows (heat sink budget)
 
 5. Results
-  T_1 = 140.0 °C    Source temperature
-  dT_m = -15.0 K    Thermal margin
+  T_1 = 140 °C    Source temperature
+  dT_m = -15 K    Thermal margin
   R_max = 2.125 K/W    Heat sink budget
   R_tot = 2.500 K/W    Total thermal resistance
-  dT_tot = 100.0 K    Total rise
-  dT_1 = 20.0 K    Rise across stage 1
-  dT_2 = 8.0 K    Rise across stage 2
-  T_2 = 120.0 °C    Hot side of stage 2
-  dT_3 = 72.0 K    Rise across stage 3
-  T_3 = 112.0 °C    Hot side of stage 3
+  dT_tot = 100 K    Total rise
+  dT_1 = 20 K    Rise across stage 1
+  dT_2 = 8 K    Rise across stage 2
+  T_2 = 120 °C    Hot side of stage 2
+  dT_3 = 72 K    Rise across stage 3
+  T_3 = 112 °C    Hot side of stage 3
   u = 1.18    Utilisation (governing)
 
 6. Checks (governing first)

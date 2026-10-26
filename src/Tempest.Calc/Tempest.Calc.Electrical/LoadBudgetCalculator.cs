@@ -79,15 +79,15 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
             new CalcClauseRef("BS EN 60204-1:2018", "cl. 4.3", "Electrical supply (supply voltage tolerance; cited by number only)"),
         ],
         [
-            new CalcApplicabilityRule("no-loads", "No loads: nothing to budget.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("cosphi", "An AC load row without its power factor: the current, the apparent power and the transformer demand cannot be stated (a blank is not taken as 1).", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("load-defaults", "A load row with a blank optional cell (η, d, k or inrush): the blank is taken as 1, which understates the heat (η) and the starting peak (inrush) and overstates the demand (d, k).", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("psu_bus", "DC loads with no AC bus chosen for their power supply: the AC bus currents and the transformer demand omit its input.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("derate", "Ambient above 40 °C with no PSU derating entered.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("rated-add", "A linked machine with no rated power: the supply is sized on its duty power only, and the machine's rating can be higher.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("battery-charge", "A battery-backed load with an autonomy: the power supply rating omits the battery's charging power.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("peukert-range", "An autonomy beyond the Peukert rated hour rate: the capacity is not taken below the plain product I_b·t.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("peukert", "Peukert needs both the exponent and the hour rate.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("no-loads", "No loads: nothing to budget.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("cosphi", "An AC load row without its power factor: the current, the apparent power and the transformer demand cannot be stated (a blank is not taken as 1).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("load-defaults", "A load row with a blank optional cell (η, d, k or inrush): the blank is taken as 1, which understates the heat (η) and the starting peak (inrush) and overstates the demand (d, k).", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("psu_bus", "DC loads with no AC bus chosen for their power supply: the AC bus currents and the transformer demand omit its input.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("derate", "Ambient above 40 °C with no PSU derating entered.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("rated-add", "A linked machine with no rated power: the supply is sized on its duty power only, and the machine's rating can be higher.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("battery-charge", "A battery-backed load with an autonomy: the power supply rating omits the battery's charging power.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("peukert-range", "An autonomy beyond the Peukert rated hour rate: the capacity is not taken below the plain product I_b·t.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("peukert", "Peukert needs both the exponent and the hour rate.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-mixed-buses", "Pump, fan, lighting and controls on three buses",
@@ -152,6 +152,7 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_PSU", "u_T", "u_batt", "u_inrush");
         var rows = c.Rows("loads");
 
         foreach (var s in new[] { "P_add", "cosphi_add", "eta_add", "inrush_add", "heat_add", "U_3ph", "U_1ph", "U_DC", "margin", "theta", "f_derate", "k_T", "t_auto", "U_b", "eta_conv", "DoD", "eta_b", "k_temp", "k_age" })

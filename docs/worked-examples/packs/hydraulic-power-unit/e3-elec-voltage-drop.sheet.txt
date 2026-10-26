@@ -31,7 +31,7 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
 3. Assumptions
   A1. Balanced load; conductor reactance from the stated X′ (zero when using resistivity alone unless X_km is given); the drop is the arithmetic (R cos φ + X sin φ) form. (Standard engineering approximation.)
   A2. A mV/A/m figure is used as tabulated, with its own temperature and system convention. (Cable table convention.)
-  A3. The conductor temperature estimate scales the rated rise with (I/I_z)²; I_z is the user's tabulated value for the installation method and corrections. (BS 7671 Appendix 4 approach, formula only.)
+  A3. The conductor temperature estimate scales the rated rise with (I/I_z)²; I_z is the user's tabulated value for the installation method and corrections. When the estimate is above T_c the resistance and the drop are computed at the estimate. (BS 7671 Appendix 4 approach, formula only.)
   A4. n_par (Parallel conductors per phase) is taken as 1. (Sheet default value; no project figure given.)
   A5. data (Conductor data from) is taken as resistivity and area. (Sheet default value; no project figure given.)
   A6. rho_20 (Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m)) is taken as 0.0194 Ω·mm²/m. (Sheet default value; no project figure given.)
@@ -75,9 +75,9 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
         Drop utilisation against the limit
 
 5. Results
-  R = 0.0696 Ω    Resistance
-  X = 0.0024 Ω    Reactance
-  dV = 3.5 V    Voltage drop
+  R = 0.06964 Ω    Resistance
+  X = 0.002400 Ω    Reactance
+  dV = 3.543 V    Voltage drop
   dV_pct = 0.88569    Voltage drop (%)
   P_loss = 234.0 W    Power loss
 
@@ -88,11 +88,11 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   None.
 
 8. Verification
-  Template: elec.voltage-drop@1.2.0
-  Content hash: c20fe1c4471c778d
+  Template: elec.voltage-drop@1.3.0
+  Content hash: 1dc7d4b34be3c142
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

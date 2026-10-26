@@ -21,10 +21,10 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   R_r | Roller radius R_r (roller follower) | 8 | mm | drawing: IDX-12-CAM rev A | 1 … 200 mm
   phi_max | Maximum pressure angle allowed (roller follower) | 30 | ° | assumption: Usual limit for a translating roller follower; set it from your design rule. | 5 … 45 °
   segs | Cam segments: rise, dwell or return, with motion law, angle and lift; the angles add to 360° and the rises equal the returns | 4 row(s) |  | spec: Indexing station IDX-12 §2.3 motion table rev A | any
-  segs[1] |  | kind = Rise; law = Cycloidal; beta = 120 deg; h = 20 mm |  |  | 
-  segs[2] |  | kind = Dwell; law = —; beta = 60 deg; h = 0 mm |  |  | 
-  segs[3] |  | kind = Return; law = 3-4-5 polynomial; beta = 120 deg; h = 20 mm |  |  | 
-  segs[4] |  | kind = Dwell; law = —; beta = 60 deg; h = 0 mm |  |  | 
+  segs[1] |  | kind = Rise; law = Cycloidal; beta = 120°; h = 20 mm |  |  | 
+  segs[2] |  | kind = Dwell; law = —; beta = 60°; h = 0 mm |  |  | 
+  segs[3] |  | kind = Return; law = 3-4-5 polynomial; beta = 120°; h = 20 mm |  |  | 
+  segs[4] |  | kind = Dwell; law = —; beta = 60°; h = 0 mm |  |  | 
   m_f | Follower mass (all moving parts that follow the cam) | 0.2 | kg | assumption: Example: follower arm, roller and tooling; take it from the CAD mass properties. | 0 … 1000 kg
   k_sp | Return spring rate (link M7 rate k) | 5 | N/mm | assumption: Example return-spring rate; link the rate k of the M7 spring sheet. | 0 … 1000 N/mm
   F_pre | Spring preload at the base circle (link an M7 force) | 20 | N | assumption: Example preload at the base circle; link a force of the M7 spring sheet. | 0 … 100000 N
@@ -189,17 +189,17 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
         Cam-shaft frequency, for the spring surge check of M7 (mech.f_in)
 
 5. Results
-  input_torque = 1.53 N·m    Peak input torque by virtual work (mech.input_torque)
-  output_motion = 0.24 m/s    Peak follower velocity (mech.output_motion)
-  peak_accel = 4.52 m/s²    Peak follower acceleration (mech.peak_accel)
-  follower_force = 120.0 N    Peak axial force of the follower on the cam (mech.follower_force)
+  input_torque = 1.534 N·m    Peak input torque by virtual work (mech.input_torque)
+  output_motion = 0.2400 m/s    Peak follower velocity (mech.output_motion)
+  peak_accel = 4.524 m/s²    Peak follower acceleration (mech.peak_accel)
+  follower_force = 120 N    Peak axial force of the follower on the cam (mech.follower_force)
   F_pin_pk = 121.3 N    Peak contact normal force on the cam, the load on the cam shaft's bearings (mech.F_pin_pk → M4, M5)
-  T_rms_in = 0.70 N·m    RMS input torque over the cam revolution (mech.T_rms_in → E1 thermal sizing)
+  T_rms_in = 0.6976 N·m    RMS input torque over the cam revolution (mech.T_rms_in → E1 thermal sizing)
   n_in = 120 rpm    Cam-shaft speed, passed through for E1's load speed (mech.n_in)
-  f_in = 2.00 Hz    Cam-shaft frequency, for the spring surge check of M7 (mech.f_in)
+  f_in = 2 Hz    Cam-shaft frequency, for the spring surge check of M7 (mech.f_in)
   P_mean = -4.375e-10 W    Mean input power over the cam revolution (mech.P_mean)
-  lift = 20.0 mm    Greatest follower displacement
-  F_spring_max = 120.0 N    Spring force at full lift (mech.F_spring_max → M7 working force)
+  lift = 20 mm    Greatest follower displacement
+  F_spring_max = 120 N    Spring force at full lift (mech.F_spring_max → M7 working force)
   theta_sw = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, … (73 items)] deg    Table: cam angle
   s_sw = [0, 0.0094867, 0.075117, 0.24921, 0.57669, 1.092, 1.8169, 2.7587, 3.91, 5.2492, 6.7418, 8.3428, … (73 items)] mm    Table: follower displacement
   v_sw = [0, 0.0040889, 0.016077, 0.035147, 0.06, 0.088942, 0.12, 0.15106, 0.18, 0.20485, 0.22392, 0.23591, … (73 items)] m/s    Table: follower velocity
@@ -216,14 +216,14 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   seg_a_pk = [4.5239, 0, 4.1569, 0] m/s²    Segments: peak acceleration
   seg_j_pk = [170.55, 0, 259.2, 0] m/s³    Segments: peak jerk
   seg_law = "1: rise (Cycloidal); 2: dwell; 3: return (3-4-5 polynomial); 4: dwell"    Segments: kind and motion law
-  v_pk = 0.24 m/s    Peak follower velocity
-  a_pk = 4.52 m/s²    Peak follower acceleration
+  v_pk = 0.2400 m/s    Peak follower velocity
+  a_pk = 4.524 m/s²    Peak follower acceleration
   j_pk = 259.2 m/s³    Peak follower jerk
-  F_max = 120.0 N    Greatest follower force on the cam
-  F_min = 20.0 N    Smallest follower force on the cam (negative: the follower leaves the cam)
+  F_max = 120 N    Greatest follower force on the cam
+  F_min = 20 N    Smallest follower force on the cam (negative: the follower leaves the cam)
   phi_max_pk = 26.60°    Largest pressure angle
-  Rb_min_phi = 33.0 mm    Smallest base-circle radius that keeps the pressure angle within its limit (roller follower)
-  rho_min = 44.7 mm    Smallest radius of curvature of the pitch curve
+  Rb_min_phi = 32.96 mm    Smallest base-circle radius that keeps the pressure angle within its limit (roller follower)
+  rho_min = 44.68 mm    Smallest radius of curvature of the pitch curve
   u_rho = 0.18    Roller radius against the smallest radius of curvature
   u_phi = 0.89    Largest pressure angle against the allowed one (governing)
 

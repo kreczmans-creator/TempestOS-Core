@@ -21,10 +21,17 @@ public sealed partial class GlossaryTests
 
     private static string GlossaryPath => Path.Combine(CalcsFolder, "glossary.md");
 
-    [GeneratedRegex(@"^\| `(?<symbol>[^`]+)` \| (?<quantity>[^|]*) \| (?<units>[^|]*) \| (?<descriptions>[^|]*) \| (?<templates>[^|]*) \| (?<status>[^|]*) \|$")]
+    [GeneratedRegex(@"^\| `(?<symbol>[^`]+)` \| (?<meaning>[^|]*) \| (?<quantity>[^|]*) \| (?<units>[^|]*) \| (?<descriptions>[^|]*) \| (?<templates>[^|]*) \| (?<status>[^|]*) \|$")]
     private static partial Regex SymbolRow();
 
-    private sealed record Row(string Symbol, string Quantity, IReadOnlyList<string> Templates, string Status);
+    private sealed record Row(string Symbol, string Meaning, string Quantity, IReadOnlyList<string> Templates, string Status);
+
+    /// <summary>The meaning id of a glossary cell: <c>`eta:efficiency`</c> is "efficiency"; a dash is no declared meaning.</summary>
+    private static string MeaningId(string symbol, string cell)
+    {
+        var text = cell.Trim().Trim('`');
+        return text == "—" ? string.Empty : text.StartsWith(symbol + ":", StringComparison.Ordinal) ? text[(symbol.Length + 1)..] : text;
+    }
 
     private static IReadOnlyList<Row> GlossaryRows()
     {
@@ -34,7 +41,7 @@ public sealed partial class GlossaryTests
         Assert.True(start >= 0, "glossary.md has no 'All symbols' section.");
 
         return [.. text[start..].Split('\n').Select(l => SymbolRow().Match(l)).Where(m => m.Success).Select(m => new Row(
-            m.Groups["symbol"].Value, m.Groups["quantity"].Value.Trim(),
+            m.Groups["symbol"].Value, MeaningId(m.Groups["symbol"].Value, m.Groups["meaning"].Value), m.Groups["quantity"].Value.Trim(),
             [.. m.Groups["templates"].Value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)], m.Groups["status"].Value.Trim()))];
     }
 
@@ -62,12 +69,13 @@ public sealed partial class GlossaryTests
             foreach (var q in f.QuantityFacts.Where(q => q.Origin != "port").DistinctBy(q => q.Symbol + "|" + GlossaryData.QuantityName(q.Dimension, q.Unit)))
             {
                 var quantity = GlossaryData.QuantityName(q.Dimension, q.Unit);
+                var meaning = GlossaryData.MeaningOf(GlossaryData.Meanings.Value, q.Symbol, f.Id, q.Origin);
                 var known = rows.Where(r => r.Symbol == q.Symbol).ToList();
 
                 if (known.Count == 0)
                     problems.Add($"{f.Id}: {q.Symbol} is not in the glossary");
-                else if (!known.Any(r => r.Quantity == quantity && r.Templates.Contains(f.Id, StringComparer.Ordinal)))
-                    problems.Add($"{f.Id}: {q.Symbol} is {quantity}, which the glossary does not list for this template ({string.Join("; ", known.Select(r => r.Quantity))})");
+                else if (!known.Any(r => r.Quantity == quantity && r.Meaning == meaning && r.Templates.Contains(f.Id, StringComparer.Ordinal)))
+                    problems.Add($"{f.Id}: {q.Symbol} is {quantity} ({(meaning.Length == 0 ? "no meaning declared" : meaning)}), which the glossary does not list for this template ({string.Join("; ", known.Select(r => r.Meaning + " " + r.Quantity))})");
             }
         }
 
@@ -96,6 +104,69 @@ public sealed partial class GlossaryTests
 
         Assert.Contains(rows, r => r.Symbol == "T" && r.Status.StartsWith("RESOLVE", StringComparison.Ordinal));
         Assert.Contains(rows, r => r.Symbol == "theta" && r.Status.StartsWith("RESOLVE", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Every_Use_Of_A_Symbol_That_Two_Templates_Share_Declares_Its_Meaning_And_Two_Meanings_Of_One_Quantity_Type_Are_Told_Apart()
+    {
+        var declared = GlossaryData.Meanings.Value;
+        var problems = new List<string>();
+        var uses = Facts.Value.SelectMany(f => f.QuantityFacts.Where(q => q.Origin != "port").Select(q => (q.Symbol, Template: f.Id, q.Origin))).Distinct().ToList();
+        var users = uses.GroupBy(x => x.Symbol).ToDictionary(g => g.Key, g => g.Select(x => x.Template).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList());
+
+        foreach (var (symbol, templates) in users.Where(p => p.Value.Count > 1))
+        {
+            if (!declared.TryGetValue(symbol, out var meanings))
+            {
+                problems.Add($"{symbol} is used by {templates.Count} templates and has no declared meaning (GlossaryMeanings.json)");
+                continue;
+            }
+
+            foreach (var (_, template, origin) in uses.Where(u => u.Symbol == symbol))
+            {
+                var count = GlossaryData.Declarations(meanings, template, origin);
+
+                if (count != 1)
+                    problems.Add($"{symbol} in {template} ({origin}) is declared {count} times (it must be declared exactly once)");
+            }
+
+            foreach (var listed in meanings.SelectMany(m => m.Value).Where(x => !uses.Any(u => u.Symbol == symbol && (x == u.Template || x == $"{u.Template}#{u.Origin}"))))
+                problems.Add($"{symbol} lists {listed}, which does not use it");
+        }
+
+        foreach (var (symbol, meanings) in declared)
+        {
+            if (!users.TryGetValue(symbol, out var templates) || templates.Count < 2)
+                problems.Add($"{symbol} is declared and fewer than two templates use it");
+
+            foreach (var id in meanings.Keys.Where(id => !MeaningIdForm().IsMatch(id)))
+                problems.Add($"{symbol}: the meaning id '{id}' is not lower-case words joined by '-'");
+        }
+
+        Assert.True(problems.Count == 0, string.Join(Environment.NewLine, problems.Take(30)) + (problems.Count > 30 ? $"{Environment.NewLine}… {problems.Count} in all" : string.Empty));
+    }
+
+    [GeneratedRegex("^[a-z0-9]+(-[a-z0-9]+)*$")]
+    private static partial Regex MeaningIdForm();
+
+    [Fact]
+    public void Eta_And_N_Are_Listed_With_Their_Separate_Meanings_Even_Where_They_Share_A_Quantity_Type()
+    {
+        var rows = GlossaryRows();
+
+        // eta: three meanings, all plain numbers, which the glossary used to merge into one line.
+        Assert.Equal(["efficiency", "perry-factor", "shear-area-factor"], rows.Where(r => r.Symbol == "eta").Select(r => r.Meaning).Order(StringComparer.Ordinal));
+        Assert.All(rows.Where(r => r.Symbol == "eta"), r => Assert.Equal("Plain number", r.Quantity));
+        Assert.Contains(rows, r => r.Symbol == "eta" && r.Meaning == "perry-factor" && r.Templates.SequenceEqual(["struct.column-buckling"]));
+        Assert.Contains(rows, r => r.Symbol == "eta" && r.Meaning == "shear-area-factor" && r.Templates.SequenceEqual(["struct.en1993-member"]));
+
+        // n: the plain-number uses are six meanings, the speed uses are two.
+        var n = rows.Where(r => r.Symbol == "n").ToList();
+        Assert.Equal(8, n.Count);
+        Assert.Equal(6, n.Count(r => r.Quantity == "Plain number"));
+        Assert.Contains(n, r => r.Meaning == "active-coils" && r.Templates.SequenceEqual(["mech.spring"]));
+        Assert.Contains(n, r => r.Meaning == "gas-exponent" && r.Templates.SequenceEqual(["fp.accumulator"]));
+        Assert.All(n, r => Assert.StartsWith("RESOLVE", r.Status, StringComparison.Ordinal));
     }
 
     [Fact]

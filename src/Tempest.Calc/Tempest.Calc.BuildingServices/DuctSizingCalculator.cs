@@ -65,11 +65,11 @@ public sealed class DuctSizingCalculator : ICalcCalculator
             new CalcClauseRef("BS EN 1506", "—", "Ventilation for buildings: sheet metal air ducts and fittings with circular cross-section, dimensions"),
         ],
         [
-            new CalcApplicabilityRule("sections", "At least one section is needed.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("geometry", "A given size must be positive; a fixed side needs the rectangular or flat-oval shape.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("velocity", "A section exceeds the velocity limit.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("laminar", "A section is laminar or transitional (Re < 4000): unusual for ductwork; check the airflow.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("summary-only", "More than 50 sections: per-section lines are omitted.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("sections", "At least one section is needed.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("geometry", "A given size must be positive; a fixed side needs the rectangular or flat-oval shape.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("velocity", "A section exceeds the velocity limit.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("laminar", "A section is laminar or transitional (Re < 4000): unusual for ductwork; check the airflow.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("summary-only", "More than 50 sections: per-section lines are omitted.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-round-given", "Round duct of given size, friction rate (ASHRAE friction-chart point)",
@@ -113,6 +113,7 @@ public sealed class DuctSizingCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_dp", "u_v");
         var method = c.InputText("method");
         c.Input("dp_target");
         c.Input("v_target");

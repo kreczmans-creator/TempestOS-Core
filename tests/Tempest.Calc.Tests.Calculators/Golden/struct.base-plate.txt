@@ -195,16 +195,16 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
 
 5. Results
   F_t_Ed = 110.91 kN    Bolt tension per bolt (to PROFIS)
-  V_b_Ed = 5.00 kN    Shear per anchor bolt (to PROFIS)
+  V_b_Ed = 5 kN    Shear per anchor bolt (to PROFIS)
   N_j_Rd = 1400.4 kN    Axial bearing resistance
   u_max = 0.87    Governing utilisation
-  f_cd = 14.2 MPa    Concrete design strength
+  f_cd = 14.17 MPa    Concrete design strength
   beta_j = 0.66667    Joint coefficient β_j
-  f_jd = 14.2 MPa    Bearing strength f_jd
-  c = 50.9 mm    Bearing outstand c
+  f_jd = 14.17 MPa    Bearing strength f_jd
+  c = 50.87 mm    Bearing outstand c
   A_eff = 98850 mm²    Effective bearing area
-  t_req_N = 10.0 mm    Plate thickness required for axial bearing alone
-  t_req = 17.6 mm    Plate thickness required (bearing, compression and tension T-stubs)
+  t_req_N = 10 mm    Plate thickness required for axial bearing alone
+  t_req = 17.61 mm    Plate thickness required (bearing, compression and tension T-stubs)
   z_C = 121.5 mm    Compression lever arm z_C
   z = 286.5 mm    Lever arm z
   C_Ed = 521.82 kN    Compression resultant
@@ -213,14 +213,14 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   T_Ed_2 = 0 kN    Tension resultant, other row
   A_flange = 42483 mm²    Compression-side bearing area
   C_Rd = 601.84 kN    Compression-side resistance
-  M_pl_Rd = 5.50 kN·m    Plate plastic moment
+  M_pl_Rd = 5.500 kN·m    Plate plastic moment
   T_Rd_1 = 392.86 kN    T-stub mode 1-2, no prying
-  T_Rd_3 = 282.00 kN    T-stub mode 3
-  T_Rd = 282.00 kN    Tension T-stub resistance
+  T_Rd_3 = 282 kN    T-stub mode 3
+  T_Rd = 282 kN    Tension T-stub resistance
   alpha_bc = 0.248    Anchor shear factor α_bc
   F_2_vb_Rd = 38.85 kN    Anchor shear resistance F_2,vb,Rd
   F_vb_Rd = 38.85 kN    Anchor shear resistance per bolt
-  F_f_Rd = 60.00 kN    Friction resistance
+  F_f_Rd = 60 kN    Friction resistance
   V_Rd = 215.41 kN    Shear resistance
   regime = "tension at one bolt row, compression under the other flange (Table 6.7, z = z_C + x_b)"    Force regime (Table 6.7)
   T_mode = "mode 3 (bolt failure)"    Governing T-stub mode

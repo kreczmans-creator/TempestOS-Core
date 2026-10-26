@@ -147,20 +147,20 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
         Power factor of the linked machine
 
 5. Results
-  P_dem = 0.24 kW    Demand active power
-  S_dem = 0.27 kVA    Demand apparent power
+  P_dem = 0.2385 kW    Demand active power
+  S_dem = 0.2650 kVA    Demand apparent power
   I_3ph = 0 A    Three-phase bus current
-  I_1ph = 1.15 A    Single-phase bus current
-  I_DC = 9.94 A    DC bus current
-  Phi = 0.073 kW    Heat dissipated inside the enclosure
-  U_L = 400.0 V    Three-phase line voltage
+  I_1ph = 1.152 A    Single-phase bus current
+  I_DC = 9.938 A    DC bus current
+  Phi = 0.07301 kW    Heat dissipated inside the enclosure
+  U_L = 400 V    Three-phase line voltage
   pf_link = 0.85    Power factor of the linked machine
-  P_conn = 0.24 kW    Connected load
+  P_conn = 0.2385 kW    Connected load
   P_PSU_req = 298.1 W    Minimum PSU rating
-  S_T_req = 0.33 kVA    Minimum transformer rating, running load
-  S_peak = 0.27 kVA    Peak apparent power at start
-  S_T_req_start = 0.088 kVA    Minimum transformer rating, starting peak
-  S_T_min = 0.33 kVA    Minimum transformer rating, running and starting
+  S_T_req = 0.3313 kVA    Minimum transformer rating, running load
+  S_peak = 0.2650 kVA    Peak apparent power at start
+  S_T_req_start = 0.08834 kVA    Minimum transformer rating, starting peak
+  S_T_min = 0.3313 kVA    Minimum transformer rating, running and starting
 
 6. Checks (governing first)
   None.
@@ -173,7 +173,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   Content hash: 63496058c8dcaccb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

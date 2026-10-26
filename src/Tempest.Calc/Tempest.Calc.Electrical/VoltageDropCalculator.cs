@@ -23,7 +23,7 @@ public sealed class VoltageDropCalculator : ICalcCalculator
     public const string DataMvAm = "mV/A/m figure";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.Electrical, "Voltage drop and I²R loss",
+        Id, "1.3.0", CalcDiscipline.Electrical, "Voltage drop and I²R loss",
         "Voltage drop along a circuit in volts and per cent of the nominal voltage, the conductor power loss, and an estimate of the conductor operating temperature, for DC, single-phase and three-phase AC, from resistivity and cross-section (with temperature correction), from tabulated R and X per kilometre, or from a mV/A/m figure; parallel conductors per phase; the drop limit is a user input (the regulatory limits live in BS 7671 Appendix 4 and Regulation 525 and are not embedded).",
         "Conductor resistance at its operating temperature, for n conductors in parallel: R = ρ_T L/(A n), with ρ_T = ρ_20 [1 + α (T_c − 20)].\nResistance and reactance from per-length figures instead: R = R′ L/n; X = X′ L/n.\nVoltage drop on a DC circuit: ΔV = 2 I R.\nVoltage drop on a single-phase AC circuit: ΔV = 2 I (R cos φ + X sin φ).\nVoltage drop on a three-phase AC circuit: ΔV = √3 I (R cos φ + X sin φ).\nVoltage drop from a tabulated mV/A/m figure, which already carries the 2 or √3: ΔV = (mV/A/m) I L / 1000.\nPower lost in the cable: P_loss = 2 I² R (DC and single-phase); 3 I² R (three-phase).\nEstimated conductor temperature at this current: T_c,est = T_amb + (T_rated − T_amb)(I/I_z)².",
         [
@@ -49,7 +49,7 @@ public sealed class VoltageDropCalculator : ICalcCalculator
         [
             new CalcAssumption("Balanced load; conductor reactance from the stated X′ (zero when using resistivity alone unless X_km is given); the drop is the arithmetic (R cos φ + X sin φ) form.", "Standard engineering approximation."),
             new CalcAssumption("A mV/A/m figure is used as tabulated, with its own temperature and system convention.", "Cable table convention."),
-            new CalcAssumption("The conductor temperature estimate scales the rated rise with (I/I_z)²; I_z is the user's tabulated value for the installation method and corrections.", "BS 7671 Appendix 4 approach, formula only."),
+            new CalcAssumption("The conductor temperature estimate scales the rated rise with (I/I_z)²; I_z is the user's tabulated value for the installation method and corrections. When the estimate is above T_c the resistance and the drop are computed at the estimate.", "BS 7671 Appendix 4 approach, formula only."),
         ],
         [
             new CalcClauseRef("BS 7671", "525", "Voltage drop in consumers' installations"),
@@ -57,10 +57,10 @@ public sealed class VoltageDropCalculator : ICalcCalculator
             new CalcClauseRef("Hughes, Electrical and Electronic Technology", "Ch. on DC and AC circuits", "Resistance, resistivity and temperature coefficient"),
         ],
         [
-            new CalcApplicabilityRule("conductor-data", "The chosen conductor-data route needs values that were not given.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("default-conductor", "The conductor cross-section or resistivity was left blank and the template default is used.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("overload", "The design current exceeds the stated current-carrying capacity.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("temperature", "The estimated conductor temperature is above the temperature used for the resistance; re-run with T_c raised.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("conductor-data", "The chosen conductor-data route needs values that were not given.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("default-conductor", "The conductor cross-section or resistivity was left blank and the template default is used.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("overload", "The design current exceeds the stated current-carrying capacity.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("temperature", "The estimated conductor temperature is above the temperature entered for the resistance, so the resistance and the voltage drop are computed at the estimated one.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-dc", "DC 48 V, 20 A, 30 m, 6 mm² copper at 70 °C (analytic)",
@@ -81,6 +81,7 @@ public sealed class VoltageDropCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_Iz", "u_dv");
         var system = c.InputText("system");
         var data = c.InputText("data");
         foreach (var s in new[] { "V_n", "I", "L", "cos_phi", "n_par", "dv_limit" })
@@ -101,7 +102,23 @@ public sealed class VoltageDropCalculator : ICalcCalculator
 
                 if (!c.Has("rho_20"))
                     c.Warn("default-conductor", $"rho_20: the resistivity is blank, so the default {CalcValue.FormatNumber(c.Template.FindInput("rho_20")!.Default ?? 0, 4)} Ω·mm²/m (the largest class 2 maximum of the cable standard) is used; enter the resistivity of the conductor if it is different.");
-                c.Assign("rho_T", "rho_20 * (1 + alpha * (T_c - 20 degC) / (1 K))", "ohm*mm^2/m", "Resistivity at the operating temperature");
+
+                // elec.voltage-drop temperature: a conductor that carries I/I_z of its capacity runs hotter than the temperature entered; the resistance, and so the drop, is then taken
+                // at the estimated temperature, so the drop is never below what the cable will show. A temperature entered above the estimate is used as entered.
+                var temperature = "T_c";
+
+                if (c.Has("I_z"))
+                {
+                    EstimateTemperature(c);
+
+                    if (c.Si("T_c_est") > c.Si("T_c") + 1e-9)
+                    {
+                        c.Assign("T_c_used", "T_c_est", "degC", "Conductor temperature used for the resistance: the estimate, which is above the temperature entered");
+                        temperature = "T_c_used";
+                    }
+                }
+
+                c.Assign("rho_T", $"rho_20 * (1 + alpha * ({temperature} - 20 degC) / (1 K))", "ohm*mm^2/m", "Resistivity at the operating temperature");
                 c.Assign("R", "rho_T * L / (A_c * n_par)", "ohm", "Conductor resistance (one conductor, parallel paths combined)");
                 c.Assign("X", "X_km * L / n_par", "ohm", "Conductor reactance");
                 break;
@@ -153,9 +170,7 @@ public sealed class VoltageDropCalculator : ICalcCalculator
         if (!c.Has("I_z"))
             return;
 
-        c.Input("I_z"); c.Input("T_rated"); c.Input("T_amb");
-        c.Assign("u_Iz", "I / I_z", null, "Load against the current-carrying capacity");
-        c.Assign("T_c_est", "T_amb + (T_rated - T_amb) * u_Iz^2", "degC", "Estimated conductor temperature", "BS 7671 App. 4 §6 form");
+        EstimateTemperature(c);
         c.Output("T_c_est", "Estimated conductor temperature");
         c.CheckUtilisation("I ≤ I_z", "u_Iz", "BS 7671 523");
 
@@ -163,6 +178,17 @@ public sealed class VoltageDropCalculator : ICalcCalculator
             c.Warn("overload", "I: the design current exceeds the current-carrying capacity.");
 
         if (data == DataResistivity && c.Si("T_c_est") > c.Si("T_c") + 1e-9)
-            c.Warn("temperature", $"T_c: the estimated conductor temperature {CalcValue.FormatNumber(c.Si("T_c_est") - 273.15, 4)} °C is above the {CalcValue.FormatNumber(c.Si("T_c") - 273.15, 4)} °C used for the resistance.");
+            c.Warn("temperature", $"T_c: the estimate {CalcValue.FormatNumber(c.Si("T_c_est") - 273.15, 4)} °C is above the {CalcValue.FormatNumber(c.Si("T_c") - 273.15, 4)} °C entered, so resistance and drop use {CalcValue.FormatNumber(c.Si("T_c_est") - 273.15, 4)} °C.");
+    }
+
+    /// <summary>The load against the capacity and the conductor temperature it implies; defined once, before the resistance is found and again by the capacity check.</summary>
+    private static void EstimateTemperature(CalcRunContext c)
+    {
+        if (c.Session.Find("T_c_est") is not null)
+            return;
+
+        c.Input("I_z"); c.Input("T_rated"); c.Input("T_amb");
+        c.Assign("u_Iz", "I / I_z", null, "Load against the current-carrying capacity");
+        c.Assign("T_c_est", "T_amb + (T_rated - T_amb) * u_Iz^2", "degC", "Estimated conductor temperature", "BS 7671 App. 4 §6 form");
     }
 }

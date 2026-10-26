@@ -45,7 +45,7 @@ public sealed class ShaftCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.4.0", CalcDiscipline.Mechanical, "Shaft design",
+        Id, "1.5.0", CalcDiscipline.Mechanical, "Shaft design",
         "A stepped (optionally hollow) shaft on two bearings carrying radial loads in two planes and a torque with a steady (mean) part and an optional alternating part: bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections the user marks, slopes at the bearings, deflection at the loads, the first lateral critical speed and parallel keys.",
         "Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(M_y² + M_z²)\n" +
         "Stress at a section: σ_a = K_f·32M_a·d/(π(d⁴ − d_i⁴)), τ_m = K_fs·16T_m·d/(π(d⁴ − d_i⁴)), τ_a = K_fs·16T_a·d/(π(d⁴ − d_i⁴)); K_f = 1 + q(K_t − 1)\n" +
@@ -99,15 +99,15 @@ public sealed class ShaftCalculator : ICalcCalculator
             new CalcClauseRef("Mott, Machine Elements in Mechanical Design", "6th ed., Ch. 12", "Shaft design"),
         ],
         [
-            new CalcApplicabilityRule("geometry", "Segments must run left to right, bearings and loads must lie on the shaft, and the bearings must be at least 1/200 of the shaft length apart.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("critical-speed", "The first critical speed (the Dunkerley lower bound) is less than twice the operating speed.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("critical-speed-skipped", "No critical speed is found when no mass deflects (ρ = 0 and every carried mass sits on a bearing).", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("mass-weight", "A carried mass is entered and w_masses is off: its weight is not in the reactions, the moment or the deflection.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("torque-span", "A torque is transmitted and a section or the key lies outside x_T1 … x_T2: it carries no torque.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("key-hub", "A key check without a hub strength: the key bearing is checked against the key and the shaft only.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("key", "A key check needs its position, width, height and length.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("size-factor", "Diameter above 254 mm: k_b is held at its 254 mm value.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("strength", "Yield above ultimate strength.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("geometry", "Segments must run left to right, bearings and loads must lie on the shaft, and the bearings must be at least 1/200 of the shaft length apart.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("critical-speed", "The first critical speed (the Dunkerley lower bound) is less than twice the operating speed: the critical-speed check fails.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("critical-speed-skipped", "No critical speed is found when no mass deflects (ρ = 0 and every carried mass sits on a bearing).", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("mass-weight", "A carried mass is entered and w_masses is off: its weight is not in the reactions, the moment or the deflection.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("torque-span", "A torque is transmitted and a section or the key lies outside x_T1 … x_T2: it carries no torque.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("key-hub", "A key check without a hub strength: the key bearing is checked against the key and the shaft only.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("key", "A key check needs its position, width, height and length.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("size-factor", "Diameter above 254 mm: k_b is held at its 254 mm value.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("strength", "Yield above ultimate strength.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-simply-supported", "Uniform shaft, central load and mass: slope, deflection, critical speed",
@@ -166,6 +166,8 @@ public sealed class ShaftCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_defl", "u_f", "u_key", "u_slope", "u_y");
+        c.MarkAtLeast("n_f_min", "n_y_min", "r_c");
         try
         {
             RunCore(c);
@@ -485,6 +487,10 @@ public sealed class ShaftCalculator : ICalcCalculator
                 var ratio = omegaD / opSpeed;
                 c.Record("r_c", "n_c,D/n", $"{F(rpm.FromSi(omegaD))} / {F(rpm.FromSi(opSpeed))}", new ScalarValue(ratio), "Critical-speed ratio (Dunkerley lower bound over operating speed)");
                 outputs.Add(("r_c", "Critical-speed ratio"));
+
+                // The first critical speed must be at least twice the operating speed: below that the shaft runs near resonance, so the check fails (it only warned before).
+                c.Record("n_c_req", "2·n", $"2 × {F(rpm.FromSi(opSpeed))} rpm", ScalarValue.Of(2 * rpm.FromSi(opSpeed), rpm), "Critical speed required, twice the operating speed");
+                c.Check("Critical speed against the operating speed", "n_c_req", "n_c_D", "Shigley 10th ed. §7-6");
 
                 if (ratio < 2)
                     c.Warn("critical-speed", $"n: the first critical speed (Dunkerley lower bound) is {CalcValue.FormatNumber(ratio, 3)} times the operating speed; keep it at least twice.");

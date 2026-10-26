@@ -56,12 +56,12 @@ Free expansion of the bar: δ_free = α·L·ΔT. Expansion actually restrained, 
         Stress utilisation
 
 5. Results
-  delta_free = 1.4 mm    Free movement
-  delta_e = 1.4 mm    Engaged movement
-  k_bar = 50.00 kN/mm    Bar stiffness
+  delta_free = 1.440 mm    Free movement
+  delta_e = 1.440 mm    Engaged movement
+  k_bar = 50 kN/mm    Bar stiffness
   F = 48000 N    Restraint force
-  sigma = -96.0 MPa    Axial stress
-  delta = 0.48 mm    Actual movement
+  sigma = -96 MPa    Axial stress
+  delta = 0.4800 mm    Actual movement
   u = 0.64    Stress utilisation (governing)
 
 6. Checks (governing first)

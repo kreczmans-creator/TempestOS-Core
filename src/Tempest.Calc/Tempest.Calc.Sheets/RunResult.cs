@@ -5,12 +5,31 @@ using Tempest.Calc.Engine.Values;
 namespace Tempest.Calc.Sheets;
 
 /// <summary>
+/// What an output is checked against, declared by the template that records it (C2-21). The display follows the kind, never the symbol or the
+/// description of the output: a utilisation is shown to two decimals and rounded up when it fails; a value that must be at least a limit is
+/// rounded down, so neither ever appears on the passing side of a limit its check fails.
+/// </summary>
+public enum CalcOutputKind
+{
+    /// <summary>An ordinary result: shown at the decimals of its quantity type.</summary>
+    Value,
+
+    /// <summary>A utilisation (demand over capacity, checked against a limit): 2 decimals, rounded up above its limit. An output a utilisation check is made on is this kind without being flagged.</summary>
+    Utilisation,
+
+    /// <summary>A safety factor, a margin or another value that must be at least a target (<c>n_f</c> against <c>n_target</c>): rounded down, so 1.4999 against 1.5 never prints 1.50.</summary>
+    AtLeast,
+}
+
+/// <summary>
 /// A named output of a run. <see cref="ValueText"/> is the value as the sheet shows it, at the decimals of its quantity type
 /// (<see cref="CalcDisplay"/>, C-2 rows 29 and 30); the value itself is never rounded. <see cref="Decimals"/> overrides the decimals for
-/// one output where the template justifies it. <see cref="DisplayText"/> is the text a run settled on once it knew every output (the
-/// solver-noise rule needs them all); an output built by hand has none and shows its own.
+/// one output where the template justifies it. <see cref="Kind"/> is what the template says the output is checked against.
+/// <see cref="NoiseProne"/> is set by a template for a solver residual, an equilibrium sum or a computed zero: only such an output is shown as 0
+/// when it is solver noise (C2-20). <see cref="DisplayText"/> is the text a run settled on for a noise-prone output that came out as noise; an
+/// output built by hand has none and shows its own.
 /// </summary>
-public sealed record CalcOutput(string Symbol, string Description, CalcValue Value, int? Decimals = null, string? DisplayText = null)
+public sealed record CalcOutput(string Symbol, string Description, CalcValue Value, int? Decimals = null, string? DisplayText = null, CalcOutputKind Kind = CalcOutputKind.Value, bool NoiseProne = false)
 {
     public string ValueText => DisplayText ?? CalcDisplay.Format(this);
 }
@@ -98,6 +117,8 @@ public sealed class CalcRunContext
     private readonly List<CalcNotice> _notices = [];
     private readonly List<CalcSeries> _series = [];
     private readonly List<CalcAssumption> _assumptions = [];
+    private readonly Dictionary<string, CalcOutputKind> _kinds = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _noiseProne = new(StringComparer.Ordinal);
 
     public CalcRunContext(ICalcSession session, CalcInputSet inputs, CalcTemplate template, CancellationToken cancellationToken)
     {
@@ -163,13 +184,51 @@ public sealed class CalcRunContext
 
     public double Si(string symbol) => Session.GetScalar(symbol).Si;
 
-    /// <summary>Records an output. <paramref name="decimals"/> overrides the decimals of its quantity type for this output only; use it where the template can justify it.</summary>
-    public void Output(string symbol, string description, int? decimals = null) => _outputs.Add(new CalcOutput(symbol, description, Session.Get(symbol), decimals));
+    /// <summary>
+    /// Records an output. <paramref name="decimals"/> overrides the decimals of its quantity type for this output only; use it where the template can
+    /// justify it. <paramref name="kind"/> declares what the output is checked against (a utilisation, a value that must be at least a target); an output a
+    /// utilisation check is made on is a utilisation without it. <paramref name="noiseProne"/> declares a solver residual, an equilibrium sum or a computed
+    /// zero, which is shown as 0 when it is solver noise.
+    /// </summary>
+    public void Output(string symbol, string description, int? decimals = null, CalcOutputKind kind = CalcOutputKind.Value, bool noiseProne = false) =>
+        _outputs.Add(new CalcOutput(symbol, description, Session.Get(symbol), decimals, null, kind, noiseProne));
 
-    public void Output(string symbol, string description, CalcValue value, int? decimals = null) => _outputs.Add(new CalcOutput(symbol, description, value, decimals));
+    public void Output(string symbol, string description, CalcValue value, int? decimals = null, CalcOutputKind kind = CalcOutputKind.Value, bool noiseProne = false) =>
+        _outputs.Add(new CalcOutput(symbol, description, value, decimals, null, kind, noiseProne));
 
-    /// <summary>Records a utilisation check: demand/capacity, passed when utilisation ≤ 1 (within a hair of rounding).</summary>
-    public CalcCheck Check(string name, string demandSymbol, string capacitySymbol, string? clause = null)
+    /// <summary>
+    /// Declares that the outputs of these symbols are utilisations (demand over capacity, checked against a limit): they are shown to two decimals and rounded
+    /// up when they exceed it. An output a utilisation check is made on needs no declaration. Declare by what the output is, not by how its symbol is spelt (C2-21).
+    /// </summary>
+    public void MarkUtilisation(params string[] symbols)
+    {
+        foreach (var symbol in symbols)
+            _kinds[symbol] = CalcOutputKind.Utilisation;
+    }
+
+    /// <summary>Declares that the outputs of these symbols are values that must be at least a target (a safety factor, a margin): they are rounded down for display (C2-21).</summary>
+    public void MarkAtLeast(params string[] symbols)
+    {
+        foreach (var symbol in symbols)
+            _kinds[symbol] = CalcOutputKind.AtLeast;
+    }
+
+    /// <summary>
+    /// Declares that the outputs of these symbols are solver residuals, equilibrium sums or computed zeros (a radial stress at a free surface, a reaction moment
+    /// at a pinned support): one that comes out more than nine orders of magnitude below the largest working value of its dimension is solver noise and is shown as
+    /// 0. An output nobody declared is never shown as 0 for being small (C2-20).
+    /// </summary>
+    public void MarkNoiseProne(params string[] symbols)
+    {
+        foreach (var symbol in symbols)
+            _noiseProne.Add(symbol);
+    }
+
+    /// <summary>
+    /// Records a utilisation check: demand/capacity, passed when utilisation ≤ 1 (within a hair of rounding). A failing check shows its demand rounded up and
+    /// its capacity rounded down, so the two never print as equal or in the passing order (C2-21).
+    /// </summary>
+    public CalcCheck Check(string name, string demandSymbol, string capacitySymbol, string? clause = null, double tolerance = 1e-9)
     {
         var d = Session.GetScalar(demandSymbol);
         var c = Session.GetScalar(capacitySymbol);
@@ -178,22 +237,32 @@ public sealed class CalcRunContext
             throw new Engine.CalcDimensionException($"Check '{name}' compares [{d.Dimension}] with [{c.Dimension}].");
 
         var u = c.Si == 0 ? double.PositiveInfinity : Math.Abs(d.Si) / Math.Abs(c.Si);
-        var check = new CalcCheck(name, CalcDisplay.Format(d), CalcDisplay.Format(c), u, u <= 1.0 + 1e-9, demandSymbol, clause);
+        var passed = u <= 1.0 + tolerance;
+        var check = new CalcCheck(
+            name,
+            CalcDisplay.Format(d, mode: passed ? CalcDisplay.Rounding.Nearest : CalcDisplay.Rounding.AwayFromZero),
+            CalcDisplay.Format(c, mode: passed ? CalcDisplay.Rounding.Nearest : CalcDisplay.Rounding.TowardZero),
+            u, passed, demandSymbol, clause);
         _checks.Add(check);
         return check;
     }
 
-    /// <summary>Records a check from an already computed utilisation.</summary>
-    public CalcCheck CheckUtilisation(string name, string utilisationSymbol, string? clause = null, double limit = 1.0)
+    /// <summary>
+    /// Records a check from an already computed utilisation. The symbol is a utilisation from now on (an output of that symbol is shown as one). The
+    /// utilisation is shown rounded up whenever it exceeds <paramref name="limit"/> (within <paramref name="tolerance"/>), not only above 1.
+    /// </summary>
+    public CalcCheck CheckUtilisation(string name, string utilisationSymbol, string? clause = null, double limit = 1.0, double tolerance = 1e-9)
     {
         var u = Session.GetScalar(utilisationSymbol);
 
         if (!u.Dimension.IsDimensionless)
             throw new Engine.CalcDimensionException($"Check '{name}' needs a dimensionless utilisation.");
 
+        _kinds.TryAdd(utilisationSymbol, CalcOutputKind.Utilisation);
+
         // A negative utilisation means the capacity is negative or inverted (a negative NPSH available): never a pass (G-03).
         // Written as "u = 1.719 vs u ≤ 1" so a ratio is never read as a demand quantity (Black B-18).
-        var check = new CalcCheck(name, $"{utilisationSymbol} = {CalcDisplay.Utilisation(u.Si)}", $"{utilisationSymbol} ≤ {CalcValue.FormatNumber(limit)}", u.Si / limit, u.Si >= 0 && u.Si <= limit + 1e-9, utilisationSymbol, clause);
+        var check = new CalcCheck(name, $"{utilisationSymbol} = {CalcDisplay.Utilisation(u.Si, limit + tolerance)}", $"{utilisationSymbol} ≤ {CalcValue.FormatNumber(limit)}", u.Si / limit, u.Si >= 0 && u.Si <= limit + tolerance, utilisationSymbol, clause);
         _checks.Add(check);
         return check;
     }
@@ -216,9 +285,32 @@ public sealed class CalcRunContext
 
     internal CalcRunResult ToResult()
     {
-        // The text of each output is settled once every output is known: the solver-noise rule compares a value with the largest of its dimension.
-        var texts = CalcDisplay.Texts(_outputs);
-        var outputs = _outputs.Select((o, i) => o with { DisplayText = texts[i] }).ToList();
+        // The kind of an output is what its template declared, or a utilisation when a utilisation check was made on its symbol. A noise-prone output
+        // that is solver noise carries the text "0": it is compared with the largest working value of its own dimension in this run, and nothing else.
+        var steps = Session.Steps;
+        var outputs = new List<CalcOutput>(_outputs.Count);
+
+        foreach (var o in _outputs)
+        {
+            var settled = o.Kind == CalcOutputKind.Value && _kinds.TryGetValue(o.Symbol, out var declared) ? o with { Kind = declared } : o;
+
+            if ((settled.NoiseProne || _noiseProne.Contains(settled.Symbol)) && settled.Value is ScalarValue { IsFinite: true } s && s.Si != 0)
+            {
+                // The comparison is with the working values of this run (inputs and steps) of the same dimension and unit, never with another output as such.
+                var largest = steps
+                    .Select(t => t.Result as ScalarValue)
+                    .Where(r => r is { IsFinite: true } && r.Dimension == s.Dimension && (!s.Dimension.IsDimensionless || r.DisplayUnit.Symbol == s.DisplayUnit.Symbol))
+                    .Select(r => Math.Abs(r!.Si))
+                    .DefaultIfEmpty(0)
+                    .Max();
+
+                if (CalcDisplay.IsNoise(s, largest))
+                    settled = settled with { DisplayText = CalcDisplay.ZeroText(s) };
+            }
+
+            outputs.Add(settled);
+        }
+
         return new CalcRunResult(Session.Steps, outputs, _checks, _notices, _series, _assumptions);
     }
 }

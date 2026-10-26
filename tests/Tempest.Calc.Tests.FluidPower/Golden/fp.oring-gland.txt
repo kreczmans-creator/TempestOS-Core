@@ -279,19 +279,19 @@ Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits o
         Contribution Pareto
 
 5. Results
-  squeeze_min = 17.0 %    Smallest squeeze
-  squeeze_max = 27.0 %    Largest squeeze
-  fill_max = 84.6 %    Largest gland fill
-  stretch = 3.8 %    Largest installed stretch
-  squeeze_nom = 21.0 %    Squeeze at the mean dimensions
-  fill_min = 64.0 %    Smallest gland fill
-  stretch_nom = 3.0 %    Installed stretch, mean dimensions
-  stretch_min = 2.1 %    Smallest installed stretch
-  X_c = 4.4 %    Largest stretch at the cold end
-  red_nom = 1.4 %    Cross-section reduction at the mean stretch
-  gap_min = 0.030 mm    Smallest extrusion gap
-  gap_max = 0.11 mm    Largest extrusion gap, diametral for a radial seal (over the temperature range, with the bore dilation)
-  gap_allow = 0.15 mm    Permitted extrusion gap, diametral for a radial seal
+  squeeze_min = 16.96 %    Smallest squeeze
+  squeeze_max = 26.96 %    Largest squeeze
+  fill_max = 84.64 %    Largest gland fill
+  stretch = 3.831 %    Largest installed stretch
+  squeeze_nom = 21.03 %    Squeeze at the mean dimensions
+  fill_min = 63.95 %    Smallest gland fill
+  stretch_nom = 2.950 %    Installed stretch, mean dimensions
+  stretch_min = 2.083 %    Smallest installed stretch
+  X_c = 4.407 %    Largest stretch at the cold end
+  red_nom = 1.443 %    Cross-section reduction at the mean stretch
+  gap_min = 0.02999 mm    Smallest extrusion gap
+  gap_max = 0.1061 mm    Largest extrusion gap, diametral for a radial seal (over the temperature range, with the bore dilation)
+  gap_allow = 0.1500 mm    Permitted extrusion gap, diametral for a radial seal
   p_sq_min = 0 %    Fraction outside the limit: squeeze below the lower limit (cold end)
   cpk_sq_min = 2.2872    C_pk: squeeze below the lower limit (cold end)
   p_sq_max = 0 %    Fraction outside the limit: squeeze above the upper limit (hot end)

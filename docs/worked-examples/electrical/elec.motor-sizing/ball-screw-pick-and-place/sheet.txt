@@ -178,31 +178,31 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
         Thermal duty (without margin)
 
 5. Results
-  T_load = 0.087 N·m    Load torque at motor
-  J_refl = 0.00014 kg·m²    Reflected load inertia
-  J_total = 0.00044 kg·m²    Total inertia
+  T_load = 0.08671 N·m    Load torque at motor
+  J_refl = 0.0001407 kg·m²    Reflected load inertia
+  J_total = 0.0004407 kg·m²    Total inertia
   alpha_pk = 5654.9 rad/s²    Motor angular acceleration
-  T_acc = 2.49 N·m    Acceleration torque
-  T_pk = 2.58 N·m    Peak torque
-  T_dec = -2.41 N·m    Deceleration torque
-  T_rms = 1.44 N·m    RMS torque
-  T_design = 2.58 N·m    Design torque for downstream couplings
+  T_acc = 2.492 N·m    Acceleration torque
+  T_pk = 2.579 N·m    Peak torque
+  T_dec = -2.406 N·m    Deceleration torque
+  T_rms = 1.440 N·m    RMS torque
+  T_design = 2.579 N·m    Design torque for downstream couplings
   T_hold = 0 N·m    Holding torque in the dwell
-  T_alt = 2.49 N·m    Alternating torque amplitude
+  T_alt = 2.492 N·m    Alternating torque amplitude
   F_ax_pk = 499.0 N    Peak axial thrust on a screw's bearings
   n_pk = 9000 rpm    Peak speed
   n_mean = 3000 rpm    Mean motor speed over the cycle
-  P_pk = 2.43 kW    Peak power
-  P_brake = 2.27 kW    Peak braking power
-  P_rms = 0.78 kW    RMS power (continuous equivalent)
+  P_pk = 2.431 kW    Peak power
+  P_brake = 2.267 kW    Peak braking power
+  P_rms = 0.7841 kW    RMS power (continuous equivalent)
   J_ratio = 1.2036    Inertia ratio
   duty = 0.7201    Thermal duty
   u_peak = 0.54    Peak utilisation
   u_rms = 0.90    Continuous utilisation (governing)
   u_speed = 0.90    Speed utilisation
-  k = 1.6 mm    Transmission constant
-  v_pk = 1.50 m/s    Peak velocity
-  a_pk = 9.00 m/s²    Peak acceleration
+  k = 1.592 mm    Transmission constant
+  v_pk = 1.500 m/s    Peak velocity
+  a_pk = 9 m/s²    Peak acceleration
 
 6. Checks (governing first)
   PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.90 vs u_rms ≤ 1  utilisation 0.90
@@ -219,7 +219,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
     T_basis: not entered, so the default of 'Load peak (T_pk)' is used.
 
 8. Verification
-  Template: elec.motor-sizing@1.9.0
+  Template: elec.motor-sizing@1.10.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

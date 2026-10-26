@@ -85,7 +85,7 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   Z_s = 1.4034 Ω    Loop impedance
   I_f = 155.69 A    Earth fault current
   R_12 = 0.6034 Ω    R₁ + R₂
-  I_a = 160.00 A    Disconnection current
+  I_a = 160 A    Disconnection current
   Z_s_max = 1.3656 Ω    Maximum loop impedance
   Z_test = 1.0925 Ω    Field-test maximum (rule of thumb)
   u_Zs = 1.03    Loop impedance utilisation

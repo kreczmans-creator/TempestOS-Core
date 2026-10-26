@@ -200,38 +200,38 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
         Velocity utilisation
 
 5. Results
-  Q_design = 30.0 m³/h    Design flow
-  H_static = 15.00 m    Static head
+  Q_design = 30 m³/h    Design flow
+  H_static = 15 m    Static head
   V_pipe = 513.7 L    Water held in the pipes
   H_sys = 27.70 m    System head at Q
   h_f_total = 12.70 m    Σ h_f
   dp_total = 124.5 kPa    Friction Δp
   dp_sys = 271.6 kPa    System Δp
-  P_hyd = 2.26 kW    Hydraulic power
-  v_peak = 2.51 m/s    Highest velocity
-  T_line = 6.0 °C    Line design temperature
+  P_hyd = 2.263 kW    Hydraulic power
+  v_peak = 2.511 m/s    Highest velocity
+  T_line = 6 °C    Line design temperature
   NPSH_a = 11.97 m    NPSH available
-  Q_duty = 31.6 m³/h    Duty flow as entered
+  Q_duty = 31.57 m³/h    Duty flow as entered
   H_duty = 29.06 m    Duty head as entered
-  P_shaft = 3.67 kW    Shaft power as entered
-  v_s1 = 1.06 m/s    Velocity, plantroom suction
+  P_shaft = 3.675 kW    Shaft power as entered
+  v_s1 = 1.061 m/s    Velocity, plantroom suction
   Re_s1 = 72253    Re, plantroom suction
   f_s1 = 0.021093    f, plantroom suction
   f_sj_s1 = 0.021152    f (Swamee–Jain), plantroom suction
-  h_f_s1 = 0.27 m    h_f, plantroom suction
-  v_s2 = 1.66 m/s    Velocity, riser DN80
+  h_f_s1 = 0.2691 m    h_f, plantroom suction
+  v_s2 = 1.658 m/s    Velocity, riser DN80
   Re_s2 = 90316    Re, riser DN80
   f_s2 = 0.020849    f, riser DN80
   f_sj_s2 = 0.020946    f (Swamee–Jain), riser DN80
-  h_f_s2 = 3.31 m    h_f, riser DN80
-  v_s3 = 2.51 m/s    Velocity, index run DN65
+  h_f_s2 = 3.312 m    h_f, riser DN80
+  v_s3 = 2.511 m/s    Velocity, index run DN65
   Re_s3 = 111160    Re, index run DN65
   f_s3 = 0.020834    f, index run DN65
   f_sj_s3 = 0.020964    f (Swamee–Jain), index run DN65
-  h_f_s3 = 9.12 m    h_f, index run DN65
-  Q_duty2 = 26.2 m³/h    Duty flow after the affinity shift
+  h_f_s3 = 9.115 m    h_f, index run DN65
+  Q_duty2 = 26.24 m³/h    Duty flow after the affinity shift
   H_duty2 = 24.71 m    Duty head after the affinity shift
-  P_shaft2 = 2.60 kW    Shaft power after the affinity shift
+  P_shaft2 = 2.597 kW    Shaft power after the affinity shift
 
 6. Checks (governing first)
   FAIL  Velocity ≤ limit: u_v = 1.01 vs u_v ≤ 1  utilisation 1.01

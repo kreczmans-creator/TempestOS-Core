@@ -67,11 +67,11 @@ public sealed class PcbTraceCalculator : ICalcCalculator
             new CalcClauseRef("Hughes, Electrical and Electronic Technology", "Ch. on DC circuits", "Resistivity and temperature coefficient of resistance"),
         ],
         [
-            new CalcApplicabilityRule("narrow", "The trace as drawn is narrower than the minimum for the allowed rise (u_w above 1): it runs hotter, and the resistance, drop and loss are taken at the rise the curve-fit gives for the drawn width.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("width", "The minimum width exceeds 10 mm, beyond the range of the source curve-fit.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("input.I", "The current exceeds 35 A (the usual-range notice on I), beyond the range of the source curve-fit.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("copper", "The copper weight is outside 1 to 3 oz/ft², the range the source curve-fit was drawn for.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("rise", "The allowed temperature rise is below 10 K, the smallest rise the source curve-fit was drawn for.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("narrow", "The trace as drawn is narrower than the minimum for the allowed rise (u_w above 1): it runs hotter, and the resistance, drop and loss are taken at the rise the curve-fit gives for the drawn width.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("width", "The minimum width exceeds 10 mm, beyond the range of the source curve-fit.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("input.I", "The current exceeds 35 A (the usual-range notice on I), beyond the range of the source curve-fit.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("copper", "The copper weight is outside 1 to 3 oz/ft², the range the source curve-fit was drawn for.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("rise", "The allowed temperature rise is below 10 K, the smallest rise the source curve-fit was drawn for.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
         ],
         [
             new CalcTestCase("ka-3a-10k-1oz-external", "3 A, 10 K rise, 1 oz copper, external layer (analytic)",
@@ -116,6 +116,7 @@ public sealed class PcbTraceCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_w");
         foreach (var s in new[] { "I", "dT", "T_amb", "Cu_oz", "w_act", "L", "n_dT", "n_A", "t_oz", "rho_20", "alpha" })
             c.Input(s);
 

@@ -122,19 +122,19 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
 5. Results
   anchor_force = 4358.4 N    Force on the anchors
   anchor_moment = 0 N·m    Moment at the anchors
-  dL = 24.5 mm    Thermal movement between the anchors (magnitude)
-  D_i = 51.0 mm    Inside diameter
+  dL = 24.48 mm    Thermal movement between the anchors (magnitude)
+  D_i = 51 mm    Inside diameter
   A_m = 247.4 mm²    Metal cross-section
-  I_x = 8.5 cm⁴    Second moment of area
-  Z_x = 3.2 cm³    Section modulus
-  dT = 60.0 K    Temperature change
-  L_tot = 24.00 m    Length that grows
-  dL_signed = 24.5 mm    Thermal movement, signed
+  I_x = 8.531 cm⁴    Second moment of area
+  Z_x = 3.160 cm³    Section modulus
+  dT = 60 K    Temperature change
+  L_tot = 24 m    Length that grows
+  dL_signed = 24.48 mm    Thermal movement, signed
   sigma_res = 122.4 MPa    Fully restrained stress
   F_res = 30.28 kN    Fully restrained force
   direction = "growth: the pipe lengthens; fully restrained it presses on its anchors (compression)"    Direction of the movement
   F_friction = 0 N    Support friction on the run
-  F_thrust = 2.40 kN    Bellows pressure thrust
+  F_thrust = 2.400 kN    Bellows pressure thrust
   F_spring = 1958.4 N    Bellows spring force
   screen = "not applicable: the bellows absorbs the movement"    Screening result
   pass = 1    All checks pass

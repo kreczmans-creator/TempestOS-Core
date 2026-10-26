@@ -96,18 +96,18 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
             new CalcClauseRef("EN 13480-3", "cl. 12 (number to be checked against the owner's copy)", "Metallic industrial piping — flexibility analysis"),
         ],
         [
-            new CalcApplicabilityRule("wall", "The wall must be less than half the outside diameter.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("Sa", "Enter the allowable displacement-stress range Sa for a leg or a loop; it has no default.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("dT_in", "Enter the temperature change when it is the source of the movement; it must not be zero.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("dT-zero", "Install and operating temperatures are equal: there is no movement to absorb.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("bellows", "An axial bellows needs both the pressure P_b and the effective area A_eff.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("modulus-low", "E (or E_hot) is below 0.5 GPa, lower than any usual pipe material: it may have been typed in MPa.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("short-leg", "The available leg (or, for an offset leg or Z-bend, a run) is shorter than ten pipe diameters: the guided-cantilever beam model is not valid.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("bellows-unused", "Bellows inputs are given with a leg or loop layout and are not used; choose the axial bellows layout.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("k1-unused", "K1 is given with the axial bellows layout, which has no screening; it is not used.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("l2-unused", "L2 is given with a layout other than the offset leg; it is not used.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("friction", "The anchor force holds no support friction unless both μ and the weight per metre are entered.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("screening-k1", "No K1 was entered: the screening ratio is shown and not judged, and the sheet does not pass.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("wall", "The wall must be less than half the outside diameter.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("Sa", "Enter the allowable displacement-stress range Sa for a leg or a loop; it has no default.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("dT_in", "Enter the temperature change when it is the source of the movement; it must not be zero.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("dT-zero", "Install and operating temperatures are equal: there is no movement to absorb.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("bellows", "An axial bellows needs both the pressure P_b and the effective area A_eff.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("modulus-low", "E (or E_hot) is below 0.5 GPa, lower than any usual pipe material: it may have been typed in MPa.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("short-leg", "The available leg (or, for an offset leg or Z-bend, a run) is shorter than ten pipe diameters: the guided-cantilever beam model is not valid.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("bellows-unused", "Bellows inputs are given with a leg or loop layout and are not used; choose the axial bellows layout.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("k1-unused", "K1 is given with the axial bellows layout, which has no screening; it is not used.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("l2-unused", "L2 is given with a layout other than the offset leg; it is not used.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("friction", "The anchor force holds no support friction unless both μ and the weight per metre are entered.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("screening-k1", "No K1 was entered: the screening ratio is shown and not judged, and the sheet does not pass.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-offset-leg-steel-50m", "Steel pipe 50 m between anchors, 70 K: growth 42 mm, an offset leg of 6 m against 4.850 m required",
@@ -153,6 +153,7 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_bellows", "u_leg", "u_res", "u_run", "u_run2", "u_scr", "u_sigma");
         foreach (var symbol in new[] { "E", "alpha", "OD", "t_wall", "L" })
             c.Input(symbol);
 

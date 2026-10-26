@@ -70,10 +70,10 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
             new CalcClauseRef("ISO 2768-1", "—", "General tolerances (where a contributor's band is a general tolerance)"),
         ],
         [
-            new CalcApplicabilityRule("few-contributors", "Fewer than four contributors: RSS and modified RSS are optimistic.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("no-requirement", "No requirement stated: capability and yield are not computed.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("sigma-ignored", "A standard deviation is stated for a uniform or triangular contributor: it applies to normal contributors only and is ignored.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("min-above-max", "The stated minimum is above the stated maximum.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("few-contributors", "Fewer than four contributors: RSS and modified RSS are optimistic.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("no-requirement", "No requirement stated: capability and yield are not computed.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("sigma-ignored", "A standard deviation is stated for a uniform or triangular contributor: it applies to normal contributors only and is ignored.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("min-above-max", "The stated minimum is above the stated maximum.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase(
@@ -193,6 +193,8 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_cpk");
+        c.MarkAtLeast("m_min", "m_max");
         var rows = c.Rows("contributors");
         var k = c.InputSi("k");
         var fRss = c.InputSi("f_rss");

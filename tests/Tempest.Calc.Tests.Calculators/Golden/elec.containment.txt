@@ -17,9 +17,9 @@ Cable area: A_cab = Σ n_i·π·d_i²/4 (n_i cables of overall diameter d_i) Con
   n_bend | Minimum bend radius as a multiple of the largest cable diameter (from your record) | 12 |  | manual | 1 … 100
   route | Pull route in pull order (straight lengths and bends) | 5 row(s) |  | manual | any
   route[1] |  | kind = Straight; L = 12 m |  |  | 
-  route[2] |  | kind = Bend; theta = 90 deg; R = 400 mm |  |  | 
+  route[2] |  | kind = Bend; theta = 90°; R = 400 mm |  |  | 
   route[3] |  | kind = Straight; L = 18 m |  |  | 
-  route[4] |  | kind = Bend; theta = 90 deg; R = 300 mm |  |  | 
+  route[4] |  | kind = Bend; theta = 90°; R = 300 mm |  |  | 
   route[5] |  | kind = Straight; L = 8 m |  |  | 
   T_1 | Tension at the start of the pull (pulling rope, drum or head) | 0 | N | manual | 0 … 10000 N
   bend_model | Tension round a bend: horizontal bend with the cable's weight on the containment floor (default), or the capstan equation without the weight term | Capstan (no weight term) |  | manual | any
@@ -182,19 +182,19 @@ Cable area: A_cab = Σ n_i·π·d_i²/4 (n_i cables of overall diameter d_i) Con
         Sidewall pressure utilisation against the limit
 
 5. Results
-  fill = 48.0 %    Fill
+  fill = 48 %    Fill
   max_tension = 138.4 N    Maximum tension, recommended direction
   A_cab = 235.6 mm²    Total cable cross-section
   A_int = 490.9 mm²    Internal cross-section
-  OD_max = 10.0 mm    Largest cable diameter
-  w = 0.600 kg/m    Mass per metre of the bundle
-  R_min = 120.0 mm    Minimum bend radius
+  OD_max = 10 mm    Largest cable diameter
+  w = 0.6000 kg/m    Mass per metre of the bundle
+  R_min = 120 mm    Minimum bend radius
   T_max_a = 154.9 N    Maximum tension, as listed
   T_max_b = 138.4 N    Maximum tension, reversed
-  P_max_a = 461 N/m    Maximum sidewall pressure, as listed
-  P_max_b = 284 N/m    Maximum sidewall pressure, reversed
-  P_max = 284 N/m    Maximum sidewall pressure, recommended direction
-  T_cab = 1200.0 N    Pulling tension limit from the cables
+  P_max_a = 461.5 N/m    Maximum sidewall pressure, as listed
+  P_max_b = 284.3 N/m    Maximum sidewall pressure, reversed
+  P_max = 284.3 N/m    Maximum sidewall pressure, recommended direction
+  T_cab = 1200 N    Pulling tension limit from the cables
   direction = "Reverse: pull from segment 5 to segment 1 (the only direction that passes every check)"    Recommended pull direction
   u_fill = 0.96    Fill utilisation (governing)
   u_bend = 0.40    Bend radius utilisation

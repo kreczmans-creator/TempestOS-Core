@@ -97,13 +97,13 @@ public sealed class MotorStartCalculator : ICalcCalculator
             new CalcClauseRef("Hughes, Electrical and Electronic Technology", "Ch. on power factor", "Power-factor correction: Q = P (tan φ₁ − tan φ₂)"),
         ],
         [
-            new CalcApplicabilityRule("cable-data", "The chosen cable-data route needs values that were not given.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("pfc", "The target power factor is not above the motor's own, so no capacitor is needed.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("pfc-starter", "Power-factor capacitors must not be connected on the output of a drive, or across a soft starter during the start.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("harmonics", "Harmonic loads are present (or a drive is used): the capacitor bank forms a parallel resonance with the supply at the stated order.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("current-limit", "The supply cannot hold a drive's regulated starting current: the source and cable drop alone exceeds the supply voltage.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("rated", "The entered rated current and P/η disagree by more than 5 % in input power.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("c_src", "A linked fault current needs the voltage factor c_src to match the c its fault level was computed with: a typed c_src other than 1.1 is flagged; linking c_src from the fault-protection step's c_k3 removes the mismatch.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("cable-data", "The chosen cable-data route needs values that were not given.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("pfc", "The target power factor is not above the motor's own, so no capacitor is needed.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("pfc-starter", "Power-factor capacitors must not be connected on the output of a drive, or across a soft starter during the start.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("harmonics", "Harmonic loads are present (or a drive is used): the capacitor bank forms a parallel resonance with the supply at the stated order.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("current-limit", "The supply cannot hold a drive's regulated starting current: the source and cable drop alone exceeds the supply voltage.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("rated", "The entered rated current and P/η disagree by more than 5 % in input power.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("c_src", "A linked fault current needs the voltage factor c_src to match the c its fault level was computed with: a typed c_src other than 1.1 is flagged; linking c_src from the fault-protection step's c_k3 removes the mismatch.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-pump-dol-transformer", "75 kW pump motor, direct on line, on a 500 kVA 4 % transformer, 40 m of 50 mm² copper (analytic)",
@@ -159,6 +159,7 @@ public sealed class MotorStartCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_dip", "u_dip_pcc");
         foreach (var s in new[] { "U", "P", "eta", "cos_phi", "dip_limit", "cos_phi2" })
             c.Input(s);
 

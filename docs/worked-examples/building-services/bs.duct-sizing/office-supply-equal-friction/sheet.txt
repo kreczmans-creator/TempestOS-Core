@@ -19,11 +19,11 @@ Round duct diameter from the design target: D by Colebrook with the air properti
   p_atm | Barometric pressure | 101.325 | kPa | assumption: Sea level. | 80 … 105 kPa
   eps | Duct roughness | 0.09 | mm | spec: Galvanised sheet, medium roughness (ASHRAE Ch. 21 category) | 0.03 … 3 mm
   sections | Duct sections | 5 row(s) |  | drawing: DRG-M-205 rev B | any
-  sections[1] |  | name = AHU to riser; Q = 2 m^3/s; L = 15 m; shape = rectangular; a = 800 mm; D = —; C = 0.8; dp_eq = 0 Pa; index = yes |  |  | 
-  sections[2] |  | name = riser; Q = 2 m^3/s; L = 12 m; shape = round; a = —; D = —; C = 0.3; dp_eq = 0 Pa; index = yes |  |  | 
-  sections[3] |  | name = floor main; Q = 1.2 m^3/s; L = 25 m; shape = rectangular; a = 500 mm; D = —; C = 1.1; dp_eq = 0 Pa; index = yes |  |  | 
-  sections[4] |  | name = branch to VAV; Q = 0.4 m^3/s; L = 10 m; shape = round; a = —; D = —; C = 0.9; dp_eq = 60 Pa; index = yes |  |  | 
-  sections[5] |  | name = other branch; Q = 0.8 m^3/s; L = 18 m; shape = round; a = —; D = —; C = 1; dp_eq = 60 Pa; index = no |  |  | 
+  sections[1] |  | name = AHU to riser; Q = 2 m³/s; L = 15 m; shape = rectangular; a = 800 mm; D = —; C = 0.8; dp_eq = 0 Pa; index = yes |  |  | 
+  sections[2] |  | name = riser; Q = 2 m³/s; L = 12 m; shape = round; a = —; D = —; C = 0.3; dp_eq = 0 Pa; index = yes |  |  | 
+  sections[3] |  | name = floor main; Q = 1.2 m³/s; L = 25 m; shape = rectangular; a = 500 mm; D = —; C = 1.1; dp_eq = 0 Pa; index = yes |  |  | 
+  sections[4] |  | name = branch to VAV; Q = 0.4 m³/s; L = 10 m; shape = round; a = —; D = —; C = 0.9; dp_eq = 60 Pa; index = yes |  |  | 
+  sections[5] |  | name = other branch; Q = 0.8 m³/s; L = 18 m; shape = round; a = —; D = —; C = 1; dp_eq = 60 Pa; index = no |  |  | 
   v_limit | Velocity limit (warning and check) | 8 | m/s | spec: SPEC-M-07 §5: 8 m/s in risers | 2 … 30 m/s
   dp_limit | Total pressure-drop limit (check) | 250 | Pa | spec: Fan external static allowance 250 Pa | 50 … 2000 Pa
   round_to | Round sizes up to a multiple of | 50 | mm | spec: BS EN 1505 / 1506 preferred sizes, 50 mm steps | 1 … 100 mm
@@ -243,53 +243,53 @@ Round duct diameter from the design target: D by Colebrook with the air properti
         Velocity utilisation
 
 5. Results
-  a_s1 = 800.0 mm    a, AHU to riser
-  b_s1 = 400.0 mm    b, AHU to riser
+  a_s1 = 800 mm    a, AHU to riser
+  b_s1 = 400 mm    b, AHU to riser
   De_s1 = 609.3 mm    D_e, AHU to riser
-  v_s1 = 6.25 m/s    v, AHU to riser
+  v_s1 = 6.250 m/s    v, AHU to riser
   Re_s1 = 277500    Re, AHU to riser
   f_s1 = 0.015999    f, AHU to riser
-  dpL_s1 = 0.74 Pa/m    Δp/L, AHU to riser
-  dp_f_s1 = 11 Pa    Friction loss, AHU to riser
-  dp_fit_s1 = 19 Pa    Fitting loss, AHU to riser
-  dp_s1 = 30 Pa    Section loss, AHU to riser
-  D_s2 = 600.0 mm    D, riser
-  v_s2 = 7.07 m/s    v, riser
+  dpL_s1 = 0.7435 Pa/m    Δp/L, AHU to riser
+  dp_f_s1 = 11.15 Pa    Friction loss, AHU to riser
+  dp_fit_s1 = 18.81 Pa    Fitting loss, AHU to riser
+  dp_s1 = 29.97 Pa    Section loss, AHU to riser
+  D_s2 = 600 mm    D, riser
+  v_s2 = 7.074 m/s    v, riser
   Re_s2 = 281820    Re, riser
   f_s2 = 0.015985    f, riser
-  dpL_s2 = 0.80 Pa/m    Δp/L, riser
-  dp_f_s2 = 9.6 Pa    Friction loss, riser
-  dp_fit_s2 = 9.0 Pa    Fitting loss, riser
-  dp_s2 = 19 Pa    Section loss, riser
-  a_s3 = 500.0 mm    a, floor main
-  b_s3 = 400.0 mm    b, floor main
+  dpL_s2 = 0.8025 Pa/m    Δp/L, riser
+  dp_f_s2 = 9.630 Pa    Friction loss, riser
+  dp_fit_s2 = 9.037 Pa    Fitting loss, riser
+  dp_s2 = 18.67 Pa    Section loss, riser
+  a_s3 = 500 mm    a, floor main
+  b_s3 = 400 mm    b, floor main
   De_s3 = 488.1 mm    D_e, floor main
-  v_s3 = 6.00 m/s    v, floor main
+  v_s3 = 6 m/s    v, floor main
   Re_s3 = 207850    Re, floor main
   f_s3 = 0.016905    f, floor main
-  dpL_s3 = 0.86 Pa/m    Δp/L, floor main
-  dp_f_s3 = 21 Pa    Friction loss, floor main
-  dp_fit_s3 = 24 Pa    Fitting loss, floor main
-  dp_s3 = 45 Pa    Section loss, floor main
-  D_s4 = 350.0 mm    D, branch to VAV
-  v_s4 = 4.16 m/s    v, branch to VAV
+  dpL_s3 = 0.8574 Pa/m    Δp/L, floor main
+  dp_f_s3 = 21.44 Pa    Friction loss, floor main
+  dp_fit_s3 = 23.84 Pa    Fitting loss, floor main
+  dp_s3 = 45.28 Pa    Section loss, floor main
+  D_s4 = 350 mm    D, branch to VAV
+  v_s4 = 4.158 m/s    v, branch to VAV
   Re_s4 = 96625    Re, branch to VAV
   f_s4 = 0.01938    f, branch to VAV
-  dpL_s4 = 0.58 Pa/m    Δp/L, branch to VAV
-  dp_f_s4 = 5.8 Pa    Friction loss, branch to VAV
-  dp_fit_s4 = 9.4 Pa    Fitting loss, branch to VAV
-  dp_s4 = 75 Pa    Section loss, branch to VAV
-  D_s5 = 450.0 mm    D, other branch
-  v_s5 = 5.03 m/s    v, other branch
+  dpL_s4 = 0.5762 Pa/m    Δp/L, branch to VAV
+  dp_f_s4 = 5.762 Pa    Friction loss, branch to VAV
+  dp_fit_s4 = 9.366 Pa    Fitting loss, branch to VAV
+  dp_s4 = 75.13 Pa    Section loss, branch to VAV
+  D_s5 = 450 mm    D, other branch
+  v_s5 = 5.030 m/s    v, other branch
   Re_s5 = 150310    Re, other branch
   f_s5 = 0.017809    f, other branch
-  dpL_s5 = 0.60 Pa/m    Δp/L, other branch
-  dp_f_s5 = 11 Pa    Friction loss, other branch
-  dp_fit_s5 = 15 Pa    Fitting loss, other branch
-  dp_s5 = 86 Pa    Section loss, other branch
-  dp_index = 169 Pa    Index-run Δp
-  dp_all = 255 Pa    Σ all sections
-  v_peak = 7.07 m/s    Highest velocity
+  dpL_s5 = 0.6029 Pa/m    Δp/L, other branch
+  dp_f_s5 = 10.85 Pa    Friction loss, other branch
+  dp_fit_s5 = 15.23 Pa    Fitting loss, other branch
+  dp_s5 = 86.08 Pa    Section loss, other branch
+  dp_index = 169.0 Pa    Index-run Δp
+  dp_all = 255.1 Pa    Σ all sections
+  v_peak = 7.074 m/s    Highest velocity
 
 6. Checks (governing first)
   PASS  Velocity ≤ limit: u_v = 0.88 vs u_v ≤ 1  utilisation 0.88

@@ -117,20 +117,20 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with 
         Approach utilisation (minimum / actual)
 
 5. Results
-  Q = 120.00 kW    Heat duty
-  T_h_out = 56.1 °C    Hot outlet
-  T_c_out = 59.1 °C    Cold outlet
-  dT_c = 19.1 K    Cold-side rise
-  T_c_m = 49.6 °C    Cold-side mean
+  Q = 120 kW    Heat duty
+  T_h_out = 56.13 °C    Hot outlet
+  T_c_out = 59.14 °C    Cold outlet
+  dT_c = 19.14 K    Cold-side rise
+  T_c_m = 49.57 °C    Cold-side mean
   cp_c = 4180 J/(kg·K)    Cold-side specific heat
-  A_req = 2.83 m²    Required area
+  A_req = 2.827 m²    Required area
   C_r = 0.80191    Capacity ratio
   NTU = 1.2973    Transfer units
   eps = 0.59666    Effectiveness
-  dT_app = 16.1 K    Approach
+  dT_app = 16.13 K    Approach
   UA = 6523.0 W/K    UA
-  dT_lm = 18.4 K    Log-mean temperature difference
-  Q_lmtd = 120.00 kW    Duty by the LMTD method
+  dT_lm = 18.40 K    Log-mean temperature difference
+  Q_lmtd = 120 kW    Duty by the LMTD method
   F = 1    LMTD correction factor
 
 6. Checks (governing first)

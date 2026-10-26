@@ -61,13 +61,13 @@ public sealed class BearingLifeCalculator : ICalcCalculator
             new CalcClauseRef("Shigley's Mechanical Engineering Design", "11th ed., Ch. 11", "Rolling-contact bearings"),
         ],
         [
-            new CalcApplicabilityRule("no-load", "No load: nothing to compute.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("kappa-low", "κ below 0.1 is outside the range a_ISO is defined for.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("kappa-high", "κ above 4 is treated as 4 when a_ISO is read.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("light-load", "Load so small against C that L_10 exceeds 10¹² million revolutions: the life is capped at that value.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("axial-factor", "An axial load acts above e_lim but Y is 0, so it would count for nothing: enter the bearing's Y.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("heavy-load", "P above 0.5·C: the rating-life equations lose accuracy.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("duty", "A duty cycle needs a positive total share of revolutions.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("no-load", "No load: nothing to compute.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("kappa-low", "κ below 0.1 is outside the range a_ISO is defined for.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("kappa-high", "κ above 4 is treated as 4 when a_ISO is read.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("light-load", "Load so small against C that L_10 exceeds 10¹² million revolutions: the life is capped at that value.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("axial-factor", "An axial load acts above e_lim but Y is 0, so it would count for nothing: enter the bearing's Y.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("heavy-load", "P above 0.5·C: the rating-life equations lose accuracy.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("duty", "A duty cycle needs a positive total share of revolutions.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-ball-95", "Ball bearing, radial load, 95 % reliability",
@@ -120,6 +120,8 @@ public sealed class BearingLifeCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_life", "u_s0");
+        c.MarkAtLeast("s_0");
         var roller = c.InputText("type") == Roller;
 
         foreach (var s in new[] { "F_r", "F_a", "n", "C", "C_0", "e_lim", "X_1", "Y_1", "X", "Y", "X_0", "Y_0", "R", "a_iso", "L_req", "s_0_req" })

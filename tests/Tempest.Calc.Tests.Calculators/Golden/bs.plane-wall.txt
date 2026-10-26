@@ -12,7 +12,7 @@ Resistance of each surface film: R = 1/(h·A). Resistance of each conducting lay
   T_1 | Side 1 temperature (the fluid's, or the surface's when no film is given) | 20 | °C | manual | -60 … 400 °C
   h_1 | Side 1 film coefficient (omit when T_1 is the surface temperature) | 10 | W/(m²·K) | manual | 2 … 10000 W/(m²·K)
   layers | Conducting layers, side 1 first | 1 row(s) |  | manual | any
-  layers[1] |  | name = glass; t = 8 mm; k = 0.78 W/(m*K) |  |  | 
+  layers[1] |  | name = glass; t = 8 mm; k = 0.78 W/(m·K) |  |  | 
   h_2 | Side 2 film coefficient (omit when T_2 is the surface temperature) | 40 | W/(m²·K) | manual | 2 … 10000 W/(m²·K)
   T_2 | Side 2 temperature (the fluid's, or the surface's when no film is given) | -10 | °C | manual | -60 … 400 °C
   A | Wall area normal to the heat flow | 1.2 | m² | manual | 0.001 … 10000 m²
@@ -62,13 +62,13 @@ Resistance of each surface film: R = 1/(h·A). Resistance of each conducting lay
 5. Results
   Q = 266.2 W    Heat flow
   q = 221.8 W/m²    Heat flux
-  U = 7.39 W/(m²·K)    Overall heat transfer coefficient
-  R_tot = 0.113 K/W    Total thermal resistance
-  R_h1 = 0.083 K/W    Side 1 film resistance
-  R_1 = 0.0085 K/W    Layer 1 resistance
-  R_h2 = 0.021 K/W    Side 2 film resistance
-  T_s0 = -2.2 °C    Side 1 surface temperature
-  T_s1 = -4.5 °C    Side 2 surface temperature
+  U = 7.393 W/(m²·K)    Overall heat transfer coefficient
+  R_tot = 0.1127 K/W    Total thermal resistance
+  R_h1 = 0.08333 K/W    Side 1 film resistance
+  R_1 = 0.008547 K/W    Layer 1 resistance
+  R_h2 = 0.02083 K/W    Side 2 film resistance
+  T_s0 = -2.180 °C    Side 1 surface temperature
+  T_s1 = -4.455 °C    Side 2 surface temperature
 
 6. Checks (governing first)
   None.

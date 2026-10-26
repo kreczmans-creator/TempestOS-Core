@@ -36,10 +36,10 @@ public sealed class Iso286FitCalculator : ICalcCalculator
             new CalcClauseRef("ISO 286-2:2010", "—", "Tables of standard tolerance classes and limit deviations (not reproduced)"),
         ],
         [
-            new CalcApplicabilityRule("bearing-bore", "A rolling-bearing bore needs ES_override and EI_override from the bearing record; it is not an H7 hole.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("large-size", "Nominal size above 500 mm uses the I = 0.004 D + 2.1 tolerance unit.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("interference-letter", "A fundamental deviation from p to zc is evaluated from the formula: the tabulated value can be several µm larger, so the maximum interference is understated; use the overrides where the table governs.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("fine-grade", "IT grades below IT5 are evaluated by geometric interpolation; check against the standard.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("bearing-bore", "A rolling-bearing bore needs ES_override and EI_override from the bearing record; it is not an H7 hole.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("large-size", "Nominal size above 500 mm uses the I = 0.004 D + 2.1 tolerance unit.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("interference-letter", "A fundamental deviation from p to zc is evaluated from the formula: the tabulated value can be several µm larger, so the maximum interference is understated; use the overrides where the table governs.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("fine-grade", "IT grades below IT5 are evaluated by geometric interpolation; check against the standard.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-h7g6-25", "25 mm H7/g6", new CalcReferenceSource("ISO 286-2:2010 (public excerpt), confirmed in Machinery's Handbook", "30th ed.", "25 mm H7: +21/0 µm; g6: −7/−20 µm; clearance 7…41 µm"),

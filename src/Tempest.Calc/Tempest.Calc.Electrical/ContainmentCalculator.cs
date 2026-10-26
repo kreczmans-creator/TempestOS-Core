@@ -96,16 +96,16 @@ public sealed class ContainmentCalculator : ICalcCalculator
             new CalcClauseRef("Beer and Johnston, Vector Mechanics for Engineers: Statics", "Ch. 8", "Friction: belt friction (the capstan equation)"),
         ],
         [
-            new CalcApplicabilityRule("cables", "Each cable row needs a whole number of cables of at least one.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("containment", "The conduit diameter, or the trunking or tray width and depth, must be entered for the containment chosen.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("route", "A straight row needs a length, a bend row an angle and a radius; the tension must stay below 1e12 N.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("mu", "A route needs the coefficient of friction.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("n_bend", "No bend-radius multiple entered: the bends are not checked against the cable.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("T_cab", "A cable has no maximum pulling tension: the cable limit is not checked.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("jam", "Three equal cables in a conduit with 1.05·D/d between 2.8 and 3.2 may jam (geometry, 5 % allowance for ovality).", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("k_n", "A derating is entered but the bundle has 3 cables or fewer: it is not applied.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("route-limits", "A route-only value (friction, grip limit, sidewall limit, derating) is entered but there is no route: it is not used.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("P_lim", "No sidewall pressure limit entered: the pressure is not checked.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("cables", "Each cable row needs a whole number of cables of at least one.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("containment", "The conduit diameter, or the trunking or tray width and depth, must be entered for the containment chosen.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("route", "A straight row needs a length, a bend row an angle and a radius; the tension must stay below 1e12 N.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("mu", "A route needs the coefficient of friction.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("n_bend", "No bend-radius multiple entered: the bends are not checked against the cable.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("T_cab", "A cable has no maximum pulling tension: the cable limit is not checked.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("jam", "Three equal cables in a conduit with 1.05·D/d between 2.8 and 3.2 may jam (geometry, 5 % allowance for ovality).", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("k_n", "A derating is entered but the bundle has 3 cables or fewer: it is not applied.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("route-limits", "A route-only value (friction, grip limit, sidewall limit, derating) is entered but there is no route: it is not used.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("P_lim", "No sidewall pressure limit entered: the pressure is not checked.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
         ],
         [
             new CalcTestCase("ka-fill-3x10-in-25", "Three 10 mm cables in a 25 mm conduit: 48 % fill, and a pull through two bends in both directions (analytic)",
@@ -179,6 +179,7 @@ public sealed class ContainmentCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_P", "u_T", "u_bend", "u_fill", "u_grip");
         var mm = UnitCatalog.Parse("mm");
         var kgPerM = UnitCatalog.Parse("kg/m");
         var newton = UnitCatalog.Parse("N");

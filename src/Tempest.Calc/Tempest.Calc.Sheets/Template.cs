@@ -169,7 +169,24 @@ public enum CalcNoticeSeverity
 }
 
 /// <summary>A declared applicability rule: what the calculator checks and what happens when the check fails.</summary>
-public sealed record CalcApplicabilityRule(string Id, string Description, CalcNoticeSeverity Severity);
+/// <summary>
+/// What an applicability rule says about the result when it fires (C-2, declared by the template, never found by matching words). A rule is
+/// <see cref="Conservative"/> when the result stays on the safe side or exact, or the notice only reports a convention, an unused input or a limitation
+/// that does not make a pass less safe. It is <see cref="Unconservative"/> when the sheet can still show a pass although the result may be on the unsafe
+/// side (a demand understated, a capacity overstated, a check not made, a method used outside its range). The contract test requires an unconservative
+/// rule to be a block or to be paired with a check that fails when it fires; the others are held by an allow-list that only shrinks.
+/// </summary>
+public enum CalcRuleEffect
+{
+    /// <summary>The result is on the safe side, exact, or the notice does not change what a pass means.</summary>
+    Conservative,
+
+    /// <summary>The result may be on the unsafe side while the sheet passes.</summary>
+    Unconservative,
+}
+
+/// <summary>An applicability rule: its id, what it says, whether it blocks or warns, and its <see cref="CalcRuleEffect"/> (declared on every rule; it is not part of the content hash).</summary>
+public sealed record CalcApplicabilityRule(string Id, string Description, CalcNoticeSeverity Severity, CalcRuleEffect Effect);
 
 /// <summary>Whether a known-answer reference value could be confirmed against its source.</summary>
 public enum CalcReferenceStatus

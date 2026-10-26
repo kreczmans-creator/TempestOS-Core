@@ -180,47 +180,53 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
       = 2800 rpm / 6000 rpm
       = 0.46667
         Speed utilisation
-  [50] duty = T_rms / T_rated
+  [50] u_rated_speed = n_pk / n_rated
+      = 2800 rpm / 2850 rpm
+      = 0.98246
+        Motor speed over the rated (nameplate) speed
+  [51] duty = T_rms / T_rated
       = 0.00035933 N·m / 2 N·m
       = 0.00017966
         Thermal duty (without margin)
 
 5. Results
-  T_load = 0.00036 N·m    Load torque at motor
-  J_refl = 0.0022 kg·m²    Reflected load inertia
-  J_total = 0.0024 kg·m²    Total inertia
+  T_load = 0.0003593 N·m    Load torque at motor
+  J_refl = 0.002222 kg·m²    Reflected load inertia
+  J_total = 0.002422 kg·m²    Total inertia
   alpha_pk = 58.64 rad/s²    Run-up angular acceleration
-  T_acc = 0.14 N·m    Run-up torque
-  T_pk = 0.14 N·m    Peak torque
-  T_rms = 0.00036 N·m    RMS torque
-  T_design = 0.14 N·m    Design torque for downstream couplings
+  T_acc = 0.1420 N·m    Run-up torque
+  T_pk = 0.1424 N·m    Peak torque
+  T_rms = 0.0003593 N·m    RMS torque
+  T_design = 0.1424 N·m    Design torque for downstream couplings
   T_hold = 0 N·m    Holding torque in the dwell
   T_alt = 0 N·m    Alternating torque amplitude
   F_ax_pk = 0 N    Peak axial thrust on a screw's bearings
-  T_out_m = 0.00032 N·m    Output shaft mean torque
+  T_out_m = 0.0003234 N·m    Output shaft mean torque
   T_out_a = 0 N·m    Output shaft alternating torque
-  T_out_pk = 0.13 N·m    Output shaft peak torque
+  T_out_pk = 0.1282 N·m    Output shaft peak torque
   n_out = 2800 rpm    Output shaft speed
-  n_pk = 2800 rpm    Motor speed
+  n_pk = 2800 rpm    Motor speed (governing)
   n_mean = 2800 rpm    Mean motor speed (the steady speed)
-  P_pk = 0.042 kW    Peak power
+  P_pk = 0.04176 kW    Peak power
   P_brake = 0 kW    Peak braking power
-  P_cont = 0.11 W    Continuous power
+  P_cont = 0.1054 W    Continuous power
   P_rated = 596.9 W    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
-  P_rms = 0.00011 kW    RMS power (continuous equivalent)
+  P_rms = 0.0001054 kW    RMS power (continuous equivalent)
   J_ratio = 11.111    Inertia ratio
   duty = 0.00017966    Thermal duty
   u_peak = 0.03    Peak utilisation
-  u_power = 0.00    Rated power utilisation P_cont/P_rated
-  u_rms = 0.00    Continuous utilisation
-  u_speed = 0.47    Speed utilisation (governing)
+  u_power = 0.00018    Rated power utilisation P_cont/P_rated
+  u_rms = 0.00022    Continuous utilisation
+  u_speed = 0.47    Speed utilisation
   k = 1    Transmission constant
+  u_rated_speed = 0.98246    Motor speed over the rated speed
 
 6. Checks (governing first)
+  PASS  Motor speed against the rated speed: 2800 rpm vs 2850 rpm  utilisation 0.98
   PASS  Speed n_pk ≤ n_max: u_speed = 0.47 vs u_speed ≤ 1  utilisation 0.47
   PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.03 vs u_peak ≤ 1  utilisation 0.03
-  PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.00 vs u_rms ≤ 1  utilisation 0.00
-  PASS  Rated power P_cont ≤ P_rated: u_power = 0.00 vs u_power ≤ 1  utilisation 0.00
+  PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.00022 vs u_rms ≤ 1  utilisation 0.00022
+  PASS  Rated power P_cont ≤ P_rated: u_power = 0.00018 vs u_power ≤ 1  utilisation 0.00018
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are J_motor, T_rated, T_peak, n_rated, n_max (Candidate motor rating). Enter each as one so its source, edition and licence travel with it.  [record]
@@ -229,11 +235,11 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   WARNING  J_motor: the inertia ratio 11.1 exceeds 10.  [inertia-ratio]
 
 8. Verification
-  Template: elec.motor-sizing@1.9.0
-  Content hash: b13348936aa53b72
+  Template: elec.motor-sizing@1.10.0
+  Content hash: 3989917de380d03f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

@@ -89,17 +89,17 @@ Welds as lines of unit throat: L_w = Σ l, centroid x_c = Σ l·x_m/L_w Unit sec
 5. Results
   f_r_max = 721.1 N/mm    Maximum force per unit length
   tau = 170.0 MPa    Throat stress
-  s_req = 4.6 mm    Leg required
-  L_w = 200.0 mm    Weld length
-  x_c = 25.0 mm    Centroid x
-  y_c = 50.0 mm    Centroid y
+  s_req = 4.636 mm    Leg required
+  L_w = 200 mm    Weld length
+  x_c = 25 mm    Centroid x
+  y_c = 50 mm    Centroid y
   I_ux = 166667 mm³    Unit second moment about x
   I_uy = 125000 mm³    Unit second moment about y
   I_uxy = 0 mm³    Unit product moment
   J_u = 291667 mm³    Unit polar moment
-  T = -3.50 kN·m    Torque about the centroid
+  T = -3.500 kN·m    Torque about the centroid
   critical = "(50, 0) mm"    Critical point
-  a = 4.2 mm    Throat
+  a = 4.242 mm    Throat
   u = 0.77    Utilisation (governing)
 
 6. Checks (governing first)

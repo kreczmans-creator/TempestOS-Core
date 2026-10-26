@@ -36,7 +36,7 @@ public sealed class CompareTests
         Assert.Equal(1.0 / 3, force.Change!.Value, 9);
 
         var stress = Assert.Single(comparison.Rows, r => r.Kind == CalcDifferenceKind.Output && r.Symbol == "sigma");
-        Assert.Equal(("60.0 MPa", "80.0 MPa"), (stress.Before, stress.After));
+        Assert.Equal(("60 MPa", "80 MPa"), (stress.Before, stress.After));
         Assert.Equal(1.0 / 3, stress.Change!.Value, 9);
         Assert.Contains(comparison.Rows, r => r.Kind == CalcDifferenceKind.Check);
         Assert.Contains("F: 12 kN → 16 kN  (+33.3 %)", comparison.Text, StringComparison.Ordinal);

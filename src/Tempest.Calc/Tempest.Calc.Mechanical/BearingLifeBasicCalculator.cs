@@ -42,9 +42,9 @@ public sealed class BearingLifeBasicCalculator : ICalcCalculator
             new CalcClauseRef("Shigley's Mechanical Engineering Design", "Ch. 11", "Rolling-contact bearings"),
         ],
         [
-            new CalcApplicabilityRule("no-load", "The equivalent load must be positive.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("light-load", "P below a millionth of C: the life is effectively unlimited.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("heavy-load", "P above half the dynamic load rating is outside the basic rating life equation.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("no-load", "The equivalent load must be positive.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("light-load", "P below a millionth of C: the life is effectively unlimited.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("heavy-load", "P above half the dynamic load rating is outside the basic rating life equation.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-legacy-ball-radial", "Legacy example 1: deep-groove ball bearing, pure radial load", Legacy(1),
@@ -61,6 +61,7 @@ public sealed class BearingLifeBasicCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_life");
         var type = c.InputText("type");
 
         foreach (var s in new[] { "C", "F_r", "F_a", "X", "Y", "n", "a_1", "L_req" })

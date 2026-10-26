@@ -81,11 +81,11 @@ public sealed class SectionPropertiesCalculator : ICalcCalculator
             new CalcClauseRef("BS EN 10210-2", "—", "Hot finished structural hollow sections: tolerances, dimensions and sectional properties"),
         ],
         [
-            new CalcApplicabilityRule("missing-dimension", "A dimension the chosen shape needs was not given.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("geometry", "A thickness exceeds the size it sits in, or a loop encloses no area.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("thin-walled-torsion", "The torsion constant is a thin-walled approximation.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("no-torsion", "No torsion constant is computed for an arbitrary polygon or a composite.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("thick-wall", "A wall thicker than a fifth of the section size: the thin-walled torsion estimate is rough.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("missing-dimension", "A dimension the chosen shape needs was not given.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("geometry", "A thickness exceeds the size it sits in, or a loop encloses no area.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("thin-walled-torsion", "The torsion constant is a thin-walled approximation.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("no-torsion", "No torsion constant is computed for an arbitrary polygon or a composite.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("thick-wall", "A wall thicker than a fifth of the section size: the thin-walled torsion estimate is rough.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-ub-457x191x98", "UB 457×191×98 (SCI Blue Book)",

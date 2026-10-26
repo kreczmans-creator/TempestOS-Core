@@ -35,6 +35,6 @@ sigma_vm_hub = sqrt((103.5 MPa)^2 − 103.5 MPa × (-62.1 MPa) + (-62.1 MPa)^2) 
 sigma_vm_shaft = sqrt((-62.1 MPa)^2 − (-62.1 MPa) × (-62.1 MPa) + (-62.1 MPa)^2) = 62.1 MPa
 sigma_vm_shaft_bore = 62.1 MPa
 … 6 more step(s) on the sheet
-Governing: PASS  Hub yield: 144.9 MPa vs 355.0 MPa  utilisation 0.41
+Governing: PASS  Hub yield: 144.9 MPa vs 355 MPa  utilisation 0.41
 ```
 <!-- hand-arithmetic:end -->

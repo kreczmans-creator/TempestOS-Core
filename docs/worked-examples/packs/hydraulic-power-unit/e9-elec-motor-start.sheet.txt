@@ -224,21 +224,21 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
         Parallel resonance order of the capacitor bank with the supply
 
 5. Results
-  start_dip = 1.2 %    Voltage dip at the motor terminals
-  kvar = 5.28 kvar    Capacitor kvar to the target power factor
+  start_dip = 1.245 %    Voltage dip at the motor terminals
+  kvar = 5.278 kvar    Capacitor kvar to the target power factor
   I_start = 78.10 A    Starting current at rated voltage
   I_rated = 33.47 A    Motor rated current
-  Z_src = 0.0159 Ω    Source impedance (magnitude)
+  Z_src = 0.01593 Ω    Source impedance (magnitude)
   Z_m = 2.9571 Ω    Motor starting impedance (magnitude)
   S_start = 54.11 kVA    Starting apparent power
   I_dip = 77.12 A    Starting current at the dipped voltage
   V_m = 395.0 V    Voltage at the motor terminals while starting
   V_pcc = 397.9 V    Point of common coupling voltage while starting
-  dip_pcc = 0.53 %    Voltage dip at the point of common coupling
-  dV_cab = 2.8 V    Cable drop along the starting voltage
+  dip_pcc = 0.5300 %    Voltage dip at the point of common coupling
+  dV_cab = 2.786 V    Cable drop along the starting voltage
   k_T = 0.97525    Torque factor at the dipped voltage
   P_in = 19.94 kW    Motor input power at rated load
-  I_cap = 7.62 A    Capacitor current
+  I_cap = 7.619 A    Capacitor current
   I_run1 = 33.47 A    Running current before correction
   I_run2 = 30.30 A    Running current after correction
   S_sc = 10.041 MVA    Short-circuit apparent power at the bank
@@ -256,7 +256,7 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
   Content hash: 66f32fca1f51bd3a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 14:32 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
 
 9. References

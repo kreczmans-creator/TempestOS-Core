@@ -37,7 +37,7 @@ The start current is for coordination only: the star-delta 78 A stays below the 
 | Cylinder and pump circuit | `fp.cylinder` | A | 7 of 7 PASS |
 | Emergency stroke accumulator | `fp.accumulator` | A | 3 of 3 PASS |
 | Pressure line | `bs.pipe-pump` | A | 1 of 1 PASS |
-| Pump drive motor | `elec.motor-sizing` | A | 4 of 4 PASS |
+| Pump drive motor | `elec.motor-sizing` | A | 5 of 5 PASS |
 | Motor supply cable | `elec.conductor-sizing` | A | 3 of 3 PASS |
 | Motor supply voltage drop | `elec.voltage-drop` | A | 1 of 1 PASS |
 | Motor supply fault protection | `elec.fault-protection` | A | 5 of 5 PASS |

@@ -34,7 +34,7 @@ public sealed class MotorSizingCalculator : ICalcCalculator
     public const string ProfileSCurve = "S-curve (sine acceleration)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.9.0", CalcDiscipline.Electrical, "Motor and actuator sizing",
+        Id, "1.10.0", CalcDiscipline.Electrical, "Motor and actuator sizing",
         "Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.",
         "Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack).\nLoad inertia reflected to the motor through a linear mechanism: J_refl = m k²/η.\nLoad torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p.\nReflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η).\nMove profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc.\nMove profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap.\nTorque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load; deceleration T_dec = −T_acc + T_load; the peak check is on the larger magnitude, SF·max(|T_pk|, |T_dec|) ≤ T_peak, and the braking power is P_brake = max(0, −T_dec·ω_pk).\nDesign torque for a coupling or any part downstream that must carry what the drive can deliver, on the basis the owner chooses (T_basis): the load peak T_design = max(|T_pk|, |T_dec|) (default; T_pk alone in continuous duty, where there is no deceleration), the motor peak T_design = T_peak, a service factor on the rated torque T_design = SF_c·T_rated, or a protective limit T_design = T_lim (a torque limiter or a drive setting).\nHolding torque in the dwell of a linear mechanism that is not held by a brake: T_hold = m g sin θ·k (efficiency not credited: it is a torque to stand still); it is part of the RMS torque for the whole dwell.\nAlternating torque amplitude of a point-to-point cycle about T_load, for a shaft's fatigue: T_alt = (T_pk − T_dec)/2 (0 in continuous duty). Torque behind the ratio on the output shaft of a rotary mechanism: T_out = T·i·η (mean, alternating and peak), n_out = n_pk/i. Peak axial thrust of a ball screw on its support bearings: F_ax_pk = F_load + m a_pk (0 for other mechanisms).\nRMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle), the dwell at T_hold.\nRMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²].\nContinuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i.\nContinuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load.\nPeak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load.\nContinuous power: P_cont = T_load ω; P_rms = P_cont; continuous duty needs the steady load torque T_L (blank or zero is refused: it would size the motor for no load).\nRated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60; check P_cont ≤ P_rated, u_power = P_cont/P_rated.",
         [
@@ -81,20 +81,20 @@ public sealed class MotorSizingCalculator : ICalcCalculator
             new CalcClauseRef("Manufacturer servo-sizing guides (Kollmorgen, Parker)", "—", "Reflected inertia, RMS torque, inertia ratio practice"),
         ],
         [
-            new CalcApplicabilityRule("mechanism-input", "The mechanism needs a dimension (screw lead or pulley diameter) or a load value that was not given.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("profile", "The acceleration fraction leaves no constant-velocity phase (f_acc = 0.5 is triangular).", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("inertia-ratio", "Load inertia exceeds the stated multiple of the motor's: tuning and stability may suffer.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("continuous-input", "Continuous duty needs a rotary mechanism, the load speed n_L, the run-up time t_start and the load inertia J_L.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("continuous-ignored", "In continuous duty the move distance, move time, acceleration fraction, dwell and profile are ignored.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("eta", "A direct-coupled rotary load has no transmission: an overall efficiency below 0.95 is probably a leftover default; use 1 or the coupling's efficiency.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("rated-speed", "Continuous duty without the candidate motor's rated speed n_rated: the rated power P_rated is not given.", CalcNoticeSeverity.Warning),
-                        new CalcApplicabilityRule("speed-above-rated", "Continuous duty: the motor speed n_pk = n_L·i is above the candidate motor's rated (nameplate) speed n_rated; the motor then runs past its nameplate point, where its rated torque and power no longer hold.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("rated-speed-range", "Continuous duty: the candidate motor's rated speed n_rated is above its maximum speed n_max; a nameplate point the motor cannot reach, so P_rated is not a power it can give.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("design-basis", "The service-factor basis needs SF_c and the protective-limit basis needs T_lim; chosen without it the sheet is blocked rather than falling back to another basis.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("p_screw", "A screw mechanism with the lead left blank: the 10 mm default is used.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("return-move", "An inclined axis or a one-way process force: the cycle holds one move and one dwell, the return stroke is not modelled.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("peak-at-speed", "The peak speed is above 70 % of n_max: T_peak is compared as the stall peak, but a motor's peak torque falls toward its top speed.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("overhauling", "The load drives the motor during deceleration or on the decline (negative load torque); check the drive can regenerate or brake.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("mechanism-input", "The mechanism needs a dimension (screw lead or pulley diameter) or a load value that was not given.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("profile", "The acceleration fraction leaves no constant-velocity phase (f_acc = 0.5 is triangular).", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("inertia-ratio", "Load inertia exceeds the stated multiple of the motor's: tuning and stability may suffer.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("continuous-input", "Continuous duty needs a rotary mechanism, the load speed n_L, the run-up time t_start and the load inertia J_L.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("continuous-ignored", "In continuous duty the move distance, move time, acceleration fraction, dwell and profile are ignored.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("eta", "A direct-coupled rotary load has no transmission: an overall efficiency below 0.95 is probably a leftover default; use 1 or the coupling's efficiency.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("rated-speed", "Continuous duty without the candidate motor's rated speed n_rated: the rated power P_rated is not given.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+                        new CalcApplicabilityRule("speed-above-rated", "Continuous duty: the motor speed n_pk = n_L·i is above the candidate motor's rated (nameplate) speed n_rated; the motor then runs past its nameplate point, where its rated torque and power no longer hold, and the speed check fails.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("rated-speed-range", "Continuous duty: the candidate motor's rated speed n_rated is above its maximum speed n_max; a nameplate point the motor cannot reach, so P_rated is not a power it can give.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("design-basis", "The service-factor basis needs SF_c and the protective-limit basis needs T_lim; chosen without it the sheet is blocked rather than falling back to another basis.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("p_screw", "A screw mechanism with the lead left blank: the 10 mm default is used.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("return-move", "An inclined axis or a one-way process force: the cycle holds one move and one dwell, the return stroke is not modelled.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("peak-at-speed", "The peak speed is above 70 % of n_max: T_peak is compared as the stall peak, but a motor's peak torque falls toward its top speed.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("overhauling", "The load drives the motor during deceleration or on the decline (negative load torque); check the drive can regenerate or brake.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
         ],
         [
             new CalcTestCase("ka-ball-screw", "Horizontal ball-screw slide, 50 kg, 10 mm lead, 0.5 m in 0.5 s (analytic)",
@@ -151,6 +151,7 @@ public sealed class MotorSizingCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_peak", "u_power", "u_rms", "u_speed");
         var mech = c.InputText("mechanism");
         var continuous = c.InputText("duty_mode") == DutyContinuous;
 
@@ -498,6 +499,10 @@ public sealed class MotorSizingCalculator : ICalcCalculator
         c.Assign("u_peak", "SF * T_pk / T_peak", null, "Peak torque utilisation with safety margin");
         c.Assign("u_rms", "SF * T_rms / T_rated", null, "Continuous torque utilisation with safety margin");
         c.Assign("u_speed", "n_pk / n_max", null, "Speed utilisation");
+
+        // The motor speed above the nameplate (rated) speed is a fail, not only a warning: the rated torque and power hold at the nameplate speed.
+        if (hasRated)
+            c.Assign("u_rated_speed", "n_pk / n_rated", null, "Motor speed over the rated (nameplate) speed");
         c.Assign("duty", "T_rms / T_rated", null, "Thermal duty (without margin)");
 
         if (c.Si("J_ratio") > c.Si("J_ratio_max"))
@@ -514,7 +519,12 @@ public sealed class MotorSizingCalculator : ICalcCalculator
         c.CheckUtilisation("Speed n_pk ≤ n_max", "u_speed");
 
         if (hasRated)
+        {
             c.CheckUtilisation("Rated power P_cont ≤ P_rated", "u_power");
+
+            // A relative tolerance of 1e-6 keeps a speed that only rounds above the nameplate (n_L * i against n_rated) from failing.
+            c.Check("Motor speed against the rated speed", "n_pk", "n_rated", tolerance: 1e-6);
+        }
 
         OutputOutputSide(c);
         c.Output("n_mean", "Mean motor speed (the steady speed)");
@@ -523,6 +533,7 @@ public sealed class MotorSizingCalculator : ICalcCalculator
         {
             c.Output("P_rated", "Rated (nameplate) power of the candidate motor, T_rated·ω_rated");
             c.Output("u_power", "Rated power utilisation P_cont/P_rated");
+            c.Output("u_rated_speed", "Motor speed over the rated speed");
         }
     }
 }

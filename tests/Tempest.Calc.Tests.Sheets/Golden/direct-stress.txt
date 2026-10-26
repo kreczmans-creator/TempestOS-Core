@@ -34,7 +34,7 @@ Axial stress in a prismatic member under a tensile or compressive load, compared
         Steel grade as chosen
 
 5. Results
-  sigma = 60.0 MPa    Direct stress
+  sigma = 60 MPa    Direct stress
   u = 0.38    Utilisation (governing)
 
 6. Checks (governing first)

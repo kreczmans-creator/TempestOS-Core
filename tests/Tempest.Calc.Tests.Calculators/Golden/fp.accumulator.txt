@@ -94,10 +94,10 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
         Pressure ratio p2/p0 (p0 at the minimum temperature) against the rule
 
 5. Results
-  V0 = 29.7 L    Accumulator gas volume required
+  V0 = 29.70 L    Accumulator gas volume required
   p0 = 81.64 bar a    Pre-charge, absolute, at the charging temperature
   p0_set = 81.64 bar a    Pre-charge to set at the charging temperature
-  p0_min = 90.00 bar a    Pre-charge, absolute, at the minimum operating temperature
+  p0_min = 90 bar a    Pre-charge, absolute, at the minimum operating temperature
   f_T = 1    Gas volume scaling T_max/T_min
   pssr = "indication not available — enter the vessel's PS and volume (or a size list)."    PSSR Schedule 1 250 bar·L exception (indication only)
   process = "charged as fast as it is discharged (one exponent n = 1 from the pre-charge to both working pressures)"    Gas process the volume is sized for

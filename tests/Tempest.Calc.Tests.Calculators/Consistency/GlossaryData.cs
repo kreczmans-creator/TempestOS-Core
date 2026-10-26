@@ -11,8 +11,11 @@ public sealed record GlossaryQuantityType(string Quantity, string Symbols, IRead
 /// <summary>A bare symbol the standard reserves for one meaning.</summary>
 public sealed record GlossaryReserved(string Symbol, string Meaning, string Row);
 
-/// <summary>One meaning of one symbol: what it measures, the units it is written in, the descriptions the templates give it and the templates that use it.</summary>
-public sealed record GlossaryMeaning(string Quantity, IReadOnlyList<string> Units, IReadOnlyList<string> Descriptions, IReadOnlyList<string> Templates);
+/// <summary>
+/// One meaning of one symbol: its declared meaning id (<c>eta:efficiency</c>; empty for a symbol only one template uses), what it measures, the units it is
+/// written in, the descriptions the templates give it and the templates that use it. A meaning that appears under two quantity types is two rows.
+/// </summary>
+public sealed record GlossaryMeaning(string Meaning, string Quantity, IReadOnlyList<string> Units, IReadOnlyList<string> Descriptions, IReadOnlyList<string> Templates);
 
 /// <summary>A symbol and every meaning it has across the catalogue; more than one meaning is a clash for phases B and C to resolve.</summary>
 public sealed record GlossarySymbol(string Symbol, IReadOnlyList<GlossaryMeaning> Meanings);
@@ -46,24 +49,55 @@ internal static class GlossaryData
         }).OrderBy(t => t.Quantity, StringComparer.Ordinal).ToList();
 
         var reserved = CalcSymbolStandard.Symbols.Select(s => new GlossaryReserved(s.Symbol, s.Meaning, s.Row)).ToList();
-        var rows = new List<(string Symbol, string Quantity, string Unit, string Description, string Template)>();
+        var rows = new List<(string Symbol, string Quantity, string Unit, string Description, string Template, string Origin)>();
 
         foreach (var f in facts)
         {
             foreach (var q in f.QuantityFacts.Where(q => q.Origin != "port"))
-                rows.Add((q.Symbol, QuantityName(q.Dimension, q.Unit), CalcUnitText.Pretty(q.Unit), q.Description, f.Id));
+                rows.Add((q.Symbol, QuantityName(q.Dimension, q.Unit), CalcUnitText.Pretty(q.Unit), q.Description, f.Id, q.Origin));
         }
+
+        var declared = Meanings.Value;
 
         var symbols = rows.GroupBy(r => r.Symbol, StringComparer.Ordinal).OrderBy(g => g.Key, StringComparer.Ordinal).Select(g => new GlossarySymbol(
             g.Key,
-            [.. g.GroupBy(r => r.Quantity, StringComparer.Ordinal).OrderByDescending(m => m.Select(r => r.Template).Distinct().Count()).ThenBy(m => m.Key, StringComparer.Ordinal).Select(m => new GlossaryMeaning(
-                m.Key,
+            [.. g.GroupBy(r => (Meaning: MeaningOf(declared, r.Symbol, r.Template, r.Origin), r.Quantity)).OrderByDescending(m => m.Select(r => r.Template).Distinct().Count()).ThenBy(m => m.Key.Meaning, StringComparer.Ordinal).ThenBy(m => m.Key.Quantity, StringComparer.Ordinal).Select(m => new GlossaryMeaning(
+                m.Key.Meaning,
+                m.Key.Quantity,
                 [.. m.Select(r => r.Unit).Where(u => u.Length > 0).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)],
                 [.. m.Select(r => r.Description).Distinct(StringComparer.Ordinal).OrderBy(d => d, StringComparer.Ordinal)],
                 [.. m.Select(r => r.Template).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)]))])).ToList();
 
         return new GlossaryDocument(facts.Count, types, reserved, symbols);
     }
+
+    /// <summary>
+    /// The declared meanings: for every symbol that two or more templates use, which template uses it for what (<c>GlossaryMeanings.json</c>: symbol, then a short meaning id,
+    /// then the templates). Two uses of one symbol in one quantity type are told apart only by their meaning ids, so every use of such a symbol must be declared.
+    /// </summary>
+    public static readonly Lazy<IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<string>>>> Meanings = new(() =>
+    {
+        var raw = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, List<string>>>>(File.ReadAllText(MeaningsPath())) ?? [];
+        return raw.ToDictionary(p => p.Key, p => (IReadOnlyDictionary<string, IReadOnlyList<string>>)p.Value.ToDictionary(m => m.Key, m => (IReadOnlyList<string>)m.Value, StringComparer.Ordinal), StringComparer.Ordinal);
+    });
+
+    public static string MeaningsPath([System.Runtime.CompilerServices.CallerFilePath] string callerFilePath = "") => Path.Combine(Path.GetDirectoryName(callerFilePath)!, "GlossaryMeanings.json");
+
+    /// <summary>
+    /// The meaning id a template gives a symbol, or empty when the symbol has no declared meanings (only one template uses it). A template is listed by its id, or
+    /// by <c>id#input</c>, <c>id#column</c> or <c>id#output</c> where one template uses the symbol for two things (the strain column and the maximum-strain output of the snap-fit).
+    /// </summary>
+    public static string MeaningOf(IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<string>>> declared, string symbol, string template, string origin = "")
+    {
+        if (!declared.TryGetValue(symbol, out var meanings))
+            return string.Empty;
+
+        return meanings.FirstOrDefault(m => m.Value.Contains($"{template}#{origin}", StringComparer.Ordinal) || m.Value.Contains(template, StringComparer.Ordinal)).Key ?? string.Empty;
+    }
+
+    /// <summary>How many declarations cover one use of a symbol: it must be exactly one.</summary>
+    public static int Declarations(IReadOnlyDictionary<string, IReadOnlyList<string>> meanings, string template, string origin) =>
+        meanings.Sum(m => m.Value.Count(x => string.Equals(x, template, StringComparison.Ordinal) || string.Equals(x, $"{template}#{origin}", StringComparison.Ordinal)));
 
     private static bool QuantityMatches(string standardName, string ruleName) => string.Equals(standardName, ruleName, StringComparison.Ordinal);
 

@@ -50,9 +50,9 @@ public sealed partial class MechanismCalculator
 
     private static void AddCamRules(List<CalcApplicabilityRule> rules)
     {
-        rules.Add(new CalcApplicabilityRule("segments", "The cam segments do not form a cam: angles not adding to 360°, rises and returns not cancelling, a rise or return without a law or a lift, or a return below the base circle.", CalcNoticeSeverity.Block));
-        rules.Add(new CalcApplicabilityRule("cam-geometry", "The follower offset reaches the prime-circle radius.", CalcNoticeSeverity.Block));
-        rules.Add(new CalcApplicabilityRule("contact", "The follower force falls below zero: the follower leaves the cam (follower jump); a stronger spring or a smaller acceleration is needed.", CalcNoticeSeverity.Warning));
+        rules.Add(new CalcApplicabilityRule("segments", "The cam segments do not form a cam: angles not adding to 360°, rises and returns not cancelling, a rise or return without a law or a lift, or a return below the base circle.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative));
+        rules.Add(new CalcApplicabilityRule("cam-geometry", "The follower offset reaches the prime-circle radius.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative));
+        rules.Add(new CalcApplicabilityRule("contact", "The follower force falls below zero: the follower leaves the cam (follower jump); a stronger spring or a smaller acceleration is needed.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative));
     }
 
     /// <summary>One row of the segment table, for callers that build inputs (examples, tests).</summary>
