@@ -61,7 +61,10 @@ public sealed class GuidedTestViewTests
         Assert.Contains("Start a run to begin", Named<TextBlock>(view, "Guided test status").Text, StringComparison.Ordinal);
         Assert.Contains("half a unit in the last digit", Named<TextBlock>(view, "Tolerance rule").Text, StringComparison.Ordinal);
         Assert.Equal(GuidedTestScript.Current.Steps.Count, Named<ListBox>(view, "Test steps").ItemCount);
-        Assert.Equal(ManualTestRun.MaxNoteLength, Named<TextBox>(view, "Result note").MaxLength);
+
+        // The note box does not cut a pasted note at the 2,000 characters a recorded note can hold (it is counted, and refused when recorded).
+        Assert.True(Named<TextBox>(view, "Result note").MaxLength > ManualTestRun.MaxNoteLength);
+        Assert.Equal("0 of 2,000 characters", Named<TextBlock>(view, "Note length").Text);
     }
 
     [AvaloniaFact]
@@ -114,6 +117,7 @@ public sealed class GuidedTestViewTests
         kit.Worksheet.Shown["mech.bearing-life-basic"] = FakeWorksheet.Engine(kit.Model.Current!);
         await Settle();
 
+        await Click(view, GuidedTestView.OpenWorksheetCaption);
         await Click(view, GuidedTestView.CompareCaption);
 
         Assert.True(Named<RadioButton>(view, "Pass").IsChecked);
@@ -201,6 +205,12 @@ public sealed class GuidedTestViewTests
             Assert.True(guided.IsEffectivelyVisible && form.IsEffectivelyVisible, "The panel and the form are shown together.");
             Assert.Equal("Guided test", AutomationProperties.GetName(guided));
 
+            // Deleting runs asks through the app's confirmation dialog, which the composer hands the panel.
+            Assert.NotNull(typeof(GuidedTestViewModel).GetField("_confirm", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(guided.Model));
+
+            // A note written and not yet recorded is still there when the node is left and shown again (the node refreshes the panel each time).
+            guided.Model.SetDraftNote("Written before leaving the node.");
+
             // The one form moves back to the Worksheets node on its own; the panel is no longer shown.
             area.SelectNode("Worksheets");
             await Settle();
@@ -213,6 +223,8 @@ public sealed class GuidedTestViewTests
             await Settle();
             Assert.Same(guided, window.GetLogicalDescendants().OfType<GuidedTestView>().Single());
             Assert.Same(form, window.GetLogicalDescendants().OfType<CalcSheetView>().Single());
+            Assert.Equal("Written before leaving the node.", guided.Model.DraftNote);
+            Assert.Equal("Written before leaving the node.", Named<TextBox>(guided, "Result note").Text);
 
             // Driven from the panel, the form beside it opens on the example's template.
             var coordinator = (CalcSheetCoordinator)typeof(MainWindow).GetField("_calcSheetCoordinator", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(window)!;

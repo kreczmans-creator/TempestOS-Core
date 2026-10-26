@@ -320,7 +320,9 @@ internal sealed partial class MainWindowComposer
             var guided = new Tempest.Desktop.GuidedTest.GuidedTestViewModel(
                 manualTests,
                 new Tempest.Desktop.GuidedTest.CalcGuidedWorksheetHost(views.Worksheets, calcSheets, calcCatalogue),
-                (Tempest.Core.Logging.ILogger?)host.Services.GetService(typeof(Tempest.Core.Logging.ILogger)));
+                (Tempest.Core.Logging.ILogger?)host.Services.GetService(typeof(Tempest.Core.Logging.ILogger)),
+                // "Delete older finished runs" asks through the app's own confirmation dialog before it removes anything.
+                (title, message, confirmCaption) => views.ConfirmationDialog.ConfirmAsync(title, message, confirmCaption));
             views.EngineeringAreaView.InstallGuidedTest(new Tempest.Desktop.GuidedTest.GuidedTestView(guided), guided.RefreshAsync);
         }
 

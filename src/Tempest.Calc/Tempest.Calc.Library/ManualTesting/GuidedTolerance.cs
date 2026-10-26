@@ -17,7 +17,10 @@ public enum GuidedCompareOutcome
 }
 
 /// <summary>The result of one comparison, with a one-sentence reason that names the quantity.</summary>
-public sealed record GuidedComparison(GuidedCompareOutcome Outcome, string Detail)
+/// <param name="Outcome">Match, Mismatch or NotComparable.</param>
+/// <param name="Detail">The reason, in one sentence.</param>
+/// <param name="Allowance">For a number compared by the rule: the allowance actually applied (for example <c>±0.5</c>), which is the coarser of the expected value's last place and the form's displayed last place; <see langword="null"/> for a text or a comparison the rule did not decide.</param>
+public sealed record GuidedComparison(GuidedCompareOutcome Outcome, string Detail, string? Allowance = null)
 {
     /// <summary>Whether the values agree.</summary>
     public bool IsMatch => Outcome == GuidedCompareOutcome.Match;
@@ -120,9 +123,11 @@ public static class GuidedTolerance
         var difference = BigInteger.Abs(expected.AtScale(s) - actual.AtScale(s));
         var twiceAllowance = BigInteger.Pow(10, s + unit);
 
+        var applied = "±" + HalfUnitText(unit);
+
         return 2 * difference <= twiceAllowance
-            ? new(GuidedCompareOutcome.Match, $"{symbol}: {shownText} agrees with {expectedText} (allowance ±{HalfUnitText(unit)}).")
-            : new(GuidedCompareOutcome.Mismatch, $"{symbol}: {shownText} differs from {expectedText} by more than ±{HalfUnitText(unit)}.");
+            ? new(GuidedCompareOutcome.Match, $"{symbol}: {shownText} agrees with {expectedText} (allowance {applied}).", applied)
+            : new(GuidedCompareOutcome.Mismatch, $"{symbol}: {shownText} differs from {expectedText} by more than {applied}.", applied);
     }
 
     private static string HalfUnitText(int unitExponent)
@@ -138,12 +143,13 @@ public static class GuidedTolerance
         return space < 0 ? (text, string.Empty) : (text[..space], text[(space + 1)..].Trim());
     }
 
-    /// <summary>The same unit written the README's way and the form's way; a pressure the form labels with its basis ('bar a', 'bar g') is the same number in 'bar'.</summary>
-    private static bool SameUnit(string expected, string shown)
-    {
-        var (e, s) = (NormaliseUnit(expected), NormaliseUnit(shown));
-        return string.Equals(e, s, StringComparison.Ordinal) || (e.EndsWith("bar", StringComparison.Ordinal) && (s == e + "a" || s == e + "g"));
-    }
+    /// <summary>
+    /// The same unit written the README's way and the form's way. A pressure basis is part of the unit: 'bar a' (absolute) and 'bar g' (gauge) are
+    /// not each other, and a bare 'bar' states no basis, so neither is the same as it; those are left to the tester rather than guessed (the two
+    /// differ by the atmosphere, about 1.013 bar).
+    /// </summary>
+    private static bool SameUnit(string expected, string shown) =>
+        string.Equals(NormaliseUnit(expected), NormaliseUnit(shown), StringComparison.Ordinal);
 
     /// <summary>Units written the README's way (ASCII) and the form's way compare equal: spaces dropped, '°C' as 'degC', 'Ω' as 'ohm', either micro sign alike, '·' and '*' alike.</summary>
     private static string NormaliseUnit(string unit)

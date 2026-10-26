@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Tempest.Calc.Library.ManualTesting;
@@ -86,7 +87,7 @@ public sealed partial class GuidedTestScriptStalenessTests
     [Fact]
     public void The_Manual_Steps_Are_The_Runbooks_Sections_As_They_Read_Now()
     {
-        var runbook = Lf(File.ReadAllText(Path.Combine(Root, "docs", "testing", "v0.26.0-runbook.md")));
+        var runbook = Lf(File.ReadAllText(RunbookPath(Root)));
         var plain = Plain(runbook);
         var script = GuidedTestScript.Current;
 
@@ -115,36 +116,134 @@ public sealed partial class GuidedTestScriptStalenessTests
         Assert.True(missing.Count == 0, $"The guided test script has manual text the runbook no longer has: {string.Join("; ", missing.Take(8))}." + Fix);
     }
 
-    [Fact]
-    public void The_Generator_Reproduces_The_Shipped_Script_Byte_For_Byte_When_Python_Is_Available()
+    /// <summary>Skipped, visibly, where there is no Python (see <see cref="PythonFactAttribute"/>); the checks above stand in for it there.</summary>
+    [PythonFact]
+    public void The_Generator_Reproduces_The_Shipped_Script_Byte_For_Byte()
     {
-        var python = new[] { "python3", "python" }.FirstOrDefault(Runs);
-
-        if (python is null)
-            return; // The checks above stand in; CI images carry Python (scripts/check-licences.py needs it).
-
-        var start = new ProcessStartInfo(python) { WorkingDirectory = Root, RedirectStandardOutput = true, RedirectStandardError = true };
-        start.ArgumentList.Add("-I");
-        start.ArgumentList.Add(Path.Combine(Root, "scripts", "generate-guided-test-script.py"));
-        start.ArgumentList.Add("--check");
-        using var process = Process.Start(start)!;
-        var error = process.StandardError.ReadToEnd();
-        process.StandardOutput.ReadToEnd();
-        Assert.True(process.WaitForExit(60_000), "The generator did not finish in 60 seconds.");
-        Assert.True(process.ExitCode == 0, $"The guided test script is stale: {error.Trim()}");
+        var (exit, _, error) = RunGenerator(Root, "--check");
+        Assert.True(exit == 0, $"The guided test script is stale: {error.Trim()}");
     }
 
-    private static bool Runs(string python)
+    [PythonFact]
+    public void The_Generator_Stops_On_A_Governing_Check_Line_It_Cannot_Parse_And_Accepts_None()
     {
-        try
+        using var copy = GeneratorCopy("0.26.0");
+        var readme = Path.Combine(copy.Path, "docs", "worked-examples", "mechanical", "t.x", "e1", "README.md");
+
+        File.WriteAllText(readme, ExampleReadme("Governing check: Bolt shear — passes (utilisation 0.5)"));
+        var (exit, _, error) = RunGenerator(copy.Path);
+        Assert.NotEqual(0, exit);
+        Assert.Contains("cannot parse the 'Governing check:' line", error, StringComparison.Ordinal);
+        Assert.Contains("t.x/e1", error, StringComparison.Ordinal);
+
+        File.WriteAllText(readme, ExampleReadme(string.Empty));
+        (exit, _, error) = RunGenerator(copy.Path);
+        Assert.NotEqual(0, exit);
+        Assert.Contains("no 'Governing check:' line", error, StringComparison.Ordinal);
+
+        File.WriteAllText(readme, ExampleReadme("Governing check: none. Files: `inputs.json`."));
+        (exit, _, error) = RunGenerator(copy.Path);
+        Assert.True(exit == 0, error);
+        Assert.Equal(JsonValueKind.Null, ScriptStep(copy.Path, "example:t.x/e1").GetProperty("governing").ValueKind);
+
+        File.WriteAllText(readme, ExampleReadme("Governing check: Bolt shear — PASS (utilisation 0.5). Files: `inputs.json`."));
+        (exit, _, error) = RunGenerator(copy.Path);
+        Assert.True(exit == 0, error);
+        Assert.Equal("Bolt shear", ScriptStep(copy.Path, "example:t.x/e1").GetProperty("governing").GetProperty("name").GetString());
+    }
+
+    [PythonFact]
+    public void The_Generator_Reads_The_Runbook_Of_The_Release_In_The_Version_File_Not_A_Fixed_One()
+    {
+        using var copy = GeneratorCopy("0.27.0");
+
+        var (exit, output, error) = RunGenerator(copy.Path);
+        Assert.True(exit == 0, error);
+        Assert.Contains("version 0.27.0+", output, StringComparison.Ordinal);
+        Assert.Contains("v0.27.0-runbook.md", File.ReadAllText(Path.Combine(copy.Path, "src", "Tempest.Calc", "Tempest.Calc.Library", "ManualTesting", "guided-test-script.json")), StringComparison.Ordinal);
+
+        File.Move(Path.Combine(copy.Path, "docs", "testing", "v0.27.0-runbook.md"), Path.Combine(copy.Path, "docs", "testing", "v0.28.0-runbook.md"));
+        (exit, _, error) = RunGenerator(copy.Path);
+        Assert.NotEqual(0, exit);
+        Assert.Contains("v0.27.0-runbook.md", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_Test_Reads_The_Runbook_Named_By_The_Version_File()
+    {
+        var release = File.ReadAllText(Path.Combine(Root, "VERSION")).Trim();
+        Assert.EndsWith($"v{release}-runbook.md", RunbookPath(Root), StringComparison.Ordinal);
+        Assert.True(File.Exists(RunbookPath(Root)), "The runbook named by the VERSION file is missing.");
+    }
+
+    private static string RunbookPath(string root) => Path.Combine(root, "docs", "testing", $"v{File.ReadAllText(Path.Combine(root, "VERSION")).Trim()}-runbook.md");
+
+    private static (int ExitCode, string Output, string Error) RunGenerator(string root, params string[] arguments)
+    {
+        var start = new ProcessStartInfo(PythonFactAttribute.Command!) { WorkingDirectory = root, RedirectStandardOutput = true, RedirectStandardError = true };
+        start.ArgumentList.Add("-I");
+        start.ArgumentList.Add(Path.Combine(root, "scripts", "generate-guided-test-script.py"));
+
+        foreach (var argument in arguments)
+            start.ArgumentList.Add(argument);
+
+        using var process = Process.Start(start)!;
+        var error = process.StandardError.ReadToEndAsync();
+        var output = process.StandardOutput.ReadToEndAsync();
+        Assert.True(process.WaitForExit(60_000), "The generator did not finish in 60 seconds.");
+        return (process.ExitCode, output.Result, error.Result);
+    }
+
+    private static JsonElement ScriptStep(string root, string id)
+    {
+        using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(root, "src", "Tempest.Calc", "Tempest.Calc.Library", "ManualTesting", "guided-test-script.json")));
+        return document.RootElement.GetProperty("steps").EnumerateArray().Single(s => s.GetProperty("id").GetString() == id).Clone();
+    }
+
+    private static string ExampleReadme(string governingLine) =>
+        "# T example (`t.x`)\n\n| Output | Expected | Computed |\n|---|---|---|\n| `P` | 3.93 kN | 3.93 kN |\n\n" + governingLine + "\n";
+
+    /// <summary>A scratch copy of what the generator reads (the script, the version, the runbook, the pack READMEs) with one worked example of its own.</summary>
+    private static TempRepository GeneratorCopy(string release)
+    {
+        var copy = new TempRepository();
+        Directory.CreateDirectory(Path.Combine(copy.Path, "scripts"));
+        File.Copy(Path.Combine(Root, "scripts", "generate-guided-test-script.py"), Path.Combine(copy.Path, "scripts", "generate-guided-test-script.py"));
+        File.WriteAllText(Path.Combine(copy.Path, "VERSION"), release + "\n");
+        Directory.CreateDirectory(Path.Combine(copy.Path, "docs", "testing"));
+        File.Copy(RunbookPath(Root), Path.Combine(copy.Path, "docs", "testing", $"v{release}-runbook.md"));
+
+        foreach (var pack in Directory.GetDirectories(Path.Combine(Root, "docs", "worked-examples", "packs")))
         {
-            var start = new ProcessStartInfo(python, "-I -c \"import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)\"") { RedirectStandardOutput = true, RedirectStandardError = true };
-            using var probe = Process.Start(start);
-            return probe is not null && probe.WaitForExit(20_000) && probe.ExitCode == 0;
+            var target = Path.Combine(copy.Path, "docs", "worked-examples", "packs", Path.GetFileName(pack));
+            Directory.CreateDirectory(target);
+            File.Copy(Path.Combine(pack, "README.md"), Path.Combine(target, "README.md"));
         }
-        catch (System.ComponentModel.Win32Exception)
+
+        var example = Path.Combine(copy.Path, "docs", "worked-examples", "mechanical", "t.x", "e1");
+        Directory.CreateDirectory(example);
+        File.WriteAllText(Path.Combine(example, "sheet.txt"), "Template: t.x@1.0.0\n");
+        File.WriteAllText(Path.Combine(example, "inputs.json"), "[]");
+        File.WriteAllText(Path.Combine(example, "README.md"), ExampleReadme("Governing check: none."));
+        return copy;
+    }
+
+    private sealed class TempRepository : IDisposable
+    {
+        public TempRepository() => Directory.CreateDirectory(Path);
+
+        public string Path { get; } = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "tempest-guided-generator-" + Guid.NewGuid().ToString("N")[..10]);
+
+        public void Dispose()
         {
-            return false;
+            try
+            {
+                Directory.Delete(Path, recursive: true);
+            }
+            catch (IOException)
+            {
+                // A scratch folder left behind in the temp folder is harmless.
+            }
         }
     }
 
@@ -206,8 +305,15 @@ public sealed partial class GuidedTestScriptStalenessTests
     private static (string, string, string)? GoverningOf(string readme)
     {
         var line = readme.Split('\n').FirstOrDefault(l => l.StartsWith("Governing check:", StringComparison.Ordinal));
-        var match = line is null ? null : Regex.Match(line, @"^Governing check: (.*?) — (PASS|FAIL) \(utilisation ([^)]+)\)");
-        return match is { Success: true } ? (match.Groups[1].Value, match.Groups[2].Value, match.Groups[3].Value) : null;
+        Assert.True(line is not null, "A worked example README has no 'Governing check:' line.");
+
+        if (Regex.IsMatch(line, @"^Governing check: none\b"))
+            return null;
+
+        // Neither a check nor "none": the README is not read as "none" by default (the app would then insist the form shows no check).
+        var match = Regex.Match(line, @"^Governing check: (.*?) — (PASS|FAIL) \(utilisation ([^)]+)\)");
+        Assert.True(match.Success, $"A worked example README has a 'Governing check:' line the guided test cannot read: {line}");
+        return (match.Groups[1].Value, match.Groups[2].Value, match.Groups[3].Value);
     }
 
     private static string? TemplateVersionOf(string sheet) => Regex.Match(sheet, @"Template: (\S+)@(\S+)") is { Success: true } m ? m.Groups[2].Value : null;

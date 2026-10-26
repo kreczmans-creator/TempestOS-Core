@@ -28,6 +28,10 @@ public sealed class GuidedAutoCompareTests
         "example:elec.motor-sizing/geared-index-table",
         "example:mech.press-fit/hollow-shaft",
         "example:mech.iso286-fit/h7-p6-50mm",
+
+        // Not a digit difference: the README states p0 in a bare "bar" and the form shows "bar a" (absolute). A bare bar names no basis, so the rule
+        // does not take it for absolute (L10, review); the tester confirms it is the absolute pre-charge.
+        "example:fp.accumulator/clamp-circuit-bladder-accumulator",
     };
 
     private static CalcRunResult RunExample(GuidedTestStep step, Func<CalcInputSet, CalcInputSet>? change = null)
@@ -50,7 +54,7 @@ public sealed class GuidedAutoCompareTests
         Assert.True(result.Suggested != ManualTestOutcome.Fail && !result.Mismatches.Any(), $"{stepId}: " + string.Join(" | ", result.Rows.Where(r => !r.Comparison.IsMatch).Select(r => r.Comparison.Detail)));
         Assert.True(result.Suggested == ManualTestOutcome.Pass || ForReview.Contains(stepId), $"{stepId} needs a look by hand but is not in the list of known examples: " + string.Join(" | ", result.Rows.Where(r => !r.Comparison.IsMatch).Select(r => r.Comparison.Detail)));
         Assert.True(result.Suggested != ManualTestOutcome.Pass || !ForReview.Contains(stepId), $"{stepId} now agrees with its printed expected values; take it out of ForReview.");
-        Assert.Equal(step.Expected!.Count + (step.Governing is null ? 0 : 2), result.Rows.Count);
+        Assert.Equal(step.Expected!.Count + (step.Governing is null ? 1 : 2), result.Rows.Count); // a governing check is two lines (its name and outcome, its utilisation); "none" is one
         Assert.False(string.IsNullOrWhiteSpace(result.ValuesShown));
         Assert.True(result.ValuesShown.Length <= ManualTestRun.MaxValuesShownLength);
     }
@@ -94,5 +98,78 @@ public sealed class GuidedAutoCompareTests
         Assert.Equal(ManualTestOutcome.Fail, result.Suggested);
         Assert.Contains(result.Rows, r => r.Symbol == "P" && r.Comparison.Detail.Contains("no such output", StringComparison.Ordinal));
         Assert.Contains(result.Rows, r => r.Symbol == "governing utilisation" && r.Comparison.Outcome == GuidedCompareOutcome.Mismatch);
+    }
+
+    // ---------------------------------------------------------------- L9: the governing check's name, and "none"
+
+    private const string BearingId = "example:mech.bearing-life-basic/ball-bearing-combined-95";
+    private const string NoGoverningId = "example:struct.beam-formulas/ss-point-offcentre";
+
+    [Fact]
+    public void A_Governing_Check_With_The_Right_Outcome_But_Another_Name_Is_A_Difference()
+    {
+        var step = GuidedTestScript.Current.Find(BearingId)!;
+        var run = RunExample(step);
+        var renamed = run with { Checks = [.. run.Checks.Select(c => c with { Name = "Some other check" })] };
+
+        var result = GuidedAutoCompare.Compare(step, renamed);
+
+        Assert.Equal(ManualTestOutcome.Fail, result.Suggested);
+        var line = Assert.Single(result.Mismatches, r => r.Symbol == "governing check");
+        Assert.Contains("Some other check", line.Comparison.Detail, StringComparison.Ordinal);
+        Assert.Contains(step.Governing!.Name, line.Comparison.Detail, StringComparison.Ordinal);
+        Assert.Contains("Some other check", result.ValuesShown, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void An_Example_Whose_Readme_Says_Governing_Check_None_Asserts_That_The_Form_Has_None()
+    {
+        var step = GuidedTestScript.Current.Find(NoGoverningId)!;
+        Assert.Null(step.Governing);
+        var run = RunExample(step);
+        Assert.Null(run.Governing);
+
+        var plain = GuidedAutoCompare.Compare(step, run);
+        Assert.Equal(ManualTestOutcome.Pass, plain.Suggested);
+        Assert.Contains(plain.Rows, r => r.Symbol == "governing check" && r.Expected == "none" && r.Shown == "none" && r.Comparison.IsMatch);
+
+        // A form that now shows a governing check is not the example the pack describes.
+        var withCheck = run with { Checks = [new CalcCheck("An unexpected check", "1", "2", 0.5, true)] };
+        var result = GuidedAutoCompare.Compare(step, withCheck);
+        Assert.Equal(ManualTestOutcome.Fail, result.Suggested);
+        var line = Assert.Single(result.Mismatches);
+        Assert.Equal("governing check", line.Symbol);
+        Assert.Contains("An unexpected check", line.Comparison.Detail, StringComparison.Ordinal);
+        Assert.Contains("has none", line.Comparison.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Every_Example_The_Script_Gives_No_Governing_Check_Is_One_The_Readme_Says_Has_None()
+    {
+        // The generator refuses a Governing check line it cannot read, so a null here is "none" and never an unread line (L13).
+        var none = GuidedTestScript.Current.Steps.Where(s => s.Kind == GuidedStepKind.Example && s.Governing is null).Select(s => s.Id).Order(StringComparer.Ordinal).ToList();
+        Assert.Equal(11, none.Count);
+        var readmes = Directory.GetFiles(Path.Combine(GuidedTestHelpers.RepositoryRoot, "docs", "worked-examples"), "README.md", SearchOption.AllDirectories);
+
+        foreach (var id in none)
+        {
+            var folder = id["example:".Length..].Split('/');
+            var readme = readmes.Single(f => f.EndsWith(Path.Combine(folder[0], folder[1], "README.md"), StringComparison.Ordinal));
+            Assert.Contains(File.ReadLines(readme), l => l.StartsWith("Governing check: none", StringComparison.Ordinal));
+        }
+    }
+
+    // ---------------------------------------------------------------- L6: the allowance applied is on the line
+
+    [Fact]
+    public void Each_Compared_Number_Carries_The_Allowance_Applied_And_A_Text_Carries_None()
+    {
+        var step = GuidedTestScript.Current.Find(BearingId)!;
+        var result = GuidedAutoCompare.Compare(step, RunExample(step));
+
+        Assert.Equal("±0.005", result.Rows.Single(r => r.Symbol == "P").Comparison.Allowance);
+        Assert.Equal("±0.05", result.Rows.Single(r => r.Symbol == "L_10h").Comparison.Allowance);
+        Assert.NotNull(result.Rows.Single(r => r.Symbol == "governing utilisation").Comparison.Allowance);
+        Assert.Null(result.Rows.Single(r => r.Symbol == "governing check").Comparison.Allowance);
     }
 }

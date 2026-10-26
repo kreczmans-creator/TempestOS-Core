@@ -396,6 +396,7 @@ public sealed class GuidedTestViewModelTests
         model.Select(BearingExample);
         kit.Worksheet.Shown["mech.bearing-life-basic"] = FakeWorksheet.Engine(model.Current!);
 
+        model.OpenWorksheet();
         model.AutoCompare();
 
         Assert.Equal(ManualTestOutcome.Pass, model.DraftOutcome);
@@ -423,6 +424,7 @@ public sealed class GuidedTestViewModelTests
         await model.StartNewAsync();
         model.Select(BearingExample);
         kit.Worksheet.Shown["mech.bearing-life-basic"] = FakeWorksheet.Engine(model.Current!);
+        model.OpenWorksheet();
         model.AutoCompare();
 
         model.SetDraftOutcome(ManualTestOutcome.Fail);
@@ -444,6 +446,7 @@ public sealed class GuidedTestViewModelTests
             Outputs = [.. wrong.Outputs.Select(o => o.Symbol == "P" ? o with { Value = new Tempest.Calc.Engine.Values.ScalarValue(4000, o.Value.Dimension, o.Value.DisplayUnit) } : o)],
         };
 
+        model.OpenWorksheet();
         model.AutoCompare();
 
         Assert.Equal(ManualTestOutcome.Fail, model.DraftOutcome);
@@ -461,6 +464,7 @@ public sealed class GuidedTestViewModelTests
         model.Select("example:mech.press-fit/hollow-shaft");
         kit.Worksheet.Shown["mech.press-fit"] = FakeWorksheet.Engine(model.Current!);
 
+        model.OpenWorksheet();
         model.AutoCompare();
 
         Assert.Null(model.DraftOutcome);

@@ -112,4 +112,50 @@ public sealed class GuidedToleranceTests
     [Fact]
     public void The_Rule_Is_Stated_In_Words_For_The_Screen() =>
         Assert.Contains("half a unit in the last digit", GuidedTolerance.RuleText, StringComparison.Ordinal);
+
+    // ---------------------------------------------------------------- L10: a pressure basis is part of the unit
+
+    [Theory]
+    [InlineData("bar", "81.645 bar a")] // a bare 'bar' states no basis: neither absolute nor gauge is assumed
+    [InlineData("bar", "81.645 bar g")]
+    [InlineData("bar a", "81.645 bar g")] // absolute and gauge differ by the atmosphere
+    [InlineData("bar g", "81.645 bar a")]
+    [InlineData("bar a", "81.645 bar")]
+    [InlineData("bar g", "81.645 bar")]
+    public void Absolute_Gauge_And_Bare_Bar_Are_Not_Taken_For_Each_Other_And_Are_Left_To_The_Tester(string expectedUnit, string shown)
+    {
+        var result = GuidedTolerance.CompareShown("p0", "81.6447", expectedUnit, shown);
+
+        Assert.Equal(GuidedCompareOutcome.NotComparable, result.Outcome);
+        Assert.Contains("compare them by hand", result.Detail, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("bar", "81.645 bar")]
+    [InlineData("bar a", "81.645 bar a")]
+    [InlineData("bar g", "81.645 bar g")]
+    [InlineData("bar a", "81.645 bara")] // spaces do not matter, as for every unit
+    public void The_Same_Pressure_Basis_Compares_By_The_Rule(string expectedUnit, string shown) =>
+        Assert.Equal(GuidedCompareOutcome.Match, GuidedTolerance.CompareShown("p0", "81.6447", expectedUnit, shown).Outcome);
+
+    // ---------------------------------------------------------------- L6: the allowance actually applied
+
+    [Theory]
+    [InlineData("12.34", "kN", "12.3 kN", "±0.005")] // the expected value is the coarser: two decimals
+    [InlineData("3.930000", "kN", "3.93 kN", "±0.00005")] // the form's five figures are the coarser: 3.9300 (four decimals)
+    [InlineData("2494200", "W", "2.4942E+06 W", "±50")] // the form writes it to five figures (tens), the expected value to units: the coarser, tens
+    [InlineData("4290.3", "h", "4290.3 h", "±0.05")]
+    public void The_Comparison_Reports_The_Allowance_Applied_Which_Is_The_Coarser_Of_The_Two_Last_Places(string expected, string unit, string shown, string applied)
+    {
+        var result = GuidedTolerance.CompareShown("x", expected, unit, shown);
+        Assert.Equal(applied, result.Allowance);
+    }
+
+    [Fact]
+    public void The_Applied_Allowance_Is_Reported_For_A_Mismatch_Too_And_Is_Absent_For_A_Text_Or_A_Unit_Left_To_The_Tester()
+    {
+        Assert.Equal("±0.005", GuidedTolerance.CompareShown("P", "3.93", "kN", "3.95 kN").Allowance);
+        Assert.Null(GuidedTolerance.CompareText("check", "PASS", "PASS").Allowance);
+        Assert.Null(GuidedTolerance.CompareShown("P", "3.93", "kN", "3.93 m").Allowance);
+    }
 }

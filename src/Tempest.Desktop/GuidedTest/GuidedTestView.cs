@@ -24,6 +24,7 @@ public sealed class GuidedTestView : UserControl
     public const string FinishCaption = "Finish the run";
     public const string CopyCaption = "Copy results sheet";
     public const string SaveCaption = "Save results sheet…";
+    public const string DeleteOlderCaption = "Delete older finished runs…";
     public const string OpenWorksheetCaption = "Open worksheet with these inputs";
     public const string CompareCaption = "Compare with the form";
     public const string RecordCaption = "Record result";
@@ -43,6 +44,7 @@ public sealed class GuidedTestView : UserControl
     private readonly Button _finish = Command(FinishCaption);
     private readonly Button _copy = Command(CopyCaption);
     private readonly Button _save = Command(SaveCaption);
+    private readonly Button _deleteOlder = Command(DeleteOlderCaption);
     private readonly ComboBox _filter = new() { MinHeight = DesignTokens.MinControlSize, HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly TextBox _search = new() { Watermark = "Search steps", MaxLength = GuidedTestViewModel.MaxSearchLength, MinHeight = DesignTokens.MinControlSize };
     private readonly ListBox _steps = new() { MaxHeight = 210 };
@@ -63,7 +65,9 @@ public sealed class GuidedTestView : UserControl
     private readonly RadioButton _fail = new() { Content = "Fail", GroupName = "GuidedResult" };
     private readonly RadioButton _blocked = new() { Content = "Blocked", GroupName = "GuidedResult" };
     private readonly RadioButton _skipped = new() { Content = "Skipped", GroupName = "GuidedResult" };
-    private readonly TextBox _note = new() { Watermark = "Note (up to 2,000 characters)", MaxLength = ManualTestRun.MaxNoteLength, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 70, MaxHeight = 140 };
+    // The box is not cut at the 2,000 characters a recorded note can hold: a longer note is shown whole, counted below, and refused when recorded.
+    private readonly TextBox _note = new() { Watermark = "Note (a recorded note holds up to 2,000 characters)", MaxLength = GuidedTestViewModel.MaxDraftNoteLength, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinHeight = 70, MaxHeight = 140 };
+    private readonly TextBlock _noteCounter = new() { FontSize = DesignTokens.FontSizeCaption, TextWrapping = TextWrapping.Wrap, Opacity = 0.8 };
     private readonly TextBox _values = new() { Watermark = "Values shown", MaxLength = ManualTestRun.MaxValuesShownLength, MinHeight = DesignTokens.MinControlSize };
     private readonly Button _record = Command(RecordCaption);
     private readonly Button _previous = Command(PreviousCaption);
@@ -85,7 +89,7 @@ public sealed class GuidedTestView : UserControl
             (_runText, "Test run"), (_tally, "Run tally"), (_resumeText, "Unfinished run"), (_filter, "Step filter"), (_search, "Search steps"), (_steps, "Test steps"),
             (_title, "Step title"), (_subtitle, "Step details"), (_instructions, "Step instructions"), (_passWhen, "Step passes when"), (_versionNote, "Worksheet version note"),
             (_inputs, "Inputs loaded"), (_expected, "Expected outputs"), (_rule, "Tolerance rule"), (_notes, "Comparison notes"),
-            (_pass, "Pass"), (_fail, "Fail"), (_blocked, "Blocked"), (_skipped, "Skipped"), (_note, "Result note"), (_values, "Values shown"),
+            (_pass, "Pass"), (_fail, "Fail"), (_blocked, "Blocked"), (_skipped, "Skipped"), (_note, "Result note"), (_noteCounter, "Note length"), (_values, "Values shown"),
             (_recorded, "Recorded result"), (_status, "Guided test status"),
         })
         {
@@ -99,7 +103,7 @@ public sealed class GuidedTestView : UserControl
         run.Children.Add(_tally);
         run.Children.Add(_resumeText);
         run.Children.Add(Row(_start, _resume, _finish));
-        run.Children.Add(Row(_copy, _save));
+        run.Children.Add(Row(_copy, _save, _deleteOlder));
 
         var list = new StackPanel { Spacing = DesignTokens.SpaceXs };
         list.Children.Add(_filter);
@@ -134,6 +138,7 @@ public sealed class GuidedTestView : UserControl
         var result = new StackPanel { Spacing = DesignTokens.SpaceXs };
         result.Children.Add(outcomes);
         result.Children.Add(_note);
+        result.Children.Add(_noteCounter);
         result.Children.Add(_values);
         result.Children.Add(Row(_record));
         result.Children.Add(_recorded);
@@ -149,13 +154,16 @@ public sealed class GuidedTestView : UserControl
         stack.Children.Add(_status);
         Content = new ScrollViewer { Content = stack, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
 
+        // Every handler that does I/O goes through the model's guard: an exception out of an async button handler has nobody to catch it and ends the
+        // application, so a failure (a store that cannot be read, a file that cannot be saved) becomes a sentence in the status line instead.
         _start.Click += async (_, _) => await _model.StartNewAsync().ConfigureAwait(true);
         _resume.Click += async (_, _) => await _model.ResumeAsync().ConfigureAwait(true);
         _finish.Click += async (_, _) => await _model.FinishAsync().ConfigureAwait(true);
-        _copy.Click += async (_, _) => await CopyAsync().ConfigureAwait(true);
-        _save.Click += async (_, _) => await SaveAsync().ConfigureAwait(true);
-        _openWorksheet.Click += (_, _) => _model.OpenWorksheet();
-        _compare.Click += (_, _) => _model.AutoCompare();
+        _copy.Click += async (_, _) => await _model.RunGuardedAsync(CopyAsync, "copy the results sheet").ConfigureAwait(true);
+        _save.Click += async (_, _) => await _model.RunGuardedAsync(SaveAsync, "save the results sheet").ConfigureAwait(true);
+        _deleteOlder.Click += async (_, _) => await _model.DeleteOlderRunsAsync().ConfigureAwait(true);
+        _openWorksheet.Click += (_, _) => Guard(_model.OpenWorksheet, "open the worksheet");
+        _compare.Click += (_, _) => Guard(_model.AutoCompare, "compare with the form");
         _record.Click += async (_, _) => await _model.RecordAsync().ConfigureAwait(true);
         _previous.Click += (_, _) => _model.Previous();
         _next.Click += (_, _) => _model.Next();
@@ -197,6 +205,7 @@ public sealed class GuidedTestView : UserControl
             _resume.IsVisible = model.Resumable is not null;
             _finish.IsEnabled = model.CanFinish;
             _copy.IsEnabled = _save.IsEnabled = model.Run is not null;
+            _deleteOlder.IsVisible = model.CanDeleteOlderRuns;
 
             if (!model.Filters.SequenceEqual(_filter.Items.OfType<string>(), StringComparer.Ordinal))
                 _filter.ItemsSource = model.Filters.ToList();
@@ -279,6 +288,8 @@ public sealed class GuidedTestView : UserControl
 
         var canRecord = model.CanRecord && model.Current is not null;
         _record.IsEnabled = canRecord;
+        _noteCounter.Text = model.NoteCounterText;
+        _noteCounter.Foreground = model.NoteTooLong ? Brushes.IndianRed : null;
 
         foreach (var control in new Control[] { _pass, _fail, _blocked, _skipped, _note, _values })
             control.IsEnabled = canRecord;
@@ -322,7 +333,7 @@ public sealed class GuidedTestView : UserControl
         var cells = new List<(Control Cell, int Column, int RowIndex)> { (Mono(line.Symbol), 0, 0), (expected, 1, 0), (verdict, 2, 0) };
 
         if (line.Shown is not null)
-            cells.Add((Caption("form shows " + line.Shown), 1, 1));
+            cells.Add((Caption($"form shows {line.Shown}{(line.Applied is null ? string.Empty : $"; allowance applied {line.Applied}")}"), 1, 1));
 
         foreach (var (cell, column, rowIndex) in cells)
         {
@@ -334,6 +345,18 @@ public sealed class GuidedTestView : UserControl
         return row;
     }
 
+    private void Guard(Action action, string what)
+    {
+        try
+        {
+            action();
+        }
+        catch (Exception failure) when (failure is not OperationCanceledException)
+        {
+            _model.ReportFailure(what, failure);
+        }
+    }
+
     private async Task CopyAsync()
     {
         var sheet = _model.ExportMarkdown();
@@ -341,22 +364,21 @@ public sealed class GuidedTestView : UserControl
 
         if (sheet is null || clipboard is null)
         {
-            _status.Text = sheet is null ? "Start or resume a run first." : "No clipboard is available here.";
+            _model.ReportStatus(sheet is null ? "Start or resume a run first." : "No clipboard is available here.");
             return;
         }
 
         await clipboard.SetTextAsync(sheet).ConfigureAwait(true);
-        _status.Text = "The results sheet is on the clipboard.";
+        _model.ReportStatus("The results sheet is on the clipboard.");
     }
 
     private async Task SaveAsync()
     {
-        var sheet = _model.ExportMarkdown();
         var storage = TopLevel.GetTopLevel(this)?.StorageProvider;
 
-        if (sheet is null || storage is null || !storage.CanSave)
+        if (_model.ExportMarkdown() is null || storage is null || !storage.CanSave)
         {
-            _status.Text = sheet is null ? "Start or resume a run first." : "No file picker is available here; copy the sheet instead.";
+            _model.ReportStatus(_model.ExportMarkdown() is null ? "Start or resume a run first." : "No file picker is available here; copy the sheet instead.");
             return;
         }
 
@@ -371,9 +393,19 @@ public sealed class GuidedTestView : UserControl
         if (file is null)
             return;
 
-        await using var stream = await file.OpenWriteAsync().ConfigureAwait(true);
-        await stream.WriteAsync(new UTF8Encoding(false).GetBytes(sheet)).ConfigureAwait(true);
-        _status.Text = $"Saved the results sheet as '{file.Name}'.";
+        // A file on disk is written through a temporary file and moved over the target, so a failure part-way leaves the earlier file whole; a place the
+        // picker gives no path for is written through its own stream.
+        await _model.SaveResultsAsync(async sheet =>
+        {
+            if (file.TryGetLocalPath() is { Length: > 0 } path)
+            {
+                await ManualTestMarkdown.WriteFileAsync(path, sheet).ConfigureAwait(true);
+                return;
+            }
+
+            await using var stream = await file.OpenWriteAsync().ConfigureAwait(true);
+            await stream.WriteAsync(new UTF8Encoding(false).GetBytes(sheet)).ConfigureAwait(true);
+        }, file.Name).ConfigureAwait(true);
     }
 
     // ------------------------------------------------------------------

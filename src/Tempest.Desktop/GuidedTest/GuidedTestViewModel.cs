@@ -1,5 +1,6 @@
 using System.Globalization;
 using Tempest.Calc.Library.ManualTesting;
+using Tempest.Calc.Sheets;
 using Tempest.Core.Logging;
 
 namespace Tempest.Desktop.GuidedTest;
@@ -7,8 +8,8 @@ namespace Tempest.Desktop.GuidedTest;
 /// <summary>One row of the step list: the step, its label and what has been recorded for it in the run.</summary>
 public sealed record GuidedStepRow(string Id, string Label, string Result);
 
-/// <summary>One expected output of the shown example beside what the form shows and how they compare.</summary>
-public sealed record GuidedExpectedLine(string Symbol, string Expected, string Allowance, string? Shown, GuidedCompareOutcome? Outcome);
+/// <summary>One expected output of the shown example beside what the form shows and how they compare; <paramref name="Applied"/> is the allowance the comparison actually applied (the coarser of the expected value's and the form's displayed last place).</summary>
+public sealed record GuidedExpectedLine(string Symbol, string Expected, string Allowance, string? Shown, GuidedCompareOutcome? Outcome, string? Applied = null);
 
 /// <summary>
 /// Addendum C, C-5: the state behind the Guided test panel, with no UI in it. It walks the script a step at a time, opens the worksheet form on an
@@ -30,6 +31,12 @@ public sealed class GuidedTestViewModel
     /// <summary>The longest search text taken.</summary>
     public const int MaxSearchLength = 100;
 
+    /// <summary>
+    /// The longest note the panel holds while it is being written. It is far above <see cref="ManualTestRun.MaxNoteLength"/> on purpose: a pasted note
+    /// longer than a note can be is shown with a count and refused when it is recorded, never cut quietly to fit. This cap only keeps the box usable.
+    /// </summary>
+    public const int MaxDraftNoteLength = 20_000;
+
     private static readonly (GuidedStepKind Kind, string Label)[] KindFilters =
     [
         (GuidedStepKind.Smoke, "4 · Smoke test"),
@@ -44,6 +51,8 @@ public sealed class GuidedTestViewModel
     private readonly IGuidedWorksheetHost _worksheet;
     private readonly GuidedTestScript _script;
     private readonly ILogger? _logger;
+    private readonly Func<string, string, string, Task<bool>>? _confirm;
+    private readonly int _keepFinished;
     private ManualTestRun? _run;
     private ManualTestRun? _resumable;
     private GuidedTestStep? _current;
@@ -53,15 +62,28 @@ public sealed class GuidedTestViewModel
     private GuidedAutoCompareResult? _comparison;
     private List<GuidedTestStep> _visible = [];
 
+    // The example the worksheet was last opened for (so Compare reads only the step whose inputs are in the form), what the last comparison put into the
+    // draft (so a change to the form takes back exactly that, and a result the tester ticked or typed themselves is left alone), and whose draft this is.
+    private string? _preparedExampleId;
+    private bool _tickFromCompare;
+    private bool _valuesFromCompare;
+    private string? _draftStepId;
+    private int _finishedRuns;
+
     /// <param name="service">The run records (and the script a run is started on).</param>
     /// <param name="worksheet">The worksheet form, as far as the guided test may touch it.</param>
-    /// <param name="logger">The host's logger; one Information line per run started, resumed or finished (ids and counts only). Null logs nothing.</param>
-    public GuidedTestViewModel(ManualTestRunService service, IGuidedWorksheetHost worksheet, ILogger? logger = null)
+    /// <param name="logger">The host's logger; one Information line per run started, resumed, finished or cleared (ids and counts only). Null logs nothing.</param>
+    /// <param name="confirm">The app's confirmation dialog (title, message, confirm caption; true when the person confirms). Deleting runs asks through it; without it nothing is deleted.</param>
+    /// <param name="keepFinishedRuns">How many of the newest finished runs "delete older finished runs" keeps; <see cref="ManualTestRunService.DefaultKeepFinished"/> by default.</param>
+    public GuidedTestViewModel(ManualTestRunService service, IGuidedWorksheetHost worksheet, ILogger? logger = null, Func<string, string, string, Task<bool>>? confirm = null, int keepFinishedRuns = ManualTestRunService.DefaultKeepFinished)
     {
         _service = service ?? throw new ArgumentNullException(nameof(service));
         _worksheet = worksheet ?? throw new ArgumentNullException(nameof(worksheet));
         _script = service.Script;
         _logger = logger;
+        _confirm = confirm;
+        _keepFinished = keepFinishedRuns > 0 ? keepFinishedRuns : throw new ArgumentOutOfRangeException(nameof(keepFinishedRuns));
+        _worksheet.FormChanged += OnFormChanged;
         ApplyFilter();
         _current = _visible.FirstOrDefault();
     }
@@ -105,7 +127,19 @@ public sealed class GuidedTestViewModel
         ? $"An unfinished run by {run.Tester}, started {Stamp(run.StartedUtc)} on {run.Build}, can be resumed ({ManualTestTally.Of(run, _script)})."
         : string.Empty;
 
-    /// <summary>Looks for an unfinished run on file (and re-reads the open one), so the panel can offer to resume it. Called each time the screen is shown.</summary>
+    /// <summary>How many finished runs are on file.</summary>
+    public int FinishedRuns => _finishedRuns;
+
+    /// <summary>The number of newest finished runs "delete older finished runs" keeps.</summary>
+    public int KeepFinishedRuns => _keepFinished;
+
+    /// <summary>Whether there are more finished runs on file than are kept, so that deleting the older ones has something to do.</summary>
+    public bool CanDeleteOlderRuns => _finishedRuns > _keepFinished;
+
+    /// <summary>
+    /// Looks for an unfinished run on file (and re-reads the open one), so the panel can offer to resume it. Called each time the screen is shown. A result
+    /// ticked or a note written for the shown step and not yet recorded is kept: coming back to the screen does not reset it.
+    /// </summary>
     public async Task RefreshAsync()
     {
         try
@@ -113,45 +147,82 @@ public sealed class GuidedTestViewModel
             if (_run is { } open && await _service.FindAsync(open.Id).ConfigureAwait(true) is { } reread)
                 _run = reread;
 
-            var unfinished = await _service.FindUnfinishedAsync().ConfigureAwait(true);
-            _resumable = unfinished is not null && unfinished.Id != _run?.Id ? unfinished : null;
+            var overview = await _service.OverviewAsync().ConfigureAwait(true);
+            _finishedRuns = overview.Finished;
+            _resumable = overview.NewestUnfinished is { } unfinished && unfinished.Id != _run?.Id ? unfinished : null;
         }
         catch (Exception failure) when (failure is not OperationCanceledException)
         {
             Status = $"The test runs on file could not be read: {failure.Message}";
         }
 
-        LoadDraft();
+        // The draft belongs to the step it was started on; only a different step (or none yet) starts again from what is recorded.
+        if (!string.Equals(_draftStepId, _current?.Id, StringComparison.Ordinal))
+            LoadDraft();
+
         Changed?.Invoke();
     }
 
-    /// <summary>Starts a new run for the person signed in.</summary>
-    public async Task StartNewAsync()
+    /// <summary>
+    /// Runs <paramref name="action"/> and turns a failure into a sentence in <see cref="Status"/> instead of an exception: a refusal says what it
+    /// says; any other failure (a store that cannot be read or written, a file that cannot be saved) says it "could not" do <paramref name="what"/> and
+    /// why. For the panel's buttons, whose handlers have nobody to catch an exception.
+    /// </summary>
+    public async Task RunGuardedAsync(Func<Task> action, string what)
     {
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentException.ThrowIfNullOrWhiteSpace(what);
+
         try
         {
-            _run = await _service.StartAsync().ConfigureAwait(true);
-            _resumable = null;
-            _logger?.Information($"Guided test: run {_run.Id:N} started on {_run.Build} by {_run.Tester}.");
-            Status = $"Started a new run on {_run.Build}. Open a step and work down the list.";
-            ApplyFilter();
-            SelectFirstNotRun();
+            await action().ConfigureAwait(true);
         }
         catch (ManualTestRefusedException refusal)
         {
             Status = refusal.Message;
         }
+        catch (Exception failure) when (failure is not OperationCanceledException)
+        {
+            ReportFailure(what, failure);
+            return;
+        }
 
         Changed?.Invoke();
     }
 
+    /// <summary>Puts a sentence in <see cref="Status"/> (for the panel's own clipboard and file actions).</summary>
+    public void ReportStatus(string sentence)
+    {
+        Status = sentence;
+        Changed?.Invoke();
+    }
+
+    /// <summary>Says in <see cref="Status"/> that <paramref name="what"/> could not be done, and why.</summary>
+    public void ReportFailure(string what, Exception failure)
+    {
+        ArgumentNullException.ThrowIfNull(failure);
+        Status = $"Could not {what}: {failure.Message}";
+        _logger?.Warning($"Guided test: could not {what} ({failure.GetType().Name}).");
+        Changed?.Invoke();
+    }
+
+    /// <summary>Starts a new run for the person signed in.</summary>
+    public Task StartNewAsync() => RunGuardedAsync(async () =>
+    {
+        _run = await _service.StartAsync().ConfigureAwait(true);
+        _resumable = null;
+        _logger?.Information($"Guided test: run {_run.Id:N} started on {_run.Build} by {_run.Tester}.");
+        Status = $"Started a new run on {_run.Build}. Open a step and work down the list.";
+        ApplyFilter();
+        SelectFirstNotRun();
+    }, "start a new test run");
+
     /// <summary>Resumes the unfinished run offered by <see cref="Resumable"/>, going to its first step without a result.</summary>
-    public async Task ResumeAsync()
+    public Task ResumeAsync() => RunGuardedAsync(async () =>
     {
         if (_resumable is not { } run)
         {
             Status = "There is no unfinished run to resume.";
-            Changed?.Invoke();
             return;
         }
 
@@ -163,35 +234,90 @@ public sealed class GuidedTestViewModel
             : $"That run was started on script {_run.ScriptVersion} and this build carries {_script.ScriptVersion}, so nothing more can be added to it. Finish it, then start a new run.";
         ApplyFilter();
         SelectFirstNotRun();
-        Changed?.Invoke();
-    }
+    }, "resume the test run");
 
     /// <summary>Finishes the open run: it is dated and read-only from then on.</summary>
-    public async Task FinishAsync()
+    public Task FinishAsync() => RunGuardedAsync(async () =>
     {
         if (_run is not { IsFinished: false } run)
         {
             Status = "There is no unfinished run open to finish.";
-            Changed?.Invoke();
             return;
         }
 
-        try
+        _run = await _service.FinishAsync(run.Id).ConfigureAwait(true);
+        _logger?.Information($"Guided test: run {_run.Id:N} finished ({ManualTestTally.Of(_run, _script)}).");
+        Status = $"Run finished {Stamp(_run.FinishedUtc!.Value)}: {ManualTestTally.Of(_run, _script)}. Copy or save the results sheet to send it back.";
+        _finishedRuns++;
+    }, "finish the test run");
+
+    /// <summary>
+    /// Deletes the finished runs older than the newest <see cref="KeepFinishedRuns"/> (never an unfinished run, and never a run that still holds a
+    /// worksheet's latest manual result), after the app's confirmation dialog says how many and that it cannot be undone. Only the test-run records go.
+    /// </summary>
+    public Task DeleteOlderRunsAsync() => RunGuardedAsync(async () =>
+    {
+        var plan = await _service.PlanTrimAsync(_keepFinished).ConfigureAwait(true);
+
+        if (plan.Delete.Count == 0)
         {
-            _run = await _service.FinishAsync(run.Id).ConfigureAwait(true);
-            _logger?.Information($"Guided test: run {_run.Id:N} finished ({ManualTestTally.Of(_run, _script)}).");
-            Status = $"Run finished {Stamp(_run.FinishedUtc!.Value)}: {ManualTestTally.Of(_run, _script)}. Copy or save the results sheet to send it back.";
-        }
-        catch (ManualTestRefusedException refusal)
-        {
-            Status = refusal.Message;
+            Status = plan.KeptForStatus > 0
+                ? $"There are no older finished runs to delete: the {plan.KeptForStatus} beyond the newest {_keepFinished} still hold a worksheet's latest manual result, so they are kept."
+                : $"There are no older finished runs to delete: {plan.Finished} finished run(s) are on file and the newest {_keepFinished} are kept.";
+            return;
         }
 
-        Changed?.Invoke();
-    }
+        if (_confirm is null)
+        {
+            Status = "Deleting test runs needs the confirmation dialog, which is not available here; nothing was deleted.";
+            return;
+        }
+
+        var kept = plan.KeptForStatus > 0 ? $" {plan.KeptForStatus} more that still hold a worksheet's latest manual result are kept too." : string.Empty;
+        var message = $"Delete {plan.Delete.Count} finished test run(s) older than the newest {_keepFinished}? This cannot be undone. Save the results sheets you need first. Runs that are not finished are never deleted.{kept}";
+
+        if (!await _confirm("Delete older test runs", message, "Delete").ConfigureAwait(true))
+        {
+            Status = "Nothing was deleted.";
+            return;
+        }
+
+        var deleted = await _service.DeleteOlderFinishedAsync(_keepFinished).ConfigureAwait(true);
+        _logger?.Information($"Guided test: {deleted} older finished run(s) deleted, the newest {_keepFinished} kept.");
+        var overview = await _service.OverviewAsync().ConfigureAwait(true);
+        _finishedRuns = overview.Finished;
+
+        // The open run may be one of those cleared away (a finished one): it is no longer on file.
+        if (_run is { IsFinished: true } open && plan.Delete.Contains(open.Id))
+        {
+            _run = null;
+            ApplyFilter();
+            LoadDraft();
+        }
+
+        Status = $"Deleted {deleted} older finished test run(s). The newest {_keepFinished} finished runs and every unfinished run were kept.";
+    }, "delete the older test runs");
 
     /// <summary>The open run as the markdown results sheet, or <see langword="null"/> when no run is open.</summary>
     public string? ExportMarkdown() => _run is { } run ? _service.ExportMarkdown(run) : null;
+
+    /// <summary>
+    /// Saves the results sheet through <paramref name="write"/> (given the sheet), then says so in <see cref="Status"/> naming <paramref name="name"/>.
+    /// A write that fails (a full disk, a folder that cannot be written) is reported as a sentence, not thrown.
+    /// </summary>
+    public Task SaveResultsAsync(Func<string, Task> write, string name) => RunGuardedAsync(async () =>
+    {
+        ArgumentNullException.ThrowIfNull(write);
+
+        if (ExportMarkdown() is not { } sheet)
+        {
+            Status = "Start or resume a run first.";
+            return;
+        }
+
+        await write(sheet).ConfigureAwait(true);
+        Status = $"Saved the results sheet as '{name}'.";
+    }, "save the results sheet");
 
     /// <summary>A file name for the saved results sheet: the commit and the date, for example <c>tempestos-guided-test-1a2b3c4-20261026.md</c>.</summary>
     public string SuggestedFileName => _run is { } run
@@ -321,7 +447,7 @@ public sealed class GuidedTestViewModel
             foreach (var expected in example.Expected ?? [])
             {
                 var row = byName.GetValueOrDefault(expected.Symbol);
-                lines.Add(new GuidedExpectedLine(expected.Symbol, Join(expected.Value, expected.Unit), GuidedTolerance.AllowanceText(expected.Value), row?.Shown, row?.Comparison.Outcome));
+                lines.Add(new GuidedExpectedLine(expected.Symbol, Join(expected.Value, expected.Unit), GuidedTolerance.AllowanceText(expected.Value), row?.Shown, row?.Comparison.Outcome, row?.Comparison.Allowance));
             }
 
             if (example.Governing is { } governing)
@@ -329,7 +455,13 @@ public sealed class GuidedTestViewModel
                 var outcome = byName.GetValueOrDefault("governing check");
                 var utilisation = byName.GetValueOrDefault("governing utilisation");
                 lines.Add(new GuidedExpectedLine("governing check", $"{governing.Outcome} — {governing.Name}", "exact text", outcome?.Shown, outcome?.Comparison.Outcome));
-                lines.Add(new GuidedExpectedLine("governing utilisation", governing.Utilisation, GuidedTolerance.AllowanceText(governing.Utilisation), utilisation?.Shown, utilisation?.Comparison.Outcome));
+                lines.Add(new GuidedExpectedLine("governing utilisation", governing.Utilisation, GuidedTolerance.AllowanceText(governing.Utilisation), utilisation?.Shown, utilisation?.Comparison.Outcome, utilisation?.Comparison.Allowance));
+            }
+            else if (example.Kind == GuidedStepKind.Example)
+            {
+                // The example documents no governing check, and the compare asserts that the form shows none either.
+                var outcome = byName.GetValueOrDefault("governing check");
+                lines.Add(new GuidedExpectedLine("governing check", "none", "exact text", outcome?.Shown, outcome?.Comparison.Outcome));
             }
 
             return lines;
@@ -348,30 +480,48 @@ public sealed class GuidedTestViewModel
     /// <summary>The result ticked (not yet recorded): the recorded one when the step is shown, or what an auto-compare pre-ticked, or the tester's choice.</summary>
     public ManualTestOutcome? DraftOutcome { get; private set; }
 
-    /// <summary>The note being written for the shown step (at most <see cref="ManualTestRun.MaxNoteLength"/> characters can be recorded).</summary>
+    /// <summary>The note being written for the shown step. It is shown whole, and only a note of at most <see cref="ManualTestRun.MaxNoteLength"/> characters can be recorded.</summary>
     public string DraftNote { get; private set; } = string.Empty;
+
+    /// <summary>How long the note is against what a note can hold, for the counter under the box (for example <c>1,234 of 2,000 characters</c>).</summary>
+    public string NoteCounterText => NoteTooLong
+        ? $"{Count(DraftNote.Length)} characters: {Count(DraftNote.Length - ManualTestRun.MaxNoteLength)} over the {Count(ManualTestRun.MaxNoteLength)} a note can hold. Shorten it to record it; nothing has been cut."
+        : $"{Count(DraftNote.Length)} of {Count(ManualTestRun.MaxNoteLength)} characters";
+
+    /// <summary>Whether the note is longer than a note can be (it will be refused, not cut, when recorded).</summary>
+    public bool NoteTooLong => DraftNote.Length > ManualTestRun.MaxNoteLength;
 
     /// <summary>The values the form showed, as one line, for the record.</summary>
     public string DraftValues { get; private set; } = string.Empty;
 
-    /// <summary>Ticks a result (the tester's own choice).</summary>
+    /// <summary>Ticks a result (the tester's own choice; a result a comparison ticked and the tester then chooses is theirs, and stays when the form changes).</summary>
     public void SetDraftOutcome(ManualTestOutcome? outcome)
     {
         DraftOutcome = outcome;
+        _tickFromCompare = false;
         Changed?.Invoke();
     }
 
     /// <summary>Sets the note text being typed. It is not recorded until <see cref="RecordAsync"/>.</summary>
     public void SetDraftNote(string? note)
     {
-        DraftNote = note ?? string.Empty;
+        var text = note ?? string.Empty;
+
+        if (text.Length > MaxDraftNoteLength)
+        {
+            text = text[..MaxDraftNoteLength];
+            Status = $"The note box holds at most {Count(MaxDraftNoteLength)} characters, so the rest was left out; a note can only be recorded up to {Count(ManualTestRun.MaxNoteLength)}.";
+        }
+
+        DraftNote = text;
         Changed?.Invoke();
     }
 
-    /// <summary>Sets the values-shown text being typed or filled by a comparison.</summary>
+    /// <summary>Sets the values-shown text being typed (values the tester writes themselves are theirs, and stay when the form changes).</summary>
     public void SetDraftValues(string? values)
     {
         DraftValues = values ?? string.Empty;
+        _valuesFromCompare = false;
         Changed?.Invoke();
     }
 
@@ -389,18 +539,40 @@ public sealed class GuidedTestViewModel
         }
 
         var discard = string.Equals(_discardArmedFor, _current!.Id, StringComparison.Ordinal);
-        var result = _worksheet.Prepare(templateId, inputs, discard);
+        GuidedPrepareResult result;
+
+        try
+        {
+            result = _worksheet.Prepare(templateId, inputs, discard);
+        }
+        catch (Exception failure) when (failure is not OperationCanceledException)
+        {
+            _preparedExampleId = null;
+            _discardArmedFor = null;
+            ClearComparison();
+            ReportFailure("open the worksheet", failure);
+            return;
+        }
+
         _discardArmedFor = result.Outcome == GuidedPrepareOutcome.NeedsConfirmation ? _current.Id : null;
-        _comparison = null;
+        ClearComparison();
+
+        // Only a form that now holds this example's inputs is one to compare; a form left alone keeps what it was last prepared for.
+        if (result.Outcome == GuidedPrepareOutcome.Ready)
+            _preparedExampleId = example.Id;
+        else if (result.Outcome == GuidedPrepareOutcome.Unavailable)
+            _preparedExampleId = null;
+
         Status = result.Outcome == GuidedPrepareOutcome.Ready
-            ? $"{result.Message} Run it, then compare its outputs with the expected values here{(example.Governing is null ? string.Empty : " and the governing check")}."
+            ? $"{result.Message} Run it, then compare its outputs with the expected values here{(example.Governing is null ? " (it has no governing check)" : " and the governing check")}."
             : result.Message;
         Changed?.Invoke();
     }
 
     /// <summary>
     /// Reads the form's current outputs against the expected values by the stated rule, fills the values shown, and pre-ticks the result it gives. The
-    /// tester confirms it, or changes it, by recording a result; nothing is recorded here.
+    /// tester confirms it, or changes it, by recording a result; nothing is recorded here. It reads only the example the worksheet was opened for, while
+    /// the form still holds that example's inputs.
     /// </summary>
     public void AutoCompare()
     {
@@ -411,20 +583,22 @@ public sealed class GuidedTestViewModel
             return;
         }
 
-        if (_worksheet.ShownRun(templateId) is not { } run)
+        if (ReadShownRun(example, templateId, out var run) is { } problem)
         {
-            Status = "Open the worksheet for this step first; there is nothing in the form to compare.";
+            Status = problem;
             Changed?.Invoke();
             return;
         }
 
-        _comparison = GuidedAutoCompare.Compare(example, run);
+        _comparison = GuidedAutoCompare.Compare(example, run!);
         DraftValues = _comparison.ValuesShown;
+        _valuesFromCompare = true;
         var differing = _comparison.Rows.Count(r => !r.Comparison.IsMatch);
 
         if (_comparison.Suggested is { } suggested)
         {
             DraftOutcome = suggested;
+            _tickFromCompare = true;
             Status = differing == 0
                 ? $"All {_comparison.Rows.Count} lines agree with the expected values. Pass is ticked; record it to confirm."
                 : $"{differing} of {_comparison.Rows.Count} lines differ (listed below). Fail is ticked; check them, then record the result you decide.";
@@ -432,10 +606,66 @@ public sealed class GuidedTestViewModel
         else
         {
             DraftOutcome = null;
+            _tickFromCompare = false;
             Status = $"{differing} of {_comparison.Rows.Count} lines need your judgement (listed below). Nothing is ticked; choose the result and record it.";
         }
 
         Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// The run the form shows for the shown example, or <see langword="null"/> with the sentence that says why not: the worksheet was not opened for this
+    /// step, or the form no longer holds the example's inputs.
+    /// </summary>
+    private string? ReadShownRun(GuidedTestStep example, string templateId, out CalcRunResult? run)
+    {
+        run = null;
+
+        if (_preparedExampleId is null)
+            return "Open the worksheet for this step first; nothing has been loaded into the form for it, so there is nothing to compare.";
+
+        if (!string.Equals(_preparedExampleId, example.Id, StringComparison.Ordinal))
+            return "Open the worksheet for this step first; the form was opened for another example, so comparing it here would read the wrong numbers.";
+
+        try
+        {
+            run = _worksheet.ShownRun(templateId);
+        }
+        catch (Exception failure) when (failure is not OperationCanceledException)
+        {
+            return $"Could not read the worksheet form: {failure.Message}";
+        }
+
+        return run is null
+            ? "The worksheet form no longer holds this example's inputs (they were edited, or another calculation is shown); press 'Open worksheet with these inputs' again, then compare."
+            : null;
+    }
+
+    /// <summary>The form's inputs or run changed after the worksheet was opened: what a comparison read, and the result and values it filled in, are out of date.</summary>
+    private void OnFormChanged()
+    {
+        var hadComparison = _comparison is not null || _tickFromCompare || _valuesFromCompare;
+
+        if (!hadComparison)
+            return;
+
+        ClearComparison();
+        Status = "The worksheet form changed after the comparison, so the comparison, and any result or values it filled in, were cleared. Compare again, or tick the result yourself.";
+        Changed?.Invoke();
+    }
+
+    /// <summary>Drops the comparison and takes back what it put into the draft (the tick and the values), leaving anything the tester chose or typed.</summary>
+    private void ClearComparison()
+    {
+        _comparison = null;
+
+        if (_tickFromCompare)
+            DraftOutcome = null;
+
+        if (_valuesFromCompare)
+            DraftValues = string.Empty;
+
+        _tickFromCompare = _valuesFromCompare = false;
     }
 
     /// <summary>Records the ticked result with the note and the values shown for the shown step, in the open run.</summary>
@@ -462,17 +692,38 @@ public sealed class GuidedTestViewModel
             return;
         }
 
-        try
+        // A result or values the comparison made are only as good as the form they read: read it again now, and refuse if it is not the same.
+        if ((_tickFromCompare || _valuesFromCompare) && StaleComparisonProblem(outcome) is { } stale)
         {
-            _run = await _service.RecordAsync(_run.Id, step.Id, outcome, DraftNote, DraftValues).ConfigureAwait(true);
-            Status = $"Recorded {outcome} for '{step.Title}'. {ManualTestTally.Of(_run, _script)}.";
-        }
-        catch (ManualTestRefusedException refusal)
-        {
-            Status = refusal.Message;
+            ClearComparison();
+            Status = stale;
+            Changed?.Invoke();
+            return;
         }
 
-        Changed?.Invoke();
+        var runId = _run.Id;
+        await RunGuardedAsync(async () =>
+        {
+            _run = await _service.RecordAsync(runId, step.Id, outcome, DraftNote, DraftValues).ConfigureAwait(true);
+            Status = $"Recorded {outcome} for '{step.Title}'. {ManualTestTally.Of(_run, _script)}.";
+        }, "record the result").ConfigureAwait(true);
+    }
+
+    /// <summary>The sentence for a comparison that no longer matches the form, or <see langword="null"/> when the form still gives the same values and result.</summary>
+    private string? StaleComparisonProblem(ManualTestOutcome ticked)
+    {
+        if (CurrentExample is not { TemplateId: { } templateId } example)
+            return null;
+
+        if (ReadShownRun(example, templateId, out var run) is { } problem)
+            return $"{problem} Nothing was recorded; the result and values the comparison filled in were cleared.";
+
+        var fresh = GuidedAutoCompare.Compare(example, run!);
+
+        if ((_valuesFromCompare && !string.Equals(fresh.ValuesShown, DraftValues, StringComparison.Ordinal)) || (_tickFromCompare && fresh.Suggested != ticked))
+            return "The worksheet form no longer shows what the comparison read, so nothing was recorded; the result and values it filled in were cleared. Compare again, or tick the result yourself.";
+
+        return null;
     }
 
     // ------------------------------------------------------------------
@@ -491,8 +742,11 @@ public sealed class GuidedTestViewModel
     {
         var first = _visible.FirstOrDefault(s => _run?.ResultFor(s.Id) is null) ?? _visible.FirstOrDefault();
 
+        // A run just started or resumed starts its first step from what that run holds, even when it is the step already shown.
         if (first is not null)
-            MoveTo(first);
+            MoveTo(first, force: true);
+        else
+            LoadDraft();
     }
 
     private void KeepCurrentOrFirst()
@@ -504,8 +758,12 @@ public sealed class GuidedTestViewModel
         }
     }
 
-    private void MoveTo(GuidedTestStep step)
+    /// <summary>Shows <paramref name="step"/>. Moving to the step already shown changes nothing (a tick, a note and a comparison on it stay) unless <paramref name="force"/> is set.</summary>
+    private void MoveTo(GuidedTestStep step, bool force = false)
     {
+        if (!force && ReferenceEquals(step, _current) && _draftStepId is not null)
+            return;
+
         _current = step;
         _comparison = null;
         _discardArmedFor = null;
@@ -519,7 +777,12 @@ public sealed class GuidedTestViewModel
         DraftOutcome = recorded?.Outcome;
         DraftNote = recorded?.Note ?? string.Empty;
         DraftValues = recorded?.ValuesShown ?? string.Empty;
+        _tickFromCompare = _valuesFromCompare = false;
+        _comparison = null;
+        _draftStepId = _current?.Id;
     }
+
+    private static string Count(int number) => number.ToString("N0", CultureInfo.InvariantCulture);
 
     private void ApplyFilter()
     {

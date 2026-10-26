@@ -87,12 +87,14 @@ public sealed class GuidedTestWorksheetTests
         Assert.Equal(ManualTestOutcome.Pass, fx.Model.DraftOutcome);
         Assert.All(fx.Model.ExpectedLines, l => Assert.Equal(GuidedCompareOutcome.Match, l.Outcome));
 
-        // The tester changes an input; the form's outputs change; the compare now disagrees and says which line.
+        // The tester changes an input: the form is no longer the example, so what was compared is taken back and a new compare is refused until it is opened again.
         fx.View.SetField("F_r", "4");
         await Settle();
+        Assert.Null(fx.Model.DraftOutcome);
+        Assert.Empty(fx.Model.ComparisonNotes);
         fx.Model.AutoCompare();
-        Assert.Equal(ManualTestOutcome.Fail, fx.Model.DraftOutcome);
-        Assert.Contains(fx.Model.ComparisonNotes, n => n.StartsWith("P:", StringComparison.Ordinal));
+        Assert.Contains("no longer holds this example's inputs", fx.Model.Status, StringComparison.Ordinal);
+        Assert.Null(fx.Model.DraftOutcome);
     }
 
     [AvaloniaFact]
@@ -182,6 +184,7 @@ public sealed class GuidedTestWorksheetTests
         await Settle();
         fx.Model.AutoCompare();
         await fx.Model.RecordAsync();
+        await fx.Model.FinishAsync(); // a result counts as the template's status once its run is finished
 
         IManualTestStatusSource source = fx.Host.ManualTests!;
         var status = await source.LatestByTemplateAsync();
@@ -192,6 +195,103 @@ public sealed class GuidedTestWorksheetTests
         Assert.Equal(2, bearing.StepsInScript);
         Assert.Equal(fx.Model.Run!.Id, bearing.RunId);
         Assert.Single(status);
+    }
+
+    // ---------------------------------------------------------------- the review's M1 and M2, on the real form
+
+    [AvaloniaFact]
+    public async Task Compare_Reads_Only_The_Example_The_Form_Was_Opened_For_Not_A_Sibling_Example_Of_The_Same_Template()
+    {
+        await using var fx = await StartAsync("P-GUIDED-M1");
+        await fx.Model.StartNewAsync();
+
+        // Open the flange example, select the overloaded one without opening it, and compare.
+        fx.Model.Select("example:mech.bolted-joint/m12-88-flange");
+        fx.Model.OpenWorksheet();
+        await Settle();
+        Assert.NotNull(fx.View.LastRun);
+
+        fx.Model.Select("example:mech.bolted-joint/m12-88-overloaded");
+        fx.Model.AutoCompare();
+
+        Assert.Contains("Open the worksheet for this step first", fx.Model.Status, StringComparison.Ordinal);
+        Assert.Null(fx.Model.DraftOutcome);
+        Assert.Empty(fx.Model.DraftValues);
+        Assert.All(fx.Model.ExpectedLines, l => Assert.Null(l.Shown));
+
+        // Opened for itself, it compares.
+        fx.Model.OpenWorksheet();
+        await Settle();
+        fx.Model.AutoCompare();
+        Assert.NotNull(fx.Model.DraftOutcome);
+        Assert.Contains(fx.Model.ExpectedLines, l => l.Shown is not null);
+    }
+
+    [AvaloniaFact]
+    public async Task The_Host_Hands_Out_The_Forms_Run_Only_While_The_Form_Is_The_Example_It_Loaded()
+    {
+        await using var fx = await StartAsync("P-GUIDED-HOST-RUN");
+        var host = new CalcGuidedWorksheetHost(fx.View, fx.Coordinator, fx.Host.CalcCatalogue!);
+        var example = GuidedTestScript.Current.Find(BearingExample)!;
+        var changes = 0;
+        host.FormChanged += () => changes++;
+        Assert.Null(host.ShownRun(example.TemplateId!));
+
+        Assert.Equal(GuidedPrepareOutcome.Ready, host.Prepare(example.TemplateId!, example.InputsJson!, discardUnsavedEdits: false).Outcome);
+        await Settle();
+        Assert.NotNull(host.ShownRun(example.TemplateId!));
+        Assert.Null(host.ShownRun("mech.bolted-joint")); // another template
+        Assert.Equal(0, changes); // preparing the form is not a change to it
+
+        // An edit: the form is no longer the example.
+        fx.View.SetField("F_r", "4");
+        await Settle();
+        Assert.True(changes > 0);
+        Assert.Null(host.ShownRun(example.TemplateId!));
+
+        // Put back, it is the example again.
+        fx.View.SetField("F_r", "3");
+        await Settle();
+        Assert.NotNull(host.ShownRun(example.TemplateId!));
+
+        // A saved calculation of the same template shown in the form is somebody's own numbers, not the example.
+        var saved = await fx.Host.CalcInstances!.CreateAsync(fx.Host.CalcCatalogue!.Find(example.TemplateId!)!.Reference, fx.ProjectId, "CALC-B01 Bearing");
+        changes = 0;
+        fx.View.ShowTemplate(fx.Host.CalcCatalogue.Find(example.TemplateId!)!, saved);
+        await Settle();
+        Assert.True(changes > 0);
+        Assert.Null(host.ShownRun(example.TemplateId!));
+    }
+
+    [AvaloniaFact]
+    public async Task A_Compare_Ticked_Pass_And_Its_Values_Are_Taken_Back_When_The_Real_Form_Changes_And_Cannot_Be_Recorded()
+    {
+        await using var fx = await StartAsync("P-GUIDED-M2");
+        await fx.Model.StartNewAsync();
+        fx.Model.Select(BearingExample);
+        fx.Model.OpenWorksheet();
+        await Settle();
+        fx.Model.AutoCompare();
+        Assert.Equal(ManualTestOutcome.Pass, fx.Model.DraftOutcome);
+        Assert.Contains("P = 3.93 kN", fx.Model.DraftValues, StringComparison.Ordinal);
+
+        // The bearing example: change F_r, then Record. Before the fix this stored Pass with the old values.
+        fx.View.SetField("F_r", "4");
+        await Settle();
+        Assert.Null(fx.Model.DraftOutcome);
+        Assert.Empty(fx.Model.DraftValues);
+        Assert.Contains("form changed after the comparison", fx.Model.Status, StringComparison.Ordinal);
+
+        await fx.Model.RecordAsync();
+        Assert.Null(fx.Model.Recorded);
+        Assert.Empty(fx.Model.Run!.Results);
+
+        // The tester can still decide for themselves, from what the form shows now.
+        fx.Model.SetDraftOutcome(ManualTestOutcome.Fail);
+        fx.Model.SetDraftNote("I changed F_r to 4 kN and the bearing life dropped, as it should.");
+        await fx.Model.RecordAsync();
+        Assert.Equal(ManualTestOutcome.Fail, fx.Model.Recorded!.Outcome);
+        Assert.DoesNotContain("P = 3.93 kN", fx.Model.Recorded.ValuesShown, StringComparison.Ordinal);
     }
 
     private static async Task<IReadOnlyDictionary<string, string>> SnapshotAsync(IQueryablePersistenceStore store, IEnumerable<string> collections)
