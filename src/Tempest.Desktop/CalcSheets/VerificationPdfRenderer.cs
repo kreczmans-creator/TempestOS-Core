@@ -54,7 +54,7 @@ public sealed class VerificationPdfRenderer
         {
             var w = state.ContentWidth;
             DocumentTemplate.AddTable(
-                state, measure, ["Calculator or chain", "Discipline", "Version", "Known answers", "Unconf. / Secondary", "Track P re-derivation", "Records not entered", "Open defects", "Manual test"],
+                state, measure, ["Calculator or chain", "Discipline", "Version", "Known answers", "Unconfirmed / Secondary", "Independent re-derivation", "Records not entered", "Open defects", "Manual test"],
                 [w * 0.22f, w * 0.09f, w * 0.06f, w * 0.12f, w * 0.07f, w * 0.17f, w * 0.12f, w * 0.06f, w * 0.09f],
                 [.. drawn.Select(Cells)],
                 [SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left]);

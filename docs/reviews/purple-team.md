@@ -216,3 +216,93 @@ One contrived decimal-point shape still only warns (P-B-04, Info), and it is acc
 **Blue's notes, judged.**
 - **Desktop Cancel abandons a background parse.** Accept: the parse checks the same token on every chunk, and one `Read()` is capped at a 64 KB tag (RR-B-02).
 - **A UTF-16 part with a stray 0x3C byte can be refused.** Accept: a refusal needs more than 64 KB of unbroken text after the byte, cell text is capped at 8 KB, the honest UTF-16 probes read, and Excel and LibreOffice write UTF-8 (RR-B-03).
+
+## Addendum C
+
+**Summary.**
+- Scope: the defensive controls of the four Addendum C features at `1474cd0a` (`v0.26.0/addC-reviews-colour`): C-3 record import (ADR-0174), C-4 verification dashboard, C-5 guided test (ADR-0175) and C-6 demo installer (ADR-0176). For each control I asked whether a permanent test exercises it, not only whether the code has it.
+- Every control that the ADRs and the Opus review fixes name has a regression test, with three exceptions:
+  - The record import's row and column caps had none (P-C-01, fixed in this change).
+  - A damaged run document crashed the readers (B-C-01, fixed in this change).
+  - Two caps that cannot be reached through the service have none (P-C-02).
+- Security and Red are reported separately in parallel; their findings are verified there, not here.
+
+**Method.**
+- For each control I read the code path, then named the test that fails if the control is removed.
+- Where no test did, I wrote a throwaway probe against the build: a damaged run document, 1,000 and 1,001 data rows, 64 and 65 columns, 1,000 runs on SQLite, an old database.
+- I promoted to permanent tests the probes that found a gap, in `tests/Tempest.Calc.Tests.Library/AddendumCColourRegressionTests.cs`. The other probes were removed.
+- Suites, Linux, warnings as errors: Library, Addendum C classes 486/486; Desktop, Addendum C classes 113/113.
+
+### C-3 record import
+
+| Control | Permanent test | Verdict |
+|---|---|---|
+| Bounded reader (5 MB, strict UTF-8, control characters) | `RecordImportTests.Hostile_Files_Are_Refused_By_The_Hardened_Primitives_And_Never_Throw` (a 6 MB file is refused with "larger than") | Exercised |
+| Strict CSV, a malformed file refused whole with its line | `A_Malformed_Csv_Is_Refused_Whole_With_The_Reason_And_The_Line_And_Nothing_Is_Saved`, `A_Row_With_The_Wrong_Number_Of_Fields_Is_An_Error_On_Its_Line_And_Blocks_The_Commit` | Exercised |
+| Row cap (1,000 data rows) and column cap (64) | none before this review | Gap, fixed: `AddendumCColourRegressionTests.Purple_P_C_01_A_Record_File_At_The_Row_And_Column_Caps_Is_Read_And_One_Over_Either_Is_Refused_Whole` |
+| Formula-like text refused; one line per text cell | `A_Cell_That_Is_Not_A_Number_Is_A_Row_Error_And_A_Cell_That_Starts_Like_A_Formula_Is_Refused`, `A_Text_Cell_With_A_Line_Break_Or_Control_Character_Is_Refused_Naming_The_Column_And_The_Row`, `A_Label_Or_Material_Name_With_A_Line_Break_Is_Refused_Too`, `A_Provenance_File_Field_With_A_Line_Break_Is_Refused_Naming_The_Column_And_The_Line`, `Provenance_Typed_On_The_Screen_With_A_Line_Break_Is_Refused` | Exercised |
+| A unit typed on the grid cannot rewrite the header | `A_Grid_Unit_With_A_Comma_Quote_Bracket_Or_Line_Break_Is_Refused_And_Cannot_Rewrite_The_Header` | Exercised |
+| Number format declared, never guessed | `The_Number_Format_Is_Declared_Never_Guessed_And_A_Decimal_Comma_File_Is_Read_Under_It` | Exercised |
+| Unit check per column | `A_Unit_That_Measures_Something_Else_Is_A_Mismatch_And_Blocks_The_Import`, `A_Missing_Or_Unknown_Unit_And_A_Unit_On_A_Plain_Number_Or_A_Text_Column_Are_Refused`, `A_Unit_Of_The_Same_Kind_Is_Kept_As_Typed_And_Judged_In_The_Calculators_Unit` | Exercised |
+| The calculators' hard limits, and a hard range on every stored-but-unapplied number | `A_Stored_But_Unapplied_Number_Outside_Any_Sensible_Range_Is_Refused`, `RecordTemplateContractTests.Every_Number_That_Is_Stored_And_Never_Applied_Has_A_Hard_Range_With_Both_Ends` | Exercised |
+| A lookup table that runs the wrong way is an error | `An_Ampacity_Table_Whose_Capacity_Does_Not_Rise_With_The_Cross_Section_Is_Refused_And_Both_Rows_Are_Named`, `A_Table_That_Runs_The_Wrong_Way_Is_An_Error_On_The_Row_That_Breaks_It`, `A_Time_Current_Curve_With_The_Same_Current_Twice_Is_Refused_…` | Exercised |
+| All or nothing, in one transaction | `The_Commit_Writes_The_Whole_Set_In_One_Transaction`, `One_Bad_Row_Among_Good_Ones_Saves_Nothing`, `A_Failed_Write_Rolls_The_Whole_Import_Back`, `A_Batch_That_Repeats_A_Revision_Is_Refused_By_The_Store_As_A_Whole_And_Leaves_It_As_It_Was` | Exercised |
+| The commit judges the file against the store as it is then | `A_Title_Taken_Between_Preview_And_Commit_Refuses_The_Whole_Import_…`, `A_Revision_Saved_Between_Preview_And_Commit_Makes_The_Import_The_Revision_After_It_And_Loses_Neither` | Exercised |
+| Provenance required; `Indicative` refused; the signed-in person stamped | `A_Record_Without_Its_Provenance_Is_Refused_And_Nothing_Is_Saved`, `The_Amendment_May_Be_Blank_And_An_Indicative_Origin_Is_Refused`, `An_Ampacity_Table_Is_Imported_As_One_Record_With_Its_Provenance_Stamped_And_Licensed_By_Default` | Exercised |
+| Licensed by default; a licence on any revision holds; no export path added | `An_Imported_Record_Is_Licensed_By_Default_And_Its_Values_Never_Leave_Through_An_Export`, `A_Revision_Of_A_Licensed_Record_Stays_Licensed_Even_If_The_New_Import_Says_Otherwise`, `A_Licensed_Material_Added_To_By_An_Import_Never_Exports_In_Any_Revision`, `A_Record_Imported_As_Unlicensed_Exports_As_Before_And_The_Import_Adds_No_Export_Path` | Exercised |
+| The records screen counts a licence on any revision (kept by O-C-01's single read) | `AddendumCColourRegressionTests.Orange_O_C_01_…` (a record licensed in revision 1 and not in revision 2 counts as licensed) | Exercised |
+| CSV export quotes a line break and neutralises a formula | `An_Exported_Value_With_A_Line_Break_Is_Quoted_And_A_Formula_Is_Still_Neutralised`, `An_Exported_Record_Holding_A_Line_Break_Keeps_It_Inside_One_Quoted_Cell` | Exercised |
+| The catalogue agrees with Track P's files | `RecordTemplateContractTests` (9 tests) | Exercised |
+
+### C-4 verification dashboard
+
+| Control | Permanent test | Verdict |
+|---|---|---|
+| Snapshot reader never throws; caps on items, findings and text | `VerificationSnapshotTests.A_Fault_The_Reader_Does_Not_Foresee_Reads_As_Unavailable_And_Never_Throws`, `Text_Over_The_Cap_Is_Refused_Not_Parsed`, `Items_Findings_And_Strings_Are_Capped`, `Negative_Or_Huge_Counts_Are_Clamped`, the three null-element tests | Exercised |
+| The snapshot is current with the documents | `VerificationSnapshotStaleTests` and the CI `--check` step | Exercised |
+| Without the data, defects read "unknown", not 0 | `Without_The_Document_Data_The_Summary_And_The_Export_Say_Unknown_Not_Zero`, `When_The_Defects_Are_Unknown_The_Document_Says_Unknown_Not_Zero_Or_None` | Exercised |
+| Markdown export escapes table, link and emphasis characters; size cap | `VerificationMarkdownTests.Text_That_Would_Break_The_Table_Is_Made_Harmless_And_Long_Text_Is_Cut`, `Link_Image_And_Emphasis_Characters_Are_Escaped_So_A_Title_Cannot_Make_One`, `The_Document_Size_Is_Capped_And_Says_Where_It_Stops` | Exercised |
+| Export: extension forced, no silent overwrite, written through a temporary file, failures said in a sentence | `VerificationDashboardViewModelTests` (`The_Extension_Of_A_…_Export_Is_Forced_…`, `An_Added_Extension_Never_Replaces_A_File_That_Is_Already_There`, `An_Export_Is_Written_Beside_Its_Target_And_Moved_Into_Place_…`, `A_Failed_Move_Leaves_No_Temporary_File_And_The_Target_Untouched`, `A_Picker_That_Fails_In_An_Unforeseen_Way_Is_Shown_As_A_Sentence_Not_Left_Unobserved`) | Exercised |
+| Row cap (500) | `VerificationDashboardServiceTests` (maxRows), `The_Pdf_Draws_At_Most_The_Row_Cap_And_Says_So` | Exercised |
+| A source that fails leaves an empty dashboard and a sentence | `A_Records_Lookup_That_Fails_Leaves_An_Empty_Dashboard_And_A_Sentence_Not_An_Exception`, `A_Records_Lookup_That_Fails_In_An_Unforeseen_Way_Is_Also_A_Sentence` | Exercised |
+| A damaged guided run does not empty the dashboard | none before this review | Gap, fixed (B-C-01): `AddendumCColourRegressionTests.Black_B_C_01_…` |
+| Export byte cap (`MaxExportBytes`, 8 MB) | none | Not exercised (P-C-02) |
+| Reads only (the manual source is the read-only interface) | `ManualTestRunServiceTests.The_Status_Source_Interface_Is_Read_Only`, `DashboardIntegrationSourcesTests.The_Dashboard_Shows_The_Guided_Status_Reads_The_Runs_Once_And_Says_Not_Tested_For_The_Rest` | Exercised |
+
+### C-5 guided test
+
+| Control | Permanent test | Verdict |
+|---|---|---|
+| A guided run writes nothing but its own collection | `GuidedRunNoSideEffectsTests.A_Full_Guided_Run_Leaves_Every_Other_Table_Exactly_As_It_Was` (a full run over the shipped script beside a draft and an issued calculation; every other collection identical in text and bytes) | Exercised |
+| Script parse caps and refusal | `GuidedTestScriptTests` (`A_Script_Over_The_Step_Cap_Is_Refused`, `…_Size_Cap_…`, `A_Field_Over_The_Length_Cap_Is_Refused`, `Too_Many_Expected_Outputs_…`, `A_Damaged_Script_Is_Refused_With_A_Reason`) | Exercised |
+| The script is current with the docs | `GuidedTestScriptStalenessTests` (ran with Python here, not skipped) | Exercised |
+| Signed-in person only; only the starter records; a finished run never changes; a run on another script is not added to | `ManualTestRunServiceReviewTests.A_Run_Cannot_Be_Started_With_Nobody_Signed_In_…`, `ManualTestRunServiceTests.Only_The_Person_Who_Started_A_Run_Can_Record_In_It_Or_Finish_It`, `A_Finished_Run_Is_Dated_And_Never_Changes_Again`, `A_Run_Started_On_Another_Script_Version_Can_Be_Finished_But_Not_Added_To` | Exercised |
+| Caps: 1,000 runs; a note refused (not cut) over 2,000; values shown cut with a mark | `The_Store_Keeps_No_More_Runs_Than_Its_Cap`, `A_Note_Of_Two_Thousand_Characters_Is_Kept_And_One_More_Is_Refused_Not_Cut`, `Shown_Values_Over_The_Cap_Are_Cut_With_A_Mark`; the 1,000-run refusal was also re-probed on SQLite | Exercised |
+| Cap: 1,000 results per run (`ManualTestRun.MaxResults`) | none | Not exercised (P-C-02) |
+| An unreadable or newer document is left out | `A_Record_That_Cannot_Be_Read_Or_Was_Written_By_A_Newer_Build_Is_Left_Out_Not_Fatal`; a damaged result inside a readable document was not covered | Gap, fixed (B-C-01) |
+| Compare reads only the step opened, and is taken back when the form changes | `GuidedTestReviewTests.Compare_Refuses_A_Step_Whose_Worksheet_Was_Not_Opened_…`, `A_Change_To_The_Form_After_Compare_Takes_Back_…`, `Recording_Reads_The_Form_Again_And_Refuses_A_Compare_Tick_…` | Exercised |
+| Every handler guarded | `Any_Action_Run_Through_The_Guard_Turns_An_Exception_Into_A_Sentence`, `A_Store_That_Fails_Is_Reported_In_The_Status_By_Every_Action_That_Uses_It` | Exercised |
+| Results sheet encoded and written through a temporary file | `ManualTestRunServiceReviewTests` (encoding; `The_Sheet_Is_Written_Through_A_Temporary_File_And_Moved_…`) | Exercised |
+| Old runs deleted only when finished, beyond the newest 50, after the app's dialog | `ManualTestRunServiceReviewTests`, `GuidedTestReviewTests.Older_Finished_Runs_Are_Deleted_Only_After_The_Confirmation_…`, `Without_The_Apps_Confirmation_Dialog_Nothing_Is_Deleted` | Exercised |
+
+### C-6 demo installer
+
+| Control | Permanent test | Verdict |
+|---|---|---|
+| Never installed by itself | `DemoProjectTests.Building_The_Services_And_Asking_Its_Status_On_An_Empty_Database_Makes_Nothing`, `DemoProjectViewModelTests.Starting_On_An_Empty_Database_Installs_Nothing_And_Offers_Only_The_Install` | Exercised |
+| Asks in the app's dialog first; a No changes nothing | `The_Install_Asks_First_Waits_For_The_Answer_And_A_No_Installs_Nothing` | Exercised |
+| Identity is the flag and the number; a real project is never removed as the demo | `Installing_Again_Is_Refused_In_A_Sentence_And_Makes_Nothing`, `A_Real_Project_That_Holds_The_Number_Stops_The_Install_And_Is_Never_Removed_As_The_Demo` | Exercised |
+| An issued record is never deleted (service and store) | `An_Issued_Demo_Pack_Is_Never_Deleted_…`, `Issued_Evidence_Under_The_Demo_Refuses_The_Removal_Naming_It_And_Changes_Nothing`, `The_Store_Deletes_Nothing_But_A_Projects_Rows_And_Demonstration_Scan_Profiles` (including the `ArgumentException` for an empty project and a non-demo profile id) | Exercised |
+| One transaction; audit before the soft delete; a retry finishes it | `The_Row_Deletion_Is_One_Transaction_Body_…`, `An_Install_And_A_Removal_Each_Leave_One_Audit_Row_…`, `A_Failure_After_The_Rows_Are_Deleted_Is_Audited_With_The_Real_Counts_…` | Exercised |
+| Only the profile versions the install wrote | `Remove_Deletes_Only_The_Scan_Profile_Versions_The_Install_Wrote_And_Keeps_A_Later_Version_A_Person_Saved` | Exercised; and a version a calculation outside the demo uses is kept: `AddendumCColourRegressionTests.Black_B_C_02_…` (B-C-02, fixed) |
+| A stale write to a removed calculation or pack is refused | `A_Stale_Update_Of_A_Calculation_Deleted_Since_It_Was_Read_…`, `A_Stale_Update_Of_A_Pack_Deleted_Since_It_Was_Read_…` | Exercised |
+| The watermark follows the project flag only | `Every_Calculation_Title_And_Reference_Says_Demo_And_Every_Sheet_Carries_The_Watermark_From_The_Project_Flag`, `A_Calculation_In_A_Real_Project_Carries_No_Demo_Mark`, `DemoWatermarkTests`, `DemoWatermarkPdfTests` | Exercised |
+| A failed install cleans up, and says so when it cannot | `A_Failed_Install_Removes_What_It_Made_And_Says_Why`, `A_Failed_Install_Whose_Clean_Up_Also_Fails_Says_Part_Of_It_Is_Left_And_Remove_Clears_It` | Exercised; the cancel path too: `AddendumCColourRegressionTests.Black_B_C_04_…` (two tests; B-C-04, fixed) |
+
+### Purple findings
+
+| ID | Sev | Location | Description | Fix | Regression test | Status |
+|---|---|---|---|---|---|---|
+| P-C-01 | Low | `RecordImportService.MaxFileRows` (1,001 lines), `MaxColumns` 64 | No test exercised the record import's row or column cap. A probe showed both bite: 1,000 data rows commit in 0.13 s, and 1,001 are refused whole. | Test added. | `AddendumCColourRegressionTests.Purple_P_C_01_A_Record_File_At_The_Row_And_Column_Caps_Is_Read_And_One_Over_Either_Is_Refused_Whole` | Fixed |
+| P-C-02 | Low | `ManualTestRun.MaxResults` (1,000), `VerificationDashboardViewModel.MaxExportBytes` (8 MB) | Neither cap is exercised. Neither can be reached through the services today: results are at most one per script step (110 steps), and a 500-row export is far under 8 MB. Each guards a damaged record or a future change. | Add a test that stores a run document with 1,001 results and shows that recording in it is refused, and one that drives the export guard with a stub renderer. | — | Open |
+| P-C-03 | Info | `ManualTestRunService` readers | The "unreadable document is left out" control was tested for a whole document, not for a damaged part of one (Black B-C-01). | Fixed with B-C-01. | `AddendumCColourRegressionTests.Black_B_C_01_…` | Fixed |

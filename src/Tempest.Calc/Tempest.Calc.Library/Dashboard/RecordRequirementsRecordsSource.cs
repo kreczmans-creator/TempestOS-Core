@@ -25,13 +25,13 @@ public sealed class RecordRequirementsRecordsSource : IRequiredRecordsSource
     /// <summary>Whether C-3's requirements table names the calculator <paramref name="templateId"/> (its rows then show only what it marks Required).</summary>
     public static bool IsStated(string templateId) => RecordRequirements.Entries.Any(e => string.Equals(e.Template, templateId, StringComparison.Ordinal));
 
-    public async Task<IReadOnlyDictionary<string, IReadOnlyList<RecordRequirement>>> RequirementsAsync(IReadOnlyList<CalcTemplate> templates, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyDictionary<string, IReadOnlyList<DashboardRecordRequirement>>> RequirementsAsync(IReadOnlyList<CalcTemplate> templates, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(templates);
         var usable = (await _store.ListRecordsAsync(null, cancellationToken).ConfigureAwait(false))
             .Where(StoreRequiredRecordsSource.IsUsableForRealWork)
             .ToLookup(r => r.Kind, StringComparer.Ordinal);
-        var result = new Dictionary<string, IReadOnlyList<RecordRequirement>>(StringComparer.Ordinal);
+        var result = new Dictionary<string, IReadOnlyList<DashboardRecordRequirement>>(StringComparer.Ordinal);
 
         foreach (var template in templates)
         {
@@ -42,9 +42,9 @@ public sealed class RecordRequirementsRecordsSource : IRequiredRecordsSource
                 [
                     .. kinds
                         .Where(k => RecordRequirements.For(template.Id, k.Kind).Need == RecordNeed.Required)
-                        .Select(k => new RecordRequirement(k.Kind, k.Title, usable[k.Kind].Any(r => RecordImportService.HoldsValueFor(r, k)))),
+                        .Select(k => new DashboardRecordRequirement(k.Kind, k.Title, usable[k.Kind].Any(r => RecordImportService.HoldsValueFor(r, k)))),
                 ]
-                : [.. kinds.Select(k => new RecordRequirement(k.Kind, k.Title, usable[k.Kind].Any()))];
+                : [.. kinds.Select(k => new DashboardRecordRequirement(k.Kind, k.Title, usable[k.Kind].Any()))];
         }
 
         return result;

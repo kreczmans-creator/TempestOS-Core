@@ -191,7 +191,8 @@ public sealed class ProjectBrowserView : UserControl
     /// </summary>
     public async Task<string> NextIdentifierAsync()
     {
-        var projects = await _directory.ListAsync().ConfigureAwait(true);
+        // A deleted project keeps its number, so the next free one counts the deleted projects too.
+        var projects = await _directory.ListIncludingDeletedAsync().ConfigureAwait(true);
 
         var highest = projects
             .Select(p => p.Identifier)

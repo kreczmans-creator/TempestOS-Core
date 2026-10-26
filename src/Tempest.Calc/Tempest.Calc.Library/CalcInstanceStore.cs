@@ -244,6 +244,17 @@ public sealed class CalcInstanceStore
     /// <returns>How many calculation rows, pack rows and scan-profile rows were deleted.</returns>
     public async Task<(int Instances, int Packs, int ScanProfiles)> DeleteDemonstrationRowsAsync(Guid projectId, IReadOnlyCollection<(string Id, int Version)> scanProfiles, CancellationToken cancellationToken = default)
     {
+        var deletion = await DeleteDemonstrationAsync(projectId, scanProfiles, cancellationToken).ConfigureAwait(false);
+        return (deletion.Instances, deletion.Packs, deletion.ScanProfiles);
+    }
+
+    /// <summary>
+    /// As <see cref="DeleteDemonstrationRowsAsync"/>, and says which of the named scan-profile versions were kept: a version that a calculation of any
+    /// other project cites in its scan imports is not deleted, because that calculation's import names it and may be repeated with it (black-team B-C-02).
+    /// The check is made inside the same transaction as the deletion.
+    /// </summary>
+    public async Task<CalcDemoDeletion> DeleteDemonstrationAsync(Guid projectId, IReadOnlyCollection<(string Id, int Version)> scanProfiles, CancellationToken cancellationToken = default)
+    {
         ArgumentNullException.ThrowIfNull(scanProfiles);
 
         if (projectId == Guid.Empty)
@@ -253,12 +264,29 @@ public sealed class CalcInstanceStore
             throw new ArgumentException($"Only scan profiles whose id starts with '{CalcDemoProject.ScanProfilePrefix}' belong to the demonstration.", nameof(scanProfiles));
 
         var counts = (Instances: 0, Packs: 0, ScanProfiles: 0);
+        var kept = new List<(string Id, int Version)>();
 
         await _store.ExecuteInTransactionAsync(async (tx, token) =>
         {
             // A transaction may be retried; count from nothing each time.
             counts = (0, 0, 0);
+            kept.Clear();
             var prefix = projectId.ToString("N") + "/";
+
+            // The profile versions a calculation outside the demonstration cites (read before anything is deleted; only the profiles named are looked for).
+            var citedElsewhere = new HashSet<(string Id, int Version)>();
+
+            foreach (var key in await tx.ListKeysAsync(InstanceCollection, string.Empty, token).ConfigureAwait(false))
+            {
+                if (key.StartsWith(prefix, StringComparison.Ordinal))
+                    continue;
+
+                if (Deserialise<CalcInstance>(await tx.ReadAsync(InstanceCollection, key, token).ConfigureAwait(false)) is { ScanImports: { Count: > 0 } imports })
+                {
+                    foreach (var import in imports.Where(i => scanProfiles.Contains((i.ProfileId, i.ProfileVersion))))
+                        citedElsewhere.Add((import.ProfileId, import.ProfileVersion));
+                }
+            }
 
             foreach (var key in await tx.ListKeysAsync(InstanceCollection, prefix, token).ConfigureAwait(false))
             {
@@ -292,6 +320,12 @@ public sealed class CalcInstanceStore
 
             foreach (var (profileId, version) in scanProfiles)
             {
+                if (citedElsewhere.Contains((profileId, version)))
+                {
+                    kept.Add((profileId, version));
+                    continue;
+                }
+
                 var key = ImportProfileKey(profileId, version);
 
                 // Only the version as the install writes it: a person who saved their own profile under the demonstration's id and version before the
@@ -306,7 +340,7 @@ public sealed class CalcInstanceStore
             }
         }, cancellationToken).ConfigureAwait(false);
 
-        return counts;
+        return new CalcDemoDeletion(counts.Instances, counts.Packs, counts.ScanProfiles, [.. kept]);
     }
 
     public async Task<CalcPack?> FindPackAsync(Guid id, CancellationToken cancellationToken = default)
@@ -498,6 +532,20 @@ public sealed class CalcInstanceStore
             .Where(r => kind is null || string.Equals(r.Kind, kind, StringComparison.Ordinal))
             .GroupBy(r => r.Id).Select(g => g.OrderBy(r => r.Revision).Last())
             .OrderBy(r => r.Kind, StringComparer.Ordinal).ThenBy(r => r.Title, StringComparer.Ordinal).ToList();
+    }
+
+    /// <summary>
+    /// The latest revision of every record, each with whether any of its revisions is licensed (the rule of <see cref="IsLicensedInAnyRevisionAsync"/>),
+    /// from one read of the collection. For a screen that lists every record kind with its counts: asking per kind and per record would read the
+    /// collection once per kind and once more per unlicensed record (Orange O-C-01).
+    /// </summary>
+    public async Task<IReadOnlyList<(CalcDataRecord Record, bool LicensedInAnyRevision)>> ListRecordsWithLicenceAsync(CancellationToken cancellationToken = default)
+    {
+        var all = await _store.ReadAllAsync(RecordCollection, cancellationToken).ConfigureAwait(false);
+        return all.Select(kv => Deserialise<CalcDataRecord>(kv.Value)).OfType<CalcDataRecord>()
+            .GroupBy(r => r.Id)
+            .Select(g => (Record: g.OrderBy(r => r.Revision).Last(), LicensedInAnyRevision: g.Any(r => r.IsLicensed())))
+            .OrderBy(x => x.Record.Kind, StringComparer.Ordinal).ThenBy(x => x.Record.Title, StringComparer.Ordinal).ToList();
     }
 
     public static string ImportProfileKey(string id, int version) => $"{id}@{version:D6}";

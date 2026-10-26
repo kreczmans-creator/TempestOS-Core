@@ -185,7 +185,7 @@ public sealed class CalcRecordsView : UserControl
         right.Children.Add(_records);
 
         right.Children.Add(Heading("Where the values come from"));
-        right.Children.Add(Labelled("Record template (Track P)", _template));
+        right.Children.Add(Labelled("Record template", _template));
         right.Children.Add(_templateNote);
 
         var fields = new WrapPanel { Orientation = Orientation.Horizontal };
@@ -265,13 +265,13 @@ public sealed class CalcRecordsView : UserControl
 
     private void Wire()
     {
-        _types.SelectionChanged += async (_, _) => await GuardedAsync(OnTypeAsync).ConfigureAwait(true);
-        _template.SelectionChanged += async (_, _) => await GuardedAsync(OnTemplateAsync).ConfigureAwait(true);
+        _types.SelectionChanged += async (_, _) => await GuardedAsync(OnTypeAsync, "show that record type").ConfigureAwait(true);
+        _template.SelectionChanged += async (_, _) => await GuardedAsync(OnTemplateAsync, "show that template").ConfigureAwait(true);
         _numberFormat.SelectionChanged += async (_, _) => await GuardedAsync(async () =>
         {
             if (!_rendering)
                 await _model.SetDecimalCommaAsync(_numberFormat.SelectedIndex == 1).ConfigureAwait(true);
-        }).ConfigureAwait(true);
+        }, "read the file under that number format").ConfigureAwait(true);
 
         foreach (var box in new[] { _title, _source, _edition, _amendment, _table, _holder, _notes })
             box.TextChanged += (_, _) => OnProvenanceChanged();
@@ -281,18 +281,18 @@ public sealed class CalcRecordsView : UserControl
         _origin.SelectionChanged += (_, _) => OnProvenanceChanged();
 
         _addRow.Click += (_, _) => _model.AddRow();
-        _removeRow.Click += async (_, _) => { _model.RemoveLastRow(); await GuardedAsync(() => _model.PreviewGridAsync()).ConfigureAwait(true); };
+        _removeRow.Click += async (_, _) => { _model.RemoveLastRow(); await GuardedAsync(() => _model.PreviewGridAsync(), "check the typed rows").ConfigureAwait(true); };
         _clearGrid.Click += (_, _) => _model.ClearGrid();
-        _saveGrid.Click += async (_, _) => await GuardedAsync(async () => { await _model.SaveGridAsync().ConfigureAwait(true); }).ConfigureAwait(true);
-        _chooseFile.Click += async (_, _) => await GuardedAsync(PickFileAsync).ConfigureAwait(true);
+        _saveGrid.Click += async (_, _) => await GuardedAsync(async () => { await _model.SaveGridAsync().ConfigureAwait(true); }, "save the typed table").ConfigureAwait(true);
+        _chooseFile.Click += async (_, _) => await GuardedAsync(PickFileAsync, "read the file").ConfigureAwait(true);
         _removeFile.Click += (_, _) => _model.ClearFile();
-        _importFile.Click += async (_, _) => await GuardedAsync(async () => { await _model.ImportFileAsync().ConfigureAwait(true); }).ConfigureAwait(true);
-        _loadProvenance.Click += async (_, _) => await GuardedAsync(PickProvenanceAsync).ConfigureAwait(true);
+        _importFile.Click += async (_, _) => await GuardedAsync(async () => { await _model.ImportFileAsync().ConfigureAwait(true); }, "import the file").ConfigureAwait(true);
+        _loadProvenance.Click += async (_, _) => await GuardedAsync(PickProvenanceAsync, "read the provenance file").ConfigureAwait(true);
 
         _debounce.Tick += async (_, _) =>
         {
             _debounce.Stop();
-            await GuardedAsync(() => _model.RefreshPreviewsAsync()).ConfigureAwait(true);
+            await GuardedAsync(() => _model.RefreshPreviewsAsync(), "check the entries").ConfigureAwait(true);
         };
     }
 
@@ -354,7 +354,7 @@ public sealed class CalcRecordsView : UserControl
         {
             Title = "Choose a record CSV",
             AllowMultiple = false,
-            FileTypeFilter = [new FilePickerFileType("Record CSV (Track P template)") { Patterns = ["*.csv", "*.txt"] }],
+            FileTypeFilter = [new FilePickerFileType("Record CSV (from a record template)") { Patterns = ["*.csv", "*.txt"] }],
         }).ConfigureAwait(true);
 
         if (picked.Count == 0)
@@ -390,7 +390,8 @@ public sealed class CalcRecordsView : UserControl
         _model.LoadProvenanceFile(file.Bytes);
     }
 
-    private async Task GuardedAsync(Func<Task> action)
+    /// <summary>Runs a handler; a failure is one sentence in the status line that names <paramref name="what"/> was being done (yellow-team Y-C-03).</summary>
+    private async Task GuardedAsync(Func<Task> action, string what)
     {
         try
         {
@@ -398,7 +399,7 @@ public sealed class CalcRecordsView : UserControl
         }
         catch (Exception failure) when (failure is not OperationCanceledException)
         {
-            _status.Text = $"Could not complete that: {failure.Message}";
+            _status.Text = $"Could not {what}: {failure.Message}";
         }
     }
 
@@ -458,7 +459,7 @@ public sealed class CalcRecordsView : UserControl
             // The template and the provenance.
             _template.ItemsSource = _model.Templates.Select(t => t.Label).ToList();
             _template.SelectedIndex = _model.Template is { } t ? _model.Templates.ToList().FindIndex(x => x.Id == t.Id) : -1;
-            _templateNote.Text = _model.Template is { } tt ? $"{tt.Title}. {tt.Note}" : _model.Templates.Count == 0 ? "No Track P template fills this kind; its records are entered on a worksheet (Save inputs as record)." : string.Empty;
+            _templateNote.Text = _model.Template is { } tt ? $"{tt.Title}. {tt.Note}" : _model.Templates.Count == 0 ? "No record template fills this kind; its records are entered on a worksheet (Save inputs as record)." : string.Empty;
             Set(_title, _model.Title);
             Set(_source, _model.SourceTitle);
             Set(_edition, _model.Edition);
@@ -658,7 +659,7 @@ public sealed class CalcRecordsView : UserControl
                     if (_rendering || pick.SelectedItem is not string chosen)
                         return;
 
-                    await GuardedAsync(() => _model.SetColumnMapAsync(header, chosen == LeaveOut ? null : chosen)).ConfigureAwait(true);
+                    await GuardedAsync(() => _model.SetColumnMapAsync(header, chosen == LeaveOut ? null : chosen), "map that column").ConfigureAwait(true);
                 };
                 Grid.SetColumn(pick, 1);
                 row.Children.Add(pick);

@@ -3,7 +3,7 @@ using Tempest.Calc.Sheets;
 namespace Tempest.Calc.Library.Dashboard;
 
 /// <summary>One record kind a template draws on, and whether any record of it has been entered.</summary>
-public sealed record RecordRequirement(string Kind, string Title, bool Present);
+public sealed record DashboardRecordRequirement(string Kind, string Title, bool Present);
 
 /// <summary>
 /// Which record kinds each template draws on and which of them have no record entered (Addendum C, C-4). The dashboard asks through this
@@ -13,7 +13,7 @@ public sealed record RecordRequirement(string Kind, string Title, bool Present);
 public interface IRequiredRecordsSource
 {
     /// <summary>The requirements of every template, by template id. A template that draws on no records has an empty list or no entry.</summary>
-    Task<IReadOnlyDictionary<string, IReadOnlyList<RecordRequirement>>> RequirementsAsync(IReadOnlyList<CalcTemplate> templates, CancellationToken cancellationToken = default);
+    Task<IReadOnlyDictionary<string, IReadOnlyList<DashboardRecordRequirement>>> RequirementsAsync(IReadOnlyList<CalcTemplate> templates, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -27,11 +27,11 @@ public sealed class StoreRequiredRecordsSource : IRequiredRecordsSource
 
     public StoreRequiredRecordsSource(CalcInstanceStore store) => _store = store ?? throw new ArgumentNullException(nameof(store));
 
-    public async Task<IReadOnlyDictionary<string, IReadOnlyList<RecordRequirement>>> RequirementsAsync(IReadOnlyList<CalcTemplate> templates, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyDictionary<string, IReadOnlyList<DashboardRecordRequirement>>> RequirementsAsync(IReadOnlyList<CalcTemplate> templates, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(templates);
         var present = (await _store.ListRecordsAsync(null, cancellationToken).ConfigureAwait(false)).Where(IsUsableForRealWork).Select(r => r.Kind).ToHashSet(StringComparer.Ordinal);
-        var result = new Dictionary<string, IReadOnlyList<RecordRequirement>>(StringComparer.Ordinal);
+        var result = new Dictionary<string, IReadOnlyList<DashboardRecordRequirement>>(StringComparer.Ordinal);
 
         foreach (var template in templates)
         {
@@ -39,7 +39,7 @@ public sealed class StoreRequiredRecordsSource : IRequiredRecordsSource
             [
                 .. (template.RecordKinds ?? [])
                     .Where(k => !MaterialLibrary.IsMaterial(k.Kind))
-                    .Select(k => new RecordRequirement(k.Kind, k.Title, present.Contains(k.Kind))),
+                    .Select(k => new DashboardRecordRequirement(k.Kind, k.Title, present.Contains(k.Kind))),
             ];
         }
 
@@ -58,28 +58,28 @@ public sealed class StoreRequiredRecordsSource : IRequiredRecordsSource
 
 /// <summary>
 /// The manual-test status of a row, from the guided test run records (Addendum C, C-5). The integrator wires the C-5 implementation in;
-/// <see cref="NoManualTestStatusSource"/> says "not tested" for everything.
+/// <see cref="NoDashboardManualTestSource"/> says "not tested" for everything.
 /// </summary>
-public interface IManualTestStatusSource
+public interface IDashboardManualTestSource
 {
     /// <summary>The status of the template (or pack template) <paramref name="id"/>.</summary>
-    Task<ManualTestStatus> StatusAsync(string id, CancellationToken cancellationToken = default);
+    Task<DashboardManualTestStatus> StatusAsync(string id, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
 /// A manual-test source that answers every row from one read (the guided test's run records are read once per report, not once per row). The
 /// dashboard asks it once, before the rows; an id it does not hold is "not tested".
 /// </summary>
-public interface IBulkManualTestStatusSource : IManualTestStatusSource
+public interface IBulkDashboardManualTestSource : IDashboardManualTestSource
 {
     /// <summary>The status of every id that has one, keyed by template (or pack template) id, ordinal.</summary>
-    Task<IReadOnlyDictionary<string, ManualTestStatus>> AllAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyDictionary<string, DashboardManualTestStatus>> AllAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>The default manual-test source: nothing has been tested.</summary>
-public sealed class NoManualTestStatusSource : IManualTestStatusSource
+public sealed class NoDashboardManualTestSource : IDashboardManualTestSource
 {
-    public Task<ManualTestStatus> StatusAsync(string id, CancellationToken cancellationToken = default) => Task.FromResult(ManualTestStatus.NotTested);
+    public Task<DashboardManualTestStatus> StatusAsync(string id, CancellationToken cancellationToken = default) => Task.FromResult(DashboardManualTestStatus.NotTested);
 }
 
 /// <summary>What the dashboard shows: the rows, whether the cap cut some off and whether the document data was available.</summary>
@@ -102,7 +102,7 @@ public sealed record VerificationReport(IReadOnlyList<VerificationRow> Rows, int
 /// Addendum C, C-4: assembles the verification dashboard, one row per worksheet calculator and one per chain, from the template catalogue
 /// (id, discipline, version, known-answer cases and their provenance flags, record kinds), the embedded document snapshot
 /// (<see cref="VerificationSnapshot"/>: KAT results, Track P re-derivation, the known-defects list, worked examples), the records store
-/// (through <see cref="IRequiredRecordsSource"/>) and the manual-test status (through <see cref="IManualTestStatusSource"/>).
+/// (through <see cref="IRequiredRecordsSource"/>) and the manual-test status (through <see cref="IDashboardManualTestSource"/>).
 /// It only reads: no calculation, Evidence status or issued record is touched.
 /// </summary>
 public sealed class VerificationDashboardService
@@ -117,7 +117,7 @@ public sealed class VerificationDashboardService
     private readonly IReadOnlyList<CalcPackTemplate> _packTemplates;
     private readonly VerificationSnapshot _snapshot;
     private readonly IRequiredRecordsSource? _records;
-    private readonly IManualTestStatusSource _manual;
+    private readonly IDashboardManualTestSource _manual;
     private readonly TimeProvider _time;
     private readonly int _maxRows;
 
@@ -125,18 +125,18 @@ public sealed class VerificationDashboardService
     /// <param name="packTemplates">The built-in chains (saved user chains are not verified and not listed).</param>
     /// <param name="snapshot">The embedded document data, or <see cref="VerificationSnapshot.LoadEmbedded"/> when <see langword="null"/>.</param>
     /// <param name="records">The records lookup; <see langword="null"/> shows no missing records.</param>
-    /// <param name="manual">The manual-test source; <see cref="NoManualTestStatusSource"/> when <see langword="null"/>.</param>
+    /// <param name="manual">The manual-test source; <see cref="NoDashboardManualTestSource"/> when <see langword="null"/>.</param>
     /// <param name="time">The clock.</param>
     /// <param name="maxRows">A lower row cap for a test; it can never exceed <see cref="MaxRows"/>.</param>
     public VerificationDashboardService(
         CalcCatalogue catalogue, IReadOnlyList<CalcPackTemplate> packTemplates, VerificationSnapshot? snapshot = null,
-        IRequiredRecordsSource? records = null, IManualTestStatusSource? manual = null, TimeProvider? time = null, int maxRows = MaxRows)
+        IRequiredRecordsSource? records = null, IDashboardManualTestSource? manual = null, TimeProvider? time = null, int maxRows = MaxRows)
     {
         _catalogue = catalogue ?? throw new ArgumentNullException(nameof(catalogue));
         _packTemplates = packTemplates ?? throw new ArgumentNullException(nameof(packTemplates));
         _snapshot = snapshot ?? VerificationSnapshot.LoadEmbedded();
         _records = records;
-        _manual = manual ?? new NoManualTestStatusSource();
+        _manual = manual ?? new NoDashboardManualTestSource();
         _time = time ?? TimeProvider.System;
         _maxRows = Math.Clamp(maxRows, 1, MaxRows);
     }
@@ -158,15 +158,15 @@ public sealed class VerificationDashboardService
         var entries = _catalogue.Current();
         var templates = entries.Select(e => e.Template).ToList();
         var requirements = _records is null
-            ? new Dictionary<string, IReadOnlyList<RecordRequirement>>(StringComparer.Ordinal)
+            ? new Dictionary<string, IReadOnlyList<DashboardRecordRequirement>>(StringComparer.Ordinal)
             : await _records.RequirementsAsync(templates, cancellationToken).ConfigureAwait(false);
         var rows = new List<VerificationRow>();
 
         // A source that can read everything at once is read once; the rows then look their status up.
-        var allManual = _manual is IBulkManualTestStatusSource bulk ? await bulk.AllAsync(cancellationToken).ConfigureAwait(false) : null;
+        var allManual = _manual is IBulkDashboardManualTestSource bulk ? await bulk.AllAsync(cancellationToken).ConfigureAwait(false) : null;
 
-        async Task<ManualTestStatus> ManualAsync(string id) =>
-            allManual is null ? await _manual.StatusAsync(id, cancellationToken).ConfigureAwait(false) : allManual.GetValueOrDefault(id) ?? ManualTestStatus.NotTested;
+        async Task<DashboardManualTestStatus> ManualAsync(string id) =>
+            allManual is null ? await _manual.StatusAsync(id, cancellationToken).ConfigureAwait(false) : allManual.GetValueOrDefault(id) ?? DashboardManualTestStatus.NotTested;
 
         // Without the document data the open defects are not known: the rows say so instead of showing zero.
         var defectsKnown = _snapshot.Problem is null;
@@ -189,7 +189,7 @@ public sealed class VerificationDashboardService
         return new VerificationReport([.. rows.Take(_maxRows)], rows.Count, rows.Count > _maxRows, _snapshot.Problem, _time.GetUtcNow());
     }
 
-    private static VerificationRow CalculatorRow(CalcTemplate template, SnapshotItem? item, IReadOnlyList<RecordRequirement> requirements, ManualTestStatus manual, bool defectsKnown)
+    private static VerificationRow CalculatorRow(CalcTemplate template, SnapshotItem? item, IReadOnlyList<DashboardRecordRequirement> requirements, DashboardManualTestStatus manual, bool defectsKnown)
     {
         var (state, passed, note) = KatState(template, item?.Kat);
         var (result, counts, verdict, findings) = Rederivation(item?.Rederivation);
@@ -203,7 +203,7 @@ public sealed class VerificationDashboardService
             findings, manual, [], null, defectsKnown);
     }
 
-    private VerificationRow ChainRow(CalcPackTemplate pack, SnapshotItem? item, IReadOnlyDictionary<string, IReadOnlyList<RecordRequirement>> requirements, ManualTestStatus manual, bool defectsKnown)
+    private VerificationRow ChainRow(CalcPackTemplate pack, SnapshotItem? item, IReadOnlyDictionary<string, IReadOnlyList<DashboardRecordRequirement>> requirements, DashboardManualTestStatus manual, bool defectsKnown)
     {
         var stepIds = pack.Steps.Select(s => s.TemplateId).Distinct(StringComparer.Ordinal).ToList();
         var steps = stepIds.Select(id => _catalogue.Find(id)).OfType<CalcCatalogueEntry>().ToList();
