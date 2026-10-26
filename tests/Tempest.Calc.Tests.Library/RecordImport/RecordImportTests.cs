@@ -280,6 +280,29 @@ public sealed class RecordImportTests
     }
 
     [Fact]
+    public async Task A_Time_Current_Curve_With_The_Same_Current_Twice_Is_Refused_And_Any_Order_Of_Distinct_Currents_Is_Taken()
+    {
+        // Review finding 5: two points at one current give the curve two times there; the calculator interpolates on I, so the second is never reached.
+        var host = Host();
+        var service = host.Service.RecordImport;
+        const string header = "I2t_let[A2*s],I_cn[kA],t[s],I[A]";
+
+        var twice = await service.PreviewAsync(Request("02", Csv(header, "50000,10,0.1,500", ",,1,200", ",,5,200", ",,10,100"), Provenance("Synthetic fuse")));
+        Assert.False(twice.CanCommit);
+        var error = Assert.Single(twice.Errors);
+        Assert.Equal(4, error.Line);
+        Assert.Equal("I", error.Column);
+        Assert.Contains("repeats line 3", error.Message, StringComparison.Ordinal);
+
+        // The same current written two ways is the same number.
+        Assert.False((await service.PreviewAsync(Request("02", Csv(header, "50000,10,0.1,500", ",,1,200", ",,5,200.0")))).CanCommit);
+
+        // Distinct currents in any order of rows are fine: the order of the rows does not matter, only that no current repeats.
+        var shuffled = await service.PreviewAsync(Request("02", Csv(header, "50000,10,10,100", ",,0.1,500", ",,1,200"), Provenance("Synthetic fuse")));
+        Assert.True(shuffled.CanCommit, Describe(shuffled));
+    }
+
+    [Fact]
     public async Task A_Table_Typed_On_The_Screen_Has_No_File_Hash_And_Says_It_Was_Typed()
     {
         var host = Host();
@@ -320,6 +343,34 @@ public sealed class RecordImportTests
         var noUnit = RecordImportService.GridToCsv(template, ["", "", "", ""], [["air", "PVC", "20", "0.9"]]);
         Assert.Equal("-", RecordUnits.SplitHeader(Encoding.UTF8.GetString(noUnit.Bytes).Split("\r\n")[0].Split(',')[2]).Unit);
         Assert.Equal(RecordUnitCheck.Missing, (await host.Service.RecordImport.PreviewAsync(Request("06", noUnit.Bytes, fileName: null))).Columns.Single(c => c.Symbol == "theta_a").Unit);
+    }
+
+    [Theory]
+    [InlineData("mm,evil")]
+    [InlineData("mm\"x")]
+    [InlineData("mm]")]
+    [InlineData("[mm")]
+    [InlineData("mm\n=1+2")]
+    [InlineData("m\rm")]
+    public async Task A_Grid_Unit_With_A_Comma_Quote_Bracket_Or_Line_Break_Is_Refused_And_Cannot_Rewrite_The_Header(string unit)
+    {
+        // Review finding 6: the unit goes into the header between brackets, unquoted; a comma or a bracket in it would add a column or end the header.
+        var host = Host();
+        var template = RecordTemplates.Find("06")!;
+        var csv = RecordImportService.GridToCsv(template, ["", "", unit, ""], [["air", "PVC", "20", "0.9"]]);
+
+        var problem = Assert.Single(csv.Problems);
+        Assert.Contains("theta_a", problem, StringComparison.Ordinal);
+        Assert.Contains("comma, a quote, a bracket or a line break", problem, StringComparison.Ordinal);
+
+        // Whatever a caller does with the bytes, the header is still four columns and the importer refuses the file.
+        var header = Encoding.UTF8.GetString(csv.Bytes).Split("\r\n")[0];
+        Assert.Equal("medium[text],insulation[text],theta_a[?],C_a[-]", header);
+        var preview = await host.Service.RecordImport.PreviewAsync(Request("06", csv.Bytes, fileName: null));
+        Assert.False(preview.CanCommit);
+
+        // A unit typed for a text column is not written at all, and a plain unit raises nothing.
+        Assert.Empty(RecordImportService.GridToCsv(template, ["a,b", "[", "degC", ""], [["air", "PVC", "20", "0.9"]]).Problems);
     }
 
     [Fact]

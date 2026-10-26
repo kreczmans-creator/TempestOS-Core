@@ -56,7 +56,7 @@ public static class RecordTemplates
         T("02", "device.characteristic", "Device time-current points", "device.characteristic",
             "I2t_let[A2*s],I_cn[kA],t[s],I[A]",
             "One record per file: I2t_let and I_cn are read from the first data row, the other columns are the curve points.",
-            Req("t", "I"), Pos("t", "I"), Rows(max: 40), Mono([], "I", "t", RecordDirection.Falling), Warn("I2t_let", 1, 1e9), Warn("I_cn", 1, 150)),
+            Req("t", "I"), Pos("t", "I"), Uniq("I"), Rows(max: 40), Mono([], "I", "t", RecordDirection.Falling), Warn("I2t_let", 1, 1e9), Warn("I_cn", 1, 150)),
 
         Proposed("03", "bs7671.max-zs", "Maximum earth fault loop impedance", "bs7671.max-zs",
             "device[text],t_disc[s],I_n[A],Z_s_max[ohm]",

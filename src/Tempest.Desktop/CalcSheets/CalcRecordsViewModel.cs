@@ -338,6 +338,14 @@ public sealed class CalcRecordsViewModel
         var csv = RecordImportService.GridToCsv(template, [.. _gridColumns.Select(c => c.Unit)], [.. _gridRows.Select(r => (IReadOnlyList<string>)r)]);
         _gridRowOfLine = csv.GridRowOfLine;
 
+        if (csv.Problems.Count > 0)
+        {
+            GridPreview = null;
+            GridIssueLines = [.. csv.Problems];
+            PreviewChanged?.Invoke();
+            return;
+        }
+
         if (csv.GridRowOfLine.Count == 0)
         {
             GridPreview = null;
@@ -373,7 +381,7 @@ public sealed class CalcRecordsViewModel
         PreviewChanged?.Invoke();
     }
 
-    /// <summary>Saves the typed rows as records, all or none.</summary>
+    /// <summary>Saves the typed rows as records, all or none. <see langword="null"/> when there is nothing to save them as, or a unit was typed that cannot be read (the status says which).</summary>
     public async Task<RecordImportOutcome?> SaveGridAsync(CancellationToken cancellationToken = default)
     {
         if (Template is not { } template)
@@ -381,6 +389,15 @@ public sealed class CalcRecordsViewModel
 
         var csv = RecordImportService.GridToCsv(template, [.. _gridColumns.Select(c => c.Unit)], [.. _gridRows.Select(r => (IReadOnlyList<string>)r)]);
         _gridRowOfLine = csv.GridRowOfLine;
+
+        if (csv.Problems.Count > 0)
+        {
+            Status = "Nothing was saved: " + csv.Problems[0];
+            GridIssueLines = [.. csv.Problems];
+            Changed?.Invoke();
+            return null;
+        }
+
         return await CommitAsync(Request(csv.Bytes, null, null), "typed", cancellationToken).ConfigureAwait(true);
     }
 

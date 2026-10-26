@@ -63,7 +63,30 @@ public sealed class RecordImportService
         ArgumentNullException.ThrowIfNull(rows);
 
         var sb = new System.Text.StringBuilder();
-        sb.Append(string.Join(',', template.Columns.Select((c, i) => $"{QuoteCsv(c.Symbol)}[{(c.IsText ? "text" : string.IsNullOrWhiteSpace(i < units.Count ? units[i] : null) ? "-" : units[i].Trim())}]"))).Append("\r\n");
+        var problems = new List<string>();
+
+        // The unit is written into the header cell between brackets, unquoted: a comma, a quote, a bracket or a line break in it would end the cell, the
+        // unit or the row, and make the header say something else. A unit never holds one, so the grid is refused (the bytes carry '?', which the importer refuses too).
+        string UnitOf(RecordTemplateColumn c, int i)
+        {
+            if (c.IsText)
+                return "text";
+
+            var typed = (i < units.Count ? units[i] : null)?.Trim() ?? string.Empty;
+
+            if (typed.Length == 0)
+                return "-";
+
+            if (typed.IndexOfAny([',', '"', '[', ']', '\r', '\n']) >= 0)
+            {
+                problems.Add($"The unit of {c.Symbol} holds a comma, a quote, a bracket or a line break. A unit is typed on its own (mm2, kN, degC).");
+                return "?";
+            }
+
+            return typed;
+        }
+
+        sb.Append(string.Join(',', template.Columns.Select((c, i) => $"{QuoteCsv(c.Symbol)}[{UnitOf(c, i)}]"))).Append("\r\n");
         var lineOf = new List<int>();
 
         for (var r = 0; r < rows.Count; r++)
@@ -77,7 +100,7 @@ public sealed class RecordImportService
             lineOf.Add(r + 1);
         }
 
-        return new RecordGridCsv(new System.Text.UTF8Encoding(false).GetBytes(sb.ToString()), lineOf);
+        return new RecordGridCsv(new System.Text.UTF8Encoding(false).GetBytes(sb.ToString()), lineOf) { Problems = problems };
     }
 
     private static string QuoteCsv(string text) =>

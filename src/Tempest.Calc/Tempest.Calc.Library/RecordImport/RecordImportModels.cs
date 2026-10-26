@@ -69,7 +69,11 @@ public sealed record RecordProvenanceInput(
 }
 
 /// <summary>A table typed on the screen written as the CSV the importer reads, with the typed row each data line came from (1-based, line 2 first).</summary>
-public sealed record RecordGridCsv(byte[] Bytes, IReadOnlyList<int> GridRowOfLine);
+public sealed record RecordGridCsv(byte[] Bytes, IReadOnlyList<int> GridRowOfLine)
+{
+    /// <summary>Why the grid cannot be read as a file (a unit typed with a comma, a quote, a bracket or a line break), in plain words; empty when it can. The bytes then carry <c>?</c> for that unit, so a caller that ignores this still has the importer refuse it.</summary>
+    public IReadOnlyList<string> Problems { get; init; } = [];
+}
 
 /// <summary>One row of a Track P <c>_provenance.csv</c> as read: the kind it names and the provenance fields.</summary>
 public sealed record RecordProvenanceRow(string Kind, RecordProvenanceInput Provenance, string EnteredBy);
