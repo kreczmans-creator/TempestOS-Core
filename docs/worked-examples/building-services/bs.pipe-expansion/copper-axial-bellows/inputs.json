@@ -47,14 +47,14 @@
   },
   {
     "Symbol": "P_b",
-    "Number": 6,
-    "Unit": "bar",
+    "Number": 600,
+    "Unit": "kPa",
     "Provenance": {
       "Kind": "Specification",
       "Reference": "Heating circuit design pressure, gauge",
       "IsSufficientToIssue": true
     },
-    "ValueText": "6"
+    "ValueText": "600"
   },
   {
     "Symbol": "T_install",
@@ -103,7 +103,7 @@
   {
     "Symbol": "k_b",
     "Number": 80,
-    "Unit": "N/mm",
+    "Unit": "kN/m",
     "Provenance": {
       "Kind": "Assumption",
       "Reference": "Placeholder spring rate; replace with the manufacturer\u0027s datasheet value.",

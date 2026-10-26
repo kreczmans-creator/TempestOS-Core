@@ -12,11 +12,11 @@ The 6 m diffusion-equivalent layer holds the vapour pressure at the cold interfa
 | `Rse` | 0.04 m^2*K/W | spec: Project surface-resistance record (external), assumed |
 | `Rsi` | 0.13 m^2*K/W | spec: Project surface-resistance record (internal, horizontal flow), assumed |
 | `Rsi_f` | 0.25 m^2*K/W | spec: Conventional R_si,f = 0.25 m²K/W for the surface-condensation check of an opaque element (a record, to be checked against the owner's copy of ISO 13788), assumed |
+| `T_int` | 20 degC | spec: SPEC-A-02 §3.1: living-room design temperature |
 | `breathable` | no | assumption: Mineral wool and brick: no timber or hygroscopic layers. |
 | `climate` | 12 row(s) | assumption: Invented illustrative maritime year; replace with the project's own monthly climate record (take it from your licensed source). |
 | `humidity_mode` | constant internal relative humidity | assumption: Constant internal humidity; no humidity-class record is held for this project. |
 | `layers` | 4 row(s) | drawing: A-310 rev C |
-| `theta_int` | 20 degC | spec: SPEC-A-02 §3.1: living-room design temperature |
 
 | Output | Expected | Computed | Result |
 |---|---|---|---|
@@ -31,4 +31,4 @@ The 6 m diffusion-equivalent layer holds the vapour pressure at the cold interfa
 | `fRsi_min` | 0.590256  | 0.590256  | PASS |
 | `pass` | 1  | 1  | PASS |
 
-Governing check: Surface condensation: f_Rsi against f_Rsi,min at 80 % critical humidity — PASS (utilisation 0.67). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Minimum surface temperature factor against the factor of the wall at 80 % critical humidity — PASS (utilisation 0.67). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -8,13 +8,13 @@ Three parts return air at 22 °C / 40 % mixed with one part outdoor air at −3 
 |---|---|---|
 | `RH` | 40 | spec: Return air 22 °C / 40 % |
 | `RH_b` | 90 | spec: Winter design condition |
+| `T_db` | 22 degC | spec: Return air 22 °C / 40 % |
+| `T_db_b` | -3 degC | spec: CIBSE Guide A winter design −3 °C / 90 %, assumed |
 | `altitude` | 120 m | drawing: Site survey SRV-01: 120 m AOD |
 | `known` | relative humidity | assumption: RH given. |
 | `m_da` | 3 kg/s | spec: AHU-02 return 3 kg/s |
 | `m_da_b` | 1 kg/s | spec: AHU-02 minimum outdoor air 1 kg/s |
 | `process` | adiabatic mixing | assumption: Mixing box. |
-| `t_db` | 22 degC | spec: Return air 22 °C / 40 % |
-| `t_db_b` | -3 degC | spec: CIBSE Guide A winter design −3 °C / 90 %, assumed |
 
 | Output | Expected | Computed | Result |
 |---|---|---|---|

@@ -362,7 +362,7 @@ public sealed class PipeExpansionTests
         var block = Assert.Single(slip.Blocks);
         Assert.Equal("modulus-low", block.RuleId);
         Assert.StartsWith("E:", block.Message, StringComparison.Ordinal);
-        Assert.Contains("is E in GPa?", block.Message, StringComparison.Ordinal);
+        Assert.Contains("in GPa, not MPa", block.Message, StringComparison.Ordinal);
         Assert.Contains("MPa", block.Message, StringComparison.Ordinal);
         Assert.Empty(CalcMessageShape.Problems(block.Message));
         Assert.Null(slip.FindOutput("anchor_force"));
@@ -513,7 +513,8 @@ public sealed class PipeExpansionTests
         Assert.Equal(Run(Loop(), Q("H", 3, "m")).OutputSi("dL"), loop.OutputSi("dL"), 12);
         Assert.Null(loop.FindOutput("sigma_run2"));
         Assert.DoesNotContain(Run().Warnings, w => w.RuleId == "l2-unused");
-        Assert.Contains(Pipe.Template.Assumptions, a => a.Statement.StartsWith("anchor_moment is", StringComparison.Ordinal) && a.Statement.Contains("not the moment on a frame anchor", StringComparison.Ordinal));
+        Assert.Contains(Pipe.Template.Assumptions, a => a.Statement.StartsWith("anchor_moment is", StringComparison.Ordinal));
+        Assert.Contains(Pipe.Template.Assumptions, a => a.Statement.Contains("not the moment on a frame anchor", StringComparison.Ordinal));
         Assert.Contains("not a frame anchor moment", Pipe.Template.OutputPorts!.Single(p => p.Symbol == "anchor_moment").Description, StringComparison.Ordinal);
     }
 
@@ -588,8 +589,8 @@ public sealed class PipeExpansionTests
         Assert.Equal("alpha", t.FindInput("alpha")!.MaterialProperty);
         var material = Assert.Single(t.RecordKinds!, k => k.Kind == PipeExpansionCalculator.MaterialKind);
         Assert.Equal(["E", "alpha"], material.Symbols);
-        Assert.Contains("Screening only — not a piping stress analysis", t.Scope, StringComparison.Ordinal);
-        Assert.Contains(t.Assumptions, a => a.Statement.StartsWith("Screening only — not a piping stress analysis", StringComparison.Ordinal));
+        Assert.Contains("a screening calculation, not a piping stress analysis", t.Scope, StringComparison.Ordinal);
+        Assert.Contains(t.Assumptions, a => a.Statement.StartsWith("The result is a screen, not a piping stress analysis", StringComparison.Ordinal));
     }
 
     [Fact]

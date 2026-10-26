@@ -4,21 +4,14 @@ Calc ID: bs.glaser    Revision: A
 Title: Glaser condensation (interstitial and surface)
 
 1. Scope and method
-Interstitial condensation in a layered wall by the Glaser method over twelve monthly climate steps: the temperature and saturation pressure at every layer interface, the vapour-pressure line with its tangent construction at the condensation planes, the condensate on each interface month by month carried forward from the first month of condensation (drying when the weather turns), the annual balance, the peak accumulation against the owner's limit, and the surface temperature factor f_Rsi against its minimum at the critical surface humidity.
-Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Total resistance and interface temperature: R_T = R_si + Σ R_j + R_se; θ_k = θ_i − (θ_i − θ_e)·(R_si + Σ_(j≤k) R_j)/R_T Saturation pressure (Magnus): p_sat = 610.5·exp(17.269·θ/(237.3 + θ)) over water (θ ≥ 0 °C); p_sat = 610.5·exp(21.875·θ/(265.5 + θ)) over ice (θ < 0 °C) Outside vapour pressure: p_e = RH_e·p_sat(θ_e) Inside vapour pressure: p_i = RH_i·p_sat(θ_i), or p_e + f_Δp·Δv(θ_e)·R_v·(T_i + T_e)/2 with the moisture excess Δv linear between two user points and constant beyond them (R_v = 461.5 J/(kg·K)) and the safety factor f_Δp on the pressure difference (a record, default 1.10; clause wording to be checked against the owner's copy of ISO 13788) Vapour flux through a layer: g = δ0·Δp/Δs_d with δ0 = 2×10⁻¹⁰ kg/(m·s·Pa) Tangent construction: the line from p_i to p_e is bent onto the saturation line at the interfaces it would rise above (and at wet interfaces), by the smallest-slope rule from each contact point Condensation at an interface: g_c = g_in − g_out; Mc accumulates g_c·t over 12 months from the first month of condensation (t = the row's days, else the calendar days of the month, January to December order), a wet interface (held at saturation) drying at g_c < 0 until nothing is left Refinement check: the same year is run again with every layer split into 20 equal sub-layers of the same λ and μ (inside the model, not counted against the 30-layer limit), because the saturation line is curved inside a layer and the interface-only model can miss the condensate that forms between two interfaces; the annual balance passes only when it passes both ways, and the sheet warns when the two runs differ (a verdict flips, or Mc_end or the wall peak differ by more than 10 %) Annual balance and peak: PASS when no condensate remains after the 12 months (as entered and in 20 sub-layers per layer); Mc_max = the most held on any interface, checked against the user's limit Wall U-value and its cross-check: U = 1/R_T; when the heat-loss calculation's U-value U_ref is given, the sheet warns if |U − U_ref|/U_ref exceeds 2 % (the two calculations then describe different constructions) Surface factor: f_Rsi = 1 − R_si,f/R_T,f with R_si,f = 0.25 m²K/W by default for an opaque element (conventional, a record; 0.13 for glazing); f_Rsi,min = the largest monthly (θ_si,min − θ_e)/(θ_i − θ_e) with p_sat(θ_si,min) = p_i/φ_crit; PASS when f_Rsi ≥ f_Rsi,min
+Calculates interstitial condensation in a layered wall by the Glaser method over twelve monthly climate steps. It gives the condensate on each interface, the annual balance, the peak against the limit and the surface temperature factor.
+Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Total resistance, U-value and interface temperature: R_T = R_si + Σ R_j + R_se; U = 1/R_T; T_k = T_int − (T_int − T_e)·(R_si + Σ_(j≤k) R_j)/R_T Saturation pressure (Magnus): p_sat = 610.5·exp(17.269·T/(237.3 + T)) over water (T ≥ 0 °C); p_sat = 610.5·exp(21.875·T/(265.5 + T)) over ice (T < 0 °C) Vapour pressures: p_e = RH_e·p_sat(T_e); p_i = RH_i·p_sat(T_int), or p_e + f_Δp·Δv(T_e)·R_v·(T_i + T_e)/2 in the moisture-excess mode with R_v = 461.5 J/(kg·K) Vapour flux and condensate: g = δ0·Δp/Δs_d with δ0 = 2×10⁻¹⁰ kg/(m·s·Pa); g_c = g_in − g_out on the tangent-construction profile; Mc accumulates g_c·t over 12 months, a wet interface drying at g_c < 0 Refinement check: the same year with every layer split into 20 equal sub-layers of the same λ and μ; the annual balance passes only when it passes both ways Annual balance and peak: PASS when no condensate remains after 12 months; Mc_max = the most held on any interface, checked against Mc_limit Surface factor: f_Rsi = 1 − R_si,f/R_T,f; f_Rsi,min = the largest monthly (T_si,min − T_e)/(T_int − T_e) with p_sat(T_si,min) = p_i/φ_crit; PASS when f_Rsi ≥ f_Rsi,min
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
-  layers | Wall layers from the inside outwards (d, λ, μ; the shape of the B4 layers table plus μ) | 2 row(s) |  | manual | any
+  layers | Wall layers from the inside outwards (thickness d, conductivity λ and vapour resistance factor μ) | 2 row(s) |  | manual | any
   layers[1] |  | name = Insulation; d = 100 mm; lambda = 0.04 W/(m·K); mu = 2 |  |  | 
   layers[2] |  | name = Brick; d = 200 mm; lambda = 0.8 W/(m·K); mu = 10 |  |  | 
-  Rsi | Internal surface resistance R_si | 0.13 | m²·K/W | manual | 0.04 … 0.25 m²·K/W
-  Rse | External surface resistance R_se | 0.04 | m²·K/W | manual | 0.02 … 0.25 m²·K/W
-  Rsi_f | Internal surface resistance R_si,f for the f_Rsi check (0.25 m²K/W is the conventional value for an opaque element, a record to check against the owner's copy of ISO 13788; 0.13 for glazing) | 0.25 | m²·K/W | manual | 0.04 … 0.5 m²·K/W
-  theta_int | Internal air temperature | 20 | °C | manual | 10 … 30 °C
-  humidity_mode | Internal humidity from | constant internal relative humidity |  | manual | any
-  RH_int | Internal relative humidity (constant-humidity mode) | 50 | % | manual | 20 … 90 %
-  dp_f | Safety factor on the vapour-pressure difference Δp = Δv·R_v·(T_i + T_e)/2 in the moisture-excess mode (design margin, 1.10 by convention; a record, wording to be checked against the owner's copy of ISO 13788) | 1.1 |  | manual | 1 … 1.5
   climate | Twelve monthly outside conditions (the user's climate record, in the order the year is run) | 12 row(s) |  | manual | any
   climate[1] |  | month = M1; theta_e = 2 °C; RH_e = 90 % |  |  | 
   climate[2] |  | month = M2; theta_e = 3 °C; RH_e = 88 % |  |  | 
@@ -32,125 +25,140 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
   climate[10] |  | month = M10; theta_e = 11 °C; RH_e = 87 % |  |  | 
   climate[11] |  | month = M11; theta_e = 6 °C; RH_e = 90 % |  |  | 
   climate[12] |  | month = M12; theta_e = 3 °C; RH_e = 91 % |  |  | 
-  RH_crit | Critical surface relative humidity | 80 | % | manual | 50 … 100 %
-  Mc_limit | Limit on the condensate on any interface (blank = report only) | 3000 | g/m² | manual | 1 … 5000 g/m²
+  humidity_mode | Internal humidity from | constant internal relative humidity |  | manual | any
   breathable | The build-up is timber or breathable (hygroscopic layers, capillary transport) | no |  | manual | any
+  T_int | Internal air temperature | 20 | °C | manual | 10 … 30 °C
+  RH_int | Internal relative humidity (constant-humidity mode) | 50 | % | manual | 20 … 90 %
+  Rsi | Internal surface resistance R_si | 0.13 | m²·K/W | manual | 0.04 … 0.25 m²·K/W
+  Rse | External surface resistance R_se | 0.04 | m²·K/W | manual | 0.02 … 0.25 m²·K/W
+  Rsi_f | Internal surface resistance R_si,f for the f_Rsi check (0.25 m²K/W is the conventional value for an opaque element and 0.13 for glazing; a record to check against the owner's copy of ISO 13788) | 0.25 | m²·K/W | manual | 0.04 … 0.5 m²·K/W
+  dp_f | Safety factor on the vapour-pressure difference Δp = Δv·R_v·(T_i + T_e)/2 in the moisture-excess mode (1.10 by convention; a record, wording to be checked against the owner's copy of ISO 13788) | 1.1 |  | manual | 1 … 1.5
+  RH_crit | Critical surface relative humidity | 80 | % | manual | 50 … 100 %
+  Mc_limit | Limit on the condensate on any interface (optional; blank = report only) | 3000 | g/m² | manual | 1 … 5000 g/m²
 
 3. Assumptions
-  A1. Steady state in each month: one-dimensional diffusion of water vapour through homogeneous layers in series, with the monthly mean climate; no air movement, no liquid transport, no moisture storage, no solar or rain gain. (The Glaser method.)
-  A2. Material properties (λ, μ) are constants of the layer, not functions of its moisture or temperature; condensate does not change them. (The Glaser method.)
-  A3. Condensation is checked at the interfaces between layers; the saturation line is joined straight between the interface values, which can miss condensate that forms inside a layer. The annual balance is therefore also run with every layer split into 20 sub-layers and passes only when both pass; the limit on the condensate per interface is checked on the interfaces as entered. (Stated limit; refinement check (bs.glaser-01). Whether ISO 13788 requires sub-division is to be checked against the owner's copy.)
-  A4. The Magnus saturation pressure is used over water at and above 0 °C and over ice below, and the water-vapour permeability of air is δ0 = 2×10⁻¹⁰ kg/(m·s·Pa); both are closed-form physics, not data of a standard. (Derived.)
-  A5. Where a month's length is blank it is the calendar days of the month, taking the climate rows as January to December (February 28 days); enter the days where the record starts in another month. A wet interface that dries within a month is taken as dry from the next month; the month's rates are those of the wet state at its start. (Monthly steps.)
-  A6. The monthly climate, the humidity-class points, the surface resistances, the critical humidity and the limit on the condensate are the user's records from the user's own licensed copies; no climate data, humidity-class table, material table or limit of any standard is shipped. (No table from a standard is shipped.)
-  A7. Month length: 12 row(s) of the climate gave no days, so the calendar days of the month are used with the rows taken as January to December (February 28 days). If the record starts in another month, enter the days of each row. (Calendar months.)
+  A1. Vapour diffuses one-dimensionally through homogeneous layers in series, in steady state each month. (The Glaser method.)
+  A2. Each month uses its mean climate, with no air movement, liquid transport, moisture storage, or solar or rain gain. (The Glaser method.)
+  A3. Material properties λ and μ are constants of each layer. (The Glaser method.)
+  A4. Condensate does not change the properties of a layer. (The Glaser method.)
+  A5. Condensation is checked at the interfaces between layers. (The Glaser method.)
+  A6. The saturation line is straight between interface values, which can miss condensate inside a layer. (Stated limit; whether ISO 13788 requires sub-division is to be checked against the owner's copy.)
+  A7. The annual balance is also run with every layer split into 20 sub-layers and passes only when both runs pass. (Refinement check.)
+  A8. The limit on the condensate per interface is checked on the interfaces as entered. (Stated limit.)
+  A9. The Magnus saturation pressure is used over water at and above 0 °C and over ice below. (Derived.)
+  A10. The water-vapour permeability of air is δ0 = 2×10⁻¹⁰ kg/(m·s·Pa). (Derived; closed-form physics, not data of a standard.)
+  A11. A blank month length is the calendar days of the month, with the climate rows taken as January to December. (Calendar months, February 28 days; enter the days where the record starts in another month.)
+  A12. A wet interface that dries within a month is dry from the next month. (Monthly steps.)
+  A13. The rates of a month are those of the wet state at its start. (Monthly steps.)
+  A14. The climate, humidity-class points, surface resistances, critical humidity and condensate limit are the user's own records. (No table from a standard is shipped.)
+  A15. Month length: 12 row(s) of the climate gave no days, so the calendar days of the month are used with the rows taken as January to December (February 28 days). If the record starts in another month, enter the days of each row. (Calendar months.)
 
 4. Working
-  [8] R_1 = d / λ    « ISO 13788 cl. 6
+  [8] R_1 = d / λ    « BS EN ISO 13788 cl. 6
       = Insulation: 100 mm / 0.04 W/(m·K)
       = 2.5 m²·K/W
         Insulation: thermal resistance
-  [9] sd_1 = μ · d    « ISO 13788 cl. 6
+  [9] sd_1 = μ · d    « BS EN ISO 13788 cl. 6
       = Insulation: 2 × 100 mm
       = 0.2 m
         Insulation: diffusion-equivalent air layer thickness
-  [10] R_2 = d / λ    « ISO 13788 cl. 6
+  [10] R_2 = d / λ    « BS EN ISO 13788 cl. 6
       = Brick: 200 mm / 0.8 W/(m·K)
       = 0.25 m²·K/W
         Brick: thermal resistance
-  [11] sd_2 = μ · d    « ISO 13788 cl. 6
+  [11] sd_2 = μ · d    « BS EN ISO 13788 cl. 6
       = Brick: 10 × 200 mm
       = 2 m
         Brick: diffusion-equivalent air layer thickness
-  [12] R_T = R_si + Σ R_j + R_se    « ISO 13788 cl. 6
+  [12] R_T = R_si + Σ R_j + R_se    « BS EN ISO 13788 cl. 6
       = 0.13 + 2.75 + 0.04
       = 2.92 m²·K/W
         Total thermal resistance
-  [13] U_wall = 1/R_T    « ISO 13788 cl. 6
+  [13] U_wall = 1/R_T    « BS EN ISO 13788 cl. 6
       = 1 / 2.92
       = 0.34247 W/(m²·K)
         U-value of the wall from the layers and the surface resistances above
-  [14] S_d = Σ s_d,j    « ISO 13788 cl. 6
+  [14] S_d = Σ s_d,j    « BS EN ISO 13788 cl. 6
       = 2.2 m
       = 2.2 m
         Total diffusion-equivalent air layer thickness
-  [15] psat_i = 610.5·exp(17.269·θ/(237.3 + θ))    « ISO 13788 cl. 6
+  [15] psat_i = 610.5·exp(17.269·θ/(237.3 + θ))    « BS EN ISO 13788 cl. 6
       = θ = 20 °C
       = 2337 Pa
         Saturation vapour pressure at the internal air temperature (Magnus)
-  [16] p_ext_m = RH_e · p_sat(θ_e)    « ISO 13788 cl. 6
+  [16] p_ext_m = RH_e · p_sat(θ_e)    « BS EN ISO 13788 cl. 6
       = months 1 … 12 of the climate
       = [634.76, 666.5, 785.09, 917.96, 1137.7, 1344.8, 1526.5, 1567.8, 1397.6, 1141.4, 841.16, 689.22] Pa
         Outside vapour pressure by month
-  [17] p_int_m = RH_i · p_sat(θ_i)    « ISO 13788 cl. 6
+  [17] p_int_m = RH_i · p_sat(θ_i)    « BS EN ISO 13788 cl. 6
       = 50 % × 2337 Pa
       = [1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5] Pa
         Inside vapour pressure by month
-  [18] n_start = first month of condensation    « ISO 13788 cl. 6
+  [18] n_start = first month of condensation    « BS EN ISO 13788 cl. 6
       = M11 (row 11)
       = 11
         Row of the climate in which the accumulation starts (0 when nothing condenses)
-  [19] Mc_1 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+  [19] Mc_1 = Σ Mc over the interfaces    « BS EN ISO 13788 cl. 6
       = M1: θ_e = 2 °C; 940.37 g/m² gained (−: dried) this month
       = 2055.5 g/m²
         M1: condensate on the wall at the end of the month
-  [20] Mc_2 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+  [20] Mc_2 = Σ Mc over the interfaces    « BS EN ISO 13788 cl. 6
       = M2: θ_e = 3 °C; 717.87 g/m² gained (−: dried) this month
       = 2773.4 g/m²
         M2: condensate on the wall at the end of the month
-  [21] Mc_3 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+  [21] Mc_3 = Σ Mc over the interfaces    « BS EN ISO 13788 cl. 6
       = M3: θ_e = 6 °C; 309.72 g/m² gained (−: dried) this month
       = 3083.1 g/m²
         M3: condensate on the wall at the end of the month
-  [22] Mc_4 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+  [22] Mc_4 = Σ Mc over the interfaces    « BS EN ISO 13788 cl. 6
       = M4: θ_e = 9 °C; -254.42 g/m² gained (−: dried) this month
       = 2828.7 g/m²
         M4: condensate on the wall at the end of the month
-  [23] Mc_5 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+  [23] Mc_5 = Σ Mc over the interfaces    « BS EN ISO 13788 cl. 6
       = M5: θ_e = 13 °C; -1180.6 g/m² gained (−: dried) this month
       = 1648 g/m²
         M5: condensate on the wall at the end of the month
-  [24] Mc_6 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+  [24] Mc_6 = Σ Mc over the interfaces    « BS EN ISO 13788 cl. 6
       = M6: θ_e = 16 °C; -1648 g/m² gained (−: dried) this month
       = 0 g/m²
         M6: condensate on the wall at the end of the month
-  [25] Mc_7 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+  [25] Mc_7 = Σ Mc over the interfaces    « BS EN ISO 13788 cl. 6
       = M7: θ_e = 18 °C; 0 g/m² gained (−: dried) this month
       = 0 g/m²
         M7: condensate on the wall at the end of the month
-  [26] Mc_8 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+  [26] Mc_8 = Σ Mc over the interfaces    « BS EN ISO 13788 cl. 6
       = M8: θ_e = 18 °C; 0 g/m² gained (−: dried) this month
       = 0 g/m²
         M8: condensate on the wall at the end of the month
-  [27] Mc_9 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+  [27] Mc_9 = Σ Mc over the interfaces    « BS EN ISO 13788 cl. 6
       = M9: θ_e = 15 °C; 0 g/m² gained (−: dried) this month
       = 0 g/m²
         M9: condensate on the wall at the end of the month
-  [28] Mc_10 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+  [28] Mc_10 = Σ Mc over the interfaces    « BS EN ISO 13788 cl. 6
       = M10: θ_e = 11 °C; 0 g/m² gained (−: dried) this month
       = 0 g/m²
         M10: condensate on the wall at the end of the month
-  [29] Mc_11 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+  [29] Mc_11 = Σ Mc over the interfaces    « BS EN ISO 13788 cl. 6
       = M11: θ_e = 6 °C; 314.26 g/m² gained (−: dried) this month
       = 314.26 g/m²
         M11: condensate on the wall at the end of the month
-  [30] Mc_12 = Σ Mc over the interfaces    « ISO 13788 cl. 6
+  [30] Mc_12 = Σ Mc over the interfaces    « BS EN ISO 13788 cl. 6
       = M12: θ_e = 3 °C; 800.87 g/m² gained (−: dried) this month
       = 1115.1 g/m²
         M12: condensate on the wall at the end of the month
-  [31] Mc_if_1 = max over the year of Mc    « ISO 13788 cl. 6
+  [31] Mc_if_1 = max over the year of Mc    « BS EN ISO 13788 cl. 6
       = between 'Insulation' and 'Brick'
       = 3083.1 g/m²
         Most condensate held on the interface between 'Insulation' and 'Brick'
-  [32] Mc_max = max over interfaces and months of Mc    « ISO 13788 cl. 6
+  [32] Mc_max = max over interfaces and months of Mc    « BS EN ISO 13788 cl. 6
       = 3083.1 g/m²
       = 3083.1 g/m²
         Most condensate held on any one interface in the year
-  [33] Mc_tot = max over months of Σ Mc    « ISO 13788 cl. 6
+  [33] Mc_tot = max over months of Σ Mc    « BS EN ISO 13788 cl. 6
       = 3083.1 g/m²
       = 3083.1 g/m²
         Most condensate on the whole wall in the year
-  [34] Mc_end = Σ Mc after 12 months    « ISO 13788 cl. 6
+  [34] Mc_end = Σ Mc after 12 months    « BS EN ISO 13788 cl. 6
       = 0 g/m²
       = 0 g/m²
         Condensate left on the wall at the end of the 12-month cycle
@@ -158,47 +166,47 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
       = M3 (row 3)
       = 3
         Row of the climate the diagram vectors are for
-  [36] sd_if = Σ s_d to the node    « ISO 13788 cl. 6
+  [36] sd_if = Σ s_d to the node    « BS EN ISO 13788 cl. 6
       = 3 nodes, inside surface first
       = [0, 0.2, 2.2] m
         Diffusion thickness at the surfaces and interfaces
-  [37] x_if = Σ d to the node    « ISO 13788 cl. 6
+  [37] x_if = Σ d to the node    « BS EN ISO 13788 cl. 6
       = 3 nodes
       = [0, 0.1, 0.3] m
         Depth from the inside surface at the surfaces and interfaces
-  [38] theta_if = θ_i − (θ_i − θ_e)·(R_si + Σ R)/R_T    « ISO 13788 cl. 6
+  [38] T_if = θ_i − (θ_i − θ_e)·(R_si + Σ R)/R_T    « BS EN ISO 13788 cl. 6
       = θ_e = 6 °C
       = [19.377, 7.3904, 6.1918] degC
         Temperature at the surfaces and interfaces
-  [39] psat_if = 610.5·exp(17.269·θ/(237.3 + θ)), ice below 0 °C    « ISO 13788 cl. 6
+  [39] psat_if = 610.5·exp(17.269·θ/(237.3 + θ)), ice below 0 °C    « BS EN ISO 13788 cl. 6
       = 3 nodes
       = [2248.3, 1028.5, 947.11] Pa
         Saturation vapour pressure at the surfaces and interfaces (the Glaser saturation line)
-  [40] p_if = tangent construction    « ISO 13788 cl. 6
+  [40] p_if = tangent construction    « BS EN ISO 13788 cl. 6
       = 3 nodes
       = [1168.5, 1028.5, 785.09] Pa
         Vapour pressure at the surfaces and interfaces after the tangent construction
-  [41] R_Tf = R_si,f + Σ R_j + R_se    « ISO 13788 cl. 5
+  [41] R_Tf = R_si,f + Σ R_j + R_se    « BS EN ISO 13788 cl. 5
       = 0.25 + 2.75 + 0.04
       = 3.04 m²·K/W
         Total thermal resistance with the internal surface resistance of the surface check
-  [42] fRsi = 1 − R_si/R_T    « ISO 13788 cl. 5
+  [42] fRsi = 1 − R_si/R_T    « BS EN ISO 13788 cl. 5
       = 1 − 0.25 / 3.04
       = 0.91776
         Temperature factor of the internal surface
-  [43] fRsi_min = max over months of (θ_si,min − θ_e)/(θ_i − θ_e)    « ISO 13788 cl. 5
+  [43] fRsi_min = max over months of (θ_si,min − θ_e)/(θ_i − θ_e)    « BS EN ISO 13788 cl. 5
       = θ_si,min from p_i/φ_crit; governing month: M1
       = 0.59026
         Minimum temperature factor at the critical surface humidity
-  [44] n_fcrit = month that governs f_Rsi,min    « ISO 13788 cl. 5
+  [44] n_fcrit = month that governs f_Rsi,min    « BS EN ISO 13788 cl. 5
       = M1 (row 1)
       = 1
         Row of the climate that governs the surface check (0 when none applies)
-  [45] Mc_end_fine = Σ Mc after 12 months, each layer in 20 sub-layers    « ISO 13788 cl. 6
+  [45] Mc_end_fine = Σ Mc after 12 months, each layer in 20 sub-layers    « BS EN ISO 13788 cl. 6
       = 0 g/m²
       = 0 g/m²
         Condensate left after 12 months when every layer is split into 20 sub-layers (refinement check)
-  [46] Mc_tot_fine = max over months of Σ Mc, each layer in 20 sub-layers    « ISO 13788 cl. 6
+  [46] Mc_tot_fine = max over months of Σ Mc, each layer in 20 sub-layers    « BS EN ISO 13788 cl. 6
       = 3083.1 g/m²
       = 3083.1 g/m²
         Most condensate on the whole wall when every layer is split into 20 sub-layers (refinement check)
@@ -206,7 +214,7 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
       = 3083.1 g/m² / 3000 g/m²
       = 1.0277
         Utilisation of the limit on the condensate per interface
-  [49] u_f = f_Rsi,min / f_Rsi    « ISO 13788 cl. 5
+  [49] u_f = f_Rsi,min / f_Rsi    « BS EN ISO 13788 cl. 5
       = 0.59026 / 0.91776
       = 0.64315
         Utilisation of the surface temperature factor
@@ -216,7 +224,7 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
         1 when the annual balance, the limit and the surface factor all pass, else 0
 
 5. Results
-  Mc_max = 3083.1 g/m²    Most condensate on any interface
+  Mc_max = 3083.1 g/m²    Most condensate on any interface (governing)
   fRsi = 0.91776    Temperature factor of the internal surface
   pass = 0    All checks pass
   U_wall = 0.3425 W/(m²·K)    U-value of the wall
@@ -246,29 +254,29 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
   n_diag = 3    Month of the diagram
   sd_if = [0, 0.2, 2.2] m    Diffusion thickness at the nodes
   x_if = [0, 0.1, 0.3] m    Depth at the nodes
-  theta_if = [19.377, 7.3904, 6.1918] degC    Temperature at the nodes
+  T_if = [19.377, 7.3904, 6.1918] degC    Temperature at the nodes
   psat_if = [2248.3, 1028.5, 947.11] Pa    Saturation pressure at the nodes
   p_if = [1168.5, 1028.5, 785.09] Pa    Vapour pressure at the nodes
   fRsi_min = 0.59026    Minimum temperature factor
   n_fcrit = 1    Month governing the surface check
   R_Tf = 3.040 m²·K/W    Total resistance for the surface check
-  u_Mc = 1.03    Peak condensate against its limit (governing)
+  u_Mc = 1.03    Peak condensate against its limit
   u_f = 0.64    Surface factor against its minimum
 
 6. Checks (governing first)
-  FAIL  Peak condensate on an interface against its limit (3000 g/m²): u_Mc = 1.03 vs u_Mc ≤ 1  utilisation 1.03  « ISO 13788 cl. 6
-  PASS  Surface condensation: f_Rsi against f_Rsi,min at 80 % critical humidity: u_f = 0.64 vs u_f ≤ 1  utilisation 0.64  « ISO 13788 cl. 5
-  PASS  Annual moisture balance: the condensate dries out within the year (as entered and with every layer in 20 sub-layers): Mc_end = 0 g/m² as entered, 0 g/m² in 20 sub-layers per layer vs Mc_end ≤ 0 g/m²  « ISO 13788 cl. 6
+  FAIL  Peak condensate on an interface against its limit: 3083.1 g/m² vs 3000 g/m²  utilisation 1.03  « BS EN ISO 13788 cl. 6
+  PASS  Minimum surface temperature factor against the factor of the wall at 80 % critical humidity: 0.59026 vs 0.91776  utilisation 0.64  « BS EN ISO 13788 cl. 5
+  PASS  Condensate left after 12 months against zero: 0 g/m² as entered, 0 g/m² in 20 sub-layers per layer vs 0 g/m² (the wall dries out within the year)  « BS EN ISO 13788 cl. 6
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are layers (Layer conductivity and vapour resistance); Rsi, Rse, Rsi_f (Surface resistances); climate (Monthly outside climate); dp_f (Internal humidity class); RH_crit, Mc_limit (Condensation criteria). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: bs.glaser@1.3.0
+  Template: bs.glaser@1.4.0
   Known-answer cases passed: 8/8
 
 9. References
-  1. ISO 13788 cl. 5 (clause number to be checked against the owner's copy) — Hygrothermal performance of building components and elements — internal surface temperature and surface condensation
-  2. ISO 13788 cl. 6 (clause number to be checked against the owner's copy) — Hygrothermal performance of building components and elements — interstitial condensation (Glaser method)
-  3. ISO 13788 moisture excess and its design margin on Δp (clause number and wording to be checked against the owner's copy) — Hygrothermal performance of building components and elements — internal humidity from the humidity class
-  4. EN 15026 whole standard (named as the recommended method for timber and breathable builds) — Hygrothermal performance of building components — assessment of moisture transfer by numerical simulation
+  1. BS EN ISO 13788:2012 cl. 5 (clause number to be checked against the owner's copy) — Hygrothermal performance of building components and elements — internal surface temperature and surface condensation
+  2. BS EN ISO 13788:2012 cl. 6 (clause number to be checked against the owner's copy) — Hygrothermal performance of building components and elements — interstitial condensation (Glaser method)
+  3. BS EN ISO 13788:2012 — Internal humidity from the humidity class, moisture excess and its allowance (clause to be checked)
+  4. BS EN 15026:2007 — Assessment of moisture transfer by numerical simulation (the whole standard, for timber and breathable builds)

@@ -7,54 +7,58 @@ Checker: —    Checked: —
 Issued: —
 
 1. Scope and method
-A closed LTHW system below 100 °C: the catalogue output (at ΔT 50 K) each room's emitter needs at the design flow, return and room temperatures, checked against the selected emitters; and the minimum expansion vessel for the system volume, fill and maximum temperatures, static head and pressures.
-Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_f − t_r)/ln((t_f − t_i)/(t_r − t_i)) Output at design: Φ = Φ50·(ΔT/50)^n; required catalogue output Φ50 = Φ_req/(ΔT/50)^n System volume: V_s = Σ V_em + V_pipe + V_plant Water expansion: e_x = ρ(t_fill)/ρ(t_max) − 1 (water density by Kell 1975), or a glycol record Vessel pre-charge: p_i = ρ·g·h_static + margin (≥ static head) Vessel size: V_e = e_x·V_s/[1 − (p_i + 1)/(p_f + 1)] (pressures in bar gauge, + 1 bar for absolute); the expansion volume only, sized for the higher of t_max and t_f; a water reserve and a safety-valve margin are not included
+Calculates the catalogue output each room's emitter needs at the design flow, return and room temperatures, and checks it against the selected emitters. It also gives the minimum expansion vessel for the system volume, temperatures, static head and pressures.
+Emitter temperature difference: ΔT = (T_flow + T_return)/2 − T_room, or the log mean (T_flow − T_return)/ln((T_flow − T_room)/(T_return − T_room)) Output at design: Φ = Φ50·(ΔT/50)^n; required catalogue output Φ50 = Φ_req/(ΔT/50)^n System volume: V_s = Σ V_em + V_pipe + V_plant Water expansion: e_x = ρ(T_fill)/ρ(T_max) − 1 (water density by Kell 1975), or a glycol record Vessel pre-charge: p_i = ρ·g·h_static + p_margin (at least the static head) Vessel size: V_e = e_x·V_s/[1 − (p_i + 1)/(p_f + 1)] (pressures in bar gauge, + 1 bar for absolute); the expansion volume only, sized for the higher of T_max and T_flow; a water reserve and a safety-valve allowance are not included
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
-  rooms | Rooms and emitters | 5 row(s) |  | spec: Room heat loss calculation (B4) and radiator survey | any
+  dT_method | Mean temperature difference | arithmetic mean (catalogue rating) |  | assumption: Catalogue ratings use the arithmetic mean. | any
+  rooms | Rooms and emitters (optional; blank = no emitter check) | 5 row(s) |  | spec: Room heat loss calculation (B4) and radiator survey | any
   rooms[1] |  | name = Lounge; Phi = 1800 W; Phi50 = 3600 W; V_em = 12 L |  |  | 
   rooms[2] |  | name = Kitchen; Phi = 1100 W; Phi50 = 2200 W; V_em = 8 L |  |  | 
   rooms[3] |  | name = Bed 1; Phi = 900 W; Phi50 = 1800 W; V_em = 7 L |  |  | 
   rooms[4] |  | name = Bed 2; Phi = 700 W; Phi50 = 1400 W; V_em = 5 L |  |  | 
   rooms[5] |  | name = Bathroom; Phi = 600 W; Phi50 = 1100 W; V_em = 4 L |  |  | 
-  t_f | Flow temperature | 55 | °C | spec: Heat pump design flow temperature | 30 … 90 °C
-  t_r | Return temperature | 45 | °C | spec: Heat pump design return temperature | 30 … 90 °C
-  t_i | Room temperature | 21 | °C | spec: Living-room design temperature | 16 … 24 °C
-  n | Emitter exponent | 1.3 |  | assumption: Panel radiators, manufacturer exponent about 1.3. | 1.1 … 1.5
-  dT_method | Mean temperature difference | arithmetic mean (catalogue rating) |  | assumption: Catalogue ratings use the arithmetic mean. | any
-  V_pipe | Pipework water content | 40 | L | assumption: 15 mm and 22 mm copper, about 120 m. | 0 … 10000 L
-  V_plant | Plant water content (boiler, cylinder coil, buffer) | 15 | L | spec: Heat pump and plate exchanger content, datasheet | 0 … 10000 L
-  t_fill | Fill temperature | 10 | °C | assumption: Mains water at fill. | 4 … 30 °C
-  t_max | Maximum system temperature | 60 | °C | spec: Heat pump maximum flow temperature | 30 … 99 °C
-  h_static | Static height above the vessel | 7 | m | drawing: M-SEC-001 rev A | 0 … 50 m
-  p_margin | Pre-charge margin over static head | 0.3 | bar | assumption: Usual margin over static head. | 0 … 1 bar
-  p_f | Final (maximum working) pressure, gauge | 2.5 | bar | assumption: 0.5 bar below the safety valve. | 0.5 … 6 bar
-  p_prv | Safety valve setting, gauge | 3 | bar | spec: Heat pump safety valve | 1.5 … 6 bar
-  V_vessel | Selected vessel volume | 12 | L | spec: Site survey: existing 12 L vessel | 1 … 5000 L
+  h_static | Static height above the vessel | 7 | m | drawing: M-SEC-001 rev A | 0 … 40 m
+  V_pipe | Pipework water content | 40 | L | assumption: 15 mm and 22 mm copper, about 120 m. | 0 … 5000 L
+  V_plant | Plant water content (boiler, cylinder coil, buffer) | 15 | L | spec: Heat pump and plate exchanger content, datasheet | 0 … 5000 L
+  V_vessel | Selected vessel volume (optional; blank = no vessel check) | 12 | L | spec: Site survey: existing 12 L vessel | 1 … 5000 L
+  T_flow | Flow temperature | 55 | °C | spec: Heat pump design flow temperature | 40 … 85 °C
+  T_return | Return temperature | 45 | °C | spec: Heat pump design return temperature | 35 … 80 °C
+  T_room | Room temperature | 21 | °C | spec: Living-room design temperature | 16 … 23 °C
+  T_fill | Fill temperature | 10 | °C | assumption: Mains water at fill. | 4 … 30 °C
+  T_max | Maximum system temperature | 60 | °C | spec: Heat pump maximum flow temperature | 30 … 95 °C
+  p_f | Final (maximum working) pressure, gauge | 250 | kPa | assumption: 50 kPa below the safety valve. | 50 … 600 kPa
+  p_prv | Safety valve setting, gauge | 300 | kPa | spec: Heat pump safety valve | 200 … 550 kPa
+  n | Emitter exponent | 1.3 |  | assumption: Panel radiators, manufacturer exponent about 1.3. | 1.2 … 1.4
+  p_margin | Pre-charge allowance over static head | 30 | kPa | assumption: Usual allowance over static head. | 0 … 100 kPa
 
 3. Assumptions
-  A1. Closed LTHW system below 100 °C; emitter output follows Φ50·(ΔT/50)^n with the manufacturer's n. (Catalogue ratings at 75/65/20 °C.)
-  A2. Water density from the Kell (1975) correlation, within about 0.01 % of IAPWS-95 at atmospheric pressure, 0–100 °C; glycol mixtures take e from a record. (Formula, not a table.)
-  A3. Gauge pressures are made absolute by adding 1 bar, as the vessel relation is usually written. (Within 1.3 % of the standard atmosphere.)
-  A4. V_e is the expansion volume by CIBSE Guide B1's relation only. It does not include a water reserve for system losses, nor a margin between the final pressure and the safety valve setting beyond p_f below p_prv; add both when the vessel is selected, from the heating-system standard in use. (Stated omission.)
-  A5. n (Emitter exponent) is taken as 1.3. (Panel radiators, manufacturer exponent about 1.3.)
-  A6. dT_method (Mean temperature difference) is taken as arithmetic mean (catalogue rating). (Catalogue ratings use the arithmetic mean.)
-  A7. V_pipe (Pipework water content) is taken as 40 L. (15 mm and 22 mm copper, about 120 m.)
-  A8. t_fill (Fill temperature) is taken as 10 °C. (Mains water at fill.)
-  A9. p_margin (Pre-charge margin over static head) is taken as 0.3 bar. (Usual margin over static head.)
-  A10. p_f (Final (maximum working) pressure, gauge) is taken as 2.5 bar. (0.5 bar below the safety valve.)
+  A1. The system is a closed LTHW system below 100 °C. (Catalogue ratings at 75/65/20 °C.)
+  A2. Emitter output follows Φ50·(ΔT/50)^n with the manufacturer's n. (Catalogue ratings at 75/65/20 °C.)
+  A3. Water density comes from the Kell (1975) correlation, within about 0.01 % of IAPWS-95 at atmospheric pressure. (Formula, not a table.)
+  A4. Glycol mixtures take the expansion coefficient e from a record. (Formula, not a table.)
+  A5. Gauge pressures are made absolute by adding 1 bar, as the vessel relation is usually written. (Within 1.3 % of the standard atmosphere.)
+  A6. V_e is the expansion volume by the CIBSE heating guide's relation only. (Stated omission.)
+  A7. V_e does not include a water reserve for system losses. (Stated omission; add it when the vessel is selected, from the heating-system standard in use.)
+  A8. V_e does not include a margin between the final pressure and the safety valve setting beyond p_f below p_prv. (Stated omission; add it when the vessel is selected, from the heating-system standard in use.)
+  A9. dT_method (Mean temperature difference) is taken as arithmetic mean (catalogue rating). (Catalogue ratings use the arithmetic mean.)
+  A10. V_pipe (Pipework water content) is taken as 40 L. (15 mm and 22 mm copper, about 120 m.)
+  A11. T_fill (Fill temperature) is taken as 10 °C. (Mains water at fill.)
+  A12. p_f (Final (maximum working) pressure, gauge) is taken as 250 kPa. (50 kPa below the safety valve.)
+  A13. n (Emitter exponent) is taken as 1.3. (Panel radiators, manufacturer exponent about 1.3.)
+  A14. p_margin (Pre-charge allowance over static head) is taken as 30 kPa. (Usual allowance over static head.)
 
 4. Working
-  [14] dT = (t_f + t_r) / 2 - t_i    « BS EN 442-2 cl. 5
+  [14] dT = (T_flow + T_return) / 2 - T_room    « BS EN 442-2 cl. 5
       = (55 degC + 45 degC) / 2 − 21 degC
       = 29 K
         Mean water-to-room temperature difference
-  [15] dT_fr = t_f - t_r
+  [15] dT_fr = T_flow - T_return
       = 55 degC − 45 degC
       = 10 K
         Flow-to-return temperature difference (what the water gives up across the emitters)
-  [16] t_m = (t_f + t_r) / 2
+  [16] T_m = (T_flow + T_return) / 2
       = (55 degC + 45 degC) / 2
       = 50 degC
         Mean water temperature, (flow + return)/2
@@ -64,27 +68,27 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
         Output correction from ΔT 50 K
   [18] R1 = Φ_req/f_dT
       = 1800 / 0.49256
-      = 3654.4 W
+      = 3.6544 kW
         Lounge: catalogue output needed; selected 3600 W gives 1773.2 W (utilisation 1.02)
   [19] R2 = Φ_req/f_dT
       = 1100 / 0.49256
-      = 2233.2 W
+      = 2.2332 kW
         Kitchen: catalogue output needed; selected 2200 W gives 1083.6 W (utilisation 1.02)
   [20] R3 = Φ_req/f_dT
       = 900 / 0.49256
-      = 1827.2 W
+      = 1.8272 kW
         Bed 1: catalogue output needed; selected 1800 W gives 886.6 W (utilisation 1.02)
   [21] R4 = Φ_req/f_dT
       = 700 / 0.49256
-      = 1421.2 W
+      = 1.4212 kW
         Bed 2: catalogue output needed; selected 1400 W gives 689.58 W (utilisation 1.02)
   [22] R5 = Φ_req/f_dT
       = 600 / 0.49256
-      = 1218.1 W
+      = 1.2181 kW
         Bathroom: catalogue output needed; selected 1100 W gives 541.81 W (utilisation 1.11)
   [23] Phi_tot = Σ Φ_req
       = 5100 W
-      = 5100 W
+      = 5.1 kW
         Total heat required by the rooms
   [24] V_em = Σ V_em
       = 36 L
@@ -94,12 +98,12 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
       = 36 L + 40 L + 15 L
       = 91 L
         System water volume
-  [26] rho_fill = ρ(t_fill), Kell 1975
-      = t = 10 °C
+  [26] rho_fill = ρ(T_fill), Kell 1975
+      = T = 10 °C
       = 999.7 kg/m³
         Water density at fill
-  [27] rho_max = ρ(t_max), Kell 1975
-      = t = 60 °C
+  [27] rho_max = ρ(T_max), Kell 1975
+      = T = 60 °C
       = 983.2 kg/m³
         Water density at maximum temperature
   [28] e_x = rho_fill / rho_max - 1
@@ -108,53 +112,61 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
         Expansion coefficient of water
   [29] p_st = rho_fill * 9.80665 m/s^2 * h_static
       = 999.7 kg/m³ × 9.80665 m/s^2 × 7 m
-      = 0.68626 bar
+      = 68.626 kPa
         Static head at the vessel
   [30] p_i = p_st + p_margin
-      = 0.68626 bar + 0.3 bar
-      = 0.98626 bar
+      = 68.626 kPa + 30 kPa
+      = 98.626 kPa
         Pre-charge (initial) pressure, gauge
   [31] V_e = e_x * V_s / (1 - (p_i + 1 bar) / (p_f + 1 bar))    « CIBSE Guide B1 §1.4
-      = 0.016783 × 91 L / (1 − (0.98626 bar + 1 bar) / (2.5 bar + 1 bar))
+      = 0.016783 × 91 L / (1 − (98.626 kPa + 1 bar) / (250 kPa + 1 bar))
       = 3.5312 L
         Minimum expansion vessel volume
-  [32] u_emit = max over rooms Φ_req/(Φ50·f_dT)
+  [32] Phi_req_gov = Φ_req of the governing room
+      = the room with the highest Φ_req/(Φ50·f_dT)
+      = 0.6 kW
+        Heat required by the governing room
+  [33] Phi_out_gov = Φ50·f_dT of the governing room
+      = its selected emitter at the design temperatures
+      = 0.54181 kW
+        Output of the selected emitter of the governing room at the design temperatures
+  [34] u_emit = max over rooms Φ_req/(Φ50·f_dT)
       = worst room
       = 1.1074
         Emitter utilisation (governing room)
-  [34] u_vessel = V_e / V_vessel
+  [36] u_vessel = V_e / V_vessel
       = 3.5312 L / 12 L
       = 0.29427
         Vessel utilisation
 
 5. Results
-  Phi_tot = 5100 W    Total heat required
+  Phi_tot = 5.100 kW    Total heat required
   V_s = 91 L    System water volume
   V_e = 3.531 L    Minimum vessel volume
   dT = 29 K    Mean temperature difference
   dT_fr = 10 K    Flow-to-return temperature difference
-  t_m = 50 °C    Mean water temperature
+  T_m = 50 °C    Mean water temperature
   f_dT = 0.49256    Output correction factor
-  R1 = 3654.4 W    Lounge: Φ50 needed
-  R2 = 2233.2 W    Kitchen: Φ50 needed
-  R3 = 1827.2 W    Bed 1: Φ50 needed
-  R4 = 1421.2 W    Bed 2: Φ50 needed
-  R5 = 1218.1 W    Bathroom: Φ50 needed
+  R1 = 3.654 kW    Lounge: Φ50 needed
+  R2 = 2.233 kW    Kitchen: Φ50 needed
+  R3 = 1.827 kW    Bed 1: Φ50 needed
+  R4 = 1.421 kW    Bed 2: Φ50 needed
+  R5 = 1.218 kW    Bathroom: Φ50 needed
   V_em = 36 L    Emitter water content
   e_x = 0.016783    Expansion coefficient
-  p_i = 0.9863 bar    Pre-charge pressure
-  u_emit = 1.11    Emitter utilisation (governing)
+  p_i = 98.63 kPa    Pre-charge pressure
+  u_emit = 1.11    Emitter utilisation
   u_vessel = 0.29    Vessel utilisation
 
 6. Checks (governing first)
-  FAIL  Selected emitters against room heat (governing room): u_emit = 1.11 vs u_emit ≤ 1  utilisation 1.11
-  PASS  Selected vessel against minimum volume: u_vessel = 0.29 vs u_vessel ≤ 1  utilisation 0.29  « CIBSE Guide B1 §1.4
+  FAIL  Selected emitters against room heat (governing room): 0.6000 kW vs 0.5418 kW  utilisation 1.11
+  PASS  Selected vessel against minimum volume: 3.531 L vs 12 L  utilisation 0.29  « CIBSE Guide B1 §1.4
 
 7. Applicability
-  WARNING  n: a tabulated value not taken from a reference record (Emitter exponent); enter it as one so its source, edition and licence travel with it.  [record.n]
+  WARNING  n: a tabulated value not taken from a reference record (Emitter rating (exponent)); enter it as one so its source, edition and licence travel with it.  [record.n]
 
 8. Verification
-  Template: bs.sealed-system@1.4.0
+  Template: bs.sealed-system@1.5.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 4/4
@@ -162,4 +174,4 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
 
 9. References
   1. BS EN 442-2:2014 cl. 5 — Radiators and convectors — test methods and rating (characteristic equation)
-  2. CIBSE Guide B1 2016, §1.4 — Heating — sealed systems and expansion
+  2. CIBSE Guide B1 §1.4, 2016 ed. — Heating — sealed systems and expansion

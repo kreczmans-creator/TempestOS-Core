@@ -647,7 +647,7 @@ public static class CalcDiagrams
                 new DiagramPointLoad("flow", new(270, 128), DiagramDirection.Right, 44, "Q", "Q", new(236, 140)),
                 new DiagramLabel("outlet-head", new(335, 22), "h_out", "h_out"),
                 new DiagramLabel("fluid", new(236, 176), "fluid", "fluid"),
-                new DiagramLabel("temperature", new(196, 200), "T", "T"),
+                new DiagramLabel("temperature", new(196, 200), "T_fluid", "T_fluid"),
                 new DiagramLabel("npsh", new(316, 200), "NPSH_r", "NPSH_r"),
             ]),
         ]);
@@ -662,8 +662,8 @@ public static class CalcDiagrams
                 new DiagramLabel("x-title", new(360, 226), Symbol: "dry bulb"),
                 new DiagramLabel("y-title", new(384, 36), Symbol: "W"),
                 new DiagramPolyline("saturation", [new(40, 200), new(120, 180), new(190, 140), new(240, 90), new(270, 40)], Thickness: 1.5, Symbol: "100 %", LabelAt: new(236, 50)),
-                new DiagramCircle("state-1", new(170, 170), 5, Filled: true, "t_db", "1", new(160, 186), Solid: true),
-                new DiagramLabel("dry-bulb", new(135, 30), "t_db", "t_db"),
+                new DiagramCircle("state-1", new(170, 170), 5, Filled: true, "T_db", "1", new(160, 186), Solid: true),
+                new DiagramLabel("dry-bulb", new(135, 30), "T_db", "T_db"),
                 new DiagramLabel("known", new(135, 54), "known", "known"),
                 new DiagramLabel("pressure", new(135, 78), "altitude", "altitude"),
             ];
@@ -671,22 +671,22 @@ public static class CalcDiagrams
             return new DiagramVariant(caption, When("process", process), elements);
         }
 
-        DiagramElement Leaving(double x, double y) => new DiagramCircle("state-2", new(x, y), 5, Filled: true, "t_2", "2", new(x + 12, y - 12), Solid: true);
+        DiagramElement Leaving(double x, double y) => new DiagramCircle("state-2", new(x, y), 5, Filled: true, "T_2", "2", new(x + 12, y - 12), Solid: true);
 
         return new(PsychrometricsCalculator.Id,
         [
             Variant("A moist-air state on the psychrometric chart: dry bulb and one more property", PsychrometricsCalculator.ProcessNone, []),
-            Variant("Sensible heating or cooling: the state moves along a line of constant humidity ratio to t_2", PsychrometricsCalculator.ProcessSensible,
-                [new DiagramPolyline("process", [new(170, 170), new(310, 170)], InputName: "t_2"), Leaving(310, 170)]),
-            Variant("Cooling with dehumidification: the state cools to t_2 at RH_2, losing moisture", PsychrometricsCalculator.ProcessCoolingDehum,
-                [new DiagramPolyline("process", [new(170, 170), new(126, 182)], InputName: "t_2"), new DiagramCircle("state-2", new(126, 182), 5, Filled: true, "t_2", "2", new(100, 140), Solid: true), new DiagramLabel("leaving-rh", new(330, 110), "RH_2", "RH_2")]),
+            Variant("Sensible heating or cooling: the state moves along a line of constant humidity ratio to T_2", PsychrometricsCalculator.ProcessSensible,
+                [new DiagramPolyline("process", [new(170, 170), new(310, 170)], InputName: "T_2"), Leaving(310, 170)]),
+            Variant("Cooling with dehumidification: the state cools to T_2 at RH_2, losing moisture", PsychrometricsCalculator.ProcessCoolingDehum,
+                [new DiagramPolyline("process", [new(170, 170), new(126, 182)], InputName: "T_2"), new DiagramCircle("state-2", new(126, 182), 5, Filled: true, "T_2", "2", new(100, 140), Solid: true), new DiagramLabel("leaving-rh", new(330, 110), "RH_2", "RH_2")]),
             Variant("Steam humidification: moisture added at almost constant dry bulb to W_2", PsychrometricsCalculator.ProcessSteam,
                 [new DiagramPolyline("process", [new(170, 170), new(176, 120)], InputName: "W_2"), new DiagramCircle("state-2", new(176, 120), 5, Filled: true, "W_2", "2", new(130, 116), Solid: true)]),
             Variant("Adiabatic (evaporative) humidification: along a line of constant wet bulb towards saturation", PsychrometricsCalculator.ProcessEvaporative,
                 [new DiagramPolyline("process", [new(170, 170), new(200, 146)], InputName: "RH_2"), new DiagramCircle("state-2", new(200, 146), 5, Filled: true, "RH_2", "2", new(250, 140), Solid: true), new DiagramLabel("efficiency", new(330, 110), "eff", "ε")]),
             Variant("Adiabatic mixing of two streams: the mixed state lies on the line between them, by mass flow", PsychrometricsCalculator.ProcessMixing,
                 [
-                    new DiagramCircle("state-b", new(300, 186), 5, Filled: true, "t_db_b", "b", new(312, 174), Solid: true),
+                    new DiagramCircle("state-b", new(300, 186), 5, Filled: true, "T_db_b", "b", new(312, 174), Solid: true),
                     new DiagramPolyline("mixing-line", [new(170, 170), new(300, 186)], Dashed: true, Thickness: 1),
                     new DiagramCircle("mixed", new(222, 176), 4, Filled: true, "m_da_b"),
                     new DiagramLabel("flow-a", new(330, 110), "m_da", "ṁ_a"),
@@ -709,7 +709,7 @@ public static class CalcDiagrams
                 new DiagramLabel("friction", new(90, 214), "dp_target", "Δp/L"),
                 new DiagramLabel("velocity", new(250, 190), "v_target", "v"),
                 new DiagramLabel("limit", new(250, 214), "v_limit", "v_limit"),
-                new DiagramLabel("temperature", new(330, 60), "T", "T"),
+                new DiagramLabel("temperature", new(330, 60), "T_air", "T_air"),
             ]),
         ]);
 

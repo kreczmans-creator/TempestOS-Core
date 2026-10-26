@@ -20,6 +20,28 @@
     "ValueText": "95"
   },
   {
+    "Symbol": "T_2",
+    "Number": 12,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "AHU schedule AHU-01 off-coil 12 \u00B0C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "12"
+  },
+  {
+    "Symbol": "T_db",
+    "Number": 28,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "CIBSE Guide A summer design condition for the site, assumed",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "28"
+  },
+  {
     "Symbol": "altitude",
     "Number": 0,
     "Unit": "m",
@@ -60,27 +82,5 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "cooling with dehumidification"
-  },
-  {
-    "Symbol": "t_2",
-    "Number": 12,
-    "Unit": "degC",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "AHU schedule AHU-01 off-coil 12 \u00B0C",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "12"
-  },
-  {
-    "Symbol": "t_db",
-    "Number": 28,
-    "Unit": "degC",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "CIBSE Guide A summer design condition for the site, assumed",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "28"
   }
 ]

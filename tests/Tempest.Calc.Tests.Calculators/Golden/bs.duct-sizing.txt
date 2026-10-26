@@ -4,27 +4,28 @@ Calc ID: bs.duct-sizing    Revision: A
 Title: Duct sizing
 
 1. Scope and method
-Sizes each duct section by the equal-friction method (a target friction rate) or the velocity method (a target velocity), rounds to standard sizes, and reports velocity, friction rate, friction and fitting losses per section and the total pressure drop along the index run, with warnings against user velocity and pressure-drop limits.
+Calculates duct sizes by the equal-friction or the velocity method, rounded up to standard sizes. It reports the velocity, friction rate and losses of each section and the pressure drop along the index run.
 Round duct diameter from the design target: D by Colebrook with the air properties at T (equal friction), or D = √(4Q/πv) (velocity), rounded up to the next standard size. Rectangular duct of equal friction and capacity: D_e = 1.30 (ab)^0.625/(a + b)^0.25. Flat-oval duct of equal friction and capacity: D_e = 1.55 A^0.625/P^0.25, with A = πb²/4 + b(a − b) and P = πb + 2(a − b). Velocity method, rectangular or flat-oval duct with side a fixed: b from the free area A = Q/v (rectangle b = A/a; flat oval the smaller root of (1 − π/4)b² − ab + A = 0), rounded up; D_e is kept for the friction only. Friction loss per metre, at the velocity v_e of the equivalent round duct: Δp/L = f ρ v_e²/(2D_e). Fitting losses, at the actual velocity: Δp = ΣC ρ v²/2. Index-run totals, summed over every section of the run: Δp_run = Σ(Δp/L · L + ΣC ρ v²/2).
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   method | Sizing method | equal friction |  | manual | any
-  dp_target | Target friction rate (equal friction) | 1 | Pa/m | manual | 0.3 … 5 Pa/m
-  v_target | Target velocity (velocity method) | 6 | m/s | manual | 2 … 20 m/s
-  T | Air temperature | 20 | °C | manual | -20 … 60 °C
-  p_atm | Barometric pressure | 101.325 | kPa | manual | 80 … 105 kPa
-  eps | Duct roughness | 0.09 | mm | manual | 0.03 … 3 mm
   sections | Duct sections | 1 row(s) |  | manual | any
   sections[1] |  | name = main; Q = 1 m³/s; L = 10 m; shape = round; a = —; D = 400 mm; C = 0; dp_eq = 0 Pa; index = yes |  |  | 
+  round_to | Round sizes up to a multiple of | 50 | mm | manual | 1 … 100 mm
+  eps_rough | Duct roughness | 0.09 | mm | manual | 0.03 … 3 mm
+  T_air | Air temperature | 20 | °C | manual | -20 … 60 °C
+  p_atm | Barometric pressure | 101.325 | kPa | manual | 80 … 105 kPa
+  dp_target | Target friction rate (equal friction) | 1 | Pa/m | manual | 0.3 … 5 Pa/m
+  v_target | Target velocity (velocity method) | 6 | m/s | manual | 2 … 20 m/s
   v_limit | Velocity limit (warning and check) | 8 | m/s | manual | 2 … 30 m/s
   dp_limit | Total pressure-drop limit (check) | 300 | Pa | manual | 50 … 2000 Pa
-  round_to | Round sizes up to a multiple of | 50 | mm | manual | 1 … 100 mm
 
 3. Assumptions
-  A1. Air is dry at the stated temperature and pressure (ρ = p/(287.055 T)); viscosity by Sutherland's law. (Standard air properties.)
-  A2. Rectangular and flat-oval ducts are sized through the equivalent diameter for equal friction and capacity. (Huebscher / Heyt–Diaz relations as given in ASHRAE Fundamentals Ch. 21.)
-  A3. Fitting loss coefficients C are user-supplied (manufacturer or ASHRAE/CIBSE data, not embedded) and refer to the section's velocity pressure. (Non-negotiable: no standard tables embedded.)
+  A1. Air is dry at the stated temperature and pressure. (Ideal gas, ρ = p/(287.055 T).)
+  A2. The viscosity of air follows Sutherland's law. (Standard air properties.)
+  A3. Rectangular and flat-oval ducts are sized through the equivalent diameter for equal friction and capacity. (Huebscher / Heyt–Diaz relations as given in ASHRAE Fundamentals Ch. 21.)
+  A4. Fitting loss coefficients C are user-supplied (manufacturer or ASHRAE/CIBSE data, not embedded) and refer to the section's velocity pressure. (Non-negotiable: no standard tables embedded.)
 
 4. Working
   [10] rho = p / (287.055 T)
@@ -89,6 +90,8 @@ Round duct diameter from the design target: D by Colebrook with the air properti
         Velocity utilisation
 
 5. Results
+  dp_index = 16.33 Pa    Index-run Δp
+  v_peak = 7.958 m/s    Highest velocity (governing)
   D_s1 = 400 mm    D, main
   v_s1 = 7.958 m/s    v, main
   Re_s1 = 211370    Re, main
@@ -97,23 +100,21 @@ Round duct diameter from the design target: D by Colebrook with the air properti
   dp_f_s1 = 16.33 Pa    Friction loss, main
   dp_fit_s1 = 0 Pa    Fitting loss, main
   dp_s1 = 16.33 Pa    Section loss, main
-  dp_index = 16.33 Pa    Index-run Δp
   dp_all = 16.33 Pa    Σ all sections
-  v_peak = 7.958 m/s    Highest velocity
 
 6. Checks (governing first)
-  PASS  Velocity ≤ limit: u_v = 0.99 vs u_v ≤ 1  utilisation 0.99
-  PASS  Index-run Δp ≤ limit: u_dp = 0.05 vs u_dp ≤ 1  utilisation 0.05
+  PASS  Highest velocity against limit: 7.958 m/s vs 8 m/s  utilisation 0.99
+  PASS  Index-run pressure drop against limit: 16.33 Pa vs 300 Pa  utilisation 0.05
 
 7. Applicability
   None.
 
 8. Verification
-  Template: bs.duct-sizing@1.1.0
+  Template: bs.duct-sizing@1.2.0
   Known-answer cases passed: 3/3
 
 9. References
   1. ASHRAE Handbook — Fundamentals Ch. 21 — Duct design (friction chart basis, equivalent diameters, loss coefficients)
-  2. CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts
-  3. BS EN 1505 — Ventilation for buildings: sheet metal air ducts and fittings with rectangular cross-section, dimensions
-  4. BS EN 1506 — Ventilation for buildings: sheet metal air ducts and fittings with circular cross-section, dimensions
+  2. CIBSE Guide C §4 — Flow of fluids in pipes and ducts
+  3. BS EN 1505:1998 — Ventilation for buildings: sheet metal air ducts and fittings with rectangular cross-section, dimensions
+  4. BS EN 1506:2007 — Ventilation for buildings: sheet metal air ducts and fittings with circular cross-section, dimensions

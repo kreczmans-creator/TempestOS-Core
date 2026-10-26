@@ -27,11 +27,11 @@ The 24 m riser grows 24.5 mm. The 2.5 m offset leg would have to be 2.82 m to ke
 | `L_req` | 2.8163 m | 2.8163 m | PASS |
 | `u_leg` | 1.12652  | 1.12652  | PASS |
 | `u_run` | 0.0378731  | 0.0378731  | PASS |
-| `anchor_force` | 192.459 N | 192.459 N | PASS |
-| `anchor_moment` | 240.573 N*m | 240.573 N*m | PASS |
+| `anchor_force` | 0.192459 kN | 0.192459 kN | PASS |
+| `anchor_moment` | 0.240573 kN*m | 0.240573 kN*m | PASS |
 | `Y_scr` | 24.6125 mm | 24.6125 mm | PASS |
 | `scr` | 236.592 mm^2/m^2 | 236.592 mm^2/m^2 | PASS |
 | `u_scr` | 2.36592  | 2.36592  | PASS |
 | `pass` | 0  | 0  | PASS |
 
-Governing check: Screening only: OD·Y/(L − U)² ≤ K1 (not met: the line needs a formal stress analysis) — FAIL (utilisation 2.37). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Screening ratio against the limit K1 (not met: the line needs a formal stress analysis) — FAIL (utilisation 2.37). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

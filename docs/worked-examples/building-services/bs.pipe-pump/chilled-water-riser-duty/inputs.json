@@ -64,7 +64,7 @@
     "ValueText": "[0, 20, 40, 60]"
   },
   {
-    "Symbol": "T",
+    "Symbol": "T_fluid",
     "Number": 6,
     "Unit": "degC",
     "Provenance": {
@@ -238,7 +238,7 @@
     "ValueText": "3 row(s)"
   },
   {
-    "Symbol": "v_max",
+    "Symbol": "v_limit",
     "Number": 2.5,
     "Unit": "m/s",
     "Provenance": {

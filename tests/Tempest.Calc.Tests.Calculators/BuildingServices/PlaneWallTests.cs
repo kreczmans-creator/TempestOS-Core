@@ -20,7 +20,7 @@ public sealed class PlaneWallTests
         Gen.Select(Gen.Double[1, 500], Gen.Double[0.01, 5], Gen.Double[-30, 60]).Sample((t, k, t1) =>
         {
             var r = CalcRunner.Run(Wall, Inputs(("a", t, k), ("b", 2 * t, k / 3)).With(CalcInputValue.Quantity("T_1", t1, "degC")));
-            var q = r.OutputSi("Q");
+            var q = r.OutputSi("Phi");
             var cold = r.OutputSi("T_s2");
             return Math.Abs(cold - q * r.OutputSi("R_h2") - 263.15) < 1e-9 * Math.Max(1, Math.Abs(cold));
         }, iter: 50);
@@ -41,15 +41,15 @@ public sealed class PlaneWallTests
     {
         var a = CalcRunner.Run(Wall, Inputs(("glass", 8, 0.78)).With(CalcInputValue.Quantity("T_1", 20, "degC")).With(CalcInputValue.Quantity("T_2", 0, "degC")));
         var b = CalcRunner.Run(Wall, Inputs(("glass", 8, 0.78)).With(CalcInputValue.Quantity("T_1", 40, "degC")).With(CalcInputValue.Quantity("T_2", 0, "degC")));
-        Assert.Equal(a.OutputSi("U"), b.OutputSi("U"), 12);
-        Assert.Equal(2 * a.OutputSi("Q"), b.OutputSi("Q"), 9);
+        Assert.Equal(a.OutputSi("U_wall"), b.OutputSi("U_wall"), 12);
+        Assert.Equal(2 * a.OutputSi("Phi"), b.OutputSi("Phi"), 9);
     }
 
     [Fact]
     public void Reversed_Flow_Is_Negative_And_Warned()
     {
         var r = CalcRunner.Run(Wall, Inputs(("glass", 8, 0.78)).With(CalcInputValue.Quantity("T_1", 0, "degC")).With(CalcInputValue.Quantity("T_2", 20, "degC")));
-        Assert.True(r.OutputSi("Q") < 0);
+        Assert.True(r.OutputSi("Phi") < 0);
         Assert.Contains(r.Warnings, w => w.RuleId == "reversed");
     }
 

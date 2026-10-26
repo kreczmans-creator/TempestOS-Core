@@ -336,8 +336,8 @@ The nine calculators of the audit's port map, as named:
 | `struct.load-combinations` | `E_d_max` → `combination.effect_uls_max`, `E_d_min` → `combination.effect_uls_min`, `E_k_max` → `combination.effect_sls_characteristic_max`, `E_qp_max` → `combination.effect_sls_quasi_permanent_max` |
 | `elec.load-budget` | `P_dem` → `load.power_demand`, `S_dem` → `load.apparent_demand`, `I_3ph` → `load.current_three_phase`, `I_1ph` → `load.current_single_phase`, `I_DC` → `load.current_dc`, `Phi` → `load.heat_dissipated`, `U_L` → `load.voltage_line`, `pf_link` → `load.power_factor_linked`, `C_req` → `battery.capacity_required` |
 | `elec.fault-protection` | `Z_s` → `fault.impedance_loop`, `I_f` → `fault.current_earth`, `S_min` → `conductor.area_adiabatic_min`, `I_k3` → `fault.current_three_phase`, `c_k3` → `fault.factor_voltage` |
-| `bs.heat-exchanger` | `Q` → `exchanger.duty`, `T_h_out` → `exchanger.temperature_hot_out`, `T_c_out` → `exchanger.temperature_cold_out`, `A_req` → `exchanger.area_required`, `dT_c` → `exchanger.temperature_rise_cold`, `T_c_m` → `exchanger.temperature_cold_mean`, `cp_c` → `exchanger.specific_heat_cold` |
-| `bs.sealed-system` | `Phi_tot` → `heating.heat_required`, `V_s` → `heating.volume_system`, `V_e` → `heating.volume_expansion_min`, `dT` → `heating.temperature_difference_emitter`, `dT_fr` → `heating.temperature_difference_loop`, `t_m` → `heating.temperature_mean` |
+| `bs.heat-exchanger` | `Phi` → `exchanger.duty`, `T_h_out` → `exchanger.temperature_hot_out`, `T_c_out` → `exchanger.temperature_cold_out`, `A_req` → `exchanger.area_required`, `dT_c` → `exchanger.temperature_rise_cold`, `T_c_m` → `exchanger.temperature_cold_mean`, `cp_c` → `exchanger.specific_heat_cold` |
+| `bs.sealed-system` | `Phi_tot` → `heating.heat_required`, `V_s` → `heating.volume_system`, `V_e` → `heating.volume_expansion_min`, `dT` → `heating.temperature_difference_emitter`, `dT_fr` → `heating.temperature_difference_loop`, `T_m` → `heating.temperature_mean` |
 
 **Good example.** `{ Symbol: "L_nmh", Unit: "h", Name: "bearing.life_modified" }`; a pack binding `("shaft", "R_A", "bearing", "F_r")` and a link saved as `calc:<id>#R_A` still resolve.
 
