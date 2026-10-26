@@ -64,18 +64,18 @@ Trace cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725
       = 0.9079 mm / 2.5 mm
       = 0.36316
         Width utilisation (minimum / as drawn)
-  [21] T_trace = T_amb + dT
-      = 25 degC + 20 K
-      = 45 degC
-        Trace operating temperature
-  [22] rho_T = rho_20 * (1 + alpha * (T_trace - 20 degC))
-      = 0.01724 ohm·mm²/m × (1 + 0.00393 1/K × (45 degC − 20 degC))
-      = 0.018934 ohm·mm²/m
-        Copper resistivity at the operating temperature
-  [23] A_act = w_act * t_Cu
+  [21] A_act = w_act * t_Cu
       = 2.5 mm × 70.002 um
       = 0.17501 mm²
         Cross-section of the trace as drawn
+  [22] T_trace = T_amb + dT
+      = 25 degC + 20 K
+      = 45 degC
+        Trace operating temperature
+  [23] rho_T = rho_20 * (1 + alpha * (T_trace - 20 degC))
+      = 0.01724 ohm·mm²/m × (1 + 0.00393 1/K × (45 degC − 20 degC))
+      = 0.018934 ohm·mm²/m
+        Copper resistivity at the operating temperature
   [24] trace_R = rho_T * L / A_act
       = 0.018934 ohm·mm²/m × 100 mm / 0.17501 mm²
       = 10.819 mohm
@@ -104,7 +104,7 @@ Trace cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725
   WARNING record: Tabulated values not taken from a reference record: k_ext, k_int, n_dT, n_A, t_oz (IPC-2221 legacy curve-fit constants); rho_20, alpha (Copper resistivity constants). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.pcb-trace@1.0.3
+  Template: elec.pcb-trace@1.1.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 6/6

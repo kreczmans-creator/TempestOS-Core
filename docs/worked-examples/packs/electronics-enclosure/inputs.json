@@ -259,8 +259,8 @@
       "Symbol": "eta_psu",
       "Number": 0.9,
       "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
+        "Kind": "Specification",
+        "Reference": "SPEC-ELX-02 \u00A74 (board loads)",
         "IsSufficientToIssue": true
       },
       "ValueText": "0.9"
@@ -341,7 +341,7 @@
               "Unit": "kW",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:b0aea15225ab4315bb8075dfa052ac6b#trace_Ploss",
+                "Reference": "calc:1b7b4ade6c99456b8e6c4315781eb0a5#trace_Ploss",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -470,41 +470,6 @@
               "Flag": false
             }
           }
-        },
-        {
-          "Cells": {
-            "name": {
-              "Text": "24 V supply loss"
-            },
-            "supply": {
-              "Text": "AC single-phase"
-            },
-            "P": {
-              "Number": 0.0265,
-              "Unit": "kW"
-            },
-            "cosphi": {
-              "Number": 1
-            },
-            "eta": {
-              "Number": 1
-            },
-            "heat": {
-              "Number": 1
-            },
-            "d": {
-              "Number": 1
-            },
-            "k": {
-              "Number": 1
-            },
-            "inrush": {
-              "Number": 1
-            },
-            "backed": {
-              "Flag": false
-            }
-          }
         }
       ],
       "Provenance": {
@@ -512,7 +477,7 @@
         "Reference": "SPEC-ELX-02 \u00A74 (board loads)",
         "IsSufficientToIssue": true
       },
-      "ValueText": "5 row(s)"
+      "ValueText": "4 row(s)"
     },
     {
       "Symbol": "margin",
@@ -618,15 +583,15 @@
     },
     {
       "Symbol": "P_add",
-      "Number": 73.00733510851057,
+      "Number": 73.00815012056731,
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8af15dbcb60e4921a2f54001a7177e83#Phi",
+        "Reference": "calc:cb8c046a036647d9af02811097f40b83#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "73.0073"
+      "ValueText": "73.0082"
     },
     {
       "Symbol": "T_amb",
@@ -877,7 +842,7 @@
       "Unit": "N",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:60a90d079b114880a770fd067b5abaf8#F_seal",
+        "Reference": "calc:6fc572ee56e347ea93cdb488c45b5cb0#F_seal",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -885,15 +850,15 @@
     },
     {
       "Symbol": "T_use",
-      "Number": 56.877083837645046,
+      "Number": 56.877315375161174,
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:60a90d079b114880a770fd067b5abaf8#T_int",
+        "Reference": "calc:6fc572ee56e347ea93cdb488c45b5cb0#T_int",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "56.8771"
+      "ValueText": "56.8773"
     },
     {
       "Symbol": "a_arm",
@@ -1187,7 +1152,7 @@
       "Unit": "kPa",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:60a90d079b114880a770fd067b5abaf8#dp_seal",
+        "Reference": "calc:6fc572ee56e347ea93cdb488c45b5cb0#dp_seal",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

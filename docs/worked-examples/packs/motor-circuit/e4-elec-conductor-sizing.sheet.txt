@@ -33,8 +33,8 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   system | Conductor system (AWG: geometry only, no AWG capacities are supplied) | metric |  | assumption: Sheet default value; no project figure given. | any
   device | Protective device | MCB type C |  | spec: SPEC-LINE-12 §5 (cabling) | any
   C_a | Ambient correction factor (1 does not apply the ambient: enter the factor for θ_a from your licensed table) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1.5
-  C_g | Grouping correction factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1.5
-  C_i | Thermal insulation correction factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1.5
+  C_g | Grouping correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
+  C_i | Thermal insulation correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
   derive_Ca | Derive C_a from the temperatures instead of the entered factor | no |  | assumption: Sheet default value; no project figure given. | any
   theta_ref | Reference ambient temperature for the derived C_a | 30 | degC | assumption: Sheet default value; no project figure given. | 0 … 60 degC
   ratings | Preferred device ratings | 9 row(s) |  | record: SYNTHETIC device ratings (test values, not a manufacturer table) — Synthetic test data, not from any catalogue, n/a, invented values for the worked example rev 1 | any
@@ -72,8 +72,8 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   A15. N_g (Grouped circuits) is taken as 1. (Sheet default value; no project figure given.)
   A16. system (Conductor system (AWG: geometry only, no AWG capacities are supplied)) is taken as metric. (Sheet default value; no project figure given.)
   A17. C_a (Ambient correction factor (1 does not apply the ambient: enter the factor for θ_a from your licensed table)) is taken as 1. (Sheet default value; no project figure given.)
-  A18. C_g (Grouping correction factor) is taken as 1. (Sheet default value; no project figure given.)
-  A19. C_i (Thermal insulation correction factor) is taken as 1. (Sheet default value; no project figure given.)
+  A18. C_g (Grouping correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
+  A19. C_i (Thermal insulation correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
   A20. derive_Ca (Derive C_a from the temperatures instead of the entered factor) is taken as no. (Sheet default value; no project figure given.)
   A21. theta_ref (Reference ambient temperature for the derived C_a) is taken as 30 degC. (Sheet default value; no project figure given.)
   A22. Machine wiring context (BS EN 60204-1): the conductor is sized for the protective device rating; the capacities and factors are the user's records for the installation method stated. (The context changes citations, and whether a gG fuse, MCCB or MPCB without I₂ may be deemed to meet I₂ ≤ 1.45·I_z (installation) or must have I₂ entered (machine wiring); no other number differs.)
@@ -95,35 +95,38 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
       = MCB type C
       = 1
         Semi-enclosed fuse factor
-  [20] I_t_req = I_n / (C_a * C_g * C_i * C_c)    « BS EN 60204-1 cl. 12.4
+  [18] theta_op = 70 degC
+      = 70 degC
+        Conductor operating temperature for the insulation (→ E5 θ, E3 T_c)
+  [21] I_t_req = I_n / (C_a * C_g * C_i * C_c)    « BS EN 60204-1 cl. 12.4
       = 6 A / (1 × 1 × 1 × 1)
       = 6 A
         Required tabulated capacity
-  [21] I_t = I_t of the selected row of the ampacity record    « BS EN 60204-1 cl. 12.4
+  [22] I_t = I_t of the selected row of the ampacity record    « BS EN 60204-1 cl. 12.4
       = I_t,req = 6 A
       = 12.3 A
         Tabulated current-carrying capacity of the selected conductor
-  [22] CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req    « BS EN 60204-1 cl. 12.4
+  [23] CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req    « BS EN 60204-1 cl. 12.4
       = I_t,req = 6 A
       = 1.5 mm²
         Selected conductor cross-section
-  [23] I_z = I_t * C_a * C_g * C_i    « BS EN 60204-1 cl. 12.4
+  [24] I_z = I_t * C_a * C_g * C_i    « BS EN 60204-1 cl. 12.4
       = 12.3 A × 1 × 1 × 1
       = 12.3 A
         Current-carrying capacity in the installed conditions
-  [24] u_Ib = I_b / I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [25] u_Ib = I_b / I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 1.3727 A / 6 A
       = 0.22879
         Design current utilisation of the device
-  [25] u_In = I_n / I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [26] u_In = I_n / I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 6 A / 12.3 A
       = 0.4878
         Device rating utilisation of the conductor
-  [26] I2 = 1.45 * I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [27] I2 = 1.45 * I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 1.45 × 6 A
       = 8.7 A
         Conventional operating current (inherent 1.45 I_n)
-  [27] u_I2 = I2 / (1.45 * I_z)    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [28] u_I2 = I2 / (1.45 * I_z)    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 8.7 A / (1.45 × 12.3 A)
       = 0.4878
         I₂ utilisation of 1.45 I_z
@@ -139,6 +142,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   L = 25 m    Circuit length
   u_Ib = 0.22879    I_b / I_n
   u_In = 0.4878    I_n / I_z
+  theta_op = 70 degC    Conductor operating temperature for the insulation
   I2 = 8.7 A    Conventional operating current
   u_I2 = 0.4878    I₂ / (1.45 I_z)
   device_code = 2    Protective device type code
@@ -152,9 +156,9 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   WARNING record: Tabulated values not taken from a reference record: C_a, C_g, C_i (Cable correction factors). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.conductor-sizing@1.2.0
-  Content hash: 7797b9e5dc359f7a
+  Template: elec.conductor-sizing@1.3.0
+  Content hash: 549b80a7a72f70a5
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 09:36 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test

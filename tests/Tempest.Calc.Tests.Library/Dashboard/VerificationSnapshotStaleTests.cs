@@ -14,7 +14,7 @@ namespace Tempest.Calc.Tests.Library.Dashboard;
 /// </summary>
 public sealed class VerificationSnapshotStaleTests
 {
-    private const string Regenerate = "Regenerate it: TEMPEST_WRITE_KAT_RESULTS=1 dotnet test tests/Tempest.Calc.Tests.Calculators --filter KatResultsTests, then python3 scripts/generate-verification-snapshot.py, and commit the result.";
+    private const string Regenerate = "Regenerate it: TEMPEST_WRITE_KAT_RESULTS=1 dotnet test tests/Tempest.Calc.Tests.Calculators --filter KatResultsTests (and tests/Tempest.Calc.Tests.Library --filter PackResultsTests for the chains), then python3 scripts/generate-verification-snapshot.py, and commit the result.";
 
     private static string Root { get; } = FindRoot();
 
@@ -50,12 +50,12 @@ public sealed class VerificationSnapshotStaleTests
         Directory.GetFiles(Path.Combine(Root, folder), pattern, option).Select(f => Path.GetRelativePath(Root, f).Replace('\\', '/'));
 
     [Fact]
-    public void The_Embedded_Snapshot_Is_Readable_And_Names_The_Four_Input_Groups()
+    public void The_Embedded_Snapshot_Is_Readable_And_Names_The_Five_Input_Groups()
     {
         var snapshot = VerificationSnapshot.LoadEmbedded();
 
         Assert.Null(snapshot.Problem);
-        Assert.Equal(["katResults", "knownDefects", "rederivation", "workedExamples"], snapshot.Sources.Keys.Order(StringComparer.Ordinal));
+        Assert.Equal(["generator", "katResults", "knownDefects", "rederivation", "workedExamples"], snapshot.Sources.Keys.Order(StringComparer.Ordinal));
         Assert.True(snapshot.Items.Count > 60, $"{snapshot.Items.Count} items");
     }
 
@@ -69,6 +69,9 @@ public sealed class VerificationSnapshotStaleTests
             ["knownDefects"] = Digest(["docs/testing/v0.26.0-known-defects.md"]),
             ["katResults"] = Digest(["docs/testing/kat-results.json"]),
             ["workedExamples"] = Digest(Files("docs/worked-examples", "README.md", SearchOption.AllDirectories)),
+
+            // The code that reads the documents is hashed too: a change to how a document is parsed changes the snapshot.
+            ["generator"] = Digest(["scripts/generate-verification-snapshot.py", "tools/verification/findings.py"]),
         };
 
         foreach (var (group, digest) in current)
@@ -94,16 +97,65 @@ public sealed class VerificationSnapshotStaleTests
     }
 
     [Fact]
+    public void The_Kat_Counts_In_The_Snapshot_Are_What_The_Kat_Results_File_Says()
+    {
+        // A second reading of docs/testing/kat-results.json, independent of the script: the snapshot must hold exactly its counts.
+        using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(Root, "docs/testing/kat-results.json")));
+        var snapshot = VerificationSnapshot.LoadEmbedded();
+        var templates = document.RootElement.GetProperty("templates").EnumerateArray().ToList();
+        Assert.True(templates.Count > 50, $"{templates.Count} templates in kat-results.json");
+
+        foreach (var t in templates)
+        {
+            var id = t.GetProperty("id").GetString()!;
+            Assert.True(snapshot.Items.TryGetValue(id, out var item) && item.Kat is not null, $"{id} is in kat-results.json but has no KAT results in the snapshot. {Regenerate}");
+            var kat = item.Kat!;
+            Assert.True(
+                kat.Version == t.GetProperty("version").GetString() && kat.Kats == t.GetProperty("kats").GetInt32() && kat.KatsPassed == t.GetProperty("katsPassed").GetInt32()
+                && kat.FailedKats.Count == t.GetProperty("failedKats").GetArrayLength() && kat.ExamplesPassed == t.GetProperty("examplesPassed").GetInt32() && kat.FailedExamples.Count == t.GetProperty("failedExamples").GetArrayLength(),
+                $"{id}: the snapshot's KAT counts ({kat.KatsPassed} of {kat.Kats}) differ from kat-results.json ({t.GetProperty("katsPassed").GetInt32()} of {t.GetProperty("kats").GetInt32()}). {Regenerate}");
+        }
+
+        Assert.Equal(templates.Count, snapshot.Items.Values.Count(i => i.Kat is not null));
+
+        var packs = document.RootElement.GetProperty("packs").EnumerateArray().ToList();
+        Assert.Equal(CalcPackTemplates.All.Count, packs.Count);
+
+        foreach (var p in packs)
+        {
+            var id = p.GetProperty("id").GetString()!;
+            var run = snapshot.Items.GetValueOrDefault(id)?.PackRun;
+            Assert.True(
+                run is not null && run.Steps == p.GetProperty("steps").GetInt32() && run.Bindings == p.GetProperty("bindings").GetInt32() && run.Passed == p.GetProperty("passed").GetBoolean() && run.Failures.Count == p.GetProperty("failures").GetArrayLength(),
+                $"{id}: the snapshot's chain run differs from kat-results.json. {Regenerate}");
+        }
+    }
+
+    [Fact]
     public async Task Every_Calculator_And_Chain_Of_The_Product_Has_A_Row_With_Results_And_No_Row_Is_Not_Run()
     {
         var catalogue = new CalcCatalogue(ShippedCalculators.All);
-        var service = new VerificationDashboardService(catalogue, CalcPackTemplates.All, VerificationSnapshot.LoadEmbedded());
+        var snapshot = VerificationSnapshot.LoadEmbedded();
+        var service = new VerificationDashboardService(catalogue, CalcPackTemplates.All, snapshot);
         var report = await service.BuildAsync();
 
         Assert.Null(report.DataProblem);
         Assert.False(report.Truncated);
         Assert.Equal(catalogue.Current().Count + CalcPackTemplates.All.Count, report.Rows.Count);
         Assert.All(report.Rows, r => Assert.True(r.KatState == KatRunState.Passed, $"{r.Id}: {r.KatText}"));
+
+        // A chain is not run unless its own run is recorded (and passed) for the chain as it is now: its worked example README existing is no result.
+        foreach (var pack in CalcPackTemplates.All)
+        {
+            var run = snapshot.Items.GetValueOrDefault(pack.Id)?.PackRun;
+            Assert.True(run is { Passed: true, Failures.Count: 0 } && run.Steps == pack.Steps.Count && run.Bindings == pack.Bindings.Count, $"{pack.Id} has no passing recorded run for its current steps and links. {Regenerate}");
+        }
+
+        // The row's state is the worst of the chain's own run and its calculators', so it can only read Passed when each calculator's row does.
+        var byId = report.Rows.ToDictionary(r => r.Id, StringComparer.Ordinal);
+
+        foreach (var pack in CalcPackTemplates.All)
+            Assert.All(pack.Steps.Select(s => s.TemplateId).Distinct(StringComparer.Ordinal), id => Assert.Equal(KatRunState.Passed, byId[id].KatState));
         Assert.All(report.Rows.Where(r => r.Kind == VerificationRowKind.Calculator), r => Assert.True(r.WorkedExamples > 0, $"{r.Id} has no worked example in the snapshot"));
         Assert.Contains(report.Rows, r => r.Id == "mech.shaft" && r.RederivationResult == "Match, with findings" && r.Findings.Count > 5);
         Assert.Contains(report.Rows, r => r.Id == "pack.drive-train" && r.Findings.Count > 5);

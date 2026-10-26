@@ -72,6 +72,7 @@ public sealed class VerificationDashboardViewModel
         (VerificationStatusFilter.UnconfirmedOrSecondary, "Unconfirmed or Secondary"),
         (VerificationStatusFilter.MissingRecords, "Records not entered"),
         (VerificationStatusFilter.NotRun, "Not run"),
+        (VerificationStatusFilter.NotRederived, "Not re-derived"),
         (VerificationStatusFilter.NotManuallyTested, "Not manually tested"),
         (VerificationStatusFilter.Clean, "Clean"),
     ];
@@ -105,10 +106,12 @@ public sealed class VerificationDashboardViewModel
         {
             Status = "Opening the verification dashboard was cancelled.";
         }
-        catch (Exception ex) when (ex is IOException or InvalidOperationException or UnauthorizedAccessException)
+#pragma warning disable CA1031 // The screen opens this without awaiting it: whatever fails while the report is built is shown as one sentence, never left unobserved.
+        catch (Exception)
         {
             Status = "The verification dashboard could not be built, so it is empty. Close it and open it again; if that does not help, restart TempestOS.";
         }
+#pragma warning restore CA1031
         finally
         {
             _busy = false;
@@ -139,10 +142,12 @@ public sealed class VerificationDashboardViewModel
 
         Rows = _report.Filter(DisciplineFilter == AllDisciplines ? null : DisciplineFilter, StatusFilter);
         var failing = Rows.Count(r => r.IsFailing);
-        var open = Rows.Sum(r => r.OpenDefectCount);
+
+        // Without the document data the open defects are unknown, which is not the same as none.
+        var defects = Rows.Any(r => !r.DefectsKnown) ? "open defects unknown" : $"{Rows.Sum(r => r.OpenDefectCount)} open defect(s) on {Rows.Count(r => r.HasOpenDefects)} row(s)";
         Summary = _report.Rows.Count == 0
             ? "There are no calculators or chains to verify."
-            : $"{Rows.Count} of {_report.Rows.Count} rows: {failing} failing, {open} open defect(s) on {Rows.Count(r => r.OpenDefectCount > 0)} row(s), {Rows.Count(r => r.HasUnconfirmedOrSecondary)} with Unconfirmed or Secondary cases, {Rows.Count(r => r.HasMissingRecords)} with records not entered, {Rows.Count(r => r.KatState == KatRunState.NotRun)} not run."
+            : $"{Rows.Count} of {_report.Rows.Count} rows: {failing} failing, {defects}, {Rows.Count(r => r.HasUnconfirmedOrSecondary)} with Unconfirmed or Secondary cases, {Rows.Count(r => r.HasMissingRecords)} with records not entered, {Rows.Count(r => r.KatState == KatRunState.NotRun)} not run, {Rows.Count(r => !r.IsRederived)} not re-derived."
               + (_report.Truncated ? $" The first {_report.Rows.Count} of {_report.TotalRows} are listed." : string.Empty);
     }
 
@@ -155,6 +160,34 @@ public sealed class VerificationDashboardViewModel
         ExportAsync("pdf", "PDF", report => _pdf.Render(report, Rows, FilterText, Version()).ToArray(), cancellationToken);
 
     private string Version() => _applicationVersion() is { Length: > 0 } text ? text : "development build";
+
+    /// <summary>
+    /// Writes <paramref name="bytes"/> to a temporary file in the same folder and then moves it into place, so a failure half way leaves the
+    /// file that was there untouched and never a partly written export.
+    /// </summary>
+    private static async Task WriteThroughTempFileAsync(string path, byte[] bytes, CancellationToken cancellationToken)
+    {
+        var full = Path.GetFullPath(path);
+        var temp = Path.Combine(Path.GetDirectoryName(full) ?? ".", $".{Path.GetFileName(full)}.{Guid.NewGuid():N}.tmp");
+
+        try
+        {
+            await File.WriteAllBytesAsync(temp, bytes, cancellationToken).ConfigureAwait(true);
+            File.Move(temp, full, overwrite: true);
+        }
+        finally
+        {
+            try
+            {
+                if (File.Exists(temp))
+                    File.Delete(temp);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // A temporary file that cannot be removed is left for the person to delete; it is not the export's result.
+            }
+        }
+    }
 
     private async Task ExportAsync(string extension, string noun, Func<VerificationReport, byte[]> render, CancellationToken cancellationToken)
     {
@@ -182,8 +215,20 @@ public sealed class VerificationDashboardViewModel
                 return;
             }
 
-            if (string.IsNullOrEmpty(Path.GetExtension(path)))
-                path += "." + extension;
+            // The file's extension is the export's: a name that has another (or none) gets ".md" or ".pdf" appended, so an export can never be
+            // saved as an .exe or a .txt. The picker's own overwrite prompt covered the name the person typed, not the name with the extension
+            // added, so an added extension never replaces a file that is already there.
+            var wanted = "." + extension;
+            var appended = !string.Equals(Path.GetExtension(path), wanted, StringComparison.OrdinalIgnoreCase);
+
+            if (appended)
+                path += wanted;
+
+            if (appended && File.Exists(path))
+            {
+                Status = $"A file named {Path.GetFileName(path)} already exists in that folder, so nothing was saved. Choose a file name that ends in {wanted}, or another folder.";
+                return;
+            }
 
             var bytes = render(_report);
 
@@ -193,7 +238,7 @@ public sealed class VerificationDashboardViewModel
                 return;
             }
 
-            await File.WriteAllBytesAsync(path, bytes, cancellationToken).ConfigureAwait(true);
+            await WriteThroughTempFileAsync(path, bytes, cancellationToken).ConfigureAwait(true);
             Status = $"Saved {Rows.Count} row(s) of the verification dashboard to {Path.GetFileName(path)}.";
         }
         catch (OperationCanceledException)
@@ -204,6 +249,12 @@ public sealed class VerificationDashboardViewModel
         {
             Status = $"The {noun} file could not be saved ({ex.Message.TrimEnd('.')}). Choose another folder or file name and try again.";
         }
+#pragma warning disable CA1031 // The export buttons start this without awaiting it: whatever else goes wrong (the renderer, the picker) is shown as a sentence, never left unobserved.
+        catch (Exception)
+        {
+            Status = $"The {noun} file could not be saved. Try again, and if it still fails choose another folder or restart TempestOS.";
+        }
+#pragma warning restore CA1031
         finally
         {
             _busy = false;

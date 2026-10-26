@@ -26,7 +26,7 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.1", CalcDiscipline.Electrical, "Fault protection: Zs, disconnection, adiabatic, fault level",
+        Id, "1.3.2", CalcDiscipline.Electrical, "Fault protection: Zs, disconnection, adiabatic, fault level",
         "Automatic disconnection of supply in a TN system for one circuit: the earth fault loop impedance at the conductor's operating temperature against the device's maximum, the disconnection time, the protective conductor (and line conductor) against the adiabatic minimum, and the prospective three-phase fault at the origin against the device's breaking capacity.",
         "Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/S (k_R = 1.125 takes the pure-copper ρ_20 to the cable standard's maximum conductor resistance; k enters with the pure ρ_20)\n" +
         "Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95\n" +
@@ -78,6 +78,8 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
             new CalcApplicabilityRule("curve", "The time–current points must bracket the required disconnection time; at least two points are needed.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("curve-range", "The fault current is outside the points entered: above the highest the fastest time entered bounds the disconnection time, below the lowest no time is read. The loop impedance verdict is still given.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("resistance", "The conductor resistance factor k_R is below 1.05: R₁ + R₂ and Z_s are at about the pure resistivity, 5 to 12 % below the cable standard's maximum conductor resistances.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("theta", "Z_s is taken at a conductor temperature below the adiabatic check's initial temperature theta_i: R₁ + R₂ and Z_s are understated.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("t_req", "The required disconnection time is above 0.4 s at U_0 up to 230 V, or is the 230 V time at a higher voltage to earth: check it against the standard's table of times.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("let-through", "Disconnection below 0.1 s without a let-through I²t: the protective conductor check uses I_f²·0.1 s at the end-of-line fault only, the line conductor check is not made and neither conductor has been shown to withstand a fault near the origin, so the sheet fails 'Conductors against let-through at the origin' until I2t_let is entered.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("device", "The device chosen must be the one carried from the cable step (device_code).", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("adiabatic", "No disconnection time: the adiabatic check is not made.", CalcNoticeSeverity.Warning),
@@ -169,6 +171,16 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
 
         if (c.Si("k_R") < 1.05)
             c.Warn("resistance", $"k_R: the conductor resistance factor {F(c.Si("k_R"))} leaves R₁ + R₂ at about the pure resistivity, 5 to 12 % below the cable standard's maximum conductor resistances, so Z_s is understated; use 1.125 unless the conductor resistance is measured or taken from the maker's data.");
+        // elec.fault-protection-06: Z_s is taken at theta, the adiabatic check starts from theta_i; a loop temperature below the conductor's own initial temperature understates Z_s.
+        if (c.Si("theta") < c.Si("theta_i") - 0.5)
+            c.Warn("theta", $"theta: Z_s is taken at {F(c.Si("theta") - 273.15)} °C but the adiabatic check starts from the conductor temperature theta_i = {F(c.Si("theta_i") - 273.15)} °C, so R₁ + R₂ and Z_s are understated; set theta to theta_i (the conductor's operating temperature) unless the circuit really runs cooler.");
+
+        // elec.fault-protection-05: t_req is an input, not read from U_0 and the circuit type, so say where it needs checking.
+        if (c.Si("U_0") <= 230 * (1 + 1e-9) && c.Si("t_req") > 0.4 * (1 + 1e-9))
+            c.Warn("t_req", $"t_req: {F(c.Si("t_req"))} s is longer than 0.4 s, the disconnection time for a final circuit at U_0 up to 230 V; a longer time is allowed only for a distribution circuit (BS 7671 reg. 411.3.2.3), not for the circuit of a machine. Check the time against Table 41.1 of your copy.");
+        else if (c.Si("U_0") > 230 * (1 + 1e-9) && c.Si("t_req") >= 0.4 * (1 - 1e-9))
+            c.Warn("t_req", $"t_req: {F(c.Si("t_req"))} s is the time for U_0 up to 230 V; at U_0 = {F(c.Si("U_0"))} V the time in Table 41.1 of your copy is shorter, so check t_req against it.");
+
         if (c.Si("S_line") > 16e-6 * (1 + 1e-9) && Math.Abs(c.Si("S_cpc") - c.Si("S_line")) <= 1e-9 * c.Si("S_line"))
             c.Warn("cpc-full-size", $"S_cpc: the protective conductor is entered equal to the line conductor ({F(c.Si("S_line") * 1e6)} mm²), as the pack link from the cable step does. Above 16 mm² the protective conductor is normally smaller (BS 7671 Table 54.7, and the cable's own earth core), and a smaller S_cpc raises R₁ + R₂, Z_s and the adiabatic utilisation; enter the real S_cpc, or confirm that this circuit has a full-size protective conductor.");
         c.Assign("Z_s", "Z_e + R_12", "ohm", "Earth fault loop impedance", "BS 7671 reg. 411.4.4");

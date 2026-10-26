@@ -121,12 +121,19 @@ public sealed class VerificationDashboardView : UserControl
                 var kat = Cell(r.KatText);
                 kat.Foreground = r.KatState switch { KatRunState.Failed => Brushes.IndianRed, KatRunState.Passed => Brushes.SeaGreen, _ => Brushes.DarkOrange };
 
-                var open = Cell(r.OpenDefectCount.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                var open = Cell(r.OpenDefectsText);
 
-                if (r.OpenDefectCount > 0)
+                if (!r.DefectsKnown)
+                {
+                    open.Foreground = Brushes.DarkOrange;
+                    ToolTip.SetTip(open, "The verification data could not be read, so the open defects are not known.");
+                }
+                else if (r.HasOpenDefects)
                 {
                     open.Foreground = Brushes.IndianRed;
-                    ToolTip.SetTip(open, string.Join("\n", r.OpenDefects.Take(30).Select(d => $"{d.Id} — {d.Severity}, {d.StatusLabel.ToLowerInvariant()}")) + (r.OpenDefectCount > 30 ? "\n…" : string.Empty));
+                    var own = r.OpenDefects.Take(30).Select(d => $"{d.Id} — {d.Severity}, {d.StatusLabel.ToLowerInvariant()}");
+                    var steps = r.StepOpenDefects.Take(30).Select(d => $"step: {d.Id} — {d.Severity}, {d.StatusLabel.ToLowerInvariant()}");
+                    ToolTip.SetTip(open, string.Join("\n", own.Concat(steps)) + (r.OpenDefectCount > 30 || r.StepOpenDefectCount > 30 ? "\n…" : string.Empty));
                 }
 
                 var records = Cell(r.MissingRecordKinds.Count == 0 ? "none" : string.Join("; ", r.MissingRecordKinds));

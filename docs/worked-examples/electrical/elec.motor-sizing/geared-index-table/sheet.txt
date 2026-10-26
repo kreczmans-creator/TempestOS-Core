@@ -153,31 +153,35 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
       = 0.3 s + 0.7 s
       = 1 s
         Cycle time
-  [49] P_rms = omega_pk * sqrt((t_acc * (2 / 3) * (T_load^2 + T_acc^2) + T_load^2 * t_const) / t_cycle)
+  [49] n_mean = omega_pk * (t_move - t_acc) / t_cycle
+      = 78.54 rad/s × (0.3 s − 0.1 s) / 1 s
+      = 150 rpm
+        Mean motor speed over the cycle, dwell included (the travel's motor turns per cycle time)
+  [50] P_rms = omega_pk * sqrt((t_acc * (2 / 3) * (T_load^2 + T_acc^2) + T_load^2 * t_const) / t_cycle)
       = 78.54 rad/s × sqrt((0.1 s × 2 / 3 × ((0 N·m)^2 + (5.0127 N·m)^2) + (0 N·m)^2 × 0.1 s) / 1 s)
       = 0.10165 kW
         RMS mechanical power over the cycle (thermal-equivalent continuous power)
-  [50] T_rms = sqrt((T_pk^2 * t_acc + T_load^2 * t_const + T_dec^2 * t_acc + T_hold^2 * t_dwell) / t_cycle)
+  [51] T_rms = sqrt((T_pk^2 * t_acc + T_load^2 * t_const + T_dec^2 * t_acc + T_hold^2 * t_dwell) / t_cycle)
       = sqrt(((5.0127 N·m)^2 × 0.1 s + (0 N·m)^2 × 0.1 s + (-5.0127 N·m)^2 × 0.1 s + (0 N·m)^2 × 0.7 s) / 1 s)
       = 2.2417 N·m
         RMS torque over the cycle (thermal), the dwell at the holding torque
-  [51] J_ratio = (J_refl + J_mech) / J_motor
+  [52] J_ratio = (J_refl + J_mech) / J_motor
       = (0.0058824 kg·m² + 0 kg·m²) / 0.0005 kg·m²
       = 11.765
         Inertia ratio (load : motor)
-  [52] u_peak = SF * max(abs(T_pk), abs(T_dec)) / T_peak
+  [53] u_peak = SF * max(abs(T_pk), abs(T_dec)) / T_peak
       = 1.25 × max(abs(5.0127 N·m), abs(-5.0127 N·m)) / 9 N·m
       = 0.69621
         Peak torque utilisation with safety margin, on the larger of the accelerating and the braking torque
-  [53] u_rms = SF * T_rms / T_rated
+  [54] u_rms = SF * T_rms / T_rated
       = 1.25 × 2.2417 N·m / 3 N·m
       = 0.93406
         Continuous torque utilisation with safety margin
-  [54] u_speed = n_pk / n_max
+  [55] u_speed = n_pk / n_max
       = 750 rpm / 3000 rpm
       = 0.25
         Speed utilisation
-  [55] duty = T_rms / T_rated
+  [56] duty = T_rms / T_rated
       = 2.2417 N·m / 3 N·m
       = 0.74725
         Thermal duty (without margin)
@@ -211,6 +215,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   T_out_a = 42.608 N·m    Output shaft alternating torque
   T_out_pk = 42.608 N·m    Output shaft peak torque
   n_out = 75 rpm    Output shaft speed
+  n_mean = 150 rpm    Mean motor speed over the cycle
 
 6. CHECKS (governing first)
   PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.93406 vs u_rms ≤ 1  utilisation 0.934
@@ -228,7 +233,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   WARNING overhauling: T_dec: the motor brakes during deceleration (negative torque); the drive must absorb the regenerated energy.
 
 8. VERIFICATION
-  Template: elec.motor-sizing@1.8.0
+  Template: elec.motor-sizing@1.9.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

@@ -8,7 +8,7 @@ Issued: 2026-10-26    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.
-Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative); this duty-weighted demand sizes the transformer and the enclosure heat Running load of each load while it is on: P_i·k_i, apparent P_i·k_i/cosφ_i (the duty d is the share of time on, so it is left out: a cable, a bus and a power supply carry the load while it is on) Bus currents: I_3φ = S_3φ,run/(√3·U), I_1φ = S_1φ,run/U, I_DC = P_DC,run/U_DC, from the running loads; when a bus is chosen for the DC power supply its input P_DC,run/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0) Power supply sizing: P_PSU ≥ margin·P_DC,run/f_derate (the running DC load, duty not applied; f_derate from the manufacturer's curve at θ and altitude) Transformer sizing: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery sizing: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
+Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative); this duty-weighted demand sizes the transformer and the enclosure heat Running load of each load while it is on: P_i·k_i, apparent P_i·k_i/cosφ_i (the duty d is the share of time on, so it is left out: a cable, a bus and a power supply carry the load while it is on) Bus currents: I_3φ = S_3φ,run/(√3·U), I_1φ = S_1φ,run/U, I_DC = P_DC,run/U_DC, from the running loads; when a bus is chosen for the DC power supply its input P_DC,run/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i + P_DC·(1/η_PSU − 1), h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0); the second term is the power supply's own loss, present when an AC bus is chosen for it Power supply sizing: P_PSU ≥ margin·P_DC,run/f_derate (the running DC load, duty not applied; f_derate from the manufacturer's curve at θ and altitude) Transformer sizing: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery sizing: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t, never below I_b·t (the exponent is not valid beyond the rated hour rate H)
   Ref: Linden's Handbook of Batteries 5th ed., Ch. 3–4 — Battery sizing and the Peukert relation
   Ref: BS EN 60204-1:2018 cl. 4.3 — Electrical supply (supply voltage tolerance; cited by number only)
 
@@ -140,6 +140,14 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
       = max(147.26 kVA, 41.491 kVA)
       = 147.26 kVA
         Minimum transformer rating (running load and starting peak)
+  [39] U_L = U_3ph
+      = 400 V
+      = 400 V
+        Three-phase line voltage of the bus
+  [40] pf_link = cosφ of the linked machine
+      = 0.85
+      = 0.85
+        Power factor of the linked machine
 
 5. RESULTS
   P_conn = 116.5 kW    Connected load
@@ -154,6 +162,8 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   S_peak = 124.47 kVA    Peak apparent power at start
   S_T_req_start = 41.491 kVA    Minimum transformer rating, starting peak
   S_T_min = 147.26 kVA    Minimum transformer rating, running and starting
+  U_L = 400 V    Three-phase line voltage
+  pf_link = 0.85    Power factor of the linked machine
 
 6. CHECKS (governing first)
   No pass/fail checks in this calculation.
@@ -162,9 +172,9 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   WARNING record: Tabulated values not taken from a reference record: f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.load-budget@1.3.0
-  Content hash: 27461dc18ad6253f
+  Template: elec.load-budget@1.4.0
+  Content hash: 11d6f81df601ffbc
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 09:36 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test

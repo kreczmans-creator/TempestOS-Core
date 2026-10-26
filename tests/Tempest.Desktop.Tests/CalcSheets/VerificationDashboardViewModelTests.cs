@@ -4,6 +4,7 @@ using Tempest.Calc.Library.Dashboard;
 using Tempest.Calc.Sheets;
 using Tempest.Desktop.CalcSheets;
 using Tempest.Desktop.Tests.Quotations;
+using Tempest.Workspace.Files;
 
 namespace Tempest.Desktop.Tests.CalcSheets;
 
@@ -69,11 +70,11 @@ public sealed class VerificationDashboardViewModelTests : IDisposable
         model.SetDiscipline("All disciplines");
         model.SetStatus(VerificationStatusFilter.OpenDefects);
         Assert.InRange(model.Rows.Count, 1, all - 1);
-        Assert.All(model.Rows, r => Assert.True(r.OpenDefectCount > 0));
+        Assert.All(model.Rows, r => Assert.True(r.HasOpenDefects));
         Assert.Contains("open defect(s)", model.Summary, StringComparison.Ordinal);
 
         model.SetDiscipline("Mechanical");
-        Assert.All(model.Rows, r => Assert.True(r.Discipline == "Mechanical" && r.OpenDefectCount > 0));
+        Assert.All(model.Rows, r => Assert.True(r.Discipline == "Mechanical" && r.HasOpenDefects));
         Assert.Equal("Discipline: Mechanical; status: open defects", model.FilterText);
 
         model.SetStatus(VerificationStatusFilter.Failing);
@@ -214,9 +215,165 @@ public sealed class VerificationDashboardViewModelTests : IDisposable
         Assert.DoesNotContain(new string('x', VerificationPdfRenderer.MaxCellLength + 10), text, StringComparison.Ordinal);
     }
 
-    private sealed class ThrowingRecords : IRequiredRecordsSource
+    [Fact]
+    public async Task An_Added_Extension_Never_Replaces_A_File_That_Is_Already_There()
     {
-        public Task<IReadOnlyDictionary<string, IReadOnlyList<RecordRequirement>>> RequirementsAsync(IReadOnlyList<CalcTemplate> templates, CancellationToken cancellationToken = default) =>
-            throw new InvalidOperationException("the store is not open");
+        var model = Model();
+        await model.RefreshAsync();
+        File.WriteAllText(Path_("records.md"), "my own notes");
+        _picker.SetNextSavePath(Path_("records"));
+
+        await model.ExportMarkdownAsync();
+
+        Assert.Equal("my own notes", File.ReadAllText(Path_("records.md")));
+        Assert.Equal("A file named records.md already exists in that folder, so nothing was saved. Choose a file name that ends in .md, or another folder.", model.Status);
+        Assert.False(model.IsBusy);
+        Assert.Equal(["records.md"], Directory.GetFiles(_folder).Select(Path.GetFileName));
+    }
+
+    [Theory]
+    [InlineData("report.txt", "report.txt.md")]
+    [InlineData("report.exe", "report.exe.md")]
+    [InlineData("report.pdf", "report.pdf.md")]
+    [InlineData("report", "report.md")]
+    [InlineData("report.MD", "report.MD")]
+    public async Task The_Extension_Of_A_Markdown_Export_Is_Forced_To_Md(string chosen, string written)
+    {
+        var model = Model();
+        await model.RefreshAsync();
+        model.SetDiscipline("Fluid power");
+        _picker.SetNextSavePath(Path_(chosen));
+
+        await model.ExportMarkdownAsync();
+
+        Assert.Equal([written], Directory.GetFiles(_folder).Select(Path.GetFileName));
+        Assert.Equal($"Saved 3 row(s) of the verification dashboard to {written}.", model.Status);
+    }
+
+    [Fact]
+    public async Task The_Extension_Of_A_Pdf_Export_Is_Forced_To_Pdf()
+    {
+        var model = Model();
+        await model.RefreshAsync();
+        model.SetDiscipline("Fluid power");
+        _picker.SetNextSavePath(Path_("report.md"));
+
+        await model.ExportPdfAsync();
+
+        Assert.Equal(["report.md.pdf"], Directory.GetFiles(_folder).Select(Path.GetFileName));
+    }
+
+    [Fact]
+    public async Task An_Export_Is_Written_Beside_Its_Target_And_Moved_Into_Place_Replacing_What_The_Picker_Confirmed()
+    {
+        var model = Model();
+        await model.RefreshAsync();
+        model.SetDiscipline("Fluid power");
+        File.WriteAllText(Path_("dashboard.md"), "old");
+        _picker.SetNextSavePath(Path_("dashboard.md"));
+
+        await model.ExportMarkdownAsync();
+
+        Assert.Contains("# TempestOS verification dashboard", File.ReadAllText(Path_("dashboard.md")), StringComparison.Ordinal);
+        Assert.Equal(["dashboard.md"], Directory.GetFiles(_folder).Select(Path.GetFileName));
+        Assert.Empty(Directory.GetFiles(_folder, "*.tmp"));
+    }
+
+    [Fact]
+    public async Task A_Failed_Move_Leaves_No_Temporary_File_And_The_Target_Untouched()
+    {
+        var model = Model();
+        await model.RefreshAsync();
+        model.SetDiscipline("Fluid power");
+
+        // The target is a folder: the file cannot be moved onto it, after the temporary file was written.
+        Directory.CreateDirectory(Path_("dashboard.md"));
+        _picker.SetNextSavePath(Path_("dashboard.md"));
+
+        await model.ExportMarkdownAsync();
+
+        Assert.StartsWith("The markdown file could not be saved (", model.Status, StringComparison.Ordinal);
+        Assert.Empty(Directory.GetFiles(_folder));
+        Assert.True(Directory.Exists(Path_("dashboard.md")));
+        Assert.False(model.IsBusy);
+    }
+
+    [Fact]
+    public async Task A_Picker_That_Fails_In_An_Unforeseen_Way_Is_Shown_As_A_Sentence_Not_Left_Unobserved()
+    {
+        var model = new VerificationDashboardViewModel(
+            new VerificationDashboardService(Catalogue(), CalcPackTemplateComposition.All()), new ThrowingPicker(), new VerificationPdfRenderer(), () => "test");
+        await model.RefreshAsync();
+
+        await model.ExportMarkdownAsync();
+        Assert.Equal("The markdown file could not be saved. Try again, and if it still fails choose another folder or restart TempestOS.", model.Status);
+        Assert.False(model.IsBusy);
+
+        await model.ExportPdfAsync();
+        Assert.Equal("The PDF file could not be saved. Try again, and if it still fails choose another folder or restart TempestOS.", model.Status);
+        Assert.False(model.IsBusy);
+    }
+
+    [Fact]
+    public async Task A_Records_Lookup_That_Fails_In_An_Unforeseen_Way_Is_Also_A_Sentence()
+    {
+        var model = Model(records: new ThrowingRecords(new FormatException("bad record")));
+
+        await model.RefreshAsync();
+
+        Assert.Empty(model.Rows);
+        Assert.StartsWith("The verification dashboard could not be built, so it is empty.", model.Status, StringComparison.Ordinal);
+        Assert.False(model.IsBusy);
+    }
+
+    [Fact]
+    public async Task Not_Re_Derived_Is_A_Status_Filter_And_Clean_Rows_Are_Re_Derived()
+    {
+        var model = Model();
+        await model.RefreshAsync();
+
+        Assert.Contains(VerificationDashboardViewModel.StatusChoices, c => c.Filter == VerificationStatusFilter.NotRederived && c.Label == "Not re-derived");
+
+        model.SetStatus(VerificationStatusFilter.NotRederived);
+        Assert.NotEmpty(model.Rows);
+        Assert.All(model.Rows, r => Assert.Equal("Not re-derived", r.RederivationResult));
+        Assert.Equal("Discipline: all; status: not re-derived", model.FilterText);
+        Assert.Contains("not re-derived", model.Summary, StringComparison.Ordinal);
+
+        model.SetStatus(VerificationStatusFilter.Clean);
+        Assert.All(model.Rows, r => Assert.NotEqual("Not re-derived", r.RederivationResult));
+    }
+
+    [Fact]
+    public async Task Without_The_Document_Data_The_Summary_And_The_Export_Say_Unknown_Not_Zero()
+    {
+        var service = new VerificationDashboardService(Catalogue(), CalcPackTemplateComposition.All(), VerificationSnapshot.Unavailable("The verification data is not part of this build."));
+        var model = new VerificationDashboardViewModel(service, _picker, new VerificationPdfRenderer(), () => "test");
+        await model.RefreshAsync();
+
+        Assert.Contains("open defects unknown", model.Summary, StringComparison.Ordinal);
+        Assert.DoesNotContain("0 open defect(s)", model.Summary, StringComparison.Ordinal);
+        Assert.All(model.Rows, r => Assert.Equal("unknown", r.OpenDefectsText));
+
+        var path = Path_("unknown.md");
+        _picker.SetNextSavePath(path);
+        await model.ExportMarkdownAsync();
+        var text = File.ReadAllText(path);
+        Assert.Contains("open defects unknown", text, StringComparison.Ordinal);
+        Assert.Contains("| unknown |", text, StringComparison.Ordinal);
+    }
+
+    private sealed class ThrowingPicker : IFilePicker
+    {
+        public Task<IReadOnlyList<PickedFile>> PickFilesAsync(FilePickerRequest request, CancellationToken cancellationToken = default) => throw new NotImplementedException();
+
+        public Task<string?> PickSavePathAsync(SavePickerRequest request, CancellationToken cancellationToken = default) => throw new FormatException("the dialog broke");
+    }
+
+    private sealed class ThrowingRecords(Exception? failure = null) : IRequiredRecordsSource
+    {
+        private readonly Exception _failure = failure ?? new InvalidOperationException("the store is not open");
+
+        public Task<IReadOnlyDictionary<string, IReadOnlyList<RecordRequirement>>> RequirementsAsync(IReadOnlyList<CalcTemplate> templates, CancellationToken cancellationToken = default) => throw _failure;
     }
 }

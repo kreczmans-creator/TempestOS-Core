@@ -34,7 +34,7 @@ public sealed class VerificationPdfRenderer
         DocumentTemplate.AddGap(state, 4f);
         DocumentTemplate.AddWrappedLine(state, measure, $"Filter: {T(string.IsNullOrWhiteSpace(filterText) ? "all rows" : filterText)}", DocumentTemplate.BodySize, bold: false);
         DocumentTemplate.AddWrappedLine(state, measure,
-            $"{drawn.Count(r => r.IsFailing)} failing  ·  {drawn.Sum(r => r.OpenDefectCount)} open defect(s) on {drawn.Count(r => r.OpenDefectCount > 0)} row(s)  ·  {drawn.Count(r => r.HasUnconfirmedOrSecondary)} with Unconfirmed or Secondary cases  ·  {drawn.Count(r => r.HasMissingRecords)} with records not entered  ·  {drawn.Count(r => r.KatState == KatRunState.NotRun)} not run  ·  {drawn.Count(r => r.IsClean)} clean",
+            $"{drawn.Count(r => r.IsFailing)} failing  ·  {(drawn.Any(r => !r.DefectsKnown) ? "open defects unknown" : $"{drawn.Sum(r => r.OpenDefectCount)} open defect(s) on {drawn.Count(r => r.HasOpenDefects)} row(s)")}  ·  {drawn.Count(r => r.HasUnconfirmedOrSecondary)} with Unconfirmed or Secondary cases  ·  {drawn.Count(r => r.HasMissingRecords)} with records not entered  ·  {drawn.Count(r => r.KatState == KatRunState.NotRun)} not run  ·  {drawn.Count(r => !r.IsRederived)} not re-derived  ·  {drawn.Count(r => r.IsClean)} clean",
             DocumentTemplate.BodySize, bold: false);
 
         if (report.DataProblem is { Length: > 0 } problem)
@@ -59,16 +59,25 @@ public sealed class VerificationPdfRenderer
                 [.. drawn.Select(Cells)],
                 [SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left]);
 
-            var open = drawn.Where(r => r.OpenDefectCount > 0).ToList();
+            var open = drawn.Where(r => r.HasOpenDefects).ToList();
 
-            if (open.Count > 0)
+            if (drawn.Any(r => !r.DefectsKnown))
+            {
+                DocumentTemplate.AddGap(state, 6f);
+                DocumentTemplate.AddWrappedLine(state, measure, "The open defects are not known: the verification data could not be read, so the Open defects column says unknown, not zero.", DocumentTemplate.BodySize, bold: true);
+            }
+            else if (open.Count > 0)
             {
                 DocumentTemplate.AddGap(state, 6f);
                 DocumentTemplate.AddHeading(state, measure, "Open defects");
                 DocumentTemplate.AddWrappedLine(state, measure, "Not marked Fixed in docs/testing/v0.26.0-known-defects.md: still open, or waiting for the owner's decision against a licensed standard.", DocumentTemplate.CaptionSize, bold: false);
 
                 foreach (var r in open)
-                    DocumentTemplate.AddWrappedLine(state, measure, $"{T(r.Id)}: {string.Join(", ", r.OpenDefects.Take(40).Select(d => $"{T(d.Id)} ({T(d.Severity)}, {d.StatusLabel.ToLowerInvariant()})"))}{(r.OpenDefects.Count > 40 ? ", …" : string.Empty)}", DocumentTemplate.CaptionSize, bold: false);
+                {
+                    var own = r.OpenDefectCount == 0 ? "none of its own" : $"{string.Join(", ", r.OpenDefects.Take(40).Select(d => $"{T(d.Id)} ({T(d.Severity)}, {d.StatusLabel.ToLowerInvariant()})"))}{(r.OpenDefects.Count > 40 ? ", …" : string.Empty)}";
+                    var steps = r.StepOpenDefectCount > 0 ? $"; step defects ({r.StepOpenDefectCount}): {string.Join(", ", r.StepOpenDefects.Take(20).Select(d => $"{T(d.Id)} ({T(d.Severity)})"))}{(r.StepOpenDefectCount > 20 ? ", …" : string.Empty)}" : string.Empty;
+                    DocumentTemplate.AddWrappedLine(state, measure, $"{T(r.Id)}: {own}{steps}", DocumentTemplate.CaptionSize, bold: false);
+                }
             }
         }
 
@@ -96,7 +105,7 @@ public sealed class VerificationPdfRenderer
         $"{r.Unconfirmed} / {r.Secondary}",
         T($"{r.RederivationResult}: {r.RederivationFindings.Text}"),
         r.MissingRecordKinds.Count == 0 ? "none" : T(string.Join("; ", r.MissingRecordKinds)),
-        r.OpenDefectCount.ToString(CultureInfo.InvariantCulture),
+        T(r.OpenDefectsText),
         T(r.ManualTest.Label),
     ];
 

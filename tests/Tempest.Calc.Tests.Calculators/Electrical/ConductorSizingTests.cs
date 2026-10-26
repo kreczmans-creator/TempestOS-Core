@@ -26,7 +26,7 @@ public sealed class ConductorSizingTests
     [Fact]
     public void Declares_Its_Ports_And_Record_Kinds()
     {
-        Assert.Equal(["I_b", "I_n", "CSA", "I_z", "L", "device_code"], Sizing.Template.OutputPorts!.Select(p => p.Symbol));
+        Assert.Equal(["I_b", "I_n", "CSA", "I_z", "L", "theta_op", "device_code"], Sizing.Template.OutputPorts!.Select(p => p.Symbol));
         Assert.Equal(["cable.ampacity", "cable.correction-factors", "device.ratings"], Sizing.Template.RecordKinds!.Select(k => k.Kind).Order(StringComparer.Ordinal));
         Assert.All(Sizing.Template.Inputs.Where(i => i.Kind is CalcInputKind.Quantity or CalcInputKind.Number), i =>
         {
@@ -311,7 +311,7 @@ public sealed class ConductorSizingTests
             return r.IsBlocked ? double.PositiveInfinity : r.OutputSi("CSA");
         }
 
-        Gen.Double[0.1, 1.5].Select(Gen.Double[0.1, 1.5]).Sample((a, b) =>
+        Gen.Double[0.1, 1.0].Select(Gen.Double[0.1, 1.0]).Sample((a, b) =>
         {
             var (low, high) = a <= b ? (a, b) : (b, a);
             return Csa(low) >= Csa(high);

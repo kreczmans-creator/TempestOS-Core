@@ -13,6 +13,11 @@ namespace Tempest.Calc.Tests.Calculators;
 /// gains, loses or fails a case, or changes version, fails here until the file is regenerated. Regenerate with
 /// <c>TEMPEST_WRITE_KAT_RESULTS=1 dotnet test tests/Tempest.Calc.Tests.Calculators --filter KatResultsTests</c> and commit the diff.
 /// The file holds no date and no machine name, so a run that changes nothing writes the same bytes.
+/// <para>
+/// The file also has a <c>packs</c> section: the run outcome of every built-in chain, written by <c>PackResultsTests</c> in
+/// <c>tests/Tempest.Calc.Tests.Library/Chains</c> (this project cannot build a chain). This test owns <c>templates</c> and carries the committed
+/// <c>packs</c> section through unchanged when it rewrites the file; <c>PackResultsTests</c> does the same for <c>templates</c>. Both write the same layout.
+/// </para>
 /// </summary>
 public sealed class KatResultsTests
 {
@@ -54,7 +59,7 @@ public sealed class KatResultsTests
     }
 
     /// <summary>The file text for <paramref name="results"/>: indented, sorted, LF line ends, one trailing newline.</summary>
-    private static string Write(IReadOnlyList<TemplateResult> results)
+    private static string Write(IReadOnlyList<TemplateResult> results, JsonElement? packs)
     {
         using var stream = new MemoryStream();
 
@@ -62,7 +67,7 @@ public sealed class KatResultsTests
         {
             json.WriteStartObject();
             json.WriteNumber("schema", SchemaVersion);
-            json.WriteString("writtenBy", "tests/Tempest.Calc.Tests.Calculators/KatResultsTests.cs (set " + WriteVariable + "=1 to rewrite)");
+            json.WriteString("writtenBy", "templates: tests/Tempest.Calc.Tests.Calculators/KatResultsTests.cs; packs: tests/Tempest.Calc.Tests.Library/Chains/PackResultsTests.cs (set " + WriteVariable + "=1 to rewrite)");
             json.WriteStartArray("templates");
 
             foreach (var r in results)
@@ -90,16 +95,33 @@ public sealed class KatResultsTests
             }
 
             json.WriteEndArray();
+
+            if (packs is { } carried)
+            {
+                json.WritePropertyName("packs");
+                carried.WriteTo(json);
+            }
+
             json.WriteEndObject();
         }
 
         return Encoding.UTF8.GetString(stream.ToArray()) + "\n";
     }
 
+    /// <summary>The committed <c>packs</c> section, carried through unchanged (it is not this test's to write), or <see langword="null"/> when there is none.</summary>
+    private static JsonElement? CommittedPacks()
+    {
+        if (!File.Exists(FilePath))
+            return null;
+
+        using var document = JsonDocument.Parse(File.ReadAllText(FilePath));
+        return document.RootElement.TryGetProperty("packs", out var packs) ? packs.Clone() : null;
+    }
+
     [Fact]
     public void Committed_Kat_Results_Are_What_A_Fresh_Run_Of_Every_Case_Gives()
     {
-        var fresh = Write(Run());
+        var fresh = Write(Run(), CommittedPacks());
 
         if (Environment.GetEnvironmentVariable(WriteVariable) == "1")
         {

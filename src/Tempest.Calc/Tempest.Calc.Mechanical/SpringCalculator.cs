@@ -54,7 +54,7 @@ public sealed class SpringCalculator : ICalcCalculator
     private const string Part3 = "EN 13906-3";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.Mechanical, "Helical springs: compression, extension, torsion",
+        Id, "1.3.1", CalcDiscipline.Mechanical, "Helical springs: compression, extension, torsion",
         "A cylindrical helical spring of round wire, cold-coiled, with a linear characteristic: compression (rate, working points, solid length by end type, stress at the working points and at solid, buckling, Goodman fatigue, surge frequency), extension (the same with the initial tension and the hook stresses) or torsion (rate with the legs, curvature-corrected bending stress, wound diameter and body length).",
         "Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ = E·d⁴/(64·D·n_a), n_a = n + (l₁ + l₂)/(3π·D) (torsion)\n" +
         "Spring stress: τ_k = k_c·8·F·D/(π·d³), k_c = (C + 0.5)/(C − 0.75) (Bergsträsser) or (4C − 1)/(4C − 4) + 0.615/C (Wahl); torsion σ = q·32·M/(π·d³) with q = (C + 0.07)/(C − 0.75) (EN 13906-3, the default) or K_i = (4C² − C − 1)/(4C·(C − 1)) (Shigley)\n" +
@@ -135,6 +135,7 @@ public sealed class SpringCalculator : ICalcCalculator
             new CalcApplicabilityRule("surge", "The surge frequency is less than 13 times the operating frequency.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("travel-mismatch", "The spring's working travel s₂ − s₁ differs from the expected working travel by more than 1 %.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("s-work-unused", "An expected working travel s_work is given in torsion mode: the travel check applies to compression and extension only, so it is not used.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("hook-fatigue", "An extension spring: the Goodman check is the body only, hook fatigue is not assessed.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("fatigue-cycles", "The required life is below 10⁴ cycles: the Goodman relation is for high-cycle fatigue.", CalcNoticeSeverity.Warning),
         ],
         [
@@ -515,7 +516,10 @@ public sealed class SpringCalculator : ICalcCalculator
             c.Output(symbol, text);
 
         Surge(c);
-        Fatigue(c, "tau_1", "tau_2", "S_su", shear: true);
+        Fatigue(c, "tau_1", "tau_2", "S_su", shear: true, bodyOnly: true);
+
+        // mech.spring-R1: the Goodman row is the body's; hook bending usually governs the fatigue of an extension spring.
+        c.Warn("hook-fatigue", "sigma_A: the Goodman fatigue check is made on the body stresses only; the fatigue of the hook (bending, and the side-bend torsion) is not assessed, and it usually governs an extension spring, so a pass here is not a pass for the whole spring.");
 
         c.CheckUtilisation("Static shear stress at working point 2", "u_2", Part2);
         c.CheckUtilisation("Hook bending stress", "u_A", Part2);
@@ -683,7 +687,7 @@ public sealed class SpringCalculator : ICalcCalculator
     }
 
     /// <summary>The Goodman check on the stresses at the two working points. The endurance strength has no default: a blank one is refused before the run.</summary>
-    private static void Fatigue(CalcRunContext c, string low, string high, string ultimate, bool shear)
+    private static void Fatigue(CalcRunContext c, string low, string high, string ultimate, bool shear, bool bodyOnly = false)
     {
         if (!Require(c, "S_e"))
             return;
@@ -711,7 +715,7 @@ public sealed class SpringCalculator : ICalcCalculator
         c.Assign("u_fat", "n_f_req * u_f", null, "Fatigue utilisation against the required factor");
         c.Output("u_f", "Goodman utilisation");
         c.Output("n_f", "Goodman safety factor");
-        c.CheckUtilisation("Goodman fatigue against the required safety factor", "u_fat", "Goodman, as M4");
+        c.CheckUtilisation(bodyOnly ? "Goodman fatigue of the body only against the required safety factor (hook fatigue not assessed)" : "Goodman fatigue against the required safety factor", "u_fat", "Goodman, as M4");
     }
 
     private static string F(double v) => double.IsFinite(v) ? CalcValue.FormatNumber(v, 5) : "—";

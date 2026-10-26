@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Controller box 7
 Calc ID: Power trace    Revision: A
 Title: PCB trace width (IPC-2221 legacy)
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: ELX-ENC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: ELX-ENC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The minimum width of a printed-circuit trace for a current and an allowed temperature rise, from the legacy IPC-2221 curve-fit, and the resistance, voltage drop and I²R loss of the trace as drawn: legacy IPC-2221 curve-fit, conservative for multilayer boards. External or internal layer; copper weight in oz/ft²; resistance at the trace's operating temperature (ambient plus rise). The IPC-2152 method (charts, plane and board-thickness factors) is not implemented.
@@ -71,18 +71,18 @@ Trace cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725
       = 1.3574 mm / 2 mm
       = 0.67871
         Width utilisation (minimum / as drawn)
-  [21] T_trace = T_amb + dT
-      = 60 degC + 30 K
-      = 90 degC
-        Trace operating temperature
-  [22] rho_T = rho_20 * (1 + alpha * (T_trace - 20 degC))
-      = 0.01724 ohm·mm²/m × (1 + 0.00393 1/K × (90 degC − 20 degC))
-      = 0.021983 ohm·mm²/m
-        Copper resistivity at the operating temperature
-  [23] A_act = w_act * t_Cu
+  [21] A_act = w_act * t_Cu
       = 2 mm × 70.002 um
       = 0.14 mm²
         Cross-section of the trace as drawn
+  [22] T_trace = T_amb + dT
+      = 60 degC + 30 K
+      = 90 degC
+        Trace operating temperature
+  [23] rho_T = rho_20 * (1 + alpha * (T_trace - 20 degC))
+      = 0.01724 ohm·mm²/m × (1 + 0.00393 1/K × (90 degC − 20 degC))
+      = 0.021983 ohm·mm²/m
+        Copper resistivity at the operating temperature
   [24] trace_R = rho_T * L / A_act
       = 0.021983 ohm·mm²/m × 150 mm / 0.14 mm²
       = 23.552 mohm
@@ -111,9 +111,9 @@ Trace cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725
   WARNING record: Tabulated values not taken from a reference record: k_ext, k_int, n_dT, n_A, t_oz (IPC-2221 legacy curve-fit constants); rho_20, alpha (Copper resistivity constants). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.pcb-trace@1.0.3
-  Content hash: 0d7d5417226f1fcc
+  Template: elec.pcb-trace@1.1.0
+  Content hash: a57ddec7a5b537ae
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test

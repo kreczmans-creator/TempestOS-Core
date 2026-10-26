@@ -91,7 +91,7 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   WARNING input.T_amb: T_amb (Ambient temperature) was not entered; the template default 30 degC is used.
 
 8. VERIFICATION
-  Template: elec.voltage-drop@1.1.0
+  Template: elec.voltage-drop@1.2.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "writtenBy": "tests/Tempest.Calc.Tests.Calculators/KatResultsTests.cs (set TEMPEST_WRITE_KAT_RESULTS=1 to rewrite)",
+  "writtenBy": "templates: tests/Tempest.Calc.Tests.Calculators/KatResultsTests.cs; packs: tests/Tempest.Calc.Tests.Library/Chains/PackResultsTests.cs (set TEMPEST_WRITE_KAT_RESULTS=1 to rewrite)",
   "templates": [
     {
       "id": "bs.duct-sizing",
@@ -104,7 +104,7 @@
     },
     {
       "id": "elec.conductor-sizing",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "kats": 6,
       "katsPassed": 6,
       "failedKats": [],
@@ -124,7 +124,7 @@
     },
     {
       "id": "elec.enclosure-heat",
-      "version": "1.5.0",
+      "version": "1.5.1",
       "kats": 4,
       "katsPassed": 4,
       "failedKats": [],
@@ -134,7 +134,7 @@
     },
     {
       "id": "elec.fault-protection",
-      "version": "1.3.1",
+      "version": "1.3.2",
       "kats": 6,
       "katsPassed": 6,
       "failedKats": [],
@@ -144,7 +144,7 @@
     },
     {
       "id": "elec.load-budget",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "kats": 4,
       "katsPassed": 4,
       "failedKats": [],
@@ -154,7 +154,7 @@
     },
     {
       "id": "elec.motor-sizing",
-      "version": "1.8.0",
+      "version": "1.9.0",
       "kats": 3,
       "katsPassed": 3,
       "failedKats": [],
@@ -174,7 +174,7 @@
     },
     {
       "id": "elec.pcb-trace",
-      "version": "1.0.3",
+      "version": "1.1.0",
       "kats": 6,
       "katsPassed": 6,
       "failedKats": [],
@@ -194,7 +194,7 @@
     },
     {
       "id": "elec.voltage-drop",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "kats": 3,
       "katsPassed": 3,
       "failedKats": [],
@@ -204,7 +204,7 @@
     },
     {
       "id": "fp.accumulator",
-      "version": "1.5.0",
+      "version": "1.5.1",
       "kats": 10,
       "katsPassed": 10,
       "failedKats": [],
@@ -224,7 +224,7 @@
     },
     {
       "id": "fp.oring-gland",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "kats": 13,
       "katsPassed": 13,
       "failedKats": [],
@@ -254,7 +254,7 @@
     },
     {
       "id": "mech.bolt-group",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "kats": 8,
       "katsPassed": 8,
       "failedKats": [],
@@ -264,7 +264,7 @@
     },
     {
       "id": "mech.bolted-joint",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "kats": 5,
       "katsPassed": 5,
       "failedKats": [],
@@ -284,7 +284,7 @@
     },
     {
       "id": "mech.iso286-fit",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "kats": 3,
       "katsPassed": 3,
       "failedKats": [],
@@ -324,7 +324,7 @@
     },
     {
       "id": "mech.press-fit",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "kats": 2,
       "katsPassed": 2,
       "failedKats": [],
@@ -334,7 +334,7 @@
     },
     {
       "id": "mech.shaft",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "kats": 3,
       "katsPassed": 3,
       "failedKats": [],
@@ -354,7 +354,7 @@
     },
     {
       "id": "mech.snap-fit",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "kats": 11,
       "katsPassed": 11,
       "failedKats": [],
@@ -364,7 +364,7 @@
     },
     {
       "id": "mech.spring",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "kats": 8,
       "katsPassed": 8,
       "failedKats": [],
@@ -541,6 +541,92 @@
       "examples": 2,
       "examplesPassed": 2,
       "failedExamples": []
+    }
+  ],
+  "packs": [
+    {
+      "id": "pack.actuated-linkage",
+      "steps": 3,
+      "bindings": 6,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "id": "pack.cold-pipe",
+      "steps": 3,
+      "bindings": 5,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "id": "pack.cooling",
+      "steps": 4,
+      "bindings": 7,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "id": "pack.drive-train",
+      "steps": 5,
+      "bindings": 9,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "id": "pack.electronics-enclosure",
+      "steps": 5,
+      "bindings": 5,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "id": "pack.envelope-moisture",
+      "steps": 3,
+      "bindings": 3,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "id": "pack.hydraulic-power-unit",
+      "steps": 8,
+      "bindings": 24,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "id": "pack.mechanism-review",
+      "steps": 6,
+      "bindings": 12,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "id": "pack.motor-circuit",
+      "steps": 6,
+      "bindings": 16,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "id": "pack.pipework-supports",
+      "steps": 3,
+      "bindings": 4,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "id": "pack.steel-support",
+      "steps": 7,
+      "bindings": 17,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "id": "pack.wet-heating",
+      "steps": 5,
+      "bindings": 9,
+      "passed": true,
+      "failures": []
     }
   ]
 }

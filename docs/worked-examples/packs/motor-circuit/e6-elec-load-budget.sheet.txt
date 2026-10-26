@@ -8,7 +8,7 @@ Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.
-Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative); this duty-weighted demand sizes the transformer and the enclosure heat Running load of each load while it is on: P_i·k_i, apparent P_i·k_i/cosφ_i (the duty d is the share of time on, so it is left out: a cable, a bus and a power supply carry the load while it is on) Bus currents: I_3φ = S_3φ,run/(√3·U), I_1φ = S_1φ,run/U, I_DC = P_DC,run/U_DC, from the running loads; when a bus is chosen for the DC power supply its input P_DC,run/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0) Power supply sizing: P_PSU ≥ margin·P_DC,run/f_derate (the running DC load, duty not applied; f_derate from the manufacturer's curve at θ and altitude) Transformer sizing: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery sizing: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
+Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative); this duty-weighted demand sizes the transformer and the enclosure heat Running load of each load while it is on: P_i·k_i, apparent P_i·k_i/cosφ_i (the duty d is the share of time on, so it is left out: a cable, a bus and a power supply carry the load while it is on) Bus currents: I_3φ = S_3φ,run/(√3·U), I_1φ = S_1φ,run/U, I_DC = P_DC,run/U_DC, from the running loads; when a bus is chosen for the DC power supply its input P_DC,run/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i + P_DC·(1/η_PSU − 1), h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0); the second term is the power supply's own loss, present when an AC bus is chosen for it Power supply sizing: P_PSU ≥ margin·P_DC,run/f_derate (the running DC load, duty not applied; f_derate from the manufacturer's curve at θ and altitude) Transformer sizing: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery sizing: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t, never below I_b·t (the exponent is not valid beyond the rated hour rate H)
   Ref: Linden's Handbook of Batteries 5th ed., Ch. 3–4 — Battery sizing and the Peukert relation
   Ref: BS EN 60204-1:2018 cl. 4.3 — Electrical supply (supply voltage tolerance; cited by number only)
 
@@ -18,6 +18,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   loads[1] |  | name = 24 V controls and I/O; supply = DC; P = 0.12 kW; cosphi = 1; eta = 0.9; heat = 1; d = 1; k = 1; inrush = 1; backed = no |  |  | 
   loads[2] |  | name = Panel fan; supply = AC single-phase; P = 0.02 kW; cosphi = 0.9; eta = 0.7; heat = 1; d = 1; k = 1; inrush = 1; backed = no |  |  | 
   P_add | Additional three-phase load (linked from E1's RMS power) | 0.784142 | kW | link: Motor sizing rev A · P_rms | 0 … 200 kW
+  P_rated_add | Rated (nameplate) shaft power of the additional machine (linked from E1's P_rated): the supply carries the larger of this and the duty power P_add; blank: the machine is sized on its duty only | 0.628319 | kW | link: Motor sizing rev A · P_rated | 0 … 200 kW
   cosphi_add | Power factor of the additional load | 0.85 |  | spec: SPEC-LINE-12 §4 (panel schedule) | 0.5 … 1
   eta_add | Efficiency of the additional load | 0.97 |  | spec: SPEC-LINE-12 §4 (panel schedule) | 0.5 … 1
   inrush_add | Starting multiple of the additional load | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 20
@@ -61,74 +62,82 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   A19. k_age (Ageing (end-of-life) factor) is taken as 0.8. (Sheet default value; no project figure given.)
 
 4. WORKING
-  [22] L1 = P·d·k; P·d·k/cosφ
+  [23] L1 = P·d·k; P·d·k/cosφ
       = 0.12 × 1 × 1 = 0.12 kW; 0.13333 kVA
       = 0.12 kW
         24 V controls and I/O (DC)
-  [23] L2 = P·d·k; P·d·k/cosφ
+  [24] L2 = P·d·k; P·d·k/cosφ
       = 0.02 × 1 × 1 = 0.02 kW; 0.022222 kVA
       = 0.02 kW
         Panel fan (AC single-phase)
-  [24] L3 = P·d·k; P·d·k/cosφ
+  [25] L3 = P·d·k; P·d·k/cosφ
       = 0.80839 × 1 × 1 = 0.80839 kW; 0.95105 kVA
       = 0.80839 kW
         Linked load (AC three-phase)
-  [25] P_conn = Σ P_i
+  [26] P_conn = Σ P_i
       = 0.12 + 0.02 + 0.80839
       = 0.94839 kW
         Connected load
-  [26] P_dem = Σ P_i·d_i·k_i
+  [27] P_dem = Σ P_i·d_i·k_i
       = 0.12 + 0.02 + 0.80839
       = 0.94839 kW
         Demand active power
-  [27] S_dem = Σ P_i·d_i·k_i/cosφ_i
+  [28] S_dem = Σ P_i·d_i·k_i/cosφ_i
       = 0.13333 + 0.022222 + 0.95105
       = 1.1066 kVA
         Demand apparent power (arithmetic)
-  [28] I_3ph = S_3φ,run/(√3·U_3ph), S_run = Σ P_i·k_i/cosφ_i
+  [29] I_3ph = S_3φ,run/(√3·U_3ph), S_run = Σ P_i·k_i/cosφ_i
       = 951.05 / (√3 × 400)
       = 1.3727 A
         Three-phase bus current, loads while on (duty not applied)
-  [29] I_1ph = S_1φ,run/U_1ph, S_run = Σ P_i·k_i/cosφ_i
+  [30] I_1ph = S_1φ,run/U_1ph, S_run = Σ P_i·k_i/cosφ_i
       = 155.56 / 230
       = 0.67633 A
         Single-phase bus current, loads while on (duty not applied)
-  [30] I_DC = P_DC,run/U_DC, P_DC,run = Σ DC P_i·k_i
+  [31] I_DC = P_DC,run/U_DC, P_DC,run = Σ DC P_i·k_i
       = 120 / 24
       = 5 A
         DC bus current, loads while on (duty not applied)
-  [31] Phi = Σ h_i·P_i·d_i·k_i
-      = 1×0.12 + 1×0.02 + 0×0.80839
-      = 0.14 kW
+  [32] Phi = Σ h_i·P_i·d_i·k_i + P_DC·(1/η_PSU − 1)
+      = 1×0.12 + 1×0.02 + 0×0.80839 + PSU loss 0.013333
+      = 0.15333 kW
         Heat dissipated inside the enclosure (→ E2)
-  [32] P_DC = Σ DC P_i·d_i·k_i
+  [33] P_DC = Σ DC P_i·d_i·k_i
       = 120 W
       = 120 W
         DC demand (duty-weighted)
-  [33] P_DC_run = Σ DC P_i·k_i
+  [34] P_DC_run = Σ DC P_i·k_i
       = 120 W
       = 120 W
         DC load while on (duty not applied)
-  [34] P_PSU_req = margin * P_DC_run / f_derate
+  [35] P_PSU_req = margin * P_DC_run / f_derate
       = 1.25 × 120 W / 1
       = 150 W
         Minimum PSU rating (the supply carries the load while it is on)
-  [35] S_T_req = margin * S_dem
+  [36] S_T_req = margin * S_dem
       = 1.25 × 1.1066 kVA
       = 1.3833 kVA
         Minimum transformer rating for the running load
-  [36] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
+  [37] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
       = 1.1066 + 0 (Panel fan starting)
       = 1.1066 kVA
         Peak apparent power while the largest load starts
-  [37] S_T_req_start = S_peak / k_T
+  [38] S_T_req_start = S_peak / k_T
       = 1.1066 kVA / 3
       = 0.36887 kVA
         Minimum transformer rating for the starting peak
-  [38] S_T_min = max(S_T_req, S_T_req_start)
+  [39] S_T_min = max(S_T_req, S_T_req_start)
       = max(1.3833 kVA, 0.36887 kVA)
       = 1.3833 kVA
         Minimum transformer rating (running load and starting peak)
+  [40] U_L = U_3ph
+      = 400 V
+      = 400 V
+        Three-phase line voltage of the bus
+  [41] pf_link = cosφ of the linked machine
+      = 0.85
+      = 0.85
+        Power factor of the linked machine
 
 5. RESULTS
   P_conn = 0.94839 kW    Connected load
@@ -137,12 +146,14 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   I_3ph = 1.3727 A    Three-phase bus current
   I_1ph = 0.67633 A    Single-phase bus current
   I_DC = 5 A    DC bus current
-  Phi = 0.14 kW    Heat dissipated inside the enclosure
+  Phi = 0.15333 kW    Heat dissipated inside the enclosure
   P_PSU_req = 150 W    Minimum PSU rating
   S_T_req = 1.3833 kVA    Minimum transformer rating, running load
   S_peak = 1.1066 kVA    Peak apparent power at start
   S_T_req_start = 0.36887 kVA    Minimum transformer rating, starting peak
   S_T_min = 1.3833 kVA    Minimum transformer rating, running and starting
+  U_L = 400 V    Three-phase line voltage
+  pf_link = 0.85    Power factor of the linked machine
 
 6. CHECKS (governing first)
   No pass/fail checks in this calculation.
@@ -151,9 +162,9 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   WARNING record: Tabulated values not taken from a reference record: f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.load-budget@1.3.0
-  Content hash: 27461dc18ad6253f
+  Template: elec.load-budget@1.4.0
+  Content hash: 11d6f81df601ffbc
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 09:36 UTC
+  Test run: 2026-10-26 12:17 UTC
   Application: TempestOS test
