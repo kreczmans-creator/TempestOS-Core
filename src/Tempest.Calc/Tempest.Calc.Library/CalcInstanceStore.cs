@@ -51,13 +51,14 @@ public sealed class CalcInstanceStore
     /// of memory to refuse one save (found by the C-7 soak). The text is plain ASCII (the serialiser escapes everything else), so bytes and
     /// characters are the same count and the cap means what it always meant.
     /// </summary>
-    internal static string SerialiseWithin<T>(T record, Func<string> tooLarge)
+    internal static string SerialiseWithin<T>(T record, Func<string> tooLarge, JsonSerializerOptions? options = null)
     {
         var sink = new LimitedBufferWriter(MaxDocumentBytes, tooLarge);
+        options ??= Json;
 
-        using (var writer = new Utf8JsonWriter(sink, new JsonWriterOptions { Encoder = Json.Encoder, Indented = Json.WriteIndented }))
+        using (var writer = new Utf8JsonWriter(sink, new JsonWriterOptions { Encoder = options.Encoder, Indented = options.WriteIndented }))
         {
-            JsonSerializer.Serialize(writer, record, Json);
+            JsonSerializer.Serialize(writer, record, options);
         }
 
         return System.Text.Encoding.UTF8.GetString(sink.WrittenSpan);
@@ -66,6 +67,15 @@ public sealed class CalcInstanceStore
     /// <summary>The sentence for a calculation whose stored record would pass <see cref="MaxDocumentBytes"/>: it names the calculation by its title, never by its identifier.</summary>
     internal static string TooLargeMessage(string calculationName) =>
         $"Calculation '{calculationName}' is larger than {MaxDocumentBytes / 1_000_000} MB and was not saved; take some of its table rows out and save it again.";
+
+    /// <summary>The sentence for a pack past the cap; it names the pack by its title.</summary>
+    internal static string PackTooLargeMessage(string title) => $"Pack '{title}' is larger than {MaxDocumentBytes / 1_000_000} MB and was not saved.";
+
+    /// <summary>The sentence for a pack template past the cap; it names the template by its title.</summary>
+    internal static string PackTemplateTooLargeMessage(string title) => $"Pack template '{title}' is larger than {MaxDocumentBytes / 1_000_000} MB and was not saved.";
+
+    /// <summary>The sentence for a reference record past the cap; it names the record by its title.</summary>
+    internal static string RecordTooLargeMessage(string title) => $"Reference record '{title}' is larger than {MaxDocumentBytes / 1_000_000} MB and was not written.";
 
     /// <summary>Whether <paramref name="instance"/> would be refused for size when saved, found without building more than the cap's worth of text.</summary>
     internal static bool ExceedsDocumentCap(CalcInstance instance)
@@ -500,7 +510,7 @@ public sealed class CalcInstanceStore
         ArgumentNullException.ThrowIfNull(transaction);
         ArgumentNullException.ThrowIfNull(pack);
 
-        await transaction.WriteAsync(PackCollection, Key(pack.ProjectId, pack.Id), Serialise(pack), cancellationToken).ConfigureAwait(false);
+        await transaction.WriteAsync(PackCollection, Key(pack.ProjectId, pack.Id), SerialiseWithin(pack, () => PackTooLargeMessage(pack.Title)), cancellationToken).ConfigureAwait(false);
         await transaction.IndexTextAsync(pack.Id, PackKind, pack.ProjectId, Sheets.CalcSheetTextRenderer.Clean(pack.Title), pack.Revision, null, cancellationToken).ConfigureAwait(false);
     }
 
@@ -508,7 +518,8 @@ public sealed class CalcInstanceStore
     public async Task SavePackTemplateAsync(CalcPackTemplate template, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(template);
-        await _store.ExecuteInTransactionAsync((tx, token) => tx.WriteAsync(PackTemplateCollection, template.Id, Serialise(template), token), cancellationToken).ConfigureAwait(false);
+        var json = SerialiseWithin(template, () => PackTemplateTooLargeMessage(template.Title));
+        await _store.ExecuteInTransactionAsync((tx, token) => tx.WriteAsync(PackTemplateCollection, template.Id, json, token), cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<CalcPackTemplate>> ListPackTemplatesAsync(CancellationToken cancellationToken = default)
@@ -524,7 +535,7 @@ public sealed class CalcInstanceStore
     {
         ArgumentNullException.ThrowIfNull(record);
         var key = RecordKey(record.Id, record.Revision);
-        var json = SerialiseWithin(record, () => $"Reference record '{record.Id:N}' is larger than {MaxDocumentBytes / 1_000_000} MB and was not written.");
+        var json = SerialiseWithin(record, () => RecordTooLargeMessage(record.Title));
 
         await _store.ExecuteInTransactionAsync(async (tx, token) =>
         {
@@ -551,10 +562,9 @@ public sealed class CalcInstanceStore
         foreach (var record in records)
         {
             ArgumentNullException.ThrowIfNull(record);
-            var json = Serialise(record);
 
-            if (json.Length > MaxDocumentBytes)
-                throw new InvalidOperationException($"Reference record '{record.Id:N}' is larger than {MaxDocumentBytes / 1_000_000} MB and was not written.");
+            // Refused the moment the record passes the cap, not after the whole of it has been built (the shape caps allow some 250 million characters).
+            var json = SerialiseWithin(record, () => RecordTooLargeMessage(record.Title));
 
             batch.Add((RecordKey(record.Id, record.Revision), json, record));
         }

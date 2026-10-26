@@ -152,6 +152,13 @@ public sealed partial class CalcInstanceService
             {
                 return (null, $"Step '{step.Key}': {ex.Message}");
             }
+            catch (CalcInstanceTooLargeException ex)
+            {
+                // The dry run above refuses a step it can see is too large before anything is made; this is the edge of the cap, where the real record
+                // (its identifiers, its links) passes it by a few bytes. The drafts of the earlier steps are taken away again, so the refusal leaves none behind.
+                await DiscardDraftsAsync(created.Values, cancellationToken).ConfigureAwait(false);
+                return (null, $"Step '{step.Key}': {ex.Message}");
+            }
             catch (DuplicateBusinessIdentifierException ex)
             {
                 return (null, $"Step '{step.Key}': {ex.Message}");
@@ -183,6 +190,25 @@ public sealed partial class CalcInstanceService
             members[key] = await _store.FindInstanceAsync(instance.Id, cancellationToken).ConfigureAwait(false) ?? instance;
 
         return (new CalcPackInstantiation(pack, members), null);
+    }
+
+    /// <summary>
+    /// Takes away the draft calculations an instantiation made before a later step was refused. Only the calculations' own rows go (the calculation store's
+    /// <see cref="CalcInstanceStore.DeleteDraftInstanceAsync"/>); one that is no longer a draft, or is already gone, is left as it is.
+    /// </summary>
+    private async Task DiscardDraftsAsync(IEnumerable<CalcInstance> drafts, CancellationToken cancellationToken)
+    {
+        foreach (var draft in drafts)
+        {
+            try
+            {
+                await _store.DeleteDraftInstanceAsync(draft.Id, cancellationToken).ConfigureAwait(false);
+            }
+            catch (CalcInstanceImmutableException)
+            {
+                // Not a draft any more: it is somebody's now.
+            }
+        }
     }
 
     /// <summary>Why <paramref name="template"/> cannot be instantiated under <paramref name="projectId"/>: a step, or the pack, would take a name the project already uses.</summary>
@@ -263,6 +289,11 @@ public sealed partial class CalcInstanceService
             var stub = new CalcInstance(Guid.Empty, entry.Reference, entry.ContentHash, null, step.Name, "A", values, [], [], [], [],
                 CalcInstanceStatus.Draft, null, null, string.Empty, DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch);
             runs[step.Key] = Snapshot(stub, CalcRunner.Run(entry.Calculator, new CalcInputSet(values), _engine, cancellationToken: cancellationToken));
+
+            // A step whose record the store would refuse for size is found here, before any step is made (C-7 review): the stub has the identifiers' place and
+            // the links' values, so it is the real record bar a few hundred bytes, and the real create below still refuses the one at the edge.
+            if (CalcInstanceStore.ExceedsDocumentCap(runs[step.Key]))
+                return $"Step '{step.Key}': {CalcInstanceStore.TooLargeMessage(step.Name)}";
         }
 
         return null;

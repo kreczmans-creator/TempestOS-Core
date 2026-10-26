@@ -39,7 +39,7 @@ public sealed partial class CalcInstanceService
             // Another save took this revision number first (Opus review, finding 15).
             return (null, $"Revision {record.Revision} of '{record.Title}' was saved by someone else at the same moment; save again to make the next revision.");
         }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("larger than", StringComparison.Ordinal))
+        catch (CalcDocumentTooLargeException ex)
         {
             return (null, ex.Message);
         }

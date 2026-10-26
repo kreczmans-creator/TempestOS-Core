@@ -207,7 +207,7 @@ public sealed partial class CalcInstanceService
         {
             await _store.SaveInstanceAsync(instance, cancellationToken).ConfigureAwait(false);
         }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("larger than", StringComparison.Ordinal))
+        catch (CalcDocumentTooLargeException)
         {
             // The record was within the cap a moment ago; it is the same length now, bar the register identifier. This is the edge of the cap itself.
             throw new CalcInstanceTooLargeException(CalcInstanceStore.TooLargeMessage(instance.Name));
@@ -316,7 +316,7 @@ public sealed partial class CalcInstanceService
         {
             await _store.SaveInstanceAsync(updated, instance.UpdatedAt, cancellationToken).ConfigureAwait(false);
         }
-        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException || ex.Message.Contains("larger than", StringComparison.Ordinal))
+        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException or CalcDocumentTooLargeException)
         {
             return CalcActionResult.Refused(ex.Message, await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false) ?? instance);
         }
@@ -444,7 +444,7 @@ public sealed partial class CalcInstanceService
             {
                 await _store.SaveInstanceAsync(rejectedInstance, instance.UpdatedAt, cancellationToken).ConfigureAwait(false);
             }
-            catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException)
+            catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException or CalcDocumentTooLargeException)
             {
                 return CalcActionResult.Refused(ex.Message, await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false) ?? instance);
             }
@@ -469,7 +469,7 @@ public sealed partial class CalcInstanceService
                 alsoWrite: (transaction, token) => CalcInstanceStore.WriteGuardedAsync(transaction, updated, instance.UpdatedAt, token),
                 cancellationToken, owner: CalcOwner).ConfigureAwait(false);
         }
-        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException)
+        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException or CalcDocumentTooLargeException)
         {
             return CalcActionResult.Refused(ex.Message, await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false) ?? instance);
         }
@@ -641,7 +641,7 @@ public sealed partial class CalcInstanceService
             cancellationToken: cancellationToken,
             owner: CalcOwner).ConfigureAwait(false);
         }
-        catch (InvalidOperationException ex) when (ex is CalcConcurrentIssueException || ex.Message.Contains("larger than", StringComparison.Ordinal))
+        catch (InvalidOperationException ex) when (ex is CalcConcurrentIssueException or CalcDocumentTooLargeException)
         {
             return CalcActionResult.Refused(ex.Message, await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false) ?? instance);
         }
@@ -704,6 +704,26 @@ public sealed partial class CalcInstanceService
         if (adoptionRefusal is not null)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' revision {nextRevision} {adoptionRefusal}", instance);
 
+        // A revision starts unattested (review N6): the earlier attestation's inputs, with their "Attested by X on date" source, are not carried, so
+        // the draft's sheet does not read as attested. A fresh AttestAsync writes them again.
+        var carried = entry.Template.RequiresAttestation
+            ? (inputsOverride ?? instance.Inputs).Where(i => !CalcAttestation.Symbols.Contains(i.Symbol, StringComparer.Ordinal)).ToList()
+            : inputsOverride ?? instance.Inputs;
+
+        var probe = new CalcInstance(
+            id, entry.Reference, entry.ContentHash, instance.ProjectId, instance.Name, nextRevision,
+            carried, [], [], [], [], CalcInstanceStatus.Draft, Guid.NewGuid(), instance.ProjectId is null ? null : Guid.NewGuid(), repin ? instance.CreatedBy : author, now, now, PredecessorId: instance.Id,
+            EditedBy: repin ? WithAuthors(instance.EditedBy, instance.CreatedBy) : WithAuthors(instance.EditedBy, instance.CreatedBy, author),
+            RepinnedBy: repin ? WithAuthors(instance.RepinnedBy, author) : instance.RepinnedBy,
+            CadImports: instance.CadImports,
+            ScanImports: instance.ScanImports);
+        probe = await RunAndSnapshotAsync(entry, probe, cancellationToken).ConfigureAwait(false);
+
+        // As Create does: the revision is made whole, with identifiers standing in for the Evidence and the register entry (the same length as the real ones),
+        // and refused for size before an Evidence record and a register entry exist for a revision that could not be saved (C-7 review).
+        if (CalcInstanceStore.ExceedsDocumentCap(probe))
+            return CalcActionResult.Refused(CalcInstanceStore.TooLargeMessage(instance.Name), instance);
+
         var evidence = adoptedEvidence;
 
         if (evidence is null)
@@ -740,27 +760,14 @@ public sealed partial class CalcInstanceService
             }
         }
 
-        // A revision starts unattested (review N6): the earlier attestation's inputs, with their "Attested by X on date" source, are not carried, so
-        // the draft's sheet does not read as attested. A fresh AttestAsync writes them again.
-        var carried = entry.Template.RequiresAttestation
-            ? (inputsOverride ?? instance.Inputs).Where(i => !CalcAttestation.Symbols.Contains(i.Symbol, StringComparer.Ordinal)).ToList()
-            : inputsOverride ?? instance.Inputs;
-
-        var next = new CalcInstance(
-            id, entry.Reference, entry.ContentHash, instance.ProjectId, instance.Name, nextRevision,
-            carried, [], [], [], [], CalcInstanceStatus.Draft, evidence.Id, register?.Id, repin ? instance.CreatedBy : author, now, now, PredecessorId: instance.Id,
-            EditedBy: repin ? WithAuthors(instance.EditedBy, instance.CreatedBy) : WithAuthors(instance.EditedBy, instance.CreatedBy, author),
-            RepinnedBy: repin ? WithAuthors(instance.RepinnedBy, author) : instance.RepinnedBy,
-            CadImports: instance.CadImports,
-            ScanImports: instance.ScanImports);
-        next = await RunAndSnapshotAsync(entry, next, cancellationToken).ConfigureAwait(false);
+        var next = probe with { EvidenceId = evidence.Id, RegisterObjectId = register?.Id };
 
         // The new draft and the superseded mark on the old instance commit together; the mark changes only status and time (the store checks the rest).
         try
         {
             await _store.SaveInstancesAsync([(next, null), (instance with { Status = CalcInstanceStatus.Superseded, UpdatedAt = now }, instance.UpdatedAt)], cancellationToken).ConfigureAwait(false);
         }
-        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException)
+        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException or CalcDocumentTooLargeException)
         {
             return CalcActionResult.Refused(ex.Message, await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false) ?? instance);
         }
@@ -975,7 +982,7 @@ public sealed partial class CalcInstanceService
                 alsoWrite: (transaction, token) => CalcInstanceStore.WriteGuardedPackAsync(transaction, checkedPack, pack.UpdatedAt, token),
                 cancellationToken, owner: CalcOwner).ConfigureAwait(false);
         }
-        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException)
+        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException or CalcDocumentTooLargeException)
         {
             return CalcActionResult.Refused(ex.Message);
         }
@@ -1030,7 +1037,7 @@ public sealed partial class CalcInstanceService
         {
             await _store.SavePackAsync(reopened, pack.UpdatedAt, cancellationToken).ConfigureAwait(false);
         }
-        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException)
+        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException or CalcDocumentTooLargeException)
         {
             return CalcActionResult.Refused(ex.Message);
         }
@@ -1189,7 +1196,7 @@ public sealed partial class CalcInstanceService
             owner: CalcOwner).ConfigureAwait(false);
 
         }
-        catch (InvalidOperationException ex) when (ex is CalcConcurrentIssueException or CalcConcurrencyException or CalcInstanceImmutableException || ex.Message.Contains("larger than", StringComparison.Ordinal))
+        catch (InvalidOperationException ex) when (ex is CalcConcurrentIssueException or CalcConcurrencyException or CalcInstanceImmutableException or CalcDocumentTooLargeException)
         {
             return CalcActionResult.Refused(ex.Message);
         }
