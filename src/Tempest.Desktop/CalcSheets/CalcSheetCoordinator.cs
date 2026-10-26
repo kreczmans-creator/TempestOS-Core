@@ -880,12 +880,12 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
     }
 
     /// <summary>Parses <paramref name="text"/> as JSON (a list) or CSV, reports every notice, and re-seeds the form when nothing blocks.</summary>
-    public void ImportInputsText(string text)
+    public bool ImportInputsText(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
         if (_view.SelectedTemplate is not { } entry)
-            return;
+            return false;
 
         var (inputs, notices) = ParseInputs(entry.Template, text);
         var blocks = notices.Where(n => n.Severity == CalcNoticeSeverity.Block).ToList();
@@ -893,12 +893,13 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         if (blocks.Count > 0)
         {
             _view.ShowStatus("Nothing imported: " + string.Join(" ", blocks.Select(b => b.Message)));
-            return;
+            return false;
         }
 
         var known = inputs.Values.Count(v => entry.Template.FindInput(v.Symbol) is not null);
         _view.ApplyImportedInputs(inputs);
         _view.ShowStatus($"Imported {known} input(s){(notices.Count > 0 ? "; " + string.Join(" ", notices.Select(n => n.Message)) : ".")}");
+        return true;
     }
 
     /// <summary>JSON when the text starts a list or an object, else CSV. Shared with the tests.</summary>
