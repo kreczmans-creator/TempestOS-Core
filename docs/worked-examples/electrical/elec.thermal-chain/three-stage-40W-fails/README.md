@@ -18,4 +18,4 @@ At 40 W the junction reaches 140 °C, 15 K over. The budget is 2.125 K/W; with 0
 | `u` | 1.1765  | 1.17647  | PASS |
 | `R_max` | 2.125 K/W | 2.125 K/W | PASS |
 
-Governing check: Source temperature T_1 ≤ T_max — FAIL (utilisation 1.176). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Source temperature T_1 ≤ T_max — FAIL (utilisation 1.18). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

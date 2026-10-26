@@ -20,4 +20,4 @@ A plain 40 mm shaft. Tresca gives the lower factor, 2.33, against 2 required.
 | `n_T` | 2.3311  | 2.33106  | PASS |
 | `n_VM` | 2.5739  | 2.57387  | PASS |
 
-Governing check: Factor of safety against the required factor — PASS (utilisation 0.858). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Factor of safety against the required factor — PASS (utilisation 0.86). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

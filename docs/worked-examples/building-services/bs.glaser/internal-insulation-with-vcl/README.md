@@ -31,4 +31,4 @@ The 6 m diffusion-equivalent layer holds the vapour pressure at the cold interfa
 | `fRsi_min` | 0.590256  | 0.590256  | PASS |
 | `pass` | 1  | 1  | PASS |
 
-Governing check: Surface condensation: f_Rsi against f_Rsi,min at 80 % critical humidity — PASS (utilisation 0.673). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Surface condensation: f_Rsi against f_Rsi,min at 80 % critical humidity — PASS (utilisation 0.67). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

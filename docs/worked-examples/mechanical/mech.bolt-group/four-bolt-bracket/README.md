@@ -23,4 +23,4 @@ A 100 mm square pattern carrying 50 kN downward 150 mm from its centroid: 12.5 k
 | `v_max` | 36.443 kN | 36.4434 kN | PASS |
 | `u_max` | 0.91109  | 0.911086  | PASS |
 
-Governing check: Circular shear–tension interaction (governing bolt) — PASS (utilisation 0.911). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Circular shear–tension interaction (governing bolt) — PASS (utilisation 0.91). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -27,4 +27,4 @@ The same detail scaled down and loaded to 120 kN. Bearing (1.60), tear-out (1.48
 | `sigma_b` | 381.36 MPa | 381.361 MPa | PASS |
 | `u_br` | 1.6  | 1.6  | PASS |
 
-Governing check: Bearing — FAIL (utilisation 1.600). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Bearing — FAIL (utilisation 1.60). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

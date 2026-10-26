@@ -20,4 +20,4 @@ Five sections sized at 1 Pa/m with the AHU main and floor main rectangular on fi
 |---|---|---|---|
 | `dp_fit_s4` | 0 Pa | 9.36574 Pa | PASS |
 
-Governing check: Velocity ≤ limit — PASS (utilisation 0.884). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Velocity ≤ limit — PASS (utilisation 0.88). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

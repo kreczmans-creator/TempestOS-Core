@@ -33,4 +33,4 @@ A 20 mm index stroke with a cycloidal rise over 120° and a 3-4-5 return over 12
 | `rho_min` | 44.6811 mm | 44.6811 mm | PASS |
 | `Rb_min_phi` | 32.9632 mm | 32.9632 mm | PASS |
 
-Governing check: Pressure angle φ_max within the allowed maximum — PASS (utilisation 0.887). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Pressure angle φ_max within the allowed maximum — PASS (utilisation 0.89). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

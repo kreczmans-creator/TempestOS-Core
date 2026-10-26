@@ -28,4 +28,4 @@ With 192 W of solar gain on top of 300 W internal load and only 5 K allowed abov
 |---|---|---|---|
 | `P_total` | 492 W | 492 W | PASS |
 
-Governing check: Natural dissipation holds T_max — FAIL (utilisation 11.044). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Natural dissipation holds T_max — FAIL (utilisation 11.05). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

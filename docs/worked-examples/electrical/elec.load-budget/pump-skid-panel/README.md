@@ -35,4 +35,4 @@ Duty and standby pumps (standby at diversity 0), a panel fan and light, and a 24
 | `I_b` | 5 A | 5 A | PASS |
 | `C_req` | 16.4474 A*h | 16.4474 A*h | PASS |
 
-Governing check: Starting peak against transformer overload — FAIL (utilisation 1.111). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Starting peak against transformer overload — FAIL (utilisation 1.12). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

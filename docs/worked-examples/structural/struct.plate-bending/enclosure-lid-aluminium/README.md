@@ -32,4 +32,4 @@ A 300 × 200 × 4 mm aluminium lid under 20 kPa. The plate is thin (span/t = 50)
 | `f1` | 353.292 Hz | 353.292 Hz | PASS |
 | `u_defl` | 0.737451  | 0.737451  | PASS |
 
-Governing check: Deflection w_max ≤ span/ratio — PASS (utilisation 0.737). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Deflection w_max ≤ span/ratio — PASS (utilisation 0.74). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

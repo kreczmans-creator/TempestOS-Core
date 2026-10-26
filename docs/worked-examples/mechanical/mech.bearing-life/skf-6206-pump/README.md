@@ -30,4 +30,4 @@ A 6206 deep groove ball bearing carries 2.5 kN radial at 1500 rpm. The basic lif
 | `L_nmh` | 7589.6 h | 7589.55 h | PASS |
 | `s_0` | 4.48  | 4.48  | PASS |
 
-Governing check: Modified rating life against required life — PASS (utilisation 0.659). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Modified rating life against required life — PASS (utilisation 0.66). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

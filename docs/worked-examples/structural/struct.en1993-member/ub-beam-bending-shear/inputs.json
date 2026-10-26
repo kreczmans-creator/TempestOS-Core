@@ -257,6 +257,16 @@
     "ValueText": "1"
   },
   {
+    "Symbol": "ltb",
+    "Text": "Restrained",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "The deck restrains the compression flange (at 1.5 m, as L_cr_z), so lateral-torsional buckling does not govern; 6.3.2 is outside this sheet.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Restrained"
+  },
+  {
     "Symbol": "r",
     "Number": 8.9,
     "Unit": "mm",

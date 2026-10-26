@@ -28,4 +28,4 @@ The secondary circuit takes 120 kW from a 1.2 kg/s primary at 80 °C. ε = 0.597
 | `T_c_out` | 59.1388 degC | 59.1388 degC | PASS |
 | `dT_app` | 16.1336 K | 16.1337 K | PASS |
 
-Governing check: Approach against minimum — PASS (utilisation 0.186). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Approach against minimum — PASS (utilisation 0.19). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

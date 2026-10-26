@@ -142,11 +142,11 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
   WARNING  segments: pressure line to cylinder has fitting losses (K = 6) at Re = 2327.1; the K values are turbulent-flow values and rise at low Reynolds number, so the fittings loss K·v²/2g is understated here.  [fittings]
 
 8. Verification
-  Template: bs.pipe-pump@1.8.1
-  Content hash: 4723d62a61e80298
+  Template: bs.pipe-pump@1.9.0
+  Content hash: 15a0bf02d74b6e79
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 19:23 UTC
   Application: TempestOS test
 
 9. References

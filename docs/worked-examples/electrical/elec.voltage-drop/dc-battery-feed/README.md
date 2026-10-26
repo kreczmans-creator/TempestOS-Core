@@ -24,4 +24,4 @@ A 48 V DC feed on 6 mm² copper drops 4.1 V (8.6 %), failing the 5 % limit: the 
 | `dV` | 4.1256 V | 4.12553 V | PASS |
 | `dV_pct` | 8.595  | 8.59486  | PASS |
 
-Governing check: Voltage drop ≤ limit — FAIL (utilisation 1.719). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Voltage drop ≤ limit — FAIL (utilisation 1.72). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

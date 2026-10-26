@@ -23,4 +23,4 @@ Four bolts in two rows 200 mm apart under a 20 kN·m moment: the tension row see
 | `t_max` | 50 kN | 50 kN | PASS |
 | `u_max` | 0.83333  | 0.833333  | PASS |
 
-Governing check: Circular shear–tension interaction (governing bolt) — PASS (utilisation 0.833). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Circular shear–tension interaction (governing bolt) — PASS (utilisation 0.83). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

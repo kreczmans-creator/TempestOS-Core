@@ -33,4 +33,4 @@ A crank-rocker drives a carton flap tucker at 60 cycles a minute. The linkage is
 | `peak_accel` | 3.16246 m/s^2 | 3.16246 m/s^2 | PASS |
 | `input_torque` | 2.26544 N*m | 2.26544 N*m | PASS |
 
-Governing check: Transmission angle μ_min at or above the required minimum — PASS (utilisation 0.826). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Transmission angle μ_min at or above the required minimum — PASS (utilisation 0.83). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

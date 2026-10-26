@@ -33,4 +33,4 @@ Delivering 14 L between 100 and 210 bar from a gas pre-charge of 90 bar (all abs
 | `u_rp` | 0.621818  | 0.621818  | PASS |
 | `bar_litres` | 7360 bar*L | 7360 bar*L | PASS |
 
-Governing check: Pre-charge within the p0/p1 rule — PASS (utilisation 1.000). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Pre-charge within the p0/p1 rule — PASS (utilisation 1.00). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

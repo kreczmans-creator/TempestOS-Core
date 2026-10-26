@@ -3,21 +3,18 @@ Project: GOLDEN
 Calc ID: elec.enclosure-heat    Revision: A
 Title: Enclosure heat dissipation and fan sizing
 
-1. SCOPE AND METHOD
+1. Scope and method
 Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.
 Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+ α I A_sun). Effective cooling surface, each face weighted by how freely it sheds heat: A_eff = Σ f_face × A_face. Temperature rise with natural cooling, one coefficient over the exposed faces (the IEC TR 60890 tables are not used): ΔT = P/(h A_eff). Air flow a fan must move to hold the target rise: V = P/(ρ c_p ΔT_target), with ρ = p(z)/(287.055 T) and c_p = 1006 J/(kg·K). Fan duty point, where the fan curve meets the system resistance (found by bisection): p_fan(V) = p_sys (V/V_ref)². Cooling unit capacity, when the surfaces alone cannot reject the heat: P_cool = P − h A_eff (T_max − T_amb); with T_max at or below T_amb the term is a gain, P_cool = P + h A_eff (T_amb − T_max), and no ventilation airflow or fan duty is given. Sealed enclosure (sealing temperature T_seal entered, no breather), pressure difference across the walls when the air warms or cools from the sealing temperature at constant volume, in absolute temperatures (a rise when T_int > T_seal, a suction when below): Δp = p_site·|T_int/T_seal − 1|. A pressure-compensation element (breather or relief) limits it to its cracking pressure: dp_seal = min(Δp, dp_relief). Force of that pressure on a cover of area A_cover: F_seal = dp_seal·A_cover.
-  Ref: IEC TR 60890 — A method of temperature-rise verification of low-voltage switchgear and controlgear assemblies by calculation
-  Ref: Manufacturer enclosure climate-control guides (Rittal, nVent Hoffman) — Effective surface, heat-transfer coefficient and fan-sizing practice (cited, not copied)
-  Ref: BS EN 61439-1 10.10 — Verification of temperature rise
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   loads | Heat loads | 2 row(s) |  | manual | any
   loads[1] |  | name = PLC and I/O; P = 80 W; qty = 1; duty = 1 |  |  | 
   loads[2] |  | name = drives; P = 55 W; qty = 4; duty = 1 |  |  | 
   P_add | Additional heat load (linked from E6's dissipated heat or another calculation) | 0 | W | manual | 0 … 100000 W
-  I_sun | Solar irradiance on the enclosure (0 = indoors) | 0 | W/m^2 | manual | 0 … 1200 W/m^2
-  A_sun | Sunlit area | 0 | m^2 | manual | 0 … 100 m^2
+  I_sun | Solar irradiance on the enclosure (0 = indoors) | 0 | W/m² | manual | 0 … 1200 W/m²
+  A_sun | Sunlit area | 0 | m² | manual | 0 … 100 m²
   alpha_sun | Surface absorptivity | 0.5 |  | manual | 0.1 … 1
   W | Enclosure width | 0.6 | m | manual | 0.1 … 5 m
   H | Enclosure height | 0.8 | m | manual | 0.1 … 5 m
@@ -28,21 +25,21 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   f_left | Left side exposure | 1 |  | manual | 0 … 1
   f_right | Right side exposure | 1 |  | manual | 0 … 1
   f_bottom | Bottom exposure (0 = on the floor) | 0 |  | manual | 0 … 1
-  h | Overall heat-transfer coefficient of the enclosure surface (editable reference value) | 5.5 | W/(m^2*K) | manual | 3 … 8 W/(m^2*K)
-  T_amb | Ambient temperature | 35 | degC | manual | -20 … 55 degC
-  T_max | Maximum internal temperature | 50 | degC | manual | 20 … 80 degC
+  h | Overall heat-transfer coefficient of the enclosure surface (editable reference value) | 5.5 | W/(m²·K) | manual | 3 … 8 W/(m²·K)
+  T_amb | Ambient temperature | 35 | °C | manual | -20 … 55 °C
+  T_max | Maximum internal temperature | 50 | °C | manual | 20 … 80 °C
   altitude | Site altitude (air density) | 0 | m | manual | 0 … 4000 m
   p_sys | System resistance (filters, grilles) at the reference airflow | 20 | Pa | manual | 0 … 500 Pa
-  V_ref | Reference airflow for the system resistance | 100 | m^3/h | manual | 1 … 100000 m^3/h
+  V_ref | Reference airflow for the system resistance | 100 | m³/h | manual | 1 … 100000 m³/h
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Heat leaves the enclosure through its exposed faces at one overall coefficient h (natural convection plus radiation to surroundings at the ambient temperature); covered faces dissipate nothing. (Plain exposed-area method of manufacturer practice, not an IEC TR 60890 verification; h is a reference value the user may edit.)
   A2. Forced ventilation removes the full heat load with air entering at ambient and leaving at the target rise; natural dissipation is neglected for the airflow (conservative). (Manufacturer fan-sizing practice.)
   A3. A sealed enclosure (T_seal entered) is a closed, rigid, leak-free volume of dry air at the site pressure when closed: the pressure difference follows from the ideal-gas relation at constant volume, from the sealing temperature to the internal temperature with natural dissipation T_int (the temperature without a cooling unit); a breather, a seal that leaks or a flexing wall reduces it, so it is an upper bound (a pressure-compensation element is modelled only as a cap at its cracking pressure, with no flow resistance); the site pressure is the standard atmosphere at the altitude. (Ideal gas at constant volume (derived).)
   A4. The fan curve is linear between the entered points; the system resistance scales with airflow squared. (Duty-point idealisation.)
   A5. The effective surface is the plain exposed-area method of manufacturer practice: each face area weighted by how freely it sheds heat, one overall coefficient h. This is not a verification of temperature rise to IEC TR 60890 or BS EN 61439-1 cl. 10.10 (neither the surface factors nor the standard's temperature-rise correlation is used). (Stated on every run so the result is not read as an assembly verification.)
 
-4. WORKING
+4. Working
   [18] P_loads = Σ P_i × n_i × d_i
       = 2 item(s)
       = 300 W
@@ -100,26 +97,31 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
       = 42.893 m³/h
         Airflow crediting natural dissipation
 
-5. RESULTS
+5. Results
+  P_total = 300 W    Total heat
+  P_cool = 206.0 W    Cooling unit needed
+  P_nat_max = 94.05 W    Natural dissipation at the limit
+  T_max = 50 °C    Internal temperature limit
+  dT_nat = 47.85 K    Natural temperature rise
+  T_int = 82.85 °C    Internal temperature (natural)
+  V_req = 62.48 m³/h    Required airflow
   P_loads = 300 W    Internal heat load
   P_solar = 0 W    Solar gain
-  P_total = 300 W    Total heat
-  A_eff = 1.14 m²    Effective surface
-  dT_nat = 47.847 K    Natural temperature rise
-  T_int = 82.847 degC    Internal temperature (natural)
-  P_nat_max = 94.05 W    Natural dissipation at the limit
-  P_cool = 205.95 W    Cooling unit needed
-  T_max = 50 degC    Internal temperature limit
-  rho_air = 1.1455 kg/m³    Air density
-  V_req = 62.481 m³/h    Required airflow
-  V_req_net = 42.893 m³/h    Required airflow (net)
+  A_eff = 1.140 m²    Effective surface
+  rho_air = 1.145 kg/m³    Air density
+  V_req_net = 42.89 m³/h    Required airflow (net)
 
-6. CHECKS (governing first)
-  FAIL  Natural dissipation holds T_max: u_nat = 3.1898 vs u_nat ≤ 1  utilisation 3.19
+6. Checks (governing first)
+  FAIL  Natural dissipation holds T_max: u_nat = 3.19 vs u_nat ≤ 1  utilisation 3.19
 
-7. APPLICABILITY
-  WARNING cooling-unit: T_max: natural dissipation holds 94.05 W of 300 W; ventilate or fit a 206 W cooling unit.
+7. Applicability
+  WARNING  T_max: natural dissipation holds 94.05 W of 300 W; ventilate or fit a 206 W cooling unit.  [cooling-unit]
 
-8. VERIFICATION
+8. Verification
   Template: elec.enclosure-heat@1.6.0
   Known-answer cases passed: 4/4
+
+9. References
+  1. IEC TR 60890 — A method of temperature-rise verification of low-voltage switchgear and controlgear assemblies by calculation
+  2. Manufacturer enclosure climate-control guides (Rittal, nVent Hoffman) — Effective surface, heat-transfer coefficient and fan-sizing practice (cited, not copied)
+  3. BS EN 61439-1 10.10 — Verification of temperature rise

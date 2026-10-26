@@ -41,7 +41,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 33/33
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 19:23 UTC
   Application: TempestOS test
 
 9. References
@@ -310,7 +310,7 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   Content hash: ec0fa964408ca211
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 16/16
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 19:23 UTC
   Application: TempestOS test
 
 9. References
@@ -635,7 +635,7 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
   Content hash: e9d829e843189b74
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 19:23 UTC
   Application: TempestOS test
 
 9. References
@@ -780,11 +780,11 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   WARNING  n: the exponent 1.4 is the ideal-gas value; real nitrogen at 61.013 to 101.01 bar absolute is stiffer (an effective isentropic exponent of about 1.5 to 2.1 between 60 and 350 bar), so an adiabatic discharge needs about 13 to 24 % more gas volume than shown. Enter a real-gas factor f_rg for the discharge path.  [exponent-real]
 
 8. Verification
-  Template: fp.accumulator@1.5.1
-  Content hash: ebe37e59c3db34a4
+  Template: fp.accumulator@1.6.0
+  Content hash: 2cceb7afd077e942
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 10/10
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 19:23 UTC
   Application: TempestOS test
 
 9. References

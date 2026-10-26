@@ -25,6 +25,7 @@ The pinion sits mid-way between the bearings, so each bearing carries √(2.2² 
 | `segments` | 5 row(s) | drawing: GBX-SH-01 rev C |
 | `theta_max` | 0.001 rad | assumption: Deep-groove ball bearing slope limit. |
 | `w` | 14 mm | drawing: GBX-SH-01 rev C |
+| `w_masses` | no | assumption: The loads table is the whole load: the pinion's weight (4 kg, 39 N) is small against the 6 kN mesh force and is not added; the mass enters the critical speed only. |
 | `x_A` | 20 mm | drawing: GBX-SH-01 rev C |
 | `x_B` | 280 mm | drawing: GBX-SH-01 rev C |
 | `x_T1` | 150 mm | drawing: GBX-SH-01 rev C |
@@ -40,4 +41,4 @@ The pinion sits mid-way between the bearings, so each bearing carries √(2.2² 
 | `n_y_min` | 4.1532  | 4.15317  | PASS |
 | `tau_key` | 23.8095 MPa | 23.8095 MPa | PASS |
 
-Governing check: Slope at the bearings against limit — PASS (utilisation 0.896). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Slope at the bearings against limit — PASS (utilisation 0.90). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

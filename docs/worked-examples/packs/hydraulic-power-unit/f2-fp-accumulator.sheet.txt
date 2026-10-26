@@ -133,11 +133,11 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   WARNING  n: the exponent 1.4 is the ideal-gas value; real nitrogen at 121.01 to 161.01 bar absolute is stiffer (an effective isentropic exponent of about 1.5 to 2.1 between 60 and 350 bar). Your real-gas factor f_rg = 1.311 is applied on top: it must be the factor for the discharge path, not for an isothermal one.  [exponent-real]
 
 8. Verification
-  Template: fp.accumulator@1.5.1
-  Content hash: ebe37e59c3db34a4
+  Template: fp.accumulator@1.6.0
+  Content hash: 2cceb7afd077e942
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 10/10
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 19:23 UTC
   Application: TempestOS test
 
 9. References

@@ -57,4 +57,4 @@ The ram makes 209.8 kN on the press stroke and 101.1 kN on the return, against l
 | `F_buck` | 220.893 kN | 220.893 kN | PASS |
 | `u_buck` | 0.382668  | 0.382668  | PASS |
 
-Governing check: Pump delivery covers the circuit flow — PASS (utilisation 0.968). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Pump delivery covers the circuit flow — PASS (utilisation 0.97). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

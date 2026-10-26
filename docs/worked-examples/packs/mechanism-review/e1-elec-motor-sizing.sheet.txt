@@ -213,7 +213,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2Ï
   u_rms = 0.70    Continuous utilisation
   u_speed = 0.48    Speed utilisation
   k = 0.10417    Transmission constant
-  u_rated_speed = 1    Motor speed over the rated speed
+  u_rated_speed = 1.00    Motor speed over the rated speed
 
 6. Checks (governing first)
   PASS  Motor speed against the rated speed: 1440 rpm vs 1440 rpm  utilisation 1.00
@@ -231,7 +231,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2Ï
   Content hash: 3989917de380d03f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 19:23 UTC
   Application: TempestOS test
 
 9. References

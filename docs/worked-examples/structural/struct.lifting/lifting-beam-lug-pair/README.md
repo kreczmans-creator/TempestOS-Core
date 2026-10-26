@@ -71,4 +71,4 @@ Two lugs on a horizontal lifting beam carry 150 kN at a sling angle of 30° from
 | `util` | 0.572203  | 0.572203  | PASS |
 | `proof_load` | 225 kN | 225 kN | PASS |
 
-Governing check: BTH-1: bearing — PASS (utilisation 0.572). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: BTH-1: bearing — PASS (utilisation 0.57). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

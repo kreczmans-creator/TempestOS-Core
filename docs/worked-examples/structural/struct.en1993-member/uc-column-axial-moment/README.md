@@ -30,6 +30,7 @@ A 4 m pinned UC column carrying 900 kN with a 40 kN·m major-axis moment from th
 | `h` | 203.2 mm | spec: BS EN 10365 UC 203×203×46 |
 | `k_yy` | 1 | assumption: Simplified interaction: k_yy = 1.0. |
 | `k_zz` | 1 | assumption: Simplified interaction: k_zz = 1.0. |
+| `ltb` | Restrained | assumption: The column is held at both ends by the floor structure, which restrains its compression flange against lateral-torsional buckling (6.3.2 is outside this sheet). |
 | `r` | 10.2 mm | spec: BS EN 10365 UC 203×203×46 |
 | `section_class` | 1 | assumption: UC 203×203×46 S355 is class 1 in compression (Blue Book). |
 | `t_f` | 11 mm | spec: BS EN 10365 UC 203×203×46 |
@@ -41,4 +42,4 @@ A 4 m pinned UC column carrying 900 kN with a 40 kN·m major-axis moment from th
 | `M_y_c_Rd` | 176.435 kN*m | 176.435 kN*m | PASS |
 | `u_member` | 1.0435  | 1.04352  | PASS |
 
-Governing check: Member interaction (simplified) — FAIL (utilisation 1.044). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Member interaction (simplified) — FAIL (utilisation 1.05). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

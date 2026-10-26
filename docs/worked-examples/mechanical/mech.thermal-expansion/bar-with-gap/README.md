@@ -20,4 +20,4 @@ The bar wants to grow 1.44 mm; the first 0.5 mm closes the gap freely and the re
 | `sigma` | -94 MPa | -94 MPa | PASS |
 | `delta` | 0.5 mm | 0.5 mm | PASS |
 
-Governing check: Thermal stress against allowable — PASS (utilisation 0.627). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Thermal stress against allowable — PASS (utilisation 0.63). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

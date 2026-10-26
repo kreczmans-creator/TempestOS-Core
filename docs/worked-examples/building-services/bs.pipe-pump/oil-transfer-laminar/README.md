@@ -20,4 +20,4 @@ Viscous oil at Re ≈ 8: the sheet flags laminar flow, uses f = 64/Re and reprod
 | `Re_s1` | 7.852  | 7.85164  | PASS |
 | `dp_total` | 57.946 kPa | 57.9465 kPa | PASS |
 
-Governing check: Velocity ≤ limit — PASS (utilisation 0.047). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Velocity ≤ limit — PASS (utilisation 0.05). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

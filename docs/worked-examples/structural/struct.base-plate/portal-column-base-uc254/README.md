@@ -63,4 +63,4 @@ A rigid-base portal column: 210 kN compression, 95 kN·m and 60 kN shear from th
 | `t_req` | 15.1417 mm | 15.1417 mm | PASS |
 | `u_max` | 0.558386  | 0.558386  | PASS |
 
-Governing check: Base plate tension T-stub (bending at the bolts) — PASS (utilisation 0.558). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Base plate tension T-stub (bending at the bolts) — PASS (utilisation 0.56). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

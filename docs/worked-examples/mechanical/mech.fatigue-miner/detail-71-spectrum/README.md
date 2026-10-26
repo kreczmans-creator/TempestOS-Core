@@ -16,4 +16,4 @@ Three stress-range blocks on a category-71 detail. Each block's share of the dam
 | `D` | 0.46939  | 0.46939  | PASS |
 | `R_f` | 2.1304  | 2.13042  | PASS |
 
-Governing check: Cumulative damage D ≤ 1 — PASS (utilisation 0.469). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Cumulative damage D ≤ 1 — PASS (utilisation 0.47). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

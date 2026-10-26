@@ -18,4 +18,4 @@ A 120 MPa working stress on a 300/450 MPa steel. Yield and ultimate margins agre
 | `n_gov` | 2.5  | 2.5  | PASS |
 | `u` | 0.6  | 0.6  | PASS |
 
-Governing check: Factor of safety against the required factor — PASS (utilisation 0.600). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Factor of safety against the required factor — PASS (utilisation 0.60). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -43,4 +43,4 @@ A 3 mm wire coiled to 24 mm mean diameter (C = 8) with nine active coils has a r
 | `r_f` | 25.8746  | 25.8746  | PASS |
 | `n_f` | 1.55786  | 1.55786  | PASS |
 
-Governing check: Minimum coil clearance at L₂: working deflection within the travel to L_n = L_s + S_a — PASS (utilisation 0.880). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Minimum coil clearance at L₂: working deflection within the travel to L_n = L_s + S_a — PASS (utilisation 0.88). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

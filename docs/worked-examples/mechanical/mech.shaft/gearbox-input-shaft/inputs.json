@@ -390,6 +390,16 @@
     "ValueText": "14"
   },
   {
+    "Symbol": "w_masses",
+    "Flag": false,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "The loads table is the whole load: the pinion\u0027s weight (4 kg, 39 N) is small against the 6 kN mesh force and is not added; the mass enters the critical speed only.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "no"
+  },
+  {
     "Symbol": "x_A",
     "Number": 20,
     "Unit": "mm",

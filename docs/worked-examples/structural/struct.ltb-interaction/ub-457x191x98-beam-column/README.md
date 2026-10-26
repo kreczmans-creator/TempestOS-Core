@@ -69,4 +69,4 @@ A beam-column between lateral restraints 5 m apart, carrying 400 kN compression 
 | `u_61` | 0.64441  | 0.64441  | PASS |
 | `u_62` | 0.930503  | 0.930503  | PASS |
 
-Governing check: Interaction, equation 6.62 — PASS (utilisation 0.931). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Interaction, equation 6.62 — PASS (utilisation 0.93). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

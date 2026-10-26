@@ -125,7 +125,7 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
   WARNING  records: tabulated values not taken from a reference record are eps_perm_once (Material properties); mu (Coefficient of friction); Es (Secant modulus at the design strain). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: mech.snap-fit@1.3.2
+  Template: mech.snap-fit@1.4.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 11/11

@@ -21,4 +21,4 @@ A 100 kN/mm restraint in series with the bar's own 50 kN/mm takes a third of the
 | `sigma` | -96 MPa | -96 MPa | PASS |
 | `delta` | 0.48 mm | 0.48 mm | PASS |
 
-Governing check: Thermal stress against allowable — PASS (utilisation 0.640). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Thermal stress against allowable — PASS (utilisation 0.64). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -33,4 +33,4 @@ Condensation starts at the insulation–brick interface in November, builds to 3
 | `fRsi_min` | 0.590256  | 0.590256  | PASS |
 | `pass` | 0  | 0  | PASS |
 
-Governing check: Peak condensate on an interface against its limit (500 g/m²) — FAIL (utilisation 6.045). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Peak condensate on an interface against its limit (500 g/m²) — FAIL (utilisation 6.05). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

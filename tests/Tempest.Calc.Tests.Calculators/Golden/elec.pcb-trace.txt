@@ -9,7 +9,7 @@ Trace cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
-  I | Trace current | 3 | A | manual | 0.01 … 35 A
+  I | Trace current (the curve-fit was drawn for up to 35 A: above it the sheet is refused) | 3 | A | manual | 0.01 … 35 A
   dT | Allowed temperature rise above ambient | 10 | K | manual | 1 … 100 K
   T_amb | Ambient temperature at the board | 25 | °C | manual | -40 … 125 °C
   layer | Layer | External layer |  | manual | any
@@ -99,7 +99,7 @@ Trace cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725
   WARNING  records: tabulated values not taken from a reference record are k_ext, k_int, n_dT, n_A, t_oz (IPC-2221 legacy curve-fit constants); rho_20, alpha (Copper resistivity constants). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: elec.pcb-trace@1.1.1
+  Template: elec.pcb-trace@1.2.0
   Known-answer cases passed: 6/6
 
 9. References

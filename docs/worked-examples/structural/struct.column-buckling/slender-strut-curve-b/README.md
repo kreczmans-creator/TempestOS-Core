@@ -21,4 +21,4 @@ A slender strut at λ = 150. Its strength is governed by buckling, not by the hi
 | `P_c` | 93.567 kN | 93.5674 kN | PASS |
 | `u` | 1.0688  | 1.06875  | PASS |
 
-Governing check: Axial load against compression resistance — FAIL (utilisation 1.069). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Axial load against compression resistance — FAIL (utilisation 1.07). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -30,4 +30,4 @@ At 55/45 °C with rooms at 21 °C the radiators give 49 % of their catalogue out
 | `V_s` | 91 L | 91 L | PASS |
 | `V_e` | 3.53118 L | 3.53118 L | PASS |
 
-Governing check: Selected emitters against room heat (governing room) — FAIL (utilisation 1.107). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Selected emitters against room heat (governing room) — FAIL (utilisation 1.11). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

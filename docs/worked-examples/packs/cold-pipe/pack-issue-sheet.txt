@@ -41,7 +41,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 23/23
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 19:23 UTC
   Application: TempestOS test
 
 9. References
@@ -207,11 +207,11 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
   None.
 
 8. Verification
-  Template: bs.pipe-pump@1.8.1
-  Content hash: 4723d62a61e80298
+  Template: bs.pipe-pump@1.9.0
+  Content hash: 15a0bf02d74b6e79
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 19:23 UTC
   Application: TempestOS test
 
 9. References
@@ -324,7 +324,7 @@ Saturation vapour pressure at the dry-bulb temperature, over water at or above 0
   Content hash: 680e2f365a72ef0a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 19:23 UTC
   Application: TempestOS test
 
 9. References
@@ -442,7 +442,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   Content hash: 1838108ae7379e74
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 14/14
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 19:23 UTC
   Application: TempestOS test
 
 9. References

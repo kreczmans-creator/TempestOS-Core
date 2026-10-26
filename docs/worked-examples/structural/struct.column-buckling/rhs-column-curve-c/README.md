@@ -21,4 +21,4 @@ A column of intermediate slenderness. The Perry factor reduces the strength from
 | `P_c` | 267.56 kN | 267.562 kN | PASS |
 | `u` | 0.56062  | 0.560619  | PASS |
 
-Governing check: Axial load against compression resistance — PASS (utilisation 0.561). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Axial load against compression resistance — PASS (utilisation 0.56). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

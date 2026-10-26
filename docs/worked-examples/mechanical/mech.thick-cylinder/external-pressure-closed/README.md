@@ -19,4 +19,4 @@ External pressure puts the whole wall in compression: bore hoop −72 MPa, outer
 | `sigma_vm_a` | 62.354 MPa | 62.3538 MPa | PASS |
 | `u` | 0.62354  | 0.623538  | PASS |
 
-Governing check: von Mises against allowable — PASS (utilisation 0.624). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: von Mises against allowable — PASS (utilisation 0.62). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

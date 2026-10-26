@@ -23,4 +23,4 @@ Three metric parts with asymmetric deviations. Worst case 0.48–0.74 mm sits in
 | `t_rss` | 0.0806226 mm | 0.0806226 mm | PASS |
 | `cpk` | 2.35666  | 2.35666  | PASS |
 
-Governing check: C_pk against target — PASS (utilisation 0.564). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: C_pk against target — PASS (utilisation 0.56). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

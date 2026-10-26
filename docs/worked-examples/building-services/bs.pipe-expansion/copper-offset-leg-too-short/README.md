@@ -34,4 +34,4 @@ The 24 m riser grows 24.5 mm. The 2.5 m offset leg would have to be 2.82 m to ke
 | `u_scr` | 2.36592  | 2.36592  | PASS |
 | `pass` | 0  | 0  | PASS |
 
-Governing check: Screening only: OD·Y/(L − U)² ≤ K1 (not met: the line needs a formal stress analysis) — FAIL (utilisation 2.366). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Screening only: OD·Y/(L − U)² ≤ K1 (not met: the line needs a formal stress analysis) — FAIL (utilisation 2.37). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -32,4 +32,4 @@ The 2.2 mm thick lug is 18 mm long (l/h = 8.2) and tapers to half its thickness 
 | `alpha_lock` | 70.71 deg | 70.71 deg | PASS |
 | `retention_force` | 46.891 N | 46.891 N | PASS |
 
-Governing check: Strain at the critical section against the permissible strain — PASS (utilisation 0.187). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Strain at the critical section against the permissible strain — PASS (utilisation 0.19). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

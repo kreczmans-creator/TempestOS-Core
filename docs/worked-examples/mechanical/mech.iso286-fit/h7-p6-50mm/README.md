@@ -17,4 +17,4 @@ An interference fit: the formula value p = IT7 = 25.0 µm sits 1 µm under the t
 | `IT_hole` | 25 µm | 24.9799 µm | PASS |
 | `i_max` | 42 µm | 40.5923 µm | PASS |
 
-Governing check: Fit classified — PASS (utilisation 0.000). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Fit classified — PASS. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

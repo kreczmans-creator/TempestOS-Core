@@ -21,4 +21,4 @@ A 1.5 m vessel at 3 MPa needs 18 mm; the 15 mm plate fails at 1.20, and its hoop
 | `sigma_h` | 168.47 MPa | 168.467 MPa | PASS |
 | `u` | 1.2013  | 1.20132  | PASS |
 
-Governing check: Provided thickness against required — FAIL (utilisation 1.201). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Provided thickness against required — FAIL (utilisation 1.21). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

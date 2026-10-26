@@ -27,4 +27,4 @@ A C-shaped fillet weld (80 + 200 + 80 mm) carries 30 kN at 250 mm. The centroid 
 | `tau` | 67.1224 MPa | 67.1224 MPa | PASS |
 | `s_req` | 2.44082 mm | 2.44082 mm | PASS |
 
-Governing check: Throat stress against design strength — PASS (utilisation 0.305). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Throat stress against design strength — PASS (utilisation 0.31). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

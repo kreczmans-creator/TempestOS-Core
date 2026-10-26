@@ -32,4 +32,4 @@ Two 14 mm servo power cables and four 9 mm encoder cables fill 44.75 % of a 40 m
 | `u_T` | 0.555213  | 0.555213  | PASS |
 | `u_P` | 0.430284  | 0.430284  | PASS |
 
-Governing check: Fill against the space factor — PASS (utilisation 0.895). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Fill against the space factor — PASS (utilisation 0.90). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -35,4 +35,4 @@ With a 60 kN working load the relieved member load exceeds the minimum preload: 
 | `F_KR` | 0 kN | 0 kN | PASS |
 | `F_S_max` | 60 kN | 60 kN | PASS |
 
-Governing check: No separation — FAIL (utilisation —). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: No separation — FAIL. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

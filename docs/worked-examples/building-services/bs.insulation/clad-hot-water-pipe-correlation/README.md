@@ -32,4 +32,4 @@ The bright cladding radiates little (h_r 0.58), so h_se is only 4.25 W/m²K and 
 | `q_per_m` | 36.7726 W/m | 36.7726 W/m | PASS |
 | `theta_se` | 27.855 degC | 27.855 degC | PASS |
 
-Governing check: Chosen thickness against the heat-loss limit — PASS (utilisation 0.613). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Chosen thickness against the heat-loss limit — PASS (utilisation 0.61). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

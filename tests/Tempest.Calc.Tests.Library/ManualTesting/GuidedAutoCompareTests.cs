@@ -52,7 +52,7 @@ public sealed class GuidedAutoCompareTests
         Assert.True(result.Suggested != ManualTestOutcome.Fail && !result.Mismatches.Any(), $"{stepId}: " + string.Join(" | ", result.Rows.Where(r => !r.Comparison.IsMatch).Select(r => r.Comparison.Detail)));
         Assert.True(result.Suggested == ManualTestOutcome.Pass || ForReview.Contains(stepId), $"{stepId} needs a look by hand but is not in the list of known examples: " + string.Join(" | ", result.Rows.Where(r => !r.Comparison.IsMatch).Select(r => r.Comparison.Detail)));
         Assert.True(result.Suggested != ManualTestOutcome.Pass || !ForReview.Contains(stepId), $"{stepId} now agrees with its printed expected values; take it out of ForReview.");
-        Assert.Equal(step.Expected!.Count + (step.Governing is null ? 1 : 2), result.Rows.Count); // a governing check is two lines (its name and outcome, its utilisation); "none" is one
+        Assert.Equal(step.Expected!.Count + (step.Governing is null || step.Governing.Utilisation.Length == 0 ? 1 : 2), result.Rows.Count); // a governing check is two lines (its name and outcome, its utilisation); "none" and a yes/no check (no utilisation, C2-32) are one
         Assert.False(string.IsNullOrWhiteSpace(result.ValuesShown));
         Assert.True(result.ValuesShown.Length <= ManualTestRun.MaxValuesShownLength);
     }

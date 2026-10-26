@@ -27,4 +27,4 @@ A 20 mm lug on a 30 mm pin between 12 mm cheek plates. All five checks pass; the
 | `sigma_b` | 122.61 MPa | 122.608 MPa | PASS |
 | `u_b` | 0.49043  | 0.490433  | PASS |
 
-Governing check: Pin bending — PASS (utilisation 0.490). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Pin bending — PASS (utilisation 0.49). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

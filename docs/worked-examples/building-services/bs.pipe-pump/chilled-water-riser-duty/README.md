@@ -25,4 +25,4 @@ Three series segments with K fittings, a 12 m rise and 3 m terminal head. The sh
 |---|---|---|---|
 | `H_static` | 15 m | 15 m | PASS |
 
-Governing check: Velocity ≤ limit — FAIL (utilisation 1.005). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Velocity ≤ limit — FAIL (utilisation 1.01). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -32,4 +32,4 @@ A 40 m radial on a 16 A type C MCB. With Z_e = 0.8 Ω the loop reaches 1.403 Ω 
 | `Z_s_max` | 1.36563 ohm | 1.36563 ohm | PASS |
 | `u_Zs` | 1.02766  | 1.02766  | PASS |
 
-Governing check: Disconnection achieved — FAIL (utilisation —). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Disconnection achieved — FAIL. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

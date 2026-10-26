@@ -16,4 +16,4 @@ Only the yield strength is known; the 1.42 factor falls short of the 1.5 require
 | `n_y` | 1.42  | 1.42  | PASS |
 | `u` | 1.0563  | 1.05634  | PASS |
 
-Governing check: Factor of safety against the required factor — FAIL (utilisation 1.056). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Factor of safety against the required factor — FAIL (utilisation 1.06). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

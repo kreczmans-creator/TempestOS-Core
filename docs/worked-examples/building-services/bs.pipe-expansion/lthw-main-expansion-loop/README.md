@@ -33,4 +33,4 @@ The 50 m main grows 42 mm; fully restrained it would carry 176 MPa and push 152 
 | `u_scr` | 0.486172  | 0.486172  | PASS |
 | `pass` | 1  | 1  | PASS |
 
-Governing check: Available leg against the required leg (3.4295 m) — PASS (utilisation 0.857). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Available leg against the required leg (3.4295 m) — PASS (utilisation 0.86). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

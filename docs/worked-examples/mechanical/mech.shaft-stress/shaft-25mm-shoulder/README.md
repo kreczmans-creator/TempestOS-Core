@@ -20,4 +20,4 @@ The shoulder fillet's concentration factors raise the bending stress by 60 %. Th
 | `n_T` | 1.8505  | 1.8505  | PASS |
 | `n_VM` | 1.8842  | 1.88416  | PASS |
 
-Governing check: Factor of safety against the required factor — PASS (utilisation 0.811). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Factor of safety against the required factor — PASS (utilisation 0.81). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

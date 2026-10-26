@@ -40,7 +40,7 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   curve_z | Buckling curve about z-z | b |  | spec: BS EN 1993-1-1 Table 6.2: rolled, h/b > 1.2, t_f ≤ 40, z-z | any
   k_yy | Interaction factor k_yy (member check) | 1 |  | assumption: No axial force; interaction factors irrelevant. | 0.5 … 2
   k_zz | Interaction factor k_zz (member check) | 1 |  | assumption: No axial force; interaction factors irrelevant. | 0.5 … 2
-  ltb | Compression flange against lateral-torsional buckling (not restrained: outside this sheet) | Restrained |  | default | any
+  ltb | Compression flange against lateral-torsional buckling (optional; blank = blocks when M_y_Ed is above 0; not restrained: outside this sheet) | Restrained |  | assumption: The deck restrains the compression flange (at 1.5 m, as L_cr_z), so lateral-torsional buckling does not govern; 6.3.2 is outside this sheet. | any
   gamma_M2 | Partial factor γ_M2 (net-section fracture) | 1.1 |  | default | 1 … 1.35
 
 3. Assumptions
@@ -53,7 +53,8 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   A7. L_cr_z (Buckling length about z-z) is taken as 1.5 m. (Compression flange restrained at 1.5 m by the deck.)
   A8. k_yy (Interaction factor k_yy (member check)) is taken as 1. (No axial force; interaction factors irrelevant.)
   A9. k_zz (Interaction factor k_zz (member check)) is taken as 1. (No axial force; interaction factors irrelevant.)
-  A10. The compression flange is restrained against lateral-torsional buckling, as the input ltb says. (Input ltb.)
+  A10. ltb (Compression flange against lateral-torsional buckling (optional; blank = blocks when M_y_Ed is above 0; not restrained: outside this sheet)) is taken as Restrained. (The deck restrains the compression flange (at 1.5 m, as L_cr_z), so lateral-torsional buckling does not govern; 6.3.2 is outside this sheet.)
+  A11. The compression flange is restrained against lateral-torsional buckling, as the input ltb says. (Input ltb.)
 
 4. Working
   [28] r_h = r
@@ -191,7 +192,7 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   A_v = 20.07 cm²    Shear area
   N_pl_Rd = 1410.8 kN    N_pl,Rd
   V_pl_Rd = 318.62 kN    V_pl,Rd
-  rho = 0    ρ
+  rho = 0    Shear reduction factor ρ
   M_y_c_Rd = 171.32 kN·m    M_y,c,Rd
   M_z_c_Rd = 39.05 kN·m    M_z,c,Rd
   M_y_b_Rd = 171.32 kN·m    M_y,Rk/γ_M1
@@ -223,11 +224,10 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
 7. Applicability
   None.
   Defaults used (inputs left empty):
-    ltb: not entered, so the default of 'Restrained' is used.
     gamma_M2: not entered, so the default of 1.1 is used.
 
 8. Verification
-  Template: struct.en1993-member@1.4.0
+  Template: struct.en1993-member@1.5.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

@@ -43,7 +43,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 24/24
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 19:23 UTC
   Application: TempestOS test
 
 9. References
@@ -208,7 +208,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   Content hash: 3e4b1ea3ce5d1522
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 19:23 UTC
   Application: TempestOS test
 
 9. References
@@ -394,7 +394,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   Content hash: 3e4b1ea3ce5d1522
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 19:23 UTC
   Application: TempestOS test
 
 9. References
@@ -540,7 +540,7 @@ Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_
   Content hash: 8f4c0fb390c63009
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 19:23 UTC
   Application: TempestOS test
 
 9. References
@@ -725,11 +725,11 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
   WARNING  eta_pump: the default 0.7 is used for a pump of only 0.094824 W shaft power. A small circulator has a far lower overall efficiency (often 0.2 or less), which raises its shaft power and torque several times (at 0.2 the torque is 3.5 times the default's); enter the pump's overall efficiency at its duty point.  [eta-default]
 
 8. Verification
-  Template: bs.pipe-pump@1.8.1
-  Content hash: 4723d62a61e80298
+  Template: bs.pipe-pump@1.9.0
+  Content hash: 15a0bf02d74b6e79
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 19:23 UTC
   Application: TempestOS test
 
 9. References
@@ -960,7 +960,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   u_rms = 0.00022    Continuous utilisation
   u_speed = 0.47    Speed utilisation
   k = 1    Transmission constant
-  u_rated_speed = 0.98246    Motor speed over the rated speed
+  u_rated_speed = 0.98    Motor speed over the rated speed
 
 6. Checks (governing first)
   PASS  Motor speed against the rated speed: 2800 rpm vs 2850 rpm  utilisation 0.98
@@ -980,7 +980,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   Content hash: 3989917de380d03f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 16:21 UTC
+  Test run: 2026-10-26 19:23 UTC
   Application: TempestOS test
 
 9. References

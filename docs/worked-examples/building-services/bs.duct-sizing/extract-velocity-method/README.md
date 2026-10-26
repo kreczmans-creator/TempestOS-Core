@@ -21,4 +21,4 @@ Sizing at 10 m/s transport velocity rounds the hood branch to 250 mm and the mai
 | `D_s1` | 250 mm | 250 mm | PASS |
 | `D_s2` | 400 mm | 400 mm | PASS |
 
-Governing check: Velocity ≤ limit — PASS (utilisation 0.557). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Velocity ≤ limit — PASS (utilisation 0.56). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

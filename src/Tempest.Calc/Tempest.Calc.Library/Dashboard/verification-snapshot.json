@@ -4,8 +4,8 @@
  "sources": {
   "rederivation": "3738520fd54a185312ad9441b014f89a0e52620ca01f5d3390e706fb0ae90082",
   "knownDefects": "f503dc243b72bd6d14a26dd72c715cf4ef74eecacdd6bcf48830d5d1c2fd8ac3",
-  "katResults": "b662b08ca483498440950665e1711d3b65aaaf9942b38675a85fc00f0dbca91b",
-  "workedExamples": "e9d6c324dc7345c7c008907e75163e1996c2b76a61e567d65ae7902ee255dc26",
+  "katResults": "0f96e6c1ca3454e8058daaeee6c1e7a494d55816e2732dfe38b4de1cbb7525f0",
+  "workedExamples": "ad239e32ba38a7c5448ba7bc0f639857bb66d23e5ff3987f4293bebc5e72b5aa",
   "generator": "44f38f035fcf5937ab168f648e6a714578568d822ffce5c1d151e261c577171e"
  },
  "defectTotals": {
@@ -115,7 +115,7 @@
   "bs.heat-exchanger": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.3.0",
+    "version": "1.4.0",
     "kats": 7,
     "katsPassed": 7,
     "failedKats": [],
@@ -162,7 +162,7 @@
   "bs.insulation": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.1.2",
+    "version": "1.1.3",
     "kats": 14,
     "katsPassed": 14,
     "failedKats": [],
@@ -199,7 +199,7 @@
   "bs.pipe-expansion": {
    "workedExamples": 3,
    "kat": {
-    "version": "1.3.0",
+    "version": "1.4.0",
     "kats": 5,
     "katsPassed": 5,
     "failedKats": [],
@@ -241,7 +241,7 @@
   "bs.pipe-pump": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.8.1",
+    "version": "1.9.0",
     "kats": 5,
     "katsPassed": 5,
     "failedKats": [],
@@ -453,7 +453,7 @@
   "bs.sealed-system": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.3.0",
+    "version": "1.4.0",
     "kats": 4,
     "katsPassed": 4,
     "failedKats": [],
@@ -681,7 +681,7 @@
   "elec.fault-protection": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.3.2",
+    "version": "1.4.0",
     "kats": 6,
     "katsPassed": 6,
     "failedKats": [],
@@ -778,7 +778,7 @@
   "elec.load-budget": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.4.1",
+    "version": "1.5.1",
     "kats": 4,
     "katsPassed": 4,
     "failedKats": [],
@@ -855,7 +855,7 @@
   "elec.motor-sizing": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.9.0",
+    "version": "1.10.0",
     "kats": 3,
     "katsPassed": 3,
     "failedKats": [],
@@ -963,7 +963,7 @@
   "elec.pcb-trace": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.1.0",
+    "version": "1.2.0",
     "kats": 6,
     "katsPassed": 6,
     "failedKats": [],
@@ -1016,7 +1016,7 @@
   "elec.voltage-drop": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.2.0",
+    "version": "1.3.0",
     "kats": 3,
     "katsPassed": 3,
     "failedKats": [],
@@ -1068,7 +1068,7 @@
   "fp.accumulator": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.5.1",
+    "version": "1.6.0",
     "kats": 10,
     "katsPassed": 10,
     "failedKats": [],
@@ -1269,7 +1269,7 @@
   "mech.bearing-life": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.1.0",
+    "version": "1.2.0",
     "kats": 5,
     "katsPassed": 5,
     "failedKats": [],
@@ -1457,7 +1457,7 @@
   "mech.iso286-fit": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.5.0",
+    "version": "1.5.1",
     "kats": 3,
     "katsPassed": 3,
     "failedKats": [],
@@ -1551,7 +1551,7 @@
   "mech.mechanism": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.2.1",
+    "version": "1.2.2",
     "kats": 16,
     "katsPassed": 16,
     "failedKats": [],
@@ -1604,7 +1604,7 @@
   "mech.shaft": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.3.1",
+    "version": "1.6.0",
     "kats": 3,
     "katsPassed": 3,
     "failedKats": [],
@@ -1697,7 +1697,7 @@
   "mech.snap-fit": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.3.1",
+    "version": "1.4.0",
     "kats": 11,
     "katsPassed": 11,
     "failedKats": [],
@@ -1739,7 +1739,7 @@
   "mech.spring": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.4.0",
+    "version": "1.5.0",
     "kats": 8,
     "katsPassed": 8,
     "failedKats": [],
@@ -1817,7 +1817,7 @@
   "mech.thick-cylinder": {
    "workedExamples": 2,
    "kat": {
-    "version": "2.1.0",
+    "version": "2.1.1",
     "kats": 3,
     "katsPassed": 3,
     "failedKats": [],
@@ -1865,7 +1865,7 @@
   "mech.tolerance-stack": {
    "workedExamples": 2,
    "kat": {
-    "version": "2.2.0",
+    "version": "2.2.1",
     "kats": 7,
     "katsPassed": 7,
     "failedKats": [],
@@ -1912,7 +1912,7 @@
   "mech.weld-group": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.1.1",
+    "version": "1.2.0",
     "kats": 4,
     "katsPassed": 4,
     "failedKats": [],
@@ -2062,8 +2062,8 @@
   },
   "pack.drive-train": {
    "workedExamples": 1,
-   "exampleChecks": 15,
-   "exampleChecksPassed": 15,
+   "exampleChecks": 17,
+   "exampleChecksPassed": 17,
    "packRun": {
     "steps": 5,
     "bindings": 9,
@@ -2176,8 +2176,8 @@
   },
   "pack.hydraulic-power-unit": {
    "workedExamples": 1,
-   "exampleChecks": 25,
-   "exampleChecksPassed": 25,
+   "exampleChecks": 26,
+   "exampleChecksPassed": 26,
    "packRun": {
     "steps": 8,
     "bindings": 24,
@@ -2238,8 +2238,8 @@
   },
   "pack.mechanism-review": {
    "workedExamples": 1,
-   "exampleChecks": 20,
-   "exampleChecksPassed": 20,
+   "exampleChecks": 23,
+   "exampleChecksPassed": 23,
    "packRun": {
     "steps": 6,
     "bindings": 12,
@@ -2454,8 +2454,8 @@
   },
   "pack.wet-heating": {
    "workedExamples": 1,
-   "exampleChecks": 6,
-   "exampleChecksPassed": 6,
+   "exampleChecks": 7,
+   "exampleChecksPassed": 7,
    "packRun": {
     "steps": 5,
     "bindings": 9,
@@ -2552,7 +2552,7 @@
   "struct.base-plate": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.5.0",
+    "version": "1.6.0",
     "kats": 9,
     "katsPassed": 9,
     "failedKats": [],
@@ -2667,7 +2667,7 @@
   "struct.connection-ec3": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.6.0",
+    "version": "1.7.0",
     "kats": 8,
     "katsPassed": 8,
     "failedKats": [],
@@ -2759,7 +2759,7 @@
   "struct.en1993-member": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.3.0",
+    "version": "1.5.0",
     "kats": 3,
     "katsPassed": 3,
     "failedKats": [],
@@ -2826,7 +2826,7 @@
   "struct.fillet-weld": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.0.1",
+    "version": "1.1.0",
     "kats": 3,
     "katsPassed": 3,
     "failedKats": [],
@@ -2900,7 +2900,7 @@
   "struct.load-combinations": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.0.0",
+    "version": "1.1.0",
     "kats": 5,
     "katsPassed": 5,
     "failedKats": [],
@@ -2937,7 +2937,7 @@
   "struct.ltb-interaction": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.1.3",
+    "version": "1.2.0",
     "kats": 8,
     "katsPassed": 8,
     "failedKats": [],
@@ -3009,7 +3009,7 @@
   "struct.plate-bending": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.2.2",
+    "version": "1.3.0",
     "kats": 11,
     "katsPassed": 11,
     "failedKats": [],

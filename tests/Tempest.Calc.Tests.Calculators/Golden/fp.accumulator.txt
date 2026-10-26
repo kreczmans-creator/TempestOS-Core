@@ -101,10 +101,11 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   f_T = 1    Gas volume scaling T_max/T_min
   pssr = "indication not available — enter the vessel's PS and volume (or a size list)."    PSSR Schedule 1 250 bar·L exception (indication only)
   process = "charged as fast as it is discharged (one exponent n = 1 from the pre-charge to both working pressures)"    Gas process the volume is sized for
-  u_r0 = 1.00    Pre-charge rule utilisation (p0/p1) (governing)
+  u_r0 = 1.00    Pre-charge rule utilisation (p0/p1)
   u_rp = 0.58    Pressure ratio utilisation (p2/p0 at the minimum temperature)
 
 6. Checks (governing first)
+  FAIL  Real-gas factor against the ideal gas above 100 bar absolute: ideal gas (f_rg = 1) at p_2 = 210 bar abs vs real-gas factor f_rg entered
   PASS  Pre-charge within the p0/p1 rule: u_r0 = 1.00 vs u_r0 ≤ 1  utilisation 1.00  « accumulator.rules record
   PASS  Pressure ratio within the p2/p0 rule: u_rp = 0.58 vs u_rp ≤ 1  utilisation 0.58  « accumulator.rules record
 
@@ -113,7 +114,7 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   WARNING  p_2: the highest working pressure is 210 bar absolute, above 200 bar; nitrogen departs from the ideal-gas law there and the volume shown is the ideal-gas value, too small (reference-EOS nitrogen at 20 °C needs 1.7 to 2.0 times the ideal volume from 450 to 700 bar). Enter a real-gas factor f_rg (up to 3) from a gas-property source.  [realgas]
 
 8. Verification
-  Template: fp.accumulator@1.5.1
+  Template: fp.accumulator@1.6.0
   Known-answer cases passed: 10/10
 
 9. References

@@ -34,4 +34,4 @@ A steel flange clamped 40 mm thick by an M12 class 8.8 bolt torqued to 80 N·m w
 | `F_M` | 40.69 kN | 40.6899 kN | PASS |
 | `Phi` | 0.07205  | 0.0720469  | PASS |
 
-Governing check: Equivalent stress at assembly within the permitted ν of the proof strength — PASS (utilisation 0.969). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Equivalent stress at assembly within the permitted ν of the proof strength — PASS (utilisation 0.97). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

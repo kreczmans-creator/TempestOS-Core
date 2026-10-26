@@ -257,6 +257,16 @@
     "ValueText": "1"
   },
   {
+    "Symbol": "ltb",
+    "Text": "Restrained",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "The column is held at both ends by the floor structure, which restrains its compression flange against lateral-torsional buckling (6.3.2 is outside this sheet).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Restrained"
+  },
+  {
     "Symbol": "r",
     "Number": 10.2,
     "Unit": "mm",

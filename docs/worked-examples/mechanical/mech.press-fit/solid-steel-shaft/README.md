@@ -29,4 +29,4 @@ Equal-stiffness steel parts: the interface pressure is 62 MPa, the hub bore hoop
 | `T` | 2195 N*m | 2194.8 N*m | PASS |
 | `dT` | 100 K | 100 K | PASS |
 
-Governing check: Hub yield — PASS (utilisation 0.408). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Hub yield — PASS (utilisation 0.41). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

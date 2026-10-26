@@ -19,4 +19,4 @@ A 2:1 wall ratio under 50 MPa: bore hoop stress 83 MPa against a thin-wall estim
 | `sigma_vm_a` | 115.47 MPa | 115.47 MPa | PASS |
 | `u` | 0.57735  | 0.57735  | PASS |
 
-Governing check: von Mises against allowable — PASS (utilisation 0.577). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: von Mises against allowable — PASS (utilisation 0.58). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

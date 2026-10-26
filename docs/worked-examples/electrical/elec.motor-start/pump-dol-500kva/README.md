@@ -45,4 +45,4 @@ A 75 kW pump started direct on line (7 × I_n = 922 A at power factor 0.3) from 
 | `I_cap` | 27.2686 A | 27.2686 A | PASS |
 | `h_res` | 25.7225  | 25.7225  | PASS |
 
-Governing check: Point-of-common-coupling dip within the limit — PASS (utilisation 0.935). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Point-of-common-coupling dip within the limit — PASS (utilisation 0.93). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

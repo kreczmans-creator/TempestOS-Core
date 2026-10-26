@@ -149,7 +149,7 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
     process: not entered, so the default of 'By duty' is used.
 
 8. Verification
-  Template: fp.accumulator@1.5.1
+  Template: fp.accumulator@1.6.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 10/10

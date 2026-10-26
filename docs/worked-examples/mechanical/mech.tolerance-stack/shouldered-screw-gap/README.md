@@ -22,4 +22,4 @@ Four inch-dimensioned parts on a shouldered screw. The worst-case gap can go neg
 | `t_rss` | 0.006 in | 0.006 in | PASS |
 | `x_wc_min` | -0.005 in | -0.005 in | PASS |
 
-Governing check: Worst case within requirement — FAIL (utilisation —). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Worst case within requirement — FAIL. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

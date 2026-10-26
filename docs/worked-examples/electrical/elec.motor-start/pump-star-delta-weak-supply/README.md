@@ -48,4 +48,4 @@ A 160 kW pump on a 500 kVA, 4 % transformer fed from a weak 15 MVA network (mini
 | `S_sc` | 6.8334 MVA | 6.8334 MVA | PASS |
 | `h_res` | 13.865  | 13.865  | PASS |
 
-Governing check: Point-of-common-coupling dip within the limit — PASS (utilisation 0.847). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Point-of-common-coupling dip within the limit — PASS (utilisation 0.85). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

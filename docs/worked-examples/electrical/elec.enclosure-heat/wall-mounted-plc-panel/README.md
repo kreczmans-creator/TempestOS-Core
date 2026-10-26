@@ -23,4 +23,4 @@
 | `dT_nat` | 47.847 K | 47.8469 K | PASS |
 | `V_duty` | 113.75 m^3/h | 113.746 m^3/h | PASS |
 
-Governing check: Natural dissipation holds T_max — FAIL (utilisation 3.190). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Natural dissipation holds T_max — FAIL (utilisation 3.19). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

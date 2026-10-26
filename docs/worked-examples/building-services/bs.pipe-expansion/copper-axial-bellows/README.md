@@ -30,4 +30,4 @@ With the bellows in the run there is no leg to check and no screening. The ancho
 | `u_bellows` | 0.612  | 0.612  | PASS |
 | `pass` | 1  | 1  | PASS |
 
-Governing check: Movement against the rated axial movement of the bellows (40 mm) — PASS (utilisation 0.612). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Movement against the rated axial movement of the bellows (40 mm) — PASS (utilisation 0.61). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

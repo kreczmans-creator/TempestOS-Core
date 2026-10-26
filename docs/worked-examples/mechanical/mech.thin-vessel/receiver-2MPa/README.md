@@ -20,4 +20,4 @@ A 1 m diameter receiver at 2 MPa with spot-radiographed seams (E = 0.85) and 3 m
 | `t_req` | 11.613 mm | 11.6133 mm | PASS |
 | `u` | 0.96777  | 0.967772  | PASS |
 
-Governing check: Provided thickness against required — PASS (utilisation 0.968). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Provided thickness against required — PASS (utilisation 0.97). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

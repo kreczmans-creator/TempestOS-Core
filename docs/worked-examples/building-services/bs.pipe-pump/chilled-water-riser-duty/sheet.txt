@@ -246,7 +246,7 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
     D_law: not entered, so the default of 'impeller trim (Q ∝ n·D, H ∝ n²·D²)' is used.
 
 8. Verification
-  Template: bs.pipe-pump@1.8.1
+  Template: bs.pipe-pump@1.9.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5
