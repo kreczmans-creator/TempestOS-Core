@@ -335,6 +335,45 @@ public sealed class CalcInstanceStore
         }, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Saves several reference records in ONE transaction (Addendum C, C-3: a record import is all or nothing). Every record is a new revision
+    /// that must not exist yet; if any one cannot be written, or the commit fails, none of them is. The set may not repeat a record revision.
+    /// </summary>
+    public async Task SaveRecordsAsync(IReadOnlyList<CalcDataRecord> records, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(records);
+
+        if (records.Count == 0)
+            return;
+
+        var batch = new List<(string Key, string Json, CalcDataRecord Record)>(records.Count);
+
+        foreach (var record in records)
+        {
+            ArgumentNullException.ThrowIfNull(record);
+            var json = Serialise(record);
+
+            if (json.Length > MaxDocumentBytes)
+                throw new InvalidOperationException($"Reference record '{record.Id:N}' is larger than {MaxDocumentBytes / 1_000_000} MB and was not written.");
+
+            batch.Add((RecordKey(record.Id, record.Revision), json, record));
+        }
+
+        if (batch.Select(b => b.Key).Distinct(StringComparer.Ordinal).Count() != batch.Count)
+            throw new CalcInstanceImmutableException("The records to save repeat a record revision; a change is a new revision.");
+
+        await _store.ExecuteInTransactionAsync(async (tx, token) =>
+        {
+            foreach (var (key, json, record) in batch)
+            {
+                if (await tx.ReadAsync(RecordCollection, key, token).ConfigureAwait(false) is not null)
+                    throw new CalcInstanceImmutableException($"Reference record {record.Id:N} revision {record.Revision} exists already; a change is a new revision.");
+
+                await tx.WriteAsync(RecordCollection, key, json, token).ConfigureAwait(false);
+            }
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>A record at a revision, or its latest revision.</summary>
     public async Task<CalcDataRecord?> FindRecordAsync(Guid id, int? revision = null, CancellationToken cancellationToken = default)
     {

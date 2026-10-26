@@ -77,6 +77,8 @@ public sealed class EngineeringAreaView : UserControl
     private readonly TreeViewItem _worksheetsNode = new() { Header = "Worksheets" };
     private readonly Dictionary<string, TreeViewItem> _disciplineWorksheetNodes = new(StringComparer.Ordinal);
     private readonly TreeViewItem _assetsNode = new() { Header = "Packs and templates" };
+    private readonly TreeViewItem _recordsNode = new() { Header = "Reference records" };
+    private readonly Tempest.Desktop.CalcSheets.CalcRecordsView? _records;
     private readonly TreeViewItem _referenceDataNode = new() { Header = "Reference data" };
 
     private readonly WorkspaceChangesSubscription _workspaceChanges;
@@ -108,7 +110,8 @@ public sealed class EngineeringAreaView : UserControl
         ICommandDispatcher commandDispatcher, Action<Guid, string> openObjectRightUp,
         EngineeringAssetsView engineeringAssets,
         Tempest.Desktop.CalcSheets.CalcSheetView worksheets, Func<Task> onWorksheetsSelected,
-        Tempest.Desktop.CalcSheets.CalcRegisterView? worksheetRegister = null, Func<Task>? onRegisterSelected = null, Func<Guid, Task>? openWorksheetInstance = null)
+        Tempest.Desktop.CalcSheets.CalcRegisterView? worksheetRegister = null, Func<Task>? onRegisterSelected = null, Func<Guid, Task>? openWorksheetInstance = null,
+        Tempest.Desktop.CalcSheets.CalcRecordsView? records = null)
     {
         ArgumentNullException.ThrowIfNull(navigator);
         ArgumentNullException.ThrowIfNull(tasksReadModel);
@@ -128,6 +131,7 @@ public sealed class EngineeringAreaView : UserControl
         _referenceData = referenceData;
         _engineeringAssets = engineeringAssets;
         _worksheets = worksheets;
+        _records = records;
         _onWorksheetsSelected = onWorksheetsSelected;
         _dashboard = dashboard;
         _onEngineeringCalculationSelected = onEngineeringCalculationSelected;
@@ -175,6 +179,9 @@ public sealed class EngineeringAreaView : UserControl
                 node.Items.Add(_worksheetsNode);
                 node.Items.Add(_calculationsNode);
                 node.Items.Add(_assetsNode);
+
+                if (records is not null)
+                    node.Items.Add(_recordsNode);
             }
 
             _modulesNode.Items.Add(node);
@@ -190,7 +197,7 @@ public sealed class EngineeringAreaView : UserControl
                  {
                      (_dashboardNode, "Dashboard"), (_tasksNode, "Tasks"), (_disciplinesNode, "Disciplines"), (_modulesNode, "Modules"),
                      (_calculationsNode, "Calculation register"), (_worksheetsNode, "Worksheets"),
-                     (_assetsNode, "Packs and templates"), (_referenceDataNode, "Reference data"),
+                     (_assetsNode, "Packs and templates"), (_recordsNode, "Reference records screen"), (_referenceDataNode, "Reference data"),
                  })
             AutomationProperties.SetName(node, name);
         AutomationProperties.SetName(_tree, "Engineering tree");
@@ -268,10 +275,30 @@ public sealed class EngineeringAreaView : UserControl
     }
 
     /// <summary>
+    /// Addendum C, C-3: opens the records screen (Modules → Calculations → Reference records), on <paramref name="kind"/> when one is given — the
+    /// "Fill" and "Open records screen" links of a worksheet land here.
+    /// </summary>
+    public async Task OpenRecordsAsync(string? kind)
+    {
+        if (_records is null)
+            return;
+
+        if (_navigator.Current.Area != ShellArea.EngineeringDepartment)
+            await _navigator.GoToModuleAsync(ShellArea.EngineeringDepartment).ConfigureAwait(true);
+
+        _suppressSelection = true;
+        _tree.SelectedItem = _recordsNode;
+        _suppressSelection = false;
+        await _records.RefreshAsync(kind).ConfigureAwait(true);
+        _detail.Content = _records;
+    }
+
+    /// <summary>
     /// Selects the node named <paramref name="automationName"/>
     /// ("Dashboard", "Tasks", "Disciplines", "Mechanical discipline" and
     /// its siblings, "Modules", "Requirements module" and its siblings,
-    /// "Worksheets", "Calculation register", "Packs and templates" or
+    /// "Worksheets", "Calculation register", "Packs and templates",
+    /// "Reference records screen" or
     /// "Reference data") — the same name a
     /// screen reader announces, and what a journey test drives the tree
     /// by.
@@ -280,7 +307,7 @@ public sealed class EngineeringAreaView : UserControl
     {
         var item = new[]
             {
-                _dashboardNode, _tasksNode, _disciplinesNode, _modulesNode, _calculationsNode, _assetsNode, _referenceDataNode,
+                _dashboardNode, _tasksNode, _disciplinesNode, _modulesNode, _calculationsNode, _assetsNode, _recordsNode, _referenceDataNode,
             }
             .Concat(_disciplineNodes.Values)
             .Concat(_disciplineWorksheetNodes.Values)
@@ -475,6 +502,13 @@ public sealed class EngineeringAreaView : UserControl
         {
             await _engineeringAssets.RefreshAsync().ConfigureAwait(true);
             _detail.Content = _engineeringAssets;
+            return;
+        }
+
+        if (ReferenceEquals(selected, _recordsNode) && _records is not null)
+        {
+            await _records.RefreshAsync().ConfigureAwait(true);
+            _detail.Content = _records;
             return;
         }
 

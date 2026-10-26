@@ -313,6 +313,11 @@ internal sealed partial class MainWindowComposer
             host.Materials is { } materials && host.Fasteners is { } fasteners && host.Bearings is { } bearings ? new Tempest.Calc.Library.CalcReferenceFill(materials, fasteners, bearings) : null,
             views.WorksheetRegister);
 
+        // Addendum C, C-3: a worksheet's "Fill" and "Open records screen" links land on the records screen, and what the screen saves
+        // is what the worksheet's missing-records list reads again.
+        calcSheets.OpenRecordsScreenAsync = kind => views.EngineeringAreaView.OpenRecordsAsync(kind);
+        views.WorksheetRecords.Model.Committed += saved => _ = calcSheets.RefreshRequirementsAsync();
+
         // `ADR-0173`: Evidence a worksheet manages is checked, issued and revised there; its editor's "Open worksheet" lands here.
         viewCoordinator.OpenCalculationForEvidenceAsync = evidenceId =>
             calcSheets.OpenForEvidenceAsync(evidenceId, views.EngineeringAreaView.OpenWorksheetAsync);

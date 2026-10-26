@@ -113,6 +113,9 @@ public sealed partial class CalcInstanceService
 
     private string CurrentPrincipal() => PrincipalOverride?.Invoke() ?? _domain.ResolveCurrentPrincipalId();
 
+    /// <summary>The signed-in person, for the record import (it stamps who entered the values).</summary>
+    internal string SignedInPerson => CurrentPrincipal();
+
     private static bool IsKnownPerson(string? principal) => !string.IsNullOrWhiteSpace(principal) && !string.Equals(principal, Tempest.Core.EngineeringData.EngineeringDocumentStore.UnknownAuthorPrincipalId, StringComparison.Ordinal);
 
     /// <summary>The principals listed with <paramref name="more"/> added, without blanks, the "unknown" sentinel or repeats; <see langword="null"/> when none is left.</summary>
@@ -130,6 +133,11 @@ public sealed partial class CalcInstanceService
     public MaterialLibrary Materials => _materials ??= new MaterialLibrary(this);
 
     internal TimeProvider Time => _time;
+
+    private RecordImportService? _recordImport;
+
+    /// <summary>The reference-record import (Addendum C, C-3): Track P's record templates, preview, all-or-nothing commit, and the records a calculator is missing.</summary>
+    public RecordImportService RecordImport => _recordImport ??= new RecordImportService(this);
 
     // ------------------------------------------------------------------
     // Create, update, run
