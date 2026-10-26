@@ -156,6 +156,10 @@ public sealed partial class CalcInstanceService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         var entry = _catalogue.Get(templateReference);
+
+        if (await DeletedProjectRefusalAsync(projectId, cancellationToken).ConfigureAwait(false) is { } deleted)
+            throw new CalcProjectDeletedException(deleted);
+
         var now = _time.GetUtcNow();
         var author = CurrentPrincipal();
         var id = Guid.NewGuid();
@@ -839,6 +843,9 @@ public sealed partial class CalcInstanceService
         if (instanceIds.Count == 0 || instanceIds.Count > CalcPack.MaxInstances)
             throw new ArgumentException($"A pack holds between 1 and {CalcPack.MaxInstances} calculations.", nameof(instanceIds));
 
+        if (await DeletedProjectRefusalAsync(projectId, cancellationToken).ConfigureAwait(false) is { } deleted)
+            throw new CalcProjectDeletedException(deleted);
+
         // A pack holds calculations of its own project: one from another project (or none) would be issued under this project's Evidence (Red R-A-12).
         var members = new List<CalcInstance>();
 
@@ -1313,6 +1320,21 @@ public sealed partial class CalcInstanceService
 
     private CalcSheetFooter Footer(CalcCatalogueEntry entry, KnownAnswerReport report) =>
         new(entry.Reference, entry.ShortHash, _engine.EngineVersion, report.Passed, report.Total, report.RunAt, _applicationVersion, FeatureNoteFor(entry.Template));
+
+    /// <summary>
+    /// Why nothing new can be made in <paramref name="projectId"/>: it has been deleted (a window that still shows it, or the demonstration's removal
+    /// running at the same time). A calculation or pack made there would sit under a deleted project out of reach of every list and of the
+    /// demonstration's removal (security review SEC-C-05). <see langword="null"/> when the project is live, unknown to the domain, or not given.
+    /// </summary>
+    internal async Task<string?> DeletedProjectRefusalAsync(Guid? projectId, CancellationToken cancellationToken)
+    {
+        if (projectId is not { } id)
+            return null;
+
+        return await _domain.Repository.FindAsync(id, cancellationToken).ConfigureAwait(false) is IDeletable { IsDeleted: true } project
+            ? $"The project '{project.BusinessIdentifier}' has been deleted, so nothing new can be made in it. Reload the projects and choose another."
+            : null;
+    }
 
     private async Task<string> ProjectLabelAsync(Guid? projectId, CancellationToken cancellationToken)
     {

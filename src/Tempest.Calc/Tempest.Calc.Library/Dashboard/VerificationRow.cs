@@ -51,7 +51,7 @@ public enum VerificationStatusFilter
 }
 
 /// <summary>The outcome of the owner's manual test of a row, from the guided test run records (Addendum C, C-5).</summary>
-public enum ManualTestOutcome
+public enum DashboardManualTestOutcome
 {
     NotTested,
     Passed,
@@ -60,17 +60,17 @@ public enum ManualTestOutcome
 }
 
 /// <summary>The manual-test status of one row: the outcome, when it was recorded and an optional note.</summary>
-public sealed record ManualTestStatus(ManualTestOutcome Outcome, DateTimeOffset? At = null, string? Note = null)
+public sealed record DashboardManualTestStatus(DashboardManualTestOutcome Outcome, DateTimeOffset? At = null, string? Note = null)
 {
     /// <summary>The status of a row nobody has tested.</summary>
-    public static ManualTestStatus NotTested { get; } = new(ManualTestOutcome.NotTested);
+    public static DashboardManualTestStatus NotTested { get; } = new(DashboardManualTestOutcome.NotTested);
 
     /// <summary>How the dashboard words it.</summary>
     public string Label => Outcome switch
     {
-        ManualTestOutcome.Passed => "Passed",
-        ManualTestOutcome.Failed => "Failed",
-        ManualTestOutcome.Partial => "Partly passed",
+        DashboardManualTestOutcome.Passed => "Passed",
+        DashboardManualTestOutcome.Failed => "Failed",
+        DashboardManualTestOutcome.Partial => "Partly passed",
         _ => "Not tested",
     };
 }
@@ -138,7 +138,7 @@ public sealed record VerificationRow(
     IReadOnlyList<string> RecordKinds,
     IReadOnlyList<string> MissingRecordKinds,
     IReadOnlyList<VerificationFinding> Findings,
-    ManualTestStatus ManualTest,
+    DashboardManualTestStatus ManualTest,
     IReadOnlyList<string> Steps,
     IReadOnlyList<VerificationFinding>? StepDefects = null,
     bool DefectsKnown = true)
@@ -225,7 +225,7 @@ public sealed record VerificationRow(
         VerificationStatusFilter.MissingRecords => HasMissingRecords,
         VerificationStatusFilter.NotRun => KatState == KatRunState.NotRun,
         VerificationStatusFilter.NotRederived => !IsRederived,
-        VerificationStatusFilter.NotManuallyTested => ManualTest.Outcome == ManualTestOutcome.NotTested,
+        VerificationStatusFilter.NotManuallyTested => ManualTest.Outcome == DashboardManualTestOutcome.NotTested,
         VerificationStatusFilter.Clean => IsClean,
         _ => false,
     };

@@ -64,6 +64,10 @@ public static class CalcDemoProject
     /// </summary>
     internal static IReadOnlyList<(string Id, int Version)> ScanProfiles { get; } = [(StackProfileId, 1), (GlandProfileId, 1)];
 
+    /// <summary>The profile the install writes at <paramref name="id"/>@<paramref name="version"/>, or <see langword="null"/>: a removal deletes a stored version only when it is this one, word for word.</summary>
+    internal static ScanProfile? ShippedProfile(string id, int version) =>
+        new[] { StackProfile, GlandProfile }.FirstOrDefault(p => string.Equals(p.Id, id, StringComparison.Ordinal) && p.Version == version);
+
     /// <summary>The scan profile that reads the synthetic table into the groove-root stack.</summary>
     public const string StackProfileId = ScanProfilePrefix + "seal-stack";
 

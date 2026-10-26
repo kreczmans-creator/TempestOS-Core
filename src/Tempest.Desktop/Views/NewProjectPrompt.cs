@@ -246,9 +246,10 @@ public sealed class NewProjectPrompt : Border
         _label.Text = label;
         _fallbackIdentifier = fallbackIdentifier ?? string.Empty;
         _referenceEditedByHand = false;
+        // A deleted project keeps its number (the directory refuses it again), so the references taken include the deleted ones.
         _takenProjectReferences = _projects is null
             ? []
-            : ProjectNumbering.ProjectReferencesIn((await _projects.ListAsync().ConfigureAwait(true)).Select(p => p.Identifier));
+            : ProjectNumbering.ProjectReferencesIn((await _projects.ListIncludingDeletedAsync().ConfigureAwait(true)).Select(p => p.Identifier));
         SetProjectReference(null);
         _nameBox.Text = string.Empty;
         _purchaseOrderBox.Text = string.Empty;

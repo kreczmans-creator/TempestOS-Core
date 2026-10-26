@@ -64,6 +64,9 @@ public sealed record RecordProvenanceInput(
         if (Origin == CalcDataOrigin.Indicative)
             return "A record you enter cannot be marked indicative: that flag is for the shipped generic seeds.";
 
+        if (!Enum.IsDefined(Origin))
+            return "The provenance's origin must be user entered, derived or a manufacturer's example.";
+
         return null;
     }
 }

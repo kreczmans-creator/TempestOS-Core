@@ -177,7 +177,8 @@ public sealed class RecordImportService
             var originText = Cell(row, "origin");
             var origin = CalcDataOrigin.UserEntered;
 
-            if (originText.Length > 0 && (!Enum.TryParse(originText, true, out origin) || origin == CalcDataOrigin.Indicative))
+            // A name, never a number or a combination ('7', 'Derived, ManufacturerExample'): Enum.TryParse takes both and makes an origin no record can have (SEC-C-04).
+            if (originText.Length > 0 && (!originText.All(char.IsAsciiLetter) || !Enum.TryParse(originText, true, out origin) || !Enum.IsDefined(origin) || origin == CalcDataOrigin.Indicative))
             {
                 issues.Add($"Line {line}: origin must be UserEntered, Derived or ManufacturerExample, not '{originText}'.");
                 continue;
@@ -283,12 +284,18 @@ public sealed class RecordImportService
             delimiter = request.Delimiter ?? CsvReader.DetectDelimiter(text);
             table = CsvReader.Read(text, delimiter, new ImportBudget(new ImportLimits { MaxRows = MaxFileRows, MaxColumns = 64 }, cancellationToken));
         }
+        catch (ImportRefusedException ex) when (ex.Code == ImportRefusalCode.TooManyRows)
+        {
+            // The reader counts the header among its lines; a person counts data rows (yellow-team Y-C-04).
+            var cap = (MaxFileRows - 1).ToString("N0", CultureInfo.InvariantCulture);
+            return Refuse($"The file has more than {cap} data rows; split it into files of at most {cap} rows, each with the header.", template, request.FileName);
+        }
         catch (ImportRefusedException ex)
         {
             return Refuse(ex.Message, template, request.FileName);
         }
 
-        var sha = request.FileName is null ? null : file.Sha256;
+        var sha =request.FileName is null ? null : file.Sha256;
         var fileIssues = new List<RecordImportIssue>();
         var profile = request.Number ?? NumberProfile.Point;
 
@@ -338,7 +345,11 @@ public sealed class RecordImportService
         }
 
         // Rows.
-        var rows = ParseRows(table, headerCells.Count, bound, profile);
+        // A declared decimal comma with a comma delimiter makes every unquoted number of a file ambiguous: '14,8' is the two fields 14 and 8, and a row
+        // that also leaves a trailing value out still has the header's width, so nothing else notices (security review SEC-C-01, as W1's P-B-01). A typed
+        // grid is exempt: GridToCsv quotes every cell that holds a comma, so its numbers cannot be split.
+        var commaSplit = profile.Decimal == DecimalMark.Comma && delimiter == ',' && request.FileName is not null;
+        var rows = ParseRows(table, headerCells.Count, bound, profile, commaSplit);
 
         if (rows.Count == 0 && fileIssues.All(i => i.Severity != RecordSeverity.Error))
             fileIssues.Add(new RecordImportIssue(RecordSeverity.Error, null, null, "The file holds a header row and no data rows."));
@@ -671,7 +682,7 @@ public sealed class RecordImportService
     // Rows
     // ------------------------------------------------------------------
 
-    private static List<ParsedRow> ParseRows(CsvTable table, int headerCount, Dictionary<string, BoundColumn> bound, NumberProfile profile)
+    private static List<ParsedRow> ParseRows(CsvTable table, int headerCount, Dictionary<string, BoundColumn> bound, NumberProfile profile, bool commaSplit)
     {
         var rows = new List<ParsedRow>();
 
@@ -695,6 +706,12 @@ public sealed class RecordImportService
 
                 if (cell.IsBlank)
                     continue;
+
+                if (commaSplit && column.IsNumeric && !table.WasQuoted(i, column.FileIndex))
+                {
+                    row.Add(RecordSeverity.Error, column.Symbol, $"{column.Symbol}: '{Clip(cell.Raw)}' is a number without quotes in a file whose fields are separated by commas, and the number format is a decimal comma. A decimal comma ('14,8') is split by the comma into 14 and 8, so no unquoted number can be read reliably. Put the numbers in quotes (\"14,8\") or save the file with semicolons between the fields.");
+                    continue;
+                }
 
                 ParseCell(row, column, cell, profile);
             }
@@ -1270,13 +1287,20 @@ public sealed class RecordImportService
             return [];
 
         var result = new List<RecordRequirement>();
+        var kinds = entry.Template.RecordKinds ?? [];
 
-        foreach (var kind in entry.Template.RecordKinds ?? [])
+        if (kinds.Count == 0)
+            return result;
+
+        if (kinds.Any(k => MaterialLibrary.IsMaterial(k.Kind)))
+            await _service.Materials.EnsureSeededAsync(cancellationToken).ConfigureAwait(false);
+
+        // One read of the records for every kind the calculator declares (the worksheet asks this each time a form opens; Orange O-C-02).
+        var byKind = (await _service.Store.ListRecordsAsync(null, cancellationToken).ConfigureAwait(false)).ToLookup(r => r.Kind, StringComparer.Ordinal);
+
+        foreach (var kind in kinds)
         {
-            if (MaterialLibrary.IsMaterial(kind.Kind))
-                await _service.Materials.EnsureSeededAsync(cancellationToken).ConfigureAwait(false);
-
-            var records = await _service.Store.ListRecordsAsync(kind.Kind, cancellationToken).ConfigureAwait(false);
+            var records = byKind[kind.Kind].ToList();
             var present = MaterialLibrary.IsMaterial(kind.Kind)
                 ? records.Count > 0
                 : records.Any(r => HoldsValueFor(r, kind));
@@ -1300,20 +1324,19 @@ public sealed class RecordImportService
     {
         var list = new List<RecordTypeInfo>();
         var entries = _service.Catalogue.Current();
+        var schemas = Schemas().Values.OrderBy(s => s.Title, StringComparer.Ordinal).ThenBy(s => s.Kind, StringComparer.Ordinal).ToList();
 
-        foreach (var schema in Schemas().Values.OrderBy(s => s.Title, StringComparer.Ordinal).ThenBy(s => s.Kind, StringComparer.Ordinal))
+        if (schemas.Any(s => s.IsMaterial))
+            await _service.Materials.EnsureSeededAsync(cancellationToken).ConfigureAwait(false);
+
+        // One read of the records for the whole list, each with whether any of its revisions is licensed (Orange O-C-01: the list read the
+        // collection once per kind, and once more per unlicensed record, so the screen took seconds to open at a thousand records).
+        var byKind = (await _service.Store.ListRecordsWithLicenceAsync(cancellationToken).ConfigureAwait(false)).ToLookup(r => r.Record.Kind, StringComparer.Ordinal);
+
+        foreach (var schema in schemas)
         {
-            if (schema.IsMaterial)
-                await _service.Materials.EnsureSeededAsync(cancellationToken).ConfigureAwait(false);
-
-            var records = await _service.Store.ListRecordsAsync(schema.Kind, cancellationToken).ConfigureAwait(false);
-            var licensed = 0;
-
-            foreach (var record in records)
-            {
-                if (await _service.IsLicensedRecordAsync(record, cancellationToken).ConfigureAwait(false))
-                    licensed++;
-            }
+            var records = byKind[schema.Kind].ToList();
+            var licensed = records.Count(r => r.LicensedInAnyRevision);
 
             var requiredBy = entries
                 .Where(e => (e.Template.RecordKinds ?? []).Any(k => k.Kind == schema.Kind) && RecordRequirements.For(e.Template.Id, schema.Kind).Need == RecordNeed.Required)

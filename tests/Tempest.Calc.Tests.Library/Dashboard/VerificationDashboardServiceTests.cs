@@ -1,7 +1,5 @@
 using Tempest.Calc.Library;
 using Tempest.Calc.Library.Dashboard;
-// Addendum C, C-3 adds Tempest.Calc.Library.RecordRequirement (the record import's requirement); this file means the dashboard's.
-using RecordRequirement = Tempest.Calc.Library.Dashboard.RecordRequirement;
 using Tempest.Calc.Sheets;
 using Tempest.Calc.Tests.Sheets;
 
@@ -52,7 +50,7 @@ public sealed class VerificationDashboardServiceTests
 
     private static CalcCatalogue Catalogue() => new([new DirectStressCalculator(), new RecordedCalculator()]);
 
-    private static VerificationDashboardService Service(VerificationSnapshot? snapshot = null, IRequiredRecordsSource? records = null, IManualTestStatusSource? manual = null, IReadOnlyList<CalcPackTemplate>? packs = null, int maxRows = VerificationDashboardService.MaxRows) =>
+    private static VerificationDashboardService Service(VerificationSnapshot? snapshot = null, IRequiredRecordsSource? records = null, IDashboardManualTestSource? manual = null, IReadOnlyList<CalcPackTemplate>? packs = null, int maxRows = VerificationDashboardService.MaxRows) =>
         new(Catalogue(), packs ?? [], snapshot ?? Snapshot(), records, manual, new FixedTime(), maxRows);
 
     private sealed class FixedTime : TimeProvider
@@ -341,7 +339,7 @@ public sealed class VerificationDashboardServiceTests
     [Fact]
     public async Task A_Chain_Is_Missing_The_Records_Any_Of_Its_Calculators_Lack()
     {
-        var records = new FakeRecords { [RecordedId] = [new RecordRequirement("test.factors", "Test factors", false), new RecordRequirement("test.other", "Other table", true)] };
+        var records = new FakeRecords { [RecordedId] = [new DashboardRecordRequirement("test.factors", "Test factors", false), new DashboardRecordRequirement("test.other", "Other table", true)] };
         var packs = new[] { new CalcPackTemplate("pack.test-chain", "Test chain", "A chain.", [new CalcPackStep("a", StressId, "Stress"), new CalcPackStep("b", RecordedId, "Recorded")], []) };
         var report = await Service(records: records, packs: packs).BuildAsync();
 
@@ -402,7 +400,7 @@ public sealed class VerificationDashboardServiceTests
     public async Task Filter_By_Discipline_And_By_Status()
     {
         var packs = new[] { new CalcPackTemplate("pack.test-chain", "Test chain", "A chain.", [new CalcPackStep("a", StressId, "Stress")], []) };
-        var report = await Service(packs: packs, records: new FakeRecords { [RecordedId] = [new RecordRequirement("test.factors", "Test factors", false)] }).BuildAsync();
+        var report = await Service(packs: packs, records: new FakeRecords { [RecordedId] = [new DashboardRecordRequirement("test.factors", "Test factors", false)] }).BuildAsync();
 
         Assert.Equal(3, report.Filter(null, VerificationStatusFilter.All).Count);
         Assert.Equal([StressId], report.Filter("Structural", VerificationStatusFilter.All).Select(r => r.Id));
@@ -516,15 +514,15 @@ public sealed class VerificationDashboardServiceTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Service().BuildAsync(cts.Token));
     }
 
-    private sealed class FakeRecords : Dictionary<string, IReadOnlyList<RecordRequirement>>, IRequiredRecordsSource
+    private sealed class FakeRecords : Dictionary<string, IReadOnlyList<DashboardRecordRequirement>>, IRequiredRecordsSource
     {
-        public Task<IReadOnlyDictionary<string, IReadOnlyList<RecordRequirement>>> RequirementsAsync(IReadOnlyList<CalcTemplate> templates, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyDictionary<string, IReadOnlyList<RecordRequirement>>>(this);
+        public Task<IReadOnlyDictionary<string, IReadOnlyList<DashboardRecordRequirement>>> RequirementsAsync(IReadOnlyList<CalcTemplate> templates, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<string, IReadOnlyList<DashboardRecordRequirement>>>(this);
     }
 
-    private sealed class FakeManual : IManualTestStatusSource
+    private sealed class FakeManual : IDashboardManualTestSource
     {
-        public Task<ManualTestStatus> StatusAsync(string id, CancellationToken cancellationToken = default) =>
-            Task.FromResult(id == StressId ? new ManualTestStatus(ManualTestOutcome.Passed, DateTimeOffset.UnixEpoch, "Checked against the book.") : ManualTestStatus.NotTested);
+        public Task<DashboardManualTestStatus> StatusAsync(string id, CancellationToken cancellationToken = default) =>
+            Task.FromResult(id == StressId ? new DashboardManualTestStatus(DashboardManualTestOutcome.Passed, DateTimeOffset.UnixEpoch, "Checked against the book.") : DashboardManualTestStatus.NotTested);
     }
 }

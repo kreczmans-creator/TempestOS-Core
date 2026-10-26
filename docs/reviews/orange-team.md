@@ -171,3 +171,73 @@ S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lift
 - SEC-B-02 is fixed (`051647fb`); item 6 of "Record kinds" above says so.
 - F2 1.3.0 is the reference for "model the duty": a `process` input defaulting to the duty, the process printed as an output, and a `process` warning when the choice does not suit the duty.
 - O-B-03 is open until B-5 merges. S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.
+
+## Addendum C
+
+Records, dashboards, test runs and installers. This extends the sections above to features that are not calculators: a screen over the store, an importer, a run log and a seeded project. Read ADR-0174 (record import), ADR-0175 (guided test), ADR-0176 (demo project) and DC-10 … DC-14 first. Paths: `Library/` is `src/Tempest.Calc/Tempest.Calc.Library/`; `Desktop/` is `src/Tempest.Desktop/`.
+
+### Read the store once per screen
+1. A screen that lists every kind, template or row reads its collection **once** and groups in memory. Asking per kind or per row reads the whole collection again each time. The records screen did this, taking 68 reads of every record and two more reads per unlicensed record, and needed 2.2 s to open at 1,000 records; it now reads once and opens in 0.18 s (O-C-01).
+2. When a rule spans revisions (a licence on any revision locks every revision, SEC-B-02), compute it from the same read (`CalcInstanceStore.ListRecordsWithLicenceAsync`). Do not call `IsLicensedInAnyRevisionAsync` per record.
+3. Prove it with the `CountingProxy` in `tests/Tempest.Calc.Tests.Library/BlueRoundTests.cs`: assert the number of `ReadAllAsync` calls, not a time (`AddendumCColourRegressionTests.Orange_O_C_01_…`).
+
+### Cap what a person can grow
+1. Every collection or file a person can grow has a cap. Each cap has a sentence that says what to do, and a test that shows it bites:
+   - record files: 1,000 data rows and 64 columns (`RecordImportService.MaxFileRows`, `MaxColumns`), 5 MB;
+   - guided runs: 1,000 (`ManualTestRunService.DefaultMaxRuns`), refused with the way out ("Delete older finished runs");
+   - per run: 1,000 results, a 2,000-character note (refused, never cut), 4,000 characters of values;
+   - dashboard: 500 rows and an 8 MB export;
+   - the embedded script: its size, steps and field lengths.
+2. Measured costs at the caps (this review, Linux, 4 cores):
+
+| What | Size | Time |
+|---|---|---|
+| Record import preview / commit | 1,000 rows (19 KB), one record per row | 83–254 ms / 125–132 ms (one transaction) |
+| Records screen list (`ListTypesAsync`) | 1,000 records, 68 kinds | 2,216 ms before O-C-01, 176 ms after |
+| Worksheet missing-records panel (`RequirementsAsync`) | 1,000 records | 157–269 ms (one read after O-C-02) |
+| Dashboard build | 1,000 records / 1,000 runs × 110 results | 84–133 ms / 762–890 ms |
+| Guided run store on SQLite | 1,000 runs × 110 results with 300-character notes | 53 MB database (and 54 MB WAL until a checkpoint); overview 113–280 ms, latest per template 0.8–1.5 s, listing 0.7–1.1 s, deleting 949 old runs 1.4 s |
+| Guided script parse at start-up | 0.5 MB | 71 ms |
+| Demo install / remove (in-memory store) | 60 calculations, 13 packs, 2 profiles | 6.1 s on a pool thread with progress lines / 88 ms |
+
+### Write all or nothing, and delete in one place
+1. A set that belongs together (an import's records, a demo's rows) is written or deleted in **one** transaction (`CalcInstanceStore.SaveRecordsAsync`, `DeleteDemonstrationRowsAsync`). Re-judge it inside the commit against the store as it is then, because the preview may be stale.
+2. The calculation store deletes in one method only, guarded by a key prefix and a name prefix, and refuses any issued row. Do not add a second one.
+3. A write that expects a stored row must refuse when the row is gone (`WriteGuardedAsync`, `WriteGuardedPackAsync`). Otherwise a stale save brings a deleted row back.
+4. Write the audit row for a delete as soon as the delete commits, before any step that can fail.
+
+### New stored documents
+1. A new collection needs no migration: it appears on its first write. Give each document a `Schema` number.
+2. A reader leaves out a document it cannot read or that a newer build wrote. It must also leave out a damaged **part** of a readable document (a null list element, a missing id, an enum value it does not know), never count one as a good result, and never throw (B-C-01).
+3. Hand a reader that must not write the read-only interface (`IManualTestStatusSource`), never the service.
+
+### Generated data that ships inside the build
+1. When `docs/` is the source, generate a JSON file with a script, embed it as a resource and add three guards: a staleness test that re-reads the docs, the script's `--check` in CI, and a reader that caps sizes and never throws (`verification-snapshot.json`, `guided-test-script.json`).
+2. A test must read counts from the artefact, not hard-code them (Yellow Y-C-06).
+3. A version that hashes the whole artefact changes when any part changes; key per item when results should survive an unrelated change (Grey GR-C-02).
+
+### Screens
+1. Every handler that reaches the store, a file or the clipboard runs through the view's guard and turns a failure into one sentence that names the action ("Could not import the file: …"). Never fire and forget without a guard (Black B-C-05, Yellow Y-C-03).
+2. Long work (the demo install) runs on the pool and reports progress lines. The view model keeps the UI thread.
+3. Do not reuse a type name in a sibling namespace of the same assembly (Green G-C-01).
+4. Name things on screen in the user's words, not the project's ("Independent re-derivation", not "Track P re-derivation"; Yellow Y-C-01).
+
+### Checklist for an Addendum C–style feature
+- [ ] The collection is read once per screen; a `CountingProxy` test pins it.
+- [ ] Every growable set has a cap, a sentence and a test at the cap and one over it.
+- [ ] Writes and deletes of a set are one transaction, re-judged at commit; stale writes to a removed row are refused.
+- [ ] A new document type has a `Schema`; readers skip whole and partial damage without throwing.
+- [ ] Generated embedded data has a generator, a staleness test, a CI `--check` and a capped, non-throwing reader.
+- [ ] Every UI handler is guarded and names its action; no unguarded fire-and-forget.
+- [ ] No internal names (work streams, review ids) on screen.
+- [ ] An ADR, a DECISIONS row, an ADR Register row (the CI health check fails without it, W-C-01) and a CHANGELOG line.
+
+### Findings
+
+| ID | Sev | Location | Description | Fix | Status |
+|---|---|---|---|---|---|
+| O-C-01 | Medium | `Library/RecordImport/RecordImportService.cs` (`ListTypesAsync`) | The records screen read every record once per record kind (68) and twice more per unlicensed record. It took 2.2 s at 1,000 records, growing as kinds × records. | One read with the any-revision licence (`CalcInstanceStore.ListRecordsWithLicenceAsync`); test `AddendumCColourRegressionTests.Orange_O_C_01_The_Records_Screen_List_Reads_The_Records_Once_Not_Once_Per_Kind_Or_Per_Record`. | Fixed |
+| O-C-02 | Low | `RecordImportService.RequirementsAsync` | The worksheet's missing-records panel read every record once per record kind of the calculator, on every form open. | One read per call; the same test, second part. | Fixed |
+| O-C-03 | Low | `Library/ManualTesting/ManualTestRunService.cs` (`LatestByTemplateAsync`, `ListAsync`, `PlanTrimAsync`) | Each call deserialises every run. At the 1,000-run cap that is 0.7–1.5 s, and the dashboard pays it on every refresh. `OverviewAsync` already avoids it for finished runs. | Keep a small summary document (latest counted result per example) updated in the same transaction as `RecordAsync` and `FinishAsync`, or read only finished runs of the current script. Accepted for now: "Delete older finished runs" keeps the store small (RR-C-05). | Open |
+| O-C-04 | Info | `RecordRequirementsRecordsSource`, `StoreRequiredRecordsSource` | The dashboard reads the whole record collection once per build (84–133 ms at 1,000). This is fine at desktop scale; RR-B-04 still describes the per-record cost of the export paths. | None. | Accepted |
+| O-C-05 | Info | `Desktop/WorkspaceHost.cs` | The 0.5 MB guided script is parsed at start-up (71 ms), even when the guided test is never opened. | It could be read on first use; the cost is small. | Accepted |

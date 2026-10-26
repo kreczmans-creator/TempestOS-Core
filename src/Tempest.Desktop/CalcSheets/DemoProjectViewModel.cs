@@ -49,6 +49,9 @@ public sealed class DemoProjectViewModel
     /// <summary>Whether the demonstration project is in this database now.</summary>
     public bool IsInstalled { get; private set; }
 
+    /// <summary>No demonstration is installed, but a removed one still holds calculations made in it after its removal; Remove clears them (SEC-C-05).</summary>
+    public bool HasLeftOver { get; private set; }
+
     /// <summary>The project's id when it is installed.</summary>
     public Guid? ProjectId { get; private set; }
 
@@ -58,8 +61,8 @@ public sealed class DemoProjectViewModel
     /// <summary>The install can be asked for: it is not installed and nothing is running.</summary>
     public bool CanInstall => !_busy && !IsInstalled;
 
-    /// <summary>The removal can be asked for: it is installed and nothing is running.</summary>
-    public bool CanRemove => !_busy && IsInstalled;
+    /// <summary>The removal can be asked for: it is installed (or a removed one left rows behind) and nothing is running.</summary>
+    public bool CanRemove => !_busy && (IsInstalled || HasLeftOver);
 
     /// <summary>One plain sentence: what is installed, what is running, or what the last act did.</summary>
     public string Status { get; private set; } = string.Empty;
@@ -74,11 +77,14 @@ public sealed class DemoProjectViewModel
     {
         var status = await _service.StatusAsync(cancellationToken).ConfigureAwait(true);
         IsInstalled = status.Installed;
+        HasLeftOver = !status.Installed && status.LeftOver;
         ProjectId = status.ProjectId;
         _installRefusal = status.InstallRefusal;
 
         if (!_busy && Status.Length == 0)
-            Status = IsInstalled ? $"The demo project '{CalcDemoProject.DisplayName}' is installed." : "The demo project is not installed.";
+            Status = IsInstalled ? $"The demo project '{CalcDemoProject.DisplayName}' is installed."
+                : HasLeftOver ? "The demo project was removed, but calculations made in it afterwards are still stored; press Remove demo project to clear them."
+                : "The demo project is not installed.";
 
         RaiseChanged();
     }
@@ -127,7 +133,7 @@ public sealed class DemoProjectViewModel
             return;
         }
 
-        await RunAsync(progress => _service.InstallAsync(progress, cancellationToken), "Installing the demo project…", cancellationToken).ConfigureAwait(true);
+        await RunAsync(progress => _service.InstallAsync(progress, cancellationToken), "Installing the demo project", "Install demo project", "what it had made was removed", cancellationToken).ConfigureAwait(true);
     }
 
     /// <summary>"Remove demo project": asks, then removes the demonstration and only the demonstration. Does nothing while an act is asking or running.</summary>
@@ -155,7 +161,7 @@ public sealed class DemoProjectViewModel
         Status = string.Empty;
         await RefreshAsync(cancellationToken).ConfigureAwait(true);
 
-        if (!IsInstalled)
+        if (!IsInstalled && !HasLeftOver)
         {
             Finish("There is no demo project to remove.", ActionOutcome.Failed);
             return;
@@ -178,12 +184,17 @@ public sealed class DemoProjectViewModel
             return;
         }
 
-        await RunAsync(_ => _service.RemoveAsync(cancellationToken), "Removing the demo project…", cancellationToken).ConfigureAwait(true);
+        await RunAsync(_ => _service.RemoveAsync(cancellationToken), "Removing the demo project", "Remove demo project", "nothing was removed", cancellationToken).ConfigureAwait(true);
     }
 
-    private async Task RunAsync(Func<IProgress<string>, Task<CalcDemoOutcome>> act, string starting, CancellationToken cancellationToken)
+    /// <param name="act">The service call.</param>
+    /// <param name="doing">What the act is, as the status line names it ("Installing the demo project").</param>
+    /// <param name="button">The button that runs it again.</param>
+    /// <param name="cancelled">What a cancellation leaves; the service returns its own sentence when it leaves more.</param>
+    /// <param name="cancellationToken">Cancels the act.</param>
+    private async Task RunAsync(Func<IProgress<string>, Task<CalcDemoOutcome>> act, string doing, string button, string cancelled, CancellationToken cancellationToken)
     {
-        Status = starting;
+        Status = doing + "…";
         RaiseChanged();
 
         CalcDemoOutcome outcome;
@@ -200,13 +211,13 @@ public sealed class DemoProjectViewModel
         }
         catch (OperationCanceledException)
         {
-            outcome = new CalcDemoOutcome(false, "The demo project act was cancelled; whatever it had started was undone.");
+            outcome = new CalcDemoOutcome(false, $"{doing} was cancelled; {cancelled}.");
         }
         catch (Exception ex)
         {
             // The service reports its own refusals as outcomes; this is anything else (the store, the engineering domain) failing, said without a stack trace.
             // Whatever it was, the section is refreshed and the shell told below, because the act may have changed some of what is stored before it failed.
-            outcome = new CalcDemoOutcome(false, $"The demo project act failed ({ex.Message.TrimEnd('.')}); press the action again, or check the demo project in the Project Explorer.", PartlyDone: true);
+            outcome = new CalcDemoOutcome(false, $"{doing} failed ({ex.Message.TrimEnd('.')}); press {button} again, or check the demo project in the Project Explorer.", PartlyDone: true);
         }
 
         try

@@ -3,8 +3,6 @@ using Tempest.Calc.Library.Dashboard;
 using Tempest.Calc.Mechanical;
 using Tempest.Calc.Sheets;
 using Guided = Tempest.Calc.Library.ManualTesting;
-using ManualTestOutcome = Tempest.Calc.Library.Dashboard.ManualTestOutcome;
-using ManualTestStatus = Tempest.Calc.Library.Dashboard.ManualTestStatus;
 
 namespace Tempest.Calc.Tests.Library.Dashboard;
 
@@ -17,7 +15,7 @@ public sealed class DashboardIntegrationSourcesTests
     private const string SpringId = "mech.spring";
     private const string RecordedId = "test.recorded";
 
-    private static VerificationDashboardService Service(LibraryTestHost host, IManualTestStatusSource? manual = null) =>
+    private static VerificationDashboardService Service(LibraryTestHost host, IDashboardManualTestSource? manual = null) =>
         new(host.Catalogue, [], VerificationSnapshot.From(new Dictionary<string, SnapshotItem>()), new RecordRequirementsRecordsSource(host.Store), manual);
 
     private static Guided.ManualTestStatus Guide(string id, Guided.ManualTestOutcome outcome, int recorded, int inScript) =>
@@ -28,13 +26,13 @@ public sealed class DashboardIntegrationSourcesTests
     // ------------------------------------------------------------------
 
     [Theory]
-    [InlineData(Guided.ManualTestOutcome.Pass, 2, 2, ManualTestOutcome.Passed, "Passed")]
-    [InlineData(Guided.ManualTestOutcome.Pass, 1, 2, ManualTestOutcome.Partial, "Partly passed")]
-    [InlineData(Guided.ManualTestOutcome.Blocked, 2, 2, ManualTestOutcome.Partial, "Partly passed")]
-    [InlineData(Guided.ManualTestOutcome.Fail, 2, 2, ManualTestOutcome.Failed, "Failed")]
-    [InlineData(Guided.ManualTestOutcome.Fail, 1, 3, ManualTestOutcome.Failed, "Failed")]
-    [InlineData(Guided.ManualTestOutcome.Pass, 0, 0, ManualTestOutcome.Partial, "Partly passed")]
-    public void A_Guided_Result_Maps_To_The_Dashboard_Status(Guided.ManualTestOutcome guided, int recorded, int inScript, ManualTestOutcome expected, string label)
+    [InlineData(Guided.ManualTestOutcome.Pass, 2, 2, DashboardManualTestOutcome.Passed, "Passed")]
+    [InlineData(Guided.ManualTestOutcome.Pass, 1, 2, DashboardManualTestOutcome.Partial, "Partly passed")]
+    [InlineData(Guided.ManualTestOutcome.Blocked, 2, 2, DashboardManualTestOutcome.Partial, "Partly passed")]
+    [InlineData(Guided.ManualTestOutcome.Fail, 2, 2, DashboardManualTestOutcome.Failed, "Failed")]
+    [InlineData(Guided.ManualTestOutcome.Fail, 1, 3, DashboardManualTestOutcome.Failed, "Failed")]
+    [InlineData(Guided.ManualTestOutcome.Pass, 0, 0, DashboardManualTestOutcome.Partial, "Partly passed")]
+    public void A_Guided_Result_Maps_To_The_Dashboard_Status(Guided.ManualTestOutcome guided, int recorded, int inScript, DashboardManualTestOutcome expected, string label)
     {
         var status = GuidedManualTestStatusSource.Map(Guide(SpringId, guided, recorded, inScript));
 
@@ -70,8 +68,8 @@ public sealed class DashboardIntegrationSourcesTests
         var runs = new FakeRuns { [SpringId] = Guide(SpringId, Guided.ManualTestOutcome.Fail, 1, 3) };
         var source = new GuidedManualTestStatusSource(runs);
 
-        Assert.Equal(ManualTestOutcome.Failed, (await source.StatusAsync(SpringId)).Outcome);
-        Assert.Same(ManualTestStatus.NotTested, await source.StatusAsync(RecordedId));
+        Assert.Equal(DashboardManualTestOutcome.Failed, (await source.StatusAsync(SpringId)).Outcome);
+        Assert.Same(DashboardManualTestStatus.NotTested, await source.StatusAsync(RecordedId));
         Assert.Throws<ArgumentNullException>(() => new GuidedManualTestStatusSource(null!));
     }
 

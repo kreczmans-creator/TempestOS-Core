@@ -11,7 +11,7 @@ public sealed class VerificationMarkdownTests
 
     private static VerificationRow Row(string id, string title = "Title", string discipline = "Mechanical", IReadOnlyList<VerificationFinding>? findings = null, IReadOnlyList<string>? missing = null) =>
         new(VerificationRowKind.Calculator, id, title, discipline, "1.2.0", 4, 4, KatRunState.Passed, string.Empty, 2, 1, 2,
-            "Match, with findings", new VerificationSeverityCounts(0, 1, 2), "MATCH WITH FINDINGS", missing ?? [], missing ?? [], findings ?? [], ManualTestStatus.NotTested, []);
+            "Match, with findings", new VerificationSeverityCounts(0, 1, 2), "MATCH WITH FINDINGS", missing ?? [], missing ?? [], findings ?? [], DashboardManualTestStatus.NotTested, []);
 
     private static VerificationReport Report(params VerificationRow[] rows) => new(rows, rows.Length, false, null, At);
 
@@ -27,7 +27,7 @@ public sealed class VerificationMarkdownTests
         Assert.Contains("Generated 2026-10-26 09:30 UTC by TempestOS 0.26.0.", text, StringComparison.Ordinal);
         Assert.Contains("Filter: Discipline: Mechanical; status: all.", text, StringComparison.Ordinal);
         Assert.Contains("2 of 2 rows shown: 0 failing, 2 open defect(s) on 1 row(s), 2 with Unconfirmed or Secondary cases, 1 with records not entered, 0 not run, 0 not re-derived, 0 clean.", text, StringComparison.Ordinal);
-        Assert.Contains("| Kind | Id | Title | Discipline | Version | Known answers | Unconfirmed | Secondary | Track P re-derivation | Records not entered | Open defects | Manual test |", text, StringComparison.Ordinal);
+        Assert.Contains("| Kind | Id | Title | Discipline | Version | Known answers | Unconfirmed | Secondary | Independent re-derivation | Records not entered | Open defects | Manual test |", text, StringComparison.Ordinal);
         Assert.Contains("| Calculator | `mech.shaft` | Shaft | Mechanical | 1.2.0 | 4 of 4 pass | 1 | 2 | Match, with findings: 1 High, 2 Medium | Shaft material; Shaft limits | 2 | Not tested |", text, StringComparison.Ordinal);
         Assert.Contains("| Calculator | `mech.spring` | Spring | Mechanical | 1.2.0 | 4 of 4 pass | 1 | 2 | Match, with findings: 1 High, 2 Medium | none | 0 | Not tested |", text, StringComparison.Ordinal);
 

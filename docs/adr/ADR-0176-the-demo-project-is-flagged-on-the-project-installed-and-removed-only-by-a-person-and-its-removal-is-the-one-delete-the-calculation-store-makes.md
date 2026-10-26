@@ -36,3 +36,15 @@ Addendum C §C6 C-6 asks for one realistic fictional project holding every built
 ## Follow-ups
 
 - The soft delete leaves the project in `IProjectDirectory.ListAsync` (it does not filter deleted projects, for projects the person deletes from the explorer too); surfaces that list projects from it should filter deleted ones.
+
+## Changes after the Addendum C security review
+
+SEC-C-03 (`docs/reviews/security-review.md`, Addendum C). Decision 4 deleted the two scan-profile keys whatever they held. A person who had saved their own profile under `demo-press-seal-stack@1` or `demo-press-seal-gland@1` before the install (from a profile file) had it used by the install, which cannot overwrite a version, and then deleted by Remove. `DeleteDemonstrationRowsAsync` now deletes a profile version only when the stored text is the shipped profile word for word (`CalcDemoProject.ShippedProfile`); any other is kept. Test: `AddendumCSecurityRegressionTests.SEC_C_03_Remove_Keeps_A_Scan_Profile_The_Person_Saved_Under_The_Demonstrations_Id`.
+
+SEC-C-05. After a removal, a window that still showed the demonstration could make a calculation in it: `CreateAsync` did not refuse a deleted project, and the row was then out of reach of Remove, which looks only for a live demonstration. `CreateAsync`, `CreatePackAsync` and `InstantiatePackTemplateAsync` now refuse a deleted project with one sentence (`CalcProjectDeletedException`, or the refusal string). A row that still lands there (a create that passed its check while the removal ran) is reported by `StatusAsync` as `LeftOver`; Settings then offers Remove demo project, which clears it through the same removal. Tests: `SEC_C_05_Nothing_New_Can_Be_Made_In_A_Deleted_Project`, `SEC_C_05_Remove_Clears_Rows_Left_In_A_Removed_Demo_Project`.
+
+## Changes after the Addendum C colour-team reviews
+
+B-C-02 (`docs/reviews/black-team.md`, Addendum C). A demo scan-profile version that a calculation of another project cites in its scan imports is kept, so that import can be repeated, and Remove names it (`CalcInstanceStore.DeleteDemonstrationAsync`, which returns the kept versions; `DeleteDemonstrationRowsAsync` stays as a wrapper). With SEC-C-03 the rule is both: a version is deleted only when it is stored word for word as the install writes it **and** no other project cites it. Only a shipped version spared by a citation is reported as kept. Test: `AddendumCColourRegressionTests.Integration_SEC_C_03_And_B_C_02_Remove_Deletes_Only_A_Shipped_Demo_Profile_No_Other_Project_Cites`.
+
+B-C-03 settles the follow-up above: `IProjectDirectory.ListAsync` leaves deleted projects out, and `ListIncludingDeletedAsync` (which a project number stays unique against) keeps them. The demonstration's own status and left-over checks (SEC-C-05) read the engineering domain directly, so they still see a removed demonstration.
