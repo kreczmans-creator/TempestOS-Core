@@ -1114,7 +1114,7 @@ public sealed partial class CalcSheetView : UserControl
                 if (spec.Kind == CalcInputKind.Quantity)
                 {
                     unit = new ComboBox { MinHeight = DesignTokens.MinControlSize, HorizontalAlignment = HorizontalAlignment.Stretch };
-                    var units = UnitChoices(spec);
+                    var units = UnitChoices(spec, seed?.Unit);
                     unit.ItemsSource = units;
                     unit.SelectedItem = seed?.Unit is { } u && units.Contains(u) ? u : spec.DefaultUnit;
                     unit.Tag = unit.SelectedItem;
@@ -1214,7 +1214,12 @@ public sealed partial class CalcSheetView : UserControl
         RaiseInputsChanged();
     }
 
-    private static IReadOnlyList<string> UnitChoices(CalcInputSpec spec)
+    /// <summary>
+    /// The units offered for a quantity field: the template's unit, then the common units of the same dimension. A seeded unit that is valid for the
+    /// dimension but not in the common list (N*mm, kN*mm, MW, daN) is offered too, so the number it came with is shown in its own unit and is never
+    /// silently read in the default unit (desktop.calc-sheet-view-01).
+    /// </summary>
+    internal static IReadOnlyList<string> UnitChoices(CalcInputSpec spec, string? seedUnit = null)
     {
         var dimension = spec.Dimension;
         var candidates = new List<string> { spec.DefaultUnit };
@@ -1224,6 +1229,9 @@ public sealed partial class CalcSheetView : UserControl
             if (symbol != spec.DefaultUnit && Tempest.Calc.Engine.Units.UnitCatalog.TryParse(symbol, out var u, out _) && u.Dimension == dimension)
                 candidates.Add(symbol);
         }
+
+        if (seedUnit is { Length: > 0 } && !candidates.Contains(seedUnit) && Tempest.Calc.Engine.Units.UnitCatalog.TryParse(seedUnit, out var seeded, out _) && seeded.Dimension == dimension)
+            candidates.Add(seedUnit);
 
         return candidates;
     }
