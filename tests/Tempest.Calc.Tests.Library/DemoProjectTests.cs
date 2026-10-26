@@ -897,6 +897,32 @@ public sealed class DemoProjectTests(InstalledDemo demo) : IClassFixture<Install
     }
 
     [Fact]
+    public async Task A_Stale_Update_Of_A_Pack_Deleted_Since_It_Was_Read_Is_Refused_And_Does_Not_Bring_It_Back()
+    {
+        var host = DemoHost.New();
+        var service = DemoHost.Service(host);
+        Assert.True((await service.InstallAsync()).Succeeded);
+        var projectId = (await service.StatusAsync()).ProjectId!.Value;
+        var read = (await host.Store.ListPacksAsync(projectId))[0];
+
+        Assert.True((await service.RemoveAsync()).Succeeded);
+        var before = host.Backing.Snapshot();
+
+        // The guarded pack write (a check, a second check or a reopen) expects the pack as it was read; with the row gone it is refused.
+        var refused = await Assert.ThrowsAsync<CalcConcurrencyException>(() => host.Store.SavePackAsync(read with { UpdatedAt = DateTimeOffset.UtcNow }, read.UpdatedAt));
+
+        Assert.Contains(read.Title, refused.Message, StringComparison.Ordinal);
+        Assert.Contains("no longer exists", refused.Message, StringComparison.Ordinal);
+        AssertSame(before, host.Backing.Snapshot());
+        Assert.Null(await host.Store.FindPackAsync(read.Id));
+        Assert.Empty(await host.Store.ListPacksAsync(projectId));
+
+        // An unguarded save (nothing expected) still creates, as a new pack does.
+        await host.Store.SavePackAsync(read);
+        Assert.NotNull(await host.Store.FindPackAsync(read.Id));
+    }
+
+    [Fact]
     public async Task The_Published_Section_Dimensions_Cite_Themselves_As_Indicative_Not_The_Invented_Specification_And_The_Install_Message_Says_So()
     {
         Assert.Contains("indicative", demo.Outcome.Message, StringComparison.Ordinal);

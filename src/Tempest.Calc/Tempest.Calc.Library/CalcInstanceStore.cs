@@ -342,7 +342,10 @@ public sealed class CalcInstanceStore
         await _store.ExecuteInTransactionAsync((tx, token) => WriteGuardedPackAsync(tx, pack, expectedUpdatedAt, token), cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Re-reads the stored pack under the transaction, enforces that it is not issued and has not changed, then writes (the pack check commits with the Evidence check).</summary>
+    /// <summary>
+    /// Re-reads the stored pack under the transaction, enforces that it still exists, is not issued and has not changed, then writes (the pack check
+    /// commits with the Evidence check).
+    /// </summary>
     public static async Task WriteGuardedPackAsync(IPersistenceTransaction transaction, CalcPack pack, DateTimeOffset expectedUpdatedAt, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(transaction);
@@ -352,7 +355,12 @@ public sealed class CalcInstanceStore
         if (existing is { Status: CalcInstanceStatus.Issued or CalcInstanceStatus.Superseded })
             throw new CalcInstanceImmutableException(pack.Id, existing.Status);
 
-        if (existing is not null && existing.UpdatedAt != expectedUpdatedAt)
+        // As WriteGuardedAsync: a write that expects the stored pack to be as the caller read it cannot create one, so a pack removed since
+        // (the demonstration's removal) is not brought back by a stale check, second check or reopen.
+        if (existing is null)
+            throw new CalcConcurrencyException($"Pack '{pack.Title}' no longer exists (it was removed since you opened it); reload and try again.");
+
+        if (existing.UpdatedAt != expectedUpdatedAt)
             throw new CalcConcurrencyException($"Pack '{pack.Title}' was changed by someone else at {existing.UpdatedAt:O}; reload it and try again.");
 
         await WritePackAsync(transaction, pack, cancellationToken).ConfigureAwait(false);
