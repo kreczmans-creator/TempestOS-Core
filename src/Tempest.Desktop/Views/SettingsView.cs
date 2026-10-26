@@ -131,6 +131,10 @@ public sealed class SettingsView : UserControl
     private readonly ConfirmationDialog? _confirmationDialog;
     private readonly Action<ISessionPrincipal>? _switchPrincipal;
 
+    // Addendum C, C-6: Settings → Demo project — "Install demo project" and "Remove demo project". `null` hides the section (a build with no
+    // worksheet service composed has nothing to install), exactly as the optional collaborators above do.
+    private readonly Tempest.Desktop.CalcSheets.DemoProjectViewModel? _demoProject;
+
     private readonly TextBox _persistenceRootBox = new() { IsReadOnly = true, MinHeight = DesignTokens.ControlSizeMedium, MinWidth = 320 };
     private readonly Button _openPersistenceFolder = new() { Content = "Open folder", MinHeight = DesignTokens.ControlSizeMedium };
     private readonly TextBlock _displayNameOverride = new() { FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap };
@@ -245,6 +249,7 @@ public sealed class SettingsView : UserControl
     /// <param name="switchPrincipal">Publishes the confirmed person as this session's own principal (`WP 21.3B`) — <see cref="Tempest.Desktop.WorkspaceHost.SwitchPrincipal"/>. <see langword="null"/> leaves the action honestly unavailable.</param>
     /// <param name="signOffPolicy">The global "Second-person sign-off" switch (`ADR-0161`). <see langword="null"/> hides the Sign-off section.</param>
     /// <param name="xeroSettings">Settings → Xero (`v0.24.0` U1). <see langword="null"/> hides the Xero section — Xero is not the running connector.</param>
+    /// <param name="demoProject">Settings → Demo project (Addendum C, C-6): the two menu actions that install and remove the seeded demonstration project. <see langword="null"/> hides the section.</param>
     public SettingsView(
         ThemeService theme, UserSettings settings, ISettingsProvider settingsProvider, IConfigurationProvider configuration, string persistenceRootPath,
         IWorkingPatternProvider? workingPatterns = null, ICurrentPrincipalAccessor? principals = null,
@@ -256,7 +261,8 @@ public sealed class SettingsView : UserControl
         IFilePicker? filePicker = null,
         IPeopleDirectory? people = null, ConfirmationDialog? confirmationDialog = null, Action<ISessionPrincipal>? switchPrincipal = null,
         Tempest.Core.Governance.ISignOffPolicy? signOffPolicy = null,
-        XeroSettingsSection? xeroSettings = null)
+        XeroSettingsSection? xeroSettings = null,
+        Tempest.Desktop.CalcSheets.DemoProjectViewModel? demoProject = null)
     {
         ArgumentNullException.ThrowIfNull(theme);
         ArgumentNullException.ThrowIfNull(settings);
@@ -286,6 +292,7 @@ public sealed class SettingsView : UserControl
         _switchPrincipal = switchPrincipal;
         _signOffPolicy = signOffPolicy;
         _xeroSettings = xeroSettings;
+        _demoProject = demoProject;
 
         _themeSelector.Items.Add(new ComboBoxItem { Content = "Light", Tag = ThemeVariant.Light });
         _themeSelector.Items.Add(new ComboBoxItem { Content = "Dark", Tag = ThemeVariant.Dark });
@@ -499,6 +506,13 @@ public sealed class SettingsView : UserControl
         if (_updateService is not null)
             System(updates);
 
+        // Addendum C, C-6: never installed unless the person asks, here; its sentence of what it did reaches the shell like every other act's.
+        if (_demoProject is not null)
+        {
+            System(BuildSection(Tempest.Desktop.CalcSheets.DemoProjectPanel.PanelName, new Tempest.Desktop.CalcSheets.DemoProjectPanel(_demoProject)));
+            _demoProject.Completed += (message, outcome) => ActionCompleted?.Invoke(message, outcome);
+        }
+
         ShowPage(SettingsPage.Account);
 
         body.Children.Add(saveRow);
@@ -574,6 +588,8 @@ public sealed class SettingsView : UserControl
         if (_xeroSettings is not null)
             await _xeroSettings.RefreshAsync().ConfigureAwait(true);
 
+        if (_demoProject is not null)
+            await _demoProject.RefreshAsync().ConfigureAwait(true);
 
         if (_persistenceDatabasePath is not null)
             _backupStatus.Text = string.Empty;

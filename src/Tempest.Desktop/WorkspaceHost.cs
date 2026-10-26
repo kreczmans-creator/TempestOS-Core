@@ -361,6 +361,9 @@ public sealed class WorkspaceHost : IAsyncDisposable
             packTemplates: Tempest.Desktop.CalcSheets.CalcPackTemplateComposition.All(),
             principals: (Tempest.Core.Identity.IPrincipalDirectory)host.Services!.GetService(typeof(Tempest.Core.Identity.IPrincipalDirectory)));
 
+        // Addendum C, C-6: the seeded demonstration project. Built here and never run: nothing at start-up installs it; Settings → Demo project does, when asked.
+        CalcDemo = new Tempest.Calc.Library.CalcDemoProjectService(CalcInstances, domainContext, Tempest.Desktop.CalcSheets.CalcCalculatorComposition.DemoCableTables());
+
         // One-off sweep (`ADR-0173`): Evidence a worksheet made before the managed marker existed is marked now, so the generic Evidence acts refuse it.
         try
         {
@@ -585,6 +588,9 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     /// <summary>`v0.26.0` (ADR-0165): the worksheet instance service (create, run, check, issue, revise, packs).</summary>
     public Tempest.Calc.Library.CalcInstanceService? CalcInstances { get; private set; }
+
+    /// <summary>Addendum C, C-6: installs and removes the seeded demonstration project; built with the worksheet service and run only by an act of the person (Settings → Demo project).</summary>
+    public Tempest.Calc.Library.CalcDemoProjectService? CalcDemo { get; private set; }
 
     /// <summary>What the start-up migration of legacy calculation records did (ADR-0167); <see langword="null"/> before start.</summary>
     public Tempest.Calc.Library.LegacyMigrationReport? LegacyMigrationReport { get; private set; }
