@@ -72,6 +72,7 @@ public sealed class GuidedTestView : UserControl
     private readonly TextBlock _recorded = Wrapped(string.Empty);
     private readonly TextBlock _status = Wrapped(string.Empty);
     private bool _rendering;
+    private List<string> _shownRows = [];
 
     public GuidedTestView(GuidedTestViewModel model)
     {
@@ -201,8 +202,20 @@ public sealed class GuidedTestView : UserControl
                 _filter.ItemsSource = model.Filters.ToList();
 
             _filter.SelectedItem = model.Filter;
-            _search.Text = model.Search;
-            _steps.ItemsSource = model.Rows.Select(r => $"{r.Result,-8}  {r.Label}").ToList();
+
+            // The search is trimmed by the model; writing it back while the person is typing would eat the space between two words.
+            if (!string.Equals((_search.Text ?? string.Empty).Trim(), model.Search, StringComparison.Ordinal))
+                _search.Text = model.Search;
+
+            // A keystroke in the note raises Changed too; the list is only rebuilt when its rows are different.
+            var rows = model.Rows.Select(r => $"{r.Result,-8}  {r.Label}").ToList();
+
+            if (!rows.SequenceEqual(_shownRows, StringComparer.Ordinal))
+            {
+                _shownRows = rows;
+                _steps.ItemsSource = rows;
+            }
+
             _steps.SelectedIndex = model.CurrentIndex;
 
             RenderStep(model);

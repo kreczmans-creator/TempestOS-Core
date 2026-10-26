@@ -57,11 +57,7 @@ public sealed record GuidedTestStep(
     GuidedGoverning? Governing = null,
     IReadOnlyList<string>? Instructions = null,
     string? PassWhen = null,
-    string? ExampleRef = null)
-{
-    /// <summary>Whether the step opens a worksheet with loaded inputs (an example, or a manual step that pastes one).</summary>
-    public bool OpensWorksheet => Kind == GuidedStepKind.Example;
-}
+    string? ExampleRef = null);
 
 /// <summary>
 /// The structured, versioned test script the Guided test walks (Addendum C, C-5). It is generated from the worked examples and the

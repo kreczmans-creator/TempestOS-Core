@@ -168,6 +168,12 @@ public sealed class GuidedTestViewTests
         await Settle();
         Assert.Equal(kit.Model.Rows.Count, steps.ItemCount);
         Assert.All(kit.Model.Rows, r => Assert.Contains("thermal-chain", r.Id, StringComparison.Ordinal));
+
+        // The model trims the search; the box must not, or a second word could never be typed.
+        Named<TextBox>(view, "Search steps").Text = "thermal ";
+        await Settle();
+        Assert.Equal("thermal ", Named<TextBox>(view, "Search steps").Text);
+        Assert.Equal("thermal", kit.Model.Search);
     }
 
     [AvaloniaFact]
