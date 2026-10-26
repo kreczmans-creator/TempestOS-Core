@@ -134,7 +134,7 @@ public sealed class MechanismReviewChainTests
         Assert.Equal(84.05792234668907, Si(e1, "P_cont"), 4);
         Assert.Equal(0.0013028163580246913, Si(e1, "J_total"), 12);
         Assert.Equal(0.6556564494972549, Si(e1, "T_pk"), 6);
-        Assert.Equal(3, e1.Checks.Count);
+        Assert.Equal(4, e1.Checks.Count);
         Assert.All(e1.Checks, c => Assert.True(c.Passed, c.Name));
 
         // E1 is judged on the cam's RMS torque; the cam's PEAK torque (10.111 N·m at the cam shaft, 1.1703 N·m at the motor) is inside the candidate motor's 3 N·m peak, which this step cannot see (guarded here).

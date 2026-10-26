@@ -76,7 +76,7 @@ public sealed class WetHeatingChainTests
         Assert.Equal(Si(e1, "T_load") * omega, Si(e1, "P_cont"), 9);
         Assert.Equal(2800, Si(e1, "n_pk") * 60 / (2 * Math.PI), 6);
         Assert.Equal(Si(e1, "T_acc") + Si(e1, "T_load"), Si(e1, "T_pk"), 12);
-        Assert.Equal(3, e1.Checks.Count);
+        Assert.Equal(4, e1.Checks.Count);
         Assert.All(e1.Checks, check => Assert.True(check.Passed, check.Name));
         Assert.Equal(1.25 * Si(e1, "T_rms") / 2.0, Si(e1, "u_rms"), 12);
         Assert.Equal(1.25 * Si(e1, "T_pk") / 6.0, Si(e1, "u_peak"), 12);
