@@ -149,6 +149,54 @@ public sealed class ShaftTests
         Assert.Equal(steady.OutputSi("n_f_min"), peak.OutputSi("n_f_min"), 12);
     }
 
+    private static CalcInputSet AlternatingBasis() => Defaults()
+        .With(ShaftCalculator.Segments((400, 27.94, 0))).With(ShaftCalculator.Loads((200, -0.2848, 0, 0))).With(ShaftCalculator.Sections((200, 1.68, 1.42, 0.85, 0.92)))
+        .With(CalcInputValue.Quantity("S_ut", 723.949485, "MPa")).With(CalcInputValue.Quantity("S_y", 565.370074, "MPa")).With(CalcInputValue.Choice("finish", ShaftCalculator.Machined)).With(CalcInputValue.Quantity("R", 99, "%"))
+        .With(CalcInputValue.Quantity("x_T1", 0, "mm")).With(CalcInputValue.Quantity("x_T2", 400, "mm"));
+
+    [Fact]
+    public void An_Alternating_Torque_Enters_The_Fatigue_Check_As_An_Alternating_Stress()
+    {
+        // chain.drive-train-01. d = 27.94 mm, S_ut 723.95 and S_y 565.37 MPa, machined, R 99 %, K_t 1.68, K_ts 1.42, q 0.85, q_s 0.92 (Shigley Example 7-1 data); M = 0.2848 kN x 0.4 m / 4 = 28.48 N·m.
+        // T_m = 50 N·m, T_a = 150 N·m. python3: σ_a 20.988 MPa, τ_m 16.186, τ_a 48.559, S_e 201.50 MPa; 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3 τ_m/S_ut
+        // gives n_f 2.13252 (the torque taken as steady, 50 N·m, gave 6.9987 and the whole 200 N·m taken as steady 3.8601); n_y = S_y/√(σ_a² + 3τ_pk²) with τ_pk (200 N·m) = 64.745 MPa gives 4.95549.
+        var basis = AlternatingBasis().With(CalcInputValue.Quantity("T", 0.05, "kN*m"));
+        var steady = CalcRunner.Run(Shaft, basis);
+        var alternating = CalcRunner.Run(Shaft, basis.With(CalcInputValue.Quantity("T_a", 0.15, "kN*m")));
+        Assert.False(alternating.IsBlocked, string.Join("; ", alternating.Blocks.Select(b => b.Message)));
+        Assert.Equal(6.998678407, steady.OutputSi("n_f_min"), 5);
+        Assert.Equal(2.132515973, alternating.OutputSi("n_f_min"), 5);
+        Assert.Equal(4.955494791, alternating.OutputSi("n_y_min"), 5);
+    }
+
+    [Fact]
+    public void A_Fully_Alternating_Torque_Has_No_Mean_Term()
+    {
+        // T_m = 0, T_a = 124.2833 N·m on the Shigley 7-1 shaft: 1/n_f = √(σ_a² + 3τ_a²)/S_e with σ_a 104.910 MPa, τ_a 40.234 MPa, S_e 201.500 MPa gives 1.599885 (python3);
+        // the same torque as a steady one gave 1.620988.
+        var basis = Defaults().With(ShaftCalculator.Segments((400, 27.94, 0))).With(ShaftCalculator.Loads((200, -1.4236088, 0, 0))).With(ShaftCalculator.Sections((200, 1.68, 1.42, 0.85, 0.92)))
+            .With(CalcInputValue.Quantity("S_ut", 723.949485, "MPa")).With(CalcInputValue.Quantity("S_y", 565.370074, "MPa")).With(CalcInputValue.Choice("finish", ShaftCalculator.Machined)).With(CalcInputValue.Quantity("R", 99, "%"))
+            .With(CalcInputValue.Quantity("x_T1", 0, "mm")).With(CalcInputValue.Quantity("x_T2", 400, "mm"));
+        var r = CalcRunner.Run(Shaft, basis.With(CalcInputValue.Quantity("T_a", 0.1242833119, "kN*m")));
+        Assert.Equal(1.599884694, r.OutputSi("n_f_min"), 5);
+        Assert.Equal(1.620988247, CalcRunner.Run(Shaft, basis.With(CalcInputValue.Quantity("T", 0.1242833119, "kN*m"))).OutputSi("n_f_min"), 5);
+    }
+
+    [Fact]
+    public void The_Key_Is_Checked_On_The_Peak_Torque_Not_The_Steady_One()
+    {
+        // chain.drive-train-01: the key sheet used T (the RMS torque in the drive-train pack) and ignored T_pk. d = 45 mm, w 14, h 9, L 40 mm, T_m 100 N·m, T_a 100 N·m, T_pk 400 N·m:
+        // τ = 2 x 400 / (45 x 14 x 40) = 31.746 MPa and σ = 4 x 400 / (45 x 9 x 40) = 98.765 MPa (python3), at the peak 400 N·m; with T_pk blank the peak is T_m + T_a = 200 N·m, half of each.
+        var basis = Defaults().With(ShaftCalculator.Segments((400, 45, 0))).With(CalcInputValue.Quantity("T", 0.1, "kN*m")).With(CalcInputValue.Quantity("T_a", 0.1, "kN*m"))
+            .With(CalcInputValue.Quantity("x_key", 100, "mm")).With(CalcInputValue.Quantity("w", 14, "mm")).With(CalcInputValue.Quantity("h", 9, "mm")).With(CalcInputValue.Quantity("L_key", 40, "mm")).With(CalcInputValue.Quantity("S_y_key", 400, "MPa"));
+        var blank = CalcRunner.Run(Shaft, basis);
+        var peak = CalcRunner.Run(Shaft, basis.With(CalcInputValue.Quantity("T_pk", 0.4, "kN*m")));
+        Assert.Equal(15.873016, blank.OutputSi("tau_key") / 1e6, 5);
+        Assert.Equal(31.746032, peak.OutputSi("tau_key") / 1e6, 5);
+        Assert.Equal(98.765432, peak.OutputSi("sigma_key") / 1e6, 5);
+        Assert.Equal(2 * blank.OutputSi("L_key_req"), peak.OutputSi("L_key_req"), 12);
+    }
+
     [Fact]
     public void A_Key_Missing_Some_Of_Its_Four_Dimensions_Says_So()
     {

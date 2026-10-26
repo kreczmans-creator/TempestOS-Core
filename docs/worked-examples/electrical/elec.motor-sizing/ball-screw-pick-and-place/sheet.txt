@@ -8,7 +8,7 @@ Issued: —
 
 1. SCOPE AND METHOD
 Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
-Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack). Load inertia reflected to the motor through a linear mechanism: J_refl = m k²/η. Load torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p. Reflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η). Move profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc. Move profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap. Torque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load. RMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle). RMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²]. Continuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i. Continuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load. Peak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load. Continuous power: P_cont = T_load ω; P_rms = P_cont. Rated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60.
+Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack). Load inertia reflected to the motor through a linear mechanism: J_refl = m k²/η. Load torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p. Reflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η). Move profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc. Move profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap. Torque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load. Alternating torque amplitude of a point-to-point cycle about T_load, for a shaft's fatigue: T_alt = (T_pk − T_dec)/2 (0 in continuous duty). Torque behind the ratio on the output shaft of a rotary mechanism: T_out = T·i·η (mean, alternating and peak), n_out = n_pk/i. Peak axial thrust of a ball screw on its support bearings: F_ax_pk = F_load + m a_pk (0 for other mechanisms). RMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle). RMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²]. Continuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i. Continuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load. Peak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load. Continuous power: P_cont = T_load ω; P_rms = P_cont. Rated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60.
   Ref: Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection — Load torque, inertia referred to the motor, duty cycles
   Ref: Manufacturer servo-sizing guides (Kollmorgen, Parker) — Reflected inertia, RMS torque, inertia ratio practice
 
@@ -104,51 +104,59 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
       = −2.4922 N·m + 0.08671 N·m
       = -2.4055 N·m
         Torque during deceleration
-  [36] n_pk = omega_pk
+  [36] T_alt = (T_pk - T_dec) / 2
+      = (2.5789 N·m − (-2.4055 N·m)) / 2
+      = 2.4922 N·m
+        Alternating torque amplitude of the cycle about T_load
+  [37] F_ax_pk = F_load + m * a_pk
+      = 49.033 N + 50 kg × 9 m/s²
+      = 499.03 N
+        Peak axial thrust on the screw's support bearings (load force plus the moved mass accelerated)
+  [38] n_pk = omega_pk
       = 942.48 rad/s
       = 9000 rpm
         Peak motor speed
-  [37] P_pk = T_pk * omega_pk
+  [39] P_pk = T_pk * omega_pk
       = 2.5789 N·m × 942.48 rad/s
       = 2.4306 kW
         Peak mechanical power
-  [38] t_acc = f_acc * t_move
+  [40] t_acc = f_acc * t_move
       = 0.33333 × 0.5 s
       = 0.16667 s
         Acceleration time
-  [39] t_const = t_move - 2 * t_acc
+  [41] t_const = t_move - 2 * t_acc
       = 0.5 s − 2 × 0.16667 s
       = 0.16667 s
         Constant-velocity time
-  [40] t_cycle = t_move + t_dwell
+  [42] t_cycle = t_move + t_dwell
       = 0.5 s + 0.5 s
       = 1 s
         Cycle time
-  [41] P_rms = omega_pk * sqrt((t_acc * (2 / 3) * (T_load^2 + T_acc^2) + T_load^2 * t_const) / t_cycle)
+  [43] P_rms = omega_pk * sqrt((t_acc * (2 / 3) * (T_load^2 + T_acc^2) + T_load^2 * t_const) / t_cycle)
       = 942.48 rad/s × sqrt((0.16667 s × 2 / 3 × ((0.08671 N·m)^2 + (2.4922 N·m)^2) + (0.08671 N·m)^2 × 0.16667 s) / 1 s)
       = 0.78414 kW
         RMS mechanical power over the cycle (thermal-equivalent continuous power)
-  [42] T_rms = sqrt((T_pk^2 * t_acc + T_load^2 * t_const + T_dec^2 * t_acc) / t_cycle)
+  [44] T_rms = sqrt((T_pk^2 * t_acc + T_load^2 * t_const + T_dec^2 * t_acc) / t_cycle)
       = sqrt(((2.5789 N·m)^2 × 0.16667 s + (0.08671 N·m)^2 × 0.16667 s + (-2.4055 N·m)^2 × 0.16667 s) / 1 s)
       = 1.4402 N·m
         RMS torque over the cycle (thermal)
-  [43] J_ratio = (J_refl + J_mech) / J_motor
+  [45] J_ratio = (J_refl + J_mech) / J_motor
       = (0.00014072 kg·m² + 0.0001 kg·m²) / 0.0002 kg·m²
       = 1.2036
         Inertia ratio (load : motor)
-  [44] u_peak = SF * T_pk / T_peak
+  [46] u_peak = SF * T_pk / T_peak
       = 1.25 × 2.5789 N·m / 6 N·m
       = 0.53728
         Peak torque utilisation with safety margin
-  [45] u_rms = SF * T_rms / T_rated
+  [47] u_rms = SF * T_rms / T_rated
       = 1.25 × 1.4402 N·m / 2 N·m
       = 0.90012
         Continuous torque utilisation with safety margin
-  [46] u_speed = n_pk / n_max
+  [48] u_speed = n_pk / n_max
       = 9000 rpm / 10000 rpm
       = 0.9
         Speed utilisation
-  [47] duty = T_rms / T_rated
+  [49] duty = T_rms / T_rated
       = 1.4402 N·m / 2 N·m
       = 0.7201
         Thermal duty (without margin)
@@ -164,6 +172,8 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   T_acc = 2.4922 N·m    Acceleration torque
   T_pk = 2.5789 N·m    Peak torque
   T_dec = -2.4055 N·m    Deceleration torque
+  T_alt = 2.4922 N·m    Alternating torque amplitude
+  F_ax_pk = 499.03 N    Peak axial thrust on a screw's bearings
   T_rms = 1.4402 N·m    RMS torque
   n_pk = 9000 rpm    Peak speed
   P_pk = 2.4306 kW    Peak power
@@ -186,7 +196,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   WARNING overhauling: T_dec: the motor brakes during deceleration (negative torque); the drive must absorb the regenerated energy.
 
 8. VERIFICATION
-  Template: elec.motor-sizing@1.5.0
+  Template: elec.motor-sizing@1.6.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

@@ -2,13 +2,13 @@ CALCULATION SHEET — ISSUED
 Project: Conveyor 7 head drive
 Calc ID: Shaft    Revision: A
 Title: Shaft: static, fatigue, keys, critical speed
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: CNV-DRV-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
 
 1. SCOPE AND METHOD
-A stepped (optionally hollow) shaft on two bearings carrying radial loads in two planes and a steady torque: bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections the user marks, slopes at the bearings, deflection at the loads, the first lateral critical speed and parallel keys.
-Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(M_y² + M_z²) Stress at a section: σ_a = K_f·32M_a·d/(π(d⁴ − d_i⁴)), τ_m = K_fs·16T_m·d/(π(d⁴ − d_i⁴)); K_f = 1 + q(K_t − 1) Endurance limit: S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e1, S_e1 (the rotating-beam limit S_e′) = 0.5·S_ut (S_ut ≤ 1400 MPa, else 700 MPa); k_a = a·S_ut^b, k_b = 1.24d^−0.107 or 1.51d^−0.157, k_e = 1 − 0.08·z_R Fatigue (DE-Goodman): 1/n_f = σ_a/S_e + √3·τ_m/S_ut; yield n_y = S_y/√((σ_a)² + 3τ_pk²), τ_pk from the larger of T and the peak torque T_pk when given Critical speed: Rayleigh ω = √(g·Σm·y/Σm·y²) (upper bound); Dunkerley 1/ω² = Σ m_i·δ_ii (lower bound, used for the ratio to the operating speed) Parallel key: τ = 2T/(d·w·L), σ = 4T/(d·h·L); required length L = max(2T·n_target/(d·w·0.577·S_y), 4T·n_target/(d·h·S_y))
+A stepped (optionally hollow) shaft on two bearings carrying radial loads in two planes and a torque with a steady (mean) part and an optional alternating part: bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections the user marks, slopes at the bearings, deflection at the loads, the first lateral critical speed and parallel keys.
+Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(M_y² + M_z²) Stress at a section: σ_a = K_f·32M_a·d/(π(d⁴ − d_i⁴)), τ_m = K_fs·16T_m·d/(π(d⁴ − d_i⁴)), τ_a = K_fs·16T_a·d/(π(d⁴ − d_i⁴)); K_f = 1 + q(K_t − 1) Endurance limit: S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e1, S_e1 (the rotating-beam limit S_e′) = 0.5·S_ut (S_ut ≤ 1400 MPa, else 700 MPa); k_a = a·S_ut^b, k_b = 1.24d^−0.107 or 1.51d^−0.157, k_e = 1 − 0.08·z_R Fatigue (DE-Goodman, bending fully reversed, torque T_m ± T_a): 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3·τ_m/S_ut; yield n_y = S_y/√((σ_a)² + 3τ_pk²), τ_pk from the larger of T_m + T_a and the peak torque T_pk when given Critical speed: Rayleigh ω = √(g·Σm·y/Σm·y²) (upper bound); Dunkerley 1/ω² = Σ m_i·δ_ii (lower bound, used for the ratio to the operating speed) Parallel key, on the peak torque T_k = the larger of T_m + T_a and T_pk: τ = 2T_k/(d·w·L), σ = 4T_k/(d·h·L); required length L = max(2T_k·n_target/(d·w·0.577·S_y), 4T_k·n_target/(d·h·S_y))
   Ref: Shigley's Mechanical Engineering Design 10th ed., Ch. 6 (§6-9, Table 6-2 Marin surface factors), Ch. 7 (§7-4 to §7-7) — Fatigue, shaft stresses, deflection, critical speeds, keys
   Ref: Mott, Machine Elements in Mechanical Design 6th ed., Ch. 12 — Shaft design
 
@@ -22,8 +22,9 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   x_B | Bearing B position | 275 | mm | drawing: DRG-CNV-410 rev B | 1 … 3000 mm
   loads | Radial loads and masses | 1 row(s) |  | drawing: DRG-CNV-410 rev B | any
   loads[1] |  | x = 150 mm; F_y = -0.92 kN; F_z = 2.53 kN; m = 3 kg |  |  | 
-  T | Torque transmitted | 0.151579 | kN*m | link: Motor sizing rev A · T_rms | 0 … 50 kN*m
-  T_pk | Peak torque for the yield check (blank: the torque T) | 0.159248 | kN*m | link: Motor sizing rev A · T_pk | 0 … 50 kN*m
+  T | Torque transmitted, steady or mean part T_m | 0.151579 | kN*m | link: Motor sizing rev A · T_load | 0 … 50 kN*m
+  T_a | Alternating torque amplitude T_a about the mean (blank: 0, a steady torque; a reversing or cyclic drive needs it) | 0 | kN*m | link: Motor sizing rev A · T_alt | 0 … 50 kN*m
+  T_pk | Peak torque for the yield check and the key (blank: T + T_a) | 0.159248 | kN*m | link: Motor sizing rev A · T_pk | 0 … 50 kN*m
   x_T1 | Torque enters at | 0 | mm | drawing: DRG-CNV-410 rev B | 0 … 3000 mm
   x_T2 | Torque leaves at | 150 | mm | drawing: DRG-CNV-410 rev B | 0 … 3000 mm
   n | Operating speed | 1475 | rpm | link: Motor sizing rev A · n_pk | 0 … 30000 rpm
@@ -43,7 +44,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   y_max | Deflection limit at the loads | 0.13 | mm | assumption: Sheet default value; no project figure given. | 0.001 … 10 mm
 
 3. ASSUMPTIONS
-  A1. Linear elastic, two simple bearing supports (pin at A, roller at B); bending fully reversed by rotation, torque steady. (Shigley 10th ed. §7-4.)
+  A1. Linear elastic, two simple bearing supports (pin at A, roller at B); bending fully reversed by rotation; torque a steady part T_m plus an alternating part T_a about it (fully alternating when T_m = 0), both acting between the torque-in and torque-out positions. (Shigley 10th ed. §7-4.)
   A2. No torsional vibration; only the first lateral mode, by Rayleigh with Dunkerley as a lower bound. (Shigley 10th ed. §7-6.)
   A3. K_t and K_ts come from user records or published fit equations; no stress-concentration chart is reproduced. (No stress-concentration chart is shipped; the factors are entered or derived.)
   A4. At a shoulder the smaller diameter governs; k_c = 1 because the stresses are combined by von Mises. (Shigley 10th ed. §6-9, §7-4.)
@@ -100,51 +101,51 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
       = 850 MPa
       = 425 MPa
         Rotating-beam endurance limit
-  [30] X1 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
+  [31] X1 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T_m/(πd³′), τ_a = K_fs·16T_a/(πd³′); 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
       = x = 50 mm, d = 35 mm, k_b = 0.84763, S_e = 261.11 MPa, K_f = 1.595, K_fs = 1.45, M = 33.651 N·m, T = 151.58 N·m, σ_a = 12.751 MPa, τ_m = 26.108 MPa, T_pk = 159.25 N·m, τ_pk = 27.429 MPa, n_y = 13.214
       = 9.8005
         Section at 50 mm: fatigue safety factor (DE-Goodman)
-  [31] X2 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T/(πd³′); 1/n_f = σ_a/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
+  [32] X2 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T_m/(πd³′), τ_a = K_fs·16T_a/(πd³′); 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
       = x = 150 mm, d = 45 mm, k_b = 0.82514, S_e = 254.18 MPa, K_f = 1.595, K_fs = 1.45, M = 168.26 N·m, T = 151.58 N·m, σ_a = 29.998 MPa, τ_m = 12.284 MPa, T_pk = 159.25 N·m, τ_pk = 12.905 MPa, n_y = 17.375
       = 6.9906
         Section at 150 mm: fatigue safety factor (DE-Goodman)
-  [32] S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e′ (governing section)
+  [33] S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e′ (governing section)
       = k_c = 1
       = 254.18 MPa
         Endurance limit at the governing section
-  [33] n_f_min = min over sections
+  [34] n_f_min = min over sections
       = 2 section(s)
       = 6.9906
         Lowest fatigue safety factor
-  [34] n_y_min = min over sections S_y/σ′_max
+  [35] n_y_min = min over sections S_y/σ′_max
       = 2 section(s)
       = 13.214
         Lowest yield safety factor
-  [35] n_c = √(g·Σm·y/Σm·y²) (Rayleigh)    « Shigley 10th ed. §7-6
+  [36] n_c = √(g·Σm·y/Σm·y²) (Rayleigh)    « Shigley 10th ed. §7-6
       = Σm = 6.2522 kg over 25 nodes
       = 51038 rpm
         First lateral critical speed (Rayleigh)
-  [36] n_c_D = 1/ω² = Σ m_i·δ_ii (Dunkerley, lower bound)    « Shigley 10th ed. §7-6
+  [37] n_c_D = 1/ω² = Σ m_i·δ_ii (Dunkerley, lower bound)    « Shigley 10th ed. §7-6
       = 25 masses
       = 49494 rpm
         First critical speed, Dunkerley lower bound
-  [37] r_c = n_c,D/n
+  [38] r_c = n_c,D/n
       = 49494 / 1475
       = 33.555
         Critical-speed ratio (Dunkerley lower bound over operating speed)
-  [38] u_f = n_target/n_f,min
+  [39] u_f = n_target/n_f,min
       = 1.5 / 6.9906
       = 0.21457
         Fatigue utilisation
-  [39] u_y = n_target/n_y,min
+  [40] u_y = n_target/n_y,min
       = 1.5 / 13.214
       = 0.11351
         Yield utilisation
-  [40] u_slope = max(θ_A, θ_B)/θ_max
+  [41] u_slope = max(θ_A, θ_B)/θ_max
       = 0.00026987 / 0.001
       = 0.26987
         Slope utilisation
-  [41] u_defl = y_load/y_max
+  [42] u_defl = y_load/y_max
       = 0.021323 / 0.13 mm
       = 0.16403
         Deflection utilisation
@@ -175,9 +176,9 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   WARNING record: Tabulated values not taken from a reference record: S_ut, S_y, E (Shaft material); theta_max, y_max (Slope and deflection limits). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: mech.shaft@1.1.1
-  Content hash: 47130117080eab34
+  Template: mech.shaft@1.2.0
+  Content hash: 626bfcd60a318f2c
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 08:42 UTC
   Application: TempestOS test

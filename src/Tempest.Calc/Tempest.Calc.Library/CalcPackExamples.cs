@@ -43,7 +43,7 @@ internal static class CalcPackExamples
     /// <summary>
     /// The gearbox input shaft: coupling at one end, a pinion of 60 mm pitch RADIUS (120 mm pitch diameter) at mid-span. T and n arrive by link, but the
     /// mesh forces are entered, derived for T = 151.58 N·m: F_t = T/r_p = 2.53 kN (horizontal plane) and F_r = F_t·tan 20° = 0.92 kN (vertical plane).
-    /// They do not follow a change of E1 by themselves: re-derive them when T_rms changes.
+    /// They do not follow a change of E1 by themselves: re-derive them when the E1 torque (T_load) changes.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> DriveM4 { get; } =
     [

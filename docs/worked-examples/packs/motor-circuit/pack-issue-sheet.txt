@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Servo axis motor circuit calc pack    Revision: A
 Title: Calculation pack
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
 
 PACK INDEX
   1. Motor sizing — Motor and actuator sizing — rev A — ISSUED — RMS torque SF·T_rms ≤ T_rated PASS
@@ -15,7 +15,7 @@ PACK INDEX
   6. Enclosure heat — Enclosure heat dissipation and fan sizing — rev A — ISSUED — Natural dissipation holds T_max PASS
 
 REVISIONS
-  A  2026-10-25  test.engineer  First issue
+  A  2026-10-26  test.engineer  First issue
 
 1. SCOPE AND METHOD
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -41,20 +41,20 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 25/25
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 08:42 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Motor sizing    Revision: A
 Title: Motor and actuator sizing
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
-Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack). Load inertia reflected to the motor through a linear mechanism: J_refl = m k²/η. Load torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p. Reflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η). Move profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc. Move profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap. Torque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load. RMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle). RMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²]. Continuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i. Continuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load. Peak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load. Continuous power: P_cont = T_load ω; P_rms = P_cont. Rated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60.
+Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack). Load inertia reflected to the motor through a linear mechanism: J_refl = m k²/η. Load torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p. Reflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η). Move profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc. Move profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap. Torque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load. Alternating torque amplitude of a point-to-point cycle about T_load, for a shaft's fatigue: T_alt = (T_pk − T_dec)/2 (0 in continuous duty). Torque behind the ratio on the output shaft of a rotary mechanism: T_out = T·i·η (mean, alternating and peak), n_out = n_pk/i. Peak axial thrust of a ball screw on its support bearings: F_ax_pk = F_load + m a_pk (0 for other mechanisms). RMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle). RMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²]. Continuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i. Continuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load. Peak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load. Continuous power: P_cont = T_load ω; P_rms = P_cont. Rated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60.
   Ref: Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection — Load torque, inertia referred to the motor, duty cycles
   Ref: Manufacturer servo-sizing guides (Kollmorgen, Parker) — Reflected inertia, RMS torque, inertia ratio practice
 
@@ -157,51 +157,59 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
       = −2.4922 N·m + 0.08671 N·m
       = -2.4055 N·m
         Torque during deceleration
-  [36] n_pk = omega_pk
+  [36] T_alt = (T_pk - T_dec) / 2
+      = (2.5789 N·m − (-2.4055 N·m)) / 2
+      = 2.4922 N·m
+        Alternating torque amplitude of the cycle about T_load
+  [37] F_ax_pk = F_load + m * a_pk
+      = 49.033 N + 50 kg × 9 m/s²
+      = 499.03 N
+        Peak axial thrust on the screw's support bearings (load force plus the moved mass accelerated)
+  [38] n_pk = omega_pk
       = 942.48 rad/s
       = 9000 rpm
         Peak motor speed
-  [37] P_pk = T_pk * omega_pk
+  [39] P_pk = T_pk * omega_pk
       = 2.5789 N·m × 942.48 rad/s
       = 2.4306 kW
         Peak mechanical power
-  [38] t_acc = f_acc * t_move
+  [40] t_acc = f_acc * t_move
       = 0.33333 × 0.5 s
       = 0.16667 s
         Acceleration time
-  [39] t_const = t_move - 2 * t_acc
+  [41] t_const = t_move - 2 * t_acc
       = 0.5 s − 2 × 0.16667 s
       = 0.16667 s
         Constant-velocity time
-  [40] t_cycle = t_move + t_dwell
+  [42] t_cycle = t_move + t_dwell
       = 0.5 s + 0.5 s
       = 1 s
         Cycle time
-  [41] P_rms = omega_pk * sqrt((t_acc * (2 / 3) * (T_load^2 + T_acc^2) + T_load^2 * t_const) / t_cycle)
+  [43] P_rms = omega_pk * sqrt((t_acc * (2 / 3) * (T_load^2 + T_acc^2) + T_load^2 * t_const) / t_cycle)
       = 942.48 rad/s × sqrt((0.16667 s × 2 / 3 × ((0.08671 N·m)^2 + (2.4922 N·m)^2) + (0.08671 N·m)^2 × 0.16667 s) / 1 s)
       = 0.78414 kW
         RMS mechanical power over the cycle (thermal-equivalent continuous power)
-  [42] T_rms = sqrt((T_pk^2 * t_acc + T_load^2 * t_const + T_dec^2 * t_acc) / t_cycle)
+  [44] T_rms = sqrt((T_pk^2 * t_acc + T_load^2 * t_const + T_dec^2 * t_acc) / t_cycle)
       = sqrt(((2.5789 N·m)^2 × 0.16667 s + (0.08671 N·m)^2 × 0.16667 s + (-2.4055 N·m)^2 × 0.16667 s) / 1 s)
       = 1.4402 N·m
         RMS torque over the cycle (thermal)
-  [43] J_ratio = (J_refl + J_mech) / J_motor
+  [45] J_ratio = (J_refl + J_mech) / J_motor
       = (0.00014072 kg·m² + 0.0001 kg·m²) / 0.0002 kg·m²
       = 1.2036
         Inertia ratio (load : motor)
-  [44] u_peak = SF * T_pk / T_peak
+  [46] u_peak = SF * T_pk / T_peak
       = 1.25 × 2.5789 N·m / 6 N·m
       = 0.53728
         Peak torque utilisation with safety margin
-  [45] u_rms = SF * T_rms / T_rated
+  [47] u_rms = SF * T_rms / T_rated
       = 1.25 × 1.4402 N·m / 2 N·m
       = 0.90012
         Continuous torque utilisation with safety margin
-  [46] u_speed = n_pk / n_max
+  [48] u_speed = n_pk / n_max
       = 9000 rpm / 10000 rpm
       = 0.9
         Speed utilisation
-  [47] duty = T_rms / T_rated
+  [49] duty = T_rms / T_rated
       = 1.4402 N·m / 2 N·m
       = 0.7201
         Thermal duty (without margin)
@@ -217,6 +225,8 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   T_acc = 2.4922 N·m    Acceleration torque
   T_pk = 2.5789 N·m    Peak torque
   T_dec = -2.4055 N·m    Deceleration torque
+  T_alt = 2.4922 N·m    Alternating torque amplitude
+  F_ax_pk = 499.03 N    Peak axial thrust on a screw's bearings
   T_rms = 1.4402 N·m    RMS torque
   n_pk = 9000 rpm    Peak speed
   P_pk = 2.4306 kW    Peak power
@@ -237,11 +247,11 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   WARNING overhauling: T_dec: the motor brakes during deceleration (negative torque); the drive must absorb the regenerated energy.
 
 8. VERIFICATION
-  Template: elec.motor-sizing@1.5.0
-  Content hash: e27e82fd084979ba
+  Template: elec.motor-sizing@1.6.0
+  Content hash: 4ea5e25d0b648caa
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 08:42 UTC
   Application: TempestOS test
 
 
@@ -249,9 +259,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Load budget    Revision: A
 Title: Load budget, PSU, transformer and battery
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.
@@ -398,7 +408,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   Content hash: 39f53bc4722e29b8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 08:42 UTC
   Application: TempestOS test
 
 
@@ -406,9 +416,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Cable and device    Revision: A
 Title: Conductor sizing and overload coordination
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 One circuit: the design current, the smallest preferred device rating that carries it, the smallest conductor whose tabulated current-carrying capacity (your own record) carries that rating once the ambient, grouping, installation and semi-enclosed-fuse factors are applied, and the overload coordination checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z. The context (machine wiring or installation) changes the clause citations and, for a gG fuse, MCCB or MPCB entered without I₂, whether the I₂ condition may be deemed satisfied (BS 7671 installation) or I₂ must be entered (machine wiring); every other number is the same in both contexts.
@@ -560,7 +570,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: b804e5325cd160b1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 08:42 UTC
   Application: TempestOS test
 
 
@@ -568,9 +578,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Voltage drop    Revision: A
 Title: Voltage drop and I²R loss
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Voltage drop along a circuit in volts and per cent of the nominal voltage, the conductor power loss, and an estimate of the conductor operating temperature, for DC, single-phase and three-phase AC, from resistivity and cross-section (with temperature correction), from tabulated R and X per kilometre, or from a mV/A/m figure; parallel conductors per phase; the drop limit is a user input (the regulatory limits live in BS 7671 Appendix 4 and Regulation 525 and are not embedded).
@@ -662,7 +672,7 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   Content hash: 2c07193ab8ffc91f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 08:42 UTC
   Application: TempestOS test
 
 
@@ -670,9 +680,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Fault protection    Revision: A
 Title: Fault protection: Zs, disconnection, adiabatic, fault level
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Automatic disconnection of supply in a TN system for one circuit: the earth fault loop impedance at the conductor's operating temperature against the device's maximum, the disconnection time, the protective conductor (and line conductor) against the adiabatic minimum, and the prospective three-phase fault at the origin against the device's breaking capacity.
@@ -803,7 +813,7 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
   Content hash: b8f2af25892a73e4
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 08:42 UTC
   Application: TempestOS test
 
 
@@ -811,9 +821,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Enclosure heat    Revision: A
 Title: Enclosure heat dissipation and fan sizing
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.
@@ -949,5 +959,5 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   Content hash: 857f14f33a5fb9c0
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 08:42 UTC
   Application: TempestOS test
