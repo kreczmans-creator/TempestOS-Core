@@ -96,7 +96,7 @@ internal static class SoakReport
         text.AppendLine("# the scaled-down soak (about a tenth), part of the ordinary Desktop test run:");
         text.AppendLine("dotnet test tests/Tempest.Desktop.Tests --filter \"FullyQualifiedName~Tempest.Desktop.Tests.Soak\"");
         text.AppendLine();
-        text.AppendLine("# the full soak, which rewrites this page (about 20 minutes):");
+        text.AppendLine("# the full soak, which rewrites this page (about 25 minutes):");
         text.AppendLine("TEMPEST_SOAK=full dotnet test tests/Tempest.Desktop.Tests --filter \"FullyQualifiedName~Tempest.Desktop.Tests.Soak.SoakFull\"");
         text.AppendLine("```");
         text.AppendLine();

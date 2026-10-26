@@ -5,7 +5,7 @@ using Tempest.Calc.Library;
 namespace Tempest.Desktop.Tests.Soak;
 
 /// <summary>
-/// Skipped unless <c>TEMPEST_SOAK=full</c> is set: the full soak (the specification's numbers, about 20 minutes) is not part of an ordinary test run.
+/// Skipped unless <c>TEMPEST_SOAK=full</c> is set: the full soak (the specification's numbers, about 25 minutes) is not part of an ordinary test run.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method)]
 public sealed class SoakFullFactAttribute : FactAttribute
@@ -13,7 +13,7 @@ public sealed class SoakFullFactAttribute : FactAttribute
     public SoakFullFactAttribute()
     {
         if (!SoakScale.FullRequested)
-            Skip = $"Set {SoakScale.EnvironmentVariable}=full to run the full performance and stability soak (about 20 minutes); it rewrites docs/verification/soak.md.";
+            Skip = $"Set {SoakScale.EnvironmentVariable}=full to run the full performance and stability soak (about 25 minutes); it rewrites docs/verification/soak.md.";
     }
 }
 
@@ -89,7 +89,7 @@ public sealed class SoakFullTests
         var runs = new List<SoakRun>();
 
         // TEMPEST_SOAK_ONLY=6,8 runs only the scenarios whose number is listed, at full scale, and writes TEMPEST_SOAK_REPORT (never docs/verification/soak.md,
-        // which is the report of the whole soak): for looking at one scenario's full-scale numbers without the 20 minutes of the others.
+        // which is the report of the whole soak): for looking at one scenario's full-scale numbers without the time of the others.
         var only = Environment.GetEnvironmentVariable("TEMPEST_SOAK_ONLY")?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         foreach (var scenario in SoakScenarios.All.Where(s => only is null || only.Contains(s.Id.Split('-')[0], StringComparer.Ordinal)))
