@@ -273,7 +273,7 @@ public sealed class GuidedTestWorksheetTests
         await Settle();
         fx.Model.AutoCompare();
         Assert.Equal(ManualTestOutcome.Pass, fx.Model.DraftOutcome);
-        Assert.Contains("P = 3.93 kN", fx.Model.DraftValues, StringComparison.Ordinal);
+        Assert.Contains("P = 3.930 kN", fx.Model.DraftValues, StringComparison.Ordinal);
 
         // The bearing example: change F_r, then Record. Before the fix this stored Pass with the old values.
         fx.View.SetField("F_r", "4");
@@ -291,7 +291,7 @@ public sealed class GuidedTestWorksheetTests
         fx.Model.SetDraftNote("I changed F_r to 4 kN and the bearing life dropped, as it should.");
         await fx.Model.RecordAsync();
         Assert.Equal(ManualTestOutcome.Fail, fx.Model.Recorded!.Outcome);
-        Assert.DoesNotContain("P = 3.93 kN", fx.Model.Recorded.ValuesShown, StringComparison.Ordinal);
+        Assert.DoesNotContain("P = 3.930 kN", fx.Model.Recorded.ValuesShown, StringComparison.Ordinal);
     }
 
     private static async Task<IReadOnlyDictionary<string, string>> SnapshotAsync(IQueryablePersistenceStore store, IEnumerable<string> collections)

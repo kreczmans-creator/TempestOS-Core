@@ -64,11 +64,11 @@ public sealed class AddendumCSecurityRegressionTests
     /// an expected 1, or 4.55 A against 5 A, was a Match and the auto-compare suggested Pass. The allowance is now capped at 1 % of the expected value.
     /// </summary>
     [Theory]
-    [InlineData("u_r0", "1", "", "1.4")]
-    [InlineData("I_b", "5", "A", "4.55 A")]
+    [InlineData("u_r0", "1", "", "1.40")] // as the form and the banner print them now: a utilisation to two decimals,
+    [InlineData("I_b", "5", "A", "4.550 A")] // four figures,
     [InlineData("u", "0.6", "", "0.64")]
-    [InlineData("P", "4", "kN", "3.7 kN")]
-    [InlineData("x", "1.5E+06", "N", "1.47E+06 N")]
+    [InlineData("P", "4", "kN", "3.700 kN")]
+    [InlineData("x", "1.5E+06", "N", "1470000 N")] // and a whole number exactly
     public void SEC_C_02_An_Output_More_Than_One_Percent_From_A_Short_Expected_Value_Does_Not_Agree(string symbol, string expected, string unit, string shown)
     {
         var result = GuidedTolerance.CompareShown(symbol, expected, unit, shown);
@@ -87,11 +87,11 @@ public sealed class AddendumCSecurityRegressionTests
         Assert.True(GuidedTolerance.CompareShown("x", expected, unit, shown).IsMatch);
 
     [Fact]
-    public void SEC_C_02_A_Utilisation_Rounded_To_The_Forms_Three_Figures_Still_Agrees()
+    public void SEC_C_02_A_Utilisation_Rounded_To_The_Forms_Digits_Still_Agrees()
     {
-        Assert.True(GuidedTolerance.CompareShown("u", "0.7285", string.Empty, "0.729", 3).IsMatch);
-        Assert.True(GuidedTolerance.CompareShown("u", "1", string.Empty, "1", 3).IsMatch);
-        Assert.False(GuidedTolerance.CompareShown("u", "1", string.Empty, "1.02", 3).IsMatch);
+        Assert.True(GuidedTolerance.CompareShown("u", "0.7285", string.Empty, "0.729").IsMatch);
+        Assert.True(GuidedTolerance.CompareShown("u", "1", string.Empty, "1").IsMatch);
+        Assert.False(GuidedTolerance.CompareShown("u", "1", string.Empty, "1.02").IsMatch);
     }
 
     [Fact]

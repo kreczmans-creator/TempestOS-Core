@@ -402,8 +402,8 @@ public sealed class GuidedTestViewModelTests
         Assert.Equal(ManualTestOutcome.Pass, model.DraftOutcome);
         Assert.Equal(ManualTestOutcome.Pass, model.Suggested);
         Assert.Contains("Pass is ticked; record it to confirm", model.Status, StringComparison.Ordinal);
-        Assert.Contains("P = 3.93 kN", model.DraftValues, StringComparison.Ordinal);
-        Assert.Contains("L_10h = 4290.3 h", model.DraftValues, StringComparison.Ordinal);
+        Assert.Contains("P = 3.930 kN", model.DraftValues, StringComparison.Ordinal);
+        Assert.Contains("L_10h = 4290 h", model.DraftValues, StringComparison.Ordinal);
         Assert.All(model.ExpectedLines, l => Assert.Equal(GuidedCompareOutcome.Match, l.Outcome));
         Assert.Empty(model.ComparisonNotes);
 
@@ -413,7 +413,7 @@ public sealed class GuidedTestViewModelTests
         model.SetDraftNote("Agrees with the sheet.");
         await model.RecordAsync();
         Assert.Equal(ManualTestOutcome.Pass, model.Recorded!.Outcome);
-        Assert.Contains("P = 3.93 kN", model.Recorded.ValuesShown, StringComparison.Ordinal);
+        Assert.Contains("P = 3.930 kN", model.Recorded.ValuesShown, StringComparison.Ordinal);
     }
 
     [Fact]

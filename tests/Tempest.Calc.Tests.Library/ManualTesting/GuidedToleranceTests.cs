@@ -1,4 +1,5 @@
 using Tempest.Calc.Library.ManualTesting;
+using Tempest.Calc.Sheets;
 
 namespace Tempest.Calc.Tests.Library.ManualTesting;
 
@@ -92,11 +93,98 @@ public sealed class GuidedToleranceTests
     }
 
     [Fact]
-    public void The_Utilisation_Is_Compared_At_The_Three_Figures_The_Form_Shows()
+    public void The_Utilisation_Is_Compared_At_The_Digits_The_Form_Shows()
     {
-        Assert.True(GuidedTolerance.CompareShown("u", "0.728", string.Empty, "0.728", 3).IsMatch);
-        Assert.True(GuidedTolerance.CompareShown("u", "12.345", string.Empty, "12.3", 3).IsMatch);
-        Assert.False(GuidedTolerance.CompareShown("u", "12.345", string.Empty, "12.4", 3).IsMatch);
+        Assert.True(GuidedTolerance.CompareShown("u", "0.728", string.Empty, "0.728").IsMatch);
+        Assert.True(GuidedTolerance.CompareShown("u", "12.345", string.Empty, "12.3").IsMatch);
+        Assert.False(GuidedTolerance.CompareShown("u", "12.345", string.Empty, "12.4").IsMatch);
+
+        // The governing banner prints two decimals (C2-22): 0.73 is a match for 0.7285 (half of 0.01 is 0.005) and 0.74 is not.
+        Assert.True(GuidedTolerance.CompareShown("u", "0.7285", string.Empty, "0.73").IsMatch);
+        Assert.False(GuidedTolerance.CompareShown("u", "0.7285", string.Empty, "0.74").IsMatch);
+    }
+
+    // ---------------------------------------------------------------- C2-22: the allowance is the digits shown, not an assumed five figures
+
+    [Theory]
+    [InlineData("150001", "h", "150000 h", false)] // a whole number is exact: 1 apart is not half a unit (an assumed five figures allowed 5)
+    [InlineData("150000.4", "h", "150000 h", true)] // the form's last digit is 1, half of it covers 0.4
+    [InlineData("3.1596", "cm^3", "3.160 cm³", true)] // four figures shown: 0.0004 is within half of 0.001 (an assumed five figures allowed 0.00005)
+    [InlineData("3.1590", "cm^3", "3.160 cm³", false)] // 0.001 away is a whole unit of the last digit shown
+    [InlineData("0.0034003", "N*m", "0.003400 N·m", true)] // six decimals shown: half of 0.000001 covers 0.0000003
+    [InlineData("0.0034012", "N*m", "0.003400 N·m", false)]
+    [InlineData("144.93", "MPa", "144.9 MPa", true)]
+    [InlineData("144.96", "MPa", "144.9 MPa", false)]
+    [InlineData("1.8626E-15", "MPa", "1.8626e-15 MPa", true)] // an exponent form is read at its own last digit (1e-19)
+    public void The_Allowance_Is_Half_The_Last_Digit_The_Form_Printed(string expected, string unit, string shown, bool match)
+    {
+        var result = GuidedTolerance.CompareShown("x", expected, unit, shown);
+        Assert.Equal(match, result.IsMatch);
+    }
+
+    [Fact]
+    public void The_Shown_Resolution_Of_The_Display_Decides_The_Allowance_And_Nothing_Else_Does()
+    {
+        foreach (var (shown, half) in new[] { ("144.9 MPa", 0.05), ("150000 h", 0.5), ("0.003400 N·m", 5e-7), ("2.4942E+06 W", 50.0) })
+        {
+            var resolution = Tempest.Calc.Sheets.CalcDisplay.ShownResolution(shown);
+            Assert.NotNull(resolution);
+            Assert.Equal(half, resolution!.Value / 2, 12);
+            Assert.Equal(half.ToString("0.#########", System.Globalization.CultureInfo.InvariantCulture), GuidedTolerance.CompareShown("x", shown.Split(' ')[0], string.Empty, shown.Split(' ')[0]).Allowance![1..]);
+        }
+    }
+
+    [Theory]
+    [InlineData("3.93", "kN", "4 kN", false)] // the form prints fewer than four figures only for an exactly whole number: 4 kN is 4 kN, not "4 to the nearest kN"
+    [InlineData("4", "kN", "4 kN", true)]
+    [InlineData("4.004", "kN", "4 kN", false)] // 0.004 is a whole expected last digit away from an exact 4
+    [InlineData("150", "mm", "150 mm", true)]
+    [InlineData("149.6", "mm", "150 mm", false)]
+    [InlineData("4290.3", "h", "4290 h", true)] // four figures or more with no point: the last digit may be rounded, half of it is allowed
+    [InlineData("4291", "h", "4290 h", false)]
+    public void A_Short_Whole_Number_Is_Exact_And_Allows_Nothing_For_Rounding(string expected, string unit, string shown, bool match) =>
+        Assert.Equal(match, GuidedTolerance.CompareShown("x", expected, unit, shown).IsMatch);
+
+    [Fact]
+    public void A_Value_The_Form_Rounds_In_A_Direction_May_Differ_By_The_Whole_Last_Digit_On_That_Side()
+    {
+        // A safety factor is rounded down (1.69089 prints 1.6908) and a failing utilisation up (1.0435 prints 1.05): the reference 1.6909 and 1.044 are a whole digit and 0.6 of one away.
+        Assert.False(GuidedTolerance.CompareShown("n_f", "1.6909", string.Empty, "1.6908").IsMatch);
+        Assert.True(GuidedTolerance.CompareShown("n_f", "1.6909", string.Empty, "1.6908", CalcDisplay.Rounding.Down).IsMatch);
+        Assert.False(GuidedTolerance.CompareShown("u", "1.044", string.Empty, "1.05").IsMatch);
+
+        var up = GuidedTolerance.CompareShown("u", "1.044", string.Empty, "1.05", CalcDisplay.Rounding.Up);
+        Assert.True(up.IsMatch, up.Detail);
+        Assert.Equal("±0.01", up.Allowance);
+
+        // Never more than that: two digits away is a mismatch whichever way it was rounded.
+        Assert.False(GuidedTolerance.CompareShown("n_f", "1.6909", string.Empty, "1.6907", CalcDisplay.Rounding.Down).IsMatch);
+        Assert.False(GuidedTolerance.CompareShown("u", "1.044", string.Empty, "1.07", CalcDisplay.Rounding.Up).IsMatch);
+
+        // The cap of 1 % still holds for a directed display: an expected 1 against a shown 1.02 differs by two last digits.
+        Assert.False(GuidedTolerance.CompareShown("u", "1", string.Empty, "1.02", CalcDisplay.Rounding.Up).IsMatch);
+    }
+
+    [Theory]
+    [InlineData("90", "deg", "90°", GuidedCompareOutcome.Match)] // the form writes the degree sign straight after the number
+    [InlineData("40.004", "deg", "40.00°", GuidedCompareOutcome.Match)]
+    [InlineData("40.004", "deg", "40.02°", GuidedCompareOutcome.Mismatch)]
+    [InlineData("0.5", "rad", "0.5000°", GuidedCompareOutcome.NotComparable)] // a degree is not a radian: left to the tester
+    public void A_Degree_Sign_Directly_After_The_Number_Is_The_Unit_Degree(string expected, string unit, string shown, GuidedCompareOutcome outcome) =>
+        Assert.Equal(outcome, GuidedTolerance.CompareShown("theta", expected, unit, shown).Outcome);
+
+    [Fact]
+    public void The_Cap_Of_One_Percent_Stays_And_Never_Goes_Below_Half_The_Last_Digit_Shown()
+    {
+        // SEC-C-02: an expected '1' written exactly allows 1 %, not half of a whole unit; a utilisation shown to two decimals keeps half of 0.01.
+        Assert.False(GuidedTolerance.CompareShown("u", "1", string.Empty, "1.02").IsMatch);
+        Assert.True(GuidedTolerance.CompareShown("u", "1", string.Empty, "1.01").IsMatch);
+        Assert.True(GuidedTolerance.CompareShown("u", "0.0031", string.Empty, "0.0031").IsMatch);
+        Assert.True(GuidedTolerance.CompareShown("u", "0.5", string.Empty, "0.50").IsMatch);
+
+        // The cap is 1 % of 0.004 = 0.00004, less than half the form's last digit (0.005), so the display's half is allowed.
+        Assert.True(GuidedTolerance.CompareShown("u", "0.004", string.Empty, "0.00").IsMatch);
+        Assert.False(GuidedTolerance.CompareShown("u", "0.004", string.Empty, "0.01").IsMatch);
     }
 
     [Theory]
@@ -142,8 +230,9 @@ public sealed class GuidedToleranceTests
     // ---------------------------------------------------------------- L6: the allowance actually applied
 
     [Theory]
-    [InlineData("12.34", "kN", "12.3 kN", "±0.005")] // the expected value is the coarser: two decimals
-    [InlineData("3.930000", "kN", "3.93 kN", "±0.00005")] // the form's five figures are the coarser: 3.9300 (four decimals)
+    [InlineData("12.34", "kN", "12.30 kN", "±0.005")] // both show two decimals: half of 0.01
+    [InlineData("12.34", "kN", "12.3 kN", "±0.05")] // the shown value is the coarser: one decimal
+    [InlineData("3.930000", "kN", "3.930 kN", "±0.0005")] // the form's last digit is the coarser: 3.930 (three decimals)
     [InlineData("2494200", "W", "2.4942E+06 W", "±50")] // the form writes it to five figures (tens), the expected value to units: the coarser, tens
     [InlineData("4290.3", "h", "4290.3 h", "±0.05")]
     public void The_Comparison_Reports_The_Allowance_Applied_Which_Is_The_Coarser_Of_The_Two_Last_Places(string expected, string unit, string shown, string applied)

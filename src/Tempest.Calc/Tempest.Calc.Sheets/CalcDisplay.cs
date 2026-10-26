@@ -366,6 +366,25 @@ public static class CalcDisplay
         return shownUnit.Length == 0 ? number : shownUnit == "°" ? number + shownUnit : $"{number} {shownUnit}";
     }
 
+    /// <summary>
+    /// The direction the form rounds an output in: a safety factor (<see cref="CalcOutputKind.AtLeast"/>) down, a utilisation above its limit up (a negative one away from
+    /// zero), everything else to the nearest. A reader comparing what the form shows with a reference value may differ from it by a whole last digit, not half of one, in the
+    /// first two cases (the guided test mode allows it).
+    /// </summary>
+    public static Rounding RoundingOf(CalcOutput output)
+    {
+        if (output.DisplayText is not null || output.Value is not ScalarValue s || !double.IsFinite(s.Si))
+            return Rounding.Nearest;
+
+        if (output.Kind == CalcOutputKind.AtLeast)
+            return Rounding.Down;
+
+        if (output.Kind == CalcOutputKind.Utilisation && output.Decimals is null && s.Dimension.IsDimensionless)
+            return s.Si < 0 ? Rounding.Down : s.Si > 1.0 + 1e-9 ? Rounding.Up : Rounding.Nearest;
+
+        return Rounding.Nearest;
+    }
+
     /// <summary>The text of an output on its own: its kind and decimals decide the form. A value the run recognised as solver noise carries its own text (<see cref="CalcOutput.DisplayText"/>).</summary>
     public static string Format(CalcOutput output) => output.Value is ScalarValue s ? Format(s, output.Kind, output.Decimals) : output.Value.Format(5);
 
@@ -374,19 +393,22 @@ public static class CalcDisplay
     /// types what the form shows can be allowed half of it. <see langword="null"/> when the text does not open with a finite number. The guided test mode takes its
     /// allowance from this, not from a fixed count of figures: the form shows 4 or 5 significant figures, and a whole number as it is.
     /// </summary>
-    public static double? ShownResolution(string? shownText)
+    public static double? ShownResolution(string? shownText) => ShownResolutionExponent(shownText) is { } exponent ? Math.Pow(10, exponent) : null;
+
+    /// <summary>The power of ten of the last digit <see cref="ShownResolution"/> measures ("144.9 MPa" is −1, "150000 h" is 0), as an exact integer for a comparison that must not use floating point.</summary>
+    public static int? ShownResolutionExponent(string? shownText)
     {
         if (string.IsNullOrWhiteSpace(shownText))
             return null;
 
-        var m = System.Text.RegularExpressions.Regex.Match(shownText.Trim(), @"^[-−+]?(?<int>\d+)(?:\.(?<frac>\d+))?(?:e(?<exp>[-+]?\d+))?(?![\d.])", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+        var m = System.Text.RegularExpressions.Regex.Match(shownText.Trim(), @"^[-−+]?(?<int>\d+)(?:\.(?<frac>\d+))?(?:e(?<exp>[-+]?\d+))?(?![\d.])", System.Text.RegularExpressions.RegexOptions.CultureInvariant | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
         if (!m.Success)
             return null;
 
         var decimals = m.Groups["frac"].Success ? m.Groups["frac"].Length : 0;
-        var exponent = m.Groups["exp"].Success ? int.Parse(m.Groups["exp"].Value, CultureInfo.InvariantCulture) : 0;
-        return Math.Pow(10, exponent - decimals);
+        var exponent = m.Groups["exp"].Success && int.TryParse(m.Groups["exp"].Value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var e) ? e : 0;
+        return exponent - decimals;
     }
 
     /// <summary>"0" with the unit of <paramref name="value"/>: how a computed zero that came out as noise is shown.</summary>

@@ -22,9 +22,6 @@ public sealed record GuidedAutoCompareResult(IReadOnlyList<GuidedOutputCompariso
 /// </summary>
 public static class GuidedAutoCompare
 {
-    /// <summary>The significant figures the form shows a utilisation to.</summary>
-    public const int UtilisationSignificantFigures = 3;
-
     /// <summary>The most characters of shown values kept (the run record caps it again).</summary>
     public const int MaxShownLength = ManualTestRun.MaxValuesShownLength;
 
@@ -50,7 +47,7 @@ public static class GuidedAutoCompare
             var text = output?.ValueText;
             var comparison = output is null
                 ? new GuidedComparison(GuidedCompareOutcome.Mismatch, $"{expected.Symbol}: the form has no such output.")
-                : AgainstExpected(expected, text);
+                : AgainstExpected(expected, text, CalcDisplay.RoundingOf(output));
             rows.Add(new GuidedOutputComparison(expected.Symbol, Join(expected.Value, expected.Unit), text ?? "—", comparison));
             shown.Add($"{expected.Symbol} = {text ?? "—"}");
         }
@@ -65,10 +62,11 @@ public static class GuidedAutoCompare
             var shownCheck = form is null ? "none" : $"{outcomeText} — {form.Name}";
             rows.Add(new GuidedOutputComparison("governing check", expectedCheck, shownCheck, GuidedTolerance.CompareText("governing check", expectedCheck, shownCheck)));
 
-            var shownUtilisation = form is null ? null : double.IsInfinity(form.Utilisation) ? "—" : CalcValue.FormatNumber(form.Utilisation, UtilisationSignificantFigures);
+            // What the governing banner prints for a ratio: two decimals, by the display's own formatter (not a figure count of this class's own); the digits shown decide the allowance.
+            var shownUtilisation = form is null ? null : double.IsInfinity(form.Utilisation) ? "—" : CalcDisplay.Utilisation(form.Utilisation);
             var utilisation = form is null
                 ? new GuidedComparison(GuidedCompareOutcome.Mismatch, "governing utilisation: the form has no governing check.")
-                : GuidedTolerance.CompareShown("governing utilisation", governing.Utilisation, string.Empty, shownUtilisation, UtilisationSignificantFigures);
+                : GuidedTolerance.CompareShown("governing utilisation", governing.Utilisation, string.Empty, shownUtilisation, form.Utilisation > 1.0 + 1e-9 ? CalcDisplay.Rounding.Up : CalcDisplay.Rounding.Nearest);
             rows.Add(new GuidedOutputComparison("governing utilisation", governing.Utilisation, shownUtilisation ?? "—", utilisation));
             shown.Add(form is null ? "governing none" : $"governing {outcomeText} — {form.Name} (utilisation {shownUtilisation ?? "—"})");
         }
@@ -96,14 +94,14 @@ public static class GuidedAutoCompare
     /// sheet was made, the difference is the example's own (its expected value is held to a verification tolerance, not to the printed digits), so it is
     /// put to the tester rather than called a fail: nothing has changed since the example was made.
     /// </summary>
-    private static GuidedComparison AgainstExpected(GuidedExpectedValue expected, string? text)
+    private static GuidedComparison AgainstExpected(GuidedExpectedValue expected, string? text, CalcDisplay.Rounding rounding)
     {
-        var comparison = GuidedTolerance.CompareShown(expected.Symbol, expected.Value, expected.Unit, text);
+        var comparison = GuidedTolerance.CompareShown(expected.Symbol, expected.Value, expected.Unit, text, rounding);
 
         if (comparison.Outcome != GuidedCompareOutcome.Mismatch || string.IsNullOrEmpty(expected.Computed))
             return comparison;
 
-        return GuidedTolerance.CompareShown(expected.Symbol, expected.Computed, expected.Unit, text).IsMatch
+        return GuidedTolerance.CompareShown(expected.Symbol, expected.Computed, expected.Unit, text, rounding).IsMatch
             ? new GuidedComparison(GuidedCompareOutcome.NotComparable, $"{comparison.Detail.TrimEnd('.')}, but it equals {expected.Computed}, the value this build computed for the example. The example's own tolerance accepts that difference; decide by hand.")
             : comparison;
     }

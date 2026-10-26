@@ -196,7 +196,7 @@ public sealed class GuidedTestReviewTests
         await model.RecordAsync();
 
         Assert.Equal(ManualTestOutcome.Pass, model.Recorded!.Outcome);
-        Assert.Contains("P = 3.93 kN", model.Recorded.ValuesShown, StringComparison.Ordinal);
+        Assert.Contains("P = 3.930 kN", model.Recorded.ValuesShown, StringComparison.Ordinal);
     }
 
     // ---------------------------------------------------------------- M3: a failure is a sentence, not a crash
@@ -398,7 +398,7 @@ public sealed class GuidedTestReviewTests
         var lines = kit.Model.ExpectedLines;
 
         Assert.Equal("±0.005", lines.Single(l => l.Symbol == "P").Applied);
-        Assert.Equal("±0.05", lines.Single(l => l.Symbol == "L_10h").Applied);
+        Assert.Equal("±0.5", lines.Single(l => l.Symbol == "L_10h").Applied);
         Assert.Null(lines.Single(l => l.Symbol == "governing check").Applied);
 
         // Before a compare nothing was applied yet.

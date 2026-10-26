@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Numerics;
+using Tempest.Calc.Sheets;
 
 namespace Tempest.Calc.Library.ManualTesting;
 
@@ -29,18 +30,15 @@ public sealed record GuidedComparison(GuidedCompareOutcome Outcome, string Detai
 /// <summary>
 /// The one rule the Guided test compares by (Addendum C, C-5), stated on screen as <see cref="RuleText"/>. A number agrees with the expected
 /// value when they differ by no more than half a unit in the last digit of the less precise of the two, the digits counted as written (the
-/// expected value as the script prints it; the shown value as the form shows it, which is five significant figures with trailing zeros
-/// dropped). That is exactly the allowance two roundings of one true value can differ by, so a correct result never fails and a wrong one
+/// expected value as the script prints it; the shown value as the form shows it, so its last digit is the last one printed,
+/// <see cref="CalcDisplay.ShownResolution"/>: 144.9 MPa is 0.1, 0.003400 N·m is 0.000001, 150000 h is 1 and a utilisation of 0.73 is 0.01). That is exactly the allowance two roundings of one true value can differ by, so a correct result never fails and a wrong one
 /// that differs in a digit both show does. A text (a governing PASS or FAIL, a choice) agrees only when it is identical. The arithmetic is
 /// exact (integers scaled by powers of ten), never a floating-point comparison, so a value on the boundary is decided the same way on every machine.
 /// </summary>
 public static class GuidedTolerance
 {
-    /// <summary>The significant figures the worksheet form shows an output to.</summary>
-    public const int FormSignificantFigures = 5;
-
     /// <summary>The rule, in the words shown to the tester.</summary>
-    public const string RuleText = "A number passes when it differs from the expected value by no more than half a unit in the last digit of the less precise of the two, counting the digits as written (the form shows 5 significant figures), and by no more than 1 % of the expected value unless the form's own last digit is coarser. A text must be identical.";
+    public const string RuleText = "A number passes when it differs from the expected value by no more than half a unit in the last digit of the less precise of the two, counting the digits as written (the form's own last digit is the last one it prints: 4 or 5 significant figures, a whole number exactly, a utilisation to two decimals), and by no more than 1 % of the expected value unless the form's own last digit is coarser. A text must be identical.";
 
     /// <summary>
     /// The most an output the form shows may differ from the expected value, in per cent of it, whatever few digits the expected value is written with
@@ -57,8 +55,8 @@ public static class GuidedTolerance
     /// <param name="expectedValue">The expected number text exactly as the script writes it.</param>
     /// <param name="expectedUnit">The expected unit text (empty for a ratio).</param>
     /// <param name="shown">What the form shows (for example <c>4290.3 h</c>).</param>
-    /// <param name="shownSignificantFigures">The significant figures the form rounds this value to (5 for an output, 3 for a utilisation).</param>
-    public static GuidedComparison CompareShown(string symbol, string expectedValue, string expectedUnit, string? shown, int shownSignificantFigures = FormSignificantFigures)
+    /// <param name="shownRounding">How the form rounded it. To the nearest (the default): the last shown digit is off by at most half of itself. Down or up (a safety factor, a failing utilisation): by at most the whole digit, on the side the form rounds to.</param>
+    public static GuidedComparison CompareShown(string symbol, string expectedValue, string expectedUnit, string? shown, CalcDisplay.Rounding shownRounding = CalcDisplay.Rounding.Nearest)
     {
         ArgumentNullException.ThrowIfNull(expectedValue);
         ArgumentNullException.ThrowIfNull(expectedUnit);
@@ -78,7 +76,8 @@ public static class GuidedTolerance
         if (!TryParse(shownNumber, out var actual))
             return new(GuidedCompareOutcome.Mismatch, $"{symbol}: the form shows '{shownNumber}' where the script expects the number {expectedValue}.");
 
-        return CompareNumbers(symbol, expected, actual, expectedValue, shownNumber, Math.Clamp(shownSignificantFigures, 1, 15), ShownRelativeCapPercent);
+        // The allowance comes from the digits the form actually shows, never from a count of figures it is assumed to show (C2-22).
+        return CompareNumbers(symbol, expected, actual, expectedValue, shownNumber, CalcDisplay.ShownResolutionExponent(shownNumber) ?? actual.Unit, ShownRelativeCapPercent, shownRounding != CalcDisplay.Rounding.Nearest, IsExactWholeNumber(shownNumber));
     }
 
     /// <summary>Compares two numbers given as text, the second exactly as the tester read it (its digits as written; no form rounding assumed).</summary>
@@ -93,7 +92,7 @@ public static class GuidedTolerance
         if (!TryParse(shownValue, out var actual))
             return new(GuidedCompareOutcome.Mismatch, $"{symbol}: '{shownValue.Trim()}' is not a number; the script expects {expectedValue}.");
 
-        return CompareNumbers(symbol, expected, actual, expectedValue, shownValue.Trim(), formSignificantFigures: null, capPercent: null);
+        return CompareNumbers(symbol, expected, actual, expectedValue, shownValue.Trim(), shownPlace: null, capPercent: null, directed: false, shownExact: false);
     }
 
     /// <summary>Two texts agree only when identical (ordinal, after trimming the ends).</summary>
@@ -123,17 +122,17 @@ public static class GuidedTolerance
             : "±" + HalfUnitText(n.Unit);
     }
 
-    private static GuidedComparison CompareNumbers(string symbol, Decimal10 expected, Decimal10 actual, string expectedText, string shownText, int? formSignificantFigures, int? capPercent)
+    private static GuidedComparison CompareNumbers(string symbol, Decimal10 expected, Decimal10 actual, string expectedText, string shownText, int? shownPlace, int? capPercent, bool directed, bool shownExact)
     {
-        // The last place of the shown value. A value the form wrote is rounded to its significant figures and has its trailing zeros dropped, so
-        // its last place is that figure's place whatever was written ('4290' is 4290.0; '2494200' is 2.4942E+6), not the last digit that happens to show.
-        var shownUnit = formSignificantFigures is { } figures ? actual.Magnitude - (figures - 1) : actual.Unit;
+        // The last place of the shown value: the power of ten of the last digit the form printed ('144.9' is 0.1, '150000' is 1, '0.003400' is 0.000001).
+        var shownUnit = shownPlace ?? actual.Unit;
 
         // An expected zero written as a bare '0' is an exact zero, not "zero to the nearest whole number": it adds no coarseness of its own.
         var expectedUnit = expected.Digits.IsZero && expected.Unit >= 0 ? shownUnit : expected.Unit;
 
-        // 'unit' is the exponent of the coarser last place; the allowance is half of 10^unit.
-        var unit = Math.Max(expectedUnit, shownUnit);
+        // 'unit' is the exponent of the coarser last place; the allowance is half of 10^unit. A short whole number the form printed (a '4', a '150') is exact: the form
+        // prints fewer than four figures only for a whole number, so there is no rounding in it and only the expected value's own last place counts.
+        var unit = shownExact ? expectedUnit : Math.Max(expectedUnit, shownUnit);
 
         // Both numbers in whole multiples of 10^-s, s being the finer written scale (and the shown value's last place), so the arithmetic is exact.
         var s = -Math.Min(Math.Min(Math.Min(expected.Unit, actual.Unit), unit), shownUnit);
@@ -142,18 +141,28 @@ public static class GuidedTolerance
         // Twice the allowance, times 100 so that a cap in whole per cent stays an integer: the rule's half unit, capped at capPercent of the expected
         // value, but never below half of the form's own last displayed place (a correct value rounded to the form's figures always agrees).
         var rule = 100 * BigInteger.Pow(10, s + unit);
+
+        // A form that rounds in a direction (a safety factor down, a failing utilisation up) is off by up to the whole last digit it prints, not half of it.
+        var display = shownExact ? BigInteger.Zero : (directed ? 200 : 100) * BigInteger.Pow(10, s + shownUnit);
+        var displayText = directed ? WholeUnitText(shownUnit) : HalfUnitText(shownUnit);
+
+        if (!shownExact && rule < display)
+        {
+            rule = display;
+            unit = shownUnit;
+        }
+
         var allowed = rule;
-        var applied = "±" + HalfUnitText(unit);
+        var applied = "±" + (directed && !shownExact && unit == shownUnit ? displayText : HalfUnitText(unit));
 
         if (capPercent is { } percent)
         {
             var cap = 2 * percent * BigInteger.Abs(expected.AtScale(s));
-            var display = 100 * BigInteger.Pow(10, s + shownUnit);
 
             if (cap < rule)
             {
                 allowed = BigInteger.Max(cap, display);
-                applied = cap >= display ? $"±{percent.ToString(CultureInfo.InvariantCulture)} % of {expectedText}" : "±" + HalfUnitText(shownUnit);
+                applied = cap >= display ? $"±{percent.ToString(CultureInfo.InvariantCulture)} % of {expectedText}" : "±" + displayText;
             }
         }
 
@@ -161,6 +170,15 @@ public static class GuidedTolerance
             ? new(GuidedCompareOutcome.Match, $"{symbol}: {shownText} agrees with {expectedText} (allowance {applied}).", applied)
             : new(GuidedCompareOutcome.Mismatch, $"{symbol}: {shownText} differs from {expectedText} by more than {applied}.", applied);
     }
+
+    /// <summary>A whole number of one to three figures ("4", "150", "-12"): the form prints so few figures only for a number that is exactly whole.</summary>
+    private static bool IsExactWholeNumber(string number)
+    {
+        var t = number.Trim().TrimStart('-', '+', '−');
+        return t.Length is >= 1 and <= 3 && t.All(char.IsAsciiDigit);
+    }
+
+    private static string WholeUnitText(int unitExponent) => unitExponent >= 0 ? "1" + new string('0', unitExponent) : "0." + new string('0', -unitExponent - 1) + "1";
 
     private static string HalfUnitText(int unitExponent)
     {
@@ -172,6 +190,11 @@ public static class GuidedTolerance
     private static (string Number, string Unit) SplitUnit(string text)
     {
         var space = text.IndexOf(' ', StringComparison.Ordinal);
+
+        // The form writes a degree sign straight after its number ("40.01°"), every other unit after a space.
+        if (space < 0 && text.EndsWith('°'))
+            return (text[..^1], "°");
+
         return space < 0 ? (text, string.Empty) : (text[..space], text[(space + 1)..].Trim());
     }
 

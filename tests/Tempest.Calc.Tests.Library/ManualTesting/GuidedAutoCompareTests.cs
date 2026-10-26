@@ -9,23 +9,17 @@ public sealed class GuidedAutoCompareTests
     public static TheoryData<string> ExampleIds => [.. GuidedTestScript.Current.Steps.Where(s => s.Kind == GuidedStepKind.Example).Select(s => s.Id)];
 
     /// <summary>
-    /// The examples whose printed expected value differs from the engine's output by more than half a unit in its last digit, found when the
-    /// Guided test was built (Addendum C, C-5). Each expected value there is a hand calculation or a published figure held to the example's
+    /// The examples whose printed expected value differs from the engine's output by more than the allowance of the digits the form shows, found when the
+    /// Guided test was built (Addendum C, C-5) and re-counted with the form's own digits (C-2: seven examples that differed from the five figures
+    /// assumed then agree with the four or five the form shows, or with the directed rounding it uses for a safety factor and a failing utilisation). Each expected value there is a hand calculation or a published figure held to the example's
     /// own verification tolerance (<c>CalcExpectedValue.RelativeTolerance</c>, 1 % by default), not to the digits printed, so the auto-compare
     /// puts the line to the tester instead of failing it. The list is closed: an example that joins it is a new difference to look at.
     /// </summary>
     private static readonly HashSet<string> ForReview = new(StringComparer.Ordinal)
     {
-        "example:struct.frame-2d/two-span-continuous-beam",
-        "example:struct.en1993-member/ub-beam-bending-shear",
-        "example:struct.fillet-weld/normal-load-overloaded",
         "example:struct.section-properties/ub-457x191x98",
-        "example:struct.column-buckling/slender-strut-curve-b",
         "example:bs.duct-sizing/office-supply-equal-friction",
-        "example:bs.pipe-pump/oil-transfer-laminar",
-        "example:elec.voltage-drop/dc-battery-feed",
         "example:elec.voltage-drop/three-phase-motor-feeder",
-        "example:elec.motor-sizing/geared-index-table",
         "example:mech.press-fit/hollow-shaft",
         "example:mech.iso286-fit/h7-p6-50mm",
 
@@ -172,7 +166,7 @@ public sealed class GuidedAutoCompareTests
         var result = GuidedAutoCompare.Compare(step, RunExample(step));
 
         Assert.Equal("±0.005", result.Rows.Single(r => r.Symbol == "P").Comparison.Allowance);
-        Assert.Equal("±0.05", result.Rows.Single(r => r.Symbol == "L_10h").Comparison.Allowance);
+        Assert.Equal("±0.5", result.Rows.Single(r => r.Symbol == "L_10h").Comparison.Allowance); // the form prints 5 figures of 16667 h, so its last digit is the unit
         Assert.NotNull(result.Rows.Single(r => r.Symbol == "governing utilisation").Comparison.Allowance);
         Assert.Null(result.Rows.Single(r => r.Symbol == "governing check").Comparison.Allowance);
     }
