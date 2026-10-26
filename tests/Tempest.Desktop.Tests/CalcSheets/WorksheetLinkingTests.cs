@@ -37,21 +37,21 @@ public sealed class WorksheetLinkingTests
             await coordinator.OpenAsync(beam.Id);
 
             var label = $"Floor beam section · rev A · {CalcInstanceStatus.Draft}";
-            view.ChooseLink("I", label, "I_xx");
+            view.ChooseLink("I", label, "I_y");
             Click(view, CalcSheetView.LinkCaption);
             await Settle();
 
             var linked = (await service.Store.FindInstanceAsync(beam.Id))!;
             var link = Assert.Single(linked.Links);
-            Assert.Equal(new CalcLink(section.Id, "I_xx", "A"), link.Link);
-            Assert.Equal(section.Outputs.Single(o => o.Symbol == "I_xx").Si!.Value * 1e8, link.Input.Number!.Value, 6);
+            Assert.Equal(new CalcLink(section.Id, "I_y", "A"), link.Link);
+            Assert.Equal(section.Outputs.Single(o => o.Symbol == "I_y").Si!.Value * 1e8, link.Input.Number!.Value, 6);
             Assert.Equal(string.Empty, view.StaleText);
 
             // The section changes: the event marks the open beam stale and offers the update.
             var changed = await service.UpdateInputsAsync(section.Id, [.. section.Inputs.Select(i => i.Number is { } n && i.Unit == "mm" ? i with { Number = n * 1.5 } : i)]);
             Assert.True(changed.Succeeded, changed.Reason);
             await Settle();
-            Assert.Contains("now gives a different 'I_xx'", view.StaleText, StringComparison.Ordinal);
+            Assert.Contains("now gives a different 'I_y'", view.StaleText, StringComparison.Ordinal);
             Assert.Equal("Update linked inputs", view.UpdateLinksCaption);
 
             Click(view, CalcSheetView.UpdateLinksName);

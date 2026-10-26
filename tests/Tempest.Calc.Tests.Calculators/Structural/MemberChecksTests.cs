@@ -115,8 +115,8 @@ public sealed class MemberChecksTests
     {
         var low = CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("V_Ed", 100, "kN")));
         var high = CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("V_Ed", 300, "kN")));
-        Assert.Equal(0, low.OutputSi("rho"));
-        Assert.True(high.OutputSi("rho") > 0);
+        Assert.Equal(0, low.OutputSi("rho_shear"));
+        Assert.True(high.OutputSi("rho_shear") > 0);
         Assert.True(high.OutputSi("M_y_c_Rd") < low.OutputSi("M_y_c_Rd"));
         Assert.Contains(high.Notices, n => n.RuleId == "high-shear");
     }
@@ -134,7 +134,7 @@ public sealed class MemberChecksTests
         // struct.en1993-member-01: UB 305x165x40 S275, M_y 120 kN.m, V 250 kN (0.785 V_pl,Rd, rho 0.3241): the sheet cut M_y,c,Rd to (1 - rho) W_pl,y f_y = 115.80 kN.m (u 1.036, FAIL).
         // Eq. 6.30 gives (W_pl,y - rho A_w^2/(4 t_w)) f_y = 160.62 kN.m (u 0.747). python3: A_w = (303.4 - 2 * 10.2) * 6 = 1698 mm2.
         var r = CalcRunner.Run(Calc, Ub(CalcInputValue.Quantity("V_Ed", 250, "kN")));
-        Assert.Equal(0.324088, r.OutputSi("rho"), 6);
+        Assert.Equal(0.324088, r.OutputSi("rho_shear"), 6);
         Assert.Equal(160.618, r.OutputSi("M_y_c_Rd") / 1e3, 3);
         Assert.Equal(0.74711, r.OutputSi("u_M_y"), 4);
 
@@ -251,7 +251,7 @@ public sealed class MemberChecksTests
         Assert.True(r.Passed);
         var fail = CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("N_Ed", -1500, "kN")));
         Assert.False(fail.Passed);
-        Assert.StartsWith("Flexural", fail.Governing!.Name, StringComparison.Ordinal);
+        Assert.StartsWith("Axial force against buckling", fail.Governing!.Name, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -148,7 +148,7 @@ internal static partial class ConsistencyRules
         new("C18-sibling-symbols", "C", "18", "One symbol for one quantity across sibling sheets.", f => Symbols(f, "18")),
         new("C19-iso-axes", "C", "19", "Section properties use the EN 1993 axes, y-y major and z-z minor.", f =>
             f.Template.Id == "struct.section-properties"
-                ? f.QuantityFacts.Where(q => q.Origin is "output" or "input" && Regex.IsMatch(q.Symbol, @"^(I|W_el|W_pl|i|alpha_pl)_(x|y|xx|yy|xy)$")).Select(q => $"{q.Symbol} uses the x/y axes of the sheet").Distinct()
+                ? f.QuantityFacts.Where(q => q.Origin is "output" or "input" && Regex.IsMatch(q.Symbol, @"^(I|W_el|W_pl|i|alpha_pl)_(x|xx|xy|yy)$")).Select(q => $"{q.Symbol} uses the x-x axes of the sheet or a doubled subscript instead of the EN 1993 y-y and z-z").Distinct()
                 : []),
 
         // D. Units

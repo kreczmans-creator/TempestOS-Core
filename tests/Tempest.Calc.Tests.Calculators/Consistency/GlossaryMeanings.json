@@ -237,7 +237,8 @@
  "I_y": {
   "second-moment-major-axis": [
    "struct.en1993-member",
-   "struct.ltb-interaction"
+   "struct.ltb-interaction",
+   "struct.section-properties"
   ]
  },
  "I_z": {
@@ -247,7 +248,8 @@
   ],
   "second-moment-minor-axis": [
    "struct.en1993-member",
-   "struct.ltb-interaction"
+   "struct.ltb-interaction",
+   "struct.section-properties"
   ]
  },
  "J": {
@@ -767,7 +769,8 @@
  "W_el_z": {
   "elastic-modulus-minor-axis": [
    "struct.en1993-member",
-   "struct.ltb-interaction"
+   "struct.ltb-interaction",
+   "struct.section-properties"
   ]
  },
  "W_pl_y": {
@@ -780,7 +783,8 @@
  "W_pl_z": {
   "plastic-modulus-minor-axis": [
    "struct.en1993-member",
-   "struct.ltb-interaction"
+   "struct.ltb-interaction",
+   "struct.section-properties"
   ]
  },
  "X": {
@@ -1511,9 +1515,6 @@
    "mech.shaft",
    "mech.spring",
    "struct.plate-bending"
-  ],
-  "shear-reduction-factor": [
-   "struct.en1993-member"
   ]
  },
  "rho_20": {
@@ -1563,8 +1564,7 @@
    "struct.base-plate",
    "struct.connection-ec3",
    "struct.lifting",
-   "struct.plate-bending",
-   "struct.section-properties"
+   "struct.plate-bending"
   ],
   "time": [
    "elec.fault-protection"
@@ -1624,7 +1624,8 @@
   ],
   "web-thickness": [
    "struct.base-plate",
-   "struct.en1993-member"
+   "struct.en1993-member",
+   "struct.section-properties"
   ]
  },
  "tau": {

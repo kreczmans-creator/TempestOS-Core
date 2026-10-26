@@ -4,46 +4,47 @@ Calc ID: struct.en1993-member    Revision: A
 Title: Member checks (EN 1993-1-1)
 
 1. Scope and method
-Resistance checks of a steel member of class 1, 2 or 3 cross-section: tension (6.2.3), compression (6.2.4) and flexural buckling about y and z (6.3.1), bending about y and z (6.2.5), shear with the high-shear reduction (6.2.6, 6.2.8), the linear cross-section interaction (6.2.1(7)) and a simplified member interaction (6.3.3 with user-entered k factors). Lateral-torsional buckling and class 4 sections are outside this sheet.
+Calculates the resistance of a class 1, 2 or 3 steel member to tension, compression, buckling, bending, shear and their interaction, to EN 1993-1-1. Tension is positive; class 4 sections and lateral-torsional buckling are outside this sheet.
 Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic modulus for class 1–2 and elastic for class 3: M_c,Rd = W f_y/γ_M0. Shear resistance: V_pl,Rd = A_v f_y/(√3 γ_M0). Bending resistance reduced by high shear, when V_Ed > 0.5 V_pl,Rd: ρ = (2V_Ed/V_pl,Rd − 1)². Class 1–2 I-section with h, t_w, t_f entered: M_y,V,Rd = (W_pl,y − ρ A_w²/(4 t_w)) f_y/γ_M0, A_w = (h − 2t_f) t_w, and M_z,c,Rd is not reduced; otherwise the whole resistance × (1 − ρ). Elastic critical load and non-dimensional slenderness: N_cr = π²EI/L_cr²; λ̄ = √(A f_y/N_cr). Buckling reduction factor and buckling resistance: Φ = 0.5[1 + α(λ̄ − 0.2) + λ̄²]; χ = 1/(Φ + √(Φ² − λ̄²)) ≤ 1; N_b,Rd = χ A f_y/γ_M1. Cross-section check, linear interaction: N_Ed/N_Rd + M_y,Ed/M_y,Rd + M_z,Ed/M_z,Rd ≤ 1. Member check, axial force and bending with buckling (6.61, 6.62): N_Ed/N_b,Rd,min + k_yy M_y,Ed/(W_y f_y/γ_M1) + k_zz M_z,Ed/(W_z f_y/γ_M1) ≤ 1, the characteristic bending resistance M_Rk over γ_M1 without the shear reduction.
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
-  N_Ed | Design axial force, TENSION positive and compression negative (the opposite sign to S6's N_Ed, which is compression positive; S2's N_e1 is tension positive) | -900 | kN | manual | -100000 … 100000 kN
-  M_y_Ed | Design moment about y-y (major) | 0 | kN·m | manual | 0 … 100000 kN·m
-  M_z_Ed | Design moment about z-z (minor) | 0 | kN·m | manual | 0 … 100000 kN·m
-  V_Ed | Design shear force | 0 | kN | manual | 0 … 100000 kN
-  f_y | Yield strength (for the thickness) | 355 | MPa | manual | 200 … 700 MPa
-  E | Modulus of elasticity | 210 | GPa | manual | 190 … 220 GPa
-  gamma_M0 | Partial factor γ_M0 (cross-section resistance) | 1 |  | manual | 1 … 1.25
-  gamma_M1 | Partial factor γ_M1 (member buckling) | 1 |  | manual | 1 … 1.25
   section_class | Cross-section class | 1 |  | manual | any
-  A | Area A | 58.7 | cm² | manual | 1 … 100000 cm²
-  W_pl_y | W_pl,y | 497 | cm³ | manual | 0.1 … 10000000 cm³
-  W_el_y | W_el,y | 450 | cm³ | manual | 0.1 … 10000000 cm³
-  W_pl_z | W_pl,z | 231 | cm³ | manual | 0.1 … 10000000 cm³
-  W_el_z | W_el,z | 152 | cm³ | manual | 0.1 … 10000000 cm³
-  I_y | I_y | 4568 | cm⁴ | manual | 0.1 … 1000000000 cm⁴
-  I_z | I_z | 1548 | cm⁴ | manual | 0.1 … 1000000000 cm⁴
-  h | Depth h (shear-area helper; leave blank when A_v is given) | 203.2 | mm | manual | 1 … 5000 mm
-  b | Width b (helper) | 203.6 | mm | manual | 1 … 5000 mm
-  t_w | Web thickness (helper) | 7.2 | mm | manual | 0.1 … 500 mm
-  t_f | Flange thickness (helper) | 11 | mm | manual | 0.1 … 500 mm
-  r | Root radius (helper) | 10.2 | mm | manual | 0 … 500 mm
-  eta | Shear-area factor η | 1 |  | manual | 1 … 1.2
-  L_cr_y | Buckling length about y-y | 4 | m | manual | 0.1 … 100 m
-  L_cr_z | Buckling length about z-z | 4 | m | manual | 0.1 … 100 m
   curve_y | Buckling curve about y-y | b |  | manual | any
   curve_z | Buckling curve about z-z | c |  | manual | any
-  k_yy | Interaction factor k_yy (member check) | 1 |  | manual | 0.5 … 2
-  k_zz | Interaction factor k_zz (member check) | 1 |  | manual | 0.5 … 2
-  gamma_M2 | Partial factor γ_M2 (net-section fracture) | 1.1 |  | manual | 1 … 1.35
+  A | Area | 58.7 | cm² | manual | 1 … 100000 cm²
+  W_pl_y | Plastic section modulus about y-y | 497 | cm³ | manual | 0.1 … 10000000 cm³
+  W_el_y | Elastic section modulus about y-y | 450 | cm³ | manual | 0.1 … 10000000 cm³
+  W_pl_z | Plastic section modulus about z-z | 231 | cm³ | manual | 0.1 … 10000000 cm³
+  W_el_z | Elastic section modulus about z-z | 152 | cm³ | manual | 0.1 … 10000000 cm³
+  I_y | Second moment of area about y-y | 4568 | cm⁴ | manual | 0.1 … 1000000000 cm⁴
+  I_z | Second moment of area about z-z | 1548 | cm⁴ | manual | 0.1 … 1000000000 cm⁴
+  h | Depth for the shear area (optional; blank = use A_v) | 203.2 | mm | manual | 1 … 5000 mm
+  b | Width for the shear area (optional; blank = use A_v) | 203.6 | mm | manual | 1 … 5000 mm
+  t_w | Web thickness for the shear area (optional; blank = use A_v) | 7.2 | mm | manual | 0.1 … 500 mm
+  t_f | Flange thickness for the shear area (optional; blank = use A_v) | 11 | mm | manual | 0.1 … 500 mm
+  r | Root radius for the shear area (optional; blank = 0) | 10.2 | mm | manual | 0 … 500 mm
+  f_y | Yield strength for the thickness | 355 | MPa | manual | 200 … 700 MPa
+  E | Young's modulus | 210 | GPa | manual | 190 … 220 GPa
+  N_Ed | Design axial force, tension positive and compression negative, opposite in sign to the base plate sheet's axial force | -900 | kN | manual | -100000 … 100000 kN
+  M_y_Ed | Design moment about y-y (major axis) | 0 | kN·m | manual | 0 … 100000 kN·m
+  M_z_Ed | Design moment about z-z (minor axis) | 0 | kN·m | manual | 0 … 100000 kN·m
+  V_Ed | Design shear force | 0 | kN | manual | 0 … 100000 kN
+  L_cr_y | Buckling length about y-y | 4 | m | manual | 0.1 … 100 m
+  L_cr_z | Buckling length about z-z | 4 | m | manual | 0.1 … 100 m
+  gamma_M0 | Partial factor for cross-section resistance | 1 |  | manual | 1 … 1.25
+  gamma_M1 | Partial factor for member buckling | 1 |  | manual | 1 … 1.25
+  gamma_M2 | Partial factor for net-section fracture | 1.1 |  | manual | 1 … 1.35
+  eta | Shear-area factor | 1 |  | manual | 1 … 1.2
+  k_yy | Interaction factor for bending about y-y in the member check | 1 |  | manual | 0.5 … 2
+  k_zz | Interaction factor for bending about z-z in the member check | 1 |  | manual | 0.5 … 2
 
 3. Assumptions
-  A1. The cross-section class is as stated by the user (1, 2 or 3); class 4 effective properties are not derived here. (6.2.2.5 effective widths are outside this sheet.)
-  A2. The compression flange is restrained against lateral-torsional buckling, as the input ltb says. (6.3.2 is outside this sheet: a member that is not restrained is checked on the LTB interaction sheet.)
-  A3. A k left at 1.0 under N_Ed/N_b,Rd above 0.3 is replaced by the Annex A/B upper bound C_m(1 + 0.8n). (6.3.3 simplified: the smaller flexural-buckling reduction is used on the axial term and the factors are not derived.)
-  A4. Imperfection factors per curve are the textbook values and may be overridden; partial factors default to 1.0 (UK National Annex) and may be overridden. (User-editable with provenance.)
+  A1. The cross-section class is the class the user states, 1, 2 or 3. (Class 4 effective properties are not derived here.)
+  A2. The compression flange is restrained against lateral-torsional buckling, as the input ltb says. (Lateral-torsional buckling of a member that is not restrained is checked on the LTB interaction sheet.)
+  A3. A k left at 1.0 is replaced by the Annex A or B upper bound C_m(1 + 0.8n). (Applies under compression with a moment; the smaller flexural-buckling reduction is used on the axial term and the factors are not derived.)
+  A4. Imperfection factors are the textbook values for the buckling curve unless the user overrides them. (Gardner and Nethercot, Designers' Guide to EN 1993-1-1.)
+  A5. Partial factors are 1.0 as in the UK National Annex unless the user overrides them. (UK National Annex to BS EN 1993-1-1.)
 
 4. Working
   [27] r_h = r
@@ -82,14 +83,14 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
       = 0 kN / 347.28 kN
       = 0
         Shear utilisation
-  [36] rho = 0    « 6.2.8(2)
+  [36] rho_shear = 0    « 6.2.8(2)
       = 0
         Shear reduction factor (V_Ed ≤ 0.5 V_pl,Rd)
-  [37] M_y_c_Rd = (1 - rho) * W_y * f_y / gamma_M0    « 6.2.5(2), 6.2.8
+  [37] M_y_c_Rd = (1 - rho_shear) * W_y * f_y / gamma_M0    « 6.2.5(2), 6.2.8
       = (1 − 0) × 497 cm³ × 355 MPa / 1
       = 176.44 kN·m
         Bending resistance about y
-  [38] M_z_c_Rd = (1 - rho) * W_z * f_y / gamma_M0    « 6.2.5(2)
+  [38] M_z_c_Rd = (1 - rho_shear) * W_z * f_y / gamma_M0    « 6.2.5(2)
       = (1 − 0) × 231 cm³ × 355 MPa / 1
       = 82.005 kN·m
         Bending resistance about z
@@ -101,132 +102,140 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
       = 0 kN·m / 82.005 kN·m
       = 0
         Bending utilisation, z
-  [41] u_N = abs(N_Ed) / N_pl_Rd
-      = abs(-900 kN) / 2083.8 kN
+  [41] N_abs = abs(N_Ed)
+      = abs(-900 kN)
+      = 900 kN
+        Axial force magnitude
+  [42] u_N = N_abs / N_pl_Rd
+      = 900 kN / 2083.8 kN
       = 0.43189
         Compression (cross-section) utilisation
-  [42] u_section = u_N + u_M_y + u_M_z    « 6.2.1(7)
+  [43] u_section = u_N + u_M_y + u_M_z    « 6.2.1(7)
       = 0.43189 + 0 + 0
       = 0.43189
         Linear cross-section interaction
-  [45] alpha_y = imperfection factor, curve b    « 6.3.1.2
+  [46] alpha_y = imperfection factor, curve b    « 6.3.1.2
       = Designers' Guide §6.3.1
       = 0.34
         Imperfection factor about y
-  [46] alpha_z = imperfection factor, curve c    « 6.3.1.2
+  [47] alpha_z = imperfection factor, curve c    « 6.3.1.2
       = Designers' Guide §6.3.1
       = 0.49
         Imperfection factor about z
-  [47] N_cr_y = pi^2 * E * I_y / L_cr_y^2    « 6.3.1.2(1)
+  [48] N_cr_y = pi^2 * E * I_y / L_cr_y^2    « 6.3.1.2(1)
       = π^2 × 210 GPa × 4568 cm⁴ / (4 m)^2
       = 5917.3 kN
         Elastic critical force about y
-  [48] lambda_y = sqrt(A * f_y / N_cr_y)    « 6.3.1.2(1)
+  [49] lambda_y = sqrt(A * f_y / N_cr_y)    « 6.3.1.2(1)
       = sqrt(58.7 cm² × 355 MPa / 5917.3 kN)
       = 0.59343
         Non-dimensional slenderness about y
-  [49] Phi_y = 0.5 * (1 + alpha_y * (lambda_y - 0.2) + lambda_y^2)    « 6.3.1.2(1)
+  [50] Phi_y = 0.5 * (1 + alpha_y * (lambda_y - 0.2) + lambda_y^2)    « 6.3.1.2(1)
       = 0.5 × (1 + 0.34 × (0.59343 − 0.2) + 0.59343^2)
       = 0.74296
         Φ about y
-  [50] chi_y = min(1, 1 / (Phi_y + sqrt(Phi_y^2 - lambda_y^2)))    « 6.3.1.2(1)
+  [51] chi_y = min(1, 1 / (Phi_y + sqrt(Phi_y^2 - lambda_y^2)))    « 6.3.1.2(1)
       = min(1, 1 / (0.74296 + sqrt(0.74296^2 − 0.59343^2)))
       = 0.84034
         Reduction factor χ about y
-  [51] N_b_y_Rd = chi_y * A * f_y / gamma_M1    « 6.3.1.1(3)
+  [52] N_b_y_Rd = chi_y * A * f_y / gamma_M1    « 6.3.1.1(3)
       = 0.84034 × 58.7 cm² × 355 MPa / 1
       = 1751.1 kN
         Buckling resistance about y
-  [52] N_cr_z = pi^2 * E * I_z / L_cr_z^2    « 6.3.1.2(1)
+  [53] N_cr_z = pi^2 * E * I_z / L_cr_z^2    « 6.3.1.2(1)
       = π^2 × 210 GPa × 1548 cm⁴ / (4 m)^2
       = 2005.3 kN
         Elastic critical force about z
-  [53] lambda_z = sqrt(A * f_y / N_cr_z)    « 6.3.1.2(1)
+  [54] lambda_z = sqrt(A * f_y / N_cr_z)    « 6.3.1.2(1)
       = sqrt(58.7 cm² × 355 MPa / 2005.3 kN)
       = 1.0194
         Non-dimensional slenderness about z
-  [54] Phi_z = 0.5 * (1 + alpha_z * (lambda_z - 0.2) + lambda_z^2)    « 6.3.1.2(1)
+  [55] Phi_z = 0.5 * (1 + alpha_z * (lambda_z - 0.2) + lambda_z^2)    « 6.3.1.2(1)
       = 0.5 × (1 + 0.49 × (1.0194 − 0.2) + 1.0194^2)
       = 1.2204
         Φ about z
-  [55] chi_z = min(1, 1 / (Phi_z + sqrt(Phi_z^2 - lambda_z^2)))    « 6.3.1.2(1)
+  [56] chi_z = min(1, 1 / (Phi_z + sqrt(Phi_z^2 - lambda_z^2)))    « 6.3.1.2(1)
       = min(1, 1 / (1.2204 + sqrt(1.2204^2 − 1.0194^2)))
       = 0.52876
         Reduction factor χ about z
-  [56] N_b_z_Rd = chi_z * A * f_y / gamma_M1    « 6.3.1.1(3)
+  [57] N_b_z_Rd = chi_z * A * f_y / gamma_M1    « 6.3.1.1(3)
       = 0.52876 × 58.7 cm² × 355 MPa / 1
       = 1101.9 kN
         Buckling resistance about z
-  [57] N_b_Rd = min(N_b_y_Rd, N_b_z_Rd)
+  [58] N_b_Rd = min(N_b_y_Rd, N_b_z_Rd)
       = min(1751.1 kN, 1101.9 kN)
       = 1101.9 kN
         Governing buckling resistance
-  [58] u_buckling = abs(N_Ed) / N_b_Rd    « 6.3.1.1(1)
-      = abs(-900 kN) / 1101.9 kN
+  [59] u_buckling = N_abs / N_b_Rd    « 6.3.1.1(1)
+      = 900 kN / 1101.9 kN
       = 0.8168
         Flexural buckling utilisation
-  [59] M_y_b_Rd = W_y * f_y / gamma_M1    « 6.3.3, Eq. 6.61
+  [60] M_y_b_Rd = W_y * f_y / gamma_M1    « 6.3.3, Eq. 6.61
       = 497 cm³ × 355 MPa / 1
       = 176.44 kN·m
         Characteristic bending resistance about y over γ_M1 (member check, no shear reduction)
-  [60] M_z_b_Rd = W_z * f_y / gamma_M1    « 6.3.3, Eq. 6.62
+  [61] M_z_b_Rd = W_z * f_y / gamma_M1    « 6.3.3, Eq. 6.62
       = 231 cm³ × 355 MPa / 1
       = 82.005 kN·m
         Characteristic bending resistance about z over γ_M1 (member check, no shear reduction)
-  [61] u_member = abs(N_Ed) / N_b_Rd + k_yy * M_y_Ed / M_y_b_Rd + k_zz * M_z_Ed / M_z_b_Rd    « 6.3.3(4)
-      = abs(-900 kN) / 1101.9 kN + 1 × 0 kN·m / 176.44 kN·m + 1 × 0 kN·m / 82.005 kN·m
+  [62] u_member = N_abs / N_b_Rd + k_yy * M_y_Ed / M_y_b_Rd + k_zz * M_z_Ed / M_z_b_Rd    « 6.3.3(4)
+      = 900 kN / 1101.9 kN + 1 × 0 kN·m / 176.44 kN·m + 1 × 0 kN·m / 82.005 kN·m
       = 0.8168
         Simplified member interaction
+  [63] u_limit = limit
+      = the utilisation limit
+      = 1
+        Utilisation limit
 
 5. Results
-  A_v = 16.94 cm²    Shear area
-  N_pl_Rd = 2083.8 kN    N_pl,Rd
-  V_pl_Rd = 347.28 kN    V_pl,Rd
-  rho = 0    Shear reduction factor ρ
-  M_y_c_Rd = 176.44 kN·m    M_y,c,Rd
-  M_z_c_Rd = 82.01 kN·m    M_z,c,Rd
-  M_y_b_Rd = 176.44 kN·m    M_y,Rk/γ_M1
-  M_z_b_Rd = 82.01 kN·m    M_z,Rk/γ_M1
-  N_cr_y = 5917.3 kN    N_cr,y
-  N_cr_z = 2005.3 kN    N_cr,z
-  lambda_y = 0.59343    λ̄_y
-  lambda_z = 1.0194    λ̄_z
-  chi_y = 0.84034    χ_y
-  chi_z = 0.52876    χ_z
-  N_b_y_Rd = 1751.1 kN    N_b,y,Rd
-  N_b_z_Rd = 1101.9 kN    N_b,z,Rd
-  N_b_Rd = 1101.9 kN    N_b,Rd
-  u_N = 0.43    Axial utilisation
-  u_M_y = 0.00    Bending y utilisation
-  u_M_z = 0.00    Bending z utilisation
-  u_V = 0.00    Shear utilisation
+  N_pl_Rd = 2083.8 kN    Plastic axial resistance
+  N_b_Rd = 1101.9 kN    Governing buckling resistance
+  M_y_c_Rd = 176.44 kN·m    Bending resistance about y-y
+  M_z_c_Rd = 82.01 kN·m    Bending resistance about z-z
+  V_pl_Rd = 347.28 kN    Plastic shear resistance
+  rho_shear = 0    Shear reduction factor ρ
   u_section = 0.43    Cross-section interaction
-  u_buckling = 0.82    Buckling utilisation (governing)
+  u_buckling = 0.82    Buckling utilisation
   u_member = 0.82    Member interaction
+  A_v = 16.94 cm²    Shear area
+  M_y_b_Rd = 176.44 kN·m    Characteristic bending resistance about y-y over the partial factor
+  M_z_b_Rd = 82.01 kN·m    Characteristic bending resistance about z-z over the partial factor
+  N_cr_y = 5917.3 kN    Elastic critical force about y-y
+  N_cr_z = 2005.3 kN    Elastic critical force about z-z
+  lambda_y = 0.59343    Non-dimensional slenderness about y-y
+  lambda_z = 1.0194    Non-dimensional slenderness about z-z
+  chi_y = 0.84034    Buckling reduction factor about y-y
+  chi_z = 0.52876    Buckling reduction factor about z-z
+  N_b_y_Rd = 1751.1 kN    Buckling resistance about y-y
+  N_b_z_Rd = 1101.9 kN    Buckling resistance about z-z
+  u_N = 0.43    Axial utilisation
+  u_M_y = 0.00    Bending y-y utilisation
+  u_M_z = 0.00    Bending z-z utilisation
+  u_V = 0.00    Shear utilisation
 
 6. Checks (governing first)
-  PASS  Flexural buckling N_Ed ≤ N_b,Rd: u_buckling = 0.82 vs u_buckling ≤ 1  utilisation 0.82  « 6.3.1.1
-  PASS  Member interaction (simplified): u_member = 0.82 vs u_member ≤ 1  utilisation 0.82  « 6.3.3
-  PASS  Compression N_Ed ≤ N_c,Rd: u_N = 0.43 vs u_N ≤ 1  utilisation 0.43  « 6.2.4
-  PASS  Cross-section interaction: u_section = 0.43 vs u_section ≤ 1  utilisation 0.43  « 6.2.1(7)
-  PASS  Bending y M_y,Ed ≤ M_y,c,Rd: u_M_y = 0.00 vs u_M_y ≤ 1  utilisation 0.00  « 6.2.5
-  PASS  Bending z M_z,Ed ≤ M_z,c,Rd: u_M_z = 0.00 vs u_M_z ≤ 1  utilisation 0.00  « 6.2.5
-  PASS  Shear V_Ed ≤ V_pl,Rd: u_V = 0.00 vs u_V ≤ 1  utilisation 0.00  « 6.2.6
+  PASS  Axial force against buckling resistance: 900 kN vs 1101.9 kN  utilisation 0.82  « cl. 6.3.1.1
+  PASS  Member interaction against its limit: 0.8168 vs 1  utilisation 0.82  « cl. 6.3.3
+  PASS  Compression against plastic resistance: 900 kN vs 2083.8 kN  utilisation 0.43  « cl. 6.2.3, 6.2.4
+  PASS  Cross-section interaction against its limit: 0.43189 vs 1  utilisation 0.43  « cl. 6.2.1(7)
+  PASS  Bending moment y-y against bending resistance: 0 kN·m vs 176.44 kN·m  utilisation 0.00  « cl. 6.2.5
+  PASS  Bending moment z-z against bending resistance: 0 kN·m vs 82.01 kN·m  utilisation 0.00  « cl. 6.2.5
+  PASS  Shear force against plastic shear resistance: 0 kN vs 347.28 kN  utilisation 0.00  « cl. 6.2.6
 
 7. Applicability
   None.
 
 8. Verification
-  Template: struct.en1993-member@1.5.0
+  Template: struct.en1993-member@1.6.0
   Known-answer cases passed: 3/3
 
 9. References
-  1. BS EN 1993-1-1 6.2.3 — Tension
-  2. BS EN 1993-1-1 6.2.4 — Compression
-  3. BS EN 1993-1-1 6.2.5 — Bending moment
-  4. BS EN 1993-1-1 6.2.6 — Shear
-  5. BS EN 1993-1-1 6.2.8 — Bending and shear
-  6. BS EN 1993-1-1 6.2.1(7) — Linear summation of utilisations
-  7. BS EN 1993-1-1 6.3.1.1, 6.3.1.2 — Uniform members in compression: buckling resistance, buckling curves
-  8. BS EN 1993-1-1 6.3.3 — Uniform members in bending and axial compression
-  9. Gardner & Nethercot, Designers' Guide to Eurocode 3 §6.3.1 — Imperfection factors for the buckling curves
+  1. BS EN 1993-1-1:2005+A1:2014 cl. 6.2.3 — Tension
+  2. BS EN 1993-1-1:2005+A1:2014 cl. 6.2.4 — Compression
+  3. BS EN 1993-1-1:2005+A1:2014 cl. 6.2.5 — Bending moment
+  4. BS EN 1993-1-1:2005+A1:2014 cl. 6.2.6 — Shear
+  5. BS EN 1993-1-1:2005+A1:2014 cl. 6.2.8 — Bending and shear
+  6. BS EN 1993-1-1:2005+A1:2014 cl. 6.2.1(7) — Linear summation of utilisations
+  7. BS EN 1993-1-1:2005+A1:2014 cl. 6.3.1.1, 6.3.1.2 — Uniform members in compression: buckling resistance, buckling curves
+  8. BS EN 1993-1-1:2005+A1:2014 cl. 6.3.3 — Uniform members in bending and axial compression
+  9. Gardner and Nethercot, Designers' Guide to EN 1993-1-1 §6.3.1, 1st ed. — Imperfection factors for the buckling curves

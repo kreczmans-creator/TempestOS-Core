@@ -140,12 +140,14 @@
   "struct.en1993-member@1.3.1": "a2e6114eb2412c02da26e89963087053655c384e990b3a3bd131bd673897866a",
   "struct.en1993-member@1.4.0": "fdf55f0878a74ece85dc763d256666ab06894600c3bab3c754e6aff8682fa248",
   "struct.en1993-member@1.5.0": "198fa1e7c5a65ea8e5f1c989b6b14d3af89ef8f1369bc7c178b60b011a782e3e",
+  "struct.en1993-member@1.6.0": "09dec90614ac2f64d2d1a6ea139bc284e73239baac99d33ac6fc6a118680a960",
   "struct.fillet-weld@1.0.1": "fc8699cc96f9dfc16db7655b272cb9d949dc6a74b0677da2f36457a0fda8f4bb",
   "struct.fillet-weld@1.0.2": "28bde48078cccba17f2aeafe198e99fbfcceaccb87d8b98c1bb0e016719edd02",
   "struct.fillet-weld@1.1.0": "05873bcb86c43432341ca75f117b7bbcc26891514ccd1f5ff122df90e642439f",
   "struct.frame-2d@1.2.0": "1b81d6b769125a7ef3769d677b110d9f8ce9b062214c11abb8180688e1da4cfb",
   "struct.frame-2d@1.3.0": "d545dc5d7d4eb03c8c981271279b33f99ea9ad37a31f6b4916111e73ed0e393d",
   "struct.frame-2d@1.4.0": "a6389d664ba5a5eb2adf8a9719870559543cf384d0eec34d3a737f073a083504",
+  "struct.frame-2d@1.5.0": "563dd9a0eb5dfb9f4aba291a1be084de907760651e6fb46b250ddc161a5f6f94",
   "struct.lifting@1.1.1": "2d4633b8b90f303665cd8d3edaee7a406a106fe71d3ee91c2af6a734e8982e2a",
   "struct.load-combinations@1.0.0": "60a0615ba7745102251e77d717f5163ee51d17270a63eb7ab4279119fa7f95e4",
   "struct.load-combinations@1.1.0": "28f3ed111e112df1ff6039f67d876e5644be893e8532c978fc23d5aeef71e230",
@@ -158,5 +160,6 @@
   "struct.plate-bending@1.3.0": "de24a86c46e1b8cf236dc4aeb96ade0e7bbf723d2b837834496a52a18973704d",
   "struct.section-properties@1.0.1": "b7d59144d05267d439aaa63ba5cee6000f9f4f055ef9797e660451e0e7b95a0c",
   "struct.section-properties@1.1.0": "985ed28ba222c801e40e19931dc01cbb1e97c9121d23f99121ce1de3a583a8ed",
-  "struct.section-properties@1.1.1": "18d6536f1f7df3e196748171f6bc258a19674dbadeb0db132fd184d478016809"
+  "struct.section-properties@1.1.1": "18d6536f1f7df3e196748171f6bc258a19674dbadeb0db132fd184d478016809",
+  "struct.section-properties@1.2.0": "a95bd0059585bd3647268f1c394b05e4eab5c77f8325ffab7d9af415bf7b9c36"
 }

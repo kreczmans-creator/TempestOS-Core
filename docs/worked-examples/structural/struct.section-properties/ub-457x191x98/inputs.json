@@ -43,17 +43,6 @@
     "ValueText": "I-section"
   },
   {
-    "Symbol": "t",
-    "Number": 11.4,
-    "Unit": "mm",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "BS EN 10365 UB 457\u00D7191\u00D798",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "11.4"
-  },
-  {
     "Symbol": "t_f",
     "Number": 19.6,
     "Unit": "mm",
@@ -63,5 +52,16 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "19.6"
+  },
+  {
+    "Symbol": "t_w",
+    "Number": 11.4,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UB 457\u00D7191\u00D798",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "11.4"
   }
 ]

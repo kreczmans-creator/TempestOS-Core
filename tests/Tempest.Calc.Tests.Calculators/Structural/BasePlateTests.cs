@@ -352,7 +352,7 @@ public sealed class BasePlateTests
         var s3 = new MemberChecksCalculator().Template.Inputs.Single(i => i.Symbol == "N_Ed").Description;
         Assert.Contains("COMPRESSION positive", s6, StringComparison.Ordinal);
         Assert.Contains("opposite", s6, StringComparison.Ordinal);
-        Assert.Contains("TENSION positive", s3, StringComparison.Ordinal);
+        Assert.Contains("tension positive", s3, StringComparison.Ordinal);
         Assert.Contains("opposite", s3, StringComparison.Ordinal);
         Assert.Contains(Plate.Template.Assumptions, a => a.Statement.Contains("R1_y", StringComparison.Ordinal) && a.Statement.Contains("N_e1", StringComparison.Ordinal));
     }

@@ -42,4 +42,4 @@ A 4 m pinned UC column carrying 900 kN with a 40 kN·m major-axis moment from th
 | `M_y_c_Rd` | 176.435 kN*m | 176.435 kN*m | PASS |
 | `u_member` | 1.0435  | 1.04352  | PASS |
 
-Governing check: Member interaction (simplified) — FAIL (utilisation 1.05). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Member interaction against its limit — FAIL (utilisation 1.05). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -41,7 +41,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 20/20
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 21:53 UTC
   Application: TempestOS test
 
 9. References
@@ -290,7 +290,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   Content hash: af9b80384432033b
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 21:53 UTC
   Application: TempestOS test
 
 9. References
@@ -308,12 +308,11 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: PIP-SUP-001    Client: Client Co
 
 1. Scope and method
-Linear elastic analysis of a plane frame or continuous beam by the direct stiffness method: reactions, member end forces, axial force, shear, bending moment and deflection along every member with their extremes and positions, for each load combination and as an envelope. Global x to the right, y up; moments and couples anticlockwise positive; sagging moments positive along a member from node i to node j.
-Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L and bending EI/L³ terms. End releases (pins) are taken out by static condensation; supports remove freedoms or add spring stiffness. Span loads become equivalent nodal loads, the exact fixed-end forces. Displacements, by banded LDLᵀ after a reverse Cuthill–McKee ordering (a non-positive pivot is reported as a mechanism): K u = F. Internal forces and deflections follow from the member end actions and Macaulay functions of the span loads. Extremes are found at stations along each member, plus the zero-shear and zero-slope points found by bisection.
+Calculates reactions, member forces and deflections of a linear elastic plane frame or continuous beam by the direct stiffness method. Global x is right and y up; bending is about the section y-y axis, anticlockwise positive.
+Member stiffness: three freedoms per node, Euler–Bernoulli members with axial EA/L and bending EI/L³ terms. End releases: pins are taken out by static condensation; supports remove freedoms or add spring stiffness. Span loads: they become equivalent nodal loads, the exact fixed-end forces. Nodal displacements: K u = F, solved by banded LDLᵀ after a reverse Cuthill–McKee ordering; a non-positive pivot is reported as a mechanism. Internal forces: they follow from the member end actions and the Macaulay functions of the span loads. Member extremes: found at stations along each member, plus the zero-shear and zero-slope points found by bisection.
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
-  E | Default modulus of elasticity | 210 | GPa | drawing: DRG-PIP-610 rev B | 1 … 500 GPa
   nodes | Nodes | 2 row(s) |  | drawing: DRG-PIP-610 rev B | any
   nodes[1] |  | id = 1; x = 0 m; y = 0 m; support = fixed |  |  | 
   nodes[2] |  | id = 2; x = 0 m; y = 2.5 m; support = free |  |  | 
@@ -322,17 +321,21 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   loads | Loads | 2 row(s) |  | drawing: DRG-PIP-610 rev B | any
   loads[1] |  | case = 1; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 7.0695 kN; F_y = 0 kN; M = 0 kN·m |  | F_x: link: Pipe expansion and anchor force rev A · anchor_force | 
   loads[2] |  | case = 2; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = -6 kN; M = 0 kN·m |  |  | 
-  combinations | Combinations (blank = each case alone) | 2 row(s) |  | drawing: DRG-PIP-610 rev B | any
+  n_div | Stations per member | 20 |  | assumption: Sheet default value; no project figure given. | 4 … 100
+  combinations | Load combinations (optional; blank = each case alone) | 2 row(s) |  | drawing: DRG-PIP-610 rev B | any
   combinations[1] |  | name = ULS; case = 1; factor = 1.5 |  |  | 
   combinations[2] |  | name = ULS; case = 2; factor = 1.35 |  |  | 
-  report | Combination to report in detail (blank = first) | ULS |  | drawing: DRG-PIP-610 rev B | any
-  n_div | Stations per member | 20 |  | assumption: Sheet default value; no project figure given. | 4 … 100
+  report | Combination to report in detail (optional; blank = the first) | ULS |  | drawing: DRG-PIP-610 rev B | any
+  E | Default Young's modulus | 210 | GPa | drawing: DRG-PIP-610 rev B | 1 … 500 GPa
 
 3. Assumptions
-  A1. Linear elastic, small displacements, first order; no shear deformation, no P–Δ, no buckling. (Euler–Bernoulli direct stiffness.)
-  A2. Members are prismatic between nodes and connect rigidly unless a release is stated; a release transmits no moment at that end. (Static condensation of the released rotation.)
-  A3. Distributed loads act perpendicular to the member unless marked as gravity loads, which act in global −y per metre of member length. (Load table convention.)
-  A4. n_div (Stations per member) is taken as 20. (Sheet default value; no project figure given.)
+  A1. The analysis is linear elastic and first order, with small displacements. (Euler–Bernoulli direct stiffness.)
+  A2. Members have no shear deformation, and there are no P–Δ effects or buckling. (Euler–Bernoulli direct stiffness.)
+  A3. Members are prismatic between nodes and connect rigidly unless a release is stated. (Static condensation of the released rotation.)
+  A4. A released member end transmits no moment. (Static condensation of the released rotation.)
+  A5. Distributed loads act perpendicular to the member unless marked as gravity loads. (Load table convention.)
+  A6. Gravity loads act in global −y per metre of member length. (Load table convention.)
+  A7. n_div (Stations per member) is taken as 20. (Sheet default value; no project figure given.)
 
 4. Working
   [4] n_nodes = nodes
@@ -461,17 +464,17 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   None.
 
 8. Verification
-  Template: struct.frame-2d@1.4.0
-  Content hash: a6389d664ba5a5eb
+  Template: struct.frame-2d@1.5.0
+  Content hash: 563dd9a0eb5dfb9f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 21:53 UTC
   Application: TempestOS test
 
 9. References
-  1. Hibbeler, Structural Analysis Ch. 16 — Plane frame analysis using the stiffness method
-  2. Roark's Formulas for Stress and Strain Ch. 8, Table 8.1 — Shear, moment, slope and deflection formulas for elastic straight beams
-  3. BS EN 1990 6.4.3 — Combinations of actions (user-entered factors)
+  1. Hibbeler, Structural Analysis Ch. 16, 9th ed. — Plane frame analysis using the stiffness method
+  2. Young and Budynas, Roark's Formulas for Stress and Strain Table 8.1, 8th ed. — Shear, moment, slope and deflection formulas for elastic straight beams
+  3. BS EN 1990:2002+A1:2005 cl. 6.4.3 — Combinations of actions (user-entered factors)
 
 
 CALCULATION SHEET — ISSUED
@@ -521,7 +524,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | drawing: DRG-PIP-611 rev B | 235 … 640 MPa
   A_s | Anchor bolt tensile stress area (from S4) | 244.79 | mm² | drawing: DRG-PIP-611 rev B | 50 … 1500 mm²
   F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 248.48 | kN | drawing: DRG-PIP-611 rev B | 1 … 2000 kN
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: f6a3d5744a814faf9235d9115dee1506/abc255d3d41c4dffbee7faa1fe3c3b79 | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 4ac64910ea16423e80c6175ed9f76b39/c0ad7d0c50dd4634a737c241dc150ba3 | any
 
 3. Assumptions
   A1. N_Ed is positive in compression here, the opposite of S3 (tension positive): a link from S2 must take the reaction R1_y (up positive, compression into the base), never the member force N_e1. (Sign convention.)
@@ -741,7 +744,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   Content hash: 3ba3eee23aa8a758
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 21:53 UTC
   Application: TempestOS test
 
 9. References

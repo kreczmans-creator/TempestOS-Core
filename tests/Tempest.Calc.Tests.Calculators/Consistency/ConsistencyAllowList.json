@@ -28,7 +28,6 @@
     "struct.base-plate": 6,
     "struct.beam-formulas": 2,
     "struct.connection-ec3": 6,
-    "struct.en1993-member": 8,
     "struct.fillet-weld": 1,
     "struct.lifting": 14,
     "struct.ltb-interaction": 6,
@@ -76,7 +75,6 @@
     "struct.beam-formulas": 8,
     "struct.column-buckling": 3,
     "struct.connection-ec3": 11,
-    "struct.en1993-member": 14,
     "struct.fillet-weld": 3,
     "struct.lifting": 26,
     "struct.ltb-interaction": 23,
@@ -86,8 +84,6 @@
     "mech.thermal-expansion": 1,
     "struct.beam-formulas": 1,
     "struct.column-buckling": 1,
-    "struct.en1993-member": 1,
-    "struct.frame-2d": 1,
     "struct.ltb-interaction": 3,
     "struct.plate-bending": 1
   },
@@ -124,12 +120,10 @@
     "mech.snap-fit": 2,
     "mech.spring": 3,
     "struct.base-plate": 6,
-    "struct.en1993-member": 9,
     "struct.lifting": 9,
     "struct.load-combinations": 1,
     "struct.ltb-interaction": 21,
-    "struct.plate-bending": 4,
-    "struct.section-properties": 15
+    "struct.plate-bending": 4
   },
   "B09-optional-hint": {
     "bs.glaser": 4,
@@ -155,11 +149,8 @@
     "mech.spring": 1,
     "struct.base-plate": 2,
     "struct.connection-ec3": 5,
-    "struct.en1993-member": 4,
-    "struct.frame-2d": 2,
     "struct.lifting": 6,
-    "struct.ltb-interaction": 5,
-    "struct.section-properties": 2
+    "struct.ltb-interaction": 5
   },
   "C10-temperature-symbols": {
     "bs.glaser": 4,
@@ -187,8 +178,7 @@
     "struct.base-plate": 1,
     "struct.connection-ec3": 1,
     "struct.lifting": 1,
-    "struct.plate-bending": 1,
-    "struct.section-properties": 2
+    "struct.plate-bending": 1
   },
   "C13-no-case-only-pairs": {
     "bs.room-heat-loss": 1,
@@ -218,9 +208,6 @@
     "mech.press-fit": 1,
     "mech.spring": 1
   },
-  "C16-greek-letters": {
-    "struct.en1993-member": 1
-  },
   "C17-single-letters": {
     "bs.duct-sizing": 1,
     "bs.insulation": 1,
@@ -246,9 +233,6 @@
     "elec.load-budget": 1,
     "mech.bolt-group": 4
   },
-  "C19-iso-axes": {
-    "struct.section-properties": 10
-  },
   "D20-units-per-quantity-type": {
     "bs.duct-sizing": 1,
     "bs.pipe-expansion": 13,
@@ -272,8 +256,7 @@
     "mech.tolerance-stack": 13,
     "struct.connection-ec3": 1,
     "struct.ltb-interaction": 1,
-    "struct.plate-bending": 3,
-    "struct.section-properties": 3
+    "struct.plate-bending": 3
   },
   "D28-percent": {
     "bs.heat-exchanger": 1,
@@ -297,8 +280,6 @@
     "mech.thick-cylinder": 1,
     "mech.tolerance-stack": 4,
     "struct.beam-formulas": 1,
-    "struct.en1993-member": 1,
-    "struct.frame-2d": 1,
     "struct.ltb-interaction": 1
   },
   "F32-missing-input-phrasing": {
@@ -323,7 +304,6 @@
     "mech.shaft": 1,
     "struct.base-plate": 1,
     "struct.connection-ec3": 2,
-    "struct.en1993-member": 1,
     "struct.ltb-interaction": 5
   },
   "F33-one-idea-per-message": {
@@ -368,18 +348,14 @@
     "struct.base-plate": 13,
     "struct.beam-formulas": 1,
     "struct.connection-ec3": 6,
-    "struct.en1993-member": 3,
     "struct.fillet-weld": 1,
-    "struct.frame-2d": 2,
     "struct.lifting": 21,
     "struct.load-combinations": 1,
     "struct.ltb-interaction": 19,
-    "struct.plate-bending": 9,
-    "struct.section-properties": 2
+    "struct.plate-bending": 9
   },
   "F35-emitted-severity-equals-declared": {
-    "elec.conductor-sizing": 3,
-    "struct.frame-2d": 1
+    "elec.conductor-sizing": 3
   },
   "F36-emitted-ids-declared": {
     "bs.glaser": 1,
@@ -415,9 +391,7 @@
     "mech.weld-group": 1,
     "struct.beam-formulas": 8,
     "struct.column-buckling": 7,
-    "struct.frame-2d": 7,
-    "struct.load-combinations": 2,
-    "struct.section-properties": 1
+    "struct.load-combinations": 2
   },
   "G39-setup-group-first": {
     "bs.duct-sizing": 1,
@@ -450,8 +424,7 @@
     "struct.lifting": 1,
     "struct.load-combinations": 1,
     "struct.ltb-interaction": 1,
-    "struct.plate-bending": 1,
-    "struct.section-properties": 1
+    "struct.plate-bending": 1
   },
   "G40-group-names": {
     "bs.duct-sizing": 1,
@@ -471,7 +444,6 @@
     "mech.mechanism": 1,
     "struct.base-plate": 1,
     "struct.connection-ec3": 3,
-    "struct.en1993-member": 1,
     "struct.ltb-interaction": 2,
     "struct.plate-bending": 2
   },
@@ -503,7 +475,6 @@
     "mech.spring": 1,
     "struct.base-plate": 1,
     "struct.connection-ec3": 2,
-    "struct.en1993-member": 2,
     "struct.fillet-weld": 1,
     "struct.ltb-interaction": 2
   },
@@ -556,7 +527,6 @@
     "mech.snap-fit": 4,
     "mech.spring": 5,
     "struct.base-plate": 4,
-    "struct.frame-2d": 20,
     "struct.lifting": 7,
     "struct.ltb-interaction": 8,
     "struct.plate-bending": 3
@@ -582,9 +552,7 @@
     "mech.tolerance-stack": 1,
     "struct.beam-formulas": 1,
     "struct.column-buckling": 1,
-    "struct.en1993-member": 1,
-    "struct.fillet-weld": 1,
-    "struct.section-properties": 1
+    "struct.fillet-weld": 1
   },
   "H45-no-legacy-codes": {
     "bs.pipe-pump": 5,
@@ -596,7 +564,6 @@
     "fp.cylinder": 7,
     "mech.mechanism": 9,
     "mech.spring": 3,
-    "struct.frame-2d": 6,
     "struct.lifting": 3,
     "struct.ltb-interaction": 1,
     "struct.plate-bending": 1
@@ -664,14 +631,11 @@
     "struct.beam-formulas": 1,
     "struct.column-buckling": 1,
     "struct.connection-ec3": 2,
-    "struct.en1993-member": 2,
     "struct.fillet-weld": 1,
-    "struct.frame-2d": 2,
     "struct.lifting": 2,
     "struct.load-combinations": 2,
     "struct.ltb-interaction": 2,
-    "struct.plate-bending": 2,
-    "struct.section-properties": 2
+    "struct.plate-bending": 2
   },
   "I50-method-layout": {
     "bs.glaser": 1,
@@ -687,9 +651,7 @@
     "mech.bolted-joint": 2,
     "mech.mechanism": 2,
     "mech.snap-fit": 1,
-    "struct.beam-formulas": 1,
-    "struct.frame-2d": 1,
-    "struct.section-properties": 1
+    "struct.beam-formulas": 1
   },
   "J51-standard-designation": {
     "bs.duct-sizing": 2,
@@ -720,13 +682,10 @@
     "struct.base-plate": 2,
     "struct.column-buckling": 1,
     "struct.connection-ec3": 1,
-    "struct.en1993-member": 1,
     "struct.fillet-weld": 1,
-    "struct.frame-2d": 1,
     "struct.lifting": 3,
     "struct.load-combinations": 1,
-    "struct.ltb-interaction": 2,
-    "struct.section-properties": 2
+    "struct.ltb-interaction": 2
   },
   "J52-clause-locator": {
     "bs.duct-sizing": 1,
@@ -756,14 +715,11 @@
     "mech.thin-vessel": 2,
     "mech.weld-group": 2,
     "struct.column-buckling": 1,
-    "struct.en1993-member": 8,
     "struct.fillet-weld": 4,
-    "struct.frame-2d": 1,
     "struct.lifting": 5,
     "struct.load-combinations": 1,
     "struct.ltb-interaction": 6,
-    "struct.plate-bending": 2,
-    "struct.section-properties": 2
+    "struct.plate-bending": 2
   },
   "J53-book-citations": {
     "bs.duct-sizing": 2,
@@ -800,13 +756,10 @@
     "mech.thick-cylinder": 2,
     "mech.weld-group": 2,
     "struct.beam-formulas": 1,
-    "struct.en1993-member": 1,
-    "struct.frame-2d": 2,
     "struct.lifting": 2,
     "struct.load-combinations": 1,
     "struct.ltb-interaction": 1,
-    "struct.plate-bending": 4,
-    "struct.section-properties": 2
+    "struct.plate-bending": 4
   },
   "J54-no-notes-in-reference-titles": {
     "elec.enclosure-heat": 1,
@@ -875,13 +828,10 @@
     "struct.beam-formulas": 1,
     "struct.column-buckling": 1,
     "struct.connection-ec3": 4,
-    "struct.en1993-member": 2,
-    "struct.frame-2d": 3,
     "struct.lifting": 9,
     "struct.load-combinations": 4,
     "struct.ltb-interaction": 7,
-    "struct.plate-bending": 7,
-    "struct.section-properties": 2
+    "struct.plate-bending": 7
   },
   "L58-spec-headings": {
     "bs.duct-sizing": 7,
@@ -930,14 +880,11 @@
     "struct.beam-formulas": 7,
     "struct.column-buckling": 7,
     "struct.connection-ec3": 8,
-    "struct.en1993-member": 7,
     "struct.fillet-weld": 7,
-    "struct.frame-2d": 8,
     "struct.lifting": 8,
     "struct.load-combinations": 8,
     "struct.ltb-interaction": 8,
-    "struct.plate-bending": 8,
-    "struct.section-properties": 7
+    "struct.plate-bending": 8
   },
   "L59-spec-title-line": {
     "bs.duct-sizing": 1,
@@ -986,14 +933,11 @@
     "struct.beam-formulas": 1,
     "struct.column-buckling": 1,
     "struct.connection-ec3": 1,
-    "struct.en1993-member": 1,
     "struct.fillet-weld": 1,
-    "struct.frame-2d": 1,
     "struct.lifting": 1,
     "struct.load-combinations": 1,
     "struct.ltb-interaction": 1,
-    "struct.plate-bending": 1,
-    "struct.section-properties": 1
+    "struct.plate-bending": 1
   },
   "L60-spec-scope-is-the-template-scope": {
     "bs.duct-sizing": 1,
@@ -1042,13 +986,10 @@
     "struct.beam-formulas": 1,
     "struct.column-buckling": 1,
     "struct.connection-ec3": 1,
-    "struct.en1993-member": 1,
     "struct.fillet-weld": 1,
-    "struct.frame-2d": 1,
     "struct.lifting": 1,
     "struct.load-combinations": 1,
     "struct.ltb-interaction": 1,
-    "struct.plate-bending": 1,
-    "struct.section-properties": 1
+    "struct.plate-bending": 1
   }
 }

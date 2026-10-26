@@ -139,7 +139,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `I`: `I:current` Current (fault-protection, pcb-trace, voltage-drop); `I:second-moment-of-area` Second moment of area (beam-formulas, column-buckling, frame-2d)
 - `I_b`: `I_b:battery-discharge-current` Current (load-budget); `I_b:design-current` Current (conductor-sizing)
 - `I_t`: `I_t:current-carrying-capacity` Current (conductor-sizing); `I_t:torsion-constant` Second moment of area (ltb-interaction)
-- `I_z`: `I_z:current-carrying-capacity` Current (conductor-sizing, voltage-drop); `I_z:second-moment-minor-axis` Second moment of area (en1993-member, ltb-interaction)
+- `I_z`: `I_z:second-moment-minor-axis` Second moment of area (en1993-member, ltb-interaction, section-properties); `I_z:current-carrying-capacity` Current (conductor-sizing, voltage-drop)
 - `J`: `J:polar-second-moment-of-bolt-areas` Second moment of area (bolt-group); `J:torsion-constant` Second moment of area (section-properties)
 - `K`: `K:fitting-loss-coefficient-sum` Plain number (pipe-pump); `K:nut-factor` Plain number (bolted-joint)
 - `L2`: `L2:crank-length` Length (mechanism); `L2:second-run-length` Length (pipe-expansion)
@@ -206,7 +206,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `phi_max`: `phi_max:maximum-pressure-angle` Angle (mechanism); `phi_max:strain-shape-maximum` Plain number (snap-fit)
 - `q`: `q:heat-flux` Heat flux (plane-wall); `q:notch-sensitivity` Plain number (shaft); `q:pressure-on-loaded-area` Stress, pressure (plate-bending)
 - `r`: `r:root-radius` Length (en1993-member, section-properties); `r:radius-of-gyration` Length (column-buckling)
-- `rho`: `rho:material-density` Density (shaft, spring, plate-bending); `rho:fluid-density` Density (cylinder); `rho:shear-reduction-factor` Plain number (en1993-member)
+- `rho`: `rho:material-density` Density (shaft, spring, plate-bending); `rho:fluid-density` Density (cylinder)
 - `s`: `s:fillet-leg` Length (weld-group); `s:move-distance` Plain number (motor-sizing)
 - `sigma`: `sigma:stress` Stress, pressure (material-margin, shaft-stress, thermal-expansion); `sigma:standard-deviation` Length (oring-gland, tolerance-stack)
 - `t`: `t:thickness` Length (plane-wall, lifting-lug, base-plate, connection-ec3, …); `t:time` Time (fault-protection)
@@ -214,7 +214,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `t_f`: `t_f:flange-thickness` Length (base-plate, en1993-member, ltb-interaction, section-properties); `t_f:flow-temperature` Temperature (sealed-system)
 - `t_max`: `t_max:maximum-bolt-tension` Force (bolt-group); `t_max:maximum-system-temperature` Temperature (sealed-system)
 - `t_req`: `t_req:required-thickness` Length (thin-vessel, base-plate); `t_req:required-disconnection-time` Time (fault-protection)
-- `t_w`: `t_w:web-thickness` Length (base-plate, en1993-member); `t_w:pipe-wall-thickness` Length (insulation)
+- `t_w`: `t_w:web-thickness` Length (base-plate, en1993-member, section-properties); `t_w:pipe-wall-thickness` Length (insulation)
 - `tau`: `tau:throat-stress` Stress, pressure (weld-group); `tau:torsional-shear-stress` Stress, pressure (shaft-stress)
 - `theta`: `theta:ambient-temperature` Temperature (load-budget); `theta:bend-angle` Angle (containment); `theta:conductor-temperature` Temperature (fault-protection); `theta:incline-angle` Angle (motor-sizing); `theta:principal-axis-angle` Angle (section-properties); `theta:sling-angle` Angle (lifting)
 - `theta_a`: `theta_a:ambient-temperature` Temperature (insulation, conductor-sizing); `theta_a:cold-point-outside-temperature` Temperature (glaser)
@@ -228,7 +228,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `w`: `w:distributed-load` Line force, distributed load, stiffness (beam-formulas); `w:key-width` Length (shaft); `w:mass-per-metre` Mass per length (containment)
 - `y_c`: `y_c:centroid-y` Length (weld-group, section-properties); `y_c:extreme-fibre-distance` Length (beam-formulas)
 
-## All symbols (1403 symbols in 54 templates)
+## All symbols (1400 symbols in 54 templates)
 
 One row per symbol, declared meaning and quantity type. Status `ok` is a symbol with one meaning; `RESOLVE` a symbol with several (phases B and C).
 
@@ -253,7 +253,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `A_fr` | — | Area | mm² | Fracture area beyond the hole | struct.lifting | ok |
 | `A_int` | — | Area | mm² | Internal cross-section | elec.containment | ok |
 | `A_m` | — | Area | mm² | Metal cross-section | bs.pipe-expansion | ok |
-| `A_net` | — | Area | cm² | Net area of a tension member (A where there are no holes; needed when… | struct.en1993-member | ok |
+| `A_net` | — | Area | cm² | Net area of a tension member (optional; blank = the sheet is blocked … | struct.en1993-member | ok |
 | `A_nt` | — | Area | mm² | Net area in tension | struct.connection-ec3 | ok |
 | `A_nv` | — | Area | mm² | Net area in shear | struct.connection-ec3 | ok |
 | `A_r` | — | Area | cm² | Rod area | fp.cylinder | ok |
@@ -263,7 +263,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `A_sun` | — | Area | m² | Sunlit area | elec.enclosure-heat | ok |
 | `A_t` | — | Area | mm² | Tension area beyond the hole | struct.lifting | ok |
 | `A_tb` | — | Area | m² | Fabric area facing outside weighted by f | bs.room-heat-loss | ok |
-| `A_v` | `A_v:shear-area` | Area | cm², mm² | Shear area; Shear area A_v (blank = rolled I from h, b, t_w, t_f, r) | struct.en1993-member, struct.lifting | ok |
+| `A_v` | `A_v:shear-area` | Area | cm², mm² | Shear area; Shear area (optional; blank = rolled I-section from h, b, t_w, t_f an… | struct.en1993-member, struct.lifting | ok |
 | `Ah` | — | Charge | A·h | Discharge capacity | elec.load-budget | ok |
 | `B` | — | Length | mm | Plate width | struct.base-plate | ok |
 | `B_p_Rd` | — | Force | kN | Punching resistance | struct.connection-ec3 | ok |
@@ -323,7 +323,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `Dh` | — | Length | mm | Hole diameter D_h | struct.lifting | ok |
 | `DoD` | — | Plain number | — | Allowed depth of discharge | elec.load-budget | ok |
 | `Dp` | — | Length | mm | Pin diameter D_p (not larger than the hole) | struct.lifting | ok |
-| `E` | `E:youngs-modulus` | Stress, pressure | GPa | Default modulus of elasticity; E (blank = sheet default); Modulus of elasticity; … (7 descriptions) | bs.pipe-expansion, fp.cylinder, mech.shaft, mech.spring, mech.thermal-expansion, mech.thick-cylinder, struct.beam-formulas, struct.column-buckling, struct.en1993-member, struct.frame-2d, struct.ltb-interaction, struct.plate-bending | ok |
+| `E` | `E:youngs-modulus` | Stress, pressure | GPa | Default Young's modulus; Modulus of elasticity; Young's modulus; … (7 descriptions) | bs.pipe-expansion, fp.cylinder, mech.shaft, mech.spring, mech.thermal-expansion, mech.thick-cylinder, struct.beam-formulas, struct.column-buckling, struct.en1993-member, struct.frame-2d, struct.ltb-interaction, struct.plate-bending | ok |
 | `EI` | — | Length | µm | Hole lower deviation | mech.iso286-fit | ok |
 | `EI_override` | — | Length | µm | Hole lower deviation override | mech.iso286-fit | ok |
 | `ES` | — | Length | µm | Hole upper deviation | mech.iso286-fit | ok |
@@ -417,15 +417,15 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `H_static` | — | Length | m | Static head | bs.pipe-pump | ok |
 | `H_sys` | — | Length | m | System head at Q | bs.pipe-pump | ok |
 | `I` | `I:current` | Current | A | Current; Design current; Trace current (the curve-fit was drawn for up to 35 A: above it the s… | elec.fault-protection, elec.pcb-trace, elec.voltage-drop | RESOLVE (2 meanings) |
-| `I` | `I:second-moment-of-area` | Second moment of area | cm⁴ | Second moment I; Second moment of area; Second moment of area about the weaker axis | struct.beam-formulas, struct.column-buckling, struct.frame-2d | RESOLVE (2 meanings) |
+| `I` | `I:second-moment-of-area` | Second moment of area | cm⁴ | Second moment of area; Second moment of area about the section y-y axis; Second moment of area about the weaker axis | struct.beam-formulas, struct.column-buckling, struct.frame-2d | RESOLVE (2 meanings) |
 | `I2` | — | Current | A | Conventional operating current; Conventional operating current I₂ (gG fuse, MCCB, MPCB: required in t… | elec.conductor-sizing | ok |
 | `I2t_let` | — | s·A² | A²·s | Device let-through energy I²t at the maximum prospective fault (disco… | elec.fault-protection | ok |
 | `ID` | — | Length | mm | Inside diameter | fp.cylinder | ok |
 | `IT_hole` | — | Length | µm | Hole tolerance | mech.iso286-fit | ok |
 | `IT_shaft` | — | Length | µm | Shaft tolerance | mech.iso286-fit | ok |
-| `I_1` | — | Second moment of area | cm⁴ | I_1 (major principal) | struct.section-properties | ok |
+| `I_1` | — | Second moment of area | cm⁴ | Major principal second moment | struct.section-properties | ok |
 | `I_1ph` | — | Current | A | Single-phase bus current | elec.load-budget | ok |
-| `I_2` | — | Second moment of area | cm⁴ | I_2 (minor principal) | struct.section-properties | ok |
+| `I_2` | — | Second moment of area | cm⁴ | Minor principal second moment | struct.section-properties | ok |
 | `I_3ph` | — | Current | A | Three-phase bus current | elec.load-budget | ok |
 | `I_DC` | — | Current | A | DC bus current | elec.load-budget | ok |
 | `I_LR_r` | — | Plain number | — | Locked-rotor current ratio I_LR/I_n | elec.motor-start | ok |
@@ -450,16 +450,14 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `I_ux` | — | Volume, section modulus | mm³ | Unit second moment about x | mech.weld-group | ok |
 | `I_uxy` | — | Volume, section modulus | mm³ | Unit product moment | mech.weld-group | ok |
 | `I_uy` | — | Volume, section modulus | mm³ | Unit second moment about y | mech.weld-group | ok |
-| `I_w` | `I_w:warping-constant` | Warping constant | dm⁶ | Warping constant I_w | struct.ltb-interaction, struct.section-properties | ok |
+| `I_w` | `I_w:warping-constant` | Warping constant | cm⁶, dm⁶ | Warping constant; Warping constant I_w | struct.ltb-interaction, struct.section-properties | ok |
 | `I_x` | — | Second moment of area | cm⁴ | Second moment of area | bs.pipe-expansion | ok |
-| `I_xx` | — | Second moment of area | cm⁴ | I_xx | struct.section-properties | ok |
-| `I_xy` | — | Second moment of area | cm⁴ | I_xy | struct.section-properties | ok |
-| `I_y` | `I_y:second-moment-major-axis` | Second moment of area | cm⁴ | I_y; Second moment of area, major axis I_y (S1: I_xx) | struct.en1993-member, struct.ltb-interaction | ok |
-| `I_yy` | — | Second moment of area | cm⁴ | I_yy | struct.section-properties | ok |
+| `I_y` | `I_y:second-moment-major-axis` | Second moment of area | cm⁴ | Second moment of area about the y-y axis; Second moment of area about y-y; Second moment of area, major axis I_y (S1: I_xx) | struct.en1993-member, struct.ltb-interaction, struct.section-properties | ok |
+| `I_yz` | — | Second moment of area | cm⁴ | Product of inertia about the y-y and z-z axes | struct.section-properties | ok |
+| `I_z` | `I_z:second-moment-minor-axis` | Second moment of area | cm⁴ | Second moment of area about the z-z axis; Second moment of area about z-z; Second moment of area, minor axis I_z (S1: I_yy) | struct.en1993-member, struct.ltb-interaction, struct.section-properties | RESOLVE (2 meanings) |
 | `I_z` | `I_z:current-carrying-capacity` | Current | A | Current-carrying capacity; Tabulated current-carrying capacity for the installed conditions (tem… | elec.conductor-sizing, elec.voltage-drop | RESOLVE (2 meanings) |
-| `I_z` | `I_z:second-moment-minor-axis` | Second moment of area | cm⁴ | I_z; Second moment of area, minor axis I_z (S1: I_yy) | struct.en1993-member, struct.ltb-interaction | RESOLVE (2 meanings) |
 | `J` | `J:polar-second-moment-of-bolt-areas` | Second moment of area | mm⁴ | Polar second moment of bolt areas | mech.bolt-group | RESOLVE (2 meanings) |
-| `J` | `J:torsion-constant` | Second moment of area | cm⁴ | Torsion constant J | struct.section-properties | RESOLVE (2 meanings) |
+| `J` | `J:torsion-constant` | Second moment of area | cm⁴ | Torsion constant | struct.section-properties | RESOLVE (2 meanings) |
 | `J_L` | — | Moment of inertia (mass) | kg·m² | Load inertia at the output (rotary mechanisms) | elec.motor-sizing | ok |
 | `J_mech` | — | Moment of inertia (mass) | kg·m² | Transmission inertia referred to the motor shaft (screw, pulleys, gea… | elec.motor-sizing | ok |
 | `J_motor` | — | Moment of inertia (mass) | kg·m² | Candidate motor rotor inertia | elec.motor-sizing | ok |
@@ -534,15 +532,15 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `M_y` | `M_y:moment-y` | Moment, torque | kN·m | Out-of-plane moment about y (tension on +x side) | mech.bolt-group, mech.weld-group | ok |
 | `M_y_A` | — | Moment, torque | kN·m | Moment at end A about y-y, as an ordinate of the bending-moment diagr… | struct.ltb-interaction | ok |
 | `M_y_B` | — | Moment, torque | kN·m | Moment at end B about y-y, same convention as A: a bending-moment-dia… | struct.ltb-interaction | ok |
-| `M_y_Ed` | `M_y_Ed:design-moment-major-axis` | Moment, torque | kN·m | Design moment about y-y (major); Greatest design moment about y-y; Greatest design moment about y-y (ψ mode; S2 M_abs_e1 or S5) | struct.en1993-member, struct.ltb-interaction | ok |
+| `M_y_Ed` | `M_y_Ed:design-moment-major-axis` | Moment, torque | kN·m | Design moment about y-y (major axis); Greatest design moment about y-y; Greatest design moment about y-y (ψ mode; S2 M_abs_e1 or S5) | struct.en1993-member, struct.ltb-interaction | ok |
 | `M_y_Rk` | — | Moment, torque | kN·m | M_y,Rk | struct.ltb-interaction | ok |
-| `M_y_b_Rd` | — | Moment, torque | kN·m | M_y,Rk/γ_M1 | struct.en1993-member | ok |
-| `M_y_c_Rd` | — | Moment, torque | kN·m | M_y,c,Rd | struct.en1993-member | ok |
+| `M_y_b_Rd` | — | Moment, torque | kN·m | Characteristic bending resistance about y-y over the partial factor | struct.en1993-member | ok |
+| `M_y_c_Rd` | — | Moment, torque | kN·m | Bending resistance about y-y | struct.en1993-member | ok |
 | `M_z` | — | Moment, torque | kN·m | Additional in-plane torque | mech.weld-group | ok |
-| `M_z_Ed` | `M_z_Ed:design-moment-minor-axis` | Moment, torque | kN·m | Design moment about z-z (minor); Greatest design moment about z-z | struct.en1993-member, struct.ltb-interaction | ok |
+| `M_z_Ed` | `M_z_Ed:design-moment-minor-axis` | Moment, torque | kN·m | Design moment about z-z (minor axis); Greatest design moment about z-z | struct.en1993-member, struct.ltb-interaction | ok |
 | `M_z_Rk` | — | Moment, torque | kN·m | M_z,Rk | struct.ltb-interaction | ok |
-| `M_z_b_Rd` | — | Moment, torque | kN·m | M_z,Rk/γ_M1 | struct.en1993-member | ok |
-| `M_z_c_Rd` | — | Moment, torque | kN·m | M_z,c,Rd | struct.en1993-member | ok |
+| `M_z_b_Rd` | — | Moment, torque | kN·m | Characteristic bending resistance about z-z over the partial factor | struct.en1993-member | ok |
+| `M_z_c_Rd` | — | Moment, torque | kN·m | Bending resistance about z-z | struct.en1993-member | ok |
 | `Mb_Rd` | — | Moment, torque | kN·m | M_b,Rd | struct.ltb-interaction | ok |
 | `Mc_1` | — | Mass per area | g/m² | M1: condensate on the wall | bs.glaser | ok |
 | `Mc_10` | — | Mass per area | g/m² | M10: condensate on the wall | bs.glaser | ok |
@@ -570,22 +568,22 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `N_1` | — | Plain number | — | Life at block 1 | mech.fatigue-miner | ok |
 | `N_2` | — | Plain number | — | Life at block 2 | mech.fatigue-miner | ok |
 | `N_3` | — | Plain number | — | Life at block 3 | mech.fatigue-miner | ok |
-| `N_Ed` | `N_Ed:axial-force-tension-positive` | Force | kN | Design axial force, TENSION positive and compression negative (as S2 …; Design axial force, TENSION positive and compression negative (the op… | struct.en1993-member, struct.ltb-interaction | RESOLVE (2 meanings) |
+| `N_Ed` | `N_Ed:axial-force-tension-positive` | Force | kN | Design axial force, TENSION positive and compression negative (as S2 …; Design axial force, tension positive and compression negative, opposi… | struct.en1993-member, struct.ltb-interaction | RESOLVE (2 meanings) |
 | `N_Ed` | `N_Ed:axial-force-compression-positive` | Force | kN | Axial force, COMPRESSION positive (the opposite sign to S3's N_Ed, wh… | struct.base-plate | RESOLVE (2 meanings) |
 | `N_Rk` | — | Force | kN | N_Rk | struct.ltb-interaction | ok |
-| `N_b_Rd` | `N_b_Rd:buckling-resistance` | Force | kN | N_b,Rd | struct.en1993-member, struct.ltb-interaction | ok |
-| `N_b_y_Rd` | `N_b_y_Rd:buckling-resistance-y` | Force | kN | N_b,y,Rd | struct.en1993-member, struct.ltb-interaction | ok |
-| `N_b_z_Rd` | `N_b_z_Rd:buckling-resistance-z` | Force | kN | N_b,z,Rd | struct.en1993-member, struct.ltb-interaction | ok |
+| `N_b_Rd` | `N_b_Rd:buckling-resistance` | Force | kN | Governing buckling resistance; N_b,Rd | struct.en1993-member, struct.ltb-interaction | ok |
+| `N_b_y_Rd` | `N_b_y_Rd:buckling-resistance-y` | Force | kN | Buckling resistance about y-y; N_b,y,Rd | struct.en1993-member, struct.ltb-interaction | ok |
+| `N_b_z_Rd` | `N_b_z_Rd:buckling-resistance-z` | Force | kN | Buckling resistance about z-z; N_b,z,Rd | struct.en1993-member, struct.ltb-interaction | ok |
 | `N_beam` | — | Force | kN | Horizontal component per lug | struct.lifting | ok |
 | `N_c` | — | Plain number | — | Required life the endurance strength belongs to | mech.spring | ok |
-| `N_cr_y` | `N_cr_y:critical-force-y` | Force | kN | N_cr,y | struct.en1993-member, struct.ltb-interaction | ok |
-| `N_cr_z` | `N_cr_z:critical-force-z` | Force | kN | N_cr,z | struct.en1993-member, struct.ltb-interaction | ok |
+| `N_cr_y` | `N_cr_y:critical-force-y` | Force | kN | Elastic critical force about y-y; N_cr,y | struct.en1993-member, struct.ltb-interaction | ok |
+| `N_cr_z` | `N_cr_z:critical-force-z` | Force | kN | Elastic critical force about z-z; N_cr,z | struct.en1993-member, struct.ltb-interaction | ok |
 | `N_e1` | — | Force | kN | N, member 1 | struct.frame-2d | ok |
 | `N_g` | — | Plain number | — | Grouped circuits | elec.conductor-sizing | ok |
 | `N_j_Rd` | — | Force | kN | Axial bearing resistance | struct.base-plate | ok |
 | `N_max` | — | Force | kN | N max (tension) | struct.frame-2d | ok |
 | `N_min` | — | Force | kN | N min (compression) | struct.frame-2d | ok |
-| `N_pl_Rd` | — | Force | kN | N_pl,Rd | struct.en1993-member | ok |
+| `N_pl_Rd` | — | Force | kN | Plastic axial resistance | struct.en1993-member | ok |
 | `N_ref` | — | Plain number | — | Cycles at the reference stress range | mech.fatigue-miner | ok |
 | `Nd` | — | Plain number | — | Design factor N_d of the Design Category (BTH-1 mode; user record) | struct.lifting | ok |
 | `OD` | `OD:pipe-outside-diameter` | Length | mm | Outside diameter of the pipe (optional; the first segment's is offere…; Pipe outside diameter | bs.pipe-expansion, bs.pipe-pump | ok |
@@ -841,7 +839,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `V_n` | — | Voltage | V | Nominal voltage (line-to-line for three-phase) | elec.voltage-drop | ok |
 | `V_pcc` | — | Voltage | V | Point of common coupling voltage while starting | elec.motor-start | ok |
 | `V_pipe` | `V_pipe:pipework-water-content` | Volume, section modulus | L | Pipework water content; Water held in the pipes | bs.pipe-pump, bs.sealed-system | ok |
-| `V_pl_Rd` | — | Force | kN | V_pl,Rd | struct.en1993-member | ok |
+| `V_pl_Rd` | — | Force | kN | Plastic shear resistance | struct.en1993-member | ok |
 | `V_plant` | — | Volume, section modulus | L | Plant water content (boiler, cylinder coil, buffer) | bs.sealed-system | ok |
 | `V_pts` | — | Volumetric flow | m³/h | Fan curve: airflow points | elec.enclosure-heat | ok |
 | `V_ref` | — | Volumetric flow | m³/h | Reference airflow for the system resistance | elec.enclosure-heat | ok |
@@ -857,12 +855,10 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `W_1` | — | Plain number | — | W 1 (g/kg) | bs.psychrometrics | ok |
 | `W_2` | — | Plain number | — | Leaving humidity ratio, g/kg (steam) | bs.psychrometrics | ok |
 | `W_c` | — | Length | mm | Trunking or tray internal width | elec.containment | ok |
-| `W_el_x` | — | Volume, section modulus | cm³ | W_el,x | struct.section-properties | ok |
-| `W_el_y` | `W_el_y:elastic-modulus-major-axis` | Volume, section modulus | cm³ | Elastic modulus, major axis (S1: W_el_x); W_el,y | struct.en1993-member, struct.ltb-interaction, struct.section-properties | ok |
-| `W_el_z` | `W_el_z:elastic-modulus-minor-axis` | Volume, section modulus | cm³ | Elastic modulus, minor axis (S1: W_el_y); W_el,z | struct.en1993-member, struct.ltb-interaction | ok |
-| `W_pl_x` | — | Volume, section modulus | cm³ | W_pl,x | struct.section-properties | ok |
-| `W_pl_y` | `W_pl_y:plastic-modulus-major-axis` | Volume, section modulus | cm³ | Plastic modulus, major axis (S1: W_pl_x); W_pl,y | struct.en1993-member, struct.ltb-interaction, struct.section-properties | ok |
-| `W_pl_z` | `W_pl_z:plastic-modulus-minor-axis` | Volume, section modulus | cm³ | Plastic modulus, minor axis (S1: W_pl_y); W_pl,z | struct.en1993-member, struct.ltb-interaction | ok |
+| `W_el_y` | `W_el_y:elastic-modulus-major-axis` | Volume, section modulus | cm³ | Elastic modulus, major axis (S1: W_el_x); Elastic section modulus about the y-y axis; Elastic section modulus about y-y | struct.en1993-member, struct.ltb-interaction, struct.section-properties | ok |
+| `W_el_z` | `W_el_z:elastic-modulus-minor-axis` | Volume, section modulus | cm³ | Elastic modulus, minor axis (S1: W_el_y); Elastic section modulus about the z-z axis; Elastic section modulus about z-z | struct.en1993-member, struct.ltb-interaction, struct.section-properties | ok |
+| `W_pl_y` | `W_pl_y:plastic-modulus-major-axis` | Volume, section modulus | cm³ | Plastic modulus, major axis (S1: W_pl_x); Plastic section modulus about the y-y axis; Plastic section modulus about y-y | struct.en1993-member, struct.ltb-interaction, struct.section-properties | ok |
+| `W_pl_z` | `W_pl_z:plastic-modulus-minor-axis` | Volume, section modulus | cm³ | Plastic modulus, minor axis (S1: W_pl_y); Plastic section modulus about the z-z axis; Plastic section modulus about z-z | struct.en1993-member, struct.ltb-interaction, struct.section-properties | ok |
 | `W_tol` | — | Length | mm | Ring cross-section tolerance, plus or minus | fp.oring-gland | ok |
 | `W_y` | — | Volume, section modulus | cm³ | W_y | struct.ltb-interaction | ok |
 | `X` | `X:radial-factor` | Plain number | — | Radial factor X for F_a/F_r > e; Radial load factor (bearing catalogue) | mech.bearing-life, mech.bearing-life-basic | RESOLVE (2 meanings) |
@@ -922,19 +918,19 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `alpha_m` | — | 1/K | 1/K | Groove metal linear thermal expansion coefficient α_m (the part that … | fp.oring-gland | ok |
 | `alpha_out_pk` | — | Angular acceleration | rad/s² | Peak output (rocker) angular acceleration | mech.mechanism | ok |
 | `alpha_pk` | — | Angular acceleration | rad/s² | Motor angular acceleration | elec.motor-sizing | ok |
-| `alpha_pl_x` | — | Plain number | — | Shape factor, x | struct.section-properties | ok |
+| `alpha_pl_y` | — | Plain number | — | Shape factor about the y-y axis | struct.section-properties | ok |
 | `alpha_r` | — | Angle | ° | Return (separation) angle α′ of the retaining face (90° is a face squ… | mech.snap-fit | ok |
 | `alpha_s` | — | 1/K | 1/K | Linear thermal expansion coefficient of the part that carries the sea… | fp.oring-gland | ok |
 | `alpha_sun` | — | Plain number | — | Surface absorptivity | elec.enclosure-heat | ok |
 | `alpha_v` | — | Plain number | — | Shear factor | struct.connection-ec3 | ok |
-| `alpha_y` | `alpha_y:imperfection-factor-y` | Plain number | — | Imperfection factor α_y (blank = from the curve); α_y | struct.en1993-member, struct.ltb-interaction | ok |
-| `alpha_z` | `alpha_z:imperfection-factor-z` | Plain number | — | Imperfection factor α_z (blank = from the curve); α_z | struct.en1993-member, struct.ltb-interaction | ok |
+| `alpha_y` | `alpha_y:imperfection-factor-y` | Plain number | — | Imperfection factor about y-y (optional; blank = from the buckling cu…; α_y | struct.en1993-member, struct.ltb-interaction | ok |
+| `alpha_z` | `alpha_z:imperfection-factor-z` | Plain number | — | Imperfection factor about z-z (optional; blank = from the buckling cu…; α_z | struct.en1993-member, struct.ltb-interaction | ok |
 | `altitude` | `altitude:altitude` | Length | m | Altitude (used when pressure is blank); Site altitude (air density) | bs.psychrometrics, elec.enclosure-heat | ok |
 | `anchor_force` | — | Force | N | Force on the anchors (resultant) | bs.pipe-expansion | ok |
 | `anchor_moment` | — | Moment, torque | N·m | Largest root moment (guided-cantilever model) | bs.pipe-expansion | ok |
 | `area` | — | Area | m² | Area | bs.room-heat-loss | ok |
 | `assembly_force` | — | Force | N | Assembly force | mech.snap-fit | ok |
-| `b` | `b:width` | Length | mm | Column width, along the plate width B (I/H and RHS); Flange width b; Groove width b; … (8 descriptions) | fp.oring-gland, mech.snap-fit, struct.base-plate, struct.en1993-member, struct.ltb-interaction, struct.plate-bending, struct.section-properties | RESOLVE (4 meanings) |
+| `b` | `b:width` | Length | mm | Column width, along the plate width B (I/H and RHS); Flange width b; Groove width b; … (7 descriptions) | fp.oring-gland, mech.snap-fit, struct.base-plate, struct.en1993-member, struct.ltb-interaction, struct.plate-bending, struct.section-properties | RESOLVE (4 meanings) |
 | `b` | `b:load-position` | Length | m | b from end i (distributed) | struct.frame-2d | RESOLVE (4 meanings) |
 | `b` | `b:outer-radius` | Length | mm | Outer radius | mech.thick-cylinder | RESOLVE (4 meanings) |
 | `b` | `b:prying-lever` | Length | mm | Prying lever: bolt to the loaded line | mech.bolt-group | RESOLVE (4 meanings) |
@@ -964,8 +960,8 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `case` | — | Plain number | — | Load case | struct.frame-2d | ok |
 | `chi_LT` | — | Plain number | — | χ_LT | struct.ltb-interaction | ok |
 | `chi_LT_0` | — | Plain number | — | χ_LT before the f modification | struct.ltb-interaction | ok |
-| `chi_y` | `chi_y:reduction-factor-y` | Plain number | — | χ_y | struct.en1993-member, struct.ltb-interaction | ok |
-| `chi_z` | `chi_z:reduction-factor-z` | Plain number | — | χ_z | struct.en1993-member, struct.ltb-interaction | ok |
+| `chi_y` | `chi_y:reduction-factor-y` | Plain number | — | Buckling reduction factor about y-y; χ_y | struct.en1993-member, struct.ltb-interaction | ok |
+| `chi_z` | `chi_z:reduction-factor-z` | Plain number | — | Buckling reduction factor about z-z; χ_z | struct.en1993-member, struct.ltb-interaction | ok |
 | `cos_phi` | `cos_phi:power-factor` | Plain number | — | Motor power factor at rated load; Power factor (AC); Power factor (not used for DC) | elec.conductor-sizing, elec.motor-start, elec.voltage-drop | ok |
 | `cos_phi2` | — | Plain number | — | Target power factor after correction | elec.motor-start | ok |
 | `cos_phi_st` | — | Plain number | — | Power factor at locked rotor (starting) | elec.motor-start | ok |
@@ -984,7 +980,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `cpk_sq_min` | — | Plain number | — | C_pk: squeeze below the lower limit (cold end) | fp.oring-gland | ok |
 | `cpk_stretch` | — | Plain number | — | C_pk: installed stretch outside its limits | fp.oring-gland | ok |
 | `cpk_target` | — | Plain number | — | Required C_pk | mech.tolerance-stack | ok |
-| `d` | `d:diameter` | Length | mm | Diameter; Diameter d (circle, tube); Interface (nominal) diameter; … (6 descriptions) | mech.bolted-joint, mech.press-fit, mech.shaft, mech.shaft-stress, mech.spring, struct.section-properties | RESOLVE (3 meanings) |
+| `d` | `d:diameter` | Length | mm | Diameter; Diameter of a circle or tube; Interface (nominal) diameter; … (6 descriptions) | mech.bolted-joint, mech.press-fit, mech.shaft, mech.shaft-stress, mech.spring, struct.section-properties | RESOLVE (3 meanings) |
 | `d` | `d:thickness` | Length | mm | Thickness | bs.glaser, bs.room-heat-loss | RESOLVE (3 meanings) |
 | `d` | `d:duty-share` | Plain number | — | Duty (share of time on) | elec.load-budget | RESOLVE (3 meanings) |
 | `dD` | — | Length | mm | Interference on the diameter: how much the ring is widened to pass th… | mech.snap-fit | ok |
@@ -1110,7 +1106,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `es_override` | — | Length | µm | Shaft upper deviation override | mech.iso286-fit | ok |
 | `eta` | `eta:efficiency` | Plain number | — | Efficiency; Efficiency (not used for DC); Mechanism efficiency (overall); … (4 descriptions) | elec.conductor-sizing, elec.load-budget, elec.motor-sizing, elec.motor-start | RESOLVE (3 meanings) |
 | `eta` | `eta:perry-factor` | Plain number | — | Perry factor | struct.column-buckling | RESOLVE (3 meanings) |
-| `eta` | `eta:shear-area-factor` | Plain number | — | Shear-area factor η | struct.en1993-member | RESOLVE (3 meanings) |
+| `eta` | `eta:shear-area-factor` | Plain number | — | Shear-area factor | struct.en1993-member | RESOLVE (3 meanings) |
 | `eta_add` | — | Plain number | — | Efficiency of the additional load | elec.load-budget | ok |
 | `eta_b` | — | Plain number | — | Battery discharge efficiency | elec.load-budget | ok |
 | `eta_conv` | — | Plain number | — | Conversion efficiency battery → loads | elec.load-budget | ok |
@@ -1161,7 +1157,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `f_v_pin` | — | Stress, pressure | MPa | Allowable shear stress, pin | mech.lifting-lug | ok |
 | `f_vw_d` | — | Stress, pressure | MPa | Design shear strength | struct.fillet-weld | ok |
 | `f_w` | — | Stress, pressure | MPa | Design strength of the throat | mech.weld-group | ok |
-| `f_y` | `f_y:yield-strength` | Stress, pressure | MPa | Plate yield strength; Yield strength; Yield strength (for the thickness); … (5 descriptions) | fp.cylinder, mech.material-margin, struct.base-plate, struct.connection-ec3, struct.en1993-member, struct.lifting, struct.ltb-interaction, struct.plate-bending | ok |
+| `f_y` | `f_y:yield-strength` | Stress, pressure | MPa | Plate yield strength; Yield strength; Yield strength (for the thickness); … (6 descriptions) | fp.cylinder, mech.material-margin, struct.base-plate, struct.connection-ec3, struct.en1993-member, struct.lifting, struct.ltb-interaction, struct.plate-bending | ok |
 | `f_yb` | `f_yb:bolt-yield-strength` | Stress, pressure | MPa | Anchor bolt yield strength (α_bc is valid for 235–640 MPa); Bolt yield strength | struct.base-plate, struct.connection-ec3 | ok |
 | `factor` | — | Plain number | — | Factor | struct.frame-2d | ok |
 | `fill` | — | Percent quantity | % | Fill | elec.containment | ok |
@@ -1174,16 +1170,16 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `g` | `g:restraint-gap` | Length | mm | Gap closed before the restraint engages | mech.thermal-expansion | RESOLVE (2 meanings) |
 | `gamma_G_inf` | — | Plain number | — | γ_G,inf (favourable permanent) | struct.load-combinations | ok |
 | `gamma_G_sup` | — | Plain number | — | γ_G,sup (unfavourable permanent) | struct.load-combinations | ok |
-| `gamma_M0` | `gamma_M0:partial-factor-cross-section` | Plain number | — | Partial factor γ_M0 (cross-section resistance); Partial factor γ_M0 on the resistance of the cross-section; γ_M0; … (4 descriptions) | struct.base-plate, struct.connection-ec3, struct.en1993-member, struct.plate-bending | ok |
-| `gamma_M1` | `gamma_M1:partial-factor-member-buckling` | Plain number | — | Partial factor γ_M1 (member buckling) | struct.en1993-member, struct.ltb-interaction | ok |
-| `gamma_M2` | `gamma_M2:partial-factor-fracture` | Plain number | — | Partial factor γ_M2; Partial factor γ_M2 (net-section fracture); γ_M2; … (4 descriptions) | struct.base-plate, struct.connection-ec3, struct.en1993-member, struct.fillet-weld | ok |
+| `gamma_M0` | `gamma_M0:partial-factor-cross-section` | Plain number | — | Partial factor for cross-section resistance; Partial factor γ_M0 on the resistance of the cross-section; γ_M0; … (4 descriptions) | struct.base-plate, struct.connection-ec3, struct.en1993-member, struct.plate-bending | ok |
+| `gamma_M1` | `gamma_M1:partial-factor-member-buckling` | Plain number | — | Partial factor for member buckling; Partial factor γ_M1 (member buckling) | struct.en1993-member, struct.ltb-interaction | ok |
+| `gamma_M2` | `gamma_M2:partial-factor-fracture` | Plain number | — | Partial factor for net-section fracture; Partial factor γ_M2; γ_M2; … (4 descriptions) | struct.base-plate, struct.connection-ec3, struct.en1993-member, struct.fillet-weld | ok |
 | `gamma_Q` | — | Plain number | — | γ_Q (variable) | struct.load-combinations | ok |
 | `gamma_c` | — | Plain number | — | γ_c, partial factor for concrete | struct.base-plate | ok |
 | `gap` | — | Length | mm | Largest permitted gap (diametral for a radial seal, axial for a face … | fp.oring-gland | ok |
 | `gap_allow` | — | Length | mm | Largest permitted extrusion gap at this pressure and hardness, if you…; Permitted extrusion gap, diametral for a radial seal | fp.oring-gland | ok |
 | `gap_max` | — | Length | mm | Largest extrusion gap, diametral for a radial seal (over the temperat… | fp.oring-gland | ok |
 | `gap_min` | — | Length | mm | Smallest extrusion gap | fp.oring-gland | ok |
-| `h` | `h:depth` | Length | mm | Column depth, along the plate length L (I/H and RHS); Depth h (or vertical leg); Depth h (shear-area helper; leave blank when A_v is given); … (5 descriptions) | struct.base-plate, struct.en1993-member, struct.ltb-interaction, struct.section-properties | RESOLVE (7 meanings) |
+| `h` | `h:depth` | Length | mm | Column depth, along the plate length L (I/H and RHS); Depth for the shear area (optional; blank = use A_v); Depth or vertical leg; … (5 descriptions) | struct.base-plate, struct.en1993-member, struct.ltb-interaction, struct.section-properties | RESOLVE (7 meanings) |
 | `h` | `h:film-coefficient` | Heat transfer coefficient, U-value | W/(m²·K) | Overall heat-transfer coefficient of the enclosure surface (editable … | elec.enclosure-heat | RESOLVE (7 meanings) |
 | `h` | `h:hole-to-weld-distance` | Length | mm | Distance h from the hole centre to the weld or base, for the out-of-p… | struct.lifting | RESOLVE (7 meanings) |
 | `h` | `h:key-height` | Length | mm | Key height | mech.shaft | RESOLVE (7 meanings) |
@@ -1212,8 +1208,6 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `i` | `i:node-index` | Plain number | — | Node i | struct.frame-2d | RESOLVE (2 meanings) |
 | `i_max` | — | Length | µm | Maximum interference | mech.iso286-fit | ok |
 | `i_min` | — | Length | µm | Minimum interference | mech.iso286-fit | ok |
-| `i_x` | — | Length | cm | i_x | struct.section-properties | ok |
-| `i_y` | — | Length | cm | i_y | struct.section-properties | ok |
 | `id` | — | Plain number | — | Element; Node | struct.frame-2d | ok |
 | `input_torque` | — | Moment, torque | N·m | Peak input (crank) torque by virtual work (mech.input_torque → E1 pea… | mech.mechanism | ok |
 | `inrush` | — | Plain number | — | Inrush multiple | elec.load-budget | ok |
@@ -1266,10 +1260,10 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `k_wall` | — | Plain number | — | Wall ratio | mech.thick-cylinder | ok |
 | `k_x` | — | Line force, distributed load, stiffness | kN/m | Spring k_x | struct.frame-2d | ok |
 | `k_y` | — | Line force, distributed load, stiffness | kN/m | Spring k_y | struct.frame-2d | ok |
-| `k_yy` | `k_yy:interaction-factor-yy` | Plain number | — | Interaction factor k_yy (member check); k_yy | struct.en1993-member, struct.ltb-interaction | ok |
+| `k_yy` | `k_yy:interaction-factor-yy` | Plain number | — | Interaction factor for bending about y-y in the member check; k_yy | struct.en1993-member, struct.ltb-interaction | ok |
 | `k_yz` | — | Plain number | — | k_yz | struct.ltb-interaction | ok |
 | `k_zy` | — | Plain number | — | k_zy | struct.ltb-interaction | ok |
-| `k_zz` | `k_zz:interaction-factor-zz` | Plain number | — | Interaction factor k_zz (member check); k_zz | struct.en1993-member, struct.ltb-interaction | ok |
+| `k_zz` | `k_zz:interaction-factor-zz` | Plain number | — | Interaction factor for bending about z-z in the member check; k_zz | struct.en1993-member, struct.ltb-interaction | ok |
 | `kappa` | — | Plain number | — | Viscosity ratio κ used for a_ISO (0.1 to 100; above 4 it is read at 4) | mech.bearing-life | ok |
 | `kvar` | — | Apparent and reactive power | kvar | Capacitor kvar to the target power factor | elec.motor-start | ok |
 | `l` | — | Length | mm | Length of the beam (cantilever); of the torsion bar: its free length … | mech.snap-fit | ok |
@@ -1287,8 +1281,8 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `lambda_LT` | — | Plain number | — | λ̄_LT | struct.ltb-interaction | ok |
 | `lambda_LT0` | — | Plain number | — | λ̄_LT,0 for 6.3.2.3 (recommended 0.4) | struct.ltb-interaction | ok |
 | `lambda_w` | — | Thermal conductivity | W/(m·K) | Pipe wall conductivity | bs.insulation | ok |
-| `lambda_y` | `lambda_y:slenderness-y` | Plain number | — | λ̄_y | struct.en1993-member, struct.ltb-interaction | ok |
-| `lambda_z` | `lambda_z:slenderness-z` | Plain number | — | λ̄_z | struct.en1993-member, struct.ltb-interaction | ok |
+| `lambda_y` | `lambda_y:slenderness-y` | Plain number | — | Non-dimensional slenderness about y-y; λ̄_y | struct.en1993-member, struct.ltb-interaction | ok |
+| `lambda_z` | `lambda_z:slenderness-z` | Plain number | — | Non-dimensional slenderness about z-z; λ̄_z | struct.en1993-member, struct.ltb-interaction | ok |
 | `loop` | — | Plain number | — | Loop (1 = outline, 2+ = holes) | struct.section-properties | ok |
 | `lower` | — | Length | mm | Lower deviation | mech.tolerance-stack | ok |
 | `lug_util` | — | Plain number | — | Governing lug utilisation | struct.lifting | ok |
@@ -1458,7 +1452,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `q_s` | — | Plain number | — | Notch sensitivity, torsion | mech.shaft | ok |
 | `q_v` | — | Volumetric flow | m³/h | Ventilation air flow | bs.room-heat-loss | ok |
 | `qty` | — | Plain number | — | Quantity | elec.enclosure-heat | ok |
-| `r` | `r:root-radius` | Length | mm | Root radius (helper); Root radius r (I, channel, tee, angle) or outer corner radius (hollow…; r | struct.en1993-member, struct.section-properties | RESOLVE (2 meanings) |
+| `r` | `r:root-radius` | Length | mm | Root or corner radius; Root radius for the shear area (optional; blank = 0); Root radius of an I-section, channel, tee or angle, or outer corner r… | struct.en1993-member, struct.section-properties | RESOLVE (2 meanings) |
 | `r` | `r:radius-of-gyration` | Length | mm | Radius of gyration | struct.column-buckling | RESOLVE (2 meanings) |
 | `r0` | — | Length | mm | Patch radius (circular plate, central patch) | struct.plate-bending | ok |
 | `r_0` | — | Plain number | — | Pre-charge rule: p0 (at T_max) at most this fraction of p1, on absolu… | fp.accumulator | ok |
@@ -1467,22 +1461,24 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `r_c_min` | — | Plain number | — | Smallest ratio of the first critical speed to the operating speed | mech.shaft | ok |
 | `r_f` | — | Plain number | — | Surge ratio f_n/f_op | mech.spring | ok |
 | `r_g` | — | Length | mm | Groove bottom corner radius | fp.oring-gland | ok |
+| `r_g_y` | — | Length | mm | Radius of gyration about the y-y axis | struct.section-properties | ok |
+| `r_g_z` | — | Length | mm | Radius of gyration about the z-z axis | struct.section-properties | ok |
 | `r_h1` | — | Length | mm | Hook mean radius, bending (extension) | mech.spring | ok |
 | `r_h2` | — | Length | mm | Hook side-bend mean radius, torsion (extension) | mech.spring | ok |
-| `r_i` | — | Length | mm | Inner corner radius (hollow rectangle; blank = 1.0 t) | struct.section-properties | ok |
+| `r_i` | — | Length | mm | Inner corner radius of a hollow rectangle (optional; blank = 1.0 t_w,… | struct.section-properties | ok |
 | `r_p` | — | Plain number | — | Pre-charge rule: p2/p0 (p0 at T_min) at most this ratio, on absolute … | fp.accumulator | ok |
 | `r_ring` | — | Length | mm | Ring radius (circular plate, ring load) | struct.plate-bending | ok |
 | `red_nom` | — | Percent quantity | % | Cross-section reduction at the mean stretch | fp.oring-gland | ok |
 | `res_max` | — | Length | mm | Largest loop-closure residual | mech.mechanism | ok |
 | `res_vel_max` | — | Plain number | — | Largest velocity-loop residual, relative to the size of its terms | mech.mechanism | ok |
 | `retention_force` | — | Force | N | Separation force | mech.snap-fit | ok |
-| `rho` | `rho:material-density` | Density | kg/m³ | Density; Density (for the frequency); Density (shaft self-mass in the critical speed) | mech.shaft, mech.spring, struct.plate-bending | RESOLVE (3 meanings) |
-| `rho` | `rho:fluid-density` | Density | kg/m³ | Fluid density | fp.cylinder | RESOLVE (3 meanings) |
-| `rho` | `rho:shear-reduction-factor` | Plain number | — | Shear reduction factor ρ | struct.en1993-member | RESOLVE (3 meanings) |
+| `rho` | `rho:material-density` | Density | kg/m³ | Density; Density (for the frequency); Density (shaft self-mass in the critical speed) | mech.shaft, mech.spring, struct.plate-bending | RESOLVE (2 meanings) |
+| `rho` | `rho:fluid-density` | Density | kg/m³ | Fluid density | fp.cylinder | RESOLVE (2 meanings) |
 | `rho_1` | — | Density | kg/m³ | ρ 1 | bs.psychrometrics | ok |
 | `rho_20` | `rho_20:resistivity-at-20c` | Resistivity | Ω·mm, Ω·mm²/m | Copper resistivity at 20 °C (annealed copper, 1.724e-8 Ω·m); Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m); Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R); … (4 descriptions) | elec.fault-protection, elec.motor-start, elec.pcb-trace, elec.voltage-drop | ok |
 | `rho_air` | — | Density | kg/m³ | Air density | elec.enclosure-heat | ok |
 | `rho_custom` | — | Density | kg/m³ | Density (custom fluid) | bs.pipe-pump | ok |
+| `rho_shear` | — | Plain number | — | Shear reduction factor ρ | struct.en1993-member | ok |
 | `rot` | — | Plain number | — | Rotation (° anticlockwise) | struct.section-properties | ok |
 | `round_to` | — | Length | mm | Round sizes up to a multiple of | bs.duct-sizing | ok |
 | `s` | `s:fillet-leg` | Length | mm | Fillet leg | mech.weld-group | RESOLVE (2 meanings) |
@@ -1552,7 +1548,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `sum_R_x` | — | Force | kN | Σ R_x | struct.frame-2d | ok |
 | `sum_R_y` | — | Force | kN | Σ R_y | struct.frame-2d | ok |
 | `swing` | — | Angle | ° | Rocker swing over the sweep | mech.mechanism | ok |
-| `t` | `t:thickness` | Length | mm | Lug plate thickness t; Lug thickness; Plate thickness; … (7 descriptions) | bs.plane-wall, mech.lifting-lug, struct.base-plate, struct.connection-ec3, struct.lifting, struct.plate-bending, struct.section-properties | RESOLVE (2 meanings) |
+| `t` | `t:thickness` | Length | mm | Lug plate thickness t; Lug thickness; Plate thickness; … (5 descriptions) | bs.plane-wall, mech.lifting-lug, struct.base-plate, struct.connection-ec3, struct.lifting, struct.plate-bending | RESOLVE (2 meanings) |
 | `t` | `t:time` | Time | s | Time | elec.fault-protection | RESOLVE (2 meanings) |
 | `t_1_out` | — | Temperature | °C | Dry-bulb 1 | bs.psychrometrics | ok |
 | `t_2` | `t_2:leaving-dry-bulb-temperature` | Temperature | °C | Leaving dry-bulb (sensible, cooling) | bs.psychrometrics | RESOLVE (2 meanings) |
@@ -1568,7 +1564,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `t_dp_1` | — | Temperature | °C | Dew point 1 | bs.psychrometrics | ok |
 | `t_dwell` | `t_dwell:dwell-time` | Time | s | Dwell between moves; Dwell time added to each cycle | elec.motor-sizing, fp.cylinder | ok |
 | `t_ext` | — | Time | s | Extend time | fp.cylinder | ok |
-| `t_f` | `t_f:flange-thickness` | Length | mm | Flange thickness (I/H); Flange thickness (helper); Flange thickness t_f; … (5 descriptions) | struct.base-plate, struct.en1993-member, struct.ltb-interaction, struct.section-properties | RESOLVE (2 meanings) |
+| `t_f` | `t_f:flange-thickness` | Length | mm | Flange thickness; Flange thickness (I/H); Flange thickness for the shear area (optional; blank = use A_v); … (4 descriptions) | struct.base-plate, struct.en1993-member, struct.ltb-interaction, struct.section-properties | RESOLVE (2 meanings) |
 | `t_f` | `t_f:flow-temperature` | Temperature | °C | Flow temperature | bs.sealed-system | RESOLVE (2 meanings) |
 | `t_fill` | — | Temperature | °C | Fill temperature | bs.sealed-system | ok |
 | `t_g` | — | Length | mm | Grout thickness (optional: checks the β_j = 2/3 condition) | struct.base-plate | ok |
@@ -1591,7 +1587,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `t_s` | — | Length | mm | Cheek plate thickness (each) | mech.lifting-lug | ok |
 | `t_se` | — | Length | mm | Required thickness, surface-temperature limit | bs.insulation | ok |
 | `t_start` | — | Time | s | Run-up time to full speed (continuous duty) | elec.motor-sizing | ok |
-| `t_w` | `t_w:web-thickness` | Length | mm | Web thickness (I/H); Web thickness (helper) | struct.base-plate, struct.en1993-member | RESOLVE (2 meanings) |
+| `t_w` | `t_w:web-thickness` | Length | mm | Wall, web or leg thickness; Web thickness (I/H); Web thickness for the shear area (optional; blank = use A_v) | struct.base-plate, struct.en1993-member, struct.section-properties | RESOLVE (2 meanings) |
 | `t_w` | `t_w:pipe-wall-thickness` | Length | mm | Pipe wall thickness (with its conductivity; blank = not included) | bs.insulation | RESOLVE (2 meanings) |
 | `t_wall` | — | Length | mm | Pipe wall thickness | bs.pipe-expansion | ok |
 | `t_wb` | — | Temperature | °C | Wet-bulb temperature | bs.psychrometrics | ok |
@@ -1658,8 +1654,8 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `u_Ib` | — | Plain number | — | I_b / I_n | elec.conductor-sizing | ok |
 | `u_In` | — | Plain number | — | I_n / I_z | elec.conductor-sizing | ok |
 | `u_LTB` | — | Plain number | — | LTB utilisation | struct.ltb-interaction | ok |
-| `u_M_y` | `u_M_y:bending-y-utilisation` | Plain number | — | Bending term, y; Bending y utilisation | struct.en1993-member, struct.ltb-interaction | ok |
-| `u_M_z` | `u_M_z:bending-z-utilisation` | Plain number | — | Bending term, z; Bending z utilisation | struct.en1993-member, struct.ltb-interaction | ok |
+| `u_M_y` | `u_M_y:bending-y-utilisation` | Plain number | — | Bending term, y; Bending y-y utilisation | struct.en1993-member, struct.ltb-interaction | ok |
+| `u_M_z` | `u_M_z:bending-z-utilisation` | Plain number | — | Bending term, z; Bending z-z utilisation | struct.en1993-member, struct.ltb-interaction | ok |
 | `u_Mc` | — | Plain number | — | Peak condensate against its limit | bs.glaser | ok |
 | `u_N` | `u_N:axial-bearing-utilisation` | Plain number | — | Axial bearing utilisation | struct.base-plate | RESOLVE (2 meanings) |
 | `u_N` | `u_N:axial-utilisation` | Plain number | — | Axial utilisation | struct.en1993-member | RESOLVE (2 meanings) |
