@@ -54,7 +54,7 @@ public sealed class SectionPropertiesCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.1", CalcDiscipline.Structural, "Section properties",
+        Id, "1.1.0", CalcDiscipline.Structural, "Section properties",
         "Area, centroid, second moments of area (Ixx, Iyy, Ixy), principal axes and values, elastic and plastic section moduli, radii of gyration, torsion constant and (I-sections) warping constant for a parametric shape, an arbitrary polygon with holes, or a composite of placed parts. The x axis is horizontal (major axis of an I-section), y vertical.",
         "Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − y dx); Ixx = ∫y² dA; Iyy = ∫x² dA; Ixy = ∫xy dA.\nSecond moments moved to the centroid by the parallel-axis theorem: I_c = I − A d².\nPrincipal axes: tan 2θ = −2Ixy/(Ixx − Iyy).\nElastic section modulus: W_el = Ixx/y_max.\nPlastic section modulus, about the equal-area axis found by bisection: W_pl = |Q_above| + |Q_below|.\nTorsion constant by shape, a Saint-Venant series for a solid rectangle, πd⁴/32 for a circle, Bredt for a closed thin-walled section, Σbt³/3 (plus a fillet term for rolled I) for an open section.\nWarping constant of an I-section: I_w = Iyy (h − t_f)²/4.",
         [
@@ -476,7 +476,8 @@ public sealed class SectionPropertiesCalculator : ICalcCalculator
             foreach (var l in partLoops)
             {
                 var moved = l.Transform(x0 - (co * p.Xc - s * p.Yc), y0 - (s * p.Xc + co * p.Yc), rot);
-                loops.Add(subtract == l.IsHole ? moved : new SectionLoop(moved.Vertices, !l.IsHole));
+                // A subtracted part turns every solid loop into a hole and every hole of the part (a tube's bore) into solid; an added part keeps its loops as they are.
+                loops.Add(subtract ? new SectionLoop(moved.Vertices, !l.IsHole) : moved);
             }
         }
 

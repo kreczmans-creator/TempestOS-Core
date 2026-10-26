@@ -69,6 +69,52 @@ public sealed class SectionPropertiesTests
     }
 
     [Fact]
+    public void Composite_Tube_Part_Added_Is_A_Ring_Not_A_Disc()
+    {
+        // struct.section-properties-01: the bore of a hollow part was turned into solid material when the part was added.
+        var tube = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeTube), CalcInputValue.Quantity("d", 200, "mm"), CalcInputValue.Quantity("t", 10, "mm"));
+        var composite = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeComposite), SectionPropertiesCalculator.Parts(
+            (SectionPropertiesCalculator.ShapeTube, 0, 200, 10, 0, 0, 0, 0, 0, "add")));
+        Assert.False(composite.IsBlocked, string.Join("; ", composite.Blocks.Select(b => b.Message)));
+
+        // Independent (python): A = pi/4 (200^2 - 180^2) = 59.690 cm2; I = pi/64 (200^4 - 180^4) = 2700.98 cm4.
+        Assert.Equal(59.690, composite.OutputSi("A") * 1e4, 0.01);
+        Assert.Equal(2700.98, composite.OutputSi("I_xx") * 1e8, 0.5);
+
+        foreach (var symbol in new[] { "A", "I_xx", "I_yy", "W_el_x", "W_pl_x" })
+            Assert.Equal(tube.OutputSi(symbol), composite.OutputSi(symbol), tube.OutputSi(symbol) * 5e-4);
+    }
+
+    [Fact]
+    public void Composite_Hollow_Rectangle_Part_Added_Matches_The_Primitive()
+    {
+        var shs = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeHollowRectangle), CalcInputValue.Quantity("b", 100, "mm"), CalcInputValue.Quantity("h", 100, "mm"), CalcInputValue.Quantity("t", 5, "mm"), CalcInputValue.Quantity("r", 7.5, "mm"), CalcInputValue.Quantity("r_i", 5, "mm"));
+        var composite = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeComposite), SectionPropertiesCalculator.Parts(
+            (SectionPropertiesCalculator.ShapeHollowRectangle, 100, 100, 5, 0, 7.5, 0, 0, 0, "add")));
+        Assert.False(composite.IsBlocked, string.Join("; ", composite.Blocks.Select(b => b.Message)));
+
+        // Independent (python): A = (100^2 - (4 - pi) 7.5^2) - (90^2 - (4 - pi) 5^2) = 18.732 cm2 (the flipped bore gave 180.3 cm2).
+        Assert.Equal(18.732, composite.OutputSi("A") * 1e4, 0.001);
+
+        foreach (var symbol in new[] { "A", "I_xx", "I_yy", "W_pl_x" })
+            Assert.Equal(shs.OutputSi(symbol), composite.OutputSi(symbol), shs.OutputSi(symbol) * 1e-6);
+    }
+
+    [Fact]
+    public void Composite_Tube_Part_Subtracted_Leaves_The_Bore_Solid()
+    {
+        // Rectangle 300 x 300 minus a tube d 200 t 10: the ring is removed and the 180 mm bore stays solid.
+        var composite = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeComposite), SectionPropertiesCalculator.Parts(
+            (SectionPropertiesCalculator.ShapeRectangle, 300, 300, 0, 0, 0, 0, 0, 0, "add"),
+            (SectionPropertiesCalculator.ShapeTube, 0, 200, 10, 0, 0, 0, 0, 0, "subtract")));
+        Assert.False(composite.IsBlocked, string.Join("; ", composite.Blocks.Select(b => b.Message)));
+
+        // Independent (python): A = 300^2 - pi/4 (200^2 - 180^2) = 840.31 cm2; I = 300^4/12 - pi/64 (200^4 - 180^4) = 64799.0 cm4.
+        Assert.Equal(840.31, composite.OutputSi("A") * 1e4, 0.01);
+        Assert.Equal(64799.0, composite.OutputSi("I_xx") * 1e8, 0.5);
+    }
+
+    [Fact]
     public void Polygon_With_Hole_Matches_The_Tube()
     {
         var hole = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(
