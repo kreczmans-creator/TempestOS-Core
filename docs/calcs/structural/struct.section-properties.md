@@ -1,4 +1,4 @@
-# S1 — Section properties (`struct.section-properties@1.1.0`)
+# S1 — Section properties (`struct.section-properties@1.1.1`)
 
 **In plain terms.** Every bending, stress and buckling check needs the shape's geometric properties: its area, where its centroid is, how its area is spread about each axis (second moments), and the section moduli that turn a bending moment into a stress. This worksheet computes them from the outline itself, adding up the contribution of each edge of the polygon, so any shape, with holes or built from plates, gives the same properties a handbook table would for a standard section.
 
@@ -7,6 +7,8 @@
 **Method.** Outline loops integrated by Green's theorem (`PolygonSection`); parallel-axis transfer to the centroid; principal axes from `tan 2θ = −2I_xy/(I_xx − I_yy)`; plastic moduli by bisection on the equal-area axis then `|Q_above| + |Q_below|`. Circle and tube in closed form. Torsion: Saint-Venant series (solid rectangle), `πd⁴/32` (round), Bredt `4A_m²t/p_m + p_m t³/3` (closed thin-walled, warned), `Σbt³/3` (open, warned) plus the El Darwish–Johnston fillet term for rolled I (AISC DG9). Warping `I_w = I_yy (h − t_f)²/4` (I only). Polygons and composites report no `J` (warning).
 
 **Inputs.** `shape`; `h`, `b`, `t`, `t_f`, `d`, `r`, `r_i` as the shape needs; `vertices` table (`x`, `y`, `loop`); `parts` table (`shape`, dims, `x0`, `y0`, `rot`, `sign`). **Outputs.** `A`, `x_c`, `y_c`, `I_xx`, `I_yy`, `I_xy`, `I_1`, `I_2`, `theta`, `W_el_x`, `W_el_y`, `W_pl_x`, `W_pl_y`, `i_x`, `i_y`, `alpha_pl_x`, `J`, `I_w`. **Checks.** none (a properties sheet). Caps: 2,000 vertex rows, 100 parts, 200 loops, 20,000 vertices per loop.
+
+**Changes in 1.1.1.** A polygon whose loop crosses itself, whose loops cross one another, whose hole lies outside the outline or inside another hole is blocked (rule `geometry`) with a message that names the loop and the problem; a hole outside the outline used to run and subtract its area from the section (a 100 mm square with a 10 × 10 mm "hole" at x 200 mm gave 99 cm²). The torsion-constant warning for the channel, angle and tee states how far the sum Σ b t³ / 3 is from a finite-element value because the root fillet is ignored: a channel about 4.3 % low and an angle about 8.9 % low (conservative), a sharp tee about 2.8 % high (unconservative); the values are not changed.
 
 **Test cases.** UB 457×191×98 and hot-finished SHS 100×100×5 against public Blue Book values (Confirmed, within 0.5 %; J within 1 %); rectangle and tube analytic; unequal angle as a polygon against the parallel-axis theorem; composite tube d 200 t 10 added (A 59.69 cm², I_xx 2 701 cm⁴), SHS 100×100×5 added (18.73 cm²) and a 300 square minus the tube (840.31 cm², 64 799 cm⁴), each from closed forms (python3).
 
