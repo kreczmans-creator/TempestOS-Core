@@ -55,6 +55,7 @@ public sealed class EngineeringAreaView : UserControl
     private readonly DockPanel? _registerPanel;
     private readonly Tempest.Desktop.CalcSheets.CalcSheetView _worksheets;
     private readonly Func<Task> _onWorksheetsSelected;
+    private readonly Tempest.Desktop.CalcSheets.VerificationDashboardView? _verification;
     private readonly ICommandDispatcher _commandDispatcher;
     private readonly Action<Guid, string> _openObjectRightUp;
 
@@ -77,6 +78,7 @@ public sealed class EngineeringAreaView : UserControl
     private readonly TreeViewItem _worksheetsNode = new() { Header = "Worksheets" };
     private readonly Dictionary<string, TreeViewItem> _disciplineWorksheetNodes = new(StringComparer.Ordinal);
     private readonly TreeViewItem _assetsNode = new() { Header = "Packs and templates" };
+    private readonly TreeViewItem _verificationNode = new() { Header = "Verification" };
     private readonly TreeViewItem _referenceDataNode = new() { Header = "Reference data" };
 
     private readonly WorkspaceChangesSubscription _workspaceChanges;
@@ -108,7 +110,8 @@ public sealed class EngineeringAreaView : UserControl
         ICommandDispatcher commandDispatcher, Action<Guid, string> openObjectRightUp,
         EngineeringAssetsView engineeringAssets,
         Tempest.Desktop.CalcSheets.CalcSheetView worksheets, Func<Task> onWorksheetsSelected,
-        Tempest.Desktop.CalcSheets.CalcRegisterView? worksheetRegister = null, Func<Task>? onRegisterSelected = null, Func<Guid, Task>? openWorksheetInstance = null)
+        Tempest.Desktop.CalcSheets.CalcRegisterView? worksheetRegister = null, Func<Task>? onRegisterSelected = null, Func<Guid, Task>? openWorksheetInstance = null,
+        Tempest.Desktop.CalcSheets.VerificationDashboardView? verification = null)
     {
         ArgumentNullException.ThrowIfNull(navigator);
         ArgumentNullException.ThrowIfNull(tasksReadModel);
@@ -132,6 +135,7 @@ public sealed class EngineeringAreaView : UserControl
         _dashboard = dashboard;
         _onEngineeringCalculationSelected = onEngineeringCalculationSelected;
         _onRegisterSelected = onRegisterSelected;
+        _verification = verification;
 
         // The register node lists the worksheet calculations above the bracket-check surface (the showcase journey
         // found it showed only the bracket records); a row opens in the worksheet form.
@@ -175,6 +179,10 @@ public sealed class EngineeringAreaView : UserControl
                 node.Items.Add(_worksheetsNode);
                 node.Items.Add(_calculationsNode);
                 node.Items.Add(_assetsNode);
+
+                // Addendum C, C-4: the read-only verification dashboard, beside the other Calculations screens.
+                if (_verification is not null)
+                    node.Items.Add(_verificationNode);
             }
 
             _modulesNode.Items.Add(node);
@@ -190,7 +198,7 @@ public sealed class EngineeringAreaView : UserControl
                  {
                      (_dashboardNode, "Dashboard"), (_tasksNode, "Tasks"), (_disciplinesNode, "Disciplines"), (_modulesNode, "Modules"),
                      (_calculationsNode, "Calculation register"), (_worksheetsNode, "Worksheets"),
-                     (_assetsNode, "Packs and templates"), (_referenceDataNode, "Reference data"),
+                     (_assetsNode, "Packs and templates"), (_verificationNode, "Verification dashboard"), (_referenceDataNode, "Reference data"),
                  })
             AutomationProperties.SetName(node, name);
         AutomationProperties.SetName(_tree, "Engineering tree");
@@ -271,8 +279,8 @@ public sealed class EngineeringAreaView : UserControl
     /// Selects the node named <paramref name="automationName"/>
     /// ("Dashboard", "Tasks", "Disciplines", "Mechanical discipline" and
     /// its siblings, "Modules", "Requirements module" and its siblings,
-    /// "Worksheets", "Calculation register", "Packs and templates" or
-    /// "Reference data") — the same name a
+    /// "Worksheets", "Calculation register", "Packs and templates",
+    /// "Verification dashboard" or "Reference data") — the same name a
     /// screen reader announces, and what a journey test drives the tree
     /// by.
     /// </summary>
@@ -280,7 +288,7 @@ public sealed class EngineeringAreaView : UserControl
     {
         var item = new[]
             {
-                _dashboardNode, _tasksNode, _disciplinesNode, _modulesNode, _calculationsNode, _assetsNode, _referenceDataNode,
+                _dashboardNode, _tasksNode, _disciplinesNode, _modulesNode, _calculationsNode, _assetsNode, _verificationNode, _referenceDataNode,
             }
             .Concat(_disciplineNodes.Values)
             .Concat(_disciplineWorksheetNodes.Values)
@@ -475,6 +483,13 @@ public sealed class EngineeringAreaView : UserControl
         {
             await _engineeringAssets.RefreshAsync().ConfigureAwait(true);
             _detail.Content = _engineeringAssets;
+            return;
+        }
+
+        if (ReferenceEquals(selected, _verificationNode) && _verification is not null)
+        {
+            await _verification.RefreshAsync().ConfigureAwait(true);
+            _detail.Content = _verification;
             return;
         }
 
