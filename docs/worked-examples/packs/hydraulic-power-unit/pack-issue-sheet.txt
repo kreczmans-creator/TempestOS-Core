@@ -43,7 +43,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 48/48
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 10:14 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -56,7 +56,7 @@ Issued: 2026-10-26    Issue: HPU-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A double-acting hydraulic cylinder in its circuit: the bore, rod and annulus areas; the force and speed on the extend and the retract stroke with mechanical and volumetric efficiency and an optional back pressure, or with the regenerative extend connection; the swept volume and the cycle time; the pump delivery, shaft power, torque and speed; a hydraulic motor's torque; the velocity in the suction, pressure and return lines against your own limits and the smallest listed hose or pipe bore that meets them; a sharp orifice's flow for flow-control screening; and a screening check of the rod against buckling (Euler above the transition slenderness, Johnson parabola below it). screening only; ISO/TS 13725 method not implemented. Not a cylinder design to a standard: the limits, the hose sizes, the mounting factor and the material properties are your records.
-Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_b/A_a Cylinder force: F_ext = (p·A_b − p_back·A_a)·η_m, F_ret = (p·A_a − p_back·A_b)·η_m; regenerative extend F_ext = p·A_r·η_m Speed and time: v_ext = Q·η_vc/A_b (regenerative: A_r), v_ret = Q·η_vc/A_a; t = stroke/v; t_cycle = t_ext + t_ret + t_dwell Required speed (optional): when v_req is given it gives the flow, Q = v_req·A_b/η_vc (regenerative: A_r), and replaces the entered Q; the flow must lie within 0.1 to 2000 L/min Swept volume: ΔV_ext = A_b·stroke (regenerative: A_r·stroke), ΔV_ret = A_a·stroke; ΔV = the larger Pump flow and power: Q_p = V_g·n·η_vp; P = p·Q_p/η_tp; T = P/ω; displacement needed V_g,req = Q/(n·η_vp) Hydraulic motor: T = Δp·V_g/(2π)·η_hm (V_g per revolution) Line velocities: v = Q_line/A_line; suction Q_suc = max(Q, V_g·n) (the geometric delivery), pressure/cap-port line Q_prs = Q_line·A_b/A_a on the retract stroke (regenerative extend: Q_line·A_b/A_r if larger), return Q_rtn = Q_line·A_b/A_a, with Q_line = max(Q, Q_p); smallest bore d = √(4Q/(π·v_max)), recommended = the smallest listed size not below it Orifice flow: Q = C_d·A_o·√(2Δp/ρ); bore for the circuit flow d_o = √(4Q/(π·C_d·√(2Δp/ρ))) Rod buckling (screening): L_eff = K·(stroke + L_add), r = d_r/4, λ = L_eff/r, λ_c = π·√(2E/f_y); Euler F_cr = π²·E·I/L_eff² for λ > λ_c, Johnson F_cr = A_r·f_y·[1 − f_y·λ²/(4π²E)] for λ ≤ λ_c; load F_b = max(F_push, F_stall) with F_stall = p·A_b (the stalled cylinder at the supply pressure: no flow, so no back pressure and no friction loss; in the regenerative extend too, since the standard connection can always be selected); utilisation u = F_b·S_f/F_cr
+Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_b/A_a Cylinder force: F_ext = (p·A_b − p_back·A_a)·η_m, F_ret = (p·A_a − p_back·A_b)·η_m; regenerative extend F_ext = p·A_r·η_m Speed and time: v_ext = Q·η_vc/A_b (regenerative: A_r), v_ret = Q·η_vc/A_a; t = stroke/v; t_cycle = t_ext + t_ret + t_dwell Required speed (optional): when v_req is given it gives the flow, Q = v_req·A_b/η_vc (regenerative: A_r), and replaces the entered Q; the flow must lie within 0.1 to 2000 L/min Swept volume: ΔV_ext = A_b·stroke (regenerative: A_r·stroke), ΔV_ret = A_a·stroke; ΔV = the larger Pump flow and power: Q_p = V_g·n·η_vp; P = p·Q_p/η_tp; T = P/ω; displacement needed V_g,req = Q/(n·η_vp) Hydraulic motor: T = Δp·V_g/(2π)·η_hm (V_g per revolution) Line velocities: v = Q_line/A_line; suction Q_suc = max(Q, V_g·n) (the geometric delivery), pressure/cap-port line Q_prs = Q_line·A_b/A_a on the retract stroke (regenerative extend: Q_line·A_b/A_r if larger), return Q_rtn = Q_line·A_b/A_a, with Q_line = max(Q, Q_p); smallest bore d = √(4Q/(π·v_max)), recommended = the smallest listed size not below it Orifice flow: Q = C_d·A_o·√(2Δp/ρ); bore for the circuit flow d_o = √(4Q/(π·C_d·√(2Δp/ρ))) Rod buckling (screening): buckling length L_b = the pin-to-pin length at full stroke = L_closed + stroke (L_closed blank: estimated as 2·stroke + L_add, the body taken as long as the stroke), L_eff = K·L_b, r = d_r/4, λ = L_eff/r, λ_c = π·√(2E/f_y); Euler F_cr = π²·E·I/L_eff² for λ > λ_c, Johnson F_cr = A_r·f_y·[1 − f_y·λ²/(4π²E)] for λ ≤ λ_c; load F_b = max(F_push, F_stall) with F_stall = p·A_b (the stalled cylinder at the supply pressure: no flow, so no back pressure and no friction loss; in the regenerative extend too, since the standard connection can always be selected); utilisation u = F_b·S_f/F_cr
   Ref: ISO/TS 13725 — Cylinder buckling load: method not implemented, screening only
   Ref: Esposito, Fluid Power with Applications Cylinder and pump chapters — Force, speed, flow and power relations, closed form
 
@@ -76,7 +76,7 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
   eta_vc | Volumetric efficiency of the cylinder (leakage past the piston) | 0.98 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
   t_dwell | Dwell time added to each cycle | 0 | s | assumption: Sheet default value; no project figure given. | 0 … 3600 s
   K_m | Effective-length factor K of the mounting (L_eff = K·L) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 2.5
-  L_add | Length added to the stroke for the buckling length (mounting and rod end beyond the stroke) | 100 | mm | assumption: Sheet default value; no project figure given. | 0 … 5000 mm
+  L_add | Length of the closed cylinder beyond its stroke (body, end caps and mounting eyes), used only when L_closed is blank: the closed length is then stroke + L_add | 100 | mm | assumption: Sheet default value; no project figure given. | 0 … 5000 mm
   E | Young's modulus of the rod | 210 | GPa | assumption: Sheet default value; no project figure given. | 50 … 250 GPa
   f_y | Yield strength of the rod | 500 | MPa | assumption: Sheet default value; no project figure given. | 100 … 1500 MPa
   S_f | Safety factor on the critical load | 3.5 |  | assumption: Sheet default value; no project figure given. | 1 … 20
@@ -99,13 +99,13 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
   A3. The pump power is the supply pressure times the pump's delivery over the total efficiency: when the pump delivers more than the circuit takes, the excess is taken to go over the relief valve at the supply pressure, which is the conservative case for the drive. The shaft torque is the power over the angular speed. (P = p·Q_p/η_tp.)
   A4. The line flows use the pump delivery when it is larger than the circuit flow: the suction line the geometric delivery V_g·n, the pressure line and the return line Q_line = max(Q, Q_p), which carries no volumetric efficiency while the speeds use Q·η_vc (the flows are the conservative side of the speeds). The line to the cylinder cap port is judged at the larger flow of the two strokes: on the retract stroke it carries the cap-side discharge Q_line·A_b/A_a (the same flow as the return line), and in the regenerative extend Q_line·A_b/A_r if that is larger. The velocity limits are your records; the sheet's defaults are placeholders, not values from a standard. (Continuity.)
   A5. The orifice relation is the sharp-edged turbulent one, Q = C_d·A·√(2Δp/ρ), with your discharge coefficient; it ignores viscosity and cavitation and is a screening of a flow-control orifice, not a valve selection. (Orifice equation, closed form.)
-  A6. The rod is treated as a solid round column of its own diameter with the effective-length factor of the mounting; the tube, the piston and the rod-end stiffness are not modelled. The rod is judged at the larger of the push load you enter and the stall thrust p·A_b (a stalled, obstructed or relief-limited cylinder loads the rod with the full pressure force on the bore: no flow, so no back pressure, and the seal friction does not relieve it); no pressure-limiting device is credited, and the regenerative extend is judged at the same stall thrust because the standard connection can always be selected. The mounting factor K_m defaults to 1 (pinned at both ends): a fixed-free mounting is K_m = 2, and the factor and the safety factor S_f are your records. screening only; ISO/TS 13725 method not implemented. (Euler and Johnson column relations, closed form.)
+  A6. The rod is treated as a solid round column of its own diameter with the effective-length factor of the mounting; the tube, the piston and the rod-end stiffness are not modelled, and the rod's diameter is taken over the whole pin-to-pin length at full stroke (closed length plus stroke, the body included; a stiffer body than the rod makes this conservative). The rod is judged at the larger of the push load you enter and the stall thrust p·A_b (a stalled, obstructed or relief-limited cylinder loads the rod with the full pressure force on the bore: no flow, so no back pressure, and the seal friction does not relieve it); no pressure-limiting device is credited, and the regenerative extend is judged at the same stall thrust because the standard connection can always be selected. The mounting factor K_m defaults to 1 (pinned at both ends): a fixed-free mounting is K_m = 2, and the factor and the safety factor S_f are your records. screening only; ISO/TS 13725 method not implemented. (Euler and Johnson column relations, closed form.)
   A7. p_back (Back pressure on the discharge side (standard connection, gauge)) is taken as 0 bar g. (Sheet default value; no project figure given.)
   A8. eta_m (Mechanical efficiency of the cylinder (seal and guide friction)) is taken as 0.95. (Sheet default value; no project figure given.)
   A9. eta_vc (Volumetric efficiency of the cylinder (leakage past the piston)) is taken as 0.98. (Sheet default value; no project figure given.)
   A10. t_dwell (Dwell time added to each cycle) is taken as 0 s. (Sheet default value; no project figure given.)
   A11. K_m (Effective-length factor K of the mounting (L_eff = K·L)) is taken as 1. (Sheet default value; no project figure given.)
-  A12. L_add (Length added to the stroke for the buckling length (mounting and rod end beyond the stroke)) is taken as 100 mm. (Sheet default value; no project figure given.)
+  A12. L_add (Length of the closed cylinder beyond its stroke (body, end caps and mounting eyes), used only when L_closed is blank: the closed length is then stroke + L_add) is taken as 100 mm. (Sheet default value; no project figure given.)
   A13. E (Young's modulus of the rod) is taken as 210 GPa. (Sheet default value; no project figure given.)
   A14. f_y (Yield strength of the rod) is taken as 500 MPa. (Sheet default value; no project figure given.)
   A15. S_f (Safety factor on the critical load) is taken as 3.5. (Sheet default value; no project figure given.)
@@ -261,13 +261,13 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
       = sqrt(4 × 75.627 L/min / (π × 3 m/s))
       = 23.129 mm
         Smallest return line bore for the velocity limit
-  [64] L_b = stroke + L_add
-      = 500 mm + 100 mm
-      = 600 mm
-        Buckling length: stroke plus the length beyond it
+  [64] L_b = 2 * stroke + L_add
+      = 2 × 500 mm + 100 mm
+      = 1100 mm
+        Buckling length, estimated: the closed length (stroke + L_add) plus the stroke
   [65] L_eff = K_m * L_b
-      = 1 × 600 mm
-      = 600 mm
+      = 1 × 1100 mm
+      = 1100 mm
         Effective length K·L
   [66] I_r = pi * d_r^4 / 64
       = π × (70 mm)^4 / 64
@@ -278,20 +278,20 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
       = 17.5 mm
         Radius of gyration of the solid rod
   [68] lam = L_eff / r_g
-      = 600 mm / 17.5 mm
-      = 34.286
+      = 1100 mm / 17.5 mm
+      = 62.857
         Slenderness ratio
   [69] lam_c = pi * sqrt(2 * E / f_y)
       = π × sqrt(2 × 210 GPa / 500 MPa)
       = 91.052
         Transition slenderness between Johnson and Euler
   [70] F_cr = A_r * f_y * (1 - f_y * lam^2 / (4 * pi^2 * E))
-      = 38.485 cm² × 500 MPa × (1 − 500 MPa × 34.286^2 / (4 × π^2 × 210 GPa))
-      = 1787.8 kN
+      = 38.485 cm² × 500 MPa × (1 − 500 MPa × 62.857^2 / (4 × π^2 × 210 GPa))
+      = 1465.7 kN
         Critical load, Johnson parabola (stocky rod)
   [71] F_allow = F_cr / S_f
-      = 1787.8 kN / 3.5
-      = 510.8 kN
+      = 1465.7 kN / 3.5
+      = 418.77 kN
         Allowable push load: critical load over the safety factor
   [72] F_stall = p * A_b
       = 160 bar g × 78.54 cm²
@@ -302,8 +302,8 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
       = 125.66 kN
         Rod load for the buckling check: the larger of the push load entered and the stall thrust p·A_b
   [74] u_buck = F_buck / F_allow
-      = 125.66 kN / 510.8 kN
-      = 0.24601
+      = 125.66 kN / 418.77 kN
+      = 0.30008
         Buckling utilisation
   [75] u_push = F_push / F_ext
       = 80 kN / 119.38 kN
@@ -313,6 +313,10 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
       = 40 kN / 60.884 kN
       = 0.65699
         Pull load over the retract force
+  [77] p_push = (F_push / eta_m + p_back * A_a) / A_b
+      = (80 kN / 0.95 + 0 bar g × 40.055 cm²) / 78.54 cm²
+      = 107.22 bar
+        Pressure at the cylinder the push load needs: (F_push/η_m + p_back·A_a)/A_b
 
 5. RESULTS
   A_b = 78.54 cm²    Bore area
@@ -329,6 +333,7 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
   dV_ext = 3.927 L    Extend swept volume
   dV_ret = 2.0028 L    Retract swept volume
   dV = 3.927 L    Swept volume per stroke (the larger)
+  p_push = 107.22 bar    Pressure the push load needs at the cylinder
   u_push = 0.67013    Push load over the extend force
   u_pull = 0.65699    Pull load over the retract force
   Q = 36 L/min    Flow into the cylinder
@@ -354,14 +359,15 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
   d_min_suc = 26.795 mm    Smallest suction line bore
   d_min_prs = 17.916 mm    Smallest pressure line bore
   d_min_rtn = 23.129 mm    Smallest return line bore
-  L_eff = 600 mm    Effective length
-  lam = 34.286    Slenderness
+  L_b = 1100 mm    Buckling length (pin to pin at full stroke)
+  L_eff = 1100 mm    Effective length
+  lam = 62.857    Slenderness
   lam_c = 91.052    Transition slenderness
-  F_cr = 1787.8 kN    Critical load (screening)
-  F_allow = 510.8 kN    Allowable push load (screening)
+  F_cr = 1465.7 kN    Critical load (screening)
+  F_allow = 418.77 kN    Allowable push load (screening)
   F_stall = 125.66 kN    Stall thrust p·A_b
   F_buck = 125.66 kN    Rod load judged for buckling: the larger of the push load and the stall thrust
-  u_buck = 0.24601    Rod buckling utilisation (screening)
+  u_buck = 0.30008    Rod buckling utilisation (screening)
   buckling_note = "screening only; ISO/TS 13725 method not implemented; stocky rod, Johnson parabola"    Rod buckling check
 
 6. CHECKS (governing first)
@@ -371,17 +377,18 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
   PASS  Extend force covers the push load: u_push = 0.67013 vs u_push ≤ 1  utilisation 0.67
   PASS  Retract force covers the pull load: u_pull = 0.65699 vs u_pull ≤ 1  utilisation 0.657
   PASS  Suction line velocity within its limit: u_suc = 0.44873 vs u_suc ≤ 1  utilisation 0.449  « cylinder.line-limits record
-  PASS  Rod buckling at the larger of the push load and the stall thrust, screening only; ISO/TS 13725 method not implemented: u_buck = 0.24601 vs u_buck ≤ 1  utilisation 0.246  « Euler / Johnson column relations
+  PASS  Rod buckling at the larger of the push load and the stall thrust, screening only; ISO/TS 13725 method not implemented: u_buck = 0.30008 vs u_buck ≤ 1  utilisation 0.3  « Euler / Johnson column relations
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: E, f_y (Rod material); K_m (Mounting effective-length factor); S_f (Rod buckling safety factor); v_suc_max, v_prs_max, v_ret_max (Line velocity limits). Enter each as one so its source, edition and licence travel with it.
+  WARNING length: L_closed: the closed pin-to-pin length is not entered; the buckling length is estimated as 2 × the stroke + L_add = 1100 mm, the cylinder body included (a cylinder buckles over its whole pin-to-pin length at full stroke, not over the rod alone). Enter the closed length from the cylinder drawing.
 
 8. VERIFICATION
-  Template: fp.cylinder@1.3.1
-  Content hash: cccea8851bedd98e
+  Template: fp.cylinder@1.4.0
+  Content hash: e9d829e843189b74
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 10:14 UTC
   Application: TempestOS test
 
 
@@ -411,12 +418,13 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   p_2 | Highest working pressure p2 | 160 | bar g | link: Cylinder and pump circuit rev A · p | 0 … 700 bar g
   p_atm | Atmospheric pressure (gauge to absolute) | 1.01325 | bar a | assumption: Sheet default value; no project figure given. | 0.5 … 1.1 bar a
   n | Gas exponent n of the discharge (1 isothermal, slow; 1.4 adiabatic, fast); with the same exponent both ways it is also the charge exponent | 1.4 |  | spec: SPEC-HPU-05 §3 (accumulator) | 1 … 1.4
-  f_rg | Real-gas factor on V0 (1 = ideal gas; at least 1, as nitrogen's compressibility factor exceeds 1 at high pressure; from a gas-property source above 200 bar) | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.5
+  f_rg | Real-gas factor on V0 (1 = ideal gas; at least 1). It is the ratio of the real to the ideal gas volume for THIS pressure window, not the compressibility factor Z at p_2: from a gas-property source, f_rg = Z_0·(1/p_1 − 1/p_2)/(Z_1/p_1 − Z_2/p_2) for an isothermal discharge, Z at p_0, p_1 and p_2, which is larger than Z_2 for a narrow window | 1.311 |  | spec: SPEC-HPU-05 §3 (accumulator) | 1 … 3
   T_max | Maximum operating temperature (p0 applies here) | 50 | degC | spec: SPEC-HPU-05 §3 (accumulator) | -40 … 150 degC
   T_min | Minimum operating temperature (the gas is coldest and delivers least here; V0 is scaled by T_max/T_min) | 10 | degC | spec: SPEC-HPU-05 §3 (accumulator) | -40 … 150 degC
   T_c | Charging temperature | 20 | degC | assumption: Sheet default value; no project figure given. | -40 … 100 degC
   r_0 | Pre-charge rule: p0 (at T_max) at most this fraction of p1, on absolute pressures (state whether the manufacturer's ratio is on gauge or absolute pressures) | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
   r_p | Pre-charge rule: p2/p0 (p0 at T_min) at most this ratio, on absolute pressures | 4 |  | assumption: Sheet default value; no project figure given. | 1 … 20
+  p_load | Lowest pressure the load still needs, bar gauge (an emergency stroke: the cylinder pressure its push load needs, linked from the cylinder circuit's p_push; p_1 must not be below it; blank = not checked) | 107.22 | bar g | link: Cylinder and pump circuit rev A · p_push | 0 … 700 bar g
 
 3. ASSUMPTIONS
   A1. All gas-law pressures are absolute. A gauge entry is converted with the atmospheric pressure entered here, so the same numbers read as gauge or as absolute give different volumes. (p·Vⁿ = const on a fixed mass of gas.)
@@ -429,11 +437,10 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   A8. process (Gas process (By duty: an emergency stroke is charged slowly to p2 and discharged at n, the other duties use one exponent both ways)) is taken as By duty. (Sheet default value; no project figure given.)
   A9. p_basis (Pressures entered as) is taken as Gauge. (Sheet default value; no project figure given.)
   A10. p_atm (Atmospheric pressure (gauge to absolute)) is taken as 1.01325 bar a. (Sheet default value; no project figure given.)
-  A11. f_rg (Real-gas factor on V0 (1 = ideal gas; at least 1, as nitrogen's compressibility factor exceeds 1 at high pressure; from a gas-property source above 200 bar)) is taken as 1. (Sheet default value; no project figure given.)
-  A12. T_c (Charging temperature) is taken as 20 degC. (Sheet default value; no project figure given.)
-  A13. r_0 (Pre-charge rule: p0 (at T_max) at most this fraction of p1, on absolute pressures (state whether the manufacturer's ratio is on gauge or absolute pressures)) is taken as 0.9. (Sheet default value; no project figure given.)
-  A14. r_p (Pre-charge rule: p2/p0 (p0 at T_min) at most this ratio, on absolute pressures) is taken as 4. (Sheet default value; no project figure given.)
-  A15. Emergency stroke duty: ΔV is the volume the emergency stroke needs (swept volume plus line compression; linkable from the cylinder circuit); p_1 is the lowest pressure at which the stroke still has the force it needs; p_2 is the pressure the accumulator is held at, reached by a slow charge. (Gas-law sizing for a stored-energy stroke.)
+  A11. T_c (Charging temperature) is taken as 20 degC. (Sheet default value; no project figure given.)
+  A12. r_0 (Pre-charge rule: p0 (at T_max) at most this fraction of p1, on absolute pressures (state whether the manufacturer's ratio is on gauge or absolute pressures)) is taken as 0.9. (Sheet default value; no project figure given.)
+  A13. r_p (Pre-charge rule: p2/p0 (p0 at T_min) at most this ratio, on absolute pressures) is taken as 4. (Sheet default value; no project figure given.)
+  A14. Emergency stroke duty: ΔV is the volume the emergency stroke needs (swept volume plus line compression; linkable from the cylinder circuit); p_1 is the lowest pressure at which the stroke still has the force it needs; p_2 is the pressure the accumulator is held at, reached by a slow charge. (Gas-law sizing for a stored-energy stroke.)
 
 4. WORKING
   [15] pa_0 = p_0 + p_atm
@@ -452,67 +459,78 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
       = max(161.01 bar a − 1.0132 bar a, 0 bar)
       = 160 bar g
         Highest working pressure, gauge
-  [20] V0_ideal = dV · (pa_2/pa_0) / [(pa_2/pa_1)^(1/n) − 1], charged isothermally to pa_2, discharged at n    « p·Vⁿ = const, charge exponent 1, discharge exponent n
+  [20] p1_g = max(pa_1 - p_atm, 0.001 bar)
+      = max(121.01 bar a − 1.0132 bar a, 0.001 bar)
+      = 120 bar g
+        Lowest working pressure, gauge
+  [21] u_load = p_load / p1_g
+      = 107.22 bar g / 120 bar g
+      = 0.8935
+        Pressure the load needs over the lowest working pressure
+  [23] V0_ideal = dV · (pa_2/pa_0) / [(pa_2/pa_1)^(1/n) − 1], charged isothermally to pa_2, discharged at n    « p·Vⁿ = const, charge exponent 1, discharge exponent n
       = 3.927 L · 1.5188 / [(1.3305)^(1/1.4) − 1]
       = 26.357 L
         Gas volume for the displacement, ideal gas, slow charge and discharge at n
-  [21] f_T = (T_max / 1 K) / (T_min / 1 K)
+  [24] f_T = (T_max / 1 K) / (T_min / 1 K)
       = 50 degC / 1 K / (10 degC / 1 K)
       = 1.1413
         Temperature scaling of the gas volume: maximum over minimum absolute temperature
-  [22] V0 = V0_ideal * f_rg * f_T
-      = 26.357 L × 1 × 1.1413
-      = 30.081 L
+  [25] V0 = V0_ideal * f_rg * f_T
+      = 26.357 L × 1.311 × 1.1413
+      = 39.436 L
         Pre-charge gas volume V0 (accumulator size required)
-  [23] T_ratio = (T_c / 1 K) / (T_max / 1 K)
+  [26] T_ratio = (T_c / 1 K) / (T_max / 1 K)
       = 20 degC / 1 K / (50 degC / 1 K)
       = 0.90716
         Charging over maximum absolute temperature
-  [24] p0 = pa_0 * T_ratio
+  [27] p0 = pa_0 * T_ratio
       = 106.01 bar a × 0.90716
       = 96.171 bar a
         Absolute pre-charge pressure at the charging temperature
-  [25] p0_min = pa_0 / f_T
+  [28] p0_min = pa_0 / f_T
       = 106.01 bar a / 1.1413
       = 92.891 bar a
         Absolute pre-charge pressure at the minimum operating temperature
-  [26] p0_set = p0 - p_atm
+  [29] p0_set = p0 - p_atm
       = 96.171 bar a − 1.0132 bar a
       = 95.158 bar g
         Pre-charge to set at the charging temperature (gauge)
-  [27] u_r0 = pa_0 / (r_0 * pa_1)
+  [30] u_r0 = pa_0 / (r_0 * pa_1)
       = 106.01 bar a / (0.9 × 121.01 bar a)
       = 0.97339
         Pre-charge against the p0/p1 rule
-  [28] u_rp = (pa_2 / p0_min) / r_p
+  [31] u_rp = (pa_2 / p0_min) / r_p
       = 161.01 bar a / 92.891 bar a / 4
       = 0.43334
         Pressure ratio p2/p0 (p0 at the minimum temperature) against the rule
 
 5. RESULTS
-  V0 = 30.081 L    Accumulator gas volume required
+  V0 = 39.436 L    Accumulator gas volume required
   p0 = 96.171 bar a    Pre-charge, absolute, at the charging temperature
   p0_set = 95.158 bar g    Pre-charge to set at the charging temperature
   p0_min = 92.891 bar a    Pre-charge, absolute, at the minimum operating temperature
   f_T = 1.1413    Gas volume scaling T_max/T_min
   u_r0 = 0.97339    Pre-charge rule utilisation (p0/p1)
   u_rp = 0.43334    Pressure ratio utilisation (p2/p0 at the minimum temperature)
+  u_load = 0.8935    Load pressure over the lowest working pressure p_1
   pssr = "indication not available — enter the vessel's PS and volume (or a size list)."    PSSR Schedule 1 250 bar·L exception (indication only)
   process = "charged slowly to p_2 (isothermal, exponent 1), discharged at n = 1.4"    Gas process the volume is sized for
 
 6. CHECKS (governing first)
   PASS  Pre-charge within the p0/p1 rule: u_r0 = 0.97339 vs u_r0 ≤ 1  utilisation 0.973  « accumulator.rules record
+  PASS  Lowest working pressure p_1 carries the load: u_load = 0.8935 vs u_load ≤ 1  utilisation 0.894
   PASS  Pressure ratio within the p2/p0 rule: u_rp = 0.43334 vs u_rp ≤ 1  utilisation 0.433  « accumulator.rules record
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: r_0, r_p (Pre-charge rules). Enter each as one so its source, edition and licence travel with it.
+  WARNING exponent-real: n: the exponent 1.4 is the ideal-gas value; real nitrogen at 121.01 to 161.01 bar absolute is stiffer (an effective isentropic exponent of about 1.5 to 2.1 between 60 and 350 bar). Your real-gas factor f_rg = 1.311 is applied on top: it must be the factor for the discharge path, not for an isothermal one.
 
 8. VERIFICATION
-  Template: fp.accumulator@1.3.2
-  Content hash: 168af24288314fc8
+  Template: fp.accumulator@1.4.0
+  Content hash: 79ca79b37dac66f8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 10/10
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 10:14 UTC
   Application: TempestOS test
 
 
@@ -668,7 +686,7 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
   Content hash: f891afe6e1b6d955
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 10:14 UTC
   Application: TempestOS test
 
 
@@ -897,7 +915,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   Content hash: fc37ad5186d37d4c
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 10:14 UTC
   Application: TempestOS test
 
 
@@ -1055,7 +1073,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: 7797b9e5dc359f7a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 10:14 UTC
   Application: TempestOS test
 
 
@@ -1157,7 +1175,7 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   Content hash: 28e4e44162109057
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 10:14 UTC
   Application: TempestOS test
 
 
@@ -1328,7 +1346,7 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   Content hash: 52adab0302839136
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 10:14 UTC
   Application: TempestOS test
 
 
@@ -1594,5 +1612,5 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
   Content hash: 66f32fca1f51bd3a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 10:14 UTC
   Application: TempestOS test

@@ -9,7 +9,7 @@ public sealed class BoltedJointCalculator : ICalcCalculator
     public const string Id = "mech.bolted-joint";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.1", CalcDiscipline.Mechanical, "Bolted joint (simplified VDI 2230)",
+        Id, "1.2.0", CalcDiscipline.Mechanical, "Bolted joint (simplified VDI 2230)",
         "One bolt clamping members under an axial working load: the preload from the tightening torque with its scatter (or as measured), the stiffness of bolt and members, how much of the working load the bolt sees, the residual clamp after embedding, separation, yield under preload plus working load, the thread engagement needed against stripping, and the fatigue amplitude.",
         "Tensile stress area of the thread: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 P and d_3 = d − 1.2269 P.\nAssembly preload from the tightening torque, nut-factor method: F_M = M_A/(K d).\nAssembly preload from the tightening torque, thread and head friction method: F_M = M_A/(0.16 P + 0.58 d_2 μ_G + 0.5 D_Km μ_K).\nAssembly preload stated directly (measured) instead of derived: F_M = F_V.\nBolt and member stiffness and the stress area may also be given (measured, FE or a fastener record) instead of derived.\nMinimum preload after the tightening scatter: F_M,min = F_M/α_A.\nBolt resilience, the head, free shank and engaged thread as springs in series: δ_S = (0.4 d + 0.4 d)/(E_S A_N) + l_k/(E_S A_s) + 0.5 d/(E_S A_d3).\nMember stiffness, the clamped parts as two pressure frusta: k = 0.5774 π E d / ln[((1.155 t + d_w − d_h)(d_w + d_h))/((1.155 t + d_w + d_h)(d_w − d_h))].\nLoad factor, the share of the working load the bolt sees: Φ = n k_S/(k_S + k_P).\nPreload lost to embedding (settling of the interfaces): F_Z = f_Z (k_S k_P)/(k_S + k_P).\nResidual clamp at the interface under the working load: F_KR = max(F_M,min − (1 − Φ) F_A − F_Z, 0).\nMaximum bolt load, the whole working load once the joint opens: F_S,max = max(F_M + Φ F_A, F_A).\nWorking equivalent stress in the bolt, tension with half the tightening torsion: σ_red = √(σ_z² + 3 (0.5 τ)²).\nFatigue stress amplitude in the thread: σ_a = (F_S,max − F_M)/(2 A_s).\nThread engagement length needed against stripping: m_min = S F_S,max/(0.5 π d τ_B).",
         [
@@ -30,6 +30,7 @@ public sealed class BoltedJointCalculator : ICalcCalculator
             new CalcInputSpec("K", "Nut factor (nut-factor method)", CalcInputKind.Number, Default: 0.2, Min: 0.1, Max: 0.35, HardMin: 0.01, HardMax: 2, Group: "Tightening"),
             new CalcInputSpec("mu_G", "Thread friction coefficient", CalcInputKind.Number, Default: 0.12, Min: 0.06, Max: 0.25, HardMin: 0.001, HardMax: 1, Group: "Tightening"),
             new CalcInputSpec("mu_K", "Head / nut bearing friction coefficient", CalcInputKind.Number, Default: 0.12, Min: 0.06, Max: 0.25, HardMin: 0.001, HardMax: 1, Group: "Tightening"),
+            new CalcInputSpec("nu_perm", "Permitted assembly utilisation ν: the equivalent stress at assembly over the proof strength (VDI 2230 R7; 0.9 is the usual target, 1.0 is the limit at which the bolt yields in tightening)", CalcInputKind.Number, Default: 1, Min: 0.5, Max: 1, HardMin: 0.1, HardMax: 1, Group: "Tightening"),
             new CalcInputSpec("alpha_A", "Tightening scatter factor (F_M,max / F_M,min)", CalcInputKind.Number, Default: 1.6, Min: 1, Max: 4, HardMin: 1, HardMax: 10, Group: "Tightening"),
             new CalcInputSpec("F_A", "Axial working load (per bolt)", CalcInputKind.Quantity, "kN", Default: 10, Min: 0, Max: 5000, HardMin: 0, HardMax: 1e6, Group: "Loads"),
             new CalcInputSpec("F_KR_req", "Required residual clamp force", CalcInputKind.Quantity, "kN", Default: 5, Min: 0, Max: 5000, HardMin: 0, HardMax: 1e6, Group: "Loads"),
@@ -94,7 +95,7 @@ public sealed class BoltedJointCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
-        foreach (var s in new[] { "d", "P", "R_p02", "E_S", "sigma_A", "l_k", "d_h", "d_w", "E_P", "n", "f_Z", "M_A", "K", "mu_G", "mu_K", "alpha_A", "F_A", "F_KR_req", "tau_B", "m_eff", "S_strip" })
+        foreach (var s in new[] { "d", "P", "R_p02", "E_S", "sigma_A", "l_k", "d_h", "d_w", "E_P", "n", "f_Z", "M_A", "K", "mu_G", "mu_K", "nu_perm", "alpha_A", "F_A", "F_KR_req", "tau_B", "m_eff", "S_strip" })
             c.Input(s);
 
         var method = c.InputText("method");
@@ -142,8 +143,12 @@ public sealed class BoltedJointCalculator : ICalcCalculator
         c.Assign("sigma_red_M", "sqrt(sigma_M^2 + 3 * tau_M^2)", "MPa", "Equivalent stress at assembly (full torsion)", "VDI 2230 R8");
         c.Assign("nu_M", "sigma_red_M / R_p02", null, "Utilisation of proof strength at assembly");
 
+        c.Assign("u_assembly", "nu_M / nu_perm", null, "Assembly utilisation over the permitted ν");
+
         if (c.Si("nu_M") > 0.9)
-            c.Warn("preload-yield", "M_A: the preload alone takes the bolt above 90 % of its proof strength.");
+            c.Warn("preload-yield", c.Si("nu_M") > 1.0
+                ? $"M_A: the equivalent stress at assembly is {CalcValue.FormatNumber(c.Si("nu_M"), 4)} of the proof strength: the bolt yields in tightening."
+                : "M_A: the preload alone takes the bolt above 90 % of its proof strength.");
 
         // Stiffness.
         if (c.Has("k_S_given"))
@@ -207,7 +212,7 @@ public sealed class BoltedJointCalculator : ICalcCalculator
             }
         }
 
-        foreach (var (s, t) in new[] { ("A_s", "Tensile stress area"), ("F_M", "Assembly preload (maximum)"), ("F_M_min", "Minimum preload"), ("sigma_M", "Preload stress"), ("nu_M", "Assembly utilisation of proof strength"), ("k_S", "Bolt stiffness"), ("k_P", "Members' stiffness"), ("Phi", "Load factor"), ("F_Z", "Embedding loss"), ("F_SA", "Additional bolt load"), ("F_KR", "Residual clamp"), ("F_A_sep", "Separation load"), ("F_S_max", "Maximum bolt load"), ("sigma_z_max", "Maximum bolt tensile stress"), ("sigma_red_B", "Working equivalent stress"), ("sigma_a", "Fatigue amplitude"), ("m_min", "Engagement needed") })
+        foreach (var (s, t) in new[] { ("A_s", "Tensile stress area"), ("F_M", "Assembly preload (maximum)"), ("F_M_min", "Minimum preload"), ("sigma_M", "Preload stress"), ("nu_M", "Assembly utilisation of proof strength"), ("u_assembly", "Assembly utilisation over the permitted ν"), ("k_S", "Bolt stiffness"), ("k_P", "Members' stiffness"), ("Phi", "Load factor"), ("F_Z", "Embedding loss"), ("F_SA", "Additional bolt load"), ("F_KR", "Residual clamp"), ("F_A_sep", "Separation load"), ("F_S_max", "Maximum bolt load"), ("sigma_z_max", "Maximum bolt tensile stress"), ("sigma_red_B", "Working equivalent stress"), ("sigma_a", "Fatigue amplitude"), ("m_min", "Engagement needed") })
             c.Output(s, t);
 
         if (separated)
@@ -223,6 +228,7 @@ public sealed class BoltedJointCalculator : ICalcCalculator
             c.CheckUtilisation("Residual clamp against requirement", "u_clamp", "VDI 2230 R7");
         }
 
+        c.CheckUtilisation("Equivalent stress at assembly within the permitted ν of the proof strength", "u_assembly", "VDI 2230 R7");
         c.CheckUtilisation("Yield in the working state", "u_yield", "VDI 2230 R8");
         c.CheckUtilisation("Fatigue amplitude", "u_fatigue", "VDI 2230 R9");
         c.CheckUtilisation("Thread stripping", "u_strip", "VDI 2230 §5.5.5");

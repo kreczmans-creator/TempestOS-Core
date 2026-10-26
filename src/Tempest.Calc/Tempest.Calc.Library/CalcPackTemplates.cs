@@ -189,7 +189,8 @@ public static class CalcPackTemplates
     /// <para>
     /// F1 → F2: the swept volume of the larger stroke (<c>dV</c>, L) is the liquid the accumulator must deliver for an emergency stroke (or store), and the supply
     /// pressure (<c>p</c>, bar gauge) is its highest working pressure <c>p_2</c>: the accumulator charges to the pressure the pump holds. The lowest working pressure
-    /// <c>p_1</c> and the pre-charge are the user's. The linked <c>p</c> is a gauge pressure, so the accumulator's <c>p_basis</c> must stay Gauge (its default): in Absolute mode the
+    /// <c>p_1</c> and the pre-charge are the user's; F1's <c>p_push</c> (the pressure the push load needs at the cylinder, gauge) is F2's <c>p_load</c>, so F2 checks that <c>p_1</c> still carries the push load, and the real-gas factor
+    /// <c>f_rg</c> (the user's, from a gas-property source; 1.311 here) makes the ideal-gas volume the real nitrogen's. The linked <c>p</c> is a gauge pressure, so the accumulator's <c>p_basis</c> must stay Gauge (its default): in Absolute mode the
     /// value would be read one atmosphere low, and the accumulator sheet warns (<c>link-basis</c>). F1 → B1: B1 judges the line F1 judges, the line to the cylinder cap port, so it takes F1's cap-port line flow (<c>Q_prs</c>,
     /// L/min to m³/h: the larger of the two strokes, the retract discharge Q·A_b/A_a), the oil density (<c>rho</c>, to the custom fluid's <c>rho_custom</c>) and the line bore
     /// (<c>d_prs</c>, to the first segment's <c>D</c> by a table-cell link), so revising the cylinder's line bore makes the pressure line stale. B1 is not given a pump, so its
@@ -231,6 +232,7 @@ public static class CalcPackTemplates
         [
             new CalcPackBinding("f1", "dV", "f2", "dV"),
             new CalcPackBinding("f1", "p", "f2", "p_2"),
+            new CalcPackBinding("f1", "p_push", "f2", "p_load"),
             new CalcPackBinding("f1", "Q_prs", "b1", "Q"),
             new CalcPackBinding("f1", "rho", "b1", "rho_custom"),
             new CalcPackBinding("f1", "d_prs", "b1", "segments", Row: 0, Column: "D"),
@@ -304,7 +306,7 @@ public static class CalcPackTemplates
     /// Actuated linkage: slider-crank (M9) → hydraulic cylinder (F1) → accumulator (F2). A slider-crank ejector is to be replaced by a cylinder. The linkage's peak slide speed (<c>output_motion</c>, m/s to mm/s) is the extend speed the cylinder must
     /// reach (<c>v_req</c>, which gives the flow and replaces the entered one) and its peak slide-direction force (<c>follower_force</c>, N to kN) is the load to push and, conservatively, to pull. <b>This is a kinematic proxy</b> (DB-04): a cylinder-actuated
     /// linkage runs at about constant cylinder speed, not at constant crank speed, so the crank's peak speed and force are what the cylinder must match, not what it would reproduce through the whole stroke. The cylinder's stroke is the slider's
-    /// (twice the crank radius), typed and guarded, as the linkage has no stroke port. F1 → F2 as in the hydraulic power unit: the swept volume of the larger stroke and the supply pressure (a gauge pressure; the accumulator's basis stays Gauge) size an emergency-stroke accumulator.
+    /// (twice the crank radius), typed and guarded, as the linkage has no stroke port. F1 → F2 as in the hydraulic power unit: the swept volume of the larger stroke and the supply pressure (a gauge pressure; the accumulator's basis stays Gauge) size an emergency-stroke accumulator, whose lowest working pressure is checked against the pressure the push load needs (F1's <c>p_push</c> to F2's <c>p_load</c>).
     /// </summary>
     public static CalcPackTemplate ActuatedLinkage { get; } = new(
         "pack.actuated-linkage", "Actuated linkage",
@@ -320,6 +322,7 @@ public static class CalcPackTemplates
             new CalcPackBinding("m9", "follower_force", "f1", "F_pull"),
             new CalcPackBinding("f1", "dV", "f2", "dV"),
             new CalcPackBinding("f1", "p", "f2", "p_2"),
+            new CalcPackBinding("f1", "p_push", "f2", "p_load"),
         ]);
 
     /// <summary>

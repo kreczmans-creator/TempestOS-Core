@@ -9,7 +9,7 @@ public sealed class PressFitCalculator : ICalcCalculator
     public const string Id = "mech.press-fit";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.1", CalcDiscipline.Mechanical, "Press and shrink fit",
+        Id, "1.1.0", CalcDiscipline.Mechanical, "Press and shrink fit",
         "A shaft (solid or hollow) pressed or shrunk into a hub: the interface pressure for a given diametral interference, the hoop and radial stresses at the interface in hub and shaft, von Mises utilisation against each yield strength, the axial assembly force and the torque the joint can carry by friction, and the temperature rise to shrink-fit the hub.",
         "Radial interference: δ_r = δ/2.\nInterface pressure, the hub and the shaft as thick cylinders: p = δ_r / [ (R/E_h)·((r_o² + R²)/(r_o² − R²) + ν_h) + (R/E_s)·((R² + r_i²)/(R² − r_i²) − ν_s) ].\nStresses at the hub bore: σ_θ = p·(r_o² + R²)/(r_o² − R²); σ_r = −p.\nStresses at the shaft surface: σ_θ = −p·(R² + r_i²)/(R² − r_i²); σ_r = −p.\nAxial force and torque the fit holds by friction: F = μ·p·2πR·L; T = μ·p·2πR²·L.\nTemperature difference to assemble by heating the hub, with assembly clearance c_a: ΔT = (δ + c_a)/(α·2R).",
         [
@@ -31,7 +31,7 @@ public sealed class PressFitCalculator : ICalcCalculator
         [
             new CalcAssumption("Both parts are long cylinders in plane stress; the interface pressure is uniform along the engagement.", "Lamé thick-cylinder relations; end effects neglected."),
             new CalcAssumption("The friction coefficient is as entered and the same for assembly and for torque transmission.", "Enter it with its source; it dominates the force and torque results."),
-            new CalcAssumption("Yield is checked by the von Mises equivalent stress at the hub bore and at the shaft surface.", "Axial stress taken as zero."),
+            new CalcAssumption("Yield is checked by the von Mises equivalent stress at the hub bore, at the shaft surface and, for a hollow shaft, at the shaft bore (where the hoop stress is largest: 2·p·R²/(R² − r_i²), with no radial stress), the larger of the two shaft values governing.", "Axial stress taken as zero."),
         ],
         [
             new CalcClauseRef("Shigley's Mechanical Engineering Design", "§3-16, §3-17", "Press and shrink fits; stresses in pressurised cylinders"),
@@ -96,6 +96,17 @@ public sealed class PressFitCalculator : ICalcCalculator
         c.Assign("sigma_r_shaft", "-p", "MPa", "Shaft radial stress at the surface");
         c.Assign("sigma_vm_hub", "sqrt(sigma_t_hub^2 - sigma_t_hub * sigma_r_hub + sigma_r_hub^2)", "MPa", "Hub von Mises stress at the bore");
         c.Assign("sigma_vm_shaft", "sqrt(sigma_t_shaft^2 - sigma_t_shaft * sigma_r_shaft + sigma_r_shaft^2)", "MPa", "Shaft von Mises stress at the surface");
+        if (dI > 0)
+        {
+            c.Assign("sigma_t_shaft_bore", "-2 * p * R^2 / (R^2 - r_i^2)", "MPa", "Shaft hoop stress at the shaft bore (hollow shaft; the radial stress is zero there)", "Lamé, external pressure on a hollow cylinder");
+            c.Assign("sigma_vm_shaft_bore", "abs(sigma_t_shaft_bore)", "MPa", "Shaft von Mises stress at the shaft bore (hollow shaft: hoop stress alone)");
+        }
+        else
+        {
+            c.Assign("sigma_vm_shaft_bore", "sigma_vm_shaft", "MPa", "Shaft von Mises stress at the centre (solid shaft: equal hoop and radial stress, the same as at the surface)");
+        }
+
+        c.Assign("sigma_vm_shaft_max", "max(sigma_vm_shaft, sigma_vm_shaft_bore)", "MPa", "Largest shaft von Mises stress, surface or bore");
         c.Assign("F_a", "mu * p * 2 * pi * R * L", "kN", "Axial assembly (press) force");
         c.Assign("T", "mu * p * 2 * pi * R^2 * L", "N*m", "Torque capacity by friction");
         c.Assign("dT", "(delta + c_a) / (alpha_h * d)", "K", "Hub temperature rise for shrink fitting");
@@ -104,12 +115,14 @@ public sealed class PressFitCalculator : ICalcCalculator
         c.Output("sigma_t_hub", "Hub hoop stress at bore");
         c.Output("sigma_t_shaft", "Shaft hoop stress at surface");
         c.Output("sigma_vm_hub", "Hub von Mises stress");
-        c.Output("sigma_vm_shaft", "Shaft von Mises stress");
+        c.Output("sigma_vm_shaft", "Shaft von Mises stress at the surface");
+        c.Output("sigma_vm_shaft_bore", "Shaft von Mises stress at the shaft bore");
+        c.Output("sigma_vm_shaft_max", "Largest shaft von Mises stress (surface or bore)");
         c.Output("F_a", "Assembly force");
         c.Output("T", "Torque capacity");
         c.Output("dT", "Shrink-fit temperature rise");
 
         c.Check("Hub yield", "sigma_vm_hub", "S_y_h");
-        c.Check("Shaft yield", "sigma_vm_shaft", "S_y_s");
+        c.Check("Shaft yield, surface and bore", "sigma_vm_shaft_max", "S_y_s");
     }
 }

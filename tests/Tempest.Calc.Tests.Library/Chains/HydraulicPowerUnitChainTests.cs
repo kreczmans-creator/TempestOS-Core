@@ -53,8 +53,8 @@ public sealed class HydraulicPowerUnitChainTests
         // F1 1.2.0 moved these (independent hand recompute): the rod is judged at the stall thrust p·A_b (125.66 kN, above the 80 kN push), and the 20 mm
         // cap-port line at the retract flow Q·A_b/A_a = 75.63 L/min, 4.01 m/s against the 5 m/s placeholder limit (a 16 mm line read 6.27 m/s and failed, so the pack uses 20 mm).
         var stall = 160e5 * areaBore;
-        Assert.Equal(stall * 3.5 / 1787806.9776735522, Si(f1, "u_buck"), 9);
-        Assert.Equal(0.2460125600778818, Si(f1, "u_buck"), 9);
+        Assert.Equal(stall * 3.5 / 1465707.6880828117, Si(f1, "u_buck"), 9);
+        Assert.Equal(0.3000755028295391, Si(f1, "u_buck"), 9);
         var areaRod = Math.PI * 0.07 * 0.07 / 4;
         var capFlow = 28e-6 * 1450 / 60 * 0.95 * areaBore / (areaBore - areaRod);
         Assert.Equal(capFlow / (Math.PI * 0.02 * 0.02 / 4), Si(f1, "v_prs"), 9);
@@ -77,15 +77,29 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.True(InputSi(f2, "p_1") > 80e3 / (areaBore * 0.95), "the lowest working pressure must still finish the stroke under load");
         Assert.Equal(107.2, 80e3 / (areaBore * 0.95) / 1e5, 1);
 
+        // chain.hydraulic-power-unit-02: F1's p_push (the pressure the push load needs at the cylinder, gauge) is F2's p_load, so F2 checks that its lowest working pressure p_1 still carries the push.
+        Assert.Equal(80e3 / (areaBore * 0.95), Si(f1, "p_push"), 6);
+        Assert.Equal(Si(f1, "p_push"), InputSi(f2, "p_load"), 6);
+        Assert.Equal(Si(f1, "p_push") / 120e5, Si(f2, "u_load"), 9);
+        Assert.Contains(f2.Links, l => l.Input.Symbol == "p_load");
+        Assert.DoesNotContain(f2.Warnings, w => w.RuleId == "load-pressure");
+
         // F2 (1.3.0): an emergency stroke is held at p2, charged slowly (isothermal) and discharged at n = 1.4: V0 = f_T·ΔV·(p2/p0)/[(p2/p1)^(1/n) − 1] on absolute pressures, a 10 to 50 °C range.
         // python3: ΔV 3.926990816987242 L, p0 106.01325, p1 121.01325, p2 161.01325 bar abs, f_T 323.15/283.15: 30.080873024534817 L (the one-exponent form gave 26.695181275084906 L, 12.7 % less).
-        Assert.Equal(30.080873024534817e-3, Si(f2, "V0"), 12);
-        Assert.Equal(26.695181275084906e-3 * 1.1268278238893188, Si(f2, "V0"), 12);
+        // chain.hydraulic-power-unit-01: the ideal gas is short for nitrogen at 161 bar abs; the pack enters the real-gas factor f_rg = 1.311 (reference equation of state for nitrogen, hold at 160 bar gauge at 10 °C then the isentropic stroke:
+        // 39.432 L against the 30.081 L of the ideal gas), so V0 = 1.311 × 30.080873024534817 = 39.4360 L, which covers the 39.43 L the stroke needs.
+        Assert.Equal(1.311, InputSi(f2, "f_rg"), 12);
+        Assert.Equal(30.080873024534817e-3 * 1.311, Si(f2, "V0"), 12);
+        Assert.Equal(26.695181275084906e-3 * 1.1268278238893188 * 1.311, Si(f2, "V0"), 12);
+        Assert.InRange(Si(f2, "V0") * 1e3, 39.432, 39.44);
         Assert.Equal(0.9733851458414678, Si(f2, "u_r0"), 9);
         Assert.Equal(0.43334029084376174, Si(f2, "u_rp"), 9);
-        Assert.Equal(2, f2.Checks.Count);
+        Assert.Equal(3, f2.Checks.Count);
         Assert.All(f2.Checks, c => Assert.True(c.Passed, c.Name));
         Assert.DoesNotContain(f2.Warnings, w => w.RuleId is "exponent" or "realgas" or "shock" or "process");
+
+        // fp.accumulator-R2: n = 1.4 is the ideal-gas exponent; the sheet says its real-gas factor is applied on top and must be the discharge path's.
+        Assert.Contains("applied on top", Assert.Single(f2.Warnings, w => w.RuleId == "exponent-real").Message, StringComparison.Ordinal);
         Assert.Contains("charged slowly to p_2", f2.Outputs.Single(o => o.Symbol == "process").Text, StringComparison.Ordinal);
 
         // F1 → B1: the pressure line B1 judges is the line F1 judges, the line to the cylinder cap port: its flow Q_prs (L/min into m³/h) is the larger of the two strokes,
@@ -304,13 +318,13 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(["f1", "f2", "b1", "e1", "e4", "e3", "e5", "e9"], template.Steps.Select(s => s.Key));
         Assert.Equal(
             [
-                ("f1", "dV", "f2", "dV"), ("f1", "p", "f2", "p_2"), ("f1", "Q_prs", "b1", "Q"), ("f1", "rho", "b1", "rho_custom"), ("f1", "d_prs", "b1", "segments"), ("f1", "T_shaft", "e1", "T_L"), ("f1", "n_shaft", "e1", "n_L"), ("e1", "P_rated", "e4", "P"),
+                ("f1", "dV", "f2", "dV"), ("f1", "p", "f2", "p_2"), ("f1", "p_push", "f2", "p_load"), ("f1", "Q_prs", "b1", "Q"), ("f1", "rho", "b1", "rho_custom"), ("f1", "d_prs", "b1", "segments"), ("f1", "T_shaft", "e1", "T_L"), ("f1", "n_shaft", "e1", "n_L"), ("e1", "P_rated", "e4", "P"),
                 ("e4", "I_b", "e3", "I"), ("e4", "L", "e3", "L"), ("e4", "CSA", "e3", "A_c"),
                 ("e4", "CSA", "e5", "S_line"), ("e4", "CSA", "e5", "S_cpc"), ("e4", "L", "e5", "L"), ("e4", "I_n", "e5", "I_n"), ("e4", "device_code", "e5", "device_code"),
                 ("e1", "P_rated", "e9", "P"), ("e4", "CSA", "e9", "A_c"), ("e4", "L", "e9", "L_cab"), ("e5", "I_k3", "e9", "I_k"), ("e5", "c_k3", "e9", "c_src"),
             ],
             template.Bindings.Select(b => (b.FromStep, b.Output, b.ToStep, b.Input)));
-        Assert.Equal(21, template.Bindings.Count);
+        Assert.Equal(22, template.Bindings.Count); // 20 + E4 CSA → E5 S_cpc (C-1 batch C) + F1 p_push → F2 p_load (C-1 batch D)
         Assert.Equal((0, "D"), (template.Bindings.Single(b => b.Input == "segments").Row, template.Bindings.Single(b => b.Input == "segments").Column));
 
         foreach (var b in template.Bindings.Where(b => b.Row is null))
@@ -383,6 +397,26 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(Si(e1, "P_rated"), InputSi(e9, "P"), 6);
         Assert.Equal(1.2454973839171712, Si(e9, "start_dip") * 100, 9);
         Assert.All(new[] { f2, b1, e1, e4, e3, e5, e9 }, i => Assert.Empty(i.Blocks));
+    }
+
+    [Fact]
+    public async Task A_Heavier_Push_Load_Fails_The_Accumulator_Because_Its_Lowest_Pressure_No_Longer_Carries_It()
+    {
+        // chain.hydraulic-power-unit-02: F_push 100 kN needs 134.0 bar at the 100 mm bore (100 kN/(78.54 cm² x 0.95)), and the accumulator still ends its stroke at p_1 = 120 bar: before the link F1 passed (u_push 0.838),
+        // F2 sized V0 as before and all 16 checks were green. Now F2 takes the pressure the push needs from F1 and fails.
+        var host = Host();
+        var inputs = ChainInputs.HydraulicPowerUnit(host);
+        inputs["f1"] = [.. inputs["f1"].Select(v => v.Symbol == "F_push" ? CalcInputValue.Quantity("F_push", 100, "kN", v.Provenance) : v)];
+        var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.HydraulicPowerUnit, await host.ProjectAsync(), "Press 7 hydraulic power unit", inputs);
+        Assert.True(refusal is null, refusal);
+        var (f1, f2) = (made!.Instances["f1"], made.Instances["f2"]);
+
+        var needed = 100e3 / (Math.PI * 0.1 * 0.1 / 4 * 0.95);
+        Assert.Equal(needed, Si(f1, "p_push"), 6);
+        Assert.Equal(134.0, Si(f1, "p_push") / 1e5, 1);
+        Assert.True(f1.Checks.Single(c => c.Name.StartsWith("Push load", StringComparison.Ordinal) || c.Name.StartsWith("Extend force", StringComparison.Ordinal)).Passed);
+        Assert.Equal(needed / 120e5, Si(f2, "u_load"), 9);
+        Assert.Contains(f2.Checks, c => c.Name.StartsWith("Lowest working pressure p_1 carries the load", StringComparison.Ordinal) && !c.Passed);
     }
 
     [Fact]

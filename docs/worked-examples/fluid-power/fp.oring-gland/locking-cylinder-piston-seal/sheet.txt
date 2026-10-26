@@ -32,10 +32,10 @@ Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits o
   D_c | Mating part that sets the extrusion gap: the piston outside diameter, or the housing bore round the rod (not used for a face seal) | 63 | mm | drawing: LC-63-002 rev B | 5 … 1000 mm
   D_c_u | Mating part diameter, upper deviation | -0.03 | mm | drawing: LC-63-002 rev B | -0.5 … 0.5 mm
   D_c_l | Mating part diameter, lower deviation | -0.06 | mm | drawing: LC-63-002 rev B | -0.5 … 0.5 mm
-  h_f | Face-seal groove depth (face seal only) | 2.7 | mm | default | 0.3 … 20 mm
+  h_f | Face-seal groove depth (face seal only; the ring is compressed over h_f + e_f) | 2.7 | mm | default | 0.3 … 20 mm
   h_f_u | Face-seal groove depth, upper deviation | 0.05 | mm | default | -0.5 … 0.5 mm
   h_f_l | Face-seal groove depth, lower deviation | 0 | mm | default | -0.5 … 0.5 mm
-  e_f | Face-seal extrusion gap between the flanges (face seal only) | 0.05 | mm | default | 0 … 2 mm
+  e_f | Face-seal gap between the flanges (face seal only): the extrusion gap, and it adds to the compression height h_f + e_f | 0.05 | mm | default | 0 … 2 mm
   e_f_u | Face-seal gap, upper deviation | 0.05 | mm | default | -0.5 … 0.5 mm
   e_f_l | Face-seal gap, lower deviation | 0 | mm | default | -0.5 … 0.5 mm
   b | Groove width b | 4.7 | mm | drawing: LC-63-002 rev B | 1 … 20 mm
@@ -335,10 +335,10 @@ Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits o
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: alpha (Material properties); d_r, d_r_tol, W, W_tol (Ring size); q_lo_s, q_hi_s, fill_lo, fill_hi, x_lo, x_hi (Squeeze, fill and stretch bands); gap_allow (Permitted extrusion gap). Enter each as one so its source, edition and licence travel with it.
   WARNING input.face_p: face_p (Face seal only: which side the pressure acts on (external: the ring ID seats on the groove inner wall and is stretched; internal: the ring OD seats on the groove outer wall and is compressed)) was not entered; the template default 'External (ring ID seated on the groove)' is used.
-  WARNING input.h_f: h_f (Face-seal groove depth (face seal only)) was not entered; the template default 2.7 mm is used.
+  WARNING input.h_f: h_f (Face-seal groove depth (face seal only; the ring is compressed over h_f + e_f)) was not entered; the template default 2.7 mm is used.
   WARNING input.h_f_u: h_f_u (Face-seal groove depth, upper deviation) was not entered; the template default 0.05 mm is used.
   WARNING input.h_f_l: h_f_l (Face-seal groove depth, lower deviation) was not entered; the template default 0 mm is used.
-  WARNING input.e_f: e_f (Face-seal extrusion gap between the flanges (face seal only)) was not entered; the template default 0.05 mm is used.
+  WARNING input.e_f: e_f (Face-seal gap between the flanges (face seal only): the extrusion gap, and it adds to the compression height h_f + e_f) was not entered; the template default 0.05 mm is used.
   WARNING input.e_f_u: e_f_u (Face-seal gap, upper deviation) was not entered; the template default 0.05 mm is used.
   WARNING input.e_f_l: e_f_l (Face-seal gap, lower deviation) was not entered; the template default 0 mm is used.
   WARNING input.nu: nu (Poisson ratio of the ring, for the linear relation) was not entered; the template default 0.49 is used.
@@ -348,7 +348,7 @@ Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits o
   WARNING input.dD_p: dD_p (Diametral growth under the operating pressure of the bore (piston seal) or of the housing bore round the rod (rod seal), from your cylinder or housing calculation; added to the extrusion gap (0 if not known)) was not entered; the template default 0 mm is used.
 
 8. VERIFICATION
-  Template: fp.oring-gland@1.2.1
+  Template: fp.oring-gland@1.3.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 13/13

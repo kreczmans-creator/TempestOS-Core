@@ -67,6 +67,18 @@
     "ValueText": "150"
   },
   {
+    "Symbol": "L_closed",
+    "Number": 950,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DWG-4310",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "950"
+  },
+  {
     "Symbol": "Q",
     "Number": 60,
     "Unit": "L/min",

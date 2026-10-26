@@ -234,7 +234,7 @@ public static class ORingGlandModel
         return kind == SealKind.Rod ? x[(int)GlandDim.Surface] : x[(int)GlandDim.Groove];
     }
 
-    /// <summary>The gland depth (before any thermal factor): half the diameter difference, or the face-seal depth.</summary>
+    /// <summary>The gland depth (before any thermal factor): half the diameter difference, or for a face seal the groove depth plus the flange gap (the ring is compressed between the groove bottom and the other flange, over h_f + e_f).</summary>
     public static double Depth(SealKind kind, double[] x)
     {
         ArgumentNullException.ThrowIfNull(x);
@@ -243,7 +243,7 @@ public static class ORingGlandModel
         {
             SealKind.Piston => (x[(int)GlandDim.Surface] - x[(int)GlandDim.Groove]) / 2.0,
             SealKind.Rod => (x[(int)GlandDim.Groove] - x[(int)GlandDim.Surface]) / 2.0,
-            _ => x[(int)GlandDim.FaceDepth],
+            _ => x[(int)GlandDim.FaceDepth] + x[(int)GlandDim.FaceGap],
         };
     }
 
@@ -272,7 +272,7 @@ public static class ORingGlandModel
 
     /// <summary>
     /// The gland depth in a case, mm, with each part at its own temperature: half the difference of the bore (or rod) at the
-    /// sealing-surface factor and the groove root at the groove-metal factor, or the face-seal depth at the groove-metal factor. With one
+    /// sealing-surface factor and the groove root at the groove-metal factor, or the face-seal groove depth plus the flange gap at the groove-metal factor. With one
     /// expansion coefficient this is g·<see cref="Depth"/>.
     /// </summary>
     public static double DepthAt(GlandEnvironment env, GlandCase c, double[] x)
@@ -285,7 +285,7 @@ public static class ORingGlandModel
         {
             SealKind.Piston => (gs * x[(int)GlandDim.Surface] - gm * x[(int)GlandDim.Groove]) / 2.0,
             SealKind.Rod => (gm * x[(int)GlandDim.Groove] - gs * x[(int)GlandDim.Surface]) / 2.0,
-            _ => gm * x[(int)GlandDim.FaceDepth],
+            _ => gm * (x[(int)GlandDim.FaceDepth] + x[(int)GlandDim.FaceGap]),
         };
     }
 

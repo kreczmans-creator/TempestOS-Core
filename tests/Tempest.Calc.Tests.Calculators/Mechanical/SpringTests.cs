@@ -88,6 +88,30 @@ public sealed class SpringTests
     }
 
     [Fact]
+    public void Choosing_No_Correction_For_The_Static_Stress_Leaves_The_Curvature_Factor_In_The_Fatigue_Stresses()
+    {
+        // mech.spring-01: d 4, D 16 (C = 4), F 100 to 400 N, R_m 1700, S_e 300 MPa: 'None' removed the curvature factor from the Goodman stresses too, u_f 0.458 against 0.634 with Bergstraesser.
+        // python3: k_c = 4.5/3.25 = 1.384615, tau_1 = 88.147, tau_2 = 352.589 MPa, a = 132.221, m = 220.368, u_f = 132.221/300 + 220.368/(0.67 x 1700) = 0.634212.
+        CalcInputValue[] spring = [Q("d", 4, "mm"), Q("D", 16, "mm"), Q("L0", 100, "mm"), Q("F_1", 100, "N"), Q("F_2", 400, "N"), Q("Rm", 1700, "MPa"), Q("S_e", 300, "MPa")];
+        var berg = Run([.. spring, CalcInputValue.Choice("corr", SpringCalculator.Bergstraesser)]);
+        var none = Run([.. spring, CalcInputValue.Choice("corr", SpringCalculator.Uncorrected)]);
+        Assert.False(berg.IsBlocked, string.Join("; ", berg.Blocks.Select(b => b.Message)));
+        Assert.False(none.IsBlocked, string.Join("; ", none.Blocks.Select(b => b.Message)));
+        Assert.Equal(0.634212, berg.OutputSi("u_f"), 5);
+        Assert.Equal(berg.OutputSi("u_f"), none.OutputSi("u_f"), 12);
+        Assert.Equal(berg.OutputSi("n_f"), none.OutputSi("n_f"), 12);
+
+        // The static stress still follows the choice: 'None' is the uncorrected 8 F D / (pi d^3), 63.662 and 254.648 MPa, and Bergstraesser is 1.3846 times that.
+        Assert.Equal(1.0, none.OutputSi("k_c"), 12);
+        Assert.Equal(254.648, none.OutputSi("tau_2") / 1e6, 3);
+        Assert.Equal(352.589, berg.OutputSi("tau_2") / 1e6, 3);
+
+        // Wahl keeps its own factor in the fatigue stresses.
+        var wahl = Run([.. spring, CalcInputValue.Choice("corr", SpringCalculator.Wahl)]);
+        Assert.True(wahl.OutputSi("u_f") > berg.OutputSi("u_f"));
+    }
+
+    [Fact]
     public void A_Spring_Index_Outside_4_To_20_Warns()
     {
         Assert.DoesNotContain(Run().Warnings, w => w.RuleId == "index");

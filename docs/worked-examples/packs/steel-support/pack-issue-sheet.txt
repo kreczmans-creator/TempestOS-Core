@@ -42,7 +42,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 47/47
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 10:14 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -178,7 +178,7 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   Content hash: 60a0615ba7745102
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 10:14 UTC
   Application: TempestOS test
 
 
@@ -383,7 +383,7 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   Content hash: d545dc5d7d4eb03c
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 10:14 UTC
   Application: TempestOS test
 
 
@@ -627,7 +627,7 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   Content hash: 5c47accf06a9faee
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 10:14 UTC
   Application: TempestOS test
 
 
@@ -739,10 +739,14 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
       = 47 kN / 141 kN
       = 0.33333
         Tension utilisation of the governing bolt
-  [28] u_lin = v/V_R + t/(1.4 T_R)
-      = 4.7/94 + 47/(1.4 × 141)
+  [28] governing_lin = bolt with the highest linear utilisation
+      = bolt 1
+      = "bolt 1"
+        The bolt that governs the linear shear–tension check
+  [29] u_lin = max over the bolts of v/V_R + t/(1.4 T_R)
+      = bolt 1: 4.7/94 + 47/(1.4 × 141)
       = 0.2881
-        Linear shear–tension interaction (governing bolt)
+        Linear shear–tension interaction, the highest over all bolts
 
 5. RESULTS
   T = 0 kN·m    Torque about the centroid
@@ -751,23 +755,24 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   t_max = 47 kN    Maximum bolt tension
   u_max = 0.33706    Governing interaction utilisation
   governing = "bolt 1"    Governing bolt
-  u_lin = 0.2881    Linear interaction utilisation
+  u_lin = 0.2881    Linear interaction utilisation (highest over all bolts)
+  governing_lin = "bolt 1"    Bolt governing the linear interaction
 
 6. CHECKS (governing first)
   PASS  Circular shear–tension interaction (governing bolt): u_max = 0.33706 vs u_max ≤ 1  utilisation 0.337
   PASS  Tension alone: u_t = 0.33333 vs u_t ≤ 1  utilisation 0.333
-  PASS  Linear shear–tension interaction v/V_R + t/(1.4 T_R): u_lin = 0.2881 vs u_lin ≤ 1  utilisation 0.288  « EN 1993-1-8 Table 3.4
+  PASS  Linear shear–tension interaction v/V_R + t/(1.4 T_R), every bolt: u_lin = 0.2881 vs u_lin ≤ 1  utilisation 0.288  « EN 1993-1-8 Table 3.4
   PASS  Shear alone: u_v = 0.05 vs u_v ≤ 1  utilisation 0.05
 
 7. APPLICABILITY
   No warnings.
 
 8. VERIFICATION
-  Template: mech.bolt-group@1.2.0
-  Content hash: 1d9f5c56b95ecdb6
+  Template: mech.bolt-group@1.3.0
+  Content hash: 9e89bfac777e5482
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 10:14 UTC
   Application: TempestOS test
 
 
@@ -941,7 +946,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: 98d5d1a33491feda
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 10:14 UTC
   Application: TempestOS test
 
 
@@ -1100,7 +1105,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: 98d5d1a33491feda
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 10:14 UTC
   Application: TempestOS test
 
 
@@ -1161,7 +1166,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | link: Holding-down bolts rev A · f_yb | 235 … 640 MPa
   A_s | Anchor bolt tensile stress area (from S4) | 244.794 | mm^2 | link: Holding-down bolts rev A · A_s | 50 … 1500 mm^2
   F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 248.485 | kN | link: Holding-down bolts rev A · F_b_Rd | 1 … 2000 kN
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 22ca7fa520f54e828b639bbef995a71c/34cbd772756045a295d4f51ce9d5ac1a | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 167513f0b29144e7ae0b612d9c48c0c3/eb81f6b17e9942dca5e18dc2cf597d8a | any
 
 3. ASSUMPTIONS
   A1. N_Ed is positive in compression here, the opposite of S3 (tension positive): a link from S2 must take the reaction R1_y (up positive, compression into the base), never the member force N_e1. (Sign convention.)
@@ -1379,5 +1384,5 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   Content hash: 78225cb0777ee5bb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-26 09:55 UTC
+  Test run: 2026-10-26 10:14 UTC
   Application: TempestOS test

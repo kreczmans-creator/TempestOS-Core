@@ -9,7 +9,7 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
     public const string Id = "mech.thick-cylinder";
 
     public CalcTemplate Template { get; } = new(
-        Id, "2.0.1", CalcDiscipline.Mechanical, "Thick-walled cylinder stresses (Lamé)",
+        Id, "2.1.0", CalcDiscipline.Mechanical, "Thick-walled cylinder stresses (Lamé)",
         "Radial, hoop and axial stresses at the bore and the outer surface of a thick-walled cylinder under internal and external pressure, the von Mises and Tresca equivalents, utilisation against an allowable, and the thin-wall estimate for comparison.",
         "Lamé constants from the bore and outside pressures: A = (a² p_i − b² p_o)/(b² − a²); B = a² b² (p_i − p_o)/(b² − a²).\nRadial and hoop stress at radius r: σ_r = A − B/r²; σ_θ = A + B/r².\nAxial stress, closed or open ends: σ_z = A (closed); σ_z = 0 (open).\nEquivalent stresses from the three principal stresses: von Mises; Tresca = the largest principal difference.",
         [
@@ -18,6 +18,8 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
             new CalcInputSpec("p_i", "Internal pressure", CalcInputKind.Quantity, "MPa", Default: 50, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e5),
             new CalcInputSpec("p_o", "External pressure", CalcInputKind.Quantity, "MPa", Default: 0, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e5),
             new CalcInputSpec("closed", "Closed ends (axial stress carried by the wall)", CalcInputKind.Boolean, Default: 1),
+            new CalcInputSpec("E", "Young's modulus (the elastic collapse pressure under external pressure only)", CalcInputKind.Quantity, "GPa", Default: 207, Min: 1, Max: 500, HardMin: 1e-3, HardMax: 5000),
+            new CalcInputSpec("nu", "Poisson's ratio (the elastic collapse pressure under external pressure only)", CalcInputKind.Number, Default: 0.3, Min: 0.1, Max: 0.49, HardMin: 0, HardMax: 0.5),
             new CalcInputSpec("sigma_allow", "Allowable stress", CalcInputKind.Quantity, "MPa", Default: 200, Min: 1, Max: 3000, HardMin: 1e-3, HardMax: 1e5),
         ],
         [
@@ -31,6 +33,7 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
         [
             new CalcApplicabilityRule("geometry", "The outer radius must exceed the inner radius.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("no-pressure", "Both pressures are zero: nothing to compute.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("stability", "External pressure above the internal on a wall thinner than 10 % of the inner radius: the stress check does not cover collapse, and elastic collapse can govern before the allowable stress is reached.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("thin-wall", "Wall thinner than 5 % of the inner radius: the thin-wall estimate is within a few percent of Lamé.", CalcNoticeSeverity.Warning),
         ],
         [
@@ -58,6 +61,8 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
         c.Input("p_o");
         var closed = c.InputFlag("closed");
         c.Input("sigma_allow");
+        c.Input("E");
+        c.Input("nu");
 
         if (!(c.Si("b") > c.Si("a")))
         {
@@ -73,6 +78,19 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
 
         if (c.Si("b") - c.Si("a") < 0.05 * c.Si("a"))
             c.Warn("thin-wall", "b: the wall is thinner than 5 % of the inner radius; the thin-wall estimate is close to Lamé here.");
+
+        // Under external pressure the wall can collapse long before the stress allowable is reached: the stress check is not a stability check.
+        var external = c.Si("p_o") > c.Si("p_i");
+        var thinWall = c.Si("b") - c.Si("a") < 0.1 * c.Si("a");
+
+        if (external && thinWall)
+        {
+            c.Assign("t_w", "b - a", "mm", "Wall thickness");
+            c.Assign("r_m", "(a + b) / 2", "mm", "Mean radius");
+            c.Assign("p_cr", "E / (4 * (1 - nu^2)) * (t_w / r_m)^3", "MPa", "Elastic collapse pressure of a long tube under external pressure (an upper bound: out-of-roundness lowers it)", "Roark Ch. 15, long tube under external pressure");
+            c.Assign("u_cr", "(p_o - p_i) / p_cr", null, "Net external pressure over the elastic collapse pressure");
+            c.Warn("stability", $"p_o: the external pressure exceeds the internal on a wall thinner than 10 % of the inner radius; the stress check below is not a stability check. The elastic collapse pressure of a long tube is {F(c.Si("p_cr") / 1e6)} MPa (the net external pressure is {F(c.Si("u_cr") * 100)} % of it) and real tubes collapse below it because of out-of-roundness; check the collapse pressure and the support (rings, end closures) with a stability method.");
+        }
 
         c.Assign("A", "(a^2 * p_i - b^2 * p_o) / (b^2 - a^2)", "MPa", "Lamé constant A", "Roark Table 13.5");
         c.Assign("B", "a^2 * b^2 * (p_i - p_o) / (b^2 - a^2)", "MPa*mm^2", "Lamé constant B", "Roark Table 13.5");
@@ -93,6 +111,17 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
         foreach (var (symbol, text) in new[] { ("sigma_r_a", "Radial stress, bore"), ("sigma_t_a", "Hoop stress, bore"), ("sigma_r_b", "Radial stress, outer"), ("sigma_t_b", "Hoop stress, outer"), ("sigma_z", "Axial stress"), ("sigma_vm_a", "von Mises, bore"), ("sigma_vm_b", "von Mises, outer"), ("sigma_tr_a", "Tresca, bore"), ("sigma_tr_b", "Tresca, outer"), ("sigma_vm_max", "Maximum von Mises"), ("u", "Utilisation"), ("sigma_thin", "Thin-wall hoop estimate"), ("k_wall", "Wall ratio") })
             c.Output(symbol, text);
 
+        if (external && thinWall)
+        {
+            c.Output("p_cr", "Elastic collapse pressure, long tube (upper bound)");
+            c.Output("u_cr", "Net external pressure over the elastic collapse pressure");
+        }
+
         c.CheckUtilisation("von Mises against allowable", "u");
+
+        if (external && thinWall)
+            c.CheckUtilisation("Net external pressure within the elastic collapse pressure (an upper bound)", "u_cr", "Roark Ch. 15");
     }
+
+    private static string F(double v) => CalcValue.FormatNumber(v, 5);
 }

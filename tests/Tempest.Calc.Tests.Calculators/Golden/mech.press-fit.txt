@@ -29,7 +29,7 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
 3. ASSUMPTIONS
   A1. Both parts are long cylinders in plane stress; the interface pressure is uniform along the engagement. (Lamé thick-cylinder relations; end effects neglected.)
   A2. The friction coefficient is as entered and the same for assembly and for torque transmission. (Enter it with its source; it dominates the force and torque results.)
-  A3. Yield is checked by the von Mises equivalent stress at the hub bore and at the shaft surface. (Axial stress taken as zero.)
+  A3. Yield is checked by the von Mises equivalent stress at the hub bore, at the shaft surface and, for a hollow shaft, at the shaft bore (where the hoop stress is largest: 2·p·R²/(R² − r_i²), with no radial stress), the larger of the two shaft values governing. (Axial stress taken as zero.)
 
 4. WORKING
   [15] R = d / 2
@@ -84,15 +84,23 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
       = sqrt((-62.1 MPa)^2 − (-62.1 MPa) × (-62.1 MPa) + (-62.1 MPa)^2)
       = 62.1 MPa
         Shaft von Mises stress at the surface
-  [28] F_a = mu * p * 2 * pi * R * L
+  [28] sigma_vm_shaft_bore = sigma_vm_shaft
+      = 62.1 MPa
+      = 62.1 MPa
+        Shaft von Mises stress at the centre (solid shaft: equal hoop and radial stress, the same as at the surface)
+  [29] sigma_vm_shaft_max = max(sigma_vm_shaft, sigma_vm_shaft_bore)
+      = max(62.1 MPa, 62.1 MPa)
+      = 62.1 MPa
+        Largest shaft von Mises stress, surface or bore
+  [30] F_a = mu * p * 2 * pi * R * L
       = 0.15 × 62.1 MPa × 2 × π × 25 mm × 60 mm
       = 87.792 kN
         Axial assembly (press) force
-  [29] T = mu * p * 2 * pi * R^2 * L
+  [31] T = mu * p * 2 * pi * R^2 * L
       = 0.15 × 62.1 MPa × 2 × π × (25 mm)^2 × 60 mm
       = 2194.8 N·m
         Torque capacity by friction
-  [30] dT = (delta + c_a) / (alpha_h * d)
+  [32] dT = (delta + c_a) / (alpha_h * d)
       = (40 µm + 20 µm) / (0.000012 1/K × 50 mm)
       = 100 K
         Hub temperature rise for shrink fitting
@@ -102,18 +110,20 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
   sigma_t_hub = 103.5 MPa    Hub hoop stress at bore
   sigma_t_shaft = -62.1 MPa    Shaft hoop stress at surface
   sigma_vm_hub = 144.9 MPa    Hub von Mises stress
-  sigma_vm_shaft = 62.1 MPa    Shaft von Mises stress
+  sigma_vm_shaft = 62.1 MPa    Shaft von Mises stress at the surface
+  sigma_vm_shaft_bore = 62.1 MPa    Shaft von Mises stress at the shaft bore
+  sigma_vm_shaft_max = 62.1 MPa    Largest shaft von Mises stress (surface or bore)
   F_a = 87.792 kN    Assembly force
   T = 2194.8 N·m    Torque capacity
   dT = 100 K    Shrink-fit temperature rise
 
 6. CHECKS (governing first)
   PASS  Hub yield: 144.9 MPa vs 350 MPa  utilisation 0.414
-  PASS  Shaft yield: 62.1 MPa vs 350 MPa  utilisation 0.177
+  PASS  Shaft yield, surface and bore: 62.1 MPa vs 350 MPa  utilisation 0.177
 
 7. APPLICABILITY
   No warnings.
 
 8. VERIFICATION
-  Template: mech.press-fit@1.0.1
+  Template: mech.press-fit@1.1.0
   Known-answer cases passed: 2/2

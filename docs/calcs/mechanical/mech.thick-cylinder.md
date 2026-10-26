@@ -1,4 +1,4 @@
-# M2c — Thick-walled cylinder (`mech.thick-cylinder@2.0.1`)
+# M2c — Thick-walled cylinder (`mech.thick-cylinder@2.1.0`)
 
 **In plain terms.** In a thin pipe the wall stress is nearly uniform, but in a thick wall it is not: the hoop stress is highest at the bore and falls towards the outside. Lamé's solution gives the radial and hoop stresses at every radius for any inner and outer pressure, and the axial stress for closed ends. The largest equivalent stress, at the bore for internal pressure, is compared with the allowable.
 
@@ -6,7 +6,7 @@
 
 **Method.** `A = (a² p_i − b² p_o)/(b² − a²)`, `B = a² b² (p_i − p_o)/(b² − a²)`, `σ_r = A − B/r²`, `σ_θ = A + B/r²`, `σ_z = A` (closed) or 0. von Mises from the three principals; Tresca = max − min. Thin wall: `(p_i − p_o)(a + b)/(2(b − a))`.
 
-**Inputs.** `a`, `b`, `p_i`, `p_o`, `closed`, `sigma_allow`. **Outputs.** stresses at a and b, `sigma_z`, `sigma_vm_*`, `sigma_tr_*`, `sigma_vm_max`, `u`, `sigma_thin`, `k_wall`. **Check.** von Mises against allowable.
+**Inputs.** `a`, `b`, `p_i`, `p_o`, `closed`, `sigma_allow`, `E` and `nu` (2.1.0, used only for the collapse comparison below). **Outputs.** stresses at a and b, `sigma_z`, `sigma_vm_*`, `sigma_tr_*`, `sigma_vm_max`, `u`, `sigma_thin`, `k_wall`; for an external pressure above the internal on a wall thinner than 10 % of the inner radius, `p_cr` and `u_cr`. **Check.** von Mises against allowable. **Stability (2.1.0).** The stress check is not a stability check: under external pressure a thin wall collapses elastically before the stress allowable is reached. When `p_o > p_i` and `(b − a)/a < 0.1` the sheet warns (`stability`), reports the long-tube elastic collapse pressure `p_cr = E/(4(1 − ν²))·(t/r_m)³` (Roark, ch. 15; an upper bound, as out-of-roundness lowers it) and checks the net external pressure against it (`u_cr`); a 95/100 mm tube under 7.5 MPa passes the stress check at 0.666 but loads 98 % of its 7.67 MPa collapse pressure.
 
 **Test cases.** three v0.16 vectors (internal/closed, external/closed, internal/open) — analytic, Confirmed.
 

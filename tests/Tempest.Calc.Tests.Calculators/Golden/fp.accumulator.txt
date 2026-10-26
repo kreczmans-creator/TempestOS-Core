@@ -21,7 +21,7 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   p_2 | Highest working pressure p2 | 210 | bar a | manual | 0 … 700 bar a
   p_atm | Atmospheric pressure (gauge to absolute) | 1.01325 | bar a | manual | 0.5 … 1.1 bar a
   n | Gas exponent n of the discharge (1 isothermal, slow; 1.4 adiabatic, fast); with the same exponent both ways it is also the charge exponent | 1 |  | manual | 1 … 1.4
-  f_rg | Real-gas factor on V0 (1 = ideal gas; at least 1, as nitrogen's compressibility factor exceeds 1 at high pressure; from a gas-property source above 200 bar) | 1 |  | manual | 1 … 1.5
+  f_rg | Real-gas factor on V0 (1 = ideal gas; at least 1). It is the ratio of the real to the ideal gas volume for THIS pressure window, not the compressibility factor Z at p_2: from a gas-property source, f_rg = Z_0·(1/p_1 − 1/p_2)/(Z_1/p_1 − Z_2/p_2) for an isothermal discharge, Z at p_0, p_1 and p_2, which is larger than Z_2 for a narrow window | 1 |  | manual | 1 … 3
   T_max | Maximum operating temperature (p0 applies here) | 50 | degC | manual | -40 … 150 degC
   T_min | Minimum operating temperature (the gas is coldest and delivers least here; V0 is scaled by T_max/T_min) | 50 | degC | manual | -40 … 150 degC
   T_c | Charging temperature | 20 | degC | manual | -40 … 100 degC
@@ -109,8 +109,8 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: r_0, r_p (Pre-charge rules). Enter each as one so its source, edition and licence travel with it.
-  WARNING realgas: p_2: the highest working pressure is 210 bar absolute, above 200 bar; nitrogen departs from the ideal-gas law there and the volume shown is the ideal-gas value. Enter a real-gas factor f_rg from a gas-property source.
+  WARNING realgas: p_2: the highest working pressure is 210 bar absolute, above 200 bar; nitrogen departs from the ideal-gas law there and the volume shown is the ideal-gas value, too small (reference-EOS nitrogen at 20 °C needs 1.7 to 2.0 times the ideal volume from 450 to 700 bar). Enter a real-gas factor f_rg (up to 3) from a gas-property source.
 
 8. VERIFICATION
-  Template: fp.accumulator@1.3.2
+  Template: fp.accumulator@1.4.0
   Known-answer cases passed: 10/10

@@ -6,8 +6,12 @@ namespace Tempest.Calc.Mechanical;
 /// tolerance unit, the IT grade multipliers and the fundamental-deviation
 /// formulae are evaluated at the geometric mean of the nominal size's
 /// main diameter step, which is how the tables themselves are derived.
-/// Results are the unrounded formula values; the tabulated values may
-/// differ by the standard's own rounding (typically ≤ 1 µm or ~2 %).
+/// Results are the unrounded formula values. For the clearance and
+/// transition letters (a–n) the tabulated values differ by the standard's
+/// own rounding (typically ≤ 1 µm or ~2 %); for the interference letters
+/// p–zc the standard's tables also add its own increments and sub-steps,
+/// so the formula value can be several µm below the tabulated one
+/// (see <see cref="InterferenceLetterNote"/>).
 /// Values are in micrometres for a nominal size in millimetres.
 /// </summary>
 public static class Iso286
@@ -15,20 +19,23 @@ public static class Iso286
     /// <summary>The upper limits of the main diameter steps (ISO 286-1 §4), in mm: 3, 6, 10, 18, 30, 50, 80, 120, 180, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150.</summary>
     private static readonly double[] StepUpper = [3, 6, 10, 18, 30, 50, 80, 120, 180, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150];
 
+    /// <summary>Relative slack on a step's upper limit: a size typed as exactly the limit (18 mm) may arrive a few ulp above it after a unit conversion (18 mm × 0.001 × 1000 = 18.000000000000004).</summary>
+    private const double StepSlack = 1e-9;
+
     public const double MinimumSizeMm = 0.0;
     public const double MaximumSizeMm = 3150.0;
 
     /// <summary>The main diameter step (lower, upper] containing <paramref name="sizeMm"/>; sizes up to 3 mm use the first step.</summary>
     public static (double Lower, double Upper) Step(double sizeMm)
     {
-        if (!(sizeMm > MinimumSizeMm) || sizeMm > MaximumSizeMm)
+        if (!(sizeMm > MinimumSizeMm) || sizeMm > MaximumSizeMm * (1.0 + StepSlack))
             throw new ArgumentOutOfRangeException(nameof(sizeMm), sizeMm, "ISO 286 covers nominal sizes above 0 up to 3150 mm.");
 
         var lower = 0.0;
 
         foreach (var upper in StepUpper)
         {
-            if (sizeMm <= upper)
+            if (sizeMm <= upper * (1.0 + StepSlack))
                 return (lower, upper);
 
             lower = upper;
@@ -104,6 +111,12 @@ public static class Iso286
         return multiplier * i;
     }
 
+    /// <summary>The letters whose tabulated values are not given by the formulae alone: p to zc add the standard's own 0 to 5 µm increments and sub-steps over the size ranges.</summary>
+    public static bool IsInterferenceLetter(string letter) => string.CompareOrdinal(letter.ToLowerInvariant(), "p") >= 0 && letter.ToLowerInvariant() != "js";
+
+    /// <summary>The note printed with a fit that uses an interference letter from the formulae.</summary>
+    public const string InterferenceLetterNote = "the formula value of a letter from p to zc can lie several µm (up to about 9 µm in the 100 to 565 mm checks, p6 at 450 mm 62.2 against 68 µm tabulated) below the tabulated deviation, because the standard's tables add their own increments and sub-steps; the maximum interference is then understated";
+
     public static readonly IReadOnlyList<string> ShaftLetters = ["a", "b", "c", "cd", "d", "e", "ef", "f", "fg", "g", "h", "js", "j", "k", "m", "n", "p", "r", "s", "t", "u", "v", "x", "y", "z", "za", "zb", "zc"];
 
     public static readonly IReadOnlyList<string> HoleLetters = ["A", "B", "C", "CD", "D", "E", "EF", "F", "FG", "G", "H", "JS", "J", "K", "M", "N", "P", "R", "S", "T", "U", "V", "X", "Y", "Z", "ZA", "ZB", "ZC"];
@@ -133,7 +146,7 @@ public static class Iso286
             "k" => grade is >= 4 and <= 7 ? 0.6 * Math.Cbrt(d) : 0.0,
             "m" => Tolerance(sizeMm, 7) - Tolerance(sizeMm, 6),
             "n" => 5 * Math.Pow(d, 0.34),
-            "p" => Tolerance(sizeMm, 7) + 0.0,
+            "p" => d > 500 ? 0.072 * d + 37.8 : Tolerance(sizeMm, 7) + 0.0,
             "r" => Math.Sqrt((Tolerance(sizeMm, 7) + 0.0) * S(d, sizeMm)),
             "s" => S(d, sizeMm),
             "t" => d > 24 ? Tolerance(sizeMm, 7) + 0.63 * d : S(d, sizeMm),
@@ -171,6 +184,10 @@ public static class Iso286
 
         if (string.CompareOrdinal(lower, "h") <= 0 || lower is "cd" or "ef" or "fg")
             return -shaft.Value;
+
+        // ISO 286-1: for N above IT8 (sizes over 3 mm) the upper deviation is zero, not −5·D^0.34.
+        if (lower == "n" && grade > 8 && StepMean(sizeMm) > 3.0)
+            return 0.0;
 
         var delta = (lower is "k" or "m" or "n" && grade <= 8) || (string.CompareOrdinal(lower, "p") >= 0 && grade <= 7)
             ? Tolerance(sizeMm, grade) - Tolerance(sizeMm, grade - 1)

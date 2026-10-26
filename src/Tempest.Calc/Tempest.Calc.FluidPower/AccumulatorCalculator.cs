@@ -41,13 +41,22 @@ public sealed class AccumulatorCalculator : ICalcCalculator
     /// <summary>Real-gas behaviour matters above this absolute pressure (200 bar): the sheet warns.</summary>
     public const double RealGasWarnBar = 200.0;
 
+    /// <summary>Real-gas behaviour of nitrogen is already worth a notice from this absolute pressure (100 bar) when the ideal gas is left on, and from 50 bar for an exponent above 1.</summary>
+    public const double RealGasEarlyWarnBar = 100.0;
+
+    /// <summary>An exponent above 1 (the discharge not isothermal) is compared with the real nitrogen's own, larger, isentropic exponent from this absolute pressure (50 bar).</summary>
+    public const double RealExponentWarnBar = 50.0;
+
+    /// <summary>The largest real-gas factor f_rg the sheet takes: reference-EOS nitrogen at 20 °C needs 2.0 for a 600 to 700 bar window, and a narrow window needs more than Z(p_2).</summary>
+    public const double RealGasFactorMax = 3.0;
+
     private static readonly IReadOnlyList<CalcColumnSpec> SizeColumns =
     [
         new("V", "Nominal gas volume", CalcInputKind.Quantity, "L", Min: 0.01, Max: 5000, HardMin: 0.01, HardMax: 5000),
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.2", CalcDiscipline.FluidPower, "Accumulator sizing (gas law)",
+        Id, "1.4.0", CalcDiscipline.FluidPower, "Accumulator sizing (gas law)",
         "The pre-charge gas volume V0 of a hydraulic accumulator that delivers, or absorbs, a liquid volume ΔV between the lowest working pressure p1 and the highest p2, from p·Vⁿ = const with absolute pressures and an exponent n between 1 (isothermal) and 1.4 (adiabatic), the gas either charged as fast as it is discharged or (a held accumulator, the default for an emergency stroke) charged slowly and isothermally to p2 and then discharged at n; the volume scaled to the lowest operating temperature (T_max/T_min) and the pre-charge pressure at the charging temperature; the next size from your own size list; and the bar·litre product PS·V of the vessel's own maximum allowable pressure and volume against the PSSR Schedule 1 250 bar·L exception. Three modes: energy storage, shock and pulsation (screening only) and emergency stroke (ΔV is the stroke volume, linkable from the cylinder circuit). Not a pressure-vessel code check.",
         "Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode)\n" +
         "Gas volume, one exponent both ways (charged as fast as it is discharged): V0 = ΔV / [(p0/p1)^(1/n) − (p0/p2)^(1/n)], n = 1 isothermal … 1.4 adiabatic\n" +
@@ -67,7 +76,7 @@ public sealed class AccumulatorCalculator : ICalcCalculator
             new CalcInputSpec("p_2", "Highest working pressure p2", CalcInputKind.Quantity, "bar", Default: 180, Min: 0, Max: 700, HardMin: 0, HardMax: 700, Group: "Pressures", PressureBasis: "@p_basis"),
             new CalcInputSpec("p_atm", "Atmospheric pressure (gauge to absolute)", CalcInputKind.Quantity, "bar", Default: 1.01325, Min: 0.5, Max: 1.1, HardMin: 0.5, HardMax: 1.1, Group: "Pressures", PressureBasis: CalcInputSpec.BasisAbsolute),
             new CalcInputSpec("n", "Gas exponent n of the discharge (1 isothermal, slow; 1.4 adiabatic, fast); with the same exponent both ways it is also the charge exponent", CalcInputKind.Number, Default: 1, Min: 1, Max: 1.4, HardMin: 1, HardMax: 1.4, Group: "Gas"),
-            new CalcInputSpec("f_rg", "Real-gas factor on V0 (1 = ideal gas; at least 1, as nitrogen's compressibility factor exceeds 1 at high pressure; from a gas-property source above 200 bar)", CalcInputKind.Number, Default: 1, Min: 1, Max: 1.5, HardMin: 1, HardMax: 1.5, Group: "Gas"),
+            new CalcInputSpec("f_rg", "Real-gas factor on V0 (1 = ideal gas; at least 1). It is the ratio of the real to the ideal gas volume for THIS pressure window, not the compressibility factor Z at p_2: from a gas-property source, f_rg = Z_0·(1/p_1 − 1/p_2)/(Z_1/p_1 − Z_2/p_2) for an isothermal discharge, Z at p_0, p_1 and p_2, which is larger than Z_2 for a narrow window", CalcInputKind.Number, Default: 1, Min: 1, Max: RealGasFactorMax, HardMin: 1, HardMax: RealGasFactorMax, Group: "Gas"),
             new CalcInputSpec("T_max", "Maximum operating temperature (p0 applies here)", CalcInputKind.Quantity, "degC", Default: 50, Min: -40, Max: 150, HardMin: -40, HardMax: 150, Group: "Temperature"),
             new CalcInputSpec("T_min", "Minimum operating temperature (the gas is coldest and delivers least here; V0 is scaled by T_max/T_min)", CalcInputKind.Quantity, "degC", Default: 20, Min: -40, Max: 150, HardMin: -40, HardMax: 150, Group: "Temperature"),
             new CalcInputSpec("T_c", "Charging temperature", CalcInputKind.Quantity, "degC", Default: 20, Min: -40, Max: 100, HardMin: -40, HardMax: 100, Group: "Temperature"),
@@ -76,6 +85,7 @@ public sealed class AccumulatorCalculator : ICalcCalculator
             new CalcInputSpec("sizes", "Available accumulator sizes (from the manufacturer's range)", CalcInputKind.Table, Columns: SizeColumns, MaxRows: 60, IsOptional: true, Group: "Size list"),
             new CalcInputSpec("PS", "Vessel maximum allowable pressure PS, bar gauge (nameplate or relief setting; not below p2 gauge; needed for the PSSR indication)", CalcInputKind.Quantity, "bar", Min: 0, Max: 1500, HardMin: 0, HardMax: 1500, IsOptional: true, Group: "PSSR indication", PressureBasis: CalcInputSpec.BasisGauge),
             new CalcInputSpec("V_vessel", "Vessel internal volume V (blank = the selected size; not below V0)", CalcInputKind.Quantity, "L", Min: 0.01, Max: 5000, HardMin: 0.01, HardMax: 5000, IsOptional: true, Group: "PSSR indication"),
+            new CalcInputSpec("p_load", "Lowest pressure the load still needs, bar gauge (an emergency stroke: the cylinder pressure its push load needs, linked from the cylinder circuit's p_push; p_1 must not be below it; blank = not checked)", CalcInputKind.Quantity, "bar", Min: 0, Max: 700, HardMin: 0, HardMax: 700, IsOptional: true, Group: "Duty", PressureBasis: CalcInputSpec.BasisGauge),
         ],
         [
             new CalcAssumption("All gas-law pressures are absolute. A gauge entry is converted with the atmospheric pressure entered here, so the same numbers read as gauge or as absolute give different volumes.", "p·Vⁿ = const on a fixed mass of gas."),
@@ -94,7 +104,10 @@ public sealed class AccumulatorCalculator : ICalcCalculator
         [
             new CalcApplicabilityRule("pressures", "Pre-charge, lowest and highest working pressure must be in increasing order (absolute) and above zero.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("basis", "On the Absolute basis, a pressure below the atmospheric pressure entered here cannot be an absolute pressure: a gauge value was probably typed as absolute.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("realgas", "The highest working pressure is above 200 bar absolute: nitrogen departs from the ideal-gas law.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("realgas", "The highest working pressure is above 200 bar absolute, or above 100 bar absolute with the ideal gas left on (f_rg = 1): nitrogen departs from the ideal-gas law and the volume is too small.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("realgas-window", "A narrow pressure window above 100 bar absolute: the real-gas factor on V0 is larger than the compressibility factor at p_2.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("exponent-real", "An exponent above 1 from 50 bar absolute: real nitrogen is stiffer than the ideal gas of that exponent, so an adiabatic discharge needs more gas volume than shown.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("load-pressure", "An emergency stroke without the pressure its load needs: p_1 is not checked against the push load.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("shock", "Shock and pulsation sizing is a screening estimate; the dynamic response of the line is not modelled.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("exponent", "A shock or emergency discharge is fast: an exponent near 1.4 is the usual choice.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("process", "The gas process chosen does not suit the duty: an emergency stroke sized with one exponent both ways understates the volume of a held accumulator, and the shock and pulsation duty uses one exponent whatever process is chosen.", CalcNoticeSeverity.Warning),
@@ -227,6 +240,15 @@ public sealed class AccumulatorCalculator : ICalcCalculator
         }
 
         c.Assign("p2_g", "max(pa_2 - p_atm, 0 bar)", UnitCatalog.BarGauge, "Highest working pressure, gauge");
+        var hasLoad = c.Has("p_load");
+
+        if (hasLoad)
+        {
+            c.Input("p_load");
+            c.Assign("p1_g", "max(pa_1 - p_atm, 0.001 bar)", UnitCatalog.BarGauge, "Lowest working pressure, gauge");
+            c.Assign("u_load", "p_load / p1_g", null, "Pressure the load needs over the lowest working pressure");
+        }
+
         var hasPs = c.Has("PS");
 
         if (hasPs)
@@ -354,6 +376,9 @@ public sealed class AccumulatorCalculator : ICalcCalculator
             outputs.Add(("bar_litres", "Pressure-volume product (bar·litres)"));
         }
 
+        if (hasLoad)
+            outputs.Add(("u_load", "Load pressure over the lowest working pressure p_1"));
+
         foreach (var (symbol, text) in outputs)
             c.Output(symbol, text);
 
@@ -366,15 +391,35 @@ public sealed class AccumulatorCalculator : ICalcCalculator
         c.CheckUtilisation("Pre-charge within the p0/p1 rule", "u_r0", "accumulator.rules record");
         c.CheckUtilisation("Pressure ratio within the p2/p0 rule", "u_rp", "accumulator.rules record");
 
+        if (hasLoad)
+            c.CheckUtilisation("Lowest working pressure p_1 carries the load", "u_load");
+
         if (sizes.Count > 0 && !sizeCovered)
             c.CheckCondition("A listed size covers the required volume", false, $"V0 = {F(c.Si("V0") * 1e3)} L", $"largest listed {F(sizes[^1] * 1e3)} L", "V0");
 
+        var frg = c.Si("f_rg");
+
         if (pa2 > RealGasWarnBar * 1e5)
         {
-            c.Warn("realgas", c.Si("f_rg") == 1.0
-                ? $"p_2: the highest working pressure is {F(pa2 / 1e5)} bar absolute, above 200 bar; nitrogen departs from the ideal-gas law there and the volume shown is the ideal-gas value. Enter a real-gas factor f_rg from a gas-property source."
-                : $"p_2: the highest working pressure is {F(pa2 / 1e5)} bar absolute, above 200 bar; the volume carries your real-gas factor f_rg = {F(c.Si("f_rg"))}.");
+            c.Warn("realgas", frg == 1.0
+                ? $"p_2: the highest working pressure is {F(pa2 / 1e5)} bar absolute, above 200 bar; nitrogen departs from the ideal-gas law there and the volume shown is the ideal-gas value, too small (reference-EOS nitrogen at 20 °C needs 1.7 to 2.0 times the ideal volume from 450 to 700 bar). Enter a real-gas factor f_rg (up to {F(RealGasFactorMax)}) from a gas-property source."
+                : $"p_2: the highest working pressure is {F(pa2 / 1e5)} bar absolute, above 200 bar; the volume carries your real-gas factor f_rg = {F(frg)}.");
         }
+        else if (frg == 1.0 && pa2 > RealGasEarlyWarnBar * 1e5)
+        {
+            c.Warn("realgas", $"p_2: the highest working pressure is {F(pa2 / 1e5)} bar absolute and the real-gas factor is left at 1; nitrogen already departs from the ideal-gas law above about 100 bar and the volume shown is the ideal-gas value, too small (reference-EOS nitrogen at 20 °C needs 1.13 times the ideal volume for a 170/190/200 bar absolute window). Enter f_rg from a gas-property source.");
+        }
+
+        if (pa2 > RealGasEarlyWarnBar * 1e5 && pa2 / pa1 < 1.3)
+            c.Warn("realgas-window", $"p_2/p_1: the pressure window is narrow ({F(pa1 / 1e5)} to {F(pa2 / 1e5)} bar absolute, p_2/p_1 = {F(pa2 / pa1)}); the volume is the small difference of two large gas volumes, so the real-gas factor on V0 is larger than the compressibility factor Z at p_2: f_rg = Z_0 (1/p_1 − 1/p_2)/(Z_1/p_1 − Z_2/p_2), with Z at p_0, p_1 and p_2.");
+
+        if (n > 1.0 && pa2 >= RealExponentWarnBar * 1e5)
+            c.Warn("exponent-real", frg == 1.0
+                ? $"n: the exponent {F(n)} is the ideal-gas value; real nitrogen at {F(pa1 / 1e5)} to {F(pa2 / 1e5)} bar absolute is stiffer (an effective isentropic exponent of about 1.5 to 2.1 between 60 and 350 bar), so an adiabatic discharge needs about 13 to 24 % more gas volume than shown. Enter a real-gas factor f_rg for the discharge path."
+                : $"n: the exponent {F(n)} is the ideal-gas value; real nitrogen at {F(pa1 / 1e5)} to {F(pa2 / 1e5)} bar absolute is stiffer (an effective isentropic exponent of about 1.5 to 2.1 between 60 and 350 bar). Your real-gas factor f_rg = {F(frg)} is applied on top: it must be the factor for the discharge path, not for an isothermal one.");
+
+        if (mode == ModeEmergency && !hasLoad)
+            c.Warn("load-pressure", "p_load: no load pressure entered; the emergency stroke is not checked against the pressure its push load needs at the end of the stroke (p_1). Enter it (link it from the cylinder circuit's p_push).");
 
         var processText = mode == ModeShock
             ? "one exponent both ways (the shock and pulsation duty)"
