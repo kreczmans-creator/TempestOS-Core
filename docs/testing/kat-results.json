@@ -124,7 +124,7 @@
     },
     {
       "id": "elec.enclosure-heat",
-      "version": "1.5.1",
+      "version": "1.6.0",
       "kats": 4,
       "katsPassed": 4,
       "failedKats": [],
@@ -144,7 +144,7 @@
     },
     {
       "id": "elec.load-budget",
-      "version": "1.4.0",
+      "version": "1.4.1",
       "kats": 4,
       "katsPassed": 4,
       "failedKats": [],
@@ -284,7 +284,7 @@
     },
     {
       "id": "mech.iso286-fit",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "kats": 3,
       "katsPassed": 3,
       "failedKats": [],
@@ -334,7 +334,7 @@
     },
     {
       "id": "mech.shaft",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "kats": 3,
       "katsPassed": 3,
       "failedKats": [],
@@ -364,7 +364,7 @@
     },
     {
       "id": "mech.spring",
-      "version": "1.3.1",
+      "version": "1.4.0",
       "kats": 8,
       "katsPassed": 8,
       "failedKats": [],
@@ -424,7 +424,7 @@
     },
     {
       "id": "struct.base-plate",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "kats": 9,
       "katsPassed": 9,
       "failedKats": [],
