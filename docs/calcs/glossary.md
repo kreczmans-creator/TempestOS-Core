@@ -594,7 +594,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `P` | `P:motor-rated-output-power` | Power, heat flow | kW | Motor rated output (shaft) power, from the nameplate (E1 P_cont is on…; Rated output (shaft) power; η converts it to input (DC: electrical po… | elec.conductor-sizing, elec.motor-start | RESOLVE (12 meanings) |
 | `P` | `P:applied-axial-load` | Force | kN | Applied axial load | struct.column-buckling | RESOLVE (12 meanings) |
 | `P` | `P:deflection-force` | Force | N | Deflection force | mech.snap-fit | RESOLVE (12 meanings) |
-| `P` | `P:dissipated-power` | Power, heat flow | W | Steady power dissipated (the heat flow through every stage) | elec.thermal-chain | RESOLVE (12 meanings) |
+| `P` | `P:dissipated-power` | Power, heat flow | kW | Steady power dissipated (the heat flow through every stage) | elec.thermal-chain | RESOLVE (12 meanings) |
 | `P` | `P:electrical-input-power` | Power, heat flow | kW | Electrical input power | elec.load-budget | RESOLVE (12 meanings) |
 | `P` | `P:heat-loss-per-item` | Power, heat flow | W | Heat loss per item | elec.enclosure-heat | RESOLVE (12 meanings) |
 | `P` | `P:internal-design-pressure` | Stress, pressure | MPa | Internal design pressure | mech.thin-vessel | RESOLVE (12 meanings) |
@@ -619,7 +619,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `P_in` | — | Power, heat flow | kW | Motor input power at rated load | elec.motor-start | ok |
 | `P_lim` | — | Line force, distributed load, stiffness | N/m | Sidewall pressure limit, force per metre of bend (from the cable make… | elec.containment | ok |
 | `P_loads` | — | Power, heat flow | W | Internal heat load | elec.enclosure-heat | ok |
-| `P_loss` | — | Power, heat flow | W | Power loss | elec.voltage-drop | ok |
+| `P_loss` | — | Power, heat flow | kW | Power loss | elec.voltage-drop | ok |
 | `P_max` | — | Line force, distributed load, stiffness | N/m | Maximum sidewall pressure, recommended direction | elec.containment | ok |
 | `P_max_a` | — | Line force, distributed load, stiffness | N/m | Maximum sidewall pressure, as listed | elec.containment | ok |
 | `P_max_b` | — | Line force, distributed load, stiffness | N/m | Maximum sidewall pressure, reversed | elec.containment | ok |

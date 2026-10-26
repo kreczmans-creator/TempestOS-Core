@@ -7118,7 +7118,7 @@
           "meaning": "dissipated-power",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Steady power dissipated (the heat flow through every stage)"
@@ -7531,7 +7531,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Power loss"

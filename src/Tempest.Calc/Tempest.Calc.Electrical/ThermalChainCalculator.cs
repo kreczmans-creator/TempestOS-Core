@@ -36,11 +36,11 @@ public sealed class ThermalChainCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.1", CalcDiscipline.Electrical, "Heat sink thermal resistance chain",
-        "Steady-state source (junction) temperature from a series chain of thermal resistances to ambient (junction to case, case to heat sink, heat sink to ambient), with each stage's temperature rise, the margin against the permitted maximum and the largest total resistance the limit allows: the heat sink budget.",
+        Id, "1.1.0", CalcDiscipline.Electrical, "Heat sink thermal resistance chain",
+        "Calculates the steady-state source temperature from a series chain of thermal resistances to ambient, with the rise across each stage. It gives the margin against the permitted maximum, negative over the limit, and the largest total resistance allowed.",
         "Temperature rise across each stage: ΔT_i = P·R_i.\nTotal resistance of the chain and the total rise: R_tot = Σ R_i; ΔT_tot = P·R_tot.\nSource (hottest node) temperature, each node below it being the one above less that stage's rise: T_1 = T_a + ΔT_tot.\nMargin against the permitted maximum: margin = T_max − T_1.\nLargest total resistance the limit allows, the heat sink budget: R_max = (T_max − T_a)/P.\nUtilisation of the permitted rise: u = ΔT_tot/(T_max − T_a).",
         [
-            new CalcInputSpec("P", "Steady power dissipated (the heat flow through every stage)", CalcInputKind.Quantity, "W", Default: 25, Min: 0, Max: 1e4, HardMin: 0, HardMax: 1e7, Group: "Source"),
+            new CalcInputSpec("P", "Steady power dissipated (the heat flow through every stage)", CalcInputKind.Quantity, "kW", Default: 0.025, Min: 0, Max: 10, HardMin: 0, HardMax: 1e4, Group: "Source"),
             new CalcInputSpec("T_a", "Ambient the last stage rejects to", CalcInputKind.Quantity, "degC", Default: 40, Min: -40, Max: 85, HardMin: -273.15, HardMax: 1000, Group: "Conditions"),
             new CalcInputSpec("stages", "Thermal resistances in series, hottest first", CalcInputKind.Table, Columns: Columns, MaxRows: MaxStages, Group: "Chain"),
             new CalcInputSpec("T_max", "Maximum permitted temperature of the hottest node (junction or case)", CalcInputKind.Quantity, "degC", Default: 125, Min: 40, Max: 200, HardMin: -273.15, HardMax: 2000, Group: "Source"),
@@ -50,9 +50,9 @@ public sealed class ThermalChainCalculator : ICalcCalculator
             new CalcAssumption("The stated ambient is the temperature the last stage actually rejects to.", "Air preheated by neighbouring parts can be well above room temperature."),
         ],
         [
-            new CalcClauseRef("JEDEC JESD51-1", "—", "Integrated circuit thermal measurement method: electrical test method (junction-to-reference resistances)"),
-            new CalcClauseRef("Çengel & Ghajar, Heat and Mass Transfer", "§15-2", "Thermal resistance networks in the cooling of electronic equipment"),
-            new CalcClauseRef("Incropera & DeWitt, Fundamentals of Heat and Mass Transfer", "§3.1", "Thermal resistance in series"),
+            new CalcClauseRef("JEDEC JESD51-1:1995", "—", "Integrated circuit thermal measurement method: electrical test method (junction-to-reference resistances)"),
+            new CalcClauseRef("Çengel & Ghajar, Heat and Mass Transfer", "§15-2, 5th ed. (edition to be checked)", "Thermal resistance networks in the cooling of electronic equipment"),
+            new CalcClauseRef("Incropera & DeWitt, Fundamentals of Heat and Mass Transfer", "§3.1, 7th ed. (edition to be checked)", "Thermal resistance in series"),
         ],
         [
             new CalcApplicabilityRule("no-stages", "At least one thermal resistance stage is needed.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
@@ -70,7 +70,15 @@ public sealed class ThermalChainCalculator : ICalcCalculator
             new CalcTestCase("ka-legacy-on-limit", "Legacy example 4: exactly on the limit at 34 W", Legacy(4), ThreeStage(34),
                 [new CalcExpectedValue("dT_tot", 85, "K", 5e-5), new CalcExpectedValue("T_1", 125, "degC", 5e-5), new CalcExpectedValue("dT_m", 0, "K", 1e-9), new CalcExpectedValue("u", 1, "", 5e-5)]),
         ],
-        Category: "Thermal");
+        Category: "Thermal",
+        OutputPorts:
+        [
+            new CalcOutputPort("T_1", "degC", "Source temperature at the hot end of the chain", "heatsink.temperature_source"),
+            new CalcOutputPort("dT_m", "K", "Temperature margin to the permitted maximum, negative when over the limit", "heatsink.temperature_margin"),
+            new CalcOutputPort("u", "", "Rise from ambient over the permitted rise", "heatsink.utilisation"),
+            new CalcOutputPort("R_max", "K/W", "Largest total thermal resistance the limit allows, the heat sink budget", "heatsink.resistance_max"),
+            new CalcOutputPort("R_tot", "K/W", "Total thermal resistance of the chain", "heatsink.resistance_total"),
+        ]);
 
     public void Run(CalcRunContext c)
     {
@@ -83,7 +91,7 @@ public sealed class ThermalChainCalculator : ICalcCalculator
 
         if (rows.Count == 0)
         {
-            c.Block("no-stages", "stages: at least one thermal resistance stage is needed.");
+            c.Block("no-stages", "stages: enter at least one thermal resistance stage.");
             return;
         }
 
@@ -113,7 +121,7 @@ public sealed class ThermalChainCalculator : ICalcCalculator
 
         if (!(total > 0))
         {
-            c.Block("zero-chain", "stages: the total thermal resistance is zero; enter at least one positive resistance.");
+            c.Block("zero-chain", "stages: the total thermal resistance is zero. Enter at least one positive resistance.");
             return;
         }
 
@@ -139,7 +147,8 @@ public sealed class ThermalChainCalculator : ICalcCalculator
         }
 
         c.Assign("dT_m", "T_max - T_1", "K", "Thermal margin (negative when over the limit)");
-        c.Assign("u", "dT_tot / (T_max - T_a)", null, "Utilisation: rise over permitted rise");
+        c.Assign("dT_allow", "T_max - T_a", "K", "Permitted rise from ambient to the source");
+        c.Assign("u", "dT_tot / dT_allow", null, "Utilisation: rise over permitted rise");
 
         if (p > 0)
             c.Assign("R_max", "(T_max - T_a) / P", "K/W", "Largest total resistance the limit allows (heat sink budget)");
@@ -161,6 +170,6 @@ public sealed class ThermalChainCalculator : ICalcCalculator
                 c.Output($"T_{n}", $"Hot side of stage {n}");
         }
 
-        c.CheckUtilisation("Source temperature T_1 ≤ T_max", "u", "Çengel §15-2");
+        c.Check("Rise from ambient against the permitted rise", "dT_tot", "dT_allow", "Çengel §15-2");
     }
 }

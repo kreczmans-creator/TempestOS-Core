@@ -23,38 +23,42 @@ public sealed class VoltageDropCalculator : ICalcCalculator
     public const string DataMvAm = "mV/A/m figure";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.Electrical, "Voltage drop and I²R loss",
-        "Voltage drop along a circuit in volts and per cent of the nominal voltage, the conductor power loss, and an estimate of the conductor operating temperature, for DC, single-phase and three-phase AC, from resistivity and cross-section (with temperature correction), from tabulated R and X per kilometre, or from a mV/A/m figure; parallel conductors per phase; the drop limit is a user input (the regulatory limits live in BS 7671 Appendix 4 and Regulation 525 and are not embedded).",
+        Id, "1.4.0", CalcDiscipline.Electrical, "Voltage drop and I²R loss",
+        "Calculates the voltage drop, the conductor power loss and the estimated conductor temperature of a DC, single-phase or three-phase circuit. The drop limit is a user input, because the limits of BS 7671 are not embedded.",
         "Conductor resistance at its operating temperature, for n conductors in parallel: R = ρ_T L/(A n), with ρ_T = ρ_20 [1 + α (T_c − 20)].\nResistance and reactance from per-length figures instead: R = R′ L/n; X = X′ L/n.\nVoltage drop on a DC circuit: ΔV = 2 I R.\nVoltage drop on a single-phase AC circuit: ΔV = 2 I (R cos φ + X sin φ).\nVoltage drop on a three-phase AC circuit: ΔV = √3 I (R cos φ + X sin φ).\nVoltage drop from a tabulated mV/A/m figure, which already carries the 2 or √3: ΔV = (mV/A/m) I L / 1000.\nPower lost in the cable: P_loss = 2 I² R (DC and single-phase); 3 I² R (three-phase).\nEstimated conductor temperature at this current: T_c,est = T_amb + (T_rated − T_amb)(I/I_z)².",
         [
-            new CalcInputSpec("system", "System", CalcInputKind.Choice, Choices: [SystemThree, SystemSingle, SystemDc], DefaultChoice: SystemThree, Group: "Circuit"),
-            new CalcInputSpec("V_n", "Nominal voltage (line-to-line for three-phase)", CalcInputKind.Quantity, "V", Default: 400, Min: 12, Max: 1000, HardMin: 0.1, HardMax: 1e6, Group: "Circuit"),
-            new CalcInputSpec("I", "Design current", CalcInputKind.Quantity, "A", Default: 100, Min: 0.1, Max: 5000, HardMin: 1e-6, HardMax: 1e6, Group: "Circuit"),
-            new CalcInputSpec("L", "Route length (one way)", CalcInputKind.Quantity, "m", Default: 80, Min: 0.1, Max: 5000, HardMin: 1e-3, HardMax: 1e6, Group: "Circuit"),
-            new CalcInputSpec("cos_phi", "Power factor (AC)", CalcInputKind.Number, Default: 0.85, Min: 0.5, Max: 1, HardMin: 0.01, HardMax: 1, Group: "Circuit"),
-            new CalcInputSpec("n_par", "Parallel conductors per phase", CalcInputKind.Number, Default: 1, Min: 1, Max: 6, HardMin: 1, HardMax: 20, Group: "Circuit"),
-            new CalcInputSpec("data", "Conductor data from", CalcInputKind.Choice, Choices: [DataResistivity, DataPerKm, DataMvAm], DefaultChoice: DataResistivity, Group: "Conductor"),
-            new CalcInputSpec("rho_20", "Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m)", CalcInputKind.Quantity, "ohm*mm^2/m", Default: 0.0194, Min: 0.01, Max: 0.05, HardMin: 1e-4, HardMax: 10, IsOptional: true, Group: "Conductor"),
-            new CalcInputSpec("alpha", "Temperature coefficient of resistance", CalcInputKind.Number, Default: 0.00393, Min: 0.003, Max: 0.0045, HardMin: 0, HardMax: 0.02, Group: "Conductor"),
-            new CalcInputSpec("A_c", "Conductor cross-section", CalcInputKind.Quantity, "mm^2", Default: 35, Min: 1, Max: 1000, HardMin: 0.01, HardMax: 1e5, IsOptional: true, Group: "Conductor"),
-            new CalcInputSpec("T_c", "Conductor operating temperature for the resistance", CalcInputKind.Quantity, "degC", Default: 70, Min: 20, Max: 90, HardMin: -50, HardMax: 300, Group: "Conductor"),
-            new CalcInputSpec("R_km", "Resistance per km per conductor (tabulated, at its stated temperature)", CalcInputKind.Quantity, "ohm/km", Min: 0.01, Max: 50, HardMin: 1e-6, HardMax: 1e4, IsOptional: true, Group: "Conductor"),
-            new CalcInputSpec("X_km", "Reactance per km per conductor", CalcInputKind.Quantity, "ohm/km", Default: 0.08, Min: 0, Max: 1, HardMin: 0, HardMax: 100, Group: "Conductor"),
-            new CalcInputSpec("mVAm", "Voltage drop figure (mV/A/m, from the cable table)", CalcInputKind.Number, Min: 0.1, Max: 100, HardMin: 1e-3, HardMax: 1e4, IsOptional: true, Group: "Conductor"),
-            new CalcInputSpec("dv_limit", "Voltage-drop limit", CalcInputKind.Number, Default: 5, Min: 1, Max: 10, HardMin: 0.01, HardMax: 100, Group: "Limits"),
-            new CalcInputSpec("I_z", "Tabulated current-carrying capacity for the installed conditions (temperature estimate)", CalcInputKind.Quantity, "A", Min: 1, Max: 5000, HardMin: 1e-3, HardMax: 1e6, IsOptional: true, Group: "Limits"),
-            new CalcInputSpec("T_rated", "Conductor rated temperature", CalcInputKind.Quantity, "degC", Default: 70, Min: 60, Max: 90, HardMin: 0, HardMax: 300, Group: "Limits"),
-            new CalcInputSpec("T_amb", "Ambient temperature", CalcInputKind.Quantity, "degC", Default: 30, Min: 0, Max: 60, HardMin: -60, HardMax: 150, Group: "Limits"),
+            new CalcInputSpec("system", "System", CalcInputKind.Choice, Choices: [SystemThree, SystemSingle, SystemDc], DefaultChoice: SystemThree, Group: "Setup"),
+            new CalcInputSpec("data", "Conductor data from", CalcInputKind.Choice, Choices: [DataResistivity, DataPerKm, DataMvAm], DefaultChoice: DataResistivity, Group: "Setup"),
+            new CalcInputSpec("L", "Route length (one way)", CalcInputKind.Quantity, "m", Default: 80, Min: 0.1, Max: 5000, HardMin: 1e-3, HardMax: 1e6, Group: "Geometry"),
+            new CalcInputSpec("n_par", "Parallel conductors per phase", CalcInputKind.Number, Default: 1, Min: 1, Max: 6, HardMin: 1, HardMax: 20, Group: "Geometry"),
+            new CalcInputSpec("A_c", "Conductor cross-section", CalcInputKind.Quantity, "mm^2", Default: 35, Min: 1, Max: 1000, HardMin: 0.01, HardMax: 1e5, IsOptional: true, Group: "Geometry"),
+            new CalcInputSpec("alpha", "Temperature coefficient of resistance", CalcInputKind.Number, Default: 0.00393, Min: 0.003, Max: 0.0045, HardMin: 0, HardMax: 0.02, Group: "Material"),
+            new CalcInputSpec("X_km", "Reactance per km per conductor", CalcInputKind.Quantity, "ohm/km", Default: 0.08, Min: 0, Max: 1, HardMin: 0, HardMax: 100, Group: "Material"),
+            new CalcInputSpec("T_rated", "Conductor rated temperature", CalcInputKind.Quantity, "degC", Default: 70, Min: 60, Max: 90, HardMin: 0, HardMax: 300, Group: "Material"),
+            new CalcInputSpec("rho_20", "Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m)", CalcInputKind.Quantity, "ohm*mm^2/m", Default: 0.0194, Min: 0.01, Max: 0.05, HardMin: 1e-4, HardMax: 10, IsOptional: true, Group: "Material"),
+            new CalcInputSpec("R_km", "Resistance per km per conductor (tabulated, at its stated temperature)", CalcInputKind.Quantity, "ohm/km", Min: 0.01, Max: 50, HardMin: 1e-6, HardMax: 1e4, IsOptional: true, Group: "Material"),
+            new CalcInputSpec("mVAm", "Voltage drop figure (mV/A/m, from the cable table)", CalcInputKind.Number, Min: 0.1, Max: 100, HardMin: 1e-3, HardMax: 1e4, IsOptional: true, Group: "Material"),
+            new CalcInputSpec("V_n", "Nominal voltage (line-to-line for three-phase)", CalcInputKind.Quantity, "V", Default: 400, Min: 12, Max: 1000, HardMin: 0.1, HardMax: 1e6, Group: "Loads"),
+            new CalcInputSpec("I", "Design current", CalcInputKind.Quantity, "A", Default: 100, Min: 0.1, Max: 5000, HardMin: 1e-6, HardMax: 1e6, Group: "Loads"),
+            new CalcInputSpec("cos_phi", "Power factor (AC)", CalcInputKind.Number, Default: 0.85, Min: 0.5, Max: 1, HardMin: 0.01, HardMax: 1, Group: "Loads"),
+            new CalcInputSpec("T_c", "Conductor operating temperature for the resistance", CalcInputKind.Quantity, "degC", Default: 70, Min: 20, Max: 90, HardMin: -50, HardMax: 300, Group: "Conditions"),
+            new CalcInputSpec("T_amb", "Ambient temperature", CalcInputKind.Quantity, "degC", Default: 30, Min: 0, Max: 60, HardMin: -60, HardMax: 150, Group: "Conditions"),
+            new CalcInputSpec("I_z", "Tabulated current-carrying capacity for the installed conditions (temperature estimate)", CalcInputKind.Quantity, "A", Min: 1, Max: 5000, HardMin: 1e-3, HardMax: 1e6, IsOptional: true, Group: "Conditions"),
+            new CalcInputSpec("dv_limit", "Voltage-drop limit", CalcInputKind.Number, Default: 5, Min: 1, Max: 10, HardMin: 0.01, HardMax: 100, Group: "Requirements"),
         ],
         [
-            new CalcAssumption("Balanced load; conductor reactance from the stated X′ (zero when using resistivity alone unless X_km is given); the drop is the arithmetic (R cos φ + X sin φ) form.", "Standard engineering approximation."),
+            new CalcAssumption("The load is balanced across the phases.", "Standard engineering approximation."),
+            new CalcAssumption("The conductor reactance is the entered X′ per kilometre times the length.", "Standard engineering approximation."),
+            new CalcAssumption("The voltage drop is the arithmetic sum R cos φ + X sin φ, not the vector difference.", "Standard engineering approximation."),
             new CalcAssumption("A mV/A/m figure is used as tabulated, with its own temperature and system convention.", "Cable table convention."),
-            new CalcAssumption("The conductor temperature estimate scales the rated rise with (I/I_z)²; I_z is the user's tabulated value for the installation method and corrections. When the estimate is above T_c the resistance and the drop are computed at the estimate.", "BS 7671 Appendix 4 approach, formula only."),
+            new CalcAssumption("The estimated conductor temperature scales the rated temperature rise with (I/I_z)².", "BS 7671:2018 Appendix 4 approach, formula only."),
+            new CalcAssumption("I_z is the tabulated capacity for the installation method, with its correction factors applied.", "BS 7671:2018 Appendix 4 approach, formula only."),
+            new CalcAssumption("When the estimate is above T_c, the resistance and the drop are computed at the estimate.", "Keeps the drop on the safe side."),
         ],
         [
-            new CalcClauseRef("BS 7671", "525", "Voltage drop in consumers' installations"),
-            new CalcClauseRef("BS 7671", "Appendix 4, section 6", "Voltage drop (mV/A/m tables and the temperature-correction method)"),
-            new CalcClauseRef("Hughes, Electrical and Electronic Technology", "Ch. on DC and AC circuits", "Resistance, resistivity and temperature coefficient"),
+            new CalcClauseRef("BS 7671:2018", "reg. 525", "Voltage drop in consumers' installations"),
+            new CalcClauseRef("BS 7671:2018", "App. 4 §6", "Voltage drop (mV/A/m tables and the temperature-correction method)"),
+            new CalcClauseRef("Hughes, Electrical and Electronic Technology", "Ch. on DC and AC circuits, 12th ed. (edition to be checked)", "Resistance, resistivity and temperature coefficient"),
         ],
         [
             new CalcApplicabilityRule("conductor-data", "The chosen conductor-data route needs values that were not given.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
@@ -77,7 +81,14 @@ public sealed class VoltageDropCalculator : ICalcCalculator
                 [new CalcExpectedValue("dV", 7.56, "V", 1e-9), new CalcExpectedValue("dV_pct", 1.89, "", 1e-9)]),
         ],
         DiagramKey: "voltage-drop",
-        Category: "Power");
+        Category: "Power",
+        OutputPorts:
+        [
+            new CalcOutputPort("dV", "V", "Voltage drop along the circuit", "circuit.voltage_drop"),
+            new CalcOutputPort("dV_pct", "", "Voltage drop relative to the nominal voltage, in %", "circuit.voltage_drop_percent"),
+            new CalcOutputPort("P_loss", "kW", "Power lost in the conductors", "circuit.power_loss"),
+            new CalcOutputPort("T_c_est", "degC", "Estimated conductor temperature at the design current", "circuit.temperature_conductor_estimated"),
+        ]);
 
     public void Run(CalcRunContext c)
     {
@@ -93,15 +104,18 @@ public sealed class VoltageDropCalculator : ICalcCalculator
         switch (data)
         {
             case DataResistivity:
-                if (!c.Has("rho_20") && c.Template.FindInput("rho_20")!.Default is null || !c.Has("A_c") && c.Template.FindInput("A_c")!.Default is null) { c.Block("conductor-data", "rho_20/A_c: resistivity and cross-section are needed."); return; }
+                if (!c.Has("rho_20") && c.Template.FindInput("rho_20")!.Default is null) { c.Block("conductor-data", "rho_20: enter the resistivity of the conductor."); return; }
+
+                if (!c.Has("A_c") && c.Template.FindInput("A_c")!.Default is null) { c.Block("conductor-data", "A_c: enter the conductor cross-section."); return; }
+
                 c.Input("rho_20"); c.Input("alpha"); c.Input("A_c"); c.Input("T_c"); c.Input("X_km");
 
                 // elec.voltage-drop-02: a blank cross-section or resistivity takes the template default; say so, the result is for that conductor.
                 if (!c.Has("A_c"))
-                    c.Warn("default-conductor", $"A_c: the conductor cross-section is blank, so the default {CalcValue.FormatNumber(c.Template.FindInput("A_c")!.Default ?? 0)} mm² is used; enter the cross-section of the cable.");
+                    c.Warn("default-conductor", $"A_c: the cross-section is blank, so the default of {CalcValue.FormatNumber(c.Template.FindInput("A_c")!.Default ?? 0)} mm² is used. Enter the cross-section of the cable.");
 
                 if (!c.Has("rho_20"))
-                    c.Warn("default-conductor", $"rho_20: the resistivity is blank, so the default {CalcValue.FormatNumber(c.Template.FindInput("rho_20")!.Default ?? 0, 4)} Ω·mm²/m (the largest class 2 maximum of the cable standard) is used; enter the resistivity of the conductor if it is different.");
+                    c.Warn("default-conductor", $"rho_20: the resistivity is blank, so the default of {CalcValue.FormatNumber(c.Template.FindInput("rho_20")!.Default ?? 0, 4)} Ω·mm²/m is used. Enter the resistivity of the conductor if it differs.");
 
                 // elec.voltage-drop temperature: a conductor that carries I/I_z of its capacity runs hotter than the temperature entered; the resistance, and so the drop, is then taken
                 // at the estimated temperature, so the drop is never below what the cable will show. A temperature entered above the estimate is used as entered.
@@ -124,21 +138,22 @@ public sealed class VoltageDropCalculator : ICalcCalculator
                 break;
 
             case DataPerKm:
-                if (!c.Has("R_km")) { c.Block("conductor-data", "R_km: the resistance per km is needed."); return; }
+                if (!c.Has("R_km")) { c.Block("conductor-data", "R_km: enter the resistance per kilometre."); return; }
                 c.Input("R_km"); c.Input("X_km");
                 c.Assign("R", "R_km * L / n_par", "ohm", "Conductor resistance");
                 c.Assign("X", "X_km * L / n_par", "ohm", "Conductor reactance");
                 break;
 
             default:
-                if (!c.Has("mVAm")) { c.Block("conductor-data", "mVAm: the mV/A/m figure is needed."); return; }
+                if (!c.Has("mVAm")) { c.Block("conductor-data", "mVAm: enter the voltage drop figure in mV/A/m."); return; }
                 c.Input("mVAm");
                 c.Assign("dV", "mVAm * 1 mV/A/m * I * L / n_par", "V", "Voltage drop from the table figure", "BS 7671 App. 4 §6");
                 c.Assign("dV_pct", "100 * dV / V_n", null, "Voltage drop, per cent");
                 c.Assign("u_dv", "dV_pct / dv_limit", null, "Drop utilisation against the limit");
+                c.Assign("dV_max", "dv_limit / 100 * V_n", "V", "Largest voltage drop the limit allows");
                 c.Output("dV", "Voltage drop");
                 c.Output("dV_pct", "Voltage drop (%)");
-                c.CheckUtilisation("Voltage drop ≤ limit", "u_dv", "BS 7671 525");
+                c.Check("Voltage drop against the limit", "dV", "dV_max", "BS 7671:2018 reg. 525");
                 CapacityCheck(c, data);
                 return;
         }
@@ -150,13 +165,14 @@ public sealed class VoltageDropCalculator : ICalcCalculator
             _ => "sqrt(3) * I * (R * cos_phi + X * sin_phi)",
         }, "V", "Voltage drop");
         c.Assign("dV_pct", "100 * dV / V_n", null, "Voltage drop, per cent");
-        c.Assign("P_loss", system == SystemThree ? "3 * I^2 * R" : "2 * I^2 * R", "W", "Conductor power loss");
+        c.Assign("P_loss", system == SystemThree ? "3 * I^2 * R" : "2 * I^2 * R", "kW", "Conductor power loss");
         c.Assign("u_dv", "dV_pct / dv_limit", null, "Drop utilisation against the limit");
+        c.Assign("dV_max", "dv_limit / 100 * V_n", "V", "Largest voltage drop the limit allows");
 
         foreach (var (symbol, text) in new[] { ("R", "Resistance"), ("X", "Reactance"), ("dV", "Voltage drop"), ("dV_pct", "Voltage drop (%)"), ("P_loss", "Power loss") })
             c.Output(symbol, text);
 
-        c.CheckUtilisation("Voltage drop ≤ limit", "u_dv", "BS 7671 525");
+        c.Check("Voltage drop against the limit", "dV", "dV_max", "BS 7671:2018 reg. 525");
 
         CapacityCheck(c, data);
     }
@@ -172,13 +188,13 @@ public sealed class VoltageDropCalculator : ICalcCalculator
 
         EstimateTemperature(c);
         c.Output("T_c_est", "Estimated conductor temperature");
-        c.CheckUtilisation("I ≤ I_z", "u_Iz", "BS 7671 523");
+        c.Check("Design current against the current-carrying capacity", "I", "I_z", "BS 7671:2018 reg. 523");
 
         if (c.Si("u_Iz") > 1)
             c.Warn("overload", "I: the design current exceeds the current-carrying capacity.");
 
         if (data == DataResistivity && c.Si("T_c_est") > c.Si("T_c") + 1e-9)
-            c.Warn("temperature", $"T_c: the estimate {CalcValue.FormatNumber(c.Si("T_c_est") - 273.15, 4)} °C is above the {CalcValue.FormatNumber(c.Si("T_c") - 273.15, 4)} °C entered, so resistance and drop use {CalcValue.FormatNumber(c.Si("T_c_est") - 273.15, 4)} °C.");
+            c.Warn("temperature", $"T_c: the estimated conductor temperature of {CalcValue.FormatNumber(c.Si("T_c_est") - 273.15, 4)} °C is above the {CalcValue.FormatNumber(c.Si("T_c") - 273.15, 4)} °C entered. The resistance and the drop use the estimate.");
     }
 
     /// <summary>The load against the capacity and the conductor temperature it implies; defined once, before the resistance is found and again by the capacity check.</summary>

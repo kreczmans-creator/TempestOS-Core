@@ -7,40 +7,44 @@ Checker: —    Checked: —
 Issued: —
 
 1. Scope and method
-Voltage drop along a circuit in volts and per cent of the nominal voltage, the conductor power loss, and an estimate of the conductor operating temperature, for DC, single-phase and three-phase AC, from resistivity and cross-section (with temperature correction), from tabulated R and X per kilometre, or from a mV/A/m figure; parallel conductors per phase; the drop limit is a user input (the regulatory limits live in BS 7671 Appendix 4 and Regulation 525 and are not embedded).
+Calculates the voltage drop, the conductor power loss and the estimated conductor temperature of a DC, single-phase or three-phase circuit. The drop limit is a user input, because the limits of BS 7671 are not embedded.
 Conductor resistance at its operating temperature, for n conductors in parallel: R = ρ_T L/(A n), with ρ_T = ρ_20 [1 + α (T_c − 20)]. Resistance and reactance from per-length figures instead: R = R′ L/n; X = X′ L/n. Voltage drop on a DC circuit: ΔV = 2 I R. Voltage drop on a single-phase AC circuit: ΔV = 2 I (R cos φ + X sin φ). Voltage drop on a three-phase AC circuit: ΔV = √3 I (R cos φ + X sin φ). Voltage drop from a tabulated mV/A/m figure, which already carries the 2 or √3: ΔV = (mV/A/m) I L / 1000. Power lost in the cable: P_loss = 2 I² R (DC and single-phase); 3 I² R (three-phase). Estimated conductor temperature at this current: T_c,est = T_amb + (T_rated − T_amb)(I/I_z)².
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   system | System | AC three-phase |  | assumption: Design convention. | any
+  data | Conductor data from | resistivity and area |  | assumption: Design convention. | any
+  L | Route length (one way) | 80 | m | drawing: DRG-E-120 rev B | 0.1 … 5000 m
+  n_par | Parallel conductors per phase | 1 |  | assumption: Design convention. | 1 … 6
+  A_c | Conductor cross-section | 35 | mm² | spec: Cable schedule CS-01: 35 mm² Cu XLPE/SWA | 1 … 1000 mm²
+  alpha | Temperature coefficient of resistance | 0.00393 |  | reference: Reference record: annealed copper 0.01724 Ω·mm²/m, 0.00393/K (Hughes) | 0.003 … 0.0045
+  X_km | Reactance per km per conductor | 0.08 | Ω/km | spec: Cable datasheet: 0.08 Ω/km | 0 … 1 Ω/km
+  T_rated | Conductor rated temperature | 70 | °C | assumption: Design convention. | 60 … 90 °C
+  rho_20 | Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.01724 | Ω·mm²/m | reference: Reference record: annealed copper 0.01724 Ω·mm²/m, 0.00393/K (Hughes) | 0.01 … 0.05 Ω·mm²/m
   V_n | Nominal voltage (line-to-line for three-phase) | 400 | V | assumption: Design convention. | 12 … 1000 V
   I | Design current | 100 | A | spec: Motor schedule MS-01: 100 A full-load current | 0.1 … 5000 A
-  L | Route length (one way) | 80 | m | drawing: DRG-E-120 rev B | 0.1 … 5000 m
   cos_phi | Power factor (AC) | 0.85 |  | assumption: Design convention. | 0.5 … 1
-  n_par | Parallel conductors per phase | 1 |  | assumption: Design convention. | 1 … 6
-  data | Conductor data from | resistivity and area |  | assumption: Design convention. | any
-  rho_20 | Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.01724 | Ω·mm²/m | reference: Reference record: annealed copper 0.01724 Ω·mm²/m, 0.00393/K (Hughes) | 0.01 … 0.05 Ω·mm²/m
-  alpha | Temperature coefficient of resistance | 0.00393 |  | reference: Reference record: annealed copper 0.01724 Ω·mm²/m, 0.00393/K (Hughes) | 0.003 … 0.0045
-  A_c | Conductor cross-section | 35 | mm² | spec: Cable schedule CS-01: 35 mm² Cu XLPE/SWA | 1 … 1000 mm²
   T_c | Conductor operating temperature for the resistance | 70 | °C | assumption: Design convention. | 20 … 90 °C
-  X_km | Reactance per km per conductor | 0.08 | Ω/km | spec: Cable datasheet: 0.08 Ω/km | 0 … 1 Ω/km
-  dv_limit | Voltage-drop limit | 5 |  | spec: Project spec ES-3 §4: 5 % (BS 7671 Appendix 4 §6.4 default for other uses) | 1 … 10
-  I_z | Tabulated current-carrying capacity for the installed conditions (temperature estimate) | 119 | A | spec: Cable schedule CS-01: I_z = 119 A for the installation method | 1 … 5000 A
-  T_rated | Conductor rated temperature | 70 | °C | assumption: Design convention. | 60 … 90 °C
   T_amb | Ambient temperature | 30 | °C | assumption: Design convention. | 0 … 60 °C
+  I_z | Tabulated current-carrying capacity for the installed conditions (temperature estimate) | 119 | A | spec: Cable schedule CS-01: I_z = 119 A for the installation method | 1 … 5000 A
+  dv_limit | Voltage-drop limit | 5 |  | spec: Project spec ES-3 §4: 5 % (BS 7671 Appendix 4 §6.4 default for other uses) | 1 … 10
 
 3. Assumptions
-  A1. Balanced load; conductor reactance from the stated X′ (zero when using resistivity alone unless X_km is given); the drop is the arithmetic (R cos φ + X sin φ) form. (Standard engineering approximation.)
-  A2. A mV/A/m figure is used as tabulated, with its own temperature and system convention. (Cable table convention.)
-  A3. The conductor temperature estimate scales the rated rise with (I/I_z)²; I_z is the user's tabulated value for the installation method and corrections. When the estimate is above T_c the resistance and the drop are computed at the estimate. (BS 7671 Appendix 4 approach, formula only.)
-  A4. system (System) is taken as AC three-phase. (Design convention.)
-  A5. V_n (Nominal voltage (line-to-line for three-phase)) is taken as 400 V. (Design convention.)
-  A6. cos_phi (Power factor (AC)) is taken as 0.85. (Design convention.)
-  A7. n_par (Parallel conductors per phase) is taken as 1. (Design convention.)
-  A8. data (Conductor data from) is taken as resistivity and area. (Design convention.)
-  A9. T_c (Conductor operating temperature for the resistance) is taken as 70 °C. (Design convention.)
-  A10. T_rated (Conductor rated temperature) is taken as 70 °C. (Design convention.)
-  A11. T_amb (Ambient temperature) is taken as 30 °C. (Design convention.)
+  A1. The load is balanced across the phases. (Standard engineering approximation.)
+  A2. The conductor reactance is the entered X′ per kilometre times the length. (Standard engineering approximation.)
+  A3. The voltage drop is the arithmetic sum R cos φ + X sin φ, not the vector difference. (Standard engineering approximation.)
+  A4. A mV/A/m figure is used as tabulated, with its own temperature and system convention. (Cable table convention.)
+  A5. The estimated conductor temperature scales the rated temperature rise with (I/I_z)². (BS 7671:2018 Appendix 4 approach, formula only.)
+  A6. I_z is the tabulated capacity for the installation method, with its correction factors applied. (BS 7671:2018 Appendix 4 approach, formula only.)
+  A7. When the estimate is above T_c, the resistance and the drop are computed at the estimate. (Keeps the drop on the safe side.)
+  A8. system (System) is taken as AC three-phase. (Design convention.)
+  A9. data (Conductor data from) is taken as resistivity and area. (Design convention.)
+  A10. n_par (Parallel conductors per phase) is taken as 1. (Design convention.)
+  A11. T_rated (Conductor rated temperature) is taken as 70 °C. (Design convention.)
+  A12. V_n (Nominal voltage (line-to-line for three-phase)) is taken as 400 V. (Design convention.)
+  A13. cos_phi (Power factor (AC)) is taken as 0.85. (Design convention.)
+  A14. T_c (Conductor operating temperature for the resistance) is taken as 70 °C. (Design convention.)
+  A15. T_amb (Ambient temperature) is taken as 30 °C. (Design convention.)
 
 4. Working
   [9] sin_phi = sqrt(1 - cos_phi^2)
@@ -77,36 +81,40 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
         Voltage drop, per cent
   [25] P_loss = 3 * I^2 * R
       = 3 × (100 A)^2 × 0.047149 ohm
-      = 1414.5 W
+      = 1.4145 kW
         Conductor power loss
   [26] u_dv = dV_pct / dv_limit
       = 1.8814 / 5
       = 0.37627
         Drop utilisation against the limit
+  [27] dV_max = dv_limit / 100 * V_n
+      = 5 / 100 × 400 V
+      = 20 V
+        Largest voltage drop the limit allows
 
 5. Results
-  R = 0.04715 Ω    Resistance
-  X = 0.006400 Ω    Reactance
   dV = 7.525 V    Voltage drop
   dV_pct = 1.8814    Voltage drop (%)
-  P_loss = 1414.5 W    Power loss
+  P_loss = 1.414 kW    Power loss
   T_c_est = 58.25 °C    Estimated conductor temperature
+  R = 0.04715 Ω    Resistance
+  X = 0.006400 Ω    Reactance
 
 6. Checks (governing first)
-  PASS  I ≤ I_z: u_Iz = 0.84 vs u_Iz ≤ 1  utilisation 0.84  « BS 7671 523
-  PASS  Voltage drop ≤ limit: u_dv = 0.38 vs u_dv ≤ 1  utilisation 0.38  « BS 7671 525
+  PASS  Design current against the current-carrying capacity: 100 A vs 119 A  utilisation 0.84  « BS 7671:2018 reg. 523
+  PASS  Voltage drop against the limit: 7.525 V vs 20 V  utilisation 0.38  « BS 7671:2018 reg. 525
 
 7. Applicability
   None.
 
 8. Verification
-  Template: elec.voltage-drop@1.3.0
+  Template: elec.voltage-drop@1.4.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3
   Test run: —
 
 9. References
-  1. BS 7671 525 — Voltage drop in consumers' installations
-  2. BS 7671 Appendix 4, section 6 — Voltage drop (mV/A/m tables and the temperature-correction method)
-  3. Hughes, Electrical and Electronic Technology Ch. on DC and AC circuits — Resistance, resistivity and temperature coefficient
+  1. BS 7671:2018 reg. 525 — Voltage drop in consumers' installations
+  2. BS 7671:2018 App. 4 §6 — Voltage drop (mV/A/m tables and the temperature-correction method)
+  3. Hughes, Electrical and Electronic Technology Ch. on DC and AC circuits, 12th ed. (edition to be checked) — Resistance, resistivity and temperature coefficient
