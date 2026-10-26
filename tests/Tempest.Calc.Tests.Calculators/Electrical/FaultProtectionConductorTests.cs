@@ -6,6 +6,7 @@ namespace Tempest.Calc.Tests.Calculators.Electrical;
 /// <summary>
 /// E5 1.3.0: elec.fault-protection-01 (R₁ + R₂ from a pure-copper resistivity), -03 (no conductor check against the let-through near the origin) and
 /// -09 (the 'curve' rule says Block, the code warns). Expected values from python3.
+/// 1.3.1 (chain.motor-circuit-06 remainder): a protective conductor equal to the line conductor above 16 mm2, as the pack link from the cable step enters it, is warned.
 /// </summary>
 public sealed class FaultProtectionConductorTests
 {
@@ -27,6 +28,36 @@ public sealed class FaultProtectionConductorTests
         Assert.True(at20 >= 0.3902, $"R1+R2 at 20 degC is {at20} ohm, below the cable standard's maximum 0.3902 ohm");
         Assert.Equal(17.241e-3 * 1.125 * 20 * (1 / 2.5 + 1 / 1.5), at20, 9);
         Assert.Equal(0.35 + 0.4950926, r.OutputSi("Z_s"), 6);
+    }
+
+    [Theory]
+    [InlineData(35, 35, true)]
+    [InlineData(25, 25, true)]
+    [InlineData(16, 16, false)]
+    [InlineData(10, 10, false)]
+    [InlineData(35, 16, false)]
+    [InlineData(50, 25, false)]
+    public void A_Protective_Conductor_Equal_To_The_Line_Conductor_Above_16_mm2_Is_Warned(double sLine, double sCpc, bool warned)
+    {
+        var r = Run(CalcInputValue.Quantity("S_line", sLine, "mm^2"), CalcInputValue.Quantity("S_cpc", sCpc, "mm^2"));
+        Assert.Equal(warned, r.Warnings.Any(w => w.RuleId == "cpc-full-size"));
+
+        if (warned)
+            Assert.Contains("enter the real S_cpc", r.Warnings.Single(w => w.RuleId == "cpc-full-size").Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_Full_Size_Protective_Conductor_Above_16_mm2_Understates_The_Loop_Resistance_The_Warning_Names()
+    {
+        // 20 m, k_R 1.125, 70 degC: R_12 = 0.017241 x 1.125 x 20 x 1.1965 x (1/35 + 1/35) = 0.026523 ohm with a full-size 35 mm2 cpc, against 0.042271 ohm with the
+        // usual 16 mm2 (python3): Z_s is understated by 15.7 mohm, which is why the notice is raised.
+        var full = Run(CalcInputValue.Quantity("S_line", 35, "mm^2"), CalcInputValue.Quantity("S_cpc", 35, "mm^2"));
+        var reduced = Run(CalcInputValue.Quantity("S_line", 35, "mm^2"), CalcInputValue.Quantity("S_cpc", 16, "mm^2"));
+        Assert.Equal(0.017241 * 1.125 * 20 * 1.1965 * (2.0 / 35), full.OutputSi("R_12"), 6);
+        Assert.Equal(0.017241 * 1.125 * 20 * 1.1965 * (1.0 / 35 + 1.0 / 16), reduced.OutputSi("R_12"), 6);
+        Assert.True(reduced.OutputSi("Z_s") > full.OutputSi("Z_s"));
+        Assert.Contains(full.Warnings, w => w.RuleId == "cpc-full-size");
+        Assert.DoesNotContain(reduced.Warnings, w => w.RuleId == "cpc-full-size");
     }
 
     [Fact]

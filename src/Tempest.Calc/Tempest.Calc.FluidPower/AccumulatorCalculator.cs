@@ -41,6 +41,12 @@ public sealed class AccumulatorCalculator : ICalcCalculator
     /// <summary>Real-gas behaviour matters above this absolute pressure (200 bar): the sheet warns.</summary>
     public const double RealGasWarnBar = 200.0;
 
+    /// <summary>
+    /// Above this absolute pressure (300 bar) an ideal-gas volume (f_rg left at 1) is refused: reference-EOS nitrogen at 20 °C needs 1.25 to 1.35 times the ideal volume in a narrow window at 300 bar, 1.6 at 500 bar and 1.7 to 2.0 times from 450 to 700 bar,
+    /// so the sheet would size an accumulator about half as big as the duty needs (fp.accumulator-01). Between 200 and 300 bar the sheet only warns: the template's own reference case (Parker, 90/100/210 bar absolute, real factor 1.05) sits there; blocking from 200 bar, as the finding first proposed, would refuse it.
+    /// </summary>
+    public const double RealGasBlockBar = 300.0;
+
     /// <summary>Real-gas behaviour of nitrogen is already worth a notice from this absolute pressure (100 bar) when the ideal gas is left on, and from 50 bar for an exponent above 1.</summary>
     public const double RealGasEarlyWarnBar = 100.0;
 
@@ -56,7 +62,7 @@ public sealed class AccumulatorCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.4.0", CalcDiscipline.FluidPower, "Accumulator sizing (gas law)",
+        Id, "1.5.0", CalcDiscipline.FluidPower, "Accumulator sizing (gas law)",
         "The pre-charge gas volume V0 of a hydraulic accumulator that delivers, or absorbs, a liquid volume ΔV between the lowest working pressure p1 and the highest p2, from p·Vⁿ = const with absolute pressures and an exponent n between 1 (isothermal) and 1.4 (adiabatic), the gas either charged as fast as it is discharged or (a held accumulator, the default for an emergency stroke) charged slowly and isothermally to p2 and then discharged at n; the volume scaled to the lowest operating temperature (T_max/T_min) and the pre-charge pressure at the charging temperature; the next size from your own size list; and the bar·litre product PS·V of the vessel's own maximum allowable pressure and volume against the PSSR Schedule 1 250 bar·L exception. Three modes: energy storage, shock and pulsation (screening only) and emergency stroke (ΔV is the stroke volume, linkable from the cylinder circuit). Not a pressure-vessel code check.",
         "Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode)\n" +
         "Gas volume, one exponent both ways (charged as fast as it is discharged): V0 = ΔV / [(p0/p1)^(1/n) − (p0/p2)^(1/n)], n = 1 isothermal … 1.4 adiabatic\n" +
@@ -104,6 +110,7 @@ public sealed class AccumulatorCalculator : ICalcCalculator
         [
             new CalcApplicabilityRule("pressures", "Pre-charge, lowest and highest working pressure must be in increasing order (absolute) and above zero.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("basis", "On the Absolute basis, a pressure below the atmospheric pressure entered here cannot be an absolute pressure: a gauge value was probably typed as absolute.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("realgas-ideal", "The highest working pressure is above 300 bar absolute and the real-gas factor is left at 1 (ideal gas): the volume would be about half the real nitrogen volume; enter f_rg.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("realgas", "The highest working pressure is above 200 bar absolute, or above 100 bar absolute with the ideal gas left on (f_rg = 1): nitrogen departs from the ideal-gas law and the volume is too small.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("realgas-window", "A narrow pressure window above 100 bar absolute: the real-gas factor on V0 is larger than the compressibility factor at p_2.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("exponent-real", "An exponent above 1 from 50 bar absolute: real nitrogen is stiffer than the ideal gas of that exponent, so an adiabatic discharge needs more gas volume than shown.", CalcNoticeSeverity.Warning),
@@ -236,6 +243,14 @@ public sealed class AccumulatorCalculator : ICalcCalculator
         if (!(c.Si("T_min") <= c.Si("T_max")))
         {
             c.Block("temperature", $"T_min: the minimum operating temperature ({F(c.Si("T_min") - 273.15)} °C) must not be above the maximum, T_max ({F(c.Si("T_max") - 273.15)} °C).");
+            return;
+        }
+
+        // Real nitrogen needs 1.7 to 2.0 times the ideal volume from 450 to 700 bar absolute (reference EOS, 20 °C), so the ideal-gas number with f_rg left at 1 would be about
+        // half the real gas volume: no safe sheet comes out of it. The volume is refused until the real-gas factor is entered (fp.accumulator-01).
+        if (pa2 > RealGasBlockBar * 1e5 && c.Si("f_rg") == 1.0)
+        {
+            c.Block("realgas-ideal", $"f_rg: the highest working pressure is {F(pa2 / 1e5)} bar absolute, above {F(RealGasBlockBar)} bar, and the real-gas factor is left at 1 (ideal gas). Nitrogen needs 1.7 to 2.0 times the ideal volume from 450 to 700 bar absolute (reference equation of state, 20 °C), so the volume would be about half the real one. Enter the real-gas factor f_rg (up to {F(RealGasFactorMax)}) for your pressure window from a gas-property source.");
             return;
         }
 
