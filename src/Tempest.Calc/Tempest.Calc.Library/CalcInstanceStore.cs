@@ -45,7 +45,7 @@ public sealed class CalcInstanceStore
     public static string Serialise<T>(T record) => JsonSerializer.Serialize(record, Json);
 
     /// <summary>
-    /// The same text as <see cref="Serialise{T}"/>, but refused (<see cref="InvalidOperationException"/> with <paramref name="tooLarge"/>) the moment it
+    /// The same text as <see cref="Serialise{T}"/>, but refused (<see cref="CalcDocumentTooLargeException"/> with <paramref name="tooLarge"/>) the moment it
     /// would pass <see cref="MaxDocumentBytes"/>: a document is never built whole to be told it is too big. The shape caps on a reference record
     /// (200 values of 500 rows of 50 cells) allow some 250 million characters of JSON; serialising all of that to measure it took over a gigabyte
     /// of memory to refuse one save (found by the C-7 soak). The text is plain ASCII (the serialiser escapes everything else), so bytes and
@@ -75,7 +75,7 @@ public sealed class CalcInstanceStore
             SerialiseWithin(instance, () => TooLargeMessage(instance.Name));
             return false;
         }
-        catch (InvalidOperationException)
+        catch (CalcDocumentTooLargeException)
         {
             return true;
         }
@@ -95,7 +95,7 @@ public sealed class CalcInstanceStore
             _written += count;
 
             if (_written > limit)
-                throw new InvalidOperationException(tooLarge());
+                throw new CalcDocumentTooLargeException(tooLarge());
         }
 
         public Memory<byte> GetMemory(int sizeHint = 0) => Grow(sizeHint);
@@ -104,16 +104,22 @@ public sealed class CalcInstanceStore
 
         private Memory<byte> Grow(int sizeHint)
         {
-            var needed = _written + Math.Max(sizeHint, 1);
+            // The limit is enforced on the bytes actually written (Advance), not on the room the writer asks for: Utf8JsonWriter reserves the worst case of a
+            // string before it writes it (about three bytes a character, up to six when the text needs escaping), so a 1.4 million character sheet asks for
+            // some 4 MB and 8 MB of room though it is written in 1.4 million bytes. Refusing on the room refused documents well under the cap.
+            if (_written > limit)
+                throw new CalcDocumentTooLargeException(tooLarge());
+
+            // The one exception: a request so large that even its least possible output (a string takes at least one byte a character, and the writer reserves
+            // at most six a character) passes the limit cannot be satisfied however it is written, so it is refused without making that room (the seventh
+            // leaves slack for the writer's few bytes of punctuation).
+            if (sizeHint / 7L > (long)limit - _written)
+                throw new CalcDocumentTooLargeException(tooLarge());
+
+            var needed = _written + (long)Math.Max(sizeHint, 1);
 
             if (needed > _buffer.Length)
-            {
-                // The limit is checked on Advance, so a writer asking for a great deal is not given it: past the limit it is refused here, too.
-                if (needed > limit + Chunk)
-                    throw new InvalidOperationException(tooLarge());
-
-                Array.Resize(ref _buffer, (int)Math.Min((long)Math.Max(needed, _buffer.Length * 2L), limit + (long)Chunk));
-            }
+                Array.Resize(ref _buffer, checked((int)Math.Max(needed, Math.Min(_buffer.Length * 2L, limit + (long)Chunk))));
 
             return _buffer.AsMemory(_written);
         }
@@ -751,4 +757,17 @@ public sealed class CalcConcurrencyException : InvalidOperationException
     public CalcConcurrencyException() { }
 
     public CalcConcurrencyException(string message, Exception innerException) : base(message, innerException) { }
+}
+
+/// <summary>
+/// A document the store was asked to write would pass <see cref="CalcInstanceStore.MaxDocumentBytes"/>; the message is one plain sentence naming the item.
+/// A type of its own, so the services that turn it into a refusal catch it by type and not by looking for words in its message.
+/// </summary>
+public sealed class CalcDocumentTooLargeException : InvalidOperationException
+{
+    public CalcDocumentTooLargeException(string message) : base(message) { }
+
+    public CalcDocumentTooLargeException() { }
+
+    public CalcDocumentTooLargeException(string message, Exception innerException) : base(message, innerException) { }
 }

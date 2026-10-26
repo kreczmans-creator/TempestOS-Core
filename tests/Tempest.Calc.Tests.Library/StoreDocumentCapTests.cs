@@ -33,7 +33,7 @@ public sealed class StoreDocumentCapTests
         var save = host.Store.SaveRecordAsync(record);
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
-        var refused = await Assert.ThrowsAsync<InvalidOperationException>(() => save);
+        var refused = await Assert.ThrowsAsync<CalcDocumentTooLargeException>(() => save);
         Assert.Contains("larger than 4 MB", refused.Message, StringComparison.Ordinal);
 
         // The refusal builds at most the cap's worth (a few buffers of about 4 MB), not the 17 million characters of the whole document twice over.
@@ -84,7 +84,7 @@ public sealed class StoreDocumentCapTests
         var overLength = CalcInstanceStore.Serialise(over).Length;
         Assert.True(underLength <= CalcInstanceStore.MaxDocumentBytes && overLength > CalcInstanceStore.MaxDocumentBytes, $"The test's records are {underLength:N0} and {overLength:N0} characters; they must straddle the cap.");
         Assert.Equal(underLength, CalcInstanceStore.SerialiseWithin(under, () => "too large").Length);
-        Assert.Equal("too large", Assert.Throws<InvalidOperationException>(() => CalcInstanceStore.SerialiseWithin(over, () => "too large")).Message);
+        Assert.Equal("too large", Assert.Throws<CalcDocumentTooLargeException>(() => CalcInstanceStore.SerialiseWithin(over, () => "too large")).Message);
     }
 
     [Fact]
