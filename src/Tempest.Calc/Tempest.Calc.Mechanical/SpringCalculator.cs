@@ -54,7 +54,7 @@ public sealed class SpringCalculator : ICalcCalculator
     private const string Part3 = "EN 13906-3";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.1", CalcDiscipline.Mechanical, "Helical springs: compression, extension, torsion",
+        Id, "1.3.0", CalcDiscipline.Mechanical, "Helical springs: compression, extension, torsion",
         "A cylindrical helical spring of round wire, cold-coiled, with a linear characteristic: compression (rate, working points, solid length by end type, stress at the working points and at solid, buckling, Goodman fatigue, surge frequency), extension (the same with the initial tension and the hook stresses) or torsion (rate with the legs, curvature-corrected bending stress, wound diameter and body length).",
         "Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ = E·d⁴/(64·D·n_a), n_a = n + (l₁ + l₂)/(3π·D) (torsion)\n" +
         "Spring stress: τ_k = k_c·8·F·D/(π·d³), k_c = (C + 0.5)/(C − 0.75) (Bergsträsser) or (4C − 1)/(4C − 4) + 0.615/C (Wahl); torsion σ = q·32·M/(π·d³) with q = (C + 0.07)/(C − 0.75) (EN 13906-3, the default) or K_i = (4C² − C − 1)/(4C·(C − 1)) (Shigley)\n" +
@@ -112,7 +112,7 @@ public sealed class SpringCalculator : ICalcCalculator
             new CalcAssumption("Solid length: the EN 13906-1 form (default) uses the maximum wire diameter d_max, adds the 1.5 d of an unground squared end and checks the minimum coil clearance S_a at the working length L₂; plain ends have no EN row and keep the geometric form. The Shigley form (nominal d, no clearance) is selectable.", "EN 13906-1 relations written in own notation, to be checked against the owner's copy; Shigley 10th ed. Table 10-1."),
             new CalcAssumption("Torsion bending stress: the EN 13906-3 factor q = (C + 0.07)/(C − 0.75) is the default; Shigley's K_i = (4C² − C − 1)/(4C(C − 1)) is selectable and about 1 % lower at C = 8.", "EN 13906-3 relation written in own notation, to be checked against the owner's copy."),
             new CalcAssumption("R_m(d) and the endurance strength are the user's inputs from the user's own copy of the wire standard and design reference, with no default. The permissible stress fractions f_τ, f_σ and f_su do default (0.45, 0.75, 0.67), to generic textbook fractions that the user replaces with the licensed EN 13906 value. R_m(d) can instead be taken from the curve R_m = A/d^m of a W3 material (revision-pinned; A in MPa for d in mm, the diameter range of the fit is the user's to respect). No wire-strength table and no permissible-stress diagram is shipped.", "No wire-strength table or permissible-stress diagram is shipped."),
-            new CalcAssumption("The stress correction factor k_c is applied to the working and the solid stress alike (conservative for the static check).", "Choose 'None (uncorrected)' for the uncorrected static stress."),
+            new CalcAssumption("The stress correction factor k_c is applied to the working and the solid stress alike (conservative for the static check).", "Choose 'None (uncorrected)' for the uncorrected static stress; the fatigue stresses (Goodman) always carry the curvature factor, the Bergsträsser one when 'None' is chosen."),
             new CalcAssumption("Extension: hook fatigue and the hook shape beyond its two radii are not assessed; the initial tension is a force the user enters.", "Shigley 10th ed. Ch. 10, extension springs."),
             new CalcAssumption("Surge is the first natural frequency of a spring with both ends fixed; a spring with one end free has half of it.", "Shigley 10th ed. Ch. 10, critical frequency."),
         ],
@@ -288,6 +288,9 @@ public sealed class SpringCalculator : ICalcCalculator
         };
 
         c.Assign("k_c", kc, null, $"Shear stress correction factor ({corr})");
+
+        // "None" is a choice for the static stress alone: the curvature of the wire concentrates the stress on the inside of the coil, and that peak is what a fatigue crack grows from, so the fatigue stresses always carry the curvature factor.
+        c.Assign("k_c_fat", corr == Uncorrected ? "(C + 0.5) / (C - 0.75)" : "k_c", null, corr == Uncorrected ? "Shear stress correction factor for the fatigue stresses (Bergsträsser: 'None' applies to the static stress only)" : "Shear stress correction factor for the fatigue stresses (as the static stress)");
         c.Assign("tau_perm", "f_tau * Rm", "MPa", "Permissible shear stress (fraction of R_m, user input)");
     }
 
@@ -692,8 +695,10 @@ public sealed class SpringCalculator : ICalcCalculator
             c.Warn("fatigue-cycles", $"N_c: the required life is {F(c.Si("N_c"))} cycles; the Goodman relation is for high-cycle fatigue, so the static check governs.");
 
         var (amplitude, mean, kind) = shear ? ("tau_a", "tau_m", "shear") : ("sigma_a", "sigma_m", "bending");
-        c.Assign(amplitude, $"({high} - {low}) / 2", "MPa", $"Alternating {kind} stress");
-        c.Assign(mean, $"({high} + {low}) / 2", "MPa", $"Mean {kind} stress");
+        // Shear (compression and extension): the fatigue stresses carry k_c_fat/k_c on the sheet's own working stresses, which is 1 unless the correction was set to 'None'.
+        var scale = shear ? "k_c_fat / k_c * " : string.Empty;
+        c.Assign(amplitude, $"{scale}({high} - {low}) / 2", "MPa", $"Alternating {kind} stress");
+        c.Assign(mean, $"{scale}({high} + {low}) / 2", "MPa", $"Mean {kind} stress");
 
         if (shear)
             c.Assign("S_su", "f_su * Rm", "MPa", "Ultimate shear strength (fraction of R_m, user input)");

@@ -1,4 +1,4 @@
-# M7 — Helical springs: compression, extension, torsion (`mech.spring@1.2.1`)
+# M7 — Helical springs: compression, extension, torsion (`mech.spring@1.3.0`)
 
 **In plain terms.** A coil spring stores energy by twisting its wire, so its stiffness comes from the wire diameter, the coil diameter and the number of turns, and its stress is highest on the inside of the coil. The worksheet takes the spring geometry and working loads, finds the rate and the stress at each working point and at solid length, and checks them against the wire's allowable stress, with a surge check (the coil ringing at its own frequency) for compression, extension and torsion springs.
 
@@ -6,7 +6,7 @@
 
 **Method.**
 - Index and rate: `C = D/d`; `k = G d⁴/(8 D³ n)` (compression, extension); torsion `k_φ = E d⁴/(64 D n_a)`, `n_a = n + (l₁ + l₂)/(3π D)`.
-- Shear stress: `τ = k_c·8 F D/(π d³)`, `k_c` by choice: Bergsträsser `(C + 0.5)/(C − 0.75)` (the default; this is the form the spec brief calls the Wahl option, and the one printed as K_B in Shigley), Wahl `(4C − 1)/(4C − 4) + 0.615/C`, or none (uncorrected). The same factor is applied to the stress at solid, which is conservative for the static check.
+- Shear stress: `τ = k_c·8 F D/(π d³)`, `k_c` by choice: Bergsträsser `(C + 0.5)/(C − 0.75)` (the default; this is the form the spec brief calls the Wahl option, and the one printed as K_B in Shigley), Wahl `(4C − 1)/(4C − 4) + 0.615/C`, or none (uncorrected). The same factor is applied to the stress at solid, which is conservative for the static check. Since 1.3.0 "none" applies to the static stress only: the Goodman fatigue stresses always carry the curvature factor (Bergsträsser when "none" is chosen; `k_c_fat` on the sheet), because the peak stress on the inside of the coil is what a fatigue crack grows from (d 4, D 16, F 100 to 400 N, R_m 1700, S_e 300 MPa: `u_f` 0.634 with either choice; "none" read 0.458 before).
 - Solid length by end type, two selectable forms (`solid_method`). **EN 13906-1 (the default):** `n_t = n + e_n`, `L_s = d_max (n_t + e_s)` with the maximum wire diameter `d_max` (input `d_max`, blank = the nominal `d`, no tolerance added) and `(e_n, e_s)` = (0, 1) plain, (1, 0) plain and ground, (2, 1.5) squared (closed, unground), (2, 0) squared and ground; plain ends have no row in the standard and keep the geometric form. The minimum sum of the coil clearances `S_a = (0.0015 D²/d + 0.1 d) n` gives the minimum length `L_n = L_s + S_a`; the sheet checks `L₂ ≥ L_n` (utilisation `s₂/(L₀ − L_n)`, check "Minimum coil clearance at L₂") and refuses a free length not above `L_n` (rule `solid`). **Shigley Table 10-1:** `L_s = d (n_t + e_s)` with nominal `d` and `e_s` = 1 for squared, no clearance. The two forms differ for squared unground ends (0.5 d) and by the wire tolerance. Pitch `p = (L₀ − a d)/(n + b)` with `(a, b)` = (1, 0), (0, 1), (3, 0), (2, 0). Travel to solid `s_c = L₀ − L_s`, `F_c = k s_c`; the stress at solid and the working deflection against the travel (`u_s = s₂/s_c`) are checked in both forms. The EN relations are written in own notation from the published expressions and are **to be checked against the owner's copy** of EN 13906-1.
 - Extension: `F = F₀ + k s`; body length `d (n + 1)`; hook bending `σ_A = F [K_A·16 D/(π d³) + 4/(π d²)]`, `K_A = (4C₁² − C₁ − 1)/(4 C₁ (C₁ − 1))`, `C₁ = 2 r₁/d`; side-bend torsion `τ_B = K_B·8 F D/(π d³)`, `K_B = (4C₂ − 1)/(4C₂ − 4)`, `C₂ = 2 r₂/d`.
 - Torsion: curvature factor by choice (`tors_factor`): **EN 13906-3 `q = (C + 0.07)/(C − 0.75)` (the default)** or Shigley's `K_i = (4C² − C − 1)/(4C (C − 1))` (about 1 % lower at C = 8); `σ = q·32 M/(π d³)` (or `K_i`); wound to angle φ the wire length is constant, so `D_w = D n/(n + φ/2π)` and the closed body is `d (n + 1 + φ/2π)` long.
@@ -33,6 +33,7 @@
 ```text
 C = 24 mm / 3 mm = 8
 k_c = (8 + 0.5) / (8 − 0.75) = 1.1724
+k_c_fat = 1.1724
 tau_perm = 0.45 × 1650 MPa = 742.5 MPa
 k = 79.3 GPa × (3 mm)^4 / (8 × (24 mm)^3 × 9) = 6.4535 N/mm
 n_t = 9 + 2 = 11
@@ -44,8 +45,7 @@ p = (70 mm − 2 × 3 mm) / (9 + 0) = 7.1111 mm
 s_c = 70 mm − 33 mm = 37 mm
 F_c = 6.4535 N/mm × 37 mm = 238.78 N
 s_1 = 60 N / 6.4535 N/mm = 9.2974 mm
-s_2 = 180 N / 6.4535 N/mm = 27.892 mm
-… 22 more step(s) on the sheet
+… 23 more step(s) on the sheet
 Governing: PASS  Minimum coil clearance at L₂: working deflection within the travel to L_n = L_s + S_a: u_n = 0.87965 vs u_n ≤ 1  utilisation 0.88  « EN 13906-1
 ```
 <!-- hand-arithmetic:end -->
