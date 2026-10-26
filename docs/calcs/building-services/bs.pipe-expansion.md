@@ -59,10 +59,10 @@ dL = 12 um/(m·K) × 50 m × abs(70 K) = 42 mm
 dL_signed = 12 um/(m·K) × 50 m × 70 K = 42 mm
 sigma_res = 210 GPa × 12 um/(m·K) × abs(70 K) = 176.4 MPa
 F_res = 210 GPa × 12 um/(m·K) × abs(70 K) × 861.55 mm² = 151.98 kN
+F_friction = μ and w_pipe blank = 0 N
 u_res = 176.4 MPa / 100 MPa = 1.764
 Delta = 42 mm / 2 = 21 mm
-L_req = sqrt(3 × 210 GPa × 88.9 mm × 21 mm / 100 MPa) = 3.4295 m
-… 15 more step(s) on the sheet
+… 16 more step(s) on the sheet
 Governing: PASS  Available leg against the required leg (3.4295 m): u_leg = 0.85737 vs u_leg ≤ 1  utilisation 0.857
 ```
 <!-- hand-arithmetic:end -->

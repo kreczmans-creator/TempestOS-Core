@@ -44,7 +44,7 @@ Phi_4 = 8.64 × 1.1928 × 1 × (21 − 18) °C = 30.918 W
 U_5 = Ground floor: 0.25 W/m²K = 0.25 W/(m²·K)
 Phi_5 = 16.2 × 0.25 × 1 × (21 − -3) °C = 97.2 W
 A_fab = 44.28 m²
-… 16 more step(s) on the sheet
+… 17 more step(s) on the sheet
 Governing: PASS  U-value of Party wall against its target (1.2 W/m²K): u_4 = 0.99404 vs u_4 ≤ 1  utilisation 0.994
 ```
 <!-- hand-arithmetic:end -->

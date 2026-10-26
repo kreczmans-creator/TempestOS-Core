@@ -30,7 +30,7 @@ M_y_c_Rd = (1 − 0) × 497 cm³ × 355 MPa / 1 = 176.44 kN·m
 M_z_c_Rd = (1 − 0) × 231 cm³ × 355 MPa / 1 = 82.005 kN·m
 u_M_y = 40 kN·m / 176.44 kN·m = 0.22671
 u_M_z = 0 kN·m / 82.005 kN·m = 0
-… 17 more step(s) on the sheet
+… 19 more step(s) on the sheet
 Governing: FAIL  Member interaction (simplified): u_member = 1.0435 vs u_member ≤ 1  utilisation 1.04  « 6.3.3
 ```
 <!-- hand-arithmetic:end -->
