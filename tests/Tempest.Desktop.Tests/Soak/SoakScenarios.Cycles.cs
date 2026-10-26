@@ -39,12 +39,15 @@ internal static partial class SoakScenarios
     /// content store); every attempt to edit an issued or superseded revision, through the service, the store and the generic Evidence
     /// acts, must be refused and must leave the stored record byte for byte as it was.
     /// </summary>
-    public static async Task CyclesAsync(SoakHost host, SoakScale scale, SoakOutcome outcome, CancellationToken cancellationToken)
+    public static Task CyclesAsync(SoakHost host, SoakScale scale, SoakOutcome outcome, CancellationToken cancellationToken) =>
+        CyclesAsync(host, scale, outcome, new List<IssuedFingerprint>(), cancellationToken);
+
+    /// <summary>The cycles, leaving the fingerprint of every revision issued in <paramref name="fingerprints"/> for a later look (after a restart, say).</summary>
+    internal static async Task CyclesAsync(SoakHost host, SoakScale scale, SoakOutcome outcome, List<IssuedFingerprint> fingerprints, CancellationToken cancellationToken)
     {
         var service = host.Service;
         var project = await host.Host.ProjectDirectory!.CreateAsync("SOAK-3", "Soak: revision cycles");
         var example = SoakExamples.For(CycleTemplate)[0].Inputs;
-        var fingerprints = new List<IssuedFingerprint>();
         var revise = new Stopwatch();
         var check = new Stopwatch();
         var issue = new Stopwatch();
@@ -203,7 +206,7 @@ internal static partial class SoakScenarios
     }
 
     /// <summary>Compares an issued revision, as it is now, with its fingerprint.</summary>
-    private static async Task VerifyAsync(SoakHost host, IssuedFingerprint expected, CalcInstanceStatus status, SoakOutcome outcome, string label)
+    internal static async Task VerifyAsync(SoakHost host, IssuedFingerprint expected, CalcInstanceStatus status, SoakOutcome outcome, string label)
     {
         var now = await host.Service.Store.FindInstanceAsync(expected.Id);
 

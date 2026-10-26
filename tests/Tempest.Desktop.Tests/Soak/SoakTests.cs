@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Tempest.Calc.Import;
+using Tempest.Calc.Library;
 
 namespace Tempest.Desktop.Tests.Soak;
 
@@ -233,6 +234,69 @@ public sealed class SoakHarnessTests
     }
 }
 
+/// <summary>The soak's host is the Desktop's own composition, at the durability each mode says it runs at.</summary>
+[Collection("Tempest.Desktop WorkspaceHost persistence")]
+public sealed class SoakHostTests
+{
+    private static string SynchronousLevel(SoakHost host) =>
+        (string)typeof(Tempest.Core.Persistence.SqlitePersistenceStore)
+            .GetProperty("SynchronousLevel", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(host.Store)!;
+
+    [Theory]
+    [InlineData(true, "FULL")]
+    [InlineData(false, "NORMAL")]
+    public async Task The_Database_Runs_At_The_Durability_The_Mode_Names(bool fullDurability, string expected)
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+        await using var host = await SoakHost.StartAsync(root, fullDurability);
+
+        Assert.Equal(expected, SynchronousLevel(host));
+        Assert.IsType<Tempest.Core.Persistence.SqlitePersistenceStore>(host.Store);
+        Assert.True(File.Exists(host.DatabasePath), "The soak runs over a real SQLite database file.");
+        Assert.NotNull(host.Service.Catalogue.Find("struct.lifting"));
+        Assert.Equal(54, host.Service.Catalogue.Current().Count);
+    }
+
+    [Fact]
+    public async Task Issued_Revisions_Are_Byte_For_Byte_The_Same_After_The_Application_Is_Restarted()
+    {
+        var root = WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath();
+        var fingerprints = new List<IssuedFingerprint>();
+        var before = new SoakOutcome();
+
+        await using (var first = await SoakHost.StartAsync(root, fullDurability: true))
+            await SoakScenarios.CyclesAsync(first, SoakScale.Ci with { Cycles = 4 }, before, fingerprints, CancellationToken.None);
+
+        Assert.Empty(before.Failures);
+        Assert.Equal(5, fingerprints.Count);
+
+        // A new host over the same database: the records, outputs, sheet text, PDFs and Evidence are read back from the file, not from memory.
+        await using var second = await SoakHost.StartAsync(root, fullDurability: true);
+        var after = new SoakOutcome();
+
+        for (var i = 0; i < fingerprints.Count; i++)
+            await SoakScenarios.VerifyAsync(second, fingerprints[i], i == fingerprints.Count - 1 ? CalcInstanceStatus.Issued : CalcInstanceStatus.Superseded, after, "after a restart");
+
+        Assert.Empty(after.Failures);
+        Assert.True(after.Checks >= fingerprints.Count * 5, "Every revision is looked at five ways.");
+    }
+
+    [Fact]
+    public async Task The_Soak_Signs_In_Two_Different_People()
+    {
+        await using var host = await SoakHost.StartAsync(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath(), fullDurability: false);
+        var project = await host.Host.ProjectDirectory!.CreateAsync("SOAK-T", "Soak host test");
+        host.SignInAs(SoakHost.Author);
+        var created = await host.Service.CreateAsync("mech.iso286-fit", project.Id, "Who", SoakExamples.For("mech.iso286-fit")[0].Inputs);
+        Assert.Equal(SoakHost.Author, created.CreatedBy);
+
+        host.SignInAs(SoakHost.Checker);
+        var second = await host.Service.CreateAsync("mech.iso286-fit", project.Id, "Who else", SoakExamples.For("mech.iso286-fit")[0].Inputs);
+        Assert.Equal(SoakHost.Checker, second.CreatedBy);
+    }
+}
+
 /// <summary>The leak check run for real: a scenario that keeps what it allocates is caught by the runner, over a real host and two passes.</summary>
 [Collection("Tempest.Desktop WorkspaceHost persistence")]
 public sealed class SoakLeakDetectorTests
@@ -242,14 +306,14 @@ public sealed class SoakLeakDetectorTests
     [Fact]
     public async Task A_Scenario_That_Leaks_Is_Caught_By_The_Runner_And_One_That_Does_Not_Is_Not()
     {
-        var leaking = new SoakScenario("x-leak", "A leaking scenario", "Keeps 12 MB per pass in a static list.", (_, _, outcome, _) =>
+        var leaking = new SoakScenario("x-leak", "A leaking scenario", "Keeps 12 MB per pass in a static list.", [], (_, _, outcome, _) =>
         {
             Kept.Add(new byte[12 * 1024 * 1024]);
             outcome.Fact("Kept", Kept.Count);
             return Task.CompletedTask;
         });
 
-        var clean = new SoakScenario("x-clean", "A clean scenario", "Allocates and drops 12 MB per pass.", (_, _, outcome, _) =>
+        var clean = new SoakScenario("x-clean", "A clean scenario", "Allocates and drops 12 MB per pass.", [], (_, _, outcome, _) =>
         {
             var dropped = new byte[12 * 1024 * 1024];
             outcome.Fact("Dropped", dropped.Length);

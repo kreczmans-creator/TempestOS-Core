@@ -3,18 +3,19 @@ using System.Diagnostics;
 namespace Tempest.Desktop.Tests.Soak;
 
 /// <summary>One scenario: what it is called in the report and how it runs against a started host.</summary>
-internal sealed record SoakScenario(string Id, string Title, string Covers, Func<SoakHost, SoakScale, SoakOutcome, CancellationToken, Task> Run);
+/// <param name="SummaryFacts">The keys of the facts the summary table shows for the scenario.</param>
+internal sealed record SoakScenario(string Id, string Title, string Covers, IReadOnlyList<string> SummaryFacts, Func<SoakHost, SoakScale, SoakOutcome, CancellationToken, Task> Run);
 
 internal static partial class SoakScenarios
 {
     /// <summary>The five scenarios of Addendum C, C-7, in the order the specification lists them.</summary>
     public static IReadOnlyList<SoakScenario> All { get; } =
     [
-        new("1-instances", "500 calculation instances", "Create, run and save a calculation of every template, from its shipped worked example, in one project.", InstancesAsync),
-        new("2-chains", "Chains of depth 20", "Link calculations 20 deep; change the head; every step goes stale; update in order; every step is current.", ChainsAsync),
-        new("3-cycles", "100 revise and supersede cycles", "Revise, change, check, issue and supersede one calculation over and over; every issued revision stays byte-identical and refuses edits.", CyclesAsync),
-        new("4-monte-carlo", "1,000 Monte Carlo runs", "The Monte Carlo service (engine and through a calculator) at its default sample count, its caps, and a tornado sweep.", MonteCarloAsync),
-        new("5-imports", "Imports at their size caps", "Scan tables, CAD expression files and parameter CSVs, and reference records, each at its cap and one past it.", ImportsAsync),
+        new("1-instances", "500 calculation instances", "Create, run and save a calculation of every template, from its shipped worked example, in one project.", ["Calculations created, run and saved", "Templates covered", "Database growth per calculation (KB)"], InstancesAsync),
+        new("2-chains", "Chains of depth 20", "Link calculations 20 deep; change the head; every step goes stale; update in order; every step is current.", ["Calculations in chains", "Steps reported stale after the head changed", "Steps updated in order"], ChainsAsync),
+        new("3-cycles", "100 revise and supersede cycles", "Revise, change, check, issue and supersede one calculation over and over; every issued revision stays byte-identical and refuses edits.", ["Revisions issued", "Edit attempts refused", "Database growth per issued revision (KB)"], CyclesAsync),
+        new("4-monte-carlo", "1,000 Monte Carlo runs", "The Monte Carlo service (engine and through a calculator) at its default sample count, its caps, and a tornado sweep.", ["Engine runs (default samples each)", "Calculator evaluations", "Tornado sweeps"], MonteCarloAsync),
+        new("5-imports", "Imports at their size caps", "Scan tables, CAD expression files and parameter CSVs, and reference records, each at its cap and one past it.", ["Largest scan table accepted (bytes)", "CAD parameters accepted", "Refusals one past a cap"], ImportsAsync),
     ];
 }
 
@@ -167,6 +168,7 @@ internal static class SoakRunner
             var heapBefore = SoakProbe.SettledHeap();
             var handlesBefore = SoakProbe.OpenHandles();
             var sqliteBefore = SoakProbe.HandlesUnder(root);
+            var databaseBefore = SoakProbe.FileBytes(host.DatabasePath) + SoakProbe.FileBytes(host.DatabasePath + "-wal");
             var gen2Before = GC.CollectionCount(2);
             var allocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
             using var sampler = new SoakSampler();
@@ -200,7 +202,7 @@ internal static class SoakRunner
 
             return new SoakPass(
                 watch.Elapsed.TotalSeconds, hostWatch.Elapsed.TotalSeconds, heapBefore, heapAfter, 0, sampler.PeakManagedBytes, sampler.PeakWorkingSetBytes,
-                0, db, wal, dbShutdown, handlesBefore, handlesAfter, sqliteBefore, sqliteAfter, 0, 0, gen2, allocated);
+                0, db, wal, dbShutdown, handlesBefore, handlesAfter, sqliteBefore, sqliteAfter, 0, 0, gen2, allocated, 0, databaseBefore);
         }
         finally
         {

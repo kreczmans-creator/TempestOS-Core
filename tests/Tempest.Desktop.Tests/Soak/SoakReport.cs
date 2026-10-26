@@ -76,7 +76,7 @@ internal static class SoakReport
         text.AppendLine("- **500 calc instances**: 500 calculations created round the 54 templates from their shipped worked examples, each run again and saved again, in one project.");
         text.AppendLine("- **Chains of depth 20**: chains of 20 links (21 calculations) of the ISO 286 fit calculator, each the nominal size of the next; a link past the depth cap is refused. Two chains share a project so that one chain's change can be seen to leave the other fresh.");
         text.AppendLine("- **100 revise/supersede cycles**: 100 times over one calculation: revise (the issued revision becomes Superseded), change an input, check by someone else, issue with its PDF sheet; 101 revisions in all.");
-        text.AppendLine(CultureInfo.InvariantCulture, $"- **1,000 Monte Carlo runs**: 1,000 runs of the Monte Carlo service, each at its default sample count ({Tempest.Calc.Engine.Analysis.MonteCarlo.DefaultSamples:N0}), which is inside the service's own cap ({Tempest.Calc.Engine.Analysis.MonteCarlo.MaxSamples:N0} for the engine). The service over a whole calculator re-runs the calculator once per sample and has a lower cap ({Tempest.Calc.Sheets.CalcRunner.MaxCalculatorSamples:N0}); it is run {scale.CalculatorMonteCarloRuns:N0} times at {scale.CalculatorMonteCarloSamples:N0} samples each (where that is fewer than the default, the reason is time, and is stated in the notes). 1,000 tornado sweeps are run as well.");
+        text.AppendLine(CultureInfo.InvariantCulture, $"- **1,000 Monte Carlo runs**: 1,000 runs of the Monte Carlo service, each at its default sample count ({Tempest.Calc.Engine.Analysis.MonteCarlo.DefaultSamples:N0}), which is inside the service's own cap ({Tempest.Calc.Engine.Analysis.MonteCarlo.MaxSamples:N0} for the engine). The service over a whole calculator re-runs the calculator once per sample and has a lower cap ({Tempest.Calc.Sheets.CalcRunner.MaxCalculatorSamples:N0}); it is run {scale.CalculatorMonteCarloRuns:N0} times at {scale.CalculatorMonteCarloSamples:N0} samples each{(scale.CalculatorMonteCarloSamples < Tempest.Calc.Engine.Analysis.MonteCarlo.DefaultSamples ? ", fewer than the default only because this is the scaled-down run" : ", the default")}, and once at its cap. {scale.TornadoSweeps:N0} tornado sweeps are run as well.");
         text.AppendLine(CultureInfo.InvariantCulture, $"- **Imports of max-size files**: scan deviation tables at the 5 MB byte cap and at the one-million-row cap, a CAD expression file at the 5 MB cap with {Tempest.Calc.Import.ImportLimits.Default.MaxParameters:N0} parameters (the parameter cap), a CAD parameter CSV at the parameter cap, and a reference record at every one of its caps; then one past each cap, which must be refused with a plain sentence and leave the calculation byte for byte as it was. Record import from CSV (Addendum C, C-3) is not in this build, so it is not soaked.");
         text.AppendLine();
 
@@ -101,7 +101,7 @@ internal static class SoakReport
     }
 
     private static string Short(SoakRun run) =>
-        string.Join("; ", run.Outcomes[0].Facts.Take(2).Select(f => $"{f.Key}: {f.Value}"));
+        string.Join("; ", run.Scenario.SummaryFacts.Select(k => $"{k}: {run.Outcomes[0].FactValue(k) ?? "-"}"));
 
     /// <summary>One scenario's section on its own (for the scaled-down run, which does not write the report but can show what it measured).</summary>
     public static string RenderSection(SoakRun run)
@@ -145,6 +145,7 @@ internal static class SoakReport
         Row("Peak managed heap while running, MiB", p => Mib(p.PeakManagedBytes));
         Row("Peak working set while running, MiB", p => Mib(p.PeakWorkingSetBytes));
         Row("Process peak working set so far, MiB", p => Mib(p.ProcessPeakWorkingSetBytes));
+        Row("tempest.db + WAL before the scenario (the seeded database), MiB", p => Mib(p.DatabaseBytesBefore));
         Row("tempest.db, MiB", p => Mib(p.DbBytes));
         Row("tempest.db-wal, MiB", p => Mib(p.WalBytes));
         Row("tempest.db after shutdown, MiB", p => Mib(p.DbBytesAfterShutdown));
@@ -154,9 +155,9 @@ internal static class SoakReport
         Row("Allocated, GiB", p => Num(p.AllocatedBytes / (1024.0 * 1024 * 1024), "0.00"));
         text.AppendLine();
 
-        var growth = Mib(run.HeapGrowthBytes);
+        var growth = (run.HeapGrowthBytes >= 0 ? "+" : "-") + Mib(Math.Abs(run.HeapGrowthBytes));
         var verdict = run.LeakFindings.Count == 0 ? "no leak, slowdown or handle growth found" : $"{run.LeakFindings.Count} finding(s)";
-        text.AppendLine(CultureInfo.InvariantCulture, $"Leak check: the heap left after disposal was **{growth} MiB** higher after pass {passes.Count} than after pass 1 (bound {Mib(SoakRunner.HeapGrowthBoundBytes)} MiB); {verdict}.");
+        text.AppendLine(CultureInfo.InvariantCulture, $"Leak check: the heap left after disposal changed by **{growth} MiB** from pass 1 to pass {passes.Count} (bound +{Mib(SoakRunner.HeapGrowthBoundBytes)} MiB); {verdict}.");
 
         if (passes.Count > 2)
         {
