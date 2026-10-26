@@ -318,6 +318,19 @@ internal sealed partial class MainWindowComposer
         calcSheets.OpenRecordsScreenAsync = kind => views.EngineeringAreaView.OpenRecordsAsync(kind);
         views.WorksheetRecords.Model.Committed += saved => _ = calcSheets.RefreshRequirementsAsync();
 
+        // Addendum C, C-5 (ADR-0175): the Guided test under Calculations. It drives the worksheet form as a scratch sheet and keeps its results in
+        // its own test-run records; it is given no calculation, Evidence or issue service. Left out when the build's script could not be read.
+        if (host.ManualTests is { } manualTests && host.CalcCatalogue is { } calcCatalogue)
+        {
+            var guided = new Tempest.Desktop.GuidedTest.GuidedTestViewModel(
+                manualTests,
+                new Tempest.Desktop.GuidedTest.CalcGuidedWorksheetHost(views.Worksheets, calcSheets, calcCatalogue),
+                (Tempest.Core.Logging.ILogger?)host.Services.GetService(typeof(Tempest.Core.Logging.ILogger)),
+                // "Delete older finished runs" asks through the app's own confirmation dialog before it removes anything.
+                (title, message, confirmCaption) => views.ConfirmationDialog.ConfirmAsync(title, message, confirmCaption));
+            views.EngineeringAreaView.InstallGuidedTest(new Tempest.Desktop.GuidedTest.GuidedTestView(guided), guided.RefreshAsync);
+        }
+
         // `ADR-0173`: Evidence a worksheet manages is checked, issued and revised there; its editor's "Open worksheet" lands here.
         viewCoordinator.OpenCalculationForEvidenceAsync = evidenceId =>
             calcSheets.OpenForEvidenceAsync(evidenceId, views.EngineeringAreaView.OpenWorksheetAsync);

@@ -85,6 +85,17 @@ public sealed class InMemoryQueryablePersistenceStore
         }
     }
 
+    /// <summary>Every committed value (the text, or a hash of the bytes), keyed by collection and key, so a test can prove that a feature wrote only the collections it owns.</summary>
+    public IReadOnlyDictionary<(string Collection, string Key), string> CommittedSnapshot()
+    {
+        lock (_publishLock)
+        {
+            return _committed.ToDictionary(
+                kv => kv.Key,
+                kv => kv.Value.Text ?? (kv.Value.Bytes is { } bytes ? "bytes:" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)) : string.Empty));
+        }
+    }
+
     /// <summary>The committed text value under <paramref name="key"/>, or <see langword="null"/>.</summary>
     public string? CommittedText(string collection, string key)
     {

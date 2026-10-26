@@ -76,6 +76,12 @@ public sealed class EngineeringAreaView : UserControl
     private readonly Dictionary<string, TreeViewItem> _disciplineNodes = new(StringComparer.Ordinal);
     private readonly TreeViewItem _calculationsNode = new() { Header = "Calculation register" };
     private readonly TreeViewItem _worksheetsNode = new() { Header = "Worksheets" };
+    private readonly TreeViewItem _guidedTestNode = new() { Header = "Guided test" };
+    private TreeViewItem? _calculationsModuleNode;
+
+    // Addendum C, C-5: the Guided test beside the worksheet form. Installed by the composer once its collaborators exist; absent when the build has no script.
+    private DockPanel? _guidedTestHost;
+    private Func<Task>? _onGuidedTestSelected;
     private readonly Dictionary<string, TreeViewItem> _disciplineWorksheetNodes = new(StringComparer.Ordinal);
     private readonly TreeViewItem _assetsNode = new() { Header = "Packs and templates" };
     private readonly TreeViewItem _recordsNode = new() { Header = "Reference records" };
@@ -190,6 +196,7 @@ public sealed class EngineeringAreaView : UserControl
                 // Addendum C, C-4: the read-only verification dashboard, beside the other Calculations screens.
                 if (_verification is not null)
                     node.Items.Add(_verificationNode);
+                _calculationsModuleNode = node;
             }
 
             _modulesNode.Items.Add(node);
@@ -256,6 +263,46 @@ public sealed class EngineeringAreaView : UserControl
         return node;
     }
 
+    /// <summary>
+    /// Addendum C, C-5: adds the Guided test node under Calculations. Its panel is shown beside the one worksheet form (the form cannot be in two places,
+    /// so the form moves between the Worksheets node and this one); <paramref name="onSelected"/> runs when the node is picked, before it is shown.
+    /// </summary>
+    public void InstallGuidedTest(Control guidedTest, Func<Task> onSelected)
+    {
+        ArgumentNullException.ThrowIfNull(guidedTest);
+        ArgumentNullException.ThrowIfNull(onSelected);
+
+        if (_guidedTestHost is not null || _calculationsModuleNode is null)
+            return;
+
+        _onGuidedTestSelected = onSelected;
+        _guidedTestHost = new DockPanel { LastChildFill = true };
+        DockPanel.SetDock(guidedTest, Dock.Left);
+        _guidedTestHost.Children.Add(guidedTest);
+        AutomationProperties.SetName(_guidedTestNode, "Guided test");
+        _calculationsModuleNode.Items.Add(_guidedTestNode);
+    }
+
+    /// <summary>The form is one control: before it is shown on its own it leaves the Guided test's host, and the Guided test's host takes it back when shown.</summary>
+    private void ShowWorksheetsSurface()
+    {
+        _guidedTestHost?.Children.Remove(_worksheets);
+        _detail.Content = _worksheets;
+    }
+
+    /// <summary>Shows the Guided test panel with the worksheet form beside it.</summary>
+    private void ShowGuidedTestSurface()
+    {
+        if (_guidedTestHost is null)
+            return;
+
+        // Release the form from the detail pane first (a control has one parent), then seat it beside the panel.
+        _detail.Content = _guidedTestHost;
+
+        if (!_guidedTestHost.Children.Contains(_worksheets))
+            _guidedTestHost.Children.Add(_worksheets);
+    }
+
     /// <summary>`v0.26.0`: opens the Worksheets node and selects <paramref name="templateReference"/> in it (the Ctrl+K entry per calculator).</summary>
     public async Task OpenWorksheetAsync(string templateReference)
     {
@@ -267,7 +314,7 @@ public sealed class EngineeringAreaView : UserControl
         _worksheets.FilterDiscipline(null);
         _tree.SelectedItem = _worksheetsNode;
         await _onWorksheetsSelected().ConfigureAwait(true);
-        _detail.Content = _worksheets;
+        ShowWorksheetsSurface();
         _worksheets.SelectTemplate(templateReference);
     }
 
@@ -279,7 +326,7 @@ public sealed class EngineeringAreaView : UserControl
         _suppressSelection = false;
         await _onWorksheetsSelected().ConfigureAwait(true);
         _worksheets.FilterDiscipline(null);
-        _detail.Content = _worksheets;
+        ShowWorksheetsSurface();
         await open().ConfigureAwait(true);
     }
 
@@ -321,6 +368,7 @@ public sealed class EngineeringAreaView : UserControl
             .Concat(_disciplineNodes.Values)
             .Concat(_disciplineWorksheetNodes.Values)
             .Append(_worksheetsNode)
+            .Append(_guidedTestNode)
             .Single(i => string.Equals(AutomationProperties.GetName(i), automationName, StringComparison.Ordinal));
         _tree.SelectedItem = item;
     }
@@ -447,7 +495,7 @@ public sealed class EngineeringAreaView : UserControl
         {
             await _onWorksheetsSelected().ConfigureAwait(true);
             _worksheets.FilterDiscipline(Tempest.Desktop.CalcSheets.CalcSheetView.DisciplineFor(marker.Category));
-            _detail.Content = _worksheets;
+            ShowWorksheetsSurface();
             return;
         }
 
@@ -503,7 +551,16 @@ public sealed class EngineeringAreaView : UserControl
         {
             await _onWorksheetsSelected().ConfigureAwait(true);
             _worksheets.FilterDiscipline(null);
-            _detail.Content = _worksheets;
+            ShowWorksheetsSurface();
+            return;
+        }
+
+        if (ReferenceEquals(selected, _guidedTestNode) && _onGuidedTestSelected is { } enterGuidedTest)
+        {
+            await _onWorksheetsSelected().ConfigureAwait(true);
+            _worksheets.FilterDiscipline(null);
+            await enterGuidedTest().ConfigureAwait(true);
+            ShowGuidedTestSurface();
             return;
         }
 
