@@ -382,7 +382,7 @@ public sealed class GuidedTestViewModelTests
         Assert.Contains(lines, l => l.Symbol == "P" && l.Expected == "3.93 kN" && l.Allowance == "±0.005");
         Assert.Contains(lines, l => l.Symbol == "L_10h" && l.Expected == "4290.3 h" && l.Allowance == "±0.05");
         Assert.Contains(lines, l => l.Symbol == "governing check" && l.Expected.StartsWith("PASS", StringComparison.Ordinal) && l.Allowance == "exact text");
-        Assert.Contains(lines, l => l.Symbol == "governing utilisation" && l.Expected == "0.728");
+        Assert.Contains(lines, l => l.Symbol == "governing utilisation" && l.Expected == "0.73"); // the README prints the sheet's own two decimals (C2-31)
         Assert.All(lines, l => Assert.Null(l.Shown));
         Assert.Contains("half a unit in the last digit", model.Rule, StringComparison.Ordinal);
     }
