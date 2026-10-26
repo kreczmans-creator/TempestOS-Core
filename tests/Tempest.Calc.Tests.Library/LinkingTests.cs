@@ -90,7 +90,7 @@ public sealed class LinkingTests
         Assert.Equal(10, f.Number!.Value, 9);
         Assert.Equal("kN", f.Unit);
         Assert.Equal(new CalcLink(source.Id, "F_out", "A"), CalcLink.From(f.Provenance));
-        Assert.Contains(stress.Outputs, o => o.Symbol == "sigma" && o.Text == "50 MPa");
+        Assert.Contains(stress.Outputs, o => o.Symbol == "sigma" && o.Text == "50.0 MPa");
         Assert.Contains(source.Id, stress.UpstreamIds);
         Assert.False((await host.Service.StalenessAsync(stress)).IsStale);
 

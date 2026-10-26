@@ -45,7 +45,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "2.2.0", CalcDiscipline.Mechanical, "Tolerance stack-up (1D) v2",
+        Id, "2.2.1", CalcDiscipline.Mechanical, "Tolerance stack-up (1D)",
         "A linear tolerance loop: worst-case limits, root-sum-square and modified RSS limits, predicted spread and capability against a stated requirement, contribution Pareto and a Monte Carlo prediction.",
         "Worst case, every contributor at its limit: T_wc = Σ|half-bands|.\nRoot sum of squares, the statistical stack: T_rss = √Σ half².\nModified RSS, a factor on the RSS (Bender-style): T_mrss = factor × RSS.\nPredicted standard deviation of the stack, from each contributor's distribution: σ = √Σ σ_i².\nProcess capability, taken from the nearer limit: C_pk = min(USL − μ, μ − LSL)/(3σ).\nMonte Carlo check, every contributor sampled from a fixed seed and summed with its sign: stack = Σ s_i x_i.",
         [

@@ -3,24 +3,23 @@ Project: GOLDEN
 Calc ID: test.direct-stress    Revision: A
 Title: Direct stress check
 
-1. SCOPE AND METHOD
+1. Scope and method
 Axial stress in a prismatic member under a tensile or compressive load, compared with an allowable stress.
 σ = F / A; utilisation = σ / σ_allow.
-  Ref: EN 1993-1-1 6.2.3 — Tension
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   F | Axial load | 12 | kN | drawing: DRG-001 rev B | 0 … 10000 kN
-  A | Cross-section area | 200 | mm^2 | drawing: DRG-001 rev B | ≥ 1 mm^2
+  A | Cross-section area | 200 | mm² | drawing: DRG-001 rev B | ≥ 1 mm²
   sigma_allow | Allowable stress | 160 | MPa | spec: SPEC-7 §4 | ≥ 1 MPa
   grade | Steel grade | S275 |  | assumption: Grade not stated on the drawing. | any
   slender | Member is slender | no |  | manual | any
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. The load acts through the centroid. (No bending from eccentricity.)
   A2. grade (Steel grade) is taken as S275. (Grade not stated on the drawing.)
 
-4. WORKING
+4. Working
   [6] sigma = F / A    « EN 1993-1-1 §6.2.3
       = 12 kN / 200 mm²
       = 60 MPa
@@ -34,16 +33,19 @@ Axial stress in a prismatic member under a tensile or compressive load, compared
       = "S275"
         Steel grade as chosen
 
-5. RESULTS
-  sigma = 60 MPa    Direct stress
-  u = 0.375    Utilisation
+5. Results
+  sigma = 60.0 MPa    Direct stress
+  u = 0.38    Utilisation (governing)
 
-6. CHECKS (governing first)
-  PASS  Direct stress: u = 0.375 vs u ≤ 1  utilisation 0.375  « EN 1993-1-1 §6.2.3
+6. Checks (governing first)
+  PASS  Direct stress: u = 0.38 vs u ≤ 1  utilisation 0.38  « EN 1993-1-1 §6.2.3
 
-7. APPLICABILITY
-  No warnings.
+7. Applicability
+  None.
 
-8. VERIFICATION
+8. Verification
   Template: test.direct-stress@1.0.0
   Known-answer cases passed: 2/2
+
+9. References
+  1. EN 1993-1-1 6.2.3 — Tension

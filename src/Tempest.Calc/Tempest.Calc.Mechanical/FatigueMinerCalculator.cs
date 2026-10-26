@@ -63,7 +63,7 @@ public sealed class FatigueMinerCalculator : ICalcCalculator
                 [CalcInputValue.Quantity("S_ref", 150, "MPa"), CalcInputValue.Of("N_ref", 1e6), CalcInputValue.Of("m", 5), CalcInputValue.Quantity("S_e", 60, "MPa"), Blocks((120, 2e6), (90, 1e7), (50, 1e7))],
                 [new CalcExpectedValue("N_1", 3_051_758, "", 5e-5), new CalcExpectedValue("d_1", 0.65536, "", 5e-5), new CalcExpectedValue("N_2", 12_860_082, "", 5e-5), new CalcExpectedValue("d_2", 0.77760, "", 5e-5), new CalcExpectedValue("d_3", 0, "", 1e-12), new CalcExpectedValue("D", 1.4330, "", 5e-5), new CalcExpectedValue("R_f", 0.69786, "", 5e-5)]),
         ],
-        Category: "Fatigue");
+        Category: "Strength");
 
     public void Run(CalcRunContext c)
     {

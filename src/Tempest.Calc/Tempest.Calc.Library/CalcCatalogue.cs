@@ -138,6 +138,28 @@ public sealed class CalcCatalogue
                 throw new ArgumentException($"Template '{t.Id}' declares input '{i.Symbol}' twice.");
         }
 
+        // C-2: an alias is the symbol an input had before it was renamed, so it must name no input of the template and no other input's alias.
+        foreach (var i in t.Inputs)
+        {
+            foreach (var alias in i.Aliases ?? [])
+            {
+                if (!seen.Add(alias))
+                    throw new ArgumentException($"Template '{t.Id}': the alias '{alias}' of input '{i.Symbol}' is already an input or the alias of another input.");
+            }
+        }
+
+        // C-2: a port is known by its output symbol, its public name and its aliases; no two ports may share one of those names.
+        var portNames = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var port in t.OutputPorts ?? [])
+        {
+            foreach (var name in new[] { port.Symbol }.Concat(port.Name is { Length: > 0 } n ? [n] : []).Concat(port.Aliases ?? []).Distinct(StringComparer.Ordinal))
+            {
+                if (!portNames.Add(name))
+                    throw new ArgumentException($"Template '{t.Id}': the port name '{name}' of output '{port.Symbol}' is already used by another port.");
+            }
+        }
+
         // ADR-0173: the governance a template asks for must be satisfiable, or no instance of it could ever be issued.
         if (t.FeatureFlag is { Length: > 0 } flag && !CalcFeatures.All.Contains(flag, StringComparer.Ordinal))
             throw new ArgumentException($"Template '{t.Id}' names the unknown feature flag '{flag}'.");

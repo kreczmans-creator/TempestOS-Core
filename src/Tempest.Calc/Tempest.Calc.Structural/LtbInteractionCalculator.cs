@@ -39,7 +39,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
     public const string MaterialKind = "material.properties";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.3", CalcDiscipline.Structural, "EN 1993-1-1 LTB and N+M interaction",
+        Id, "1.1.4", CalcDiscipline.Structural, "Lateral-torsional buckling and N+M interaction (EN 1993-1-1)",
         "Lateral-torsional buckling (6.3.2), flexural buckling (6.3.1) and the interaction of axial compression with bending (6.3.3) for a uniform doubly-symmetric I-section member on fork supports, class 1 to 3: M_cr, λ̄_LT, χ_LT and M_b,Rd; χ_y, χ_z and N_b,Rd; the Annex B (or Annex A) interaction factors and both interaction ratios, with the governing check.",
         "Critical moment (NCCI SN003 form): M_cr = C₁·π²E·I_z/(kL)²·[√((k/k_w)²·I_w/I_z + (kL)²·G·I_t/(π²E·I_z) + (C₂z_g)²) − C₂z_g]; C₁ = 1.88 − 1.40ψ + 0.52ψ² ≤ 2.70 (end moments, k = 1) unless entered\n" +
         "LTB slenderness: λ̄_LT = √(W_y·f_y/M_cr), W_y = W_pl,y (class 1, 2) or W_el,y (class 3)\n" +
@@ -194,7 +194,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
                 [new CalcExpectedValue("lambda_LT", 1.11959778027, "", 1e-6), new CalcExpectedValue("chi_LT", 0.49453731243, "", 1e-6), new CalcExpectedValue("k_yy", 1.32784479795, "", 1e-6), new CalcExpectedValue("k_yz", 1.39568003974, "", 1e-6), new CalcExpectedValue("k_zy", 1.18115263105, "", 1e-6), new CalcExpectedValue("k_zz", 1.24149385047, "", 1e-6), new CalcExpectedValue("u_61", 1.42476704306, "", 1e-6), new CalcExpectedValue("u_62", 1.48163658227, "", 1e-6)],
                 CalcReferenceStatus.Unconfirmed),
         ],
-        Category: "Design",
+        Category: "Members",
         OutputPorts:
         [
             new CalcOutputPort("Mb_Rd", "kN*m", "Design buckling resistance moment (→ S8 spreader beams)"),

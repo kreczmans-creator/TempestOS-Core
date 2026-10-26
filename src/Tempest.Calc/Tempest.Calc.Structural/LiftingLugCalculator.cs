@@ -207,7 +207,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
                     new CalcExpectedValue("P_b", 10.875, "kip", 1e-9), new CalcExpectedValue("P_v", 19.849, "kip", 3e-5), new CalcExpectedValue("P_sp", 20.539, "kip", 3e-5),
                 ]),
         ],
-        Category: "Design",
+        Category: "Lifting",
         OutputPorts:
         [
             new CalcOutputPort("capacity", "kN", "Rated load the lug carries in the governing mode (lug.capacity)"),

@@ -69,10 +69,7 @@ public static class CalcDiagramReader
     }
 
     /// <summary>A unit as an engineer writes it: °C, mm², kN·m.</summary>
-    public static string Pretty(string unit) =>
-        unit.Replace("degC", "°C", StringComparison.Ordinal).Replace("deg", "°", StringComparison.Ordinal)
-            .Replace("^2", "²", StringComparison.Ordinal).Replace("^3", "³", StringComparison.Ordinal).Replace("^4", "⁴", StringComparison.Ordinal)
-            .Replace("*", "·", StringComparison.Ordinal);
+    public static string Pretty(string unit) => Tempest.Calc.Sheets.CalcUnitText.Pretty(unit);
 
     private static string? LabelOf(DiagramElement element, CalcTemplate template, CalcInputSet inputs) =>
         element.Symbol is not { } symbol ? null : element.InputName is { } name ? $"{symbol} = {ValueText(template, name, inputs)}" : symbol;

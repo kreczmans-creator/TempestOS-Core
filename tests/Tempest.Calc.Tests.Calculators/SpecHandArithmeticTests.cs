@@ -52,7 +52,9 @@ public sealed partial class SpecHandArithmeticTests
     [Fact]
     public void Every_Spec_Explains_Itself_In_Plain_Terms()
     {
-        foreach (var path in Directory.GetFiles(Path.Combine(WorkedExamples.RepositoryRoot, "docs", "calcs"), "*.md", SearchOption.AllDirectories))
+        // The spec pages of the templates and workflows, in the folders under docs/calcs. The pages that sit directly in docs/calcs (the sheet
+        // standard, the glossary and its intro, the generated work list) are not specs of one calculation.
+        foreach (var path in Directory.GetFiles(Path.Combine(WorkedExamples.RepositoryRoot, "docs", "calcs"), "*.md", SearchOption.AllDirectories).Where(p => Path.GetDirectoryName(p) != Path.Combine(WorkedExamples.RepositoryRoot, "docs", "calcs")))
             Assert.Contains("**In plain terms.**", File.ReadAllText(path), StringComparison.Ordinal);
     }
 
@@ -82,8 +84,8 @@ public sealed partial class SpecHandArithmeticTests
     private static List<string> Steps(string sheet)
     {
         var lines = sheet.Split('\n');
-        var start = Array.FindIndex(lines, l => l == "4. WORKING");
-        var stop = Array.FindIndex(lines, l => l == "5. RESULTS");
+        var start = Array.FindIndex(lines, l => l == "4. Working");
+        var stop = Array.FindIndex(lines, l => l == "5. Results");
         var steps = new List<string>();
 
         if (start < 0 || stop < start)
@@ -119,7 +121,7 @@ public sealed partial class SpecHandArithmeticTests
     private static string? Governing(string sheet)
     {
         var lines = sheet.Split('\n');
-        var start = Array.FindIndex(lines, l => l.StartsWith("6. CHECKS", StringComparison.Ordinal));
+        var start = Array.FindIndex(lines, l => l.StartsWith("6. Checks", StringComparison.Ordinal));
         return start >= 0 && start + 1 < lines.Length && (lines[start + 1].StartsWith("  PASS", StringComparison.Ordinal) || lines[start + 1].StartsWith("  FAIL", StringComparison.Ordinal))
             ? lines[start + 1].Trim()
             : null;

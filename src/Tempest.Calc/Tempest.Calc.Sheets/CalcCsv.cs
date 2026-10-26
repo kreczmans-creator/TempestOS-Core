@@ -183,19 +183,24 @@ public static class CalcCsv
                 continue;
 
             // A table's rows and cells: name[1] marks row 1, name[1].column is one cell of it (Black B-A-05).
-            if (TableRef.TryParse(symbol, out var tableRef) && template.FindInput(tableRef.Table) is { Kind: CalcInputKind.Table } tableSpec)
+            if (TableRef.TryParse(symbol, out var tableRef) && template.ResolveInput(tableRef.Table) is { Kind: CalcInputKind.Table } tableSpec)
             {
+                // C-2: a table input that was renamed is read under its current symbol.
+                tableRef = tableRef with { Table = tableSpec.Symbol };
                 ReadTableRow(r + 1, tableRef, tableSpec, tables, Cell(row, "value"), Cell(row, "unit"), ReadProvenance(Cell(row, "provenance"), Cell(row, "reference"), Cell(row, "revision")), notices);
                 continue;
             }
 
-            var spec = template.FindInput(symbol);
+            // C-2: a symbol an input had before it was renamed is read as the input it has become.
+            var spec = template.ResolveInput(symbol);
 
             if (spec is null)
             {
                 notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Warning, $"Row {r + 1}: {symbol} is not an input of this calculation and was skipped."));
                 continue;
             }
+
+            symbol = spec.Symbol;
 
             var raw = Cell(row, "value");
 

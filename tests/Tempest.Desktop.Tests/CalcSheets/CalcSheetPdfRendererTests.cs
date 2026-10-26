@@ -107,6 +107,76 @@ public sealed class CalcSheetPdfRendererTests
         Assert.True(text.IndexOf("Pack index", StringComparison.Ordinal) < text.IndexOf("σ = F / A", StringComparison.Ordinal));
     }
 
+    private static string Collapse(string text) => System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ");
+
+    private static CalcSheet Empty() => new(
+        GoldenFiles.FixedHeader("x", "Empty"), string.Empty, string.Empty, [], [], [], [], [], [], [], [],
+        new CalcSheetFooter("x@1.0.0", "0000000000000000", "engine", 0, 0, null));
+
+    [Fact]
+    public void The_Pdf_Prints_The_Same_Headings_In_The_Same_Order_As_The_Text_Sheet()
+    {
+        // C-2, row 1: one heading wording, one order, and every section printed even when it is empty.
+        var text = Collapse(PdfTextExtractor.ExtractText(new CalcSheetPdfRenderer().Render(Empty()).ToArray()));
+        var last = -1;
+
+        foreach (var heading in CalcSheetStandard.Headings)
+        {
+            var at = text.IndexOf(heading, StringComparison.Ordinal);
+            Assert.True(at > last, $"'{heading}' is missing or out of order in the PDF");
+            last = at;
+        }
+
+        // Inputs, assumptions, working, results, checks, applicability and references each say "None." when they are empty.
+        Assert.True(System.Text.RegularExpressions.Regex.Matches(text, "None\\.").Count >= 7, text);
+    }
+
+    [Fact]
+    public void The_Pdf_Prints_A_Notice_In_The_Text_Sheets_Form_And_Lists_The_Defaults_Apart()
+    {
+        // F is given and the rest default: the defaults are listed apart from the warnings, in plain words with unit symbols.
+        var calculator = new TestWorksheetCalculator();
+        var inputs = new CalcInputSet([CalcInputValue.Quantity("F", 12, "kN", CalcProvenance.Drawing("DRG-001", "B"))]);
+        var at = new DateTimeOffset(2026, 10, 23, 9, 0, 0, TimeSpan.Zero);
+        var sheet = CalcSheetBuilder.Build(calculator.Template, inputs, CalcRunner.Run(calculator, inputs), GoldenFiles.FixedHeader("x", "x") with { Status = CalcSheetStatus.Draft }, new CalcSheetFooter(calculator.Template.Reference, "0123456789abcdef", "engine", 1, 1, at));
+        Assert.NotEmpty(sheet.DefaultNotices);
+        Assert.DoesNotContain(sheet.Warnings, w => w.IsDefaultUsed);
+
+        var pdf = Collapse(PdfTextExtractor.ExtractText(new CalcSheetPdfRenderer().Render(sheet).ToArray()));
+        var textSheet = Collapse(CalcSheetTextRenderer.Render(sheet));
+
+        Assert.Contains("Defaults used (inputs left empty):", pdf, StringComparison.Ordinal);
+        Assert.Contains("A: not entered, so the default of 200 mm² is used.", pdf, StringComparison.Ordinal);
+        Assert.DoesNotContain("template default", pdf, StringComparison.Ordinal);
+
+        // Every notice line of the text sheet is in the PDF, word for word (the PDF folds runs of spaces).
+        foreach (var notice in sheet.Warnings.Concat(sheet.Blocks))
+            Assert.Contains(Collapse(CalcSheetStandard.NoticeLine(notice)), pdf, StringComparison.Ordinal);
+
+        Assert.Contains("Defaults used (inputs left empty): A: not entered", textSheet, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_Pdf_Lists_The_Headline_Results_First_Marks_The_Governing_One_And_Gives_A_Yes_No_Check_No_Utilisation()
+    {
+        var calculator = CalcCalculatorComposition.All().Single(c => c.Template.Id == "mech.bearing-life");
+        var inputs = CalcTemplateHasher.DefaultInputs(calculator.Template);
+        var at = new DateTimeOffset(2026, 10, 23, 9, 0, 0, TimeSpan.Zero);
+        var sheet = CalcSheetBuilder.Build(calculator.Template, inputs, CalcRunner.Run(calculator, inputs), GoldenFiles.FixedHeader("x", "x"), new CalcSheetFooter(calculator.Template.Reference, "0123456789abcdef", "engine", 1, 1, at));
+        var pdf = Collapse(PdfTextExtractor.ExtractText(new CalcSheetPdfRenderer().Render(sheet).ToArray()));
+
+        Assert.Equal("L_nmh", sheet.Outputs[0].Symbol);
+        var results = pdf.Split("5. Results")[1].Split("6. Checks")[0];
+        Assert.True(results.IndexOf("Modified rating life", StringComparison.Ordinal) < results.IndexOf("Reliability factor", StringComparison.Ordinal), results);
+        Assert.Contains("(governing)", pdf, StringComparison.Ordinal);
+        Assert.Contains("0.94", pdf, StringComparison.Ordinal);
+
+        var yesNo = new CalcCheck("Fit classified", "clearance", "clearance", 0, true, HasUtilisation: false);
+        Assert.Equal("—", yesNo.UtilisationText);
+        var withYesNo = Sheet() with { Checks = [yesNo] };
+        Assert.DoesNotContain("0.00", Collapse(PdfTextExtractor.ExtractText(new CalcSheetPdfRenderer().Render(withYesNo).ToArray())).Split("6. Checks")[1].Split("7. Applicability")[0], StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Render_NeverInterpretsAHostileString()
     {

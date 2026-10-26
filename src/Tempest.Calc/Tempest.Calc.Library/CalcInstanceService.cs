@@ -153,7 +153,8 @@ public sealed partial class CalcInstanceService
         // A new calculation's links (an import, a pack step's inputs) meet the same rules as any other (ADR-0168 amendment).
         if (inputs is not null)
         {
-            var list = inputs.ToList();
+            // C-2: a symbol an input had before it was renamed is stored under the input it has become.
+            var list = CalcInputAliases.Canonicalise(entry.Template, inputs.ToList()).ToList();
 
             if (ProvenanceTooLong(list))
                 throw new CalcLinkRefusedException($"A provenance reference is longer than {CalcProvenance.MaxReferenceLength} characters.");
@@ -228,7 +229,8 @@ public sealed partial class CalcInstanceService
         if (instance.PackId is { } packId && await _store.FindPackAsync(packId, cancellationToken).ConfigureAwait(false) is { Status: not CalcInstanceStatus.Draft } pack)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' belongs to pack '{pack.Title}', which is {pack.Status}; its inputs are frozen.", instance);
 
-        var newInputs = inputs.ToList();
+        // C-2: a symbol an input had before it was renamed is stored under the input it has become.
+        var newInputs = CalcInputAliases.Canonicalise(entry.Template, inputs.ToList()).ToList();
 
         if (ProvenanceTooLong(newInputs))
             return CalcActionResult.Refused($"A provenance reference is longer than {CalcProvenance.MaxReferenceLength} characters.", instance);

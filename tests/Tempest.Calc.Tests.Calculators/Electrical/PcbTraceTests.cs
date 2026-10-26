@@ -103,7 +103,7 @@ public sealed class PcbTraceTests
     {
         var heavy = Run(CalcInputValue.Quantity("I", 40, "A"), CalcInputValue.Quantity("dT", 20, "K"), CalcInputValue.Of("Cu_oz", 1), CalcInputValue.Quantity("w_act", 10, "mm"));
         var notices = CalcInputValidator.Validate(Pcb.Template, With(CalcInputValue.Quantity("I", 40, "A")));
-        Assert.Contains(notices, n => n.Severity == CalcNoticeSeverity.Warning && n.Message.StartsWith("I ", StringComparison.Ordinal));
+        Assert.Contains(notices, n => n.Severity == CalcNoticeSeverity.Warning && n.Message.StartsWith("I:", StringComparison.Ordinal));
         Assert.Contains(heavy.Warnings, w => w.RuleId == "width");
         Assert.DoesNotContain(Run().Warnings, w => w.RuleId == "width");
     }
@@ -136,7 +136,7 @@ public sealed class PcbTraceTests
         // 18 µm typed as "18 oz" gave w_min 0.10 mm and a PASS where the real half ounce needs 3.6 mm and fails.
         var result = Run(CalcInputValue.Of("Cu_oz", micrometres));
         var block = Assert.Single(result.Blocks, b => b.Message.StartsWith("Cu_oz", StringComparison.Ordinal));
-        Assert.Contains("must be at most 6", block.Message, StringComparison.Ordinal);
+        Assert.Contains("enter at most 6", block.Message, StringComparison.Ordinal);
         Assert.Contains("not a thickness in µm", block.Message, StringComparison.Ordinal);
         Assert.True(result.IsBlocked);
 

@@ -77,7 +77,7 @@ public sealed class BoltedJointCalculator : ICalcCalculator
                 [new CalcExpectedValue("Phi", 0.30, "", 5e-5), new CalcExpectedValue("F_S_max", 20.000, "kN", 5e-5), new CalcExpectedValue("F_KR", 0, "kN", 1e-9), new CalcExpectedValue("F_A_sep", 14.286, "kN", 5e-5), new CalcExpectedValue("n_0", 0.71429, "", 5e-5), new CalcExpectedValue("sigma_z_max", 237.25, "MPa", 5e-5)]),
         ],
         DiagramKey: "bolted-joint-preload",
-        Category: "Fasteners");
+        Category: "Connections");
 
     private static CalcReferenceSource Legacy(int n) =>
         new("TempestOS calc.bolted-joint-preload (v0.21.0) hand calculation and test vector", null, $"docs/engineering/calculations/calc.bolted-joint-preload.md, Example {n}");

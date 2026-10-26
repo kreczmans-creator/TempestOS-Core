@@ -43,7 +43,9 @@ public enum CalcInputKind
 /// block. Limits are in <see cref="DefaultUnit"/>. <see cref="MaterialProperty"/> names the material property
 /// (<c>E</c>, <c>rho</c>, <c>f_y</c>, <c>E(T)</c>, …) this input takes from a <c>material.properties</c> record; the
 /// template also lists the input's symbol in a record kind of that name (Addendum B, W3). <see cref="PressureBasis"/> names the
-/// basis of a pressure input so the sheet prints "bar a" or "bar g" beside it.
+/// basis of a pressure input so the sheet prints "bar a" or "bar g" beside it. <see cref="Aliases"/> are the symbols this input was
+/// called before it was renamed (C-2): an inputs file, a CSV, a saved draft or a pack link that still uses one is read as this input
+/// (<see cref="CalcInputAliases"/>); nothing writes an alias.
 /// </summary>
 public sealed record CalcInputSpec(
     string Symbol,
@@ -65,7 +67,8 @@ public sealed record CalcInputSpec(
     string? PressureBasis = null,
     string? ReferenceLibrary = null,
     string? ReferenceProperty = null,
-    string? ReferenceDimension = null)
+    string? ReferenceDimension = null,
+    IReadOnlyList<string>? Aliases = null)
 {
     /// <summary>A pressure that is always gauge (above the atmosphere): <see cref="PressureBasis"/> "g".</summary>
     public const string BasisGauge = "g";
@@ -226,6 +229,13 @@ public sealed record CalcTemplate(
     public string Reference => $"{Id}@{Version}";
 
     public CalcInputSpec? FindInput(string symbol) => Inputs.FirstOrDefault(i => string.Equals(i.Symbol, symbol, StringComparison.Ordinal));
+
+    /// <summary>The input named <paramref name="symbolOrAlias"/>: by its symbol, else by a symbol it was called before (<see cref="CalcInputSpec.Aliases"/>).</summary>
+    public CalcInputSpec? ResolveInput(string symbolOrAlias) =>
+        FindInput(symbolOrAlias) ?? Inputs.FirstOrDefault(i => i.Aliases is { Count: > 0 } aliases && aliases.Contains(symbolOrAlias, StringComparer.Ordinal));
+
+    /// <summary>The output port named <paramref name="nameOrSymbol"/>: by its public name, its output symbol or an alias (<see cref="CalcOutputPort.Matches"/>), or <see langword="null"/>.</summary>
+    public CalcOutputPort? FindPort(string nameOrSymbol) => OutputPorts?.FirstOrDefault(p => p.Matches(nameOrSymbol));
 
     /// <summary>
     /// Whether Check and Issue demand more than an ordinary template does (Addendum B, S8): a competent-person attestation, a

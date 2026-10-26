@@ -205,7 +205,7 @@ public sealed partial class CalcSheetView : UserControl
         AutomationProperties.SetName(_updateLinksButton, UpdateLinksName);
         _linkTarget.SelectionChanged += (_, _) =>
         {
-            _linkOutput.ItemsSource = _linkTarget.SelectedIndex >= 0 ? _linkTargets[_linkTarget.SelectedIndex].Outputs.Select(o => $"{o.Symbol} ({(o.Unit.Length == 0 ? "–" : o.Unit)}) — {o.Description}").ToList() : [];
+            _linkOutput.ItemsSource = _linkTarget.SelectedIndex >= 0 ? _linkTargets[_linkTarget.SelectedIndex].Outputs.Select(o => $"{o.PublicName}{(o.Name is { Length: > 0 } ? $" [{o.Symbol}]" : string.Empty)} ({(o.Unit.Length == 0 ? "–" : CalcUnitText.Pretty(o.Unit))}) — {o.Description}").ToList() : [];
             UpdateLinkButton();
         };
         _linkInput.SelectionChanged += (_, _) => UpdateLinkButton();
@@ -417,7 +417,7 @@ public sealed partial class CalcSheetView : UserControl
     {
         _linkInput.SelectedItem = input;
         _linkTarget.SelectedIndex = _linkTargets.ToList().FindIndex(t => t.Label == targetLabel);
-        _linkOutput.SelectedIndex = _linkTarget.SelectedIndex < 0 ? -1 : _linkTargets[_linkTarget.SelectedIndex].Outputs.ToList().FindIndex(o => o.Symbol == outputSymbol);
+        _linkOutput.SelectedIndex = _linkTarget.SelectedIndex < 0 ? -1 : _linkTargets[_linkTarget.SelectedIndex].Outputs.ToList().FindIndex(o => o.Matches(outputSymbol));
     }
 
     private void UpdateLinkButton() =>
@@ -824,8 +824,12 @@ public sealed partial class CalcSheetView : UserControl
         foreach (var n in result.Blocks)
             _notices.Children.Add(Typeset(new TextBlock { Foreground = Brushes.IndianRed, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, $"Block — {n.Message}"));
 
-        foreach (var n in result.Warnings)
+        foreach (var n in result.EngineeringWarnings)
             _notices.Children.Add(Typeset(new TextBlock { Foreground = Brushes.DarkOrange, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, $"Warning — {n.Message}"));
+
+        // C-2, row 4: the notes that an empty input took its default are listed apart from the warnings, in a quieter colour.
+        foreach (var n in result.DefaultNotices)
+            _notices.Children.Add(Typeset(new TextBlock { Foreground = Brushes.Gray, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, $"Default — {n.Message}"));
 
         foreach (var s in result.Steps.Where(s => s.Kind != CalcStepKind.Input))
         {

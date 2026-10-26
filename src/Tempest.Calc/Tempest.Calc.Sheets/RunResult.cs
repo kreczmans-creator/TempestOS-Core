@@ -4,17 +4,44 @@ using Tempest.Calc.Engine.Values;
 
 namespace Tempest.Calc.Sheets;
 
-/// <summary>A named output of a run.</summary>
-public sealed record CalcOutput(string Symbol, string Description, CalcValue Value)
+/// <summary>
+/// A named output of a run. <see cref="ValueText"/> is the value as the sheet shows it, at the decimals of its quantity type
+/// (<see cref="CalcDisplay"/>, C-2 rows 29 and 30); the value itself is never rounded. <see cref="Decimals"/> overrides the decimals for
+/// one output where the template justifies it. <see cref="DisplayText"/> is the text a run settled on once it knew every output (the
+/// solver-noise rule needs them all); an output built by hand has none and shows its own.
+/// </summary>
+public sealed record CalcOutput(string Symbol, string Description, CalcValue Value, int? Decimals = null, string? DisplayText = null)
 {
-    public string ValueText => Value.Format(5);
+    public string ValueText => DisplayText ?? CalcDisplay.Format(this);
 }
 
-/// <summary>One check: demand against capacity, the utilisation, and whether it passed. The governing check is the one with the highest utilisation.</summary>
-public sealed record CalcCheck(string Name, string DemandText, string CapacityText, double Utilisation, bool Passed, string? StepSymbol = null, string? Clause = null);
+/// <summary>
+/// One check: demand against capacity, the utilisation, and whether it passed. The governing check is the one with the highest utilisation.
+/// <paramref name="HasUtilisation"/> is false for a yes/no check (a fit class, a separation test): it has no ratio, so a sheet prints
+/// PASS or FAIL and no utilisation (C-2, row 3).
+/// </summary>
+public sealed record CalcCheck(string Name, string DemandText, string CapacityText, double Utilisation, bool Passed, string? StepSymbol = null, string? Clause = null, bool HasUtilisation = true)
+{
+    /// <summary>The utilisation as a sheet prints it: 2 decimals, or "—" for a yes/no check.</summary>
+    public string UtilisationText => !HasUtilisation || double.IsInfinity(Utilisation) ? "—" : CalcDisplay.Utilisation(Utilisation);
+}
+
+/// <summary>What a notice is: an applicability rule that fired, or the plain note that an input was not entered and its default was used.</summary>
+public enum CalcNoticeKind
+{
+    /// <summary>A warning or block raised by an applicability rule or by input validation.</summary>
+    Rule,
+
+    /// <summary>An input left empty that has a default (C-2, row 4): listed apart from the warnings, so the notes do not bury the ones that matter.</summary>
+    DefaultUsed,
+}
 
 /// <summary>A warning (soft) or a block (hard) raised by an applicability rule or by input validation.</summary>
-public sealed record CalcNotice(string RuleId, CalcNoticeSeverity Severity, string Message);
+public sealed record CalcNotice(string RuleId, CalcNoticeSeverity Severity, string Message, CalcNoticeKind Kind = CalcNoticeKind.Rule)
+{
+    /// <summary>Whether this is the note that a default stood in for an empty input.</summary>
+    public bool IsDefaultUsed => Kind == CalcNoticeKind.DefaultUsed;
+}
 
 /// <summary>Data a form or a sheet can draw: a named series of (x, y) points with units.</summary>
 public sealed record CalcSeries(string Name, string XLabel, string XUnit, string YLabel, string YUnit, IReadOnlyList<(double X, double Y)> Points);
@@ -36,7 +63,14 @@ public sealed record CalcRunResult(
 
     public bool IsBlocked => Notices.Any(n => n.Severity == CalcNoticeSeverity.Block);
 
+    /// <summary>Every warning, the default-value notes included (see <see cref="EngineeringWarnings"/> and <see cref="DefaultNotices"/>).</summary>
     public IReadOnlyList<CalcNotice> Warnings => Notices.Where(n => n.Severity == CalcNoticeSeverity.Warning).ToList();
+
+    /// <summary>The warnings that are not default-value notes: what an engineer must read.</summary>
+    public IReadOnlyList<CalcNotice> EngineeringWarnings => Notices.Where(n => n.Severity == CalcNoticeSeverity.Warning && !n.IsDefaultUsed).ToList();
+
+    /// <summary>The notes that an empty input took its default (C-2, row 4).</summary>
+    public IReadOnlyList<CalcNotice> DefaultNotices => Notices.Where(n => n.IsDefaultUsed).ToList();
 
     public IReadOnlyList<CalcNotice> Blocks => Notices.Where(n => n.Severity == CalcNoticeSeverity.Block).ToList();
 
@@ -129,9 +163,10 @@ public sealed class CalcRunContext
 
     public double Si(string symbol) => Session.GetScalar(symbol).Si;
 
-    public void Output(string symbol, string description) => _outputs.Add(new CalcOutput(symbol, description, Session.Get(symbol)));
+    /// <summary>Records an output. <paramref name="decimals"/> overrides the decimals of its quantity type for this output only; use it where the template can justify it.</summary>
+    public void Output(string symbol, string description, int? decimals = null) => _outputs.Add(new CalcOutput(symbol, description, Session.Get(symbol), decimals));
 
-    public void Output(string symbol, string description, CalcValue value) => _outputs.Add(new CalcOutput(symbol, description, value));
+    public void Output(string symbol, string description, CalcValue value, int? decimals = null) => _outputs.Add(new CalcOutput(symbol, description, value, decimals));
 
     /// <summary>Records a utilisation check: demand/capacity, passed when utilisation ≤ 1 (within a hair of rounding).</summary>
     public CalcCheck Check(string name, string demandSymbol, string capacitySymbol, string? clause = null)
@@ -143,7 +178,7 @@ public sealed class CalcRunContext
             throw new Engine.CalcDimensionException($"Check '{name}' compares [{d.Dimension}] with [{c.Dimension}].");
 
         var u = c.Si == 0 ? double.PositiveInfinity : Math.Abs(d.Si) / Math.Abs(c.Si);
-        var check = new CalcCheck(name, d.Format(Session.SignificantFigures), c.Format(Session.SignificantFigures), u, u <= 1.0 + 1e-9, demandSymbol, clause);
+        var check = new CalcCheck(name, CalcDisplay.Format(d), CalcDisplay.Format(c), u, u <= 1.0 + 1e-9, demandSymbol, clause);
         _checks.Add(check);
         return check;
     }
@@ -158,7 +193,7 @@ public sealed class CalcRunContext
 
         // A negative utilisation means the capacity is negative or inverted (a negative NPSH available): never a pass (G-03).
         // Written as "u = 1.719 vs u ≤ 1" so a ratio is never read as a demand quantity (Black B-18).
-        var check = new CalcCheck(name, $"{utilisationSymbol} = {u.Format(Session.SignificantFigures)}", $"{utilisationSymbol} ≤ {CalcValue.FormatNumber(limit)}", u.Si / limit, u.Si >= 0 && u.Si <= limit + 1e-9, utilisationSymbol, clause);
+        var check = new CalcCheck(name, $"{utilisationSymbol} = {CalcDisplay.Utilisation(u.Si)}", $"{utilisationSymbol} ≤ {CalcValue.FormatNumber(limit)}", u.Si / limit, u.Si >= 0 && u.Si <= limit + 1e-9, utilisationSymbol, clause);
         _checks.Add(check);
         return check;
     }
@@ -166,7 +201,7 @@ public sealed class CalcRunContext
     /// <summary>Records a pass/fail check that is not a ratio (a separation check, a sign change).</summary>
     public CalcCheck CheckCondition(string name, bool passed, string demandText, string capacityText, string? stepSymbol = null, string? clause = null)
     {
-        var check = new CalcCheck(name, demandText, capacityText, passed ? 0.0 : double.PositiveInfinity, passed, stepSymbol, clause);
+        var check = new CalcCheck(name, demandText, capacityText, passed ? 0.0 : double.PositiveInfinity, passed, stepSymbol, clause, HasUtilisation: false);
         _checks.Add(check);
         return check;
     }
@@ -179,7 +214,13 @@ public sealed class CalcRunContext
 
     public void Assume(string statement, string? basis = null) => _assumptions.Add(new CalcAssumption(statement, basis));
 
-    internal CalcRunResult ToResult() => new(Session.Steps, _outputs, _checks, _notices, _series, _assumptions);
+    internal CalcRunResult ToResult()
+    {
+        // The text of each output is settled once every output is known: the solver-noise rule compares a value with the largest of its dimension.
+        var texts = CalcDisplay.Texts(_outputs);
+        var outputs = _outputs.Select((o, i) => o with { DisplayText = texts[i] }).ToList();
+        return new CalcRunResult(Session.Steps, outputs, _checks, _notices, _series, _assumptions);
+    }
 }
 
 /// <summary>The computing half of a calculator: given validated inputs, writes steps, outputs, checks and notices into the context.</summary>

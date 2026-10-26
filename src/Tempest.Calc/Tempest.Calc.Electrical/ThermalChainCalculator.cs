@@ -70,7 +70,7 @@ public sealed class ThermalChainCalculator : ICalcCalculator
             new CalcTestCase("ka-legacy-on-limit", "Legacy example 4: exactly on the limit at 34 W", Legacy(4), ThreeStage(34),
                 [new CalcExpectedValue("dT_tot", 85, "K", 5e-5), new CalcExpectedValue("T_1", 125, "degC", 5e-5), new CalcExpectedValue("dT_m", 0, "K", 1e-9), new CalcExpectedValue("u", 1, "", 5e-5)]),
         ],
-        Category: "Thermal management");
+        Category: "Thermal");
 
     public void Run(CalcRunContext c)
     {

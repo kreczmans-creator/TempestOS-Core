@@ -266,12 +266,12 @@ public sealed class CalcSheetViewTests
         var (view, _) = NewView();
         view.SelectTemplate("test.desktop-stress");
         view.SetField("F", text: "20000");
-        Assert.Contains("F (Axial load) is outside its usual range", view.FieldProblem("F"), StringComparison.Ordinal);
+        Assert.Contains("F: 20000 kN is outside the usual range", view.FieldProblem("F"), StringComparison.Ordinal);
         Assert.NotNull(view.LastRun);
         Assert.False(view.LastRun!.IsBlocked);
 
         view.SetField("A", text: "0");
-        Assert.Contains("A (Cross-section area) must be at least", view.FieldProblem("A"), StringComparison.Ordinal);
+        Assert.Contains("A: enter at least", view.FieldProblem("A"), StringComparison.Ordinal);
         Assert.True(view.LastRun!.IsBlocked);
         Assert.StartsWith("Blocked —", view.GoverningText, StringComparison.Ordinal);
     }
@@ -282,7 +282,7 @@ public sealed class CalcSheetViewTests
         var (view, _) = NewView();
         view.SelectTemplate("test.desktop-stress");
         view.SetField("F", text: "twelve");
-        Assert.Contains("F must be a finite number", view.FieldProblem("F"), StringComparison.Ordinal);
+        Assert.Contains("F: enter a finite number.", view.FieldProblem("F"), StringComparison.Ordinal);
     }
 
     [AvaloniaFact]

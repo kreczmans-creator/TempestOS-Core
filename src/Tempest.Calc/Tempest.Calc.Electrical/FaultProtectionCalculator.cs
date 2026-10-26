@@ -26,7 +26,7 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.2", CalcDiscipline.Electrical, "Fault protection: Zs, disconnection, adiabatic, fault level",
+        Id, "1.4.0", CalcDiscipline.Electrical, "Fault protection (BS 7671)",
         "Automatic disconnection of supply in a TN system for one circuit: the earth fault loop impedance at the conductor's operating temperature against the device's maximum, the disconnection time, the protective conductor (and line conductor) against the adiabatic minimum, and the prospective three-phase fault at the origin against the device's breaking capacity.",
         "Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/S (k_R = 1.125 takes the pure-copper ρ_20 to the cable standard's maximum conductor resistance; k enters with the pure ρ_20)\n" +
         "Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95\n" +
@@ -116,11 +116,11 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
         Category: "Power",
         OutputPorts:
         [
-            new CalcOutputPort("Z_s", "ohm", "Earth fault loop impedance"),
-            new CalcOutputPort("I_f", "A", "Earth fault current"),
-            new CalcOutputPort("S_min", "mm^2", "Minimum protective conductor"),
-            new CalcOutputPort("I_k3", "kA", "Prospective three-phase fault"),
-            new CalcOutputPort("c_k3", "", "Voltage factor c that I_k3 was computed with, c_max (→ E9 c_src, so the motor start uses the same factor)"),
+            new CalcOutputPort("Z_s", "ohm", "Earth fault loop impedance", "fault.impedance_loop"),
+            new CalcOutputPort("I_f", "A", "Earth fault current", "fault.current_earth"),
+            new CalcOutputPort("S_min", "mm^2", "Minimum protective conductor", "conductor.area_adiabatic_min"),
+            new CalcOutputPort("I_k3", "kA", "Prospective three-phase fault", "fault.current_three_phase"),
+            new CalcOutputPort("c_k3", "", "Voltage factor c that I_k3 was computed with, c_max (→ motor-start c_src, so the motor start uses the same factor)", "fault.factor_voltage"),
         ],
         RecordKinds:
         [

@@ -90,7 +90,7 @@ public sealed class LegacyMigrationTests
         Assert.Contains("Bolt load = 42935 N", run.SheetText, StringComparison.Ordinal);
         Assert.Contains("PASS  The external load must not separate the joint.", run.SheetText, StringComparison.Ordinal);
         Assert.Contains("A1. Migrated from calculation record", run.SheetText, StringComparison.Ordinal);
-        Assert.Contains("WARNING legacy.archive", run.SheetText, StringComparison.Ordinal);
+        Assert.Contains("[legacy.archive]", run.SheetText, StringComparison.Ordinal);
         Assert.Empty(run.Result.Steps);
 
         foreach (var reason in new[]

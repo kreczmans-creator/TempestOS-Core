@@ -71,7 +71,7 @@ public sealed class PlaneWallCalculator : ICalcCalculator
                 [CalcInputValue.Quantity("T_1", 25, "degC"), Layers(("brick", 200, 0.72), ("insulation", 50, 0.04)), CalcInputValue.Quantity("T_2", 5, "degC"), CalcInputValue.Quantity("A", 3, "m^2")],
                 [new CalcExpectedValue("R_1", 0.092593, "K/W", 5e-5), new CalcExpectedValue("R_2", 0.41667, "K/W", 5e-5), new CalcExpectedValue("R_tot", 0.50926, "K/W", 5e-5), new CalcExpectedValue("Q", 39.273, "W", 5e-5), new CalcExpectedValue("q", 13.091, "W/m^2", 5e-5), new CalcExpectedValue("U", 0.65455, "W/(m^2*K)", 5e-5), new CalcExpectedValue("T_s0", 25, "degC", 5e-5), new CalcExpectedValue("T_s1", 21.364, "degC", 5e-5), new CalcExpectedValue("T_s2", 5, "degC", 5e-5)]),
         ],
-        Category: "Heat transfer");
+        Category: "Thermal");
 
     public void Run(CalcRunContext c)
     {

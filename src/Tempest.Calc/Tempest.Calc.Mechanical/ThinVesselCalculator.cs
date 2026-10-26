@@ -49,7 +49,7 @@ public sealed class ThinVesselCalculator : ICalcCalculator
                 [CalcInputValue.Quantity("P", 3, "MPa"), CalcInputValue.Quantity("R", 750, "mm"), CalcInputValue.Quantity("S", 138, "MPa"), CalcInputValue.Of("E_j", 1.0), CalcInputValue.Of("n", 1), CalcInputValue.Quantity("c", 1.5, "mm"), CalcInputValue.Quantity("t_p", 15, "mm")],
                 [new CalcExpectedValue("t_c", 16.520, "mm", 5e-5), new CalcExpectedValue("t_l", 8.1169, "mm", 5e-5), new CalcExpectedValue("t_req", 18.020, "mm", 5e-5), new CalcExpectedValue("sigma_h", 168.47, "MPa", 5e-5), new CalcExpectedValue("u", 1.2013, "", 5e-5)]),
         ],
-        Category: "Pressure Systems");
+        Category: "Vessels");
 
     public void Run(CalcRunContext c)
     {

@@ -20,6 +20,9 @@ public static class CalcSheetBuilder
         ArgumentNullException.ThrowIfNull(header);
         ArgumentNullException.ThrowIfNull(footer);
 
+        // C-2: a symbol an input had before it was renamed is read as the input it has become.
+        inputs = CalcInputAliases.Canonicalise(template, inputs);
+
         var inputRows = new List<CalcSheetInputRow>();
         var assumptions = new List<CalcAssumption>(template.Assumptions);
 
@@ -42,7 +45,8 @@ public static class CalcSheetBuilder
                 unit = $"{unit} {basis}";
             }
 
-            inputRows.Add(new CalcSheetInputRow(spec.Symbol, spec.Description, Truncate(shown.ValueText), unit, source, range));
+            // The unit and the range are shown as symbols (°C, Ω, kN·m, mm²), as everywhere else on the sheet (C-2, row 27).
+            inputRows.Add(new CalcSheetInputRow(spec.Symbol, spec.Description, Truncate(shown.ValueText), CalcUnitText.Pretty(unit), source, CalcUnitText.Pretty(range)));
 
             // A table's rows are reproduced under their summary row so the model (nodes, loads, vertices, contributors)
             // can be checked from the sheet alone (Black B-17); past the cap the count is stated.
@@ -60,7 +64,7 @@ public static class CalcSheetBuilder
             }
 
             if (shown.Provenance is { Kind: CalcProvenanceKind.Assumption } p)
-                assumptions.Add(new CalcAssumption($"{spec.Symbol} ({spec.Description}) is taken as {shown.ValueText}{(unit.Length > 0 ? " " + unit : string.Empty)}.", p.Reference));
+                assumptions.Add(new CalcAssumption($"{spec.Symbol} ({spec.Description}) is taken as {shown.ValueText}{(unit.Length > 0 ? " " + CalcUnitText.Pretty(unit) : string.Empty)}.", p.Reference));
         }
 
         assumptions.AddRange(result.RunAssumptions);
@@ -68,10 +72,12 @@ public static class CalcSheetBuilder
         // Governing case first (§3.4 item 6), then the rest by utilisation.
         var checks = result.Checks.OrderByDescending(c => c.Utilisation).ToList();
 
+        // C-2: the headline results first, then the supporting values, then the utilisations; the default-value notes apart from the warnings.
         return new CalcSheet(
             header, template.Scope, template.Method, template.ClauseRefs, inputRows, assumptions,
             result.Steps.Where(s => s.Kind != CalcStepKind.Input).ToList(),
-            checks, CollapseUnsourced(result.Warnings, template), result.Blocks, result.Outputs, footer, revisions, null, template.DiagramKey, inputs);
+            checks, CollapseUnsourced(result.EngineeringWarnings, template), result.Blocks, CalcSheetStandard.OrderOutputs(template, result.Outputs), footer, revisions, null, template.DiagramKey, inputs,
+            result.DefaultNotices);
     }
 
     private const string UnsourcedPrefix = "record.";
@@ -104,7 +110,7 @@ public static class CalcSheetBuilder
         if (rest.Count > 0)
             groups.Add(string.Join(", ", rest));
 
-        var merged = new CalcNotice("record", CalcNoticeSeverity.Warning, $"Tabulated values not taken from a reference record: {string.Join("; ", groups)}. Enter each as one so its source, edition and licence travel with it.");
+        var merged = new CalcNotice("record", CalcNoticeSeverity.Warning, $"records: tabulated values not taken from a reference record are {string.Join("; ", groups)}. Enter each as one so its source, edition and licence travel with it.");
         var list = new List<CalcNotice>();
 
         foreach (var w in warnings)

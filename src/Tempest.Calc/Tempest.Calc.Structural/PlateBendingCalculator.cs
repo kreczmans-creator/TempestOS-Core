@@ -173,7 +173,7 @@ public sealed class PlateBendingCalculator : ICalcCalculator
                 [new CalcExpectedValue("f1", ClampedSquareF1, "Hz", 1e-6)],
                 CalcReferenceStatus.Unconfirmed),
         ],
-        Category: "Design",
+        Category: "Members",
         OutputPorts:
         [
             new CalcOutputPort("w_max", "mm", "Maximum plate deflection (→ S6, E2 enclosure checks)"),

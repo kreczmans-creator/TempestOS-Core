@@ -70,6 +70,10 @@ public sealed partial class CalcInstanceService
 
         var entry = _catalogue.Find(instance.TemplateReference);
 
+        // C-2: a symbol the input had before it was renamed binds the input it has become.
+        if (entry is not null)
+            inputSymbol = CalcInputAliases.Canonical(entry.Template, inputSymbol);
+
         if (entry?.Template.FindInput(inputSymbol) is not { Kind: CalcInputKind.Quantity or CalcInputKind.Number } spec)
             return CalcActionResult.Refused($"'{inputSymbol}' is not a number or quantity input of '{instance.Name}'; only those can be linked.", instance);
 
@@ -84,7 +88,7 @@ public sealed partial class CalcInstanceService
         if (upstream.ProjectId != instance.ProjectId)
             return CalcActionResult.Refused($"'{upstream.Name}' is in another project; links stay within one project, where cycles and staleness can be traced.", instance);
 
-        if (upstream.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, outputSymbol, StringComparison.Ordinal)) is not { Si: { } } output)
+        if (FindOutput(upstream, outputSymbol) is not { Si: { } } output)
             return CalcActionResult.Refused($"'{upstream.Name}' has no numeric output '{outputSymbol}'.", instance);
 
         if (PortProblem(upstream, outputSymbol) is { } notPort)
@@ -131,6 +135,10 @@ public sealed partial class CalcInstanceService
             return CalcActionResult.Refused($"Calculation '{instance.Name}' cannot take an input from its own output.", instance);
 
         var entry = _catalogue.Find(instance.TemplateReference);
+
+        if (entry is not null)
+            tableSymbol = CalcInputAliases.Canonical(entry.Template, tableSymbol);
+
         var label = CellLabel(tableSymbol, row, column);
 
         if (entry?.Template.FindInput(tableSymbol) is not { Kind: CalcInputKind.Table, Columns: { } columns })
@@ -158,7 +166,7 @@ public sealed partial class CalcInstanceService
         if (upstream.ProjectId != instance.ProjectId)
             return CalcActionResult.Refused($"'{upstream.Name}' is in another project; links stay within one project, where cycles and staleness can be traced.", instance);
 
-        if (upstream.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, outputSymbol, StringComparison.Ordinal)) is not { Si: { } } output)
+        if (FindOutput(upstream, outputSymbol) is not { Si: { } } output)
             return CalcActionResult.Refused($"'{upstream.Name}' has no numeric output '{outputSymbol}'.", instance);
 
         if (PortProblem(upstream, outputSymbol) is { } notPort)
@@ -220,7 +228,7 @@ public sealed partial class CalcInstanceService
 
             var current = Latest(pinned, successors);
 
-            if (current.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, link.OutputSymbol, StringComparison.Ordinal)) is not { Si: { } } output
+            if (FindOutput(current, link.OutputSymbol) is not { Si: { } } output
                 || entry.Template.FindInput(input.Symbol) is not { } spec || ValueFor(spec, output) is not { } value)
                 return CalcActionResult.Refused($"'{current.Name}' rev {current.Revision} no longer gives '{link.OutputSymbol}' in a unit '{input.Symbol}' takes; re-link it by hand.", instance);
 
@@ -240,7 +248,7 @@ public sealed partial class CalcInstanceService
             var current = Latest(pinned, successors);
             var spec = entry.Template.FindInput(symbol)?.Columns?.FirstOrDefault(c => string.Equals(c.Key, column, StringComparison.Ordinal));
 
-            if (current.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, link.OutputSymbol, StringComparison.Ordinal)) is not { Si: { } } output
+            if (FindOutput(current, link.OutputSymbol) is not { Si: { } } output
                 || spec is not { Kind: CalcInputKind.Quantity or CalcInputKind.Number } || ConvertFor(spec.Kind, spec.DefaultUnit, output) is not { } converted)
                 return CalcActionResult.Refused($"'{current.Name}' rev {current.Revision} no longer gives '{link.OutputSymbol}' in a unit '{label}' takes; re-link it by hand.", instance);
 
@@ -427,7 +435,7 @@ public sealed partial class CalcInstanceService
 
             if (latest.Id != upstream.Id)
                 reasons.Add($"'{label}' is pinned to '{upstream.Name}' rev {upstream.Revision}, which is superseded by rev {latest.Revision}; update to revision {latest.Revision}.");
-            else if (upstream.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, link.OutputSymbol, StringComparison.Ordinal)) is not { Si: { } si })
+            else if (FindOutput(upstream, link.OutputSymbol) is not { Si: { } si })
                 reasons.Add($"'{upstream.Name}' rev {upstream.Revision} no longer gives '{link.OutputSymbol}'.");
             else if (!SameValue(takenSi, si))
                 reasons.Add($"'{upstream.Name}' rev {upstream.Revision} now gives a different '{link.OutputSymbol}' than the value '{label}' took.");
@@ -713,7 +721,7 @@ public sealed partial class CalcInstanceService
                     return $"'{label}' is linked to '{upstream.Name}' rev {link.Revision}, but that calculation is rev {upstream.Revision}; link to the revision that exists.";
 
                 if (kind is not { } k
-                    || upstream.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, link.OutputSymbol, StringComparison.Ordinal)) is not { Si: { } } output
+                    || FindOutput(upstream, link.OutputSymbol) is not { Si: { } } output
                     || ConvertFor(k, defaultUnit, output) is null)
                     return $"'{label}' is linked to '{upstream.Name}'.{link.OutputSymbol}, which it cannot take (missing, or a different dimension).";
 
@@ -758,10 +766,25 @@ public sealed partial class CalcInstanceService
             return $"'{upstream.Name}' cannot be linked to: {switchedOff}";
 
         if (_catalogue.Find(upstream.TemplateReference)?.Template is not { OutputPorts: { Count: > 0 } ports } template
-            || ports.Any(p => string.Equals(p.Symbol, outputSymbol, StringComparison.Ordinal)))
+            || ports.Any(p => p.Matches(outputSymbol)))
             return null;
 
-        return $"'{upstream.Name}'.{outputSymbol} is not an output {template.Title} offers for linking; link to one of: {string.Join(", ", ports.Select(p => p.Symbol))}.";
+        return $"'{upstream.Name}'.{outputSymbol} is not an output {template.Title} offers for linking; link to one of: {string.Join(", ", ports.Select(p => p.PublicName))}.";
+    }
+
+    /// <summary>
+    /// The stored output of <paramref name="upstream"/> that <paramref name="nameOrSymbol"/> names: by the output's own symbol (which is
+    /// what every link saved before C-2 holds), else through the template's port that the public name or an alias belongs to (C-2, row 43).
+    /// A link saved under an old symbol keeps resolving after the port is renamed.
+    /// </summary>
+    private CalcOutputSnapshot? FindOutput(CalcInstance upstream, string nameOrSymbol)
+    {
+        if (upstream.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, nameOrSymbol, StringComparison.Ordinal)) is { } exact)
+            return exact;
+
+        var template = (_catalogue.Find(upstream.TemplateReference) ?? _catalogue.Find(upstream.TemplateId))?.Template;
+
+        return template?.FindPort(nameOrSymbol) is { } port ? upstream.Outputs.FirstOrDefault(o => port.Matches(o.Symbol)) : null;
     }
 
     private static HashSet<Guid> Upstream(Guid id, Dictionary<Guid, CalcInstance> instances)

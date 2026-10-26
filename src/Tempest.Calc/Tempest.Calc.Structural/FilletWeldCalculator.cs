@@ -23,7 +23,7 @@ public sealed class FilletWeldCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.1", CalcDiscipline.Structural, "Fillet weld (EN 1993-1-8 simplified method)",
+        Id, "1.0.2", CalcDiscipline.Structural, "Fillet weld (EN 1993-1-8)",
         "A fillet weld carrying forces parallel to, transverse to and normal to its axis, by the simplified method: the resultant over the throat area against the design shear strength of the weld, with the required throat and leg.",
         "Resultant force on the weld: F = √(F_∥² + F_⊥² + F_n²).\nDesign shear strength of the weld, simplified method: f_vw,d = f_u/(√3·β_w·γ_M2).\nShear stress on the throat: τ_w = F/(a·L).\nWeld resistance and utilisation: F_w,Rd = f_vw,d·a·L; u = F/F_w,Rd.\nThroat needed (not less than 3 mm) and the matching leg: a_req = max(F/(f_vw,d·L), 3 mm); leg = √2·a.",
         [

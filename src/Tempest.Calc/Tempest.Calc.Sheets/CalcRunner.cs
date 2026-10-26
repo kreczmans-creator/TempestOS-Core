@@ -16,6 +16,8 @@ public static class CalcRunner
         ArgumentNullException.ThrowIfNull(calculator);
         ArgumentNullException.ThrowIfNull(inputs);
 
+        // C-2: a symbol an input had before it was renamed is read as the input it has become.
+        inputs = CalcInputAliases.Canonicalise(calculator.Template, inputs);
         var notices = CalcInputValidator.Validate(calculator.Template, inputs).ToList();
 
         if (notices.Any(n => n.Severity == CalcNoticeSeverity.Block))
@@ -30,17 +32,17 @@ public static class CalcRunner
         }
         catch (CalcException e)
         {
-            context.Block("engine", e.Message);
+            context.Block("engine", CalcMessageShape.Engine(e.Message));
         }
         catch (OperationCanceledException)
         {
-            context.Block("cancelled", "The calculation was cancelled before it finished.");
+            context.Block("cancelled", "calculation: the calculation was cancelled before it finished.");
         }
         catch (Exception e) when (e is ArgumentException or InvalidOperationException or ArithmeticException or IndexOutOfRangeException or KeyNotFoundException or NullReferenceException)
         {
             // A calculator's own guard or a numeric edge the engine did not
             // see: still a block on the sheet, never a crash in the form.
-            context.Block("engine", $"The calculation could not be completed: {e.Message}");
+            context.Block("engine", CalcMessageShape.Engine($"the calculation could not be completed: {e.Message}"));
         }
 
         var result = context.ToResult();

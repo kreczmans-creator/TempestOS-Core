@@ -45,7 +45,7 @@ public sealed class ShaftCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.Mechanical, "Shaft: static, fatigue, keys, critical speed",
+        Id, "1.4.0", CalcDiscipline.Mechanical, "Shaft design",
         "A stepped (optionally hollow) shaft on two bearings carrying radial loads in two planes and a torque with a steady (mean) part and an optional alternating part: bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections the user marks, slopes at the bearings, deflection at the loads, the first lateral critical speed and parallel keys.",
         "Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(M_y² + M_z²)\n" +
         "Stress at a section: σ_a = K_f·32M_a·d/(π(d⁴ − d_i⁴)), τ_m = K_fs·16T_m·d/(π(d⁴ − d_i⁴)), τ_a = K_fs·16T_a·d/(π(d⁴ − d_i⁴)); K_f = 1 + q(K_t − 1)\n" +
@@ -124,15 +124,15 @@ public sealed class ShaftCalculator : ICalcCalculator
                 [new CalcExpectedValue("S_e", 201.4997, "MPa", 1e-5), new CalcExpectedValue("n_f_min", 1.620988, "", 1e-5), new CalcExpectedValue("n_y_min", 4.488973, "", 1e-5)],
                 CalcReferenceStatus.Unconfirmed),
         ],
-        Category: "Drives",
+        Category: "Shafts",
         OutputPorts:
         [
-            new CalcOutputPort("R_A", "kN", "Radial reaction at bearing A (→ M5 F_r)"),
-            new CalcOutputPort("R_B", "kN", "Radial reaction at bearing B (→ M5 F_r)"),
-            new CalcOutputPort("d_A", "mm", "Seat diameter at A (→ M2)"),
-            new CalcOutputPort("d_B", "mm", "Seat diameter at B (→ M2)"),
-            new CalcOutputPort("n_f_min", "", "Lowest fatigue safety factor"),
-            new CalcOutputPort("n_c", "rpm", "First critical speed"),
+            new CalcOutputPort("R_A", "kN", "Radial reaction at bearing A (→ bearing-life F_r)", "shaft.reaction_a"),
+            new CalcOutputPort("R_B", "kN", "Radial reaction at bearing B (→ bearing-life F_r)", "shaft.reaction_b"),
+            new CalcOutputPort("d_A", "mm", "Seat diameter at A (→ iso286-fit D)", "shaft.seat_diameter_a"),
+            new CalcOutputPort("d_B", "mm", "Seat diameter at B (→ iso286-fit D)", "shaft.seat_diameter_b"),
+            new CalcOutputPort("n_f_min", "", "Lowest fatigue safety factor", "shaft.safety_fatigue_min"),
+            new CalcOutputPort("n_c", "rpm", "First critical speed", "shaft.speed_critical"),
         ],
         RecordKinds:
         [

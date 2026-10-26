@@ -102,7 +102,7 @@ public sealed class BoltGroupCalculator : ICalcCalculator
                 [new CalcExpectedValue("v_max", 20.000, "kN", 5e-5), new CalcExpectedValue("u_max", 0.80000, "", 5e-5)]),
         ],
         DiagramKey: "bolt-group-eccentric-shear",
-        Category: "Fasteners");
+        Category: "Connections");
 
     private static CalcInputValue Bolts(params (string X, string Y)[] points) =>
         CalcInputValue.Table("bolts", points.Select(p => CalcRow.Of(("x", new CalcCell(double.Parse(p.X, System.Globalization.CultureInfo.InvariantCulture), "mm")), ("y", new CalcCell(double.Parse(p.Y, System.Globalization.CultureInfo.InvariantCulture), "mm")), ("A", new CalcCell(84.3, "mm^2")))).ToList());

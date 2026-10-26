@@ -109,7 +109,7 @@ public sealed class WorkedExamplePdfTests
         Assert.True(text.Contains($"{reference} · {currentHash} · ", StringComparison.Ordinal), $"{stale} sheet.txt says {reference} and the template's hash is {currentHash}; the PDF prints version {printed.Groups["version"].Value} with hash {printed.Groups["hash"].Value}.");
 
         // The governing check sheet.txt lists first ("PASS  Name: u = …") is printed in the PDF.
-        var governing = Regex.Match(sheet, @"^6\. CHECKS[^\n]*\n\s*(?:PASS|FAIL)\s+(?<name>[^:\n]+):", RegexOptions.Multiline | RegexOptions.CultureInvariant);
+        var governing = Regex.Match(sheet, @"^6\. Checks[^\n]*\n\s*(?:PASS|FAIL)\s+(?<name>[^:\n]+):", RegexOptions.Multiline | RegexOptions.CultureInvariant);
 
         if (governing.Success)
         {

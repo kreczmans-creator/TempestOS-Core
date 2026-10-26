@@ -231,7 +231,7 @@ public sealed class BlueRoundTests
             new CalcSheetHeader("P", "C", template.Title, "A", CalcSheetStatus.Draft, "a", null, null, null, null),
             GoldenFiles.FixedFooter(template, 2, 2));
         var notice = Assert.Single(sheet.Warnings, w => w.RuleId == "record");
-        Assert.Equal("Tabulated values not taken from a reference record: segments, gap (Segment data). Enter each as one so its source, edition and licence travel with it.", notice.Message);
+        Assert.Equal("records: tabulated values not taken from a reference record are segments, gap (Segment data). Enter each as one so its source, edition and licence travel with it.", notice.Message);
         Assert.DoesNotContain(sheet.Warnings, w => w.RuleId.StartsWith("record.", StringComparison.Ordinal));
     }
 

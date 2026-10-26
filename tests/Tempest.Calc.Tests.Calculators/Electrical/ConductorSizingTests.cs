@@ -47,7 +47,7 @@ public sealed class ConductorSizingTests
         var r = Run(Q(symbol, value, unit));
         Assert.True(r.IsBlocked);
         Assert.Empty(r.Outputs);
-        Assert.Contains(r.Blocks, b => b.Message.StartsWith(symbol + " ", StringComparison.Ordinal));
+        Assert.Contains(r.Blocks, b => b.Message.StartsWith(symbol + ":", StringComparison.Ordinal));
     }
 
     [Theory]

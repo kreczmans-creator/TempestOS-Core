@@ -56,22 +56,30 @@ public static class CalcSheetTextRenderer
             sb.AppendLine();
         }
 
-        sb.AppendLine("1. SCOPE AND METHOD");
+        // C-2, rows 1 to 4: the headings, their order, "None." for an empty section and the line forms are CalcSheetStandard's, as in the PDF.
+        sb.AppendLine(CalcSheetStandard.ScopeAndMethod);
         sb.AppendLine(Clean(sheet.Scope));
         sb.AppendLine(Clean(sheet.Method));
+        sb.AppendLine();
+        sb.AppendLine(CalcSheetStandard.Inputs);
 
-        foreach (var c in sheet.ClauseRefs)
-            sb.Append("  Ref: ").Append(Clean(c.Standard)).Append(c.Clause is { Length: > 0 } and not "—" ? " " + Clean(c.Clause) : string.Empty).Append(" — ").AppendLine(Clean(c.Title));
+        if (sheet.Inputs.Count == 0)
+        {
+            sb.Append("  ").AppendLine(CalcSheetStandard.Empty);
+        }
+        else
+        {
+            sb.AppendLine("  Symbol | Description | Value | Unit | Source | Valid range");
+
+            foreach (var i in sheet.Inputs)
+                sb.Append("  ").Append(Clean(i.Symbol)).Append(" | ").Append(Clean(i.Description)).Append(" | ").Append(Clean(i.Value)).Append(" | ").Append(Clean(i.Unit)).Append(" | ").Append(Clean(i.Source)).Append(" | ").AppendLine(Clean(i.ValidRange));
+        }
 
         sb.AppendLine();
-        sb.AppendLine("2. INPUTS");
-        sb.AppendLine("  Symbol | Description | Value | Unit | Source | Valid range");
+        sb.AppendLine(CalcSheetStandard.Assumptions);
 
-        foreach (var i in sheet.Inputs)
-            sb.Append("  ").Append(Clean(i.Symbol)).Append(" | ").Append(Clean(i.Description)).Append(" | ").Append(Clean(i.Value)).Append(" | ").Append(Clean(i.Unit)).Append(" | ").Append(Clean(i.Source)).Append(" | ").AppendLine(Clean(i.ValidRange));
-
-        sb.AppendLine();
-        sb.AppendLine("3. ASSUMPTIONS");
+        if (sheet.Assumptions.Count == 0)
+            sb.Append("  ").AppendLine(CalcSheetStandard.Empty);
 
         for (var n = 0; n < sheet.Assumptions.Count; n++)
         {
@@ -85,7 +93,10 @@ public static class CalcSheetTextRenderer
         }
 
         sb.AppendLine();
-        sb.AppendLine("4. WORKING");
+        sb.AppendLine(CalcSheetStandard.Working);
+
+        if (sheet.Working.Count == 0)
+            sb.Append("  ").AppendLine(CalcSheetStandard.Empty);
 
         foreach (var s in sheet.Working)
         {
@@ -106,21 +117,23 @@ public static class CalcSheetTextRenderer
         }
 
         sb.AppendLine();
-        sb.AppendLine("5. RESULTS");
+        sb.AppendLine(CalcSheetStandard.Results);
+
+        if (sheet.Outputs.Count == 0)
+            sb.Append("  ").AppendLine(CalcSheetStandard.Empty);
 
         foreach (var o in sheet.Outputs)
-            sb.Append("  ").Append(Clean(o.Symbol)).Append(" = ").Append(Clean(o.ValueText)).Append("    ").AppendLine(Clean(o.Description));
+            sb.Append("  ").Append(Clean(o.Symbol)).Append(" = ").Append(Clean(o.ValueText)).Append("    ").AppendLine(Clean(CalcSheetStandard.DescriptionOf(sheet, o)));
 
         sb.AppendLine();
-        sb.AppendLine("6. CHECKS (governing first)");
+        sb.AppendLine(CalcSheetStandard.Checks);
 
         if (sheet.Checks.Count == 0)
-            sb.AppendLine("  No pass/fail checks in this calculation.");
+            sb.Append("  ").AppendLine(CalcSheetStandard.Empty);
 
         foreach (var c in sheet.Checks)
         {
-            var u = double.IsInfinity(c.Utilisation) ? "—" : CalcValue.FormatNumber(c.Utilisation, 3);
-            sb.Append("  ").Append(c.Passed ? "PASS" : "FAIL").Append("  ").Append(Clean(c.Name)).Append(": ").Append(Clean(c.DemandText)).Append(" vs ").Append(Clean(c.CapacityText)).Append("  utilisation ").Append(u);
+            sb.Append("  ").Append(Clean(CalcSheetStandard.CheckLine(c)));
 
             if (c.Clause is { Length: > 0 })
                 sb.Append("  « ").Append(Clean(c.Clause));
@@ -129,19 +142,27 @@ public static class CalcSheetTextRenderer
         }
 
         sb.AppendLine();
-        sb.AppendLine("7. APPLICABILITY");
+        sb.AppendLine(CalcSheetStandard.Applicability);
 
         if (sheet.Warnings.Count == 0 && sheet.Blocks.Count == 0)
-            sb.AppendLine("  No warnings.");
+            sb.Append("  ").AppendLine(CalcSheetStandard.Empty);
 
         foreach (var b in sheet.Blocks)
-            sb.Append("  BLOCK   ").Append(Clean(b.RuleId)).Append(": ").AppendLine(Clean(b.Message));
+            sb.Append("  ").AppendLine(Clean(CalcSheetStandard.NoticeLine(b)));
 
         foreach (var w in sheet.Warnings)
-            sb.Append("  WARNING ").Append(Clean(w.RuleId)).Append(": ").AppendLine(Clean(w.Message));
+            sb.Append("  ").AppendLine(Clean(CalcSheetStandard.NoticeLine(w)));
+
+        if (sheet.DefaultNotices.Count > 0)
+        {
+            sb.Append("  ").Append(CalcSheetStandard.DefaultsHeading).AppendLine(":");
+
+            foreach (var d in sheet.DefaultNotices)
+                sb.Append("    ").AppendLine(Clean(CalcSheetStandard.DefaultLine(d)));
+        }
 
         sb.AppendLine();
-        sb.AppendLine("8. VERIFICATION");
+        sb.AppendLine(CalcSheetStandard.Verification);
         var f = sheet.Footer;
         sb.Append("  Template: ").AppendLine(Clean(f.TemplateReference));
         sb.Append("  Content hash: ").AppendLine(Clean(f.ContentHash));
@@ -154,6 +175,18 @@ public static class CalcSheetTextRenderer
 
         if (f.FeatureNote is { Length: > 0 })
             sb.Append("  Optional feature: ").AppendLine(Clean(f.FeatureNote));
+
+        sb.AppendLine();
+        sb.AppendLine(CalcSheetStandard.References);
+
+        if (sheet.ClauseRefs.Count == 0)
+            sb.Append("  ").AppendLine(CalcSheetStandard.Empty);
+
+        for (var n = 0; n < sheet.ClauseRefs.Count; n++)
+        {
+            var c = sheet.ClauseRefs[n];
+            sb.Append(CultureInfo.InvariantCulture, $"  {n + 1}. ").Append(Clean(c.Standard)).Append(c.Clause is { Length: > 0 } and not "—" ? " " + Clean(c.Clause) : string.Empty).Append(" — ").AppendLine(Clean(c.Title));
+        }
 
         return sb.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
     }

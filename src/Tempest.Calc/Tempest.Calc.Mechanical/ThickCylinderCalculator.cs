@@ -9,7 +9,7 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
     public const string Id = "mech.thick-cylinder";
 
     public CalcTemplate Template { get; } = new(
-        Id, "2.1.0", CalcDiscipline.Mechanical, "Thick-walled cylinder stresses (Lamé)",
+        Id, "2.1.1", CalcDiscipline.Mechanical, "Thick-walled cylinder (Lamé)",
         "Radial, hoop and axial stresses at the bore and the outer surface of a thick-walled cylinder under internal and external pressure, the von Mises and Tresca equivalents, utilisation against an allowable, and the thin-wall estimate for comparison.",
         "Lamé constants from the bore and outside pressures: A = (a² p_i − b² p_o)/(b² − a²); B = a² b² (p_i − p_o)/(b² − a²).\nRadial and hoop stress at radius r: σ_r = A − B/r²; σ_θ = A + B/r².\nAxial stress, closed or open ends: σ_z = A (closed); σ_z = 0 (open).\nEquivalent stresses from the three principal stresses: von Mises; Tresca = the largest principal difference.",
         [
@@ -51,7 +51,7 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
                 [new CalcExpectedValue("sigma_vm_a", 116.67, "MPa", 5e-5), new CalcExpectedValue("sigma_vm_b", 33.333, "MPa", 5e-5), new CalcExpectedValue("u", 0.58333, "", 5e-5), new CalcExpectedValue("sigma_t_a", 83.333, "MPa", 5e-5), new CalcExpectedValue("sigma_z", 0, "MPa", 1e-9), new CalcExpectedValue("sigma_thin", 75, "MPa", 5e-5)]),
         ],
         DiagramKey: "thick-walled-cylinder",
-        Category: "Pressure Systems");
+        Category: "Vessels");
 
     public void Run(CalcRunContext c)
     {

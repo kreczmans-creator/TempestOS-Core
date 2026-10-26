@@ -19,7 +19,7 @@ public sealed class BearingLifeCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Mechanical, "Rolling bearing life (ISO 281)",
+        Id, "1.2.0", CalcDiscipline.Mechanical, "Rolling bearing life (ISO 281)",
         "The basic and modified rating life of a rolling bearing under a steady load or a duty cycle, at a chosen reliability, against a required life; and the static safety factor against a required value.",
         "Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 0 for a single-row radial ball bearing), else P = X·F_r + Y·F_a (Y = 0 is refused when an axial load acts above e_lim)\n" +
         "Duty cycle: P_eq = (Σ P_i^p·U_i / Σ U_i)^(1/p)\n" +
@@ -95,11 +95,11 @@ public sealed class BearingLifeCalculator : ICalcCalculator
         Category: "Bearings",
         OutputPorts:
         [
-            new CalcOutputPort("L_nmh", "h", "Modified rating life in hours"),
-            new CalcOutputPort("L_10h", "h", "Basic rating life in hours"),
-            new CalcOutputPort("P", "kN", "Equivalent dynamic load"),
-            new CalcOutputPort("P_0", "kN", "Equivalent static load"),
-            new CalcOutputPort("s_0", "", "Static safety factor"),
+            new CalcOutputPort("L_nmh", "h", "Modified rating life in hours", "bearing.life_modified"),
+            new CalcOutputPort("L_10h", "h", "Basic rating life in hours", "bearing.life_basic"),
+            new CalcOutputPort("P", "kN", "Equivalent dynamic load", "bearing.load_dynamic"),
+            new CalcOutputPort("P_0", "kN", "Equivalent static load", "bearing.load_static"),
+            new CalcOutputPort("s_0", "", "Static safety factor", "bearing.safety_static"),
         ],
         RecordKinds:
         [

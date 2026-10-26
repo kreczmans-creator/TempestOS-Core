@@ -58,7 +58,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.1", CalcDiscipline.Mechanical, "Snap-fits: cantilever, annular, torsion",
+        Id, "1.3.2", CalcDiscipline.Mechanical, "Snap-fits",
         "A plastic snap-fit joint of one of five forms: a cantilever lug of constant section, of tapered thickness or of tapered width, an annular (closed ring) snap, or a torsion bar. The strain at the critical section against the permissible strain of the plastic (one-time or repeated joining), the deflection force with the secant modulus, the assembly force (inclined entry face) and the separation force (return face) with Coulomb friction, and whether the joint is self-locking.",
         "Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (constant section; the design guides print the rounded 0.67); a linear taper of the thickness to r_h = h_tip/h gives K_y = 2·J/φ_max with J = [2r_h − r_h²/2 − ln r_h − 3/2]/(1 − r_h)³ and φ_max = 1 for r_h ≥ 1/2 (otherwise the strain peaks inside the beam at t = (2a − 1)/a, a = 1 − r_h, with φ_max = (1 − t)/(1 − a·t)²); a linear taper of the width to r_b gives K_y = 2·J with J = [1/2 − 2r_b + 3r_b²/2 − r_b²·ln r_b]/(1 − r_b)³\n" +
         "Strain and force of the cantilever: ε = y·h/(K_y·l²); P = b·h²·Es·ε/(6·l·φ_max) = (b·h²/6)·(Es·ε/l) at the root of a constant section; Es is the secant modulus at ε (typed, or interpolated from the W3 points Es(ε))\n" +
@@ -166,7 +166,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
                 [Q("l", 15, "mm"), Q("h", 2, "mm"), Q("b", 6, "mm"), Q("y", 1, "mm"), Q("Es", 2400, "MPa"), CalcInputValue.Of("eps_perm_once", 0.04), CalcInputValue.Of("mu", 0.3), Q("alpha", 30, "deg"), Q("alpha_r", 60, "deg"), CalcInputValue.Of("n_latch", 4), Q("F_req", 100, "N")],
                 [new CalcExpectedValue("retention_force", 36.096413577352465, "N", 1e-9), new CalcExpectedValue("F_hold", 144.38565430940986, "N", 1e-9), new CalcExpectedValue("u_hold", 0.692589582242748, "", 1e-9)]),
         ],
-        Category: "Joining",
+        Category: "Connections",
         OutputPorts:
         [
             new CalcOutputPort("assembly_force", "N", "Force to push the parts together over the entry face (snap.assembly_force)"),

@@ -25,7 +25,7 @@ public sealed class SealedSystemCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.BuildingServices, "Sealed heating system: emitters and expansion vessel",
+        Id, "1.4.0", CalcDiscipline.BuildingServices, "Sealed heating system",
         "A closed LTHW system below 100 °C: the catalogue output (at ΔT 50 K) each room's emitter needs at the design flow, return and room temperatures, checked against the selected emitters; and the minimum expansion vessel for the system volume, fill and maximum temperatures, static head and pressures.",
         "Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_f − t_r)/ln((t_f − t_i)/(t_r − t_i))\n" +
         "Output at design: Φ = Φ50·(ΔT/50)^n; required catalogue output Φ50 = Φ_req/(ΔT/50)^n\n" +
@@ -91,12 +91,12 @@ public sealed class SealedSystemCalculator : ICalcCalculator
         Category: "Hydraulics",
         OutputPorts:
         [
-            new CalcOutputPort("Phi_tot", "W", "Total heat required by the rooms (→ B1 flow)"),
-            new CalcOutputPort("V_s", "L", "System water volume"),
-            new CalcOutputPort("V_e", "L", "Minimum expansion vessel volume"),
-            new CalcOutputPort("dT", "K", "Emitter mean temperature difference"),
-            new CalcOutputPort("dT_fr", "K", "Flow-to-return temperature difference of the loop (→ B1 heat-load flow)"),
-            new CalcOutputPort("t_m", "degC", "Mean water temperature of the loop, (t_f + t_r)/2 (→ B1 fluid temperature)"),
+            new CalcOutputPort("Phi_tot", "W", "Total heat required by the rooms (→ pipe-pump Phi_load)", "heating.heat_required"),
+            new CalcOutputPort("V_s", "L", "System water volume", "heating.volume_system"),
+            new CalcOutputPort("V_e", "L", "Minimum expansion vessel volume", "heating.volume_expansion_min"),
+            new CalcOutputPort("dT", "K", "Emitter mean temperature difference", "heating.temperature_difference_emitter"),
+            new CalcOutputPort("dT_fr", "K", "Flow-to-return temperature difference of the loop (→ pipe-pump dT_load)", "heating.temperature_difference_loop"),
+            new CalcOutputPort("t_m", "degC", "Mean water temperature of the loop, (t_f + t_r)/2 (→ pipe-pump T)", "heating.temperature_mean"),
         ],
         RecordKinds:
         [

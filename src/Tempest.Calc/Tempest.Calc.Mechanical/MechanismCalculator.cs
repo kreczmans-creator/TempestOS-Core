@@ -31,7 +31,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
     private const string Source = "Vector-loop closed form (Freudenstein / law of cosines)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.1", CalcDiscipline.Mechanical, "Mechanism kinematics: four-bar, slider-crank, cam",
+        Id, "1.2.2", CalcDiscipline.Mechanical, "Mechanism kinematics",
         "A single-degree-of-freedom planar mechanism driven at constant speed: a four-bar linkage or an offset slider-crank (both circuits, position, velocity and acceleration over a sweep of the input angle, Grashof class, transmission angle against a minimum, toggle and dead-centre positions, loop-closure residual, input torque by virtual work), or a cam with a translating follower. Rigid links, no clearance, no friction.",
         "Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|, cos γ = (c² + ℓ² − b²)/(2cℓ), θ₄ = φ ∓ γ (φ the direction O₄→A; open: −, crossed: +); θ₃ from B − A\n" +
         "Four-bar velocity and acceleration: differentiated loop, 2×2 system with det = b·c·sin(θ₃ − θ₄); ω₃ = ω₂·a·sin(θ₄ − θ₂)/(b·sin(θ₃ − θ₄)), ω₄ = ω₂·a·sin(θ₃ − θ₂)/(c·sin(θ₃ − θ₄)); α from the second derivative at constant ω₂\n" +

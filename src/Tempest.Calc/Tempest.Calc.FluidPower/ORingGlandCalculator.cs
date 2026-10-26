@@ -344,7 +344,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
                 [new CalcExpectedValue("stretch", 5.8, "%", 1e-9), new CalcExpectedValue("u_stretch", 0.9666666667, "", 1e-9)],
                 CalcReferenceStatus.Unconfirmed),
         ],
-        Category: "Hydraulics",
+        Category: "Seals",
         OutputPorts:
         [
             new CalcOutputPort("squeeze_min", "%", "Smallest squeeze over tolerance, temperature and swell (cold end)"),

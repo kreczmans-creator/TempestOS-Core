@@ -806,7 +806,7 @@ public sealed class BlueRoundTests
         var sheet = (await host.Service.RunAsync(calc.Id))!.SheetText;
 
         Assert.Equal(1, CountOf(sheet, "not taken from a reference record"));
-        Assert.Contains("Tabulated values not taken from a reference record: k_1, ratings (Test factors).", sheet, StringComparison.Ordinal);
+        Assert.Contains("records: tabulated values not taken from a reference record are k_1, ratings (Test factors).", sheet, StringComparison.Ordinal);
     }
 
     private static int CountOf(string text, string part)
