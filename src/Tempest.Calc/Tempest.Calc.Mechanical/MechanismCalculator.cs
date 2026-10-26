@@ -31,7 +31,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
     private const string Source = "Vector-loop closed form (Freudenstein / law of cosines)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.1", CalcDiscipline.Mechanical, "Mechanism kinematics: four-bar, slider-crank, cam",
+        Id, "1.2.2", CalcDiscipline.Mechanical, "Mechanism kinematics",
         "A single-degree-of-freedom planar mechanism driven at constant speed: a four-bar linkage or an offset slider-crank (both circuits, position, velocity and acceleration over a sweep of the input angle, Grashof class, transmission angle against a minimum, toggle and dead-centre positions, loop-closure residual, input torque by virtual work), or a cam with a translating follower. Rigid links, no clearance, no friction.",
         "Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|, cos γ = (c² + ℓ² − b²)/(2cℓ), θ₄ = φ ∓ γ (φ the direction O₄→A; open: −, crossed: +); θ₃ from B − A\n" +
         "Four-bar velocity and acceleration: differentiated loop, 2×2 system with det = b·c·sin(θ₃ − θ₄); ω₃ = ω₂·a·sin(θ₄ − θ₂)/(b·sin(θ₃ − θ₄)), ω₄ = ω₂·a·sin(θ₃ − θ₂)/(c·sin(θ₃ − θ₄)); α from the second derivative at constant ω₂\n" +
@@ -121,12 +121,12 @@ public sealed partial class MechanismCalculator : ICalcCalculator
     {
         var rules = new List<CalcApplicabilityRule>
         {
-            new("missing", "An input the chosen mechanism needs is blank.", CalcNoticeSeverity.Block),
-            new("geometry", "The mechanism cannot be assembled at any angle of the swept range, or the links are not a valid mechanism.", CalcNoticeSeverity.Block),
-            new("reach", "Some rows of the sweep cannot be assembled (the crank cannot turn fully) or sit at a toggle with no defined velocity: they are left out of the table.", CalcNoticeSeverity.Warning),
-            new("limit", "The requested sweep reaches an assembly limit (a toggle, or the rod perpendicular to the slide line) or passes a change point: the sweep is cut where the mechanism cannot be assembled, and when the limit is inside it the speed, acceleration, torque and force peaks, which are unbounded at constant input speed, and the ports are not reported.", CalcNoticeSeverity.Warning),
-            new("closure", "The loop-closure residual reached 1e-9 mm.", CalcNoticeSeverity.Warning),
-            new("grashof", "The linkage is not a Grashof crank (the input link cannot turn through 360°) but the swept range is 360° or more.", CalcNoticeSeverity.Warning),
+            new("missing", "An input the chosen mechanism needs is blank.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new("geometry", "The mechanism cannot be assembled at any angle of the swept range, or the links are not a valid mechanism.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new("reach", "Some rows of the sweep cannot be assembled (the crank cannot turn fully) or sit at a toggle with no defined velocity: they are left out of the table.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new("limit", "The requested sweep reaches an assembly limit (a toggle, or the rod perpendicular to the slide line) or passes a change point: the sweep is cut where the mechanism cannot be assembled, and when the limit is inside it the speed, acceleration, torque and force peaks, which are unbounded at constant input speed, and the ports are not reported.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new("closure", "The loop-closure residual reached 1e-9 mm.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new("grashof", "The linkage is not a Grashof crank (the input link cannot turn through 360°) but the swept range is 360° or more.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         };
 
         AddCamRules(rules);
@@ -139,6 +139,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_mu", "u_phi", "u_rho");
         var mode = c.InputText("mode");
 
         c.Input("steps");
@@ -204,7 +205,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
     private static void Scalar(CalcRunContext c, string symbol, string formula, string substitution, double value, string unit, string description, string? clause = null)
     {
         c.Record(symbol, formula, substitution, unit.Length == 0 ? new ScalarValue(value) : ScalarValue.Of(value, unit), description, clause);
-        c.Output(symbol, description);
+        c.Output(symbol, description, noiseProne: true);
     }
 
     private static double Sgn(double x) => x > 0 ? 1 : x < 0 ? -1 : 0;

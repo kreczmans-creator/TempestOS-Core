@@ -4,6 +4,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
 using Tempest.Calc.Library;
 using Tempest.Calc.Sheets;
+using Tempest.Calc.Verification;
 using Tempest.Desktop.CalcSheets;
 
 namespace Tempest.Desktop.Tests.CalcSheets;
@@ -236,7 +237,7 @@ public sealed class CalcSheetViewTests
         Assert.NotNull(view.UnitPicker("F"));
         Assert.NotNull(view.LastRun);
         Assert.False(view.IsStale);
-        Assert.StartsWith("PASS — Direct stress: utilisation 0.375", view.GoverningText, StringComparison.Ordinal);
+        Assert.StartsWith("PASS — Direct stress: utilisation 0.38", view.GoverningText, StringComparison.Ordinal);
     }
 
     [AvaloniaFact]
@@ -266,12 +267,12 @@ public sealed class CalcSheetViewTests
         var (view, _) = NewView();
         view.SelectTemplate("test.desktop-stress");
         view.SetField("F", text: "20000");
-        Assert.Contains("F (Axial load) is outside its usual range", view.FieldProblem("F"), StringComparison.Ordinal);
+        Assert.Contains("F: 20000 kN is outside the usual range", view.FieldProblem("F"), StringComparison.Ordinal);
         Assert.NotNull(view.LastRun);
         Assert.False(view.LastRun!.IsBlocked);
 
         view.SetField("A", text: "0");
-        Assert.Contains("A (Cross-section area) must be at least", view.FieldProblem("A"), StringComparison.Ordinal);
+        Assert.Contains("A: enter at least", view.FieldProblem("A"), StringComparison.Ordinal);
         Assert.True(view.LastRun!.IsBlocked);
         Assert.StartsWith("Blocked —", view.GoverningText, StringComparison.Ordinal);
     }
@@ -282,7 +283,7 @@ public sealed class CalcSheetViewTests
         var (view, _) = NewView();
         view.SelectTemplate("test.desktop-stress");
         view.SetField("F", text: "twelve");
-        Assert.Contains("F must be a finite number", view.FieldProblem("F"), StringComparison.Ordinal);
+        Assert.Contains("F: enter a finite number.", view.FieldProblem("F"), StringComparison.Ordinal);
     }
 
     [AvaloniaFact]
@@ -390,6 +391,77 @@ public sealed class CalcSheetViewTests
         Assert.Equal("ISSUED", watermark.Text);
         Assert.Contains(view.GetLogicalDescendants().OfType<Button>(), b => AutomationProperties.GetName(b) == CalcSheetView.ReviseCaption && b.IsVisible);
         Assert.DoesNotContain(view.GetLogicalDescendants().OfType<Button>(), b => AutomationProperties.GetName(b) == CalcSheetView.IssueCaption && b.IsVisible);
+    }
+
+    [AvaloniaFact]
+    public void TheForm_ShowsEachResultCheckAndTheBanner_AsTheSheetDoes()
+    {
+        // C-2 fix (H3): one formatter. 40.05 kN on 200 mm² is 200.25 MPa against 160, u = 1.2516: the sheet prints 1.26 (rounded up, a failing check never reads 1.25) and so does the form.
+        var (view, catalogue) = NewView();
+        view.SelectTemplate("test.desktop-stress");
+        view.SetField("F", text: "40.05");
+        var run = view.LastRun!;
+
+        Assert.False(run.Passed);
+        Assert.Equal([.. run.Outputs.Select(o => (o.Symbol, o.ValueText))], [.. view.ShownResults]);
+        Assert.Contains(("sigma", "200.3 MPa"), view.ShownResults);
+        Assert.Contains(("u", "1.26"), view.ShownResults);
+        Assert.Equal(CalcSheetStandard.GoverningBanner(run.Governing!), view.GoverningText);
+        Assert.Equal("FAIL — Direct stress: utilisation 1.26", view.GoverningText);
+        Assert.Equal([.. run.Checks.OrderByDescending(c => c.Utilisation).Select(CalcSheetStandard.FormCheckText)], [.. view.ShownChecks]);
+        Assert.Contains("(u = 1.26)", Assert.Single(view.ShownChecks), StringComparison.Ordinal);
+
+        // The text sheet prints the same numbers.
+        var entry = catalogue.Get("test.desktop-stress");
+        var sheet = CalcSheetBuilder.Build(entry.Template, view.ReadForm(), run, GoldenFiles.FixedHeader(entry.Template.Id, entry.Template.Title), GoldenFiles.FixedFooter(entry.Template, 1, 1));
+        var text = CalcSheetTextRenderer.Render(sheet);
+
+        foreach (var (symbol, shown) in view.ShownResults)
+            Assert.Contains($"{symbol} = {shown}", text, StringComparison.Ordinal);
+
+        Assert.Contains("utilisation 1.26", text, StringComparison.Ordinal);
+    }
+
+    [AvaloniaFact]
+    public void AnInstanceSavedUnderAnOldInputSymbol_OpensOnTheCurrentOne()
+    {
+        // C-2 fix (L2): the form canonicalises the saved inputs, as every other reader does.
+        var catalogue = new CalcCatalogue([new AliasedWorksheetCalculator()]);
+        var entry = catalogue.Get("test.desktop-aliased");
+        var view = new CalcSheetView();
+        view.ShowCatalogue(catalogue.Current());
+
+        var saved = new CalcInstance(
+            Guid.NewGuid(), entry.Reference, entry.ContentHash, null, "CALC-OLD", "A",
+            [CalcInputValue.Quantity("F_old", 33, "kN", CalcProvenance.Drawing("D1")), CalcInputValue.Quantity("A", 200, "mm^2", CalcProvenance.Drawing("D1")), CalcInputValue.Quantity("sigma_allow", 160, "MPa", CalcProvenance.Specification("S1")), CalcInputValue.Choice("grade", "S275", CalcProvenance.Specification("S1"))],
+            [], [], [], [], CalcInstanceStatus.Draft, null, null, "s.k", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch);
+
+        view.ShowTemplate(entry, saved);
+
+        Assert.Null(view.FieldControl("F_old"));
+        Assert.Equal("33", ((TextBox)view.FieldControl("F")!).Text);
+        Assert.Equal(33, view.ReadForm().Find("F")!.Number);
+        Assert.Null(view.ReadForm().Find("F_old"));
+    }
+
+    [AvaloniaFact]
+    public void AnInstanceSavedUnderBothSymbolsWithDifferentValues_IsNotResolvedSilently()
+    {
+        var catalogue = new CalcCatalogue([new AliasedWorksheetCalculator()]);
+        var entry = catalogue.Get("test.desktop-aliased");
+        var view = new CalcSheetView();
+        view.ShowCatalogue(catalogue.Current());
+        var saved = new CalcInstance(
+            Guid.NewGuid(), entry.Reference, entry.ContentHash, null, "CALC-TWICE", "A",
+            [CalcInputValue.Quantity("F_old", 99, "kN"), CalcInputValue.Quantity("F", 12, "kN"), CalcInputValue.Quantity("A", 200, "mm^2"), CalcInputValue.Quantity("sigma_allow", 160, "MPa"), CalcInputValue.Choice("grade", "S275")],
+            [], [], [], [], CalcInstanceStatus.Draft, null, null, "s.k", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch);
+
+        // The form opens (it is only a view) with the current symbol's own value, and the run of the saved inputs is blocked with both named.
+        view.ShowTemplate(entry, saved);
+        Assert.Equal("12", ((TextBox)view.FieldControl("F")!).Text);
+        var run = CalcRunner.Run(entry.Calculator, new CalcInputSet(saved.Inputs));
+        Assert.True(run.IsBlocked);
+        Assert.Contains("F_old", run.Blocks[0].Message, StringComparison.Ordinal);
     }
 
     [AvaloniaFact]

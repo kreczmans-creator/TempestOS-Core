@@ -115,7 +115,7 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
             DocumentTemplate.AddGap(state, 6f);
         }
 
-        DocumentTemplate.AddHeading(state, measure, "1. Scope and method");
+        DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.ScopeAndMethod);
 
         if (sheet.Scope.Length > 0)
             Line(state, measure, sheet.Scope);
@@ -139,9 +139,15 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
         DocumentTemplate.AddGap(state, 6f);
         AddDiagram(state, measure, sheet);
 
-        if (sheet.Inputs.Count > 0)
+        DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Inputs);
+
+        if (sheet.Inputs.Count == 0)
         {
-            DocumentTemplate.AddHeading(state, measure, "2. Inputs");
+            Line(state, measure, CalcSheetStandard.Empty);
+            DocumentTemplate.AddGap(state, 6f);
+        }
+        else
+        {
             DocumentTemplate.AddTable(
                 state, measure, ["Symbol", "Description", "Value", "Unit", "Source", "Valid range"],
                 [W(0.12f), W(0.30f), W(0.12f), W(0.08f), W(0.22f), W(0.16f)],
@@ -163,23 +169,24 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
             DocumentTemplate.AddGap(state, 6f);
         }
 
-        if (sheet.Assumptions.Count > 0)
+        DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Assumptions);
+
+        if (sheet.Assumptions.Count == 0)
+            Line(state, measure, CalcSheetStandard.Empty);
+
+        for (var n = 0; n < sheet.Assumptions.Count; n++)
         {
-            DocumentTemplate.AddHeading(state, measure, "3. Assumptions");
-
-            for (var n = 0; n < sheet.Assumptions.Count; n++)
-            {
-                var a = sheet.Assumptions[n];
-                Line(state, measure, $"A{n + 1}. {a.Statement}{(a.Basis is { Length: > 0 } ? $" ({a.Basis})" : string.Empty)}", symbols: true);
-            }
-
-            DocumentTemplate.AddGap(state, 6f);
+            var a = sheet.Assumptions[n];
+            Line(state, measure, $"A{n + 1}. {a.Statement}{(a.Basis is { Length: > 0 } ? $" ({a.Basis})" : string.Empty)}", symbols: true);
         }
 
-        if (sheet.Working.Count > 0)
-        {
-            DocumentTemplate.AddHeading(state, measure, "4. Working");
+        DocumentTemplate.AddGap(state, 6f);
+        DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Working);
 
+        if (sheet.Working.Count == 0)
+            Line(state, measure, CalcSheetStandard.Empty);
+
+        {
             foreach (var s in sheet.Working)
             {
                 DocumentTemplate.EnsureSpace(state, DocumentTemplate.BodySize * DocumentTemplate.LineLeading * 3);
@@ -204,22 +211,27 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
             DocumentTemplate.AddGap(state, 6f);
         }
 
-        if (sheet.Outputs.Count > 0)
+        DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Results);
+
+        if (sheet.Outputs.Count == 0)
         {
-            DocumentTemplate.AddHeading(state, measure, "5. Results");
+            Line(state, measure, CalcSheetStandard.Empty);
+        }
+        else
+        {
             DocumentTemplate.AddTable(
                 state, measure, ["Symbol", "Value", "Description"],
                 [W(0.18f), W(0.27f), W(0.55f)],
-                [.. sheet.Outputs.Select(o => new[] { T(o.Symbol), T(o.ValueText), T(o.Description) })],
+                [.. sheet.Outputs.Select(o => new[] { T(o.Symbol), T(o.ValueText), T(CalcSheetStandard.DescriptionOf(sheet, o)) })],
                 [SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Left], [true, true, true]);
-            DocumentTemplate.AddGap(state, 6f);
         }
 
-        DocumentTemplate.AddHeading(state, measure, "6. Checks (governing first)");
+        DocumentTemplate.AddGap(state, 6f);
+        DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Checks);
 
         if (sheet.Checks.Count == 0)
         {
-            Line(state, measure, "No pass/fail checks in this calculation.");
+            Line(state, measure, CalcSheetStandard.Empty);
         }
         else
         {
@@ -229,26 +241,35 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
                 [.. sheet.Checks.Select(c => new[]
                 {
                     c.Passed ? "PASS" : "FAIL", T(c.Name), T(c.DemandText), T(c.CapacityText),
-                    double.IsInfinity(c.Utilisation) ? "—" : Tempest.Calc.Engine.Values.CalcValue.FormatNumber(c.Utilisation, 3),
+                    c.UtilisationText,
                     c.Clause is { Length: > 0 } clause ? T(CalcBibliography.Format(references.Cite(clause))) : string.Empty,
                 })],
                 [SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Right, SKTextAlign.Right, SKTextAlign.Left], [false, true, true, true, false, false]);
         }
 
         DocumentTemplate.AddGap(state, 6f);
-        DocumentTemplate.AddHeading(state, measure, "7. Applicability");
+        DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Applicability);
 
         if (sheet.Warnings.Count == 0 && sheet.Blocks.Count == 0)
-            Line(state, measure, "No warnings.");
+            Line(state, measure, CalcSheetStandard.Empty);
 
         foreach (var b in sheet.Blocks)
-            Line(state, measure, $"BLOCK — {b.RuleId}: {b.Message}", color: DocumentTemplate.Ink900, symbols: true);
+            Line(state, measure, CalcSheetStandard.NoticeLine(b), color: DocumentTemplate.Ink900, symbols: true);
 
         foreach (var w in sheet.Warnings)
-            Line(state, measure, $"WARNING — {w.RuleId}: {w.Message}", symbols: true);
+            Line(state, measure, CalcSheetStandard.NoticeLine(w), symbols: true);
+
+        if (sheet.DefaultNotices.Count > 0)
+        {
+            DocumentTemplate.AddGap(state, 2f);
+            Line(state, measure, $"{CalcSheetStandard.DefaultsHeading}:", DocumentTemplate.CaptionSize + 1f);
+
+            foreach (var d in sheet.DefaultNotices)
+                Line(state, measure, $"    {CalcSheetStandard.DefaultLine(d)}", DocumentTemplate.CaptionSize + 1f, symbols: true);
+        }
 
         DocumentTemplate.AddGap(state, 6f);
-        DocumentTemplate.AddHeading(state, measure, "8. Verification");
+        DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Verification);
         var f = sheet.Footer;
         Line(state, measure, $"Template {T(f.TemplateReference, 120)}    Content hash {T(f.ContentHash, 80)}    Engine {T(f.EngineVersion, 40)}", DocumentTemplate.CaptionSize, DocumentFontRole.Mono);
         Line(state, measure, $"Known-answer cases passed {f.KnownAnswerPassed}/{f.KnownAnswerTotal}    Test run {Date(f.TestRunAt, true)}    {T(f.ApplicationVersion, 80)}", DocumentTemplate.CaptionSize, DocumentFontRole.Mono);
@@ -256,14 +277,14 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
         if (f.FeatureNote is { Length: > 0 })
             Line(state, measure, $"Optional feature: {T(f.FeatureNote, 300)}", DocumentTemplate.CaptionSize, DocumentFontRole.Mono);
 
-        if (references.References.Count > 0)
-        {
-            DocumentTemplate.AddGap(state, 6f);
-            DocumentTemplate.AddHeading(state, measure, "9. References");
+        DocumentTemplate.AddGap(state, 6f);
+        DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.References);
 
-            foreach (var r in references.References)
-                Line(state, measure, $"{r.Number}. {r.Entry}", DocumentTemplate.CaptionSize + 1f);
-        }
+        if (references.References.Count == 0)
+            Line(state, measure, CalcSheetStandard.Empty);
+
+        foreach (var r in references.References)
+            Line(state, measure, $"{r.Number}. {r.Entry}", DocumentTemplate.CaptionSize + 1f);
     }
 
     private static float W(float fraction) => DocumentTemplate.ContentWidth * fraction;

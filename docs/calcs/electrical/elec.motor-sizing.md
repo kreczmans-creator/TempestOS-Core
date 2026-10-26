@@ -1,4 +1,4 @@
-# E1 — Motor and actuator sizing (`elec.motor-sizing@1.9.0`)
+# E1 — Motor and actuator sizing (`elec.motor-sizing@1.10.0`)
 
 **In plain terms.** A motor must give enough torque to accelerate the load and overcome friction and gravity, at the speed the move needs. The worksheet turns the motion profile and the mechanics (screw, belt, rack or gearbox) into the torque at the motor shaft for each part of the cycle. The peak torque must stay within the motor's short-term rating, the root-mean-square torque within its continuous rating so it does not overheat, and the load's inertia should not be too large compared with the motor's for stable control.
 
@@ -17,6 +17,8 @@
 **Changes in 1.8.0 (elec.motor-sizing N2).** The default design-torque basis "Load peak (T_pk)" is now `T_design = max(|T_pk|, |T_dec|)` in point-to-point duty (continuous duty has no deceleration and keeps `T_pk`). On an overhauling drive the braking torque is the larger and is what a coupling downstream carries: 200 kg at −20°, `T_pk` 4.019 N·m, `T_dec` −5.740 N·m, `T_design` 4.019 → 5.740 N·m. The choice keeps its stored name so saved sheets still open; where `|T_dec| ≤ T_pk` (an uphill or level move) the value is unchanged.
 
 **Changes in 1.9.0 (elec.motor-sizing-03, -04, -R1, -R2).** With the sine (S-curve) profile `P_pk` and `P_brake` are the maxima of `T(t)·ω(t)` over the acceleration and the deceleration, found by a scan: the torque `T_load + T_acc sin x` peaks at mid-acceleration where the speed is half the top speed, so the product of the two peaks overstated the power (ka-ball-screw with the sine profile: 3771.3 W before, 2457.9 W now; braking 3607.9 W before, 2335.3 W now). The trapezoid keeps `T_pk·ω_pk` (exact). A blank `p_screw` raises the warning `p_screw` (the 10 mm default is used). An inclined axis (`theta` ≠ 0) or a process force (`F_p` ≠ 0) raises `return-move`: the cycle holds one move and one dwell and the return stroke is not modelled. A peak speed above 70 % of `n_max` raises `peak-at-speed`: `T_peak` is compared as the stall peak torque, but a motor's peak torque falls toward its top speed, so check the torque-speed curve at `n_pk`. Chain additions in the same version (chain.drive-train-03, chain.motor-circuit-04): the new output `n_mean`, the mean motor speed over the cycle, `ω_pk·(t_move − t_acc)/t_cycle` for either profile (ka-ball-screw: 3000 rpm against the peak 9000 rpm; the steady speed in continuous duty), is the speed a bearing's life in hours is counted at; and a rated speed `n_rated` on a point-to-point sheet now gives the rated shaft power `P_rated = T_rated·n_rated` (it was ignored, with the notice `rated-speed-ignored`, which is removed), so a supply sized for the motor, not only for the duty, can use it.
+
+**Changes in 1.10.0 (C-2 fix, M1).** `speed-above-rated`: in continuous duty with the candidate motor's rated speed `n_rated` given, the motor speed `n_pk` above `n_rated` now fails the check "Motor speed against the rated speed" (relative tolerance 1·10⁻⁶ so a speed that only rounds above the nameplate does not fail) and shows `u_rated_speed = n_pk/n_rated`; it only warned before. Every other value is unchanged.
 
 **Test cases.** Ball-screw slide and geared index table, both analytic (Confirmed; P_rms 784.142 W and 101.652 W, the first checked by numerical integration); continuous pump duty through a 4:1 gearbox at 700 rpm with a 2 s run-up (analytic, Confirmed): ω = 293.2153 rad/s, T_load = 0.833333 N·m, T_pk = 1.008448 N·m, T_rms = 0.833333 N·m, P_cont = 244.3461 W, u_peak = 0.210093, u_rms = 0.520833, u_speed = 0.8. Output ports are declared (they were derived before).
 <!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
@@ -38,6 +40,6 @@ T_acc = 0.00044072 kg·m² × 5654.9 rad/s² = 2.4922 N·m
 T_pk = 2.4922 N·m + 0.08671 N·m = 2.5789 N·m
 T_dec = −2.4922 N·m + 0.08671 N·m = -2.4055 N·m
 … 17 more step(s) on the sheet
-Governing: PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.90012 vs u_rms ≤ 1  utilisation 0.9
+Governing: PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.90 vs u_rms ≤ 1  utilisation 0.90
 ```
 <!-- hand-arithmetic:end -->

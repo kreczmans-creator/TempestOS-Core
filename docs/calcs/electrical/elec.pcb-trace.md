@@ -1,4 +1,4 @@
-# E7 — PCB trace width, legacy IPC-2221 curve-fit (`elec.pcb-trace@1.1.0`)
+# E7 — PCB trace width, legacy IPC-2221 curve-fit (`elec.pcb-trace@1.1.1`)
 
 **In plain terms.** A copper track on a circuit board heats up when it carries current, and the thinner it is, the hotter it gets. The worksheet uses the old IPC-2221 curve to find the narrowest trace that carries a current without exceeding a chosen temperature rise, and then the resistance, voltage drop and heat of the trace as drawn.
 
@@ -33,6 +33,6 @@ rho_T = 0.01724 ohm·mm²/m × (1 + 0.00393 1/K × (45 degC − 20 degC)) = 0.01
 trace_R = 0.018934 ohm·mm²/m × 100 mm / 0.17501 mm² = 10.819 mohm
 vdrop = 5 A × 10.819 mohm = 54.095 mV
 trace_Ploss = (5 A)^2 × 10.819 mohm = 270.47 mW
-Governing: PASS  Trace width as drawn against the minimum for the rise: u_w = 0.36316 vs u_w ≤ 1  utilisation 0.363  « IPC-2221 §6 (legacy)
+Governing: PASS  Trace width as drawn against the minimum for the rise: u_w = 0.36 vs u_w ≤ 1  utilisation 0.36  « IPC-2221 §6 (legacy)
 ```
 <!-- hand-arithmetic:end -->

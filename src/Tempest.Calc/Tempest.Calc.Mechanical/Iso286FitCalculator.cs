@@ -12,7 +12,7 @@ public sealed class Iso286FitCalculator : ICalcCalculator
     public const string BearingBore = "rolling-bearing bore (deviations from the bearing record)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.5.0", CalcDiscipline.Mechanical, "ISO 286 limits and fits",
+        Id, "1.4.1", CalcDiscipline.Mechanical, "Limits and fits (ISO 286)",
         "Hole and shaft limits for a nominal size and tolerance classes, the resulting fit (clearance, transition or interference) and its extreme values, from the ISO 286-1 formulae.",
         "Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^(1/3) + 0.001·D (µm).\nWidth of the tolerance band for the grade: ITn = multiplier × i.\nFundamental deviations by letter from the published formulae, and hole deviations by the general rule: EI = −es (A–H); ES = −ei + Δ (K–ZC).\nLimits of size of the hole and the shaft: limit = nominal + deviation.\nFit extremes, the largest and smallest clearance (negative is interference): c_max = ES − ei; c_min = EI − es.\nRolling-bearing bore mode: a bearing bore is not an ISO 286 hole; it has its own tolerance (ISO 492) lying below nominal, so ES and EI are entered from the bearing record instead of being computed.",
         [
@@ -36,10 +36,10 @@ public sealed class Iso286FitCalculator : ICalcCalculator
             new CalcClauseRef("ISO 286-2:2010", "—", "Tables of standard tolerance classes and limit deviations (not reproduced)"),
         ],
         [
-            new CalcApplicabilityRule("bearing-bore", "A rolling-bearing bore needs ES_override and EI_override from the bearing record; it is not an H7 hole.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("large-size", "Nominal size above 500 mm uses the I = 0.004 D + 2.1 tolerance unit.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("interference-letter", "A fundamental deviation from p to zc is evaluated from the formula: the tabulated value can be several µm larger, so the maximum interference is understated; use the overrides where the table governs.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("fine-grade", "IT grades below IT5 are evaluated by geometric interpolation; check against the standard.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("bearing-bore", "A rolling-bearing bore needs ES_override and EI_override from the bearing record; it is not an H7 hole.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("large-size", "Nominal size above 500 mm uses the I = 0.004 D + 2.1 tolerance unit.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("interference-letter", "A fundamental deviation from p to zc is evaluated from the formula: the tabulated value can be several µm larger, so the maximum interference is understated; use the overrides where the table governs.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("fine-grade", "IT grades below IT5 are evaluated by geometric interpolation; check against the standard.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-h7g6-25", "25 mm H7/g6", new CalcReferenceSource("ISO 286-2:2010 (public excerpt), confirmed in Machinery's Handbook", "30th ed.", "25 mm H7: +21/0 µm; g6: −7/−20 µm; clearance 7…41 µm"),

@@ -55,9 +55,9 @@ public sealed class ThermalChainCalculator : ICalcCalculator
             new CalcClauseRef("Incropera & DeWitt, Fundamentals of Heat and Mass Transfer", "§3.1", "Thermal resistance in series"),
         ],
         [
-            new CalcApplicabilityRule("no-stages", "At least one thermal resistance stage is needed.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("zero-chain", "The total thermal resistance must be positive.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("limit", "The maximum source temperature must be above the ambient.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("no-stages", "At least one thermal resistance stage is needed.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("zero-chain", "The total thermal resistance must be positive.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("limit", "The maximum source temperature must be above the ambient.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-legacy-three-stage", "Legacy example 1: three-stage chain at 25 W", Legacy(1), ThreeStage(25),
@@ -70,10 +70,12 @@ public sealed class ThermalChainCalculator : ICalcCalculator
             new CalcTestCase("ka-legacy-on-limit", "Legacy example 4: exactly on the limit at 34 W", Legacy(4), ThreeStage(34),
                 [new CalcExpectedValue("dT_tot", 85, "K", 5e-5), new CalcExpectedValue("T_1", 125, "degC", 5e-5), new CalcExpectedValue("dT_m", 0, "K", 1e-9), new CalcExpectedValue("u", 1, "", 5e-5)]),
         ],
-        Category: "Thermal management");
+        Category: "Thermal");
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u");
+        c.MarkAtLeast("dT_m");
         c.Input("P");
         c.Input("T_a");
         var rows = c.Rows("stages");

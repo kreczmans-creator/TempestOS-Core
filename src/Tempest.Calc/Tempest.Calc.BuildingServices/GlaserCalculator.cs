@@ -93,18 +93,18 @@ public sealed class GlaserCalculator : ICalcCalculator
             new CalcClauseRef("EN 15026", "whole standard (named as the recommended method for timber and breathable builds)", "Hygrothermal performance of building components — assessment of moisture transfer by numerical simulation"),
         ],
         [
-            new CalcApplicabilityRule("layers", "Enter the layers (inside first), each with thickness, conductivity and μ; at most 30.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("element", "The element named must have rows in the layers table.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("climate", "The climate record has exactly twelve monthly rows, each with a temperature and a humidity.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("humidity-class", "The moisture-excess mode needs both humidity-class points, the cold point below the warm one.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("element-filter", "Rows of the layers table that belong to another element are ignored.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("layer-subdivision", "The condensate left after 12 months, or the wall peak, changes (a verdict flips, or by more than 10 %) when every layer is split into 20 sub-layers: condensate forms inside a layer. The annual balance must pass both ways.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("single-layer", "A single layer has no interface: no interstitial condensation can be found.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("p-int-saturated", "The internal vapour pressure from the humidity class exceeds saturation at the internal temperature in some month and is limited to it.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("fRsi-not-applicable", "No month has the outside air at least 1 K colder than the inside: f_Rsi,min is taken as 0.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("rsi-f-low", "The internal surface resistance for the surface check is below 0.25 m²K/W, the conventional value for an opaque element (0.13 is for glazing).", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("u-ref-mismatch", "The U-value 1/R_T of the layers differs by more than 2 % from the U-value given by the heat-loss calculation: the two describe different constructions or surface resistances.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("en15026", "A timber or breathable build-up (the flag, or any layer flagged timber or breathable) is outside the Glaser method: use EN 15026 hygrothermal simulation.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("layers", "Enter the layers (inside first), each with thickness, conductivity and μ; at most 30.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("element", "The element named must have rows in the layers table.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("climate", "The climate record has exactly twelve monthly rows, each with a temperature and a humidity.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("humidity-class", "The moisture-excess mode needs both humidity-class points, the cold point below the warm one.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("element-filter", "Rows of the layers table that belong to another element are ignored.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("layer-subdivision", "The condensate left after 12 months, or the wall peak, changes (a verdict flips, or by more than 10 %) when every layer is split into 20 sub-layers: condensate forms inside a layer. The annual balance must pass both ways.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("single-layer", "A single layer has no interface: no interstitial condensation can be found.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("p-int-saturated", "The internal vapour pressure from the humidity class exceeds saturation at the internal temperature in some month and is limited to it.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("fRsi-not-applicable", "No month has the outside air at least 1 K colder than the inside: f_Rsi,min is taken as 0.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("rsi-f-low", "The internal surface resistance for the surface check is below 0.25 m²K/W, the conventional value for an opaque element (0.13 is for glazing).", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("u-ref-mismatch", "The U-value 1/R_T of the layers differs by more than 2 % from the U-value given by the heat-loss calculation: the two describe different constructions or surface resistances.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("en15026", "A timber or breathable build-up (the flag, or any layer flagged timber or breathable) is outside the Glaser method: use EN 15026 hygrothermal simulation.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
         ],
         [
             new CalcTestCase("ka-seasonal-drying", "The same wall in an invented maritime year: condensation from November, dry again in June",
@@ -197,6 +197,8 @@ public sealed class GlaserCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_Mc", "u_f");
+        c.MarkAtLeast("fRsi");
         var layerRows = c.Rows("layers");
 
         if (layerRows.Count == 0)

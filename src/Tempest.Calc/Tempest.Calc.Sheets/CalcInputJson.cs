@@ -86,6 +86,15 @@ public static class CalcInputJson
             if (values.Any(v => v!.Rows is { } rows && rows.Any(r => r is null)))
                 return (new CalcInputSet(), [new CalcNotice("json", CalcNoticeSeverity.Block, "A table holds an empty (null) row.")]);
 
+            // C-2: a symbol an input had before it was renamed is read as the input it has become (an old inputs.json still loads).
+            if (template is not null)
+            {
+                if (!CalcInputAliases.TryCanonicalise(template, values.Select(v => v!).ToList(), out var canonical, out var aliasConflict))
+                    return (new CalcInputSet(), [new CalcNotice("json", CalcNoticeSeverity.Block, aliasConflict!)]);
+
+                values = [.. canonical];
+            }
+
             var duplicate = values.GroupBy(v => v!.Symbol, StringComparer.Ordinal).FirstOrDefault(g => g.Count() > 1);
 
             if (duplicate is not null)

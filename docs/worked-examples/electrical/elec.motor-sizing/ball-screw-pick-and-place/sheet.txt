@@ -6,40 +6,38 @@ Author: TempestOS    Authored: —
 Checker: —    Checked: —
 Issued: —
 
-1. SCOPE AND METHOD
+1. Scope and method
 Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
 Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack). Load inertia reflected to the motor through a linear mechanism: J_refl = m k²/η. Load torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p. Reflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η). Move profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc. Move profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap. Torque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load; deceleration T_dec = −T_acc + T_load; the peak check is on the larger magnitude, SF·max(|T_pk|, |T_dec|) ≤ T_peak, and the braking power is P_brake = max(0, −T_dec·ω_pk). Design torque for a coupling or any part downstream that must carry what the drive can deliver, on the basis the owner chooses (T_basis): the load peak T_design = max(|T_pk|, |T_dec|) (default; T_pk alone in continuous duty, where there is no deceleration), the motor peak T_design = T_peak, a service factor on the rated torque T_design = SF_c·T_rated, or a protective limit T_design = T_lim (a torque limiter or a drive setting). Holding torque in the dwell of a linear mechanism that is not held by a brake: T_hold = m g sin θ·k (efficiency not credited: it is a torque to stand still); it is part of the RMS torque for the whole dwell. Alternating torque amplitude of a point-to-point cycle about T_load, for a shaft's fatigue: T_alt = (T_pk − T_dec)/2 (0 in continuous duty). Torque behind the ratio on the output shaft of a rotary mechanism: T_out = T·i·η (mean, alternating and peak), n_out = n_pk/i. Peak axial thrust of a ball screw on its support bearings: F_ax_pk = F_load + m a_pk (0 for other mechanisms). RMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle), the dwell at T_hold. RMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²]. Continuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i. Continuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load. Peak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load. Continuous power: P_cont = T_load ω; P_rms = P_cont; continuous duty needs the steady load torque T_L (blank or zero is refused: it would size the motor for no load). Rated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60; check P_cont ≤ P_rated, u_power = P_cont/P_rated.
-  Ref: Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection — Load torque, inertia referred to the motor, duty cycles
-  Ref: Manufacturer servo-sizing guides (Kollmorgen, Parker) — Reflected inertia, RMS torque, inertia ratio practice
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   mechanism | Mechanism | lead / ball screw |  | assumption: Sizing convention. | any
   i | Gear ratio i (motor : output, 1 = none) | 1 |  | assumption: Sizing convention. | 1 … 1000
   eta | Mechanism efficiency (overall) | 0.9 |  | spec: Screw datasheet BS-1610: 90 % | 0.3 … 1
   p_screw | Screw lead (per revolution of the screw) | 10 | mm | spec: Screw datasheet BS-1610: 10 mm lead | 1 … 100 mm
-  J_mech | Transmission inertia referred to the motor shaft (screw, pulleys, gearbox, coupling) | 0.0001 | kg*m^2 | spec: Screw datasheet BS-1610 + coupling: 1.0e-4 kg·m² | 0 … 10 kg*m^2
+  J_mech | Transmission inertia referred to the motor shaft (screw, pulleys, gearbox, coupling) | 0.0001 | kg·m² | spec: Screw datasheet BS-1610 + coupling: 1.0e-4 kg·m² | 0 … 10 kg·m²
   m | Moved mass (linear mechanisms) | 50 | kg | spec: Mechanical layout ML-12: carriage + gripper 50 kg | 0 … 100000 kg
   mu | Friction coefficient (guide / bearing) | 0.1 |  | assumption: Linear guides with seals: μ = 0.1. | 0 … 1
-  theta | Incline from horizontal (+ moving uphill) | 0 | deg | assumption: Sizing convention. | -90 … 90 deg
+  theta | Incline from horizontal (+ moving uphill) | 0 | ° | assumption: Sizing convention. | -90 … 90 °
   F_p | Process force opposing the move (linear) | 0 | N | assumption: Sizing convention. | 0 … 1000000 N
   brake | A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor | no |  | default | any
-  T_L | Constant load torque at the output (rotary; continuous duty needs it: blank or zero is refused) | 0 | N*m | default | 0 … 100000 N*m
+  T_L | Constant load torque at the output (rotary; continuous duty needs it: blank or zero is refused) | 0 | N·m | default | 0 … 100000 N·m
   duty_mode | Duty (point-to-point move cycle, or continuous rotary running with a run-up) | point-to-point |  | default | any
   profile | Motion profile | trapezoidal |  | assumption: Sizing convention. | any
   s | Move distance (linear: m; rotary: output revolutions) | 0.5 |  | spec: Cycle specification CS-3: 0.5 m in 0.5 s, 0.5 s dwell, 1/3 ramps | 0.0001 … 10000
   t_move | Move time | 0.5 | s | spec: Cycle specification CS-3: 0.5 m in 0.5 s, 0.5 s dwell, 1/3 ramps | 0.01 … 3600 s
   f_acc | Acceleration (and deceleration) fraction of the move time | 0.333333 |  | spec: Cycle specification CS-3: 0.5 m in 0.5 s, 0.5 s dwell, 1/3 ramps | 0.05 … 0.5
   t_dwell | Dwell between moves | 0.5 | s | spec: Cycle specification CS-3: 0.5 m in 0.5 s, 0.5 s dwell, 1/3 ramps | 0 … 3600 s
-  J_motor | Candidate motor rotor inertia | 0.0002 | kg*m^2 | spec: Motor datasheet SM-040: 2.0e-4 kg·m², 2.0 / 6.0 N·m, 10 000 rpm | 1e-7 … 10 kg*m^2
-  T_rated | Candidate motor continuous (rated) torque | 2 | N*m | spec: Motor datasheet SM-040: 2.0e-4 kg·m², 2.0 / 6.0 N·m, 10 000 rpm | 0.01 … 100000 N*m
-  T_peak | Candidate motor peak torque | 6 | N*m | spec: Motor datasheet SM-040: 2.0e-4 kg·m², 2.0 / 6.0 N·m, 10 000 rpm | 0.01 … 100000 N*m
+  J_motor | Candidate motor rotor inertia | 0.0002 | kg·m² | spec: Motor datasheet SM-040: 2.0e-4 kg·m², 2.0 / 6.0 N·m, 10 000 rpm | 1e-7 … 10 kg·m²
+  T_rated | Candidate motor continuous (rated) torque | 2 | N·m | spec: Motor datasheet SM-040: 2.0e-4 kg·m², 2.0 / 6.0 N·m, 10 000 rpm | 0.01 … 100000 N·m
+  T_peak | Candidate motor peak torque | 6 | N·m | spec: Motor datasheet SM-040: 2.0e-4 kg·m², 2.0 / 6.0 N·m, 10 000 rpm | 0.01 … 100000 N·m
   T_basis | Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter | Load peak (T_pk) |  | default | any
   n_max | Candidate motor maximum speed | 10000 | rpm | spec: Motor datasheet SM-040: 2.0e-4 kg·m², 2.0 / 6.0 N·m, 10 000 rpm | 10 … 100000 rpm
   SF | Safety margin on torque | 1.25 |  | assumption: Sizing convention. | 1 … 3
   J_ratio_max | Inertia ratio limit (load : motor), warning | 10 |  | assumption: Sizing convention. | 1 … 100
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Rigid transmission; the mechanism efficiency applies to the driving direction and is also used in the deceleration phase (conservative for peak, slightly pessimistic for RMS). (Servo-sizing practice.)
   A2. The friction force is Coulomb friction on the moved mass; viscous and breakaway friction are not modelled unless included in F_p. (Load model.)
   A3. Continuous duty: the load torque is constant at the stated speed and the motor accelerates the whole inertia linearly to speed in t_start while carrying the full load torque (conservative); the move distance, move time, acceleration fraction, dwell and profile are ignored. (Run-up idealisation for pumps and fans.)
@@ -47,13 +45,13 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   A5. mechanism (Mechanism) is taken as lead / ball screw. (Sizing convention.)
   A6. i (Gear ratio i (motor : output, 1 = none)) is taken as 1. (Sizing convention.)
   A7. mu (Friction coefficient (guide / bearing)) is taken as 0.1. (Linear guides with seals: μ = 0.1.)
-  A8. theta (Incline from horizontal (+ moving uphill)) is taken as 0 deg. (Sizing convention.)
+  A8. theta (Incline from horizontal (+ moving uphill)) is taken as 0 °. (Sizing convention.)
   A9. F_p (Process force opposing the move (linear)) is taken as 0 N. (Sizing convention.)
   A10. profile (Motion profile) is taken as trapezoidal. (Sizing convention.)
   A11. SF (Safety margin on torque) is taken as 1.25. (Sizing convention.)
   A12. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sizing convention.)
 
-4. WORKING
+4. Working
   [22] k = p_screw / (2 * pi * i)
       = 10 mm / (2 × π × 1)
       = 1.5915 mm
@@ -179,49 +177,54 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
       = 0.7201
         Thermal duty (without margin)
 
-5. RESULTS
-  k = 1.5915 mm    Transmission constant
+5. Results
   T_load = 0.08671 N·m    Load torque at motor
-  J_refl = 0.00014072 kg·m²    Reflected load inertia
-  J_total = 0.00044072 kg·m²    Total inertia
-  v_pk = 1.5 m/s    Peak velocity
-  a_pk = 9 m/s²    Peak acceleration
+  J_refl = 0.0001407 kg·m²    Reflected load inertia
+  J_total = 0.0004407 kg·m²    Total inertia
   alpha_pk = 5654.9 rad/s²    Motor angular acceleration
-  T_acc = 2.4922 N·m    Acceleration torque
-  T_pk = 2.5789 N·m    Peak torque
-  T_dec = -2.4055 N·m    Deceleration torque
-  T_design = 2.5789 N·m    Design torque for downstream couplings
+  T_acc = 2.492 N·m    Acceleration torque
+  T_pk = 2.579 N·m    Peak torque
+  T_dec = -2.406 N·m    Deceleration torque
+  T_rms = 1.440 N·m    RMS torque
+  T_design = 2.579 N·m    Design torque for downstream couplings
   T_hold = 0 N·m    Holding torque in the dwell
-  T_alt = 2.4922 N·m    Alternating torque amplitude
-  F_ax_pk = 499.03 N    Peak axial thrust on a screw's bearings
-  T_rms = 1.4402 N·m    RMS torque
+  T_alt = 2.492 N·m    Alternating torque amplitude
+  F_ax_pk = 499.0 N    Peak axial thrust on a screw's bearings
   n_pk = 9000 rpm    Peak speed
-  P_pk = 2.4306 kW    Peak power
-  P_brake = 2.2672 kW    Peak braking power
-  P_rms = 0.78414 kW    RMS power (continuous equivalent)
+  n_mean = 3000 rpm    Mean motor speed over the cycle
+  P_pk = 2.431 kW    Peak power
+  P_brake = 2.267 kW    Peak braking power
+  P_rms = 0.7841 kW    RMS power (continuous equivalent)
   J_ratio = 1.2036    Inertia ratio
   duty = 0.7201    Thermal duty
-  u_peak = 0.53728    Peak utilisation
-  u_rms = 0.90012    Continuous utilisation
-  u_speed = 0.9    Speed utilisation
-  n_mean = 3000 rpm    Mean motor speed over the cycle
+  u_peak = 0.54    Peak utilisation
+  u_rms = 0.90    Continuous utilisation (governing)
+  u_speed = 0.90    Speed utilisation
+  k = 1.592 mm    Transmission constant
+  v_pk = 1.500 m/s    Peak velocity
+  a_pk = 9 m/s²    Peak acceleration
 
-6. CHECKS (governing first)
-  PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.90012 vs u_rms ≤ 1  utilisation 0.9
-  PASS  Speed n_pk ≤ n_max: u_speed = 0.9 vs u_speed ≤ 1  utilisation 0.9
-  PASS  Peak torque SF·max(|T_pk|, |T_dec|) ≤ T_peak: u_peak = 0.53728 vs u_peak ≤ 1  utilisation 0.537
+6. Checks (governing first)
+  PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.90 vs u_rms ≤ 1  utilisation 0.90
+  PASS  Speed n_pk ≤ n_max: u_speed = 0.90 vs u_speed ≤ 1  utilisation 0.90
+  PASS  Peak torque SF·max(|T_pk|, |T_dec|) ≤ T_peak: u_peak = 0.54 vs u_peak ≤ 1  utilisation 0.54
 
-7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: J_motor, T_rated, T_peak, n_max (Candidate motor rating). Enter each as one so its source, edition and licence travel with it.
-  WARNING input.T_L: T_L (Constant load torque at the output (rotary; continuous duty needs it: blank or zero is refused)) was not entered; the template default 0 N*m is used.
-  WARNING input.duty_mode: duty_mode (Duty (point-to-point move cycle, or continuous rotary running with a run-up)) was not entered; the template default 'point-to-point' is used.
-  WARNING input.T_basis: T_basis (Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter) was not entered; the template default 'Load peak (T_pk)' is used.
-  WARNING peak-at-speed: n_pk: the peak speed is 90 % of n_max and T_peak is compared as the stall peak torque; a servo's peak torque falls toward its top speed, so check the motor's torque-speed curve at n_pk for T_pk.
-  WARNING overhauling: T_dec: the motor brakes during deceleration (negative torque); the drive must absorb the regenerated energy.
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are J_motor, T_rated, T_peak, n_max (Candidate motor rating). Enter each as one so its source, edition and licence travel with it.  [record]
+  WARNING  n_pk: the peak speed is 90 % of n_max and T_peak is compared as the stall peak torque; a servo's peak torque falls toward its top speed, so check the motor's torque-speed curve at n_pk for T_pk.  [peak-at-speed]
+  WARNING  T_dec: the motor brakes during deceleration (negative torque); the drive must absorb the regenerated energy.  [overhauling]
+  Defaults used (inputs left empty):
+    T_L: not entered, so the default of 0 N·m is used.
+    duty_mode: not entered, so the default of 'point-to-point' is used.
+    T_basis: not entered, so the default of 'Load peak (T_pk)' is used.
 
-8. VERIFICATION
-  Template: elec.motor-sizing@1.9.0
+8. Verification
+  Template: elec.motor-sizing@1.10.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3
   Test run: —
+
+9. References
+  1. Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection — Load torque, inertia referred to the motor, duty cycles
+  2. Manufacturer servo-sizing guides (Kollmorgen, Parker) — Reflected inertia, RMS torque, inertia ratio practice

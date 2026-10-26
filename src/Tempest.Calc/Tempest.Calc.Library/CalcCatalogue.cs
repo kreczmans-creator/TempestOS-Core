@@ -49,12 +49,17 @@ public sealed class CalcCatalogue
         var template = calculator.Template;
         ValidateTemplate(template);
 
+        // One run on the defaults gives the formulas the content hash covers and the output symbols a port alias must not take.
+        var defaultRun = CalcRunner.Run(calculator, CalcTemplateHasher.DefaultInputs(template));
+        ValidatePortAliases(template, defaultRun);
+        var contentHash = CalcTemplateHasher.Hash(template, CalcTemplateHasher.Formulas(defaultRun));
+
         lock (_gate)
         {
             if (_byReference.ContainsKey(template.Reference) || _withheldByReference.ContainsKey(template.Reference))
                 throw new InvalidOperationException($"Calculator '{template.Reference}' is already registered.");
 
-            var entry = new CalcCatalogueEntry(calculator, CalcTemplateHasher.Hash(calculator));
+            var entry = new CalcCatalogueEntry(calculator, contentHash);
 
             // A calculator whose feature is off is held aside: no list, no search, no lookup and so no new instance reaches it (ADR-0173).
             var (byReference, current) = Features.IsEnabled(template.FeatureFlag) ? (_byReference, _current) : (_withheldByReference, _withheldCurrent);
@@ -122,6 +127,29 @@ public sealed class CalcCatalogue
     public CalcCatalogueEntry Get(string reference) =>
         Find(reference) ?? throw (FeatureRefusal(reference) is { } switchedOff ? new CalcFeatureDisabledException(switchedOff) : new KeyNotFoundException($"No calculator '{reference}' is registered."));
 
+    /// <summary>
+    /// C-2: a port is also known by its public name and its aliases, so none of them may be the symbol of an output that is not that port: a link by that
+    /// symbol would then name two outputs. The outputs are those of a run on the defaults and the symbols the known-answer cases expect.
+    /// </summary>
+    private static void ValidatePortAliases(CalcTemplate t, CalcRunResult defaultRun)
+    {
+        if (t.OutputPorts is not { Count: > 0 } ports)
+            return;
+
+        var portSymbols = ports.Select(p => p.Symbol).ToHashSet(StringComparer.Ordinal);
+        var others = defaultRun.Outputs.Select(o => o.Symbol).Concat(t.TestCases.SelectMany(c => c.Expected).Select(e => e.Symbol))
+            .Where(s => !portSymbols.Contains(s)).ToHashSet(StringComparer.Ordinal);
+
+        foreach (var port in ports)
+        {
+            foreach (var name in (port.Name is { Length: > 0 } n ? [n] : Enumerable.Empty<string>()).Concat(port.Aliases ?? []))
+            {
+                if (others.Contains(name))
+                    throw new ArgumentException($"Template '{t.Id}': the name '{name}' of port '{port.Symbol}' is the symbol of another output of the template; a link by that symbol would name two outputs.");
+            }
+        }
+    }
+
     private static void ValidateTemplate(CalcTemplate t)
     {
         if (string.IsNullOrWhiteSpace(t.Id) || t.Id.Length > 64 || t.Id.Any(c => !(char.IsAsciiLetterOrDigit(c) || c is '.' or '-' or '_')))
@@ -136,6 +164,28 @@ public sealed class CalcCatalogue
         {
             if (!seen.Add(i.Symbol))
                 throw new ArgumentException($"Template '{t.Id}' declares input '{i.Symbol}' twice.");
+        }
+
+        // C-2: an alias is the symbol an input had before it was renamed, so it must name no input of the template and no other input's alias.
+        foreach (var i in t.Inputs)
+        {
+            foreach (var alias in i.Aliases ?? [])
+            {
+                if (!seen.Add(alias))
+                    throw new ArgumentException($"Template '{t.Id}': the alias '{alias}' of input '{i.Symbol}' is already an input or the alias of another input.");
+            }
+        }
+
+        // C-2: a port is known by its output symbol, its public name and its aliases; no two ports may share one of those names.
+        var portNames = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var port in t.OutputPorts ?? [])
+        {
+            foreach (var name in new[] { port.Symbol }.Concat(port.Name is { Length: > 0 } n ? [n] : []).Concat(port.Aliases ?? []).Distinct(StringComparer.Ordinal))
+            {
+                if (!portNames.Add(name))
+                    throw new ArgumentException($"Template '{t.Id}': the port name '{name}' of output '{port.Symbol}' is already used by another port.");
+            }
         }
 
         // ADR-0173: the governance a template asks for must be satisfiable, or no instance of it could ever be issued.

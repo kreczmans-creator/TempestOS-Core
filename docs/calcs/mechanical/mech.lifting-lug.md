@@ -33,6 +33,6 @@ sigma_b = 325 N·m / 2650.7 mm³ = 122.61 MPa
 u_t = 36.765 MPa / 150 MPa = 0.2451
 u_br = 83.333 MPa / 200 MPa = 0.41667
 … 3 more step(s) on the sheet
-Governing: PASS  Pin bending: u_b = 0.49043 vs u_b ≤ 1  utilisation 0.49
+Governing: PASS  Pin bending: u_b = 0.49 vs u_b ≤ 1  utilisation 0.49
 ```
 <!-- hand-arithmetic:end -->

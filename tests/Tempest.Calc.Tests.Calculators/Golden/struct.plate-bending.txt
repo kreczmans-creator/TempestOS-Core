@@ -3,17 +3,11 @@ Project: GOLDEN
 Calc ID: struct.plate-bending    Revision: A
 Title: Plate bending
 
-1. SCOPE AND METHOD
+1. Scope and method
 Bending of a thin, flat, isotropic plate under a lateral load by Kirchhoff small-deflection theory: circular plates (uniform pressure, central patch, ring load; clamped or simply supported) in closed form; rectangular plates simply supported (uniform pressure or central patch, Navier series) or clamped (Ritz, approximate). Maximum deflection, greatest von Mises stress at the surface, stress and deflection utilisations and the fundamental frequency.
 Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von Mises σ_vm = √(σ_x² − σ_x·σ_y + σ_y² + 3τ_xy²) Circular, uniform q, clamped: w = q·a⁴/(64D); σ_edge = 3q·a²/(4t²); simply supported: w = (5 + ν)·q·a⁴/(64(1 + ν)D); σ_centre = 3(3 + ν)·q·a²/(8t²) Circular, central patch (radius c, pressure q) or ring (radius b, force F): w = A + B·r² (+ q·r⁴/64D) inside, A′ + B′·r² + C′·ln(r/a) + k·r²·ln(r/a) outside, k = q·c²/8D or F/8πD; constants from continuity of w, w′, M_r at the load radius and the edge conditions; M_r = −D(w″ + ν·w′/r), M_θ = −D(w′/r + ν·w″) Rectangular, simply supported: w = Σ W_mn·sin(mπx/a)·sin(nπy/b) over odd m, n; W_mn = q_mn/(π⁴D(m²/a² + n²/b²)²); q_mn = 16q/(π²mn) (uniform) or 16q/(π²mn)·sin(mπ/2)·sin(nπ/2)·sin(mπu/2a)·sin(nπv/2b) (patch u × v); M_x = Dπ²ΣW_mn(m²/a² + ν·n²/b²)·sin·sin, M_y likewise, M_xy = −D(1 − ν)π²ΣW_mn(mn/ab)·cos·cos; terms added until w, the centre moments and the corner M_xy each change by < 10⁻⁶ over a doubling (cap 1024 × 1024; the corner sum of a uniform load, which converges like 1/N², is Richardson-extrapolated before it is compared) Rectangular, clamped: Ritz, w = Σ c_ij·X_i(x/a)·Y_j(y/b), X_k(ξ) = ξ²(1 − ξ)²·P₂ₖ(2ξ − 1); c from the minimum of the total potential energy; order K taken as 8, 12, 16, 20, 25, 30 until w and the stress change by < 10⁻⁵ (or the change stops falling) Fundamental frequency: simply supported rectangle ω₁₁ = π²(1/a² + 1/b²)·√(D/(ρt)), f = ω/2π; circular ω = (λ²/a²)·√(D/(ρt)), λ² from the Bessel characteristic equation; clamped rectangle by Rayleigh–Ritz with the same basis Plate checks: σ_vm ≤ f_y/γ_M0; w_max ≤ span/ratio (circular span = diameter, rectangle span = shorter side); WARN w/t > 0.5
-  Ref: Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 3 — Symmetrical bending of circular plates
-  Ref: Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 5 — Simply supported rectangular plates (Navier solution)
-  Ref: Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 6 — Rectangular plates with various edge conditions
-  Ref: Leissa, Vibration of Plates (NASA SP-160) Ch. 2, 4 — Natural frequencies of circular and rectangular plates
-  Ref: BS EN 1993-1-1:2005+A1:2014 6.1(1) — Partial factor γ_M0
-  Ref: BS EN 1993-1-1:2005+A1:2014 6.2.1(5) — Yield criterion for the cross-section
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   shape | Plate shape | circular |  | manual | any
   support | Edge support, all round | clamped |  | manual | any
@@ -30,12 +24,12 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
   r_ring | Ring radius (circular plate, ring load) | 150 | mm | manual | 1 … 5000 mm
   E | Modulus of elasticity | 200 | GPa | manual | 0.1 … 500 GPa
   nu | Poisson's ratio | 0.3 |  | manual | 0 … 0.45
-  rho | Density (for the frequency) | 7850 | kg/m^3 | manual | 100 … 20000 kg/m^3
+  rho | Density (for the frequency) | 7850 | kg/m³ | manual | 100 … 20000 kg/m³
   f_y | Yield strength | 275 | MPa | manual | 5 … 2000 MPa
   gamma_M0 | Partial factor γ_M0 on the resistance of the cross-section | 1 |  | manual | 1 … 1.5
   defl_ratio | Deflection limit: span/ratio (span = diameter of a circular plate, shorter side of a rectangle) | 250 |  | manual | 50 … 2000
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Thin plate, small-deflection (Kirchhoff) theory: flat, isotropic, linear elastic, constant thickness; the middle surface is unstrained; shear deformation is neglected (span/t of 10 or more). (Scope of S9; a warning below span/t = 10.)
   A2. The deflection stays small against the thickness: w/t above 0.5 means membrane action stiffens the plate and the small-deflection result is not valid (it overstates the deflection and the bending stress and ignores the membrane stress). (The sheet warns at w/t > 0.5.)
   A3. The edge support is the same all round and ideal: a simply supported edge is held at zero deflection and free to rotate; a clamped edge allows no deflection or rotation. A simply supported rectangle has its corners held down (the corner reaction 2·M_xy is reported); if the corners can lift, the deflection and the central moments are larger than computed. (Navier solution; no elastic edges, no rotational springs.)
@@ -44,7 +38,7 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
   A6. The clamped rectangle is a Ritz approximation: the deflection converges quickly, the moments and stress more slowly (the sheet reports the order used and the last change; long plates and small patches converge slowest, and the last change understates the error). Compare a critical result with finite elements. (Approximate; the sheet states the order used and the last change.)
   A7. Material properties are inputs taken from the W3 library (E, ν, ρ, f_y), each citing the material record, its revision and the page or table; the generic textbook seeds are indicative. (Record kind material.properties.)
 
-4. WORKING
+4. Working
   [14] F_total = q·A_loaded    « Kirchhoff theory
       = 20 kPa × 196350 mm²
       = 3.927 kN
@@ -114,27 +108,35 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
       = 0.2666
         Deflection utilisation
 
-5. RESULTS
+5. Results
   w_max = 0.5332 mm    Maximum deflection
-  sigma_max = 33.331 MPa    Greatest von Mises stress
-  sigma_principal = 37.5 MPa    Greatest principal stress
+  sigma_max = 33.33 MPa    Greatest von Mises stress
   f1 = 198.68 Hz    Fundamental frequency
-  u_stress = 0.1212    Stress utilisation
-  u_defl = 0.2666    Deflection utilisation
+  sigma_principal = 37.50 MPa    Greatest principal stress
   w_over_t = 0.10664    Deflection over thickness
   D = 2289.4 N·m    Flexural rigidity
   M_edge = -156.25 N·m/m    Edge moment
   M_c = 101.56 N·m/m    Moment at the centre
   lambda2 = 10.216    Frequency parameter λ²
   location = "edge"    Governing stress point
+  u_stress = 0.12    Stress utilisation
+  u_defl = 0.27    Deflection utilisation (governing)
 
-6. CHECKS (governing first)
-  PASS  Deflection w_max ≤ span/ratio: u_defl = 0.2666 vs u_defl ≤ 1  utilisation 0.267  « Serviceability
-  PASS  Stress σ_vm ≤ f_y/γ_M0: u_stress = 0.1212 vs u_stress ≤ 1  utilisation 0.121  « 6.2.1(5)
+6. Checks (governing first)
+  PASS  Deflection w_max ≤ span/ratio: u_defl = 0.27 vs u_defl ≤ 1  utilisation 0.27  « Serviceability
+  PASS  Stress σ_vm ≤ f_y/γ_M0: u_stress = 0.12 vs u_stress ≤ 1  utilisation 0.12  « 6.2.1(5)
 
-7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: E, nu, rho, f_y (Material properties); gamma_M0 (EN 1993 National Annex factors); defl_ratio (Deflection limit). Enter each as one so its source, edition and licence travel with it.
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are E, nu, rho, f_y (Material properties); gamma_M0 (EN 1993 National Annex factors); defl_ratio (Deflection limit). Enter each as one so its source, edition and licence travel with it.  [record]
 
-8. VERIFICATION
+8. Verification
   Template: struct.plate-bending@1.2.2
   Known-answer cases passed: 11/11
+
+9. References
+  1. Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 3 — Symmetrical bending of circular plates
+  2. Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 5 — Simply supported rectangular plates (Navier solution)
+  3. Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 6 — Rectangular plates with various edge conditions
+  4. Leissa, Vibration of Plates (NASA SP-160) Ch. 2, 4 — Natural frequencies of circular and rectangular plates
+  5. BS EN 1993-1-1:2005+A1:2014 6.1(1) — Partial factor γ_M0
+  6. BS EN 1993-1-1:2005+A1:2014 6.2.1(5) — Yield criterion for the cross-section

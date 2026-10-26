@@ -75,6 +75,6 @@ a_eff = 75 − 55/2 mm = 47.5 mm
 phi = 55 × 50 / 55 = 50 deg
 be_eff = min(40, 100, 38.339) mm = 38.339 mm
 … 34 more step(s) on the sheet
-Governing: PASS  BTH-1: bearing: u_b = 0.5722 vs u_b ≤ 1  utilisation 0.572  « BTH-1 3-3.3
+Governing: PASS  BTH-1: bearing: u_b = 0.57 vs u_b ≤ 1  utilisation 0.57  « BTH-1 3-3.3
 ```
 <!-- hand-arithmetic:end -->

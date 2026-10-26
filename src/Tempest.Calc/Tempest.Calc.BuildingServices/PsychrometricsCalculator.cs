@@ -68,11 +68,11 @@ public sealed class PsychrometricsCalculator : ICalcCalculator
             new CalcClauseRef("CIBSE Guide C", "Section 1", "Properties of humid air (principles)"),
         ],
         [
-            new CalcApplicabilityRule("second-property", "The chosen second property has no value.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("supersaturated", "The state lies above saturation (RH > 100 %).", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("process-input", "The process needs a leaving-state value that was not given, or it is not reachable.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("no-dehumidification", "The mixture is supersaturated: fog forms and the state shown is nominal.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("dry-coil", "Cooling with dehumidification and RH_2 blank, but t_2 is above the entering dew point: the coil is dry, the leaving moisture is held at the entering value and the load is sensible only.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("second-property", "The chosen second property has no value.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("supersaturated", "The state lies above saturation (RH > 100 %).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("process-input", "The process needs a leaving-state value that was not given, or it is not reachable.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("no-dehumidification", "The mixture is supersaturated: fog forms and the state shown is nominal.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("dry-coil", "Cooling with dehumidification and RH_2 blank, but t_2 is above the entering dew point: the coil is dry, the leaving moisture is held at the entering value and the load is sensible only.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-saturation-20", "Saturated air at 20 °C, 101.325 kPa",

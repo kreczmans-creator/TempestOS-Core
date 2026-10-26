@@ -61,7 +61,7 @@ public static class CalcInputValidator
                 // A defaulted input is visible on the sheet ("default" source) and now in the notices too, so a sheet
                 // computed from an empty or truncated file cannot pass for an entered one (Black B-01).
                 if (!spec.IsOptional && spec.Kind is not CalcInputKind.Boolean and not CalcInputKind.Text && (spec.Default is not null || spec.DefaultChoice is not null))
-                    notices.Add(new CalcNotice("input." + spec.Symbol, CalcNoticeSeverity.Warning, $"{spec.Symbol} ({spec.Description}) was not entered; the template default {DefaultText(spec)} is used."));
+                    notices.Add(new CalcNotice("input." + spec.Symbol, CalcNoticeSeverity.Warning, $"{spec.Symbol}: not entered, so the default of {DefaultText(spec)} is used.", CalcNoticeKind.DefaultUsed));
 
                 if (spec.IsOptional || spec.Default is not null || spec.DefaultChoice is not null || spec.Kind is CalcInputKind.Boolean or CalcInputKind.Text)
                     continue;
@@ -79,17 +79,17 @@ public static class CalcInputValidator
 
                 case CalcInputKind.Choice:
                     if (value.Text is null || spec.Choices is null || !spec.Choices.Contains(value.Text, StringComparer.Ordinal))
-                        notices.Add(Block(spec.Symbol, $"{spec.Symbol} must be one of: {string.Join(", ", spec.Choices ?? [])}."));
+                        notices.Add(Block(spec.Symbol, $"{spec.Symbol}: choose one of {string.Join(", ", spec.Choices ?? [])}."));
                     break;
 
                 case CalcInputKind.Text:
                     if (value.Text is { Length: > MaxTextLength })
-                        notices.Add(Block(spec.Symbol, $"{spec.Symbol} is at most {MaxTextLength} characters."));
+                        notices.Add(Block(spec.Symbol, $"{spec.Symbol}: enter at most {MaxTextLength} characters."));
                     break;
 
                 case CalcInputKind.Boolean:
                     if (value.Flag is null)
-                        notices.Add(Block(spec.Symbol, $"{spec.Symbol} must be yes or no."));
+                        notices.Add(Block(spec.Symbol, $"{spec.Symbol}: choose yes or no."));
                     break;
 
                 case CalcInputKind.Vector:
@@ -105,7 +105,7 @@ public static class CalcInputValidator
         foreach (var value in inputs.Values)
         {
             if (template.FindInput(value.Symbol) is null)
-                notices.Add(new CalcNotice("input." + value.Symbol, CalcNoticeSeverity.Warning, $"{value.Symbol} is not an input of this calculation and is ignored."));
+                notices.Add(new CalcNotice("input." + value.Symbol, CalcNoticeSeverity.Warning, $"{value.Symbol}: not an input of this calculation, so it is ignored."));
         }
 
         return notices;
@@ -127,7 +127,7 @@ public static class CalcInputValidator
                 continue;
 
             if ((value.Provenance is null || !value.Provenance.IsSufficientToIssue) && !TableStandsOnScanCells(value))
-                notices.Add(Block(spec.Symbol, $"{spec.Symbol} needs a source (drawing, specification, assumption, evidence or reference) before the sheet can be issued."));
+                notices.Add(Block(spec.Symbol, $"{spec.Symbol}: give a source (drawing, specification, assumption, evidence or reference) before the sheet can be issued."));
         }
 
         return notices;
@@ -149,13 +149,13 @@ public static class CalcInputValidator
     {
         if (value.Number is not { } n)
         {
-            notices.Add(Block(spec.Symbol, $"{spec.Symbol} needs a number."));
+            notices.Add(Block(spec.Symbol, $"{spec.Symbol}: enter a number."));
             return;
         }
 
         if (!double.IsFinite(n))
         {
-            notices.Add(Block(spec.Symbol, $"{spec.Symbol} must be a finite number."));
+            notices.Add(Block(spec.Symbol, $"{spec.Symbol}: enter a finite number."));
             return;
         }
 
@@ -173,7 +173,7 @@ public static class CalcInputValidator
 
             if (unit.Dimension != spec.Dimension)
             {
-                notices.Add(Block(spec.Symbol, $"{spec.Symbol} must be entered in a unit of {spec.DefaultUnit}, not {unitText}."));
+                notices.Add(Block(spec.Symbol, $"{spec.Symbol}: enter it in a unit of {CalcUnitText.Pretty(spec.DefaultUnit)}, not {CalcUnitText.Pretty(unitText)}."));
                 return;
             }
 
@@ -181,7 +181,7 @@ public static class CalcInputValidator
         }
         else if (value.Unit is { Length: > 0 } u && u != "1")
         {
-            notices.Add(Block(spec.Symbol, $"{spec.Symbol} is a plain number and takes no unit."));
+            notices.Add(Block(spec.Symbol, $"{spec.Symbol}: enter a plain number without a unit."));
             return;
         }
 
@@ -190,24 +190,24 @@ public static class CalcInputValidator
 
     private static void CheckLimits(string symbol, string description, double v, string unit, double? min, double? max, double? hardMin, double? hardMax, List<CalcNotice> notices)
     {
-        var suffix = unit.Length > 0 ? " " + unit : string.Empty;
+        var suffix = unit.Length > 0 ? " " + CalcUnitText.Pretty(unit) : string.Empty;
 
         if (hardMin is { } hmin && v < hmin)
         {
-            notices.Add(Block(symbol, $"{symbol} ({description}) must be at least {F(hmin)}{suffix}; {F(v)}{suffix} was given."));
+            notices.Add(Block(symbol, $"{symbol}: enter at least {F(hmin)}{suffix} ({description}); {F(v)}{suffix} was given."));
             return;
         }
 
         if (hardMax is { } hmax && v > hmax)
         {
-            notices.Add(Block(symbol, $"{symbol} ({description}) must be at most {F(hmax)}{suffix}; {F(v)}{suffix} was given."));
+            notices.Add(Block(symbol, $"{symbol}: enter at most {F(hmax)}{suffix} ({description}); {F(v)}{suffix} was given."));
             return;
         }
 
         if ((min is { } lo && v < lo) || (max is { } hi && v > hi))
         {
             var range = min is { } l2 && max is { } h2 ? $"{F(l2)} … {F(h2)}{suffix}" : min is { } l3 ? $"≥ {F(l3)}{suffix}" : $"≤ {F(max!.Value)}{suffix}";
-            notices.Add(new CalcNotice("input." + symbol, CalcNoticeSeverity.Warning, $"{symbol} ({description}) is outside its usual range {range}; {F(v)}{suffix} was given."));
+            notices.Add(new CalcNotice("input." + symbol, CalcNoticeSeverity.Warning, $"{symbol}: {F(v)}{suffix} is outside the usual range {range} ({description})."));
         }
     }
 
@@ -215,19 +215,19 @@ public static class CalcInputValidator
     {
         if (value.Vector is not { } vector)
         {
-            notices.Add(Block(spec.Symbol, $"{spec.Symbol} needs a list of numbers."));
+            notices.Add(Block(spec.Symbol, $"{spec.Symbol}: enter a list of numbers."));
             return;
         }
 
         if (vector.Count > MaxVectorLength)
         {
-            notices.Add(Block(spec.Symbol, $"{spec.Symbol} holds at most {MaxVectorLength} values."));
+            notices.Add(Block(spec.Symbol, $"{spec.Symbol}: enter at most {MaxVectorLength} values."));
             return;
         }
 
         if (vector.Any(x => !double.IsFinite(x)))
         {
-            notices.Add(Block(spec.Symbol, $"{spec.Symbol} must hold finite numbers only."));
+            notices.Add(Block(spec.Symbol, $"{spec.Symbol}: enter finite numbers only."));
             return;
         }
 
@@ -236,7 +236,7 @@ public static class CalcInputValidator
         if (!UnitCatalog.TryParse(unitText, out var unit, out var error))
             notices.Add(Block(spec.Symbol, $"{spec.Symbol}: {error}"));
         else if (unit.Dimension != spec.Dimension)
-            notices.Add(Block(spec.Symbol, $"{spec.Symbol} must be entered in a unit of {spec.DefaultUnit}, not {unitText}."));
+            notices.Add(Block(spec.Symbol, $"{spec.Symbol}: enter it in a unit of {CalcUnitText.Pretty(spec.DefaultUnit)}, not {CalcUnitText.Pretty(unitText)}."));
     }
 
     private static void ValidateTable(CalcInputSpec spec, CalcInputValue value, List<CalcNotice> notices)
@@ -249,7 +249,7 @@ public static class CalcInputValidator
 
         if (rows.Count > spec.MaxRows)
         {
-            notices.Add(Block(spec.Symbol, $"{spec.Symbol} holds at most {spec.MaxRows} rows; {rows.Count} were given."));
+            notices.Add(Block(spec.Symbol, $"{spec.Symbol}: enter at most {spec.MaxRows} rows; {rows.Count} were given."));
             return;
         }
 
@@ -263,7 +263,7 @@ public static class CalcInputValidator
 
             if (row is null)
             {
-                notices.Add(Block(spec.Symbol, $"{spec.Symbol} row {r + 1} is empty."));
+                notices.Add(Block(spec.Symbol, $"{spec.Symbol}: row {r + 1} is empty."));
                 continue;
             }
 
@@ -276,12 +276,10 @@ public static class CalcInputValidator
             foreach (var col in columns)
             {
                 var cell = row.Get(col.Key);
-                var where = $"{spec.Symbol} row {r + 1}, {col.Label}";
-
                 if (cell is null || (cell.Number is null && cell.Text is null && cell.Flag is null))
                 {
                     if (!col.IsOptional)
-                        notices.Add(Block(spec.Symbol, $"{where} needs a value."));
+                        notices.Add(Block(spec.Symbol, $"{spec.Symbol}: {RowPlace(r, col)} needs a value."));
 
                     continue;
                 }
@@ -293,7 +291,7 @@ public static class CalcInputValidator
                     {
                         if (cell.Number is not { } n || !double.IsFinite(n))
                         {
-                            notices.Add(Block(spec.Symbol, $"{where} must be a finite number."));
+                            notices.Add(Block(spec.Symbol, $"{spec.Symbol}: {RowPlace(r, col)} must be a finite number."));
                             break;
                         }
 
@@ -305,7 +303,7 @@ public static class CalcInputValidator
 
                             if (!UnitCatalog.TryParse(unitText, out var unit, out var error))
                             {
-                                notices.Add(Block(spec.Symbol, $"{where}: {error}"));
+                                notices.Add(Block(spec.Symbol, $"{spec.Symbol}: {RowPlace(r, col)}: {error}"));
                                 break;
                             }
 
@@ -313,7 +311,7 @@ public static class CalcInputValidator
 
                             if (unit.Dimension != expected.Dimension)
                             {
-                                notices.Add(Block(spec.Symbol, $"{where} must be in a unit of {col.DefaultUnit}, not {unitText}."));
+                                notices.Add(Block(spec.Symbol, $"{spec.Symbol}: {RowPlace(r, col)} must be in a unit of {CalcUnitText.Pretty(col.DefaultUnit)}, not {CalcUnitText.Pretty(unitText)}."));
                                 break;
                             }
 
@@ -326,28 +324,30 @@ public static class CalcInputValidator
 
                     case CalcInputKind.Choice:
                         if (cell.Text is null || col.Choices is null || !col.Choices.Contains(cell.Text, StringComparer.Ordinal))
-                            notices.Add(Block(spec.Symbol, $"{where} must be one of: {string.Join(", ", col.Choices ?? [])}."));
+                            notices.Add(Block(spec.Symbol, $"{spec.Symbol}: {RowPlace(r, col)} must be one of {string.Join(", ", col.Choices ?? [])}."));
                         break;
 
                     case CalcInputKind.Text:
                         if (cell.Text is { Length: > MaxTextLength })
-                            notices.Add(Block(spec.Symbol, $"{where} is at most {MaxTextLength} characters."));
+                            notices.Add(Block(spec.Symbol, $"{spec.Symbol}: {RowPlace(r, col)} is at most {MaxTextLength} characters."));
                         break;
 
                     case CalcInputKind.Boolean:
                         if (cell.Flag is null)
-                            notices.Add(Block(spec.Symbol, $"{where} must be yes or no."));
+                            notices.Add(Block(spec.Symbol, $"{spec.Symbol}: {RowPlace(r, col)} must be yes or no."));
                         break;
                 }
             }
         }
     }
 
+    private static string RowPlace(int zeroBasedRow, CalcColumnSpec col) => $"row {zeroBasedRow + 1}, {col.Label}";
+
     private static CalcNotice Block(string symbol, string message) => new("input." + symbol, CalcNoticeSeverity.Block, message);
 
     private static string DefaultText(CalcInputSpec spec) => spec.DefaultChoice is { } choice
         ? $"'{choice}'"
-        : Engine.Values.CalcValue.FormatNumber(spec.Default ?? 0, 4) + (spec.DefaultUnit.Length > 0 ? " " + spec.DefaultUnit : string.Empty);
+        : Engine.Values.CalcValue.FormatNumber(spec.Default ?? 0, 4) + (spec.DefaultUnit.Length > 0 ? " " + CalcUnitText.Pretty(spec.DefaultUnit) : string.Empty);
 
     private static string F(double v) => Engine.Values.CalcValue.FormatNumber(v, 5);
 }

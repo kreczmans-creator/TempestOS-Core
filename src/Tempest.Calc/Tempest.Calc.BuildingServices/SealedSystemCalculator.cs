@@ -25,7 +25,7 @@ public sealed class SealedSystemCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.BuildingServices, "Sealed heating system: emitters and expansion vessel",
+        Id, "1.4.0", CalcDiscipline.BuildingServices, "Sealed heating system",
         "A closed LTHW system below 100 °C: the catalogue output (at ΔT 50 K) each room's emitter needs at the design flow, return and room temperatures, checked against the selected emitters; and the minimum expansion vessel for the system volume, fill and maximum temperatures, static head and pressures.",
         "Emitter temperature difference: ΔT = (t_f + t_r)/2 − t_i, or the log mean (t_f − t_r)/ln((t_f − t_i)/(t_r − t_i))\n" +
         "Output at design: Φ = Φ50·(ΔT/50)^n; required catalogue output Φ50 = Φ_req/(ΔT/50)^n\n" +
@@ -62,13 +62,13 @@ public sealed class SealedSystemCalculator : ICalcCalculator
             new CalcClauseRef("CIBSE Guide B1", "2016, §1.4", "Heating — sealed systems and expansion"),
         ],
         [
-            new CalcApplicabilityRule("temperatures", "Flow above return above room temperature.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("pressures", "Pre-charge below final pressure below the safety valve setting.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("volume", "System volume between 10 and 10 000 L.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("v-pipe-default", "The pipework water content V_pipe is the template default of 20 L: it is not linked to the pipework, so a larger system gets an undersized expansion vessel.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("t-fill", "The fill temperature must be below the maximum system temperature.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("emitter", "A selected emitter output of 0 W is refused: leave the cell empty for none selected.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("t-max", "The maximum temperature is below the flow temperature: the vessel is sized for the flow temperature.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("temperatures", "Flow above return above room temperature.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("pressures", "Pre-charge below final pressure below the safety valve setting.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("volume", "System volume between 10 and 10 000 L.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("v-pipe-default", "The pipework water content V_pipe is the template default of 20 L: it is not linked to the pipework, so a larger system gets an undersized expansion vessel.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("t-fill", "The fill temperature must be below the maximum system temperature.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("emitter", "A selected emitter output of 0 W is refused: leave the cell empty for none selected.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("t-max", "The maximum temperature is below the flow temperature: the vessel is sized for the flow temperature.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-dt50", "Catalogue conditions 75/65/20: correction 1",
@@ -91,12 +91,12 @@ public sealed class SealedSystemCalculator : ICalcCalculator
         Category: "Hydraulics",
         OutputPorts:
         [
-            new CalcOutputPort("Phi_tot", "W", "Total heat required by the rooms (→ B1 flow)"),
-            new CalcOutputPort("V_s", "L", "System water volume"),
-            new CalcOutputPort("V_e", "L", "Minimum expansion vessel volume"),
-            new CalcOutputPort("dT", "K", "Emitter mean temperature difference"),
-            new CalcOutputPort("dT_fr", "K", "Flow-to-return temperature difference of the loop (→ B1 heat-load flow)"),
-            new CalcOutputPort("t_m", "degC", "Mean water temperature of the loop, (t_f + t_r)/2 (→ B1 fluid temperature)"),
+            new CalcOutputPort("Phi_tot", "W", "Total heat required by the rooms (→ pipe-pump Phi_load)", "heating.heat_required"),
+            new CalcOutputPort("V_s", "L", "System water volume", "heating.volume_system"),
+            new CalcOutputPort("V_e", "L", "Minimum expansion vessel volume", "heating.volume_expansion_min"),
+            new CalcOutputPort("dT", "K", "Emitter mean temperature difference", "heating.temperature_difference_emitter"),
+            new CalcOutputPort("dT_fr", "K", "Flow-to-return temperature difference of the loop (→ pipe-pump dT_load)", "heating.temperature_difference_loop"),
+            new CalcOutputPort("t_m", "degC", "Mean water temperature of the loop, (t_f + t_r)/2 (→ pipe-pump T)", "heating.temperature_mean"),
         ],
         RecordKinds:
         [
@@ -121,6 +121,7 @@ public sealed class SealedSystemCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_emit", "u_vessel");
         foreach (var s in new[] { "t_f", "t_r", "t_i", "n", "V_pipe", "V_plant", "t_fill", "t_max", "h_static", "p_margin", "p_f", "p_prv" })
             c.Input(s);
 

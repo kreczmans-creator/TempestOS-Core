@@ -31,7 +31,7 @@ public sealed class ConnectionCalculator : ICalcCalculator
     public static IReadOnlyList<(string Grade, double BetaW)> Steels { get; } = [("S235", 0.8), ("S275", 0.85), ("S355", 0.9), ("S420", 1.0), ("S460", 1.0)];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.6.0", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
+        Id, "1.7.0", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
         "The design resistances of one bolt in a plate (shear, bearing, tension, punching, combined shear and tension), an optional block-tearing check of the bolt group, the spacing limits, and a fillet weld by the simplified and the directional method, each against its design force.",
         "Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P\n" +
         "Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane)\n" +
@@ -90,13 +90,13 @@ public sealed class ConnectionCalculator : ICalcCalculator
             new CalcClauseRef("ISO 898-1:2013", "cl. 9.1", "Nominal stress area (formula)"),
         ],
         [
-            new CalcApplicabilityRule("hole", "The hole must be larger than the bolt; an oversize or slotted hole type needs its hole size d_0 entered.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("hole_clearance", "A d₀ above the normal clearance with the hole type left at normal is treated as oversize (bearing × 0.8).", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("single_lap", "With one shear plane and k₁·α_b above 1.5 the bearing resistance is capped for a single-lap joint with one bolt row; the sheet warns until the joint type is stated.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("spacing", "The edge distance e₂, the gauge p₂ and the pitch p₁ must leave a positive bearing factor (k₁ and α_b above 0).", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("e_head", "The across-corners dimension cannot be less than the across-flats dimension of the nut.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("block", "Block tearing needs the group force and both net areas.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("weld", "The weld check needs a throat and a force per length.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("hole", "The hole must be larger than the bolt; an oversize or slotted hole type needs its hole size d_0 entered.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("hole_clearance", "A d₀ above the normal clearance with the hole type left at normal is treated as oversize (bearing × 0.8).", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("single_lap", "With one shear plane and k₁·α_b above 1.5 the bearing resistance is capped for a single-lap joint with one bolt row; the sheet warns until the joint type is stated.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("spacing", "The edge distance e₂, the gauge p₂ and the pitch p₁ must leave a positive bearing factor (k₁ and α_b above 0).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("e_head", "The across-corners dimension cannot be less than the across-flats dimension of the nut.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("block", "Block tearing needs the group force and both net areas.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("weld", "The weld check needs a throat and a force per length.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
         ],
         [
             new CalcTestCase("ka-m20-88-shear-bearing", "M20 8.8, single shear through threads, 10 mm S275 plate",
@@ -137,13 +137,13 @@ public sealed class ConnectionCalculator : ICalcCalculator
         Category: "Connections",
         OutputPorts:
         [
-            new CalcOutputPort("F_v_Rd", "kN", "Shear resistance per bolt"),
-            new CalcOutputPort("F_b_Rd", "kN", "Bearing resistance per bolt (→ S6 F_1_vb_Rd)"),
-            new CalcOutputPort("F_t_Rd", "kN", "Tension resistance per bolt (→ S6 holding-down bolts)"),
-            new CalcOutputPort("A_s", "mm^2", "Bolt tensile stress area (→ S6 holding-down bolts)"),
-            new CalcOutputPort("f_ub", "MPa", "Bolt ultimate strength (→ S6 f_ub)"),
-            new CalcOutputPort("f_yb", "MPa", "Bolt yield strength (→ S6 f_yb)"),
-            new CalcOutputPort("f_vw_d", "MPa", "Weld design shear strength (→ M6 f_w)"),
+            new CalcOutputPort("F_v_Rd", "kN", "Shear resistance per bolt", "bolt.resistance_shear"),
+            new CalcOutputPort("F_b_Rd", "kN", "Bearing resistance per bolt (→ base-plate F_1_vb_Rd)", "bolt.resistance_bearing"),
+            new CalcOutputPort("F_t_Rd", "kN", "Tension resistance per bolt (→ base-plate F_t_Rd)", "bolt.resistance_tension"),
+            new CalcOutputPort("A_s", "mm^2", "Bolt tensile stress area (→ base-plate A_s)", "bolt.area_stress"),
+            new CalcOutputPort("f_ub", "MPa", "Bolt ultimate strength (→ base-plate f_ub)", "bolt.strength_ultimate"),
+            new CalcOutputPort("f_yb", "MPa", "Bolt yield strength (→ base-plate f_yb)", "bolt.strength_yield"),
+            new CalcOutputPort("f_vw_d", "MPa", "Weld design shear strength (→ weld-group f_w)", "weld.strength_shear_design"),
         ],
         RecordKinds:
         [
@@ -176,6 +176,7 @@ public sealed class ConnectionCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_b", "u_block", "u_dir", "u_perp", "u_t", "u_v", "u_vt", "u_w");
         foreach (var s in new[] { "n_s", "t", "f_y", "f_u", "e_1", "e_2", "k_e1", "k_e2", "k_p1", "k_p2", "gamma_M2", "gamma_M0", "F_v_Ed", "F_t_Ed" })
             c.Input(s);
 

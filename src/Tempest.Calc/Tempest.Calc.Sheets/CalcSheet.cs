@@ -64,9 +64,22 @@ public sealed record CalcSheet(
     IReadOnlyList<CalcRevisionRow>? Revisions = null,
     IReadOnlyList<CalcPackIndexRow>? PackIndex = null,
     string? DiagramKey = null,
-    CalcInputSet? InputValues = null)
+    CalcInputSet? InputValues = null,
+    IReadOnlyList<CalcNotice>? Defaults = null)
 {
     public CalcCheck? Governing => Checks.Count == 0 ? null : Checks.OrderByDescending(c => c.Utilisation).First();
+
+    /// <summary>
+    /// The notes that an empty input took its default (C-2, row 4), kept apart from <see cref="Warnings"/> so they do not bury the warnings
+    /// that matter. Empty when no input was defaulted.
+    /// </summary>
+    public IReadOnlyList<CalcNotice> DefaultNotices => Defaults ?? [];
+
+    /// <summary>
+    /// The symbol of the result the governing check is made on, when that check has a utilisation and the symbol is one of the results; a
+    /// sheet marks it "(governing)" in the Results section (C-2, row 2).
+    /// </summary>
+    public string? GoverningOutputSymbol => Governing is { HasUtilisation: true, StepSymbol: { } symbol } && Outputs.Any(o => string.Equals(o.Symbol, symbol, StringComparison.Ordinal)) ? symbol : null;
 }
 
 /// <summary>The seam a PDF (or any other) renderer implements. The Desktop implements it over the existing document pipeline.</summary>

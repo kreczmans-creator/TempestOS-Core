@@ -6,15 +6,11 @@ Author: TempestOS    Authored: —
 Checker: —    Checked: —
 Issued: —
 
-1. SCOPE AND METHOD
+1. Scope and method
 Area, centroid, second moments of area (Ixx, Iyy, Ixy), principal axes and values, elastic and plastic section moduli, radii of gyration, torsion constant and (I-sections) warping constant for a parametric shape, an arbitrary polygon with holes, or a composite of placed parts. The x axis is horizontal (major axis of an I-section), y vertical.
 Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − y dx); Ixx = ∫y² dA; Iyy = ∫x² dA; Ixy = ∫xy dA. Second moments moved to the centroid by the parallel-axis theorem: I_c = I − A d². Principal axes: tan 2θ = −2Ixy/(Ixx − Iyy). Elastic section modulus: W_el = Ixx/y_max. Plastic section modulus, about the equal-area axis found by bisection: W_pl = |Q_above| + |Q_below|. Torsion constant by shape, a Saint-Venant series for a solid rectangle, πd⁴/32 for a circle, Bredt for a closed thin-walled section, Σbt³/3 (plus a fillet term for rolled I) for an open section. Warping constant of an I-section: I_w = Iyy (h − t_f)²/4.
-  Ref: Roark's Formulas for Stress and Strain Appendix A, Table A.1; Ch. 10, Table 10.1 — Properties of sections; torsion of solid and thin-walled sections
-  Ref: AISC Design Guide 9 (Seaburg & Carter) Appendix — Torsional properties of rolled I-shapes
-  Ref: BS EN 10365 — Hot rolled steel channels, I and H sections: dimensions and masses
-  Ref: BS EN 10210-2 — Hot finished structural hollow sections: tolerances, dimensions and sectional properties
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   shape | Shape | polygon |  | drawing: DRG-BG-100 rev C | any
   vertices | Polygon vertices (polygon shape) | 8 row(s) |  | drawing: DRG-BG-100 rev C | any
@@ -27,12 +23,12 @@ Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − 
   vertices[7] |  | x = 180 mm; y = 280 mm; loop = 2 |  |  | 
   vertices[8] |  | x = -180 mm; y = 280 mm; loop = 2 |  |  | 
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. A polygon outline is simple (no self-intersection); holes lie inside the outline and do not overlap. (Green's theorem integrates the signed loops as given.)
   A2. Rolled-section root fillets are quarter circles of radius r; flange tips are square; hollow-section corners are quarter circles of outer radius r_o (default 1.5 t) and inner radius r_i (default 1.0 t). (Published section tables use the same idealisation.)
   A3. Thin-walled torsion constants neglect the junction and tip effects except the fillet term kept for rolled I-sections. (Open sections: Σbt³/3; closed: Bredt.)
 
-4. WORKING
+4. Working
   [2] A = ½ ∮ (x dy − y dx)    « Roark Table A.1
       = Green's theorem over 8 vertices in 2 loop(s)
       = 384 cm²
@@ -110,33 +106,39 @@ Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − 
       = 1.2078
         Shape factor about x
 
-5. RESULTS
+5. Results
   A = 384 cm²    Area
   x_c = 0 mm    Centroid x
   y_c = 0 mm    Centroid y
-  I_xx = 193150 cm⁴    I_xx
-  I_yy = 102270 cm⁴    I_yy
+  I_xx = 193152 cm⁴    I_xx
+  I_yy = 102272 cm⁴    I_yy
   I_xy = 0 cm⁴    I_xy
-  I_1 = 193150 cm⁴    I_1 (major principal)
-  I_2 = 102270 cm⁴    I_2 (minor principal)
-  theta = 0 deg    Principal axis angle
+  I_1 = 193152 cm⁴    I_1 (major principal)
+  I_2 = 102272 cm⁴    I_2 (minor principal)
+  theta = 0°    Principal axis angle
   W_el_x = 6438.4 cm³    W_el,x
   W_el_y = 5113.6 cm³    W_el,y
   W_pl_x = 7776 cm³    W_pl,x
   W_pl_y = 5856 cm³    W_pl,y
-  i_x = 22.428 cm    i_x
+  i_x = 22.43 cm    i_x
   i_y = 16.32 cm    i_y
   alpha_pl_x = 1.2078    Shape factor, x
 
-6. CHECKS (governing first)
-  No pass/fail checks in this calculation.
+6. Checks (governing first)
+  None.
 
-7. APPLICABILITY
-  WARNING no-torsion: J: no torsion constant is computed for an arbitrary polygon.
+7. Applicability
+  WARNING  J: no torsion constant is computed for an arbitrary polygon.  [no-torsion]
 
-8. VERIFICATION
+8. Verification
   Template: struct.section-properties@1.1.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5
   Test run: —
+
+9. References
+  1. Roark's Formulas for Stress and Strain Appendix A, Table A.1; Ch. 10, Table 10.1 — Properties of sections; torsion of solid and thin-walled sections
+  2. AISC Design Guide 9 (Seaburg & Carter) Appendix — Torsional properties of rolled I-shapes
+  3. BS EN 10365 — Hot rolled steel channels, I and H sections: dimensions and masses
+  4. BS EN 10210-2 — Hot finished structural hollow sections: tolerances, dimensions and sectional properties

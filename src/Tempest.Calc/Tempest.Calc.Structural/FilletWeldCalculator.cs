@@ -23,7 +23,7 @@ public sealed class FilletWeldCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.1", CalcDiscipline.Structural, "Fillet weld (EN 1993-1-8 simplified method)",
+        Id, "1.0.2", CalcDiscipline.Structural, "Fillet weld (EN 1993-1-8)",
         "A fillet weld carrying forces parallel to, transverse to and normal to its axis, by the simplified method: the resultant over the throat area against the design shear strength of the weld, with the required throat and leg.",
         "Resultant force on the weld: F = √(F_∥² + F_⊥² + F_n²).\nDesign shear strength of the weld, simplified method: f_vw,d = f_u/(√3·β_w·γ_M2).\nShear stress on the throat: τ_w = F/(a·L).\nWeld resistance and utilisation: F_w,Rd = f_vw,d·a·L; u = F/F_w,Rd.\nThroat needed (not less than 3 mm) and the matching leg: a_req = max(F/(f_vw,d·L), 3 mm); leg = √2·a.",
         [
@@ -47,10 +47,10 @@ public sealed class FilletWeldCalculator : ICalcCalculator
             new CalcClauseRef("BS EN 1993-1-8", "4.11", "Long joints"),
         ],
         [
-            new CalcApplicabilityRule("throat", "Throats below 3 mm are outside the method.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("length", "Effective lengths below max(30 mm, 6·a) should not be designed to carry load.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("no-load", "At least one force must be non-zero.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("long-joint", "Lap-joint welds longer than 150·a need the long-joint reduction β_Lw, which this sheet does not apply.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("throat", "Throats below 3 mm are outside the method.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("length", "Effective lengths below max(30 mm, 6·a) should not be designed to carry load.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("no-load", "At least one force must be non-zero.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("long-joint", "Lap-joint welds longer than 150·a need the long-joint reduction β_Lw, which this sheet does not apply.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
         ],
         [
             new CalcTestCase("ka-legacy-s355-shear", "Legacy example 1: S355 lap weld in longitudinal shear", Legacy(1), Example(150, 0, 0, 200, 5, 490, 0.9),
@@ -64,6 +64,7 @@ public sealed class FilletWeldCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u");
         foreach (var s in new[] { "F_par", "F_tr", "F_n", "L", "a", "f_u", "beta_w", "gamma_M2" })
             c.Input(s);
 

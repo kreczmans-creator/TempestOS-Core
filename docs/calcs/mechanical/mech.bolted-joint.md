@@ -35,6 +35,6 @@ tau_M = 42.158 N·m / 187.81 mm³ = 224.47 MPa
 sigma_red_M = sqrt((482.87 MPa)^2 + 3 × (224.47 MPa)^2) = 619.94 MPa
 nu_M = 619.94 MPa / 640 MPa = 0.96866
 … 25 more step(s) on the sheet
-Governing: PASS  Equivalent stress at assembly within the permitted ν of the proof strength: u_assembly = 0.96866 vs u_assembly ≤ 1  utilisation 0.969  « VDI 2230 R7
+Governing: PASS  Equivalent stress at assembly within the permitted ν of the proof strength: u_assembly = 0.97 vs u_assembly ≤ 1  utilisation 0.97  « VDI 2230 R7
 ```
 <!-- hand-arithmetic:end -->

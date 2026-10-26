@@ -58,7 +58,7 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.0", CalcDiscipline.Structural, "Load combinations (EN 1990)",
+        Id, "1.1.0", CalcDiscipline.Structural, "Load combinations (EN 1990)",
         "Design values of a single action effect (a force, a moment or a load intensity) under every EN 1990 Annex A1 combination for buildings: ULS persistent/transient, SLS characteristic, frequent and quasi-permanent, and accidental. Every variable action is tried as the leading one; the maximum and minimum envelopes and their governing combinations are reported.",
         "ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on γ_G,sup)\n" +
         "ULS 6.10a: Σ γ_G·G + Σ γ_Q·K_FI·ψ_0·Q_i; 6.10b: Σ ξ·γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i\n" +
@@ -91,9 +91,9 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
             new CalcClauseRef("UK NA to BS EN 1990:2002+A1:2005", "NA.A1.2(A)–(C)", "UK values of partial factors"),
         ],
         [
-            new CalcApplicabilityRule("no-actions", "No actions: nothing to combine.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("psi-missing", "A variable action's category has no ψ factors in the ψ record.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("no-permanent", "No permanent action: check the combinations are what you intend.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("no-actions", "No actions: nothing to combine.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("psi-missing", "A variable action's category has no ψ factors in the ψ record.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("no-permanent", "No permanent action: check the combinations are what you intend.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-610-single", "Permanent plus office imposed, 6.10",
@@ -118,13 +118,13 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
                 [new CalcExpectedValue("E_d_max", 37.65, "kN/m", 1e-9)],
                 CalcReferenceStatus.Unconfirmed),
         ],
-        Category: "Design",
+        Category: "Actions",
         OutputPorts:
         [
-            new CalcOutputPort("E_d_max", "", "ULS design effect, maximum (unit of the actions)"),
-            new CalcOutputPort("E_d_min", "", "ULS design effect, minimum"),
-            new CalcOutputPort("E_k_max", "", "SLS characteristic effect, maximum"),
-            new CalcOutputPort("E_qp_max", "", "SLS quasi-permanent effect, maximum"),
+            new CalcOutputPort("E_d_max", "", "ULS design effect, maximum (unit of the actions)", "combination.effect_uls_max"),
+            new CalcOutputPort("E_d_min", "", "ULS design effect, minimum", "combination.effect_uls_min"),
+            new CalcOutputPort("E_k_max", "", "SLS characteristic effect, maximum", "combination.effect_sls_characteristic_max"),
+            new CalcOutputPort("E_qp_max", "", "SLS quasi-permanent effect, maximum", "combination.effect_sls_quasi_permanent_max"),
         ],
         RecordKinds:
         [

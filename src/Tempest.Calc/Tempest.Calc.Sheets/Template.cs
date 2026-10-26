@@ -43,7 +43,9 @@ public enum CalcInputKind
 /// block. Limits are in <see cref="DefaultUnit"/>. <see cref="MaterialProperty"/> names the material property
 /// (<c>E</c>, <c>rho</c>, <c>f_y</c>, <c>E(T)</c>, …) this input takes from a <c>material.properties</c> record; the
 /// template also lists the input's symbol in a record kind of that name (Addendum B, W3). <see cref="PressureBasis"/> names the
-/// basis of a pressure input so the sheet prints "bar a" or "bar g" beside it.
+/// basis of a pressure input so the sheet prints "bar a" or "bar g" beside it. <see cref="Aliases"/> are the symbols this input was
+/// called before it was renamed (C-2): an inputs file, a CSV, a saved draft or a pack link that still uses one is read as this input
+/// (<see cref="CalcInputAliases"/>); nothing writes an alias.
 /// </summary>
 public sealed record CalcInputSpec(
     string Symbol,
@@ -65,7 +67,8 @@ public sealed record CalcInputSpec(
     string? PressureBasis = null,
     string? ReferenceLibrary = null,
     string? ReferenceProperty = null,
-    string? ReferenceDimension = null)
+    string? ReferenceDimension = null,
+    IReadOnlyList<string>? Aliases = null)
 {
     /// <summary>A pressure that is always gauge (above the atmosphere): <see cref="PressureBasis"/> "g".</summary>
     public const string BasisGauge = "g";
@@ -166,7 +169,24 @@ public enum CalcNoticeSeverity
 }
 
 /// <summary>A declared applicability rule: what the calculator checks and what happens when the check fails.</summary>
-public sealed record CalcApplicabilityRule(string Id, string Description, CalcNoticeSeverity Severity);
+/// <summary>
+/// What an applicability rule says about the result when it fires (C-2, declared by the template, never found by matching words). A rule is
+/// <see cref="Conservative"/> when the result stays on the safe side or exact, or the notice only reports a convention, an unused input or a limitation
+/// that does not make a pass less safe. It is <see cref="Unconservative"/> when the sheet can still show a pass although the result may be on the unsafe
+/// side (a demand understated, a capacity overstated, a check not made, a method used outside its range). The contract test requires an unconservative
+/// rule to be a block or to be paired with a check that fails when it fires; the others are held by an allow-list that only shrinks.
+/// </summary>
+public enum CalcRuleEffect
+{
+    /// <summary>The result is on the safe side, exact, or the notice does not change what a pass means.</summary>
+    Conservative,
+
+    /// <summary>The result may be on the unsafe side while the sheet passes.</summary>
+    Unconservative,
+}
+
+/// <summary>An applicability rule: its id, what it says, whether it blocks or warns, and its <see cref="CalcRuleEffect"/> (declared on every rule; it is not part of the content hash).</summary>
+public sealed record CalcApplicabilityRule(string Id, string Description, CalcNoticeSeverity Severity, CalcRuleEffect Effect);
 
 /// <summary>Whether a known-answer reference value could be confirmed against its source.</summary>
 public enum CalcReferenceStatus
@@ -226,6 +246,13 @@ public sealed record CalcTemplate(
     public string Reference => $"{Id}@{Version}";
 
     public CalcInputSpec? FindInput(string symbol) => Inputs.FirstOrDefault(i => string.Equals(i.Symbol, symbol, StringComparison.Ordinal));
+
+    /// <summary>The input named <paramref name="symbolOrAlias"/>: by its symbol, else by a symbol it was called before (<see cref="CalcInputSpec.Aliases"/>).</summary>
+    public CalcInputSpec? ResolveInput(string symbolOrAlias) =>
+        FindInput(symbolOrAlias) ?? Inputs.FirstOrDefault(i => i.Aliases is { Count: > 0 } aliases && aliases.Contains(symbolOrAlias, StringComparer.Ordinal));
+
+    /// <summary>The output port named <paramref name="nameOrSymbol"/>: by its public name, its output symbol or an alias (<see cref="CalcOutputPort.Matches"/>), or <see langword="null"/>.</summary>
+    public CalcOutputPort? FindPort(string nameOrSymbol) => OutputPorts?.FirstOrDefault(p => p.Matches(nameOrSymbol));
 
     /// <summary>
     /// Whether Check and Issue demand more than an ordinary template does (Addendum B, S8): a competent-person attestation, a

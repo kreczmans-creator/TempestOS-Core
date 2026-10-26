@@ -1,4 +1,4 @@
-# M6 — Weld group, elastic line method (`mech.weld-group@1.1.1`)
+# M6 — Weld group, elastic line method (`mech.weld-group@1.2.0`)
 
 **In plain terms.** Several fillet welds in a plane share a load, and if the load acts off-centre the group is also twisted, so the weld ends furthest from the centre carry the most. The worksheet treats each weld as a line, finds the centre of the group, and works out the force per unit length at the most loaded point and the stress in the throat against a strength you choose, and the leg size needed.
 
@@ -9,6 +9,8 @@
 **Inputs.** `welds` table (x1, y1, x2, y2 −2000…2000 mm; ≤ 50), `s` 3–25 mm, `f_w` (from S4 or a user allowable with source), `F_x`, `F_y`, `F_z` kN, `e_x`, `e_y`, `M_x`, `M_y`, `M_z` kN·m.
 
 **Outputs.** `L_w`, `x_c`, `y_c`, `I_ux`, `I_uy`, `I_uxy`, `J_u`, `T`, `f_r_max`, `critical`, `a`, `tau`, `s_req`, `u`. **Ports.** `f_r_max` → S4, `tau`, `s_req`. **Check.** throat stress against design strength.
+
+**Port names (C-2).** Each port is listed under its public name, `<area>.<quantity>`; the output symbol stays as its symbol and as an alias, so a link, a pack binding or an inputs file written before the rename still resolves. `f_r_max` = `weld.force_per_length_max`; `tau` = `weld.stress_throat`; `s_req` = `weld.leg_required`.
 
 **Limitations.** Elastic, static, fillet welds of one leg size; rigid parts.
 
@@ -32,6 +34,6 @@ a = 0.707 × 8 mm = 5.656 mm
 tau = 379.64 N/mm / 5.656 mm = 67.122 MPa
 s_req = 379.64 N/mm / (0.707 × 220 MPa) = 2.4408 mm
 u = 67.122 MPa / 220 MPa = 0.3051
-Governing: PASS  Throat stress against design strength: u = 0.3051 vs u ≤ 1  utilisation 0.305  « EN 1993-1-8 cl. 4.5.3.3
+Governing: PASS  Throat stress against design strength: u = 0.31 vs u ≤ 1  utilisation 0.31  « EN 1993-1-8 cl. 4.5.3.3
 ```
 <!-- hand-arithmetic:end -->

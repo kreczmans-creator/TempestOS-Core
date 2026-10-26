@@ -1,4 +1,4 @@
-# M2c — Thick-walled cylinder (`mech.thick-cylinder@2.1.0`)
+# M2c — Thick-walled cylinder (`mech.thick-cylinder@2.1.1`)
 
 **In plain terms.** In a thin pipe the wall stress is nearly uniform, but in a thick wall it is not: the hoop stress is highest at the bore and falls towards the outside. Lamé's solution gives the radial and hoop stresses at every radius for any inner and outer pressure, and the axial stress for closed ends. The largest equivalent stress, at the bore for internal pressure, is compared with the allowable.
 
@@ -29,6 +29,6 @@ sigma_vm_max = max(115.47 MPa, 28.868 MPa) = 115.47 MPa
 u = 115.47 MPa / 200 MPa = 0.57735
 sigma_thin = (50 MPa − 0 MPa) × (50 mm + 100 mm) / 2 / (100 mm − 50 mm) = 75 MPa
 … 1 more step(s) on the sheet
-Governing: PASS  von Mises against allowable: u = 0.57735 vs u ≤ 1  utilisation 0.577
+Governing: PASS  von Mises against allowable: u = 0.58 vs u ≤ 1  utilisation 0.58
 ```
 <!-- hand-arithmetic:end -->

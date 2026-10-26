@@ -37,10 +37,11 @@ public sealed partial class CalcInstanceService
 
         foreach (var value in instance.Inputs)
         {
-            if (current.Template.FindInput(value.Symbol) is null)
+            // C-2: an input that was renamed carries over under its new symbol instead of being dropped.
+            if (current.Template.ResolveInput(value.Symbol) is not { } spec)
                 dropped.Add(value.Symbol);
-            else
-                carried.Set(value);
+            else if (carried.Find(spec.Symbol) is null || string.Equals(value.Symbol, spec.Symbol, StringComparison.Ordinal))
+                carried.Set(value with { Symbol = spec.Symbol });
         }
 
         var droppedText = dropped.Count == 0 ? string.Empty : $" {dropped.Count} input{(dropped.Count == 1 ? "" : "s")} the new version no longer has ({string.Join(", ", dropped.Take(8))}{(dropped.Count > 8 ? ", …" : string.Empty)}) {(dropped.Count == 1 ? "was" : "were")} left out.";

@@ -1,4 +1,4 @@
-# E5 — Fault protection: Zs, disconnection, adiabatic, fault level (`elec.fault-protection@1.3.2`)
+# E5 — Fault protection: Zs, disconnection, adiabatic, fault level (`elec.fault-protection@1.4.0`)
 
 **In plain terms.** If a live conductor touches an earthed part, the protective device must open the circuit fast enough that the fault is not dangerous. The worksheet works out the loop impedance and fault current of the circuit, whether the device opens in time, whether the protective and line conductors can carry the fault current without overheating, and whether the device can break the fault level. It demands an independent check.
 
@@ -9,6 +9,8 @@
 **Inputs.** `U_0`, `Z_e` 0.01–3 Ω, `C_min`, optional `S_r`, `u_k`, `c_max`; `L`, `S_line`, `S_cpc`, `theta` 20–90 °C; material record `conductor.material` (`rho_20`, `alpha`, `Q_c`, `beta`, `theta_i`, `theta_f`); `device`, `I_n`, optional `device_code` 1–4, optional `curve`, `t_req` 0.1–5 s, optional `I2t_let` (let-through I²t at the maximum prospective fault), `I_cn` (record `device.characteristic`).
 
 **Outputs.** `R_12`, `Z_s`, `I_f`, `I_a`, `t_d`, `Z_s_max`, `u_Zs`, `Z_test`, `k`, `S_min`, `u_cpc`, `u_line` (only when the line check is made), `Z_T`, `I_k3`, `c_k3` (1.2.0: the voltage factor `c_max` that `I_k3` was computed with, when the transformer data are given), `u_Icn`. **Ports.** `Z_s`, `I_f`, `S_min`, `I_k3`, `c_k3` (1.2.0, → E9 `c_src`). **Checks.** loop impedance; disconnection time (shown as `t_d` against `t_req` with its real ratio); CPC adiabatic; line adiabatic (when made); breaking capacity.
+
+**Port names (C-2).** Each port is listed under its public name, `<area>.<quantity>`; the output symbol stays as its symbol and as an alias, so a link, a pack binding or an inputs file written before the rename still resolves. `Z_s` = `fault.impedance_loop`; `I_f` = `fault.current_earth`; `S_min` = `conductor.area_adiabatic_min`; `I_k3` = `fault.current_three_phase`; `c_k3` = `fault.factor_voltage`.
 
 **Limitations.** TN only; single earth fault; no motor contribution, arc fault or IT systems; no BS 7671 table embedded.
 
@@ -31,6 +33,6 @@ I_a = 10 × 16 A = 160 A
 Z_s_max = 0.95 × 230 V / 160 A = 1.3656 ohm
 u_Zs = 1.4034 ohm / 1.3656 ohm = 1.0277
 Z_test = 0.8 × 1.3656 ohm = 1.0925 ohm
-Governing: FAIL  Disconnection achieved: I_f below the instantaneous tripping current vs disconnection within t_req  utilisation —  « BS 7671 reg. 411.3.2.2
+Governing: FAIL  Disconnection achieved: I_f below the instantaneous tripping current vs disconnection within t_req  « BS 7671 reg. 411.3.2.2
 ```
 <!-- hand-arithmetic:end -->

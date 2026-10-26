@@ -54,7 +54,7 @@ public sealed class SpringCalculator : ICalcCalculator
     private const string Part3 = "EN 13906-3";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.4.0", CalcDiscipline.Mechanical, "Helical springs: compression, extension, torsion",
+        Id, "1.4.0", CalcDiscipline.Mechanical, "Helical springs",
         "A cylindrical helical spring of round wire, cold-coiled, with a linear characteristic: compression (rate, working points, solid length by end type, stress at the working points and at solid, buckling, Goodman fatigue, surge frequency), extension (the same with the initial tension and the hook stresses) or torsion (rate with the legs, curvature-corrected bending stress, wound diameter and body length).",
         "Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ = E·d⁴/(64·D·n_a), n_a = n + (l₁ + l₂)/(3π·D) (torsion)\n" +
         "Spring stress: τ_k = k_c·8·F·D/(π·d³), k_c = (C + 0.5)/(C − 0.75) (Bergsträsser) or (4C − 1)/(4C − 4) + 0.615/C (Wahl); torsion σ = q·32·M/(π·d³) with q = (C + 0.07)/(C − 0.75) (EN 13906-3, the default) or K_i = (4C² − C − 1)/(4C·(C − 1)) (Shigley)\n" +
@@ -124,20 +124,20 @@ public sealed class SpringCalculator : ICalcCalculator
             new CalcClauseRef("Shigley's Mechanical Engineering Design", "10th ed., Ch. 10", "Helical springs: end geometry, buckling, critical frequency, extension and torsion springs"),
         ],
         [
-            new CalcApplicabilityRule("geometry", "The mean coil diameter must exceed the wire diameter; the elastic constants must satisfy E > G.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("solid", "The free length must exceed the solid length of the end type (EN 13906-1: the solid length plus the minimum coil clearance).", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("missing", "An input the chosen mode needs is blank.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("wire-strength", "R_m(d) must be typed or its W3 curve (A, m) given, and must lie in 50 … 5000 MPa.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("d-max", "The maximum wire diameter cannot be below the nominal diameter.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("sequence", "Working point 2 must not be below working point 1; an extension spring's first force must reach the initial tension.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("hook", "The hook radii must exceed half the wire diameter.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("index", "The spring index C = D/d is outside 4 … 20.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("buckling", "The deflection at working point 2 reaches the buckling deflection of the spring.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("surge", "The surge frequency is less than 13 times the operating frequency.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("travel-mismatch", "The spring's working travel s₂ − s₁ differs from the expected working travel by more than 1 %.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("s-work-unused", "An expected working travel s_work is given in torsion mode: the travel check applies to compression and extension only, so it is not used.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("hook-fatigue", "An extension spring with no hook bending endurance S_e_b: the hook bending fatigue is not assessed, and it usually governs.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("fatigue-cycles", "The required life is below 10⁴ cycles: the Goodman relation is for high-cycle fatigue.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("geometry", "The mean coil diameter must exceed the wire diameter; the elastic constants must satisfy E > G.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("solid", "The free length must exceed the solid length of the end type (EN 13906-1: the solid length plus the minimum coil clearance).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("missing", "An input the chosen mode needs is blank.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("wire-strength", "R_m(d) must be typed or its W3 curve (A, m) given, and must lie in 50 … 5000 MPa.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("d-max", "The maximum wire diameter cannot be below the nominal diameter.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("sequence", "Working point 2 must not be below working point 1; an extension spring's first force must reach the initial tension.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("hook", "The hook radii must exceed half the wire diameter.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("index", "The spring index C = D/d is outside 4 … 20.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("buckling", "The deflection at working point 2 reaches the buckling deflection of the spring: the buckling check fails.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("surge", "The surge frequency is less than 13 times the operating frequency.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("travel-mismatch", "The spring's working travel s₂ − s₁ differs from the expected working travel by more than 1 %.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("s-work-unused", "An expected working travel s_work is given in torsion mode: the travel check applies to compression and extension only, so it is not used.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("hook-fatigue", "An extension spring with no hook bending endurance S_e_b: the hook bending fatigue is not assessed, and it usually governs.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("fatigue-cycles", "The required life is below 10⁴ cycles: the Goodman relation is for high-cycle fatigue.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
         ],
         [
             new CalcTestCase("ka-compression", "Compression spring, squared and ground ends: rate, stress, solid length, surge, Goodman",
@@ -202,6 +202,8 @@ public sealed class SpringCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_2", "u_A", "u_B", "u_b", "u_c", "u_f", "u_fat", "u_n", "u_s");
+        c.MarkAtLeast("n_f", "r_f");
         var mode = c.InputText("mode");
 
         foreach (var s in new[] { "d", "D", "n" })
@@ -408,6 +410,13 @@ public sealed class SpringCalculator : ICalcCalculator
         Fatigue(c, "tau_1", "tau_2", "S_su", shear: true);
 
         c.CheckUtilisation("Static shear stress at solid length", "u_c", Part1);
+
+        // A compression spring whose deflection at point 2 reaches the buckling deflection fails; one that is stable at any deflection has no buckling deflection to reach.
+        if (c.Session.Find("y_cr") is not null)
+            c.Check("Working deflection against the buckling deflection", "s_2", "y_cr", "Shigley 10th ed. Ch. 10, buckling");
+        else
+            c.CheckCondition("Working deflection against the buckling deflection", true, "stable at any deflection", "λ_eff² < C₂′", "u_b", "Shigley 10th ed. Ch. 10, buckling");
+
         c.CheckUtilisation("Working deflection within the travel to solid", "u_s", Part1);
 
         if (enSolid)
@@ -461,13 +470,14 @@ public sealed class SpringCalculator : ICalcCalculator
 
         c.Output("u_b", "Deflection at point 2 / buckling deflection");
 
-        if (ub < 1)
+        if (ub <= 1 + 1e-9)
         {
             c.Output("buckling", "Buckling", new TextValue("PASS"));
             return;
         }
 
-        c.Output("buckling", "Buckling", new TextValue("WARN"));
+        // The buckling check (a utilisation check on u_b, in the verdict) fails here; the warning says what to change.
+        c.Output("buckling", "Buckling", new TextValue("FAIL"));
         c.Warn("buckling", $"nu_seat: the deflection at working point 2 ({F(c.Si("s_2") * 1e3)} mm) reaches the buckling deflection ({F(c.Si("y_cr") * 1e3)} mm); guide the spring or change the end support.");
     }
 

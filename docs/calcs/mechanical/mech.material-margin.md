@@ -20,6 +20,6 @@ n_y = 300 MPa / 120 MPa = 2.5
 n_u = 450 MPa / 120 MPa = 3.75
 n_gov = min(2.5, 3.75 / 1.5) = 2.5
 u = 1.5 / 2.5 = 0.6
-Governing: PASS  Factor of safety against the required factor: u = 0.6 vs u ≤ 1  utilisation 0.6  « Shigley §1-10
+Governing: PASS  Factor of safety against the required factor: u = 0.60 vs u ≤ 1  utilisation 0.60  « Shigley §1-10
 ```
 <!-- hand-arithmetic:end -->

@@ -102,15 +102,15 @@ public sealed class CylinderCalculator : ICalcCalculator
             new CalcClauseRef("Esposito, Fluid Power with Applications", "Cylinder and pump chapters", "Force, speed, flow and power relations, closed form"),
         ],
         [
-            new CalcApplicabilityRule("rod", "The rod must be smaller than the bore.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("flow", "A flow into the cylinder or a required extend speed is needed, and the flow the speed needs must lie within 0.1 to 2000 L/min.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("v-req-q", "A flow other than the sheet's opening 36 L/min is entered as well as a required extend speed: the flow from the speed is used and Q ignored.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("length", "The closed pin-to-pin length of the cylinder is not entered: the buckling length is estimated as twice the stroke plus L_add, the cylinder body included.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("force", "The back pressure must leave a net force on both strokes.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("pump", "The pump displacement and speed are entered together, and the total efficiency cannot exceed the volumetric efficiency.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("motor", "The motor displacement and pressure drop are entered together.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("orifice", "The orifice diameter needs the pressure drop; a drop above the supply pressure is not possible.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("size", "No listed hose or pipe size is as large as the smallest bore the velocity limit needs.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("rod", "The rod must be smaller than the bore.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("flow", "A flow into the cylinder or a required extend speed is needed, and the flow the speed needs must lie within 0.1 to 2000 L/min.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("v-req-q", "A flow other than the sheet's opening 36 L/min is entered as well as a required extend speed: the flow from the speed is used and Q ignored.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("length", "The closed pin-to-pin length of the cylinder is not entered: the buckling length is estimated as twice the stroke plus L_add, the cylinder body included.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("force", "The back pressure must leave a net force on both strokes.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("pump", "The pump displacement and speed are entered together, and the total efficiency cannot exceed the volumetric efficiency.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("motor", "The motor displacement and pressure drop are entered together.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("orifice", "The orifice diameter needs the pressure drop; a drop above the supply pressure is not possible.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("size", "No listed hose or pipe size is as large as the smallest bore the velocity limit needs.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-circuit-standard", "Standard 100/70 cylinder at 160 bar with pump, motor, lines, orifice and rod check (analytic)",
@@ -173,6 +173,7 @@ public sealed class CylinderCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_buck", "u_prs", "u_pull", "u_pump", "u_push", "u_rtn", "u_suc");
         foreach (var s in new[] { "p", "p_back", "rho", "F_push", "F_pull", "D", "d_r", "stroke", "eta_m", "eta_vc", "t_dwell", "K_m", "L_add", "E", "f_y", "S_f", "eta_tp", "d_suc", "d_prs", "d_ret", "v_suc_max", "v_prs_max", "v_ret_max" })
             c.Input(s);
 

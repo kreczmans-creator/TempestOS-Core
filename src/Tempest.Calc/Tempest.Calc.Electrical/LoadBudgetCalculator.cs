@@ -29,7 +29,7 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.4.1", CalcDiscipline.Electrical, "Load budget, PSU, transformer and battery",
+        Id, "1.5.0", CalcDiscipline.Electrical, "Load budget, PSU, transformer and battery",
         "The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.",
         "Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative); this duty-weighted demand sizes the transformer and the enclosure heat\n" +
         "Running load of each load while it is on: P_i·k_i, apparent P_i·k_i/cosφ_i (the duty d is the share of time on, so it is left out: a cable, a bus and a power supply carry the load while it is on)\n" +
@@ -79,15 +79,15 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
             new CalcClauseRef("BS EN 60204-1:2018", "cl. 4.3", "Electrical supply (supply voltage tolerance; cited by number only)"),
         ],
         [
-            new CalcApplicabilityRule("no-loads", "No loads: nothing to budget.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("cosphi", "An AC load row without its power factor: the current, the apparent power and the transformer demand cannot be stated (a blank is not taken as 1).", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("load-defaults", "A load row with a blank optional cell (η, d, k or inrush): the blank is taken as 1, which understates the heat (η) and the starting peak (inrush) and overstates the demand (d, k).", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("psu_bus", "DC loads with no AC bus chosen for their power supply: the AC bus currents and the transformer demand omit its input.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("derate", "Ambient above 40 °C with no PSU derating entered.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("rated-add", "A linked machine with no rated power: the supply is sized on its duty power only, and the machine's rating can be higher.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("battery-charge", "A battery-backed load with an autonomy: the power supply rating omits the battery's charging power.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("peukert-range", "An autonomy beyond the Peukert rated hour rate: the capacity is not taken below the plain product I_b·t.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("peukert", "Peukert needs both the exponent and the hour rate.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("no-loads", "No loads: nothing to budget.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("cosphi", "An AC load row without its power factor: the current, the apparent power and the transformer demand cannot be stated (a blank is not taken as 1).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("load-defaults", "A load row with a blank optional cell (η, d, k or inrush): the blank is taken as 1, which understates the heat (η) and the starting peak (inrush) and overstates the demand (d, k).", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("psu_bus", "DC loads with no AC bus chosen for their power supply: the AC bus currents and the transformer demand omit its input.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("derate", "Ambient above 40 °C with no PSU derating entered.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("rated-add", "A linked machine with no rated power: the supply is sized on its duty power only, and the machine's rating can be higher.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("battery-charge", "A battery-backed load with an autonomy: the power supply rating omits the battery's charging power.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("peukert-range", "An autonomy beyond the Peukert rated hour rate: the capacity is not taken below the plain product I_b·t.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("peukert", "Peukert needs both the exponent and the hour rate.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-mixed-buses", "Pump, fan, lighting and controls on three buses",
@@ -115,15 +115,15 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
         Category: "Power",
         OutputPorts:
         [
-            new CalcOutputPort("P_dem", "kW", "Demand active power"),
-            new CalcOutputPort("S_dem", "kVA", "Demand apparent power"),
-            new CalcOutputPort("I_3ph", "A", "Three-phase bus current of the loads while they are on, duty not applied (→ E4 I_b)"),
-            new CalcOutputPort("I_1ph", "A", "Single-phase bus current"),
-            new CalcOutputPort("I_DC", "A", "DC bus current"),
-            new CalcOutputPort("Phi", "kW", "Heat dissipated inside the enclosure (→ E2)"),
-            new CalcOutputPort("U_L", "V", "Three-phase line voltage of the bus (→ E3 V_n)"),
-            new CalcOutputPort("pf_link", "", "Power factor of the linked machine (→ E3 cos φ)"),
-            new CalcOutputPort("C_req", "A*h", "Minimum battery capacity"),
+            new CalcOutputPort("P_dem", "kW", "Demand active power", "load.power_demand"),
+            new CalcOutputPort("S_dem", "kVA", "Demand apparent power", "load.apparent_demand"),
+            new CalcOutputPort("I_3ph", "A", "Three-phase bus current of the loads while they are on, duty not applied (→ conductor-sizing I_b_in)", "load.current_three_phase"),
+            new CalcOutputPort("I_1ph", "A", "Single-phase bus current", "load.current_single_phase"),
+            new CalcOutputPort("I_DC", "A", "DC bus current", "load.current_dc"),
+            new CalcOutputPort("Phi", "kW", "Heat dissipated inside the enclosure (→ enclosure-heat P_add)", "load.heat_dissipated"),
+            new CalcOutputPort("U_L", "V", "Three-phase line voltage of the bus (→ voltage-drop V_n)", "load.voltage_line"),
+            new CalcOutputPort("pf_link", "", "Power factor of the linked machine (→ voltage-drop cos_phi)", "load.power_factor_linked"),
+            new CalcOutputPort("C_req", "A*h", "Minimum battery capacity", "battery.capacity_required"),
         ],
         RecordKinds:
         [
@@ -152,6 +152,7 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_PSU", "u_T", "u_batt", "u_inrush");
         var rows = c.Rows("loads");
 
         foreach (var s in new[] { "P_add", "cosphi_add", "eta_add", "inrush_add", "heat_add", "U_3ph", "U_1ph", "U_DC", "margin", "theta", "f_derate", "k_T", "t_auto", "U_b", "eta_conv", "DoD", "eta_b", "k_temp", "k_age" })

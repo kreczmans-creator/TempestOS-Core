@@ -35,7 +35,7 @@ public sealed partial class CalcInstanceService
                 return $"Pack template '{template.Title}': step '{step.Key}' names template '{step.TemplateId}', which is not registered.";
 
             foreach (var symbol in (step.Example ?? []).Select(v => v.Symbol).Concat(step.Omit ?? []))
-                if (entry.Template.FindInput(symbol) is null)
+                if (entry.Template.ResolveInput(symbol) is null)
                     return $"Pack template '{template.Title}': step '{step.Key}' gives an example for '{symbol}', which '{step.TemplateId}' does not have.";
         }
 
@@ -51,7 +51,7 @@ public sealed partial class CalcInstanceService
             var source = template.Steps[from];
             var target = template.Steps[to];
 
-            if (!OutputPorts(source.TemplateId).Any(p => string.Equals(p.Symbol, b.Output, StringComparison.Ordinal)))
+            if (!OutputPorts(source.TemplateId).Any(p => p.Matches(b.Output)))
                 return $"Pack template '{template.Title}': '{source.TemplateId}' offers no output '{b.Output}'.";
 
             if ((b.Row is null) != (b.Column is null))
@@ -59,7 +59,7 @@ public sealed partial class CalcInstanceService
 
             if (b.Row is { } row && b.Column is { } column)
             {
-                var table = _catalogue.Get(target.TemplateId).Template.FindInput(b.Input);
+                var table = _catalogue.Get(target.TemplateId).Template.ResolveInput(b.Input);
 
                 if (table is not { Kind: CalcInputKind.Table })
                     return $"Pack template '{template.Title}': '{target.TemplateId}' has no table input '{b.Input}'.";
@@ -70,7 +70,7 @@ public sealed partial class CalcInstanceService
                 continue;
             }
 
-            if (_catalogue.Get(target.TemplateId).Template.FindInput(b.Input) is not { Kind: CalcInputKind.Quantity or CalcInputKind.Number })
+            if (_catalogue.Get(target.TemplateId).Template.ResolveInput(b.Input) is not { Kind: CalcInputKind.Quantity or CalcInputKind.Number })
                 return $"Pack template '{template.Title}': '{target.TemplateId}' has no number or quantity input '{b.Input}'.";
         }
 
@@ -94,12 +94,14 @@ public sealed partial class CalcInstanceService
         if (step.Example is not { Count: > 0 } example)
             return null;
 
-        var linked = template.Bindings.Where(b => string.Equals(b.ToStep, step.Key, StringComparison.Ordinal) && b.Row is null).Select(b => b.Input)
-            .Concat(step.Omit ?? []).ToHashSet(StringComparer.Ordinal);
-        var set = new CalcInputSet(DefaultInputs(_catalogue.Get(step.TemplateId).Template).Where(v => !linked.Contains(v.Symbol)));
-        var named = example.Select(v => v.Symbol).ToHashSet(StringComparer.Ordinal);
+        var stepTemplate = _catalogue.Get(step.TemplateId).Template;
+        var linked = template.Bindings.Where(b => string.Equals(b.ToStep, step.Key, StringComparison.Ordinal) && b.Row is null).Select(b => CalcInputAliases.Canonical(stepTemplate, b.Input))
+            .Concat((step.Omit ?? []).Select(o => CalcInputAliases.Canonical(stepTemplate, o))).ToHashSet(StringComparer.Ordinal);
+        var set = new CalcInputSet(DefaultInputs(stepTemplate).Where(v => !linked.Contains(v.Symbol)));
+        var named = example.Select(v => CalcInputAliases.Canonical(stepTemplate, v.Symbol)).ToHashSet(StringComparer.Ordinal);
 
-        foreach (var value in example)
+        // C-2: an example written with a symbol an input had before it was renamed is read as the input it has become.
+        foreach (var value in CalcInputAliases.Canonicalise(stepTemplate, example))
             set.Set(value);
 
         var assumed = CalcProvenance.Assumed(ExampleBasis);
@@ -219,7 +221,10 @@ public sealed partial class CalcInstanceService
         foreach (var step in template.Steps)
         {
             var entry = _catalogue.Get(step.TemplateId);
-            var values = (inputs is not null && inputs.TryGetValue(step.Key, out var given) ? given : ExampleInputs(template, step) ?? DefaultInputs(entry.Template)).ToList();
+            if (!CalcInputAliases.TryCanonicalise(entry.Template, (inputs is not null && inputs.TryGetValue(step.Key, out var given) ? given : ExampleInputs(template, step) ?? DefaultInputs(entry.Template)).ToList(), out var canonicalValues, out var aliasConflict))
+                return aliasConflict;
+
+            var values = canonicalValues.ToList();
 
             foreach (var b in template.Bindings.Where(b => string.Equals(b.ToStep, step.Key, StringComparison.Ordinal)))
             {
@@ -228,7 +233,7 @@ public sealed partial class CalcInstanceService
                 if (upstream.Blocks is { Count: > 0 } blocks)
                     return BlockedReason(template, b, step, blocks[0].Message);
 
-                if (upstream.Outputs.FirstOrDefault(o => string.Equals(o.Symbol, b.Output, StringComparison.Ordinal)) is not { Si: { } } output)
+                if (FindOutput(upstream, b.Output) is not { Si: { } } output)
                 {
                     // Say why when the upstream sheet has a warning naming the output (only that one, never an unrelated warning) (E1 gives no P_rated without its rated speed n_rated).
                     var reason = upstream.Warnings.FirstOrDefault(w => w.Message.Contains(b.Output, StringComparison.Ordinal));
@@ -236,11 +241,11 @@ public sealed partial class CalcInstanceService
                     return $"Step '{step.Key}': '{step.Name}' cannot take '{b.Output}': '{upstream.Name}' gives no numeric output '{b.Output}'.{why}";
                 }
 
-                var spec = entry.Template.FindInput(b.Input)!;
+                var spec = entry.Template.ResolveInput(b.Input)!;
 
                 if (b.Row is { } row && b.Column is { } column)
                 {
-                    var index = values.FindIndex(v => string.Equals(v.Symbol, b.Input, StringComparison.Ordinal));
+                    var index = values.FindIndex(v => string.Equals(v.Symbol, spec.Symbol, StringComparison.Ordinal));
                     var columnSpec = spec.Columns!.First(c => string.Equals(c.Key, column, StringComparison.Ordinal));
 
                     if (index < 0 || values[index].Rows is not { } rows || row >= rows.Count)
@@ -256,7 +261,7 @@ public sealed partial class CalcInstanceService
                 if (ValueFor(spec, output) is not { } value)
                     return $"Step '{step.Key}': '{upstream.Name}'.{b.Output} cannot feed '{b.Input}': the dimensions differ.";
 
-                values.RemoveAll(v => string.Equals(v.Symbol, b.Input, StringComparison.Ordinal));
+                values.RemoveAll(v => string.Equals(v.Symbol, spec.Symbol, StringComparison.Ordinal));
                 values.Add(value);
             }
 

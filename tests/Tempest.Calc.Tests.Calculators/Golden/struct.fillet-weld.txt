@@ -1,17 +1,13 @@
 CALCULATION SHEET — DRAFT
 Project: GOLDEN
 Calc ID: struct.fillet-weld    Revision: A
-Title: Fillet weld (EN 1993-1-8 simplified method)
+Title: Fillet weld (EN 1993-1-8)
 
-1. SCOPE AND METHOD
+1. Scope and method
 A fillet weld carrying forces parallel to, transverse to and normal to its axis, by the simplified method: the resultant over the throat area against the design shear strength of the weld, with the required throat and leg.
 Resultant force on the weld: F = √(F_∥² + F_⊥² + F_n²). Design shear strength of the weld, simplified method: f_vw,d = f_u/(√3·β_w·γ_M2). Shear stress on the throat: τ_w = F/(a·L). Weld resistance and utilisation: F_w,Rd = f_vw,d·a·L; u = F/F_w,Rd. Throat needed (not less than 3 mm) and the matching leg: a_req = max(F/(f_vw,d·L), 3 mm); leg = √2·a.
-  Ref: BS EN 1993-1-8 4.5.3.3 — Simplified method for design resistance of fillet weld
-  Ref: BS EN 1993-1-8 4.5.2(2) — Effective throat thickness: minimum 3 mm
-  Ref: BS EN 1993-1-8 4.5.1(2) — Effective length: welds shorter than 30 mm or 6 throats not to carry load
-  Ref: BS EN 1993-1-8 4.11 — Long joints
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   F_par | Force parallel to the weld axis | 150 | kN | manual | -100000 … 100000 kN
   F_tr | Force transverse to the weld axis, in the plane of the parts | 0 | kN | manual | -100000 … 100000 kN
@@ -22,11 +18,11 @@ Resultant force on the weld: F = √(F_∥² + F_⊥² + F_n²). Design shear st
   beta_w | Correlation factor β_w (0.8 S235, 0.85 S275, 0.9 S355, 1.0 S420/S460) | 0.9 |  | manual | 0.8 … 1
   gamma_M2 | Partial factor γ_M2 | 1.25 |  | manual | 1 … 2
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. The resultant force is shared uniformly along the effective length. (Simplified method.)
   A2. Equal-leg fillet: leg = √2 × throat. (Geometry.)
 
-4. WORKING
+4. Working
   [9] F = sqrt(F_par^2 + F_tr^2 + F_n^2)
       = sqrt((150 kN)^2 + (0 kN)^2 + (0 kN)^2)
       = 150 kN
@@ -60,22 +56,28 @@ Resultant force on the weld: F = √(F_∥² + F_⊥² + F_n²). Design shear st
       = 7.0711 mm
         Leg length of the throat provided (equal legs)
 
-5. RESULTS
+5. Results
   F = 150 kN    Resultant force
-  f_vw_d = 251.47 MPa    Design shear strength
+  f_vw_d = 251.5 MPa    Design shear strength
   tau_w = 150 MPa    Throat stress
   F_w_Rd = 251.47 kN    Weld resistance
-  u = 0.5965    Utilisation
-  a_calc = 2.9825 mm    Throat needed
+  a_calc = 2.982 mm    Throat needed
   a_req = 3 mm    Required throat
-  s_leg = 7.0711 mm    Leg length provided
+  s_leg = 7.071 mm    Leg length provided
+  u = 0.60    Utilisation (governing)
 
-6. CHECKS (governing first)
-  PASS  Weld resistance: u = 0.5965 vs u ≤ 1  utilisation 0.596  « BS EN 1993-1-8 4.5.3.3
+6. Checks (governing first)
+  PASS  Weld resistance: u = 0.60 vs u ≤ 1  utilisation 0.60  « BS EN 1993-1-8 4.5.3.3
 
-7. APPLICABILITY
-  No warnings.
+7. Applicability
+  None.
 
-8. VERIFICATION
-  Template: struct.fillet-weld@1.0.1
+8. Verification
+  Template: struct.fillet-weld@1.0.2
   Known-answer cases passed: 3/3
+
+9. References
+  1. BS EN 1993-1-8 4.5.3.3 — Simplified method for design resistance of fillet weld
+  2. BS EN 1993-1-8 4.5.2(2) — Effective throat thickness: minimum 3 mm
+  3. BS EN 1993-1-8 4.5.1(2) — Effective length: welds shorter than 30 mm or 6 throats not to carry load
+  4. BS EN 1993-1-8 4.11 — Long joints

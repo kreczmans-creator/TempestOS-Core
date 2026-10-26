@@ -45,7 +45,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "2.2.0", CalcDiscipline.Mechanical, "Tolerance stack-up (1D) v2",
+        Id, "2.2.1", CalcDiscipline.Mechanical, "Tolerance stack-up (1D)",
         "A linear tolerance loop: worst-case limits, root-sum-square and modified RSS limits, predicted spread and capability against a stated requirement, contribution Pareto and a Monte Carlo prediction.",
         "Worst case, every contributor at its limit: T_wc = Σ|half-bands|.\nRoot sum of squares, the statistical stack: T_rss = √Σ half².\nModified RSS, a factor on the RSS (Bender-style): T_mrss = factor × RSS.\nPredicted standard deviation of the stack, from each contributor's distribution: σ = √Σ σ_i².\nProcess capability, taken from the nearer limit: C_pk = min(USL − μ, μ − LSL)/(3σ).\nMonte Carlo check, every contributor sampled from a fixed seed and summed with its sign: stack = Σ s_i x_i.",
         [
@@ -70,10 +70,10 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
             new CalcClauseRef("ISO 2768-1", "—", "General tolerances (where a contributor's band is a general tolerance)"),
         ],
         [
-            new CalcApplicabilityRule("few-contributors", "Fewer than four contributors: RSS and modified RSS are optimistic.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("no-requirement", "No requirement stated: capability and yield are not computed.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("sigma-ignored", "A standard deviation is stated for a uniform or triangular contributor: it applies to normal contributors only and is ignored.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("min-above-max", "The stated minimum is above the stated maximum.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("few-contributors", "Fewer than four contributors: RSS and modified RSS are optimistic.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("no-requirement", "No requirement stated: capability and yield are not computed.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("sigma-ignored", "A standard deviation is stated for a uniform or triangular contributor: it applies to normal contributors only and is ignored.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("min-above-max", "The stated minimum is above the stated maximum.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase(
@@ -193,6 +193,8 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_cpk");
+        c.MarkAtLeast("m_min", "m_max");
         var rows = c.Rows("contributors");
         var k = c.InputSi("k");
         var fRss = c.InputSi("f_rss");

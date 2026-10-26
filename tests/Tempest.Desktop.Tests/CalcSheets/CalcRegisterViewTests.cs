@@ -30,7 +30,8 @@ public sealed class CalcRegisterViewTests
         Assert.Contains("2 calculation(s): 1 issued, 0 checked, 1 draft, 0 superseded.", texts);
         Assert.Contains("Bolted joint", texts);
         Assert.Contains("ISSUED", texts);
-        Assert.Contains("FAIL u = 1.2", texts);
+        Assert.Contains("FAIL u = 1.20", texts);
+        Assert.Contains("PASS u = 0.83", texts);
     }
 
     [AvaloniaFact]

@@ -25,7 +25,7 @@ public sealed class ConductorSizingSenseTests
         var r = Run(CalcInputValue.Of(symbol, value));
 
         Assert.True(r.IsBlocked);
-        Assert.Contains(r.Blocks, b => b.Message.StartsWith(symbol + " ", StringComparison.Ordinal));
+        Assert.Contains(r.Blocks, b => b.Message.StartsWith(symbol + ":", StringComparison.Ordinal));
     }
 
     [Fact]

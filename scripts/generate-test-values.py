@@ -30,6 +30,18 @@ def cell(s: str) -> str:
     return s.strip().replace("|", "\\|")
 
 
+_SUPER = str.maketrans("0123456789-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁻")
+
+
+def pretty(text: str) -> str:
+    """A unit (or a value with its unit) with Unicode symbols, as the sheet prints it: degC -> °C, deg -> °, ohm -> Ω, * -> ·, ^2 -> ² (CalcUnitText.Pretty)."""
+    text = re.sub(r"(?<=\d) deg(?![A-Za-z])", "°", text)  # a number of degrees is written 93.89°, with no space, as the sheet does
+    text = re.sub(r"\^(-?\d+)", lambda m: m.group(1).translate(_SUPER), text)
+    text = text.replace("*", "·").replace("degC", "°C").replace("degF", "°F")
+    text = re.sub(r"(?<![A-Za-z])deg(?![A-Za-z])", "°", text)
+    return re.sub(r"(?<![A-Za-z])([kMGmµu]?)ohm(?![A-Za-z])", lambda m: ("µ" if m.group(1) == "u" else m.group(1)) + "Ω", text)
+
+
 def inputs_table(sheet: str) -> list[str]:
     rows = [l for l in section(sheet, 2) if l.strip()]
     if not rows:
@@ -57,7 +69,7 @@ def expected_table(readme: str) -> list[str]:
         if not l.startswith("|"):
             break
         parts = [p.strip() for p in l.strip("|").split("|")]
-        out.append(f"| {parts[0]} | {parts[1]} |")
+        out.append(f"| {parts[0]} | {pretty(parts[1])} |")
     return out
 
 
@@ -76,7 +88,7 @@ def main() -> int:
           "example's `inputs.json` (Import inputs… on the worksheet form; the path is given) or type the inputs below. Run it. "
           "Each expected output must match to the digits shown. The governing check must read as stated. A table input lists its "
           "rows under it (for example `sizes[1]`).", "",
-          "Units are as the form shows them. `bar a` and `bar g` are absolute and gauge bar. A value marked `default` is the form's "
+          "Units are written as symbols (kN·m, m², °C, Ω), as the sheet prints them; the form's unit list spells the same unit kN*m, m^2, degC, ohm. `bar a` and `bar g` are absolute and gauge bar. A value marked `default` is the form's "
           "own default: leave it as it opens.", "", "## Contents", ""]
     for disc, title in DISCIPLINES:
         ts = [t for d, t in templates if d == disc]

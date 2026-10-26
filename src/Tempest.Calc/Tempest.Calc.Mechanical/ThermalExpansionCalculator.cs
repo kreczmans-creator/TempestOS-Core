@@ -63,6 +63,7 @@ public sealed class ThermalExpansionCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u");
         foreach (var s in new[] { "L", "A", "E", "alpha", "dT", "g", "sigma_allow" })
             c.Input(s);
 

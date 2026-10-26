@@ -6,19 +6,15 @@ Author: TempestOS    Authored: —
 Checker: —    Checked: —
 Issued: —
 
-1. SCOPE AND METHOD
+1. Scope and method
 Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
 Design flow from the heat carried, when a heat load is given in place of a flow: Q = Φ/(ρ c_p ΔT). Mean velocity in the pipe: v = Q/(πD²/4). Reynolds number, which decides laminar or turbulent flow: Re = ρvD/μ. Friction factor for laminar flow (Re < 2300): f = 64/Re. Friction factor for turbulent flow, Colebrook–White by fixed-point iteration (at most 100 steps) from the Swamee–Jain value, which also cross-checks it: 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)). Head lost in the pipe and its fittings: h_f = f (L + L_eq)/D · v²/2g + K v²/2g. System curve, with the friction of a turbulent or transitional segment and every fitting loss scaled from the design flow as Q², and the friction of a laminar segment (Re < 2300, h_f ∝ Q) as Q (a closed circuit has Σdz = 0, the rise in the flow being recovered in the return): H_sys(Q) = Σdz + h_out + Σh_f,lam·(Q/Q₀) + Σh_f,other·(Q/Q₀)². Water held in the pipes: V_pipe = Σ π/4·D²·L. Duty point, where the pump and system curves cross (every crossing is found by a scan and refined by bisection; the stable one, where the pump curve falls through the system curve, nearest the design flow is reported): H_pump(Q) = H_sys(Q). Pump affinity laws for a change of speed n: Q ∝ n; H ∝ n². For a change of impeller diameter D, by the choice: a trimmed impeller of the same casing, Q ∝ D and H ∝ D² (the default, the usual practice for a trim); or a geometrically similar pump scaled in all dimensions, Q ∝ D³ and H ∝ D². Speed and diameter combine as Q ∝ n·D^a, H ∝ n²·D², a = 1 or 3. Net positive suction head available, to compare with what the pump requires: NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg, with p_v from the water correlation or, for a custom fluid, from the vapour pressure entered. The friction h_f,suction is that of the segments marked 'suction' only, at the larger of the design flow and the duty flow the pump runs at. Shaft torque for the motor: T = P/ω with P the larger of the design-flow shaft power and the duty-point shaft power, at the speed n_pump; when a speed or diameter ratio shifts the duty, the shifted duty power at the shifted speed n_pump·n₂/n₁.
-  Ref: Crane Technical Paper 410 — Flow of fluids through valves, fittings and pipe
-  Ref: Çengel & Cimbala, Fluid Mechanics Ch. 8 — Internal flow: friction factor, minor losses, pump duty
-  Ref: CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts (principles)
-  Ref: Kell, J. Chem. Eng. Data 20(1), 1975 — Density of liquid water
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   fluid | Fluid | water |  | spec: SPEC-M-04 §3: chilled water, no glycol | any
-  T | Fluid temperature (mean; link B6 t_m for a heating loop) | 6 | degC | spec: SPEC-M-04 §3: 6 °C flow | 0 … 100 degC
-  Q | Design flow rate (blank when a heat load gives it) | 30 | m^3/h | spec: Schedule CHW-01 design flow | 0.01 … 100000 m^3/h
+  T | Fluid temperature (mean; link B6 t_m for a heating loop) | 6 | °C | spec: SPEC-M-04 §3: 6 °C flow | 0 … 100 °C
+  Q | Design flow rate (blank when a heat load gives it) | 30 | m³/h | spec: Schedule CHW-01 design flow | 0.01 … 100000 m³/h
   segments | Pipe segments in series | 3 row(s) |  | drawing: DRG-M-110 rev C | any
   segments[1] |  | name = plantroom suction; L = 8 m; D = 100 mm; eps = 0.045 mm; K = 3; L_eq = 0 m; dz = 0 m; side = suction |  |  | 
   segments[2] |  | name = riser DN80; L = 60 m; D = 80 mm; eps = 0.045 mm; K = 8; L_eq = 0 m; dz = 10 m; side = discharge |  |  | 
@@ -26,7 +22,7 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
   circuit | Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored) | open (the pump lifts the water by the rises entered) |  | default | any
   h_out | Pressure head required at the outlet | 3 | m | spec: Terminal unit: 30 kPa ≈ 3 m | 0 … 1000 m
   v_max | Velocity limit (warning) | 2.5 | m/s | spec: CIBSE Guide C practice limit, assumed | 0.5 … 10 m/s
-  Q_pump | Pump curve: flow points | [0, 20, 40, 60] | m^3/h | spec: Pump datasheet P-01 rev 2, curve points | any
+  Q_pump | Pump curve: flow points | [0, 20, 40, 60] | m³/h | spec: Pump datasheet P-01 rev 2, curve points | any
   H_pump | Pump curve: head points | [40, 36, 24, 4] | m | spec: Pump datasheet P-01 rev 2, curve points | any
   n_ratio | Speed ratio n₂/n₁ (affinity) | 0.9 |  | assumption: Inverter turn-down to 90 % speed. | 0.2 … 2
   D_ratio | Impeller diameter ratio D₂/D₁ (affinity; the law is chosen below) | 1 |  | assumption: Impeller unchanged. | 0.7 … 1.1
@@ -36,7 +32,7 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
   z_s | Static head at the pump suction (+ flooded, − lift) | 2 | m | drawing: DRG-M-110 rev C | -10 … 100 m
   NPSH_r | NPSH required by the pump, at the flow NPSH_a is evaluated at: the larger of the design flow and the duty flow (optional) | 3 | m | spec: Pump datasheet P-01 rev 2 | 0 … 50 m
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Steady, incompressible, fully developed flow; all segments carry the full design flow in series. (Darcy–Weisbach.)
   A2. Fitting losses scale with velocity head (K method) or add pipe length (equivalent-length method); both may be used on one segment. (Crane TP-410 practice.)
   A3. The system curve scales the friction of turbulent and transitional segments and all fitting losses with Q² from the design flow (the friction factor is held at its design-flow value); the friction of a laminar segment scales with Q; the static part is independent of flow. (H_sys = H_static + k₁ Q + k₂ Q².)
@@ -45,7 +41,7 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
   A6. D_ratio (Impeller diameter ratio D₂/D₁ (affinity; the law is chosen below)) is taken as 1. (Impeller unchanged.)
   A7. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sea level.)
 
-4. WORKING
+4. Working
   [3] rho = Kell (1975) density of water at T    « Kell 1975
       = T = 6 °C
       = 999.94 kg/m³
@@ -203,54 +199,61 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
       = 1.0045
         Velocity utilisation
 
-5. RESULTS
-  T_line = 6 degC    Line design temperature
+5. Results
+  Q_design = 30 m³/h    Design flow
+  H_static = 15 m    Static head
+  V_pipe = 513.7 L    Water held in the pipes
+  H_sys = 27.70 m    System head at Q
+  h_f_total = 12.70 m    Σ h_f
+  dp_total = 124.5 kPa    Friction Δp
+  dp_sys = 271.6 kPa    System Δp
+  P_hyd = 2.263 kW    Hydraulic power
+  v_peak = 2.511 m/s    Highest velocity
+  T_line = 6 °C    Line design temperature
+  NPSH_a = 11.97 m    NPSH available
+  Q_duty = 31.57 m³/h    Duty flow as entered
+  H_duty = 29.06 m    Duty head as entered
+  P_shaft = 3.675 kW    Shaft power as entered
   v_s1 = 1.061 m/s    Velocity, plantroom suction
   Re_s1 = 72253    Re, plantroom suction
   f_s1 = 0.021093    f, plantroom suction
   f_sj_s1 = 0.021152    f (Swamee–Jain), plantroom suction
-  h_f_s1 = 0.26906 m    h_f, plantroom suction
-  v_s2 = 1.6579 m/s    Velocity, riser DN80
+  h_f_s1 = 0.2691 m    h_f, plantroom suction
+  v_s2 = 1.658 m/s    Velocity, riser DN80
   Re_s2 = 90316    Re, riser DN80
   f_s2 = 0.020849    f, riser DN80
   f_sj_s2 = 0.020946    f (Swamee–Jain), riser DN80
-  h_f_s2 = 3.3123 m    h_f, riser DN80
-  v_s3 = 2.5113 m/s    Velocity, index run DN65
+  h_f_s2 = 3.312 m    h_f, riser DN80
+  v_s3 = 2.511 m/s    Velocity, index run DN65
   Re_s3 = 111160    Re, index run DN65
   f_s3 = 0.020834    f, index run DN65
   f_sj_s3 = 0.020964    f (Swamee–Jain), index run DN65
-  h_f_s3 = 9.1151 m    h_f, index run DN65
-  h_f_total = 12.696 m    Σ h_f
-  H_static = 15 m    Static head
-  V_pipe = 513.75 L    Water held in the pipes
-  H_sys = 27.696 m    System head at Q
-  dp_total = 124.5 kPa    Friction Δp
-  dp_sys = 271.59 kPa    System Δp
-  Q_design = 30 m³/h    Design flow
-  P_hyd = 2.2633 kW    Hydraulic power
-  Q_duty = 31.569 m³/h    Duty flow as entered
-  H_duty = 29.059 m    Duty head as entered
-  P_shaft = 3.6747 kW    Shaft power as entered
-  Q_duty2 = 26.238 m³/h    Duty flow after the affinity shift
-  H_duty2 = 24.712 m    Duty head after the affinity shift
-  P_shaft2 = 2.5972 kW    Shaft power after the affinity shift
-  NPSH_a = 11.968 m    NPSH available
-  v_peak = 2.5113 m/s    Highest velocity
+  h_f_s3 = 9.115 m    h_f, index run DN65
+  Q_duty2 = 26.24 m³/h    Duty flow after the affinity shift
+  H_duty2 = 24.71 m    Duty head after the affinity shift
+  P_shaft2 = 2.597 kW    Shaft power after the affinity shift
 
-6. CHECKS (governing first)
-  FAIL  Velocity ≤ limit: u_v = 1.0045 vs u_v ≤ 1  utilisation 1
-  PASS  NPSH_r ≤ NPSH_a: u_npsh = 0.25066 vs u_npsh ≤ 1  utilisation 0.251
-  PASS  Duty point exists (as entered): 31.569 m³/h vs 29.059 m  utilisation 0
-  PASS  Duty point exists (after the affinity shift): 26.238 m³/h vs 24.712 m  utilisation 0
+6. Checks (governing first)
+  FAIL  Velocity ≤ limit: u_v = 1.01 vs u_v ≤ 1  utilisation 1.01
+  PASS  NPSH_r ≤ NPSH_a: u_npsh = 0.25 vs u_npsh ≤ 1  utilisation 0.25
+  PASS  Duty point exists (as entered): 31.569 m³/h vs 29.059 m
+  PASS  Duty point exists (after the affinity shift): 26.238 m³/h vs 24.712 m
 
-7. APPLICABILITY
-  WARNING input.circuit: circuit (Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored)) was not entered; the template default 'open (the pump lifts the water by the rises entered)' is used.
-  WARNING input.D_law: D_law (Law for the diameter ratio: a trimmed impeller of the same casing (Q ∝ D, H ∝ D²) or a geometrically similar pump (Q ∝ D³, H ∝ D²)) was not entered; the template default 'impeller trim (Q ∝ n·D, H ∝ n²·D²)' is used.
-  WARNING velocity: segments: index run DN65 runs at 2.5113 m/s, above the 2.5 m/s limit.
+7. Applicability
+  WARNING  segments: index run DN65 runs at 2.5113 m/s, above the 2.5 m/s limit.  [velocity]
+  Defaults used (inputs left empty):
+    circuit: not entered, so the default of 'open (the pump lifts the water by the rises entered)' is used.
+    D_law: not entered, so the default of 'impeller trim (Q ∝ n·D, H ∝ n²·D²)' is used.
 
-8. VERIFICATION
+8. Verification
   Template: bs.pipe-pump@1.8.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5
   Test run: —
+
+9. References
+  1. Crane Technical Paper 410 — Flow of fluids through valves, fittings and pipe
+  2. Çengel & Cimbala, Fluid Mechanics Ch. 8 — Internal flow: friction factor, minor losses, pump duty
+  3. CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts (principles)
+  4. Kell, J. Chem. Eng. Data 20(1), 1975 — Density of liquid water

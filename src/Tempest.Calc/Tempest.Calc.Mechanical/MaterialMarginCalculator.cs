@@ -40,10 +40,12 @@ public sealed class MaterialMarginCalculator : ICalcCalculator
                 [CalcInputValue.Quantity("sigma", 250, "MPa"), CalcInputValue.Quantity("f_y", 355, "MPa"), CalcInputValue.Of("k_u", 1.5), CalcInputValue.Of("n_req", 1.5)],
                 [new CalcExpectedValue("n_y", 1.42, "", 1e-12), new CalcExpectedValue("n_gov", 1.42, "", 1e-12), new CalcExpectedValue("u", 1.0563, "", 5e-5)]),
         ],
-        Category: "Materials");
+        Category: "Strength");
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u");
+        c.MarkAtLeast("n_u", "n_y", "n_gov");
         foreach (var s in new[] { "sigma", "f_y", "k_u", "n_req" })
             c.Input(s);
 

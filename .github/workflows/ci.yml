@@ -954,6 +954,11 @@ jobs:
       - name: Check NuGet package licences against the allow-list
         run: python3 scripts/check-licences.py
 
+      # Addendum C, C-2 (M3): docs/calcs/glossary.md is generated from glossary-data.json and glossary-intro.md. Offline and deterministic, like the
+      # licence check above: it fails when the document was edited by hand or the data changed and the script was not run.
+      - name: Check the calculation glossary is what its generator writes
+        run: python3 scripts/generate-glossary.py --check
+
   # WP 16.5B — Linux/X11 launch smoke test. `TD-116` (a Linux `TypeLoadException`
   # inside Avalonia.FreeDesktop's DBus/X11 IME path, root-caused to a security
   # pin — `Tmds.DBus.Protocol` 0.94.2 — that Avalonia.FreeDesktop 11.2.3

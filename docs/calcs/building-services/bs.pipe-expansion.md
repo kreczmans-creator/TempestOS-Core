@@ -63,6 +63,6 @@ F_friction = μ and w_pipe blank = 0 N
 u_res = 176.4 MPa / 100 MPa = 1.764
 Delta = 42 mm / 2 = 21 mm
 … 16 more step(s) on the sheet
-Governing: PASS  Available leg against the required leg (3.4295 m): u_leg = 0.85737 vs u_leg ≤ 1  utilisation 0.857
+Governing: PASS  Available leg against the required leg (3.4295 m): u_leg = 0.86 vs u_leg ≤ 1  utilisation 0.86
 ```
 <!-- hand-arithmetic:end -->

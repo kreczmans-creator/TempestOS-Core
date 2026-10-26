@@ -2,21 +2,15 @@ CALCULATION SHEET — ISSUED
 Project: Controller box 7
 Calc ID: Cover plate    Revision: A
 Title: Plate bending
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: ELX-ENC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: ELX-ENC-001    Client: Client Co
 
-1. SCOPE AND METHOD
+1. Scope and method
 Bending of a thin, flat, isotropic plate under a lateral load by Kirchhoff small-deflection theory: circular plates (uniform pressure, central patch, ring load; clamped or simply supported) in closed form; rectangular plates simply supported (uniform pressure or central patch, Navier series) or clamped (Ritz, approximate). Maximum deflection, greatest von Mises stress at the surface, stress and deflection utilisations and the fundamental frequency.
 Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von Mises σ_vm = √(σ_x² − σ_x·σ_y + σ_y² + 3τ_xy²) Circular, uniform q, clamped: w = q·a⁴/(64D); σ_edge = 3q·a²/(4t²); simply supported: w = (5 + ν)·q·a⁴/(64(1 + ν)D); σ_centre = 3(3 + ν)·q·a²/(8t²) Circular, central patch (radius c, pressure q) or ring (radius b, force F): w = A + B·r² (+ q·r⁴/64D) inside, A′ + B′·r² + C′·ln(r/a) + k·r²·ln(r/a) outside, k = q·c²/8D or F/8πD; constants from continuity of w, w′, M_r at the load radius and the edge conditions; M_r = −D(w″ + ν·w′/r), M_θ = −D(w′/r + ν·w″) Rectangular, simply supported: w = Σ W_mn·sin(mπx/a)·sin(nπy/b) over odd m, n; W_mn = q_mn/(π⁴D(m²/a² + n²/b²)²); q_mn = 16q/(π²mn) (uniform) or 16q/(π²mn)·sin(mπ/2)·sin(nπ/2)·sin(mπu/2a)·sin(nπv/2b) (patch u × v); M_x = Dπ²ΣW_mn(m²/a² + ν·n²/b²)·sin·sin, M_y likewise, M_xy = −D(1 − ν)π²ΣW_mn(mn/ab)·cos·cos; terms added until w, the centre moments and the corner M_xy each change by < 10⁻⁶ over a doubling (cap 1024 × 1024; the corner sum of a uniform load, which converges like 1/N², is Richardson-extrapolated before it is compared) Rectangular, clamped: Ritz, w = Σ c_ij·X_i(x/a)·Y_j(y/b), X_k(ξ) = ξ²(1 − ξ)²·P₂ₖ(2ξ − 1); c from the minimum of the total potential energy; order K taken as 8, 12, 16, 20, 25, 30 until w and the stress change by < 10⁻⁵ (or the change stops falling) Fundamental frequency: simply supported rectangle ω₁₁ = π²(1/a² + 1/b²)·√(D/(ρt)), f = ω/2π; circular ω = (λ²/a²)·√(D/(ρt)), λ² from the Bessel characteristic equation; clamped rectangle by Rayleigh–Ritz with the same basis Plate checks: σ_vm ≤ f_y/γ_M0; w_max ≤ span/ratio (circular span = diameter, rectangle span = shorter side); WARN w/t > 0.5
-  Ref: Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 3 — Symmetrical bending of circular plates
-  Ref: Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 5 — Simply supported rectangular plates (Navier solution)
-  Ref: Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 6 — Rectangular plates with various edge conditions
-  Ref: Leissa, Vibration of Plates (NASA SP-160) Ch. 2, 4 — Natural frequencies of circular and rectangular plates
-  Ref: BS EN 1993-1-1:2005+A1:2014 6.1(1) — Partial factor γ_M0
-  Ref: BS EN 1993-1-1:2005+A1:2014 6.2.1(5) — Yield criterion for the cross-section
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   shape | Plate shape | rectangular |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
   support | Edge support, all round | simply supported |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
@@ -33,12 +27,12 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
   r_ring | Ring radius (circular plate, ring load) | 150 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
   E | Modulus of elasticity | 69 | GPa | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 0.1 … 500 GPa
   nu | Poisson's ratio | 0.33 |  | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 0 … 0.45
-  rho | Density (for the frequency) | 2700 | kg/m^3 | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 100 … 20000 kg/m^3
+  rho | Density (for the frequency) | 2700 | kg/m³ | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 100 … 20000 kg/m³
   f_y | Yield strength | 120 | MPa | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 5 … 2000 MPa
   gamma_M0 | Partial factor γ_M0 on the resistance of the cross-section | 1 |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | 1 … 1.5
   defl_ratio | Deflection limit: span/ratio (span = diameter of a circular plate, shorter side of a rectangle) | 250 |  | assumption: Sheet default value; no project figure given. | 50 … 2000
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Thin plate, small-deflection (Kirchhoff) theory: flat, isotropic, linear elastic, constant thickness; the middle surface is unstrained; shear deformation is neglected (span/t of 10 or more). (Scope of S9; a warning below span/t = 10.)
   A2. The deflection stays small against the thickness: w/t above 0.5 means membrane action stiffens the plate and the small-deflection result is not valid (it overstates the deflection and the bending stress and ignores the membrane stress). (The sheet warns at w/t > 0.5.)
   A3. The edge support is the same all round and ideal: a simply supported edge is held at zero deflection and free to rotate; a clamped edge allows no deflection or rotation. A simply supported rectangle has its corners held down (the corner reaction 2·M_xy is reported); if the corners can lift, the deflection and the central moments are larger than computed. (Navier solution; no elastic edges, no rotational springs.)
@@ -53,7 +47,7 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
   A12. r_ring (Ring radius (circular plate, ring load)) is taken as 150 mm. (Sheet default value; no project figure given.)
   A13. defl_ratio (Deflection limit: span/ratio (span = diameter of a circular plate, shorter side of a rectangle)) is taken as 250. (Sheet default value; no project figure given.)
 
-4. WORKING
+4. Working
   [15] F_total = q·A_loaded    « Kirchhoff theory
       = 1 kPa × 300000 mm²
       = 0.3 kN
@@ -131,33 +125,41 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
       = 0.42758
         Deflection utilisation
 
-5. RESULTS
-  w_max = 0.85516 mm    Maximum deflection
-  sigma_max = 5.8993 MPa    Greatest von Mises stress
-  sigma_principal = 5.9731 MPa    Greatest principal stress
-  f1 = 65.835 Hz    Fundamental frequency
-  u_stress = 0.049161    Stress utilisation
-  u_defl = 0.42758    Deflection utilisation
+5. Results
+  w_max = 0.8552 mm    Maximum deflection
+  sigma_max = 5.899 MPa    Greatest von Mises stress
+  f1 = 65.83 Hz    Fundamental frequency
+  sigma_principal = 5.973 MPa    Greatest principal stress
   w_over_t = 0.21379    Deflection over thickness
   D = 412.97 N·m    Flexural rigidity
   terms_used = 128    Series terms used
-  M_x_c = 12.913 N·m/m    M_x at the centre
-  M_y_c = 15.928 N·m/m    M_y at the centre
-  M_xy_k = 9.0825 N·m/m    Corner twisting moment
-  R_corner = 0.018165 kN    Corner reaction
+  M_x_c = 12.91 N·m/m    M_x at the centre
+  M_y_c = 15.93 N·m/m    M_y at the centre
+  M_xy_k = 9.083 N·m/m    Corner twisting moment
+  R_corner = 0.01817 kN    Corner reaction
   location = "corner (twisting moment)"    Governing stress point
+  u_stress = 0.05    Stress utilisation
+  u_defl = 0.43    Deflection utilisation (governing)
 
-6. CHECKS (governing first)
-  PASS  Deflection w_max ≤ span/ratio: u_defl = 0.42758 vs u_defl ≤ 1  utilisation 0.428  « Serviceability
-  PASS  Stress σ_vm ≤ f_y/γ_M0: u_stress = 0.049161 vs u_stress ≤ 1  utilisation 0.0492  « 6.2.1(5)
+6. Checks (governing first)
+  PASS  Deflection w_max ≤ span/ratio: u_defl = 0.43 vs u_defl ≤ 1  utilisation 0.43  « Serviceability
+  PASS  Stress σ_vm ≤ f_y/γ_M0: u_stress = 0.05 vs u_stress ≤ 1  utilisation 0.05  « 6.2.1(5)
 
-7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: E, nu, rho, f_y (Material properties); gamma_M0 (EN 1993 National Annex factors); defl_ratio (Deflection limit). Enter each as one so its source, edition and licence travel with it.
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are E, nu, rho, f_y (Material properties); gamma_M0 (EN 1993 National Annex factors); defl_ratio (Deflection limit). Enter each as one so its source, edition and licence travel with it.  [record]
 
-8. VERIFICATION
+8. Verification
   Template: struct.plate-bending@1.2.2
   Content hash: 82862b637af72f75
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 11/11
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 16:21 UTC
   Application: TempestOS test
+
+9. References
+  1. Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 3 — Symmetrical bending of circular plates
+  2. Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 5 — Simply supported rectangular plates (Navier solution)
+  3. Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 6 — Rectangular plates with various edge conditions
+  4. Leissa, Vibration of Plates (NASA SP-160) Ch. 2, 4 — Natural frequencies of circular and rectangular plates
+  5. BS EN 1993-1-1:2005+A1:2014 6.1(1) — Partial factor γ_M0
+  6. BS EN 1993-1-1:2005+A1:2014 6.2.1(5) — Yield criterion for the cross-section

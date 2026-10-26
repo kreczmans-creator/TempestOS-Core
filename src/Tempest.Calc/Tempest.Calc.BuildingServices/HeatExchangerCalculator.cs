@@ -19,7 +19,7 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
     public const string Sizing = "sizing (given duty)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.BuildingServices, "Heat exchanger (LMTD and ε-NTU)",
+        Id, "1.4.0", CalcDiscipline.BuildingServices, "Heat exchanger (LMTD and ε-NTU)",
         "Single-phase heat exchanger with constant properties: in rating mode the duty and outlet temperatures for a given area; in sizing mode the area for a given duty. Counterflow, parallel flow, 1-shell-pass shell and tube, crossflow with both fluids unmixed (approximate), and one fluid at constant temperature.",
         "Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with one fluid at constant temperature (C_r = 0) that fluid's capacity rate is infinite, C_min is the other stream's and the constant stream leaves at its inlet temperature\n" +
         "Overall coefficient with fouling: U_f = 1/(1/U + R_f)\n" +
@@ -54,14 +54,14 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
             new CalcClauseRef("Çengel & Ghajar, Heat and Mass Transfer", "5th ed., Ch. 11", "Heat exchangers"),
         ],
         [
-            new CalcApplicabilityRule("temperatures", "The hot inlet must be hotter than the cold inlet.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("area-missing", "Rating needs an area; sizing needs a required duty.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("duty-unattainable", "The required duty exceeds what any area of this arrangement can transfer.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("lmtd-mismatch", "The ε-NTU duty and the LMTD duty differ by more than 2 %: the arrangement or the temperatures are inconsistent.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("crossflow-approx", "Crossflow both-unmixed effectiveness is an approximate correlation.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("condensation", "The cold-side inlet is below the dew point of the hot-side air: the coil surface can condense water, which this sensible-only duty does not include and which needs a drain.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("pinch", "An end temperature difference is zero: the area is effectively infinite.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("low-F", "F below 0.75: the 1-shell-pass arrangement is used inefficiently; consider more shell passes.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("temperatures", "The hot inlet must be hotter than the cold inlet.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("area-missing", "Rating needs an area; sizing needs a required duty.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("duty-unattainable", "The required duty exceeds what any area of this arrangement can transfer.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("lmtd-mismatch", "The ε-NTU duty and the LMTD duty differ by more than 2 %: the arrangement or the temperatures are inconsistent.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("crossflow-approx", "Crossflow both-unmixed effectiveness is an approximate correlation.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("condensation", "The cold-side inlet is below the dew point of the hot-side air: the coil surface can condense water, which this sensible-only duty does not include and which needs a drain.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("pinch", "An end temperature difference is zero: the area is effectively infinite.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("low-F", "F below 0.75: the 1-shell-pass arrangement is used inefficiently; consider more shell passes.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-counter-balanced", "Balanced counterflow, NTU = 1",
@@ -97,13 +97,13 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
         Category: "Thermal",
         OutputPorts:
         [
-            new CalcOutputPort("Q", "kW", "Heat duty"),
-            new CalcOutputPort("T_h_out", "degC", "Hot-side outlet temperature"),
-            new CalcOutputPort("T_c_out", "degC", "Cold-side outlet temperature"),
-            new CalcOutputPort("dT_c", "K", "Cold-side temperature rise, T_c,out − T_c,in (→ B1 dT_load)"),
-            new CalcOutputPort("T_c_m", "degC", "Mean cold-side temperature (→ B1 fluid temperature T)"),
-            new CalcOutputPort("cp_c", "J/(kg*K)", "Cold-side specific heat as entered (→ B1 cp_load, so a glycol mixture reaches the pump flow)"),
-            new CalcOutputPort("A_req", "m^2", "Required area (sizing)"),
+            new CalcOutputPort("Q", "kW", "Heat duty", "exchanger.duty"),
+            new CalcOutputPort("T_h_out", "degC", "Hot-side outlet temperature", "exchanger.temperature_hot_out"),
+            new CalcOutputPort("T_c_out", "degC", "Cold-side outlet temperature", "exchanger.temperature_cold_out"),
+            new CalcOutputPort("dT_c", "K", "Cold-side temperature rise, T_c,out − T_c,in (→ pipe-pump dT_load)", "exchanger.temperature_rise_cold"),
+            new CalcOutputPort("T_c_m", "degC", "Mean cold-side temperature (→ pipe-pump T)", "exchanger.temperature_cold_mean"),
+            new CalcOutputPort("cp_c", "J/(kg*K)", "Cold-side specific heat as entered (→ pipe-pump cp_load, so a glycol mixture reaches the pump flow)", "exchanger.specific_heat_cold"),
+            new CalcOutputPort("A_req", "m^2", "Required area (sizing)", "exchanger.area_required"),
         ],
         RecordKinds:
         [
@@ -116,6 +116,7 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_app", "u_duty");
         var arrangement = c.InputText("arrangement");
         var sizing = c.InputText("mode") == Sizing;
 

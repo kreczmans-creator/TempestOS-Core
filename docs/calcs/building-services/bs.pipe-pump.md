@@ -38,6 +38,6 @@ Re_s2 = 999.94 × 1.6579 × 0.08 / 0.0014684 = 90316
 f_s2 = Colebrook–White, 10 iterations (Swamee–Jain start 0.020946) = 0.020849
 f_sj_s2 = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)² = 0.020946
 … 25 more step(s) on the sheet
-Governing: FAIL  Velocity ≤ limit: u_v = 1.0045 vs u_v ≤ 1  utilisation 1
+Governing: FAIL  Velocity ≤ limit: u_v = 1.01 vs u_v ≤ 1  utilisation 1.01
 ```
 <!-- hand-arithmetic:end -->

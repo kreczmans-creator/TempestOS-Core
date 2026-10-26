@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Tempest.Calc.Library;
+using Tempest.Calc.Sheets;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop.CalcSheets;
@@ -78,7 +79,7 @@ public sealed class CalcRegisterView : UserControl
                 CalcInstanceStatus.Superseded => Brushes.Gray,
                 _ => Brushes.DarkOrange,
             };
-            var check = Cell(governing is null ? "—" : $"{(governing.Passed ? "PASS" : "FAIL")} u = {Tempest.Calc.Engine.Values.CalcValue.FormatNumber(governing.Utilisation, 3)}");
+            var check = Cell(governing is null ? "—" : $"{(governing.Passed ? "PASS" : "FAIL")} u = {CalcDisplay.StoredUtilisation(governing.Utilisation)}");
 
             if (governing is not null)
                 check.Foreground = governing.Passed ? Brushes.SeaGreen : Brushes.IndianRed;

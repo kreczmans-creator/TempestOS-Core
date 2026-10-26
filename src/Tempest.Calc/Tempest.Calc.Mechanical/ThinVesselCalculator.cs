@@ -36,8 +36,8 @@ public sealed class ThinVesselCalculator : ICalcCalculator
             new CalcClauseRef("ASME BPVC Section VIII Division 1", "UG-27(c)(2)", "Thickness of shells under internal pressure, longitudinal stress"),
         ],
         [
-            new CalcApplicabilityRule("thin-wall", "The thin-shell formulae apply while t ≤ R/2 and P ≤ 0.385·S·E; beyond that use mech.thick-cylinder.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("corroded-through", "The provided thickness must exceed the corrosion allowance.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("thin-wall", "The thin-shell formulae apply while t ≤ R/2 and P ≤ 0.385·S·E; beyond that use mech.thick-cylinder.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("corroded-through", "The provided thickness must exceed the corrosion allowance.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-ug27-hand", "UG-27 hand calculation: 2 MPa, R 500 mm, S 138 MPa, E 0.85, c 3 mm, t 12 mm",
@@ -49,10 +49,11 @@ public sealed class ThinVesselCalculator : ICalcCalculator
                 [CalcInputValue.Quantity("P", 3, "MPa"), CalcInputValue.Quantity("R", 750, "mm"), CalcInputValue.Quantity("S", 138, "MPa"), CalcInputValue.Of("E_j", 1.0), CalcInputValue.Of("n", 1), CalcInputValue.Quantity("c", 1.5, "mm"), CalcInputValue.Quantity("t_p", 15, "mm")],
                 [new CalcExpectedValue("t_c", 16.520, "mm", 5e-5), new CalcExpectedValue("t_l", 8.1169, "mm", 5e-5), new CalcExpectedValue("t_req", 18.020, "mm", 5e-5), new CalcExpectedValue("sigma_h", 168.47, "MPa", 5e-5), new CalcExpectedValue("u", 1.2013, "", 5e-5)]),
         ],
-        Category: "Pressure Systems");
+        Category: "Vessels");
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u");
         foreach (var s in new[] { "P", "R", "S", "E_j", "n", "c", "t_p" })
             c.Input(s);
 

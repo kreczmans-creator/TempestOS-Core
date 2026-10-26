@@ -123,20 +123,20 @@ public sealed class LiftingLugCalculator : ICalcCalculator
             new CalcClauseRef("PUWER 1998", "reg 4, reg 5", "Suitability and maintenance of work equipment"),
         ],
         [
-            new CalcApplicabilityRule("pin", "The pin cannot be larger than the hole.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("radius", "The lug end radius must exceed the hole radius.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("strength", "f_u cannot be below f_y.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("factors", "BTH-1 mode needs the user-record factors N_d, n_y, n_u and k_b.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("clearance", "A pin much smaller than the hole reduces C_r.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("be", "b_e is limited to R − D_h/2.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("tilt", "A horizontal beam adds the 6° tilt case.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("sharing", "Four lugs: three are taken to share the load.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("angle", "A sling angle above 60° from the vertical, with the tilt, is outside the usual range.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("k-svc", "No service-class factor entered: 1.0 used.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("dishing", "No dishing limit entered: the dishing check is not made.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("proof", "No proof-load factor entered: no proof load given.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("beam-area", "No beam area entered: the spreader utilisation is the lug utilisation only.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("attestation", "The competent-person attestation and the second check are required to check and issue.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("pin", "The pin cannot be larger than the hole.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("radius", "The lug end radius must exceed the hole radius.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("strength", "f_u cannot be below f_y.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("factors", "BTH-1 mode needs the user-record factors N_d, n_y, n_u and k_b.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("clearance", "A pin much smaller than the hole reduces C_r.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("be", "b_e is limited to R − D_h/2.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("tilt", "A horizontal beam adds the 6° tilt case.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("sharing", "Four lugs: three are taken to share the load.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("angle", "A sling angle above 60° from the vertical, with the tilt, is outside the usual range.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("k-svc", "No service-class factor entered: 1.0 used.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("dishing", "No dishing limit entered: the dishing check is not made.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("proof", "No proof-load factor entered: no proof load given.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("beam-area", "No beam area entered: the spreader utilisation is the lug utilisation only.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("attestation", "The competent-person attestation and the second check are required to check and issue.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-bth1-hand", "BTH-1 mode, two lugs at 30° and 5° out of plane, 150 kN: every section hand-recomputed",
@@ -207,7 +207,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
                     new CalcExpectedValue("P_b", 10.875, "kip", 1e-9), new CalcExpectedValue("P_v", 19.849, "kip", 3e-5), new CalcExpectedValue("P_sp", 20.539, "kip", 3e-5),
                 ]),
         ],
-        Category: "Design",
+        Category: "Lifting",
         OutputPorts:
         [
             new CalcOutputPort("capacity", "kN", "Rated load the lug carries in the governing mode (lug.capacity)"),
@@ -232,6 +232,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("lug_util", "u_b", "u_beam", "u_bth", "u_dish", "u_en", "u_en_b", "u_en_sp", "u_en_t", "u_en_v", "u_sp", "u_t", "u_v", "util");
         var mode = c.InputText("mode");
         var bth = mode is ModeBth1 or ModeBoth;
         var en = mode is ModeEn or ModeBoth;

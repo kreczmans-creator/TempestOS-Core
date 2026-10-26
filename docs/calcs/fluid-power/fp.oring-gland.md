@@ -45,6 +45,6 @@ stretch = 57.5/55.55 − 1 = 3.5104 %
 stretch_min = 57.426/56.45 − 1 = 1.729 %
 red_nom = r(2.6125 %) = 1.2812 %
 … 37 more step(s) on the sheet
-Governing: PASS  Squeeze minimum within the band: squeeze_min 15.125 % vs ≥ 15 %  utilisation 0  « oring.criteria record
+Governing: PASS  Squeeze minimum within the band: squeeze_min 15.125 % vs ≥ 15 %  « oring.criteria record
 ```
 <!-- hand-arithmetic:end -->

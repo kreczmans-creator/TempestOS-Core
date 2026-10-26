@@ -84,27 +84,27 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             new CalcClauseRef("Kell, J. Chem. Eng. Data 20(1), 1975", "—", "Density of liquid water"),
         ],
         [
-            new CalcApplicabilityRule("heat-flow", "A heat load needs its temperature difference (and the reverse); without a heat load a design flow is needed.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("heat-t", "A heat load is given without the fluid temperature: 20 °C is taken.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("cp_load", "A custom fluid needs its specific heat for the heat-load flow.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("heat-flow-q", "A design flow is entered as well as a heat load: the flow from the heat load is used and Q ignored.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("custom-fluid", "A custom fluid needs its density and viscosity.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("water-range", "Water correlations hold for 0–100 °C.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("segments", "At least one segment is needed.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("laminar", "Laminar flow in a segment (Re < 2300): f = 64/Re.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("transition", "Transitional flow (2300 ≤ Re < 4000): the friction factor is uncertain; Colebrook is used.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("fittings", "Fitting loss coefficients K are entered for a segment below Re 4000: K is a turbulent-flow value and rises at low Re, so the fittings term K·v²/2g is understated.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("velocity", "A segment exceeds the velocity limit.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("pump-curve", "The pump curve needs at least two points with matching flow and head counts, flows increasing.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("npsh-custom", "NPSH_r is entered for a custom fluid with no vapour pressure p_v_custom: NPSH_a is not computed and no NPSH check is made.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("npsh-no-suction", "NPSH_r is entered but no segment is marked 'suction' (a blank side column means discharge): NPSH_a carries no suction friction and is optimistic unless the suction line has no friction.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("no-duty", "The pump curve and the system curve do not cross within the curve's flow range.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("plant-loss", "A heat-load sheet has no outlet head h_out: the pump head then holds pipe friction only, without the water-side loss of the boiler, heat exchanger, coil, valves and emitters.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("fluid-cp", "The specific heat of the heat-load flow differs from water's by more than 5 %: the fluid is not water, but this sheet is on water unless a custom fluid is chosen, so the flow, friction and torque are those of water.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("multi-duty", "The pump curve crosses the system curve more than once: all crossings are listed and the stable one nearest the design flow is reported.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("duty-unstable", "The only crossing of the pump curve and the system curve is on a rising part of the pump curve, where the operating point is unstable.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("eta-default", "The pump efficiency is the default 0.7 for a pump of under about 1 kW shaft power: small circulators have a far lower overall efficiency, so the shaft power and torque are understated.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("summary-only", "More than 50 segments: per-segment lines are omitted.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("heat-flow", "A heat load needs its temperature difference (and the reverse); without a heat load a design flow is needed.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("heat-t", "A heat load is given without the fluid temperature: 20 °C is taken.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("cp_load", "A custom fluid needs its specific heat for the heat-load flow.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("heat-flow-q", "A design flow is entered as well as a heat load: the flow from the heat load is used and Q ignored.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("custom-fluid", "A custom fluid needs its density and viscosity.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("water-range", "Water correlations hold for 0–100 °C.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("segments", "At least one segment is needed.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("laminar", "Laminar flow in a segment (Re < 2300): f = 64/Re.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("transition", "Transitional flow (2300 ≤ Re < 4000): the friction factor is uncertain; Colebrook is used.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("fittings", "Fitting loss coefficients K are entered for a segment below Re 4000: K is a turbulent-flow value and rises at low Re, so the fittings term K·v²/2g is understated.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("velocity", "A segment exceeds the velocity limit.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("pump-curve", "The pump curve needs at least two points with matching flow and head counts, flows increasing.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("npsh-custom", "NPSH_r is entered for a custom fluid with no vapour pressure p_v_custom: NPSH_a is not computed and no NPSH check is made.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("npsh-no-suction", "NPSH_r is entered but no segment is marked 'suction' (a blank side column means discharge): NPSH_a carries no suction friction and is optimistic unless the suction line has no friction.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("no-duty", "The pump curve and the system curve do not cross within the curve's flow range.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("plant-loss", "A heat-load sheet has no outlet head h_out: the pump head then holds pipe friction only, without the water-side loss of the boiler, heat exchanger, coil, valves and emitters.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("fluid-cp", "The specific heat of the heat-load flow differs from water's by more than 5 %: the fluid is not water, but this sheet is on water unless a custom fluid is chosen, so the flow, friction and torque are those of water.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("multi-duty", "The pump curve crosses the system curve more than once: all crossings are listed and the stable one nearest the design flow is reported.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("duty-unstable", "The only crossing of the pump curve and the system curve is on a rising part of the pump curve, where the operating point is unstable.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("eta-default", "The pump efficiency is the default 0.7 for a pump of under about 1 kW shaft power: small circulators have a far lower overall efficiency, so the shaft power and torque are understated.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("summary-only", "More than 50 segments: per-segment lines are omitted.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-laminar-oil", "Laminar oil flow (analytic Hagen–Poiseuille)",
@@ -160,6 +160,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_npsh", "u_v");
         const double g = 9.80665;
         var fluid = c.InputText("fluid");
         var tEntered = c.Has("T");

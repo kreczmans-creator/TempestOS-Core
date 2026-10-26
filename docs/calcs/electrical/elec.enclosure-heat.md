@@ -32,6 +32,6 @@ rho_air = 101.32 kPa / (287.055 J/(kg*K) × 35 degC) = 1.1455 kg/m³
 V_req = 300 W / (1.1455 kg/m³ × 1006 J/(kg*K) × 15 K) = 62.481 m³/h
 V_req_net = max(0 m^3/h, (300 W − 94.05 W) / (1.1455 kg/m³ × 1006 J/(kg*K) × 15 K)) = 42.893 m³/h
 … 3 more step(s) on the sheet
-Governing: FAIL  Natural dissipation holds T_max: u_nat = 3.1898 vs u_nat ≤ 1  utilisation 3.19
+Governing: FAIL  Natural dissipation holds T_max: u_nat = 3.19 vs u_nat ≤ 1  utilisation 3.19
 ```
 <!-- hand-arithmetic:end -->

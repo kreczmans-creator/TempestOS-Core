@@ -166,7 +166,7 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(Si(e1, "T_load") * omega, Si(e1, "P_cont"), 6);
         Assert.Equal(11805.938169574532, Si(e1, "P_cont"), 6);
         Assert.Equal(Si(e1, "P_cont"), Si(e1, "P_rms"), 6);
-        Assert.Equal(4, e1.Checks.Count);
+        Assert.Equal(5, e1.Checks.Count);
         Assert.All(e1.Checks, c => Assert.True(c.Passed, c.Name));
         Assert.Equal(0.8099023351401162, Si(e1, "u_rms"), 9);
 

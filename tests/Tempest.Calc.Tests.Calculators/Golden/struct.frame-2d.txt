@@ -3,31 +3,28 @@ Project: GOLDEN
 Calc ID: struct.frame-2d    Revision: A
 Title: Beam and 2D frame analysis
 
-1. SCOPE AND METHOD
+1. Scope and method
 Linear elastic analysis of a plane frame or continuous beam by the direct stiffness method: reactions, member end forces, axial force, shear, bending moment and deflection along every member with their extremes and positions, for each load combination and as an envelope. Global x to the right, y up; moments and couples anticlockwise positive; sagging moments positive along a member from node i to node j.
 Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L and bending EI/L³ terms. End releases (pins) are taken out by static condensation; supports remove freedoms or add spring stiffness. Span loads become equivalent nodal loads, the exact fixed-end forces. Displacements, by banded LDLᵀ after a reverse Cuthill–McKee ordering (a non-positive pivot is reported as a mechanism): K u = F. Internal forces and deflections follow from the member end actions and Macaulay functions of the span loads. Extremes are found at stations along each member, plus the zero-shear and zero-slope points found by bisection.
-  Ref: Hibbeler, Structural Analysis Ch. 16 — Plane frame analysis using the stiffness method
-  Ref: Roark's Formulas for Stress and Strain Ch. 8, Table 8.1 — Shear, moment, slope and deflection formulas for elastic straight beams
-  Ref: BS EN 1990 6.4.3 — Combinations of actions (user-entered factors)
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   E | Default modulus of elasticity | 210 | GPa | manual | 1 … 500 GPa
   nodes | Nodes | 2 row(s) |  | manual | any
   nodes[1] |  | id = 1; x = 0 m; y = 0 m; support = pin |  |  | 
   nodes[2] |  | id = 2; x = 6 m; y = 0 m; support = roller (vertical) |  |  | 
   elements | Elements | 1 row(s) |  | manual | any
-  elements[1] |  | id = 1; i = 1; j = 2; A = 100 cm^2; I = 8000 cm^4; rel_i = no; rel_j = no |  |  | 
+  elements[1] |  | id = 1; i = 1; j = 2; A = 100 cm²; I = 8000 cm⁴; rel_i = no; rel_j = no |  |  | 
   loads | Loads | 1 row(s) |  | manual | any
-  loads[1] |  | case = 1; kind = udl; target = 1; a = 0 m; b = 6 m; w1 = -10 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = 0 kN; M = 0 kN*m |  |  | 
+  loads[1] |  | case = 1; kind = udl; target = 1; a = 0 m; b = 6 m; w1 = -10 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = 0 kN; M = 0 kN·m |  |  | 
   n_div | Stations per member | 20 |  | manual | 4 … 100
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Linear elastic, small displacements, first order; no shear deformation, no P–Δ, no buckling. (Euler–Bernoulli direct stiffness.)
   A2. Members are prismatic between nodes and connect rigidly unless a release is stated; a release transmits no moment at that end. (Static condensation of the released rotation.)
   A3. Distributed loads act perpendicular to the member unless marked as gravity loads, which act in global −y per metre of member length. (Load table convention.)
 
-4. WORKING
+4. Working
   [3] n_nodes = nodes
       = 2
       = 2
@@ -145,39 +142,44 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
       = 10.045 mm
         Maximum transverse deflection
 
-5. RESULTS
+5. Results
   R1_x = 0 kN    R_x node 1
   R1_y = 30 kN    R_y node 1
   R1_m = 0 kN·m    M node 1
   R1_x_abs = 0 kN    |R_x| node 1
   R1_m_abs = 0 kN·m    |M| node 1
+  N_e1 = 0 kN    N, member 1
+  V_e1 = 30 kN    |V| max, member 1
+  M_abs_e1 = 45 kN·m    |M| max, member 1
+  M_max_e1 = 45 kN·m    M max, member 1
+  M_min_e1 = 0 kN·m    M min, member 1
+  sum_R_y = 60 kN    Σ R_y
+  sum_R_x = 0 kN    Σ R_x
+  M_max = 45 kN·m    M max
+  M_min = 0 kN·m    M min
+  V_max = 30 kN    |V| max
+  N_max = 0 kN    N max (tension)
+  N_min = 0 kN    N min (compression)
+  d_max = 10.04 mm    δ max
   R2_x = 0 kN    R_x node 2
   R2_y = 30 kN    R_y node 2
   R2_m = 0 kN·m    M node 2
   R2_x_abs = 0 kN    |R_x| node 2
   R2_m_abs = 0 kN·m    |M| node 2
-  sum_R_y = 60 kN    Σ R_y
-  sum_R_x = 0 kN    Σ R_x
-  M_max_e1 = 45 kN·m    M max, member 1
-  M_min_e1 = 0 kN·m    M min, member 1
-  M_abs_e1 = 45 kN·m    |M| max, member 1
-  V_e1 = 30 kN    |V| max, member 1
-  N_e1 = 0 kN    N, member 1
-  d_e1 = 10.045 mm    δ max, member 1
-  M_max = 45 kN·m    M max
+  d_e1 = 10.04 mm    δ max, member 1
   x_Mmax = 3 m    x of M max
-  M_min = 0 kN·m    M min
-  V_max = 30 kN    |V| max
-  N_max = 0 kN    N max (tension)
-  N_min = 0 kN    N min (compression)
-  d_max = 10.045 mm    δ max
 
-6. CHECKS (governing first)
-  No pass/fail checks in this calculation.
+6. Checks (governing first)
+  None.
 
-7. APPLICABILITY
-  No warnings.
+7. Applicability
+  None.
 
-8. VERIFICATION
+8. Verification
   Template: struct.frame-2d@1.4.0
   Known-answer cases passed: 6/6
+
+9. References
+  1. Hibbeler, Structural Analysis Ch. 16 — Plane frame analysis using the stiffness method
+  2. Roark's Formulas for Stress and Strain Ch. 8, Table 8.1 — Shear, moment, slope and deflection formulas for elastic straight beams
+  3. BS EN 1990 6.4.3 — Combinations of actions (user-entered factors)

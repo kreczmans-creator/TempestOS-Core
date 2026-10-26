@@ -122,7 +122,7 @@ public sealed class CalcInstanceServiceTests
         var attachment = Assert.Single(await evidence.GetAttachmentsAsync());
         Assert.Equal("text/plain", attachment.ContentType);
         var content = await evidence.ReadAttachmentContentAsync(attachment.Id);
-        Assert.Contains("4. WORKING", System.Text.Encoding.UTF8.GetString(content.Bytes), StringComparison.Ordinal);
+        Assert.Contains("4. Working", System.Text.Encoding.UTF8.GetString(content.Bytes), StringComparison.Ordinal);
 
         var register = (Calculation)(await host.Context.Repository.FindAsync(instance.RegisterObjectId!.Value))!;
         Assert.True(register.Completed);
@@ -137,7 +137,7 @@ public sealed class CalcInstanceServiceTests
         var instance = await host.Service.CreateAsync("test.direct-stress", await host.ProjectAsync(), "C3", inputs);
         var checkResult = await host.Service.CheckAsync(instance.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted);
         Assert.False(checkResult.Succeeded);
-        Assert.StartsWith("A needs a source", checkResult.Reason, StringComparison.Ordinal);
+        Assert.StartsWith("A: give a source", checkResult.Reason, StringComparison.Ordinal);
         Assert.Equal(CalcInstanceStatus.Draft, (await host.Store.FindInstanceAsync(instance.Id))!.Status);
 
         var issued = await host.Service.IssueAsync(instance.Id, "ISS-2", "Client Co");

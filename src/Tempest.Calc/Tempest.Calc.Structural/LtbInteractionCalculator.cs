@@ -39,7 +39,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
     public const string MaterialKind = "material.properties";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.3", CalcDiscipline.Structural, "EN 1993-1-1 LTB and N+M interaction",
+        Id, "1.1.4", CalcDiscipline.Structural, "Lateral-torsional buckling and N+M interaction (EN 1993-1-1)",
         "Lateral-torsional buckling (6.3.2), flexural buckling (6.3.1) and the interaction of axial compression with bending (6.3.3) for a uniform doubly-symmetric I-section member on fork supports, class 1 to 3: M_cr, λ̄_LT, χ_LT and M_b,Rd; χ_y, χ_z and N_b,Rd; the Annex B (or Annex A) interaction factors and both interaction ratios, with the governing check.",
         "Critical moment (NCCI SN003 form): M_cr = C₁·π²E·I_z/(kL)²·[√((k/k_w)²·I_w/I_z + (kL)²·G·I_t/(π²E·I_z) + (C₂z_g)²) − C₂z_g]; C₁ = 1.88 − 1.40ψ + 0.52ψ² ≤ 2.70 (end moments, k = 1) unless entered\n" +
         "LTB slenderness: λ̄_LT = √(W_y·f_y/M_cr), W_y = W_pl,y (class 1, 2) or W_el,y (class 3)\n" +
@@ -129,24 +129,24 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
             new CalcClauseRef("EN 1993-1-1:2022", "8.3", "Stability of members (label only, see the edition note)"),
         ],
         [
-            new CalcApplicabilityRule("class-4", "Class 4 cross-sections need effective properties: outside this sheet.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("section", "The plastic moduli cannot be below the elastic moduli.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("end-moments", "End-moment mode needs both end moments.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("n-cr", "The design compression must stay below the elastic buckling forces (Annex A).", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("edition", "The 2022 edition choice changes the label only.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("moment", "The ψ mode needs the greatest moment M_y,Ed and ψ_y: a blank one falls back to the template default.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("k_c", "With C₁ entered the f modification needs k_c entered (unless the diagram is given as end moments).", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("C_m_y", "With C₁ entered Annex B needs C_my entered (unless the diagram is given as end moments).", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("C_m_LT", "Table B.2 divides by C_mLT − 0.25: C_mLT must exceed 0.25.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("curve", "The automatic flexural buckling curve is not defined for this section (f_y above 420 MPa, or a Table 6.2 combination without a row): choose the curve.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("engine", "The elastic critical moment could not be evaluated for these inputs.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("c1-psi", "C₁ from the ψ formula applies to end moments with k = 1 and can exceed the exact elastic value by up to about 10 % when ψ < 0.25; Annex A takes C_my,0 from ψ.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("table-b1", "Table B.1 is for members not susceptible to torsional deformation; an open I-section whose χ_LT is below 1 is susceptible unless it is restrained against twist.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("zg-c2", "z_g has no effect while C₂ = 0.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("double-curvature", "End moments of opposite sign are taken as double curvature (ψ < 0, C₁ up to its cap): bending-moment-diagram ordinates, not stiffness-analysis end actions.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("use-f", "The f modification belongs to 6.3.2.3 and is not applied with 6.3.2.2.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("annex-a", "Annex A coefficients are to be checked against the standard.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("slender", "Non-dimensional slenderness above 2.0.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("class-4", "Class 4 cross-sections need effective properties: outside this sheet.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("section", "The plastic moduli cannot be below the elastic moduli.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("end-moments", "End-moment mode needs both end moments.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("n-cr", "The design compression must stay below the elastic buckling forces (Annex A).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("edition", "The 2022 edition choice changes the label only.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("moment", "The ψ mode needs the greatest moment M_y,Ed and ψ_y: a blank one falls back to the template default.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("k_c", "With C₁ entered the f modification needs k_c entered (unless the diagram is given as end moments).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("C_m_y", "With C₁ entered Annex B needs C_my entered (unless the diagram is given as end moments).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("C_m_LT", "Table B.2 divides by C_mLT − 0.25: C_mLT must exceed 0.25.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("curve", "The automatic flexural buckling curve is not defined for this section (f_y above 420 MPa, or a Table 6.2 combination without a row): choose the curve.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("engine", "The elastic critical moment could not be evaluated for these inputs.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("c1-psi", "C₁ from the ψ formula applies to end moments with k = 1 and can exceed the exact elastic value by up to about 10 % when ψ < 0.25; Annex A takes C_my,0 from ψ.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("table-b1", "Table B.1 is for members not susceptible to torsional deformation; an open I-section whose χ_LT is below 1 is susceptible unless it is restrained against twist.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("zg-c2", "z_g has no effect while C₂ = 0.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("double-curvature", "End moments of opposite sign are taken as double curvature (ψ < 0, C₁ up to its cap): bending-moment-diagram ordinates, not stiffness-analysis end actions.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("use-f", "The f modification belongs to 6.3.2.3 and is not applied with 6.3.2.2.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("annex-a", "Annex A coefficients are to be checked against the standard.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("slender", "Non-dimensional slenderness above 2.0.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-annex-b-class2", "Annex B, Table B.2, class 2: N = 1200 kN with M_y = 200 kN·m (ψ = 0.5) and M_z = 15 kN·m",
@@ -194,7 +194,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
                 [new CalcExpectedValue("lambda_LT", 1.11959778027, "", 1e-6), new CalcExpectedValue("chi_LT", 0.49453731243, "", 1e-6), new CalcExpectedValue("k_yy", 1.32784479795, "", 1e-6), new CalcExpectedValue("k_yz", 1.39568003974, "", 1e-6), new CalcExpectedValue("k_zy", 1.18115263105, "", 1e-6), new CalcExpectedValue("k_zz", 1.24149385047, "", 1e-6), new CalcExpectedValue("u_61", 1.42476704306, "", 1e-6), new CalcExpectedValue("u_62", 1.48163658227, "", 1e-6)],
                 CalcReferenceStatus.Unconfirmed),
         ],
-        Category: "Design",
+        Category: "Members",
         OutputPorts:
         [
             new CalcOutputPort("Mb_Rd", "kN*m", "Design buckling resistance moment (→ S8 spreader beams)"),
@@ -260,6 +260,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_61", "u_62", "u_LTB", "u_M_y", "u_M_z", "u_N_y", "u_N_z", "u_buckling", "u_interaction", "u_member");
         var cls = c.InputText("section_class");
 
         if (cls == "4")

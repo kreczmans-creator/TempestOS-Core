@@ -173,6 +173,20 @@ public static class CalcCsv
         string Cell(IReadOnlyList<string> row, string name) => columns.TryGetValue(name, out var i) && i < row.Count ? row[i].Trim() : string.Empty;
 
         var tables = new Dictionary<string, ImportedTable>(StringComparer.Ordinal);
+        var givenAs = new Dictionary<string, (string Name, CalcInputValue Value)>(StringComparer.Ordinal);
+
+        // An input given under its current symbol and again under an old symbol with a different value is refused, not resolved by whichever row comes last.
+        void Put(CalcInputValue value, string nameUsed, int rowNumber)
+        {
+            if (givenAs.TryGetValue(value.Symbol, out var prior) && !string.Equals(prior.Name, nameUsed, StringComparison.Ordinal) && !CalcInputAliases.SameValue(prior.Value, value))
+            {
+                notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Block, $"Row {rowNumber}: {value.Symbol} is given as '{prior.Name}' and again as '{nameUsed}' with a different value; keep one."));
+                return;
+            }
+
+            givenAs[value.Symbol] = (nameUsed, value);
+            set.Set(value);
+        }
 
         for (var r = 1; r < rows.Count; r++)
         {
@@ -183,19 +197,25 @@ public static class CalcCsv
                 continue;
 
             // A table's rows and cells: name[1] marks row 1, name[1].column is one cell of it (Black B-A-05).
-            if (TableRef.TryParse(symbol, out var tableRef) && template.FindInput(tableRef.Table) is { Kind: CalcInputKind.Table } tableSpec)
+            if (TableRef.TryParse(symbol, out var tableRef) && template.ResolveInput(tableRef.Table) is { Kind: CalcInputKind.Table } tableSpec)
             {
+                // C-2: a table input that was renamed is read under its current symbol.
+                tableRef = tableRef with { Table = tableSpec.Symbol };
                 ReadTableRow(r + 1, tableRef, tableSpec, tables, Cell(row, "value"), Cell(row, "unit"), ReadProvenance(Cell(row, "provenance"), Cell(row, "reference"), Cell(row, "revision")), notices);
                 continue;
             }
 
-            var spec = template.FindInput(symbol);
+            // C-2: a symbol an input had before it was renamed is read as the input it has become.
+            var spec = template.ResolveInput(symbol);
 
             if (spec is null)
             {
                 notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Warning, $"Row {r + 1}: {symbol} is not an input of this calculation and was skipped."));
                 continue;
             }
+
+            var nameUsed = symbol;
+            symbol = spec.Symbol;
 
             var raw = Cell(row, "value");
 
@@ -226,12 +246,12 @@ public static class CalcCsv
                         continue;
                     }
 
-                    set.Set(new CalcInputValue(symbol, Number: n, Unit: unit.Length > 0 ? unit : (spec.Kind == CalcInputKind.Quantity ? spec.DefaultUnit : null), Provenance: provenance));
+                    Put(new CalcInputValue(symbol, Number: n, Unit: unit.Length > 0 ? unit : (spec.Kind == CalcInputKind.Quantity ? spec.DefaultUnit : null), Provenance: provenance), nameUsed, r + 1);
                     break;
 
                 case CalcInputKind.Choice:
                 case CalcInputKind.Text:
-                    set.Set(new CalcInputValue(symbol, Text: raw, Provenance: provenance));
+                    Put(new CalcInputValue(symbol, Text: raw, Provenance: provenance), nameUsed, r + 1);
                     break;
 
                 case CalcInputKind.Boolean:
@@ -241,7 +261,7 @@ public static class CalcCsv
                         continue;
                     }
 
-                    set.Set(new CalcInputValue(symbol, Flag: ParseFlag(raw) ?? false, Provenance: provenance));
+                    Put(new CalcInputValue(symbol, Flag: ParseFlag(raw) ?? false, Provenance: provenance), nameUsed, r + 1);
                     break;
 
                 case CalcInputKind.Vector:
@@ -267,7 +287,7 @@ public static class CalcCsv
                         continue;
                     }
 
-                    set.Set(new CalcInputValue(symbol, Unit: unit.Length > 0 ? unit : spec.DefaultUnit, Vector: values, Provenance: provenance));
+                    Put(new CalcInputValue(symbol, Unit: unit.Length > 0 ? unit : spec.DefaultUnit, Vector: values, Provenance: provenance), nameUsed, r + 1);
                     break;
                 }
 

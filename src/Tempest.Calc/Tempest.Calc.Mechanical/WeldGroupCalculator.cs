@@ -19,7 +19,7 @@ public sealed class WeldGroupCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.1", CalcDiscipline.Mechanical, "Weld group (elastic line method)",
+        Id, "1.2.0", CalcDiscipline.Mechanical, "Weld group (elastic line method)",
         "A group of straight fillet welds in a plane under in-plane forces (with eccentricity, so torsion), an out-of-plane force and out-of-plane moments: the resultant force per unit length at every weld end, the critical point, the throat stress against the design strength and the leg size required.",
         "Welds as lines of unit throat: L_w = Σ l, centroid x_c = Σ l·x_m/L_w\n" +
         "Unit second moments: I_ux = Σ [l(y_m − y_c)² + l·Δy²/12], I_uy likewise, product I_uxy = Σ [l(x_m − x_c)(y_m − y_c) + l·Δx·Δy/12], J_u = I_ux + I_uy\n" +
@@ -50,8 +50,8 @@ public sealed class WeldGroupCalculator : ICalcCalculator
             new CalcClauseRef("EN 1993-1-8:2005", "cl. 4.5.3.3", "Simplified method for design resistance of fillet welds (resistance input)"),
         ],
         [
-            new CalcApplicabilityRule("few-welds", "No weld of non-zero length.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("collinear", "All welds on one line: an out-of-plane moment about that line cannot be resisted (direct shear and in-plane torsion still can).", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("few-welds", "No weld of non-zero length.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("collinear", "All welds on one line: an out-of-plane moment about that line cannot be resisted (direct shear and in-plane torsion still can).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-two-vertical", "Two vertical welds under an eccentric vertical load (Shigley Table 9-1 case 2)",
@@ -71,12 +71,12 @@ public sealed class WeldGroupCalculator : ICalcCalculator
                 [Welds((0, 0, 150, 0), (0, 0, 0, 50)), Q("F_y", 0, "kN"), Q("M_x", 1, "kN*m")],
                 [new CalcExpectedValue("I_ux", 33854.16667, "mm^3", 1e-9), new CalcExpectedValue("I_uy", 492187.5, "mm^3", 1e-9), new CalcExpectedValue("I_uxy", -70312.5, "mm^3", 1e-9), new CalcExpectedValue("f_r_max", 1500, "N/mm", 1e-9)]),
         ],
-        Category: "Fasteners",
+        Category: "Connections",
         OutputPorts:
         [
-            new CalcOutputPort("f_r_max", "N/mm", "Maximum resultant force per unit length (→ S4)"),
-            new CalcOutputPort("tau", "MPa", "Maximum throat stress"),
-            new CalcOutputPort("s_req", "mm", "Leg size required"),
+            new CalcOutputPort("f_r_max", "N/mm", "Maximum resultant force per unit length (→ connection-ec3 F_w_Ed)", "weld.force_per_length_max"),
+            new CalcOutputPort("tau", "MPa", "Maximum throat stress", "weld.stress_throat"),
+            new CalcOutputPort("s_req", "mm", "Leg size required", "weld.leg_required"),
         ]);
 
     private static CalcInputValue Q(string symbol, double value, string unit) => CalcInputValue.Quantity(symbol, value, unit);
@@ -87,6 +87,7 @@ public sealed class WeldGroupCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u");
         foreach (var s in new[] { "s", "f_w", "F_x", "F_y", "F_z", "e_x", "e_y", "M_x", "M_y", "M_z" })
             c.Input(s);
 

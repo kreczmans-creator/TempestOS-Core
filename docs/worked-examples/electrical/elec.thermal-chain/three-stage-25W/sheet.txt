@@ -6,28 +6,25 @@ Author: TempestOS    Authored: —
 Checker: —    Checked: —
 Issued: —
 
-1. SCOPE AND METHOD
+1. Scope and method
 Steady-state source (junction) temperature from a series chain of thermal resistances to ambient (junction to case, case to heat sink, heat sink to ambient), with each stage's temperature rise, the margin against the permitted maximum and the largest total resistance the limit allows: the heat sink budget.
 Temperature rise across each stage: ΔT_i = P·R_i. Total resistance of the chain and the total rise: R_tot = Σ R_i; ΔT_tot = P·R_tot. Source (hottest node) temperature, each node below it being the one above less that stage's rise: T_1 = T_a + ΔT_tot. Margin against the permitted maximum: margin = T_max − T_1. Largest total resistance the limit allows, the heat sink budget: R_max = (T_max − T_a)/P. Utilisation of the permitted rise: u = ΔT_tot/(T_max − T_a).
-  Ref: JEDEC JESD51-1 — Integrated circuit thermal measurement method: electrical test method (junction-to-reference resistances)
-  Ref: Çengel & Ghajar, Heat and Mass Transfer §15-2 — Thermal resistance networks in the cooling of electronic equipment
-  Ref: Incropera & DeWitt, Fundamentals of Heat and Mass Transfer §3.1 — Thermal resistance in series
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   P | Steady power dissipated (the heat flow through every stage) | 25 | W | spec: DS-PWR-901 device and heat sink datasheets rev A | 0 … 10000 W
-  T_a | Ambient the last stage rejects to | 40 | degC | spec: SPEC-EL-05 thermal limits | -40 … 85 degC
+  T_a | Ambient the last stage rejects to | 40 | °C | spec: SPEC-EL-05 thermal limits | -40 … 85 °C
   stages | Thermal resistances in series, hottest first | 3 row(s) |  | spec: DS-PWR-901 device and heat sink datasheets rev A | any
   stages[1] |  | name = junction to case; R = 0.5 K/W |  |  | 
   stages[2] |  | name = case to sink; R = 0.2 K/W |  |  | 
   stages[3] |  | name = sink to ambient; R = 1.8 K/W |  |  | 
-  T_max | Maximum permitted temperature of the hottest node (junction or case) | 125 | degC | spec: SPEC-EL-05 thermal limits | 40 … 200 degC
+  T_max | Maximum permitted temperature of the hottest node (junction or case) | 125 | °C | spec: SPEC-EL-05 thermal limits | 40 … 200 °C
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Steady state: the whole dissipated power flows through the one chain, and each resistance is constant. (No thermal capacitance (nothing about warm-up or a transient overload); no parallel path through the board.)
   A2. The stated ambient is the temperature the last stage actually rejects to. (Air preheated by neighbouring parts can be well above room temperature.)
 
-4. WORKING
+4. Working
   [4] R_tot = Σ R_i    « Incropera §3.1
       = 0.5 + 0.2 + 1.8 K/W
       = 2.5 K/W
@@ -73,28 +70,33 @@ Temperature rise across each stage: ΔT_i = P·R_i. Total resistance of the chai
       = 3.4 K/W
         Largest total resistance the limit allows (heat sink budget)
 
-5. RESULTS
-  T_1 = 102.5 degC    Source temperature
-  dT_m = 22.5 K    Thermal margin
-  u = 0.73529    Utilisation
-  R_max = 3.4 K/W    Heat sink budget
-  R_tot = 2.5 K/W    Total thermal resistance
-  dT_tot = 62.5 K    Total rise
-  dT_1 = 12.5 K    Rise across stage 1
+5. Results
+  T_1 = 102.5 °C    Source temperature
+  dT_m = 22.50 K    Thermal margin
+  R_max = 3.400 K/W    Heat sink budget
+  R_tot = 2.500 K/W    Total thermal resistance
+  dT_tot = 62.50 K    Total rise
+  dT_1 = 12.50 K    Rise across stage 1
   dT_2 = 5 K    Rise across stage 2
-  T_2 = 90 degC    Hot side of stage 2
+  T_2 = 90 °C    Hot side of stage 2
   dT_3 = 45 K    Rise across stage 3
-  T_3 = 85 degC    Hot side of stage 3
+  T_3 = 85 °C    Hot side of stage 3
+  u = 0.74    Utilisation (governing)
 
-6. CHECKS (governing first)
-  PASS  Source temperature T_1 ≤ T_max: u = 0.73529 vs u ≤ 1  utilisation 0.735  « Çengel §15-2
+6. Checks (governing first)
+  PASS  Source temperature T_1 ≤ T_max: u = 0.74 vs u ≤ 1  utilisation 0.74  « Çengel §15-2
 
-7. APPLICABILITY
-  No warnings.
+7. Applicability
+  None.
 
-8. VERIFICATION
+8. Verification
   Template: elec.thermal-chain@1.0.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 4/4
   Test run: —
+
+9. References
+  1. JEDEC JESD51-1 — Integrated circuit thermal measurement method: electrical test method (junction-to-reference resistances)
+  2. Çengel & Ghajar, Heat and Mass Transfer §15-2 — Thermal resistance networks in the cooling of electronic equipment
+  3. Incropera & DeWitt, Fundamentals of Heat and Mass Transfer §3.1 — Thermal resistance in series

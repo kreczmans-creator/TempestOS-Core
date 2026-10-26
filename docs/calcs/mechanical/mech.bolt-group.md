@@ -34,6 +34,6 @@ bolt_v = bolt 2 = "bolt 2"
 bolt_t = bolt 1 = "bolt 1"
 u_max = √((36.443/40)² + (0/45)²) = 0.91109
 … 5 more step(s) on the sheet
-Governing: PASS  Circular shear–tension interaction (governing bolt): u_max = 0.91109 vs u_max ≤ 1  utilisation 0.911
+Governing: PASS  Circular shear–tension interaction (governing bolt): u_max = 0.91 vs u_max ≤ 1  utilisation 0.91
 ```
 <!-- hand-arithmetic:end -->

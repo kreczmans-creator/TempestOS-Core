@@ -1,4 +1,4 @@
-# B6 — Sealed system: emitters and expansion vessel (`bs.sealed-system@1.3.0`)
+# B6 — Sealed system: emitters and expansion vessel (`bs.sealed-system@1.4.0`)
 
 **In plain terms.** In a closed heating circuit the water expands as it warms, and with nowhere to go it would overpressure the pipes; an expansion vessel with a cushion of gas takes the extra volume. The worksheet works out how much heat each radiator must give at your flow and return temperatures, how much the system water expands, and so the smallest vessel and its pre-charge pressure that will hold it.
 
@@ -9,6 +9,8 @@
 **Inputs.** optional `rooms` table (name, Φ, selected Φ50, V_em; ≤ 200); `t_f`, `t_r` 30–90 °C; `t_i` 16–24 °C; `n` 1.1–1.5 (record `emitter.rating`); `dT_method`; `V_pipe`, `V_plant` (V_s must be 10–10 000 L); `t_fill`, `t_max`; optional `e_fluid` (record `fluid.expansion`); `h_static` 0–50 m; `p_margin`; `p_f`; `p_prv` 1.5–6 bar; optional `V_vessel`. The symbol `e` is the engine's constant, so the coefficient is `e_x`.
 
 **Outputs.** `dT`, `dT_fr` (flow-to-return difference `t_f − t_r`, added in 1.1.0 because the emitter mean difference `dT` is not the temperature drop of the loop), `t_m` (mean water temperature `(t_f + t_r)/2`, °C), `f_dT`, `R1…` (Φ50 needed per room), `Phi_tot`, `V_em`, `V_s`, `e_x`, `p_i`, `V_e`, `u_emit`, `u_vessel`. **Ports.** `Phi_tot`, `dT_fr` and `t_m` → B1 (`Phi_load`, `dT_load`, `T`), `V_s`, `V_e`, `dT`. The `Phi` column of `rooms` takes a cell link from B4's `Phi_HL` (ADR-0168 amendment 2). **Checks.** governing room emitter; selected vessel.
+
+**Port names (C-2).** Each port is listed under its public name, `<area>.<quantity>`; the output symbol stays as its symbol and as an alias, so a link, a pack binding or an inputs file written before the rename still resolves. `Phi_tot` = `heating.heat_required`; `V_s` = `heating.volume_system`; `V_e` = `heating.volume_expansion_min`; `dT` = `heating.temperature_difference_emitter`; `dT_fr` = `heating.temperature_difference_loop`; `t_m` = `heating.temperature_mean`.
 
 **Changes in 1.3.0.** The rooms table has an optional column `t_i`, the room's own design temperature (blank: the sheet's `t_i`); a room with it set takes its emitter's temperature difference from it, `ΔT = (t_f + t_r)/2 − t_i` (or the log mean) and `f_dT = (ΔT/50)^n` for that room (a 350.4 W room on a 400 W emitter at 75/65 °C, n 1.3: `t_i` 20 °C gives ΔT 50 K and utilisation 0.876, 21 °C gives ΔT 49 K and 0.899, +2.7 %). A room temperature at or above the return blocks. In the wet-heating pack each room's `t_i` is linked from its heat-loss step's `theta_int`. A `V_pipe` left at the 20 L default warns (rule `v-pipe-default`): it is the pipework's water content, which B1 outputs as `V_pipe` but cannot feed back (a cycle in the pack), so a larger system would get an undersized vessel (DN28 × 40 m holds 24.63 L: `V_e` 2.496 L against 2.800 L).
 
@@ -35,6 +37,6 @@ V_s = 36 L + 40 L + 15 L = 91 L
 rho_fill = t = 10 °C = 999.7 kg/m³
 rho_max = t = 60 °C = 983.2 kg/m³
 … 6 more step(s) on the sheet
-Governing: FAIL  Selected emitters against room heat (governing room): u_emit = 1.1074 vs u_emit ≤ 1  utilisation 1.11
+Governing: FAIL  Selected emitters against room heat (governing room): u_emit = 1.11 vs u_emit ≤ 1  utilisation 1.11
 ```
 <!-- hand-arithmetic:end -->

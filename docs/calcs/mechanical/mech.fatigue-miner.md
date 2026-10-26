@@ -24,6 +24,6 @@ N_3 = 2000000 × (71 MPa / 40 MPa)^3 = 11185000
 d_3 = 2000000 / 11185000 = 0.17882
 D = 0.1397 + 0.15088 + 0.17882 = 0.46939
 R_f = 1 / 0.46939 = 2.1304
-Governing: PASS  Cumulative damage D ≤ 1: D = 0.46939 vs D ≤ 1  utilisation 0.469  « Shigley §6-15
+Governing: PASS  Cumulative damage D ≤ 1: D = 0.47 vs D ≤ 1  utilisation 0.47  « Shigley §6-15
 ```
 <!-- hand-arithmetic:end -->

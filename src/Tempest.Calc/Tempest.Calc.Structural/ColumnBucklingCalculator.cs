@@ -45,7 +45,7 @@ public sealed class ColumnBucklingCalculator : ICalcCalculator
             new CalcClauseRef("BS 5950-1:2000", "Table 23", "Allocation of strut curve"),
         ],
         [
-            new CalcApplicabilityRule("slenderness", "Slenderness above 180 is outside the method (members resisting loads other than wind).", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("slenderness", "Slenderness above 180 is outside the method (members resisting loads other than wind).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-legacy-curve-c", "Legacy example 1: curve c, intermediate slenderness", Legacy(1),
@@ -62,6 +62,7 @@ public sealed class ColumnBucklingCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u");
         c.Input("L_E");
         c.Input("A");
         c.Input("I");

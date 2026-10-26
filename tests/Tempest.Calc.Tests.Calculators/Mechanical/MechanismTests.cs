@@ -624,7 +624,7 @@ public sealed class MechanismTests
         Assert.DoesNotContain("1000000000", sheet, StringComparison.Ordinal);
         Assert.DoesNotContain("1e+09", sheet, StringComparison.Ordinal);
         Assert.Contains("FAIL  Transmission angle", sheet, StringComparison.Ordinal);
-        Assert.Contains("utilisation —", sheet, StringComparison.Ordinal);
+        Assert.DoesNotContain("utilisation", sheet.Split('\n').Single(l => l.Contains("FAIL  Transmission angle", StringComparison.Ordinal)), StringComparison.Ordinal);
 
         // A finite minimum angle still gives the ratio, and a zero requirement is met at any angle.
         Assert.Equal(50 / 45.815614846695546, Run(Q("mu_req", 50, "deg")).OutputSi("u_mu"), 6);

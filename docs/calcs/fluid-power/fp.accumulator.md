@@ -45,6 +45,6 @@ p0_set = 81.645 bar a
 u_r0 = 90 bar a / (0.9 × 100 bar a) = 1
 u_rp = 210 bar a / 84.43 bar a / 4 = 0.62182
 … 4 more step(s) on the sheet
-Governing: PASS  Pre-charge within the p0/p1 rule: u_r0 = 1 vs u_r0 ≤ 1  utilisation 1  « accumulator.rules record
+Governing: PASS  Pre-charge within the p0/p1 rule: u_r0 = 1.00 vs u_r0 ≤ 1  utilisation 1.00  « accumulator.rules record
 ```
 <!-- hand-arithmetic:end -->

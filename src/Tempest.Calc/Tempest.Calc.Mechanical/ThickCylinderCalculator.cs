@@ -9,7 +9,7 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
     public const string Id = "mech.thick-cylinder";
 
     public CalcTemplate Template { get; } = new(
-        Id, "2.1.0", CalcDiscipline.Mechanical, "Thick-walled cylinder stresses (Lamé)",
+        Id, "2.1.1", CalcDiscipline.Mechanical, "Thick-walled cylinder (Lamé)",
         "Radial, hoop and axial stresses at the bore and the outer surface of a thick-walled cylinder under internal and external pressure, the von Mises and Tresca equivalents, utilisation against an allowable, and the thin-wall estimate for comparison.",
         "Lamé constants from the bore and outside pressures: A = (a² p_i − b² p_o)/(b² − a²); B = a² b² (p_i − p_o)/(b² − a²).\nRadial and hoop stress at radius r: σ_r = A − B/r²; σ_θ = A + B/r².\nAxial stress, closed or open ends: σ_z = A (closed); σ_z = 0 (open).\nEquivalent stresses from the three principal stresses: von Mises; Tresca = the largest principal difference.",
         [
@@ -31,10 +31,10 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
             new CalcClauseRef("Shigley's Mechanical Engineering Design", "§3-14", "Stresses in pressurised cylinders"),
         ],
         [
-            new CalcApplicabilityRule("geometry", "The outer radius must exceed the inner radius.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("no-pressure", "Both pressures are zero: nothing to compute.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("stability", "External pressure above the internal on a wall thinner than 10 % of the inner radius: the stress check does not cover collapse, and elastic collapse can govern before the allowable stress is reached.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("thin-wall", "Wall thinner than 5 % of the inner radius: the thin-wall estimate is within a few percent of Lamé.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("geometry", "The outer radius must exceed the inner radius.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("no-pressure", "Both pressures are zero: nothing to compute.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("stability", "External pressure above the internal on a wall thinner than 10 % of the inner radius: the stress check does not cover collapse, and elastic collapse can govern before the allowable stress is reached.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("thin-wall", "Wall thinner than 5 % of the inner radius: the thin-wall estimate is within a few percent of Lamé.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-internal-closed", "Internal pressure, closed ends (v0.16 vector 1)",
@@ -51,10 +51,11 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
                 [new CalcExpectedValue("sigma_vm_a", 116.67, "MPa", 5e-5), new CalcExpectedValue("sigma_vm_b", 33.333, "MPa", 5e-5), new CalcExpectedValue("u", 0.58333, "", 5e-5), new CalcExpectedValue("sigma_t_a", 83.333, "MPa", 5e-5), new CalcExpectedValue("sigma_z", 0, "MPa", 1e-9), new CalcExpectedValue("sigma_thin", 75, "MPa", 5e-5)]),
         ],
         DiagramKey: "thick-walled-cylinder",
-        Category: "Pressure Systems");
+        Category: "Vessels");
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u", "u_cr");
         c.Input("a");
         c.Input("b");
         c.Input("p_i");
@@ -107,6 +108,8 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
         c.Assign("u", "sigma_vm_max / sigma_allow", null, "Utilisation");
         c.Assign("sigma_thin", "(p_i - p_o) * (a + b) / 2 / (b - a)", "MPa", "Thin-wall hoop estimate at the mean radius");
         c.Assign("k_wall", "b / a", null, "Wall ratio b/a");
+
+        c.MarkNoiseProne("sigma_r_a", "sigma_r_b");
 
         foreach (var (symbol, text) in new[] { ("sigma_r_a", "Radial stress, bore"), ("sigma_t_a", "Hoop stress, bore"), ("sigma_r_b", "Radial stress, outer"), ("sigma_t_b", "Hoop stress, outer"), ("sigma_z", "Axial stress"), ("sigma_vm_a", "von Mises, bore"), ("sigma_vm_b", "von Mises, outer"), ("sigma_tr_a", "Tresca, bore"), ("sigma_tr_b", "Tresca, outer"), ("sigma_vm_max", "Maximum von Mises"), ("u", "Utilisation"), ("sigma_thin", "Thin-wall hoop estimate"), ("k_wall", "Wall ratio") })
             c.Output(symbol, text);

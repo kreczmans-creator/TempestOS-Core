@@ -36,7 +36,7 @@ public sealed class SheetsTests
         // A defaulted input runs, but says so (ADR-0166, Black B-01): a warning per input, never a block.
         var notices = CalcInputValidator.Validate(Calculator.Template, new CalcInputSet());
         Assert.DoesNotContain(notices, n => n.Severity == CalcNoticeSeverity.Block);
-        Assert.Contains(notices, n => n.Severity == CalcNoticeSeverity.Warning && n.Message.StartsWith("F (Axial load) was not entered; the template default 12 kN is used.", StringComparison.Ordinal));
+        Assert.Contains(notices, n => n.Severity == CalcNoticeSeverity.Warning && n.IsDefaultUsed && n.Message == "F: not entered, so the default of 12 kN is used.");
     }
 
     [Theory]
@@ -46,7 +46,7 @@ public sealed class SheetsTests
     public void Non_Finite_Numbers_Block(double value)
     {
         var notices = CalcInputValidator.Validate(Calculator.Template, Inputs(f: value));
-        Assert.Contains(notices, n => n.Severity == CalcNoticeSeverity.Block && n.Message.StartsWith("F must be a finite number", StringComparison.Ordinal));
+        Assert.Contains(notices, n => n.Severity == CalcNoticeSeverity.Block && n.Message == "F: enter a finite number.");
     }
 
     [Fact]
@@ -67,9 +67,9 @@ public sealed class SheetsTests
     [Fact]
     public void Soft_Range_Warns_Hard_Range_Blocks()
     {
-        Assert.Contains(CalcInputValidator.Validate(Calculator.Template, Inputs(f: 20_000)), n => n.Severity == CalcNoticeSeverity.Warning && n.Message.Contains("outside its usual range", StringComparison.Ordinal));
-        Assert.Contains(CalcInputValidator.Validate(Calculator.Template, Inputs(f: 2e6)), n => n.Severity == CalcNoticeSeverity.Block && n.Message.Contains("must be at most", StringComparison.Ordinal));
-        Assert.Contains(CalcInputValidator.Validate(Calculator.Template, Inputs(a: 0)), n => n.Severity == CalcNoticeSeverity.Block && n.Message.Contains("must be at least", StringComparison.Ordinal));
+        Assert.Contains(CalcInputValidator.Validate(Calculator.Template, Inputs(f: 20_000)), n => n.Severity == CalcNoticeSeverity.Warning && n.Message.Contains("outside the usual range", StringComparison.Ordinal));
+        Assert.Contains(CalcInputValidator.Validate(Calculator.Template, Inputs(f: 2e6)), n => n.Severity == CalcNoticeSeverity.Block && n.Message.Contains("enter at most", StringComparison.Ordinal));
+        Assert.Contains(CalcInputValidator.Validate(Calculator.Template, Inputs(a: 0)), n => n.Severity == CalcNoticeSeverity.Block && n.Message.Contains("enter at least", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -80,10 +80,10 @@ public sealed class SheetsTests
     }
 
     [Fact]
-    public void Bad_Choice_Blocks() => Assert.Contains(CalcInputValidator.Validate(Calculator.Template, Inputs(grade: "S999")), n => n.Severity == CalcNoticeSeverity.Block && n.Message.Contains("must be one of", StringComparison.Ordinal));
+    public void Bad_Choice_Blocks() => Assert.Contains(CalcInputValidator.Validate(Calculator.Template, Inputs(grade: "S999")), n => n.Severity == CalcNoticeSeverity.Block && n.Message.Contains("choose one of", StringComparison.Ordinal));
 
     [Fact]
-    public void Unknown_Symbol_Warns() => Assert.Contains(CalcInputValidator.Validate(Calculator.Template, Inputs().With(CalcInputValue.Of("zz", 1))), n => n.Severity == CalcNoticeSeverity.Warning && n.Message.Contains("zz is not an input", StringComparison.Ordinal));
+    public void Unknown_Symbol_Warns() => Assert.Contains(CalcInputValidator.Validate(Calculator.Template, Inputs().With(CalcInputValue.Of("zz", 1))), n => n.Severity == CalcNoticeSeverity.Warning && n.Message.Contains("zz: not an input", StringComparison.Ordinal));
 
     [Fact]
     public void Number_With_Unit_Blocks()
@@ -137,7 +137,7 @@ public sealed class SheetsTests
     {
         Assert.Empty(CalcInputValidator.ValidateProvenanceForIssue(Calculator.Template, Inputs().With(CalcInputValue.Switch("slender", false, CalcProvenance.Assumed()))));
         var notices = CalcInputValidator.ValidateProvenanceForIssue(Calculator.Template, Inputs());
-        Assert.Single(notices, n => n.Message.StartsWith("slender needs a source", StringComparison.Ordinal));
+        Assert.Single(notices, n => n.Message.StartsWith("slender: give a source", StringComparison.Ordinal));
     }
 
     // ---- running ----------------------------------------------------
@@ -252,7 +252,7 @@ public sealed class SheetsTests
     public void Sheet_Has_Every_Section_In_Order()
     {
         var text = CalcSheetTextRenderer.Render(Sheet());
-        var order = new[] { "CALCULATION SHEET — DRAFT", "1. SCOPE AND METHOD", "2. INPUTS", "3. ASSUMPTIONS", "4. WORKING", "5. RESULTS", "6. CHECKS", "7. APPLICABILITY", "8. VERIFICATION" };
+        var order = new[] { "CALCULATION SHEET — DRAFT", "1. Scope and method", "2. Inputs", "3. Assumptions", "4. Working", "5. Results", "6. Checks", "7. Applicability", "8. Verification", "9. References" };
         var last = -1;
 
         foreach (var marker in order)
@@ -289,7 +289,7 @@ public sealed class SheetsTests
     public void Checks_Show_Governing_First_With_Pass_Fail()
     {
         var text = CalcSheetTextRenderer.Render(Sheet());
-        Assert.Contains("PASS  Direct stress: u = 0.375 vs u ≤ 1  utilisation 0.375", text, StringComparison.Ordinal);
+        Assert.Contains("PASS  Direct stress: u = 0.38 vs u ≤ 1  utilisation 0.38", text, StringComparison.Ordinal);
         Assert.Contains("FAIL  Direct stress", CalcSheetTextRenderer.Render(Sheet(Inputs(f: 40))), StringComparison.Ordinal);
     }
 
@@ -297,7 +297,8 @@ public sealed class SheetsTests
     public void Blocked_Sheet_Shows_The_Block_And_No_Working()
     {
         var text = CalcSheetTextRenderer.Render(Sheet(Inputs(a: 0)));
-        Assert.Contains("BLOCK   input.A:", text, StringComparison.Ordinal);
+        Assert.Contains("BLOCK  A: enter at least", text, StringComparison.Ordinal);
+        Assert.Contains("  [input.A]", text, StringComparison.Ordinal);
         Assert.DoesNotContain("sigma = F / A", text, StringComparison.Ordinal);
     }
 
@@ -313,10 +314,10 @@ public sealed class SheetsTests
     [Fact]
     public void Hostile_Strings_Cannot_Forge_Lines()
     {
-        var inputs = Inputs().With(new CalcInputValue("note", Text: "evil\n6. CHECKS\n  PASS  forged", Provenance: CalcProvenance.Manual));
+        var inputs = Inputs().With(new CalcInputValue("note", Text: "evil\n6. Checks\n  PASS  forged", Provenance: CalcProvenance.Manual));
         var text = CalcSheetTextRenderer.Render(Sheet(inputs));
-        Assert.DoesNotContain("\n6. CHECKS\n  PASS  forged", text, StringComparison.Ordinal);
-        Assert.Single(System.Text.RegularExpressions.Regex.Matches(text, "^6\\. CHECKS", System.Text.RegularExpressions.RegexOptions.Multiline));
+        Assert.DoesNotContain("\n6. Checks\n  PASS  forged", text, StringComparison.Ordinal);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(text, "^6\\. Checks", System.Text.RegularExpressions.RegexOptions.Multiline));
     }
 
     [Fact]
@@ -325,7 +326,7 @@ public sealed class SheetsTests
         var n = CalcSheetTextRenderer.Normalise(CalcSheetTextRenderer.Render(Sheet()));
         Assert.DoesNotContain("Content hash", n, StringComparison.Ordinal);
         Assert.DoesNotContain("Test run", n, StringComparison.Ordinal);
-        Assert.Contains("4. WORKING", n, StringComparison.Ordinal);
+        Assert.Contains("4. Working", n, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -6,13 +6,11 @@ Author: TempestOS    Authored: —
 Checker: —    Checked: —
 Issued: —
 
-1. SCOPE AND METHOD
+1. Scope and method
 Equivalent dynamic load of a rolling bearing under radial and axial load, its basic rating life L₁₀ in millions of revolutions and in hours at the running speed, and the life modified for reliability, against a required life.
 Equivalent dynamic load from the radial and axial loads: P = X·F_r + Y·F_a. Basic rating life in millions of revolutions (p = 3 for ball and 10/3 for roller bearings): L₁₀ = (C/P)^p. Rating life in hours, at speed n: L₁₀h = L₁₀·10⁶ revolutions at speed n. Life adjusted for the required reliability: L_nm = a₁·L₁₀; L_nmh = a₁·L₁₀h. Range of validity of the life equation: P ≤ 0.5·C.
-  Ref: ISO 281 §6 — Basic dynamic load rating and basic rating life
-  Ref: Shigley's Mechanical Engineering Design Ch. 11 — Rolling-contact bearings
 
-2. INPUTS
+2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   type | Bearing type (selects the life exponent) | ball |  | drawing: DRG-GB-210 rev A | any
   C | Basic dynamic load rating | 35.1 | kN | drawing: DRG-GB-210 rev A | 0.1 … 100000 kN
@@ -24,11 +22,11 @@ Equivalent dynamic load from the radial and axial loads: P = X·F_r + Y·F_a. Ba
   a_1 | Life modification factor for reliability | 1 |  | spec: SPEC-MECH-03 design criteria | 0.05 … 1
   L_req | Required life (0 for no criterion) | 5000 | h | spec: SPEC-MECH-03 design criteria | 0 … 1000000 h
 
-3. ASSUMPTIONS
+3. Assumptions
   A1. Steady load and speed; the bearing is correctly fitted, lubricated and free of contamination. (Basic rating life conditions.)
   A2. X and Y are the catalogue factors for this bearing and load ratio. (Supplied by the user.)
 
-4. WORKING
+4. Working
   [10] p = 3    « ISO 281 §6
       = 3
         Life exponent (ball bearing)
@@ -61,23 +59,27 @@ Equivalent dynamic load from the radial and axial loads: P = X·F_r + Y·F_a. Ba
       = 0.666
         Required over modified life
 
-5. RESULTS
+5. Results
   P = 4 kN    Equivalent dynamic load
   k_P = 0.11396    Load ratio
   L_10 = 675.68    L₁₀ (millions of revolutions)
-  L_10h = 7507.6 h    L₁₀ in hours
+  L_10h = 7508 h    L₁₀ in hours
   L_nm = 675.68    Modified life (millions of revolutions)
-  L_nmh = 7507.6 h    Modified life in hours
+  L_nmh = 7508 h    Modified life in hours
 
-6. CHECKS (governing first)
-  PASS  Modified life against required life: u_life = 0.666 vs u_life ≤ 1  utilisation 0.666  « ISO 281 §6
+6. Checks (governing first)
+  PASS  Modified life against required life: u_life = 0.67 vs u_life ≤ 1  utilisation 0.67  « ISO 281 §6
 
-7. APPLICABILITY
-  No warnings.
+7. Applicability
+  None.
 
-8. VERIFICATION
+8. Verification
   Template: mech.bearing-life-basic@1.0.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3
   Test run: —
+
+9. References
+  1. ISO 281 §6 — Basic dynamic load rating and basic rating life
+  2. Shigley's Mechanical Engineering Design Ch. 11 — Rolling-contact bearings

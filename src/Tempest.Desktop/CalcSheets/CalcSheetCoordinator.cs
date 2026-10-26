@@ -266,8 +266,9 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
                 continue;
 
             // A template that declares output ports offers only those for linking; the others (a factor it echoes from a record) are not (Red R-A-09).
-            var declared = _service.Catalogue.Find(candidate.TemplateReference)?.Template.OutputPorts is { Count: > 0 } offered ? offered.Select(p => p.Symbol).ToHashSet(StringComparer.Ordinal) : null;
-            var ports = candidate.Outputs.Where(o => o.Si is not null && (declared is null || declared.Contains(o.Symbol))).Select(o => new CalcOutputPort(o.Symbol, o.Unit ?? string.Empty, o.Description)).ToList();
+            // C-2: a port is listed under its public name (<area>.<quantity>) with its output symbol beside it.
+            var declared = _service.Catalogue.Find(candidate.TemplateReference)?.Template.OutputPorts is { Count: > 0 } offered ? offered : null;
+            var ports = candidate.Outputs.Where(o => o.Si is not null && (declared is null || declared.Any(p => p.Matches(o.Symbol)))).Select(o => new CalcOutputPort(o.Symbol, o.Unit ?? string.Empty, o.Description, declared?.FirstOrDefault(p => p.Matches(o.Symbol))?.Name)).ToList();
             targets.Add(new CalcSheetView.LinkTarget(candidate.Id, $"{candidate.Name} · rev {candidate.Revision} · {candidate.Status}", ports));
         }
 

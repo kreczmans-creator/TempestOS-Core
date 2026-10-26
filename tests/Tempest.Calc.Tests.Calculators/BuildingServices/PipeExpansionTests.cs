@@ -363,7 +363,7 @@ public sealed class PipeExpansionTests
         // Below the plausible floor the input is refused (a ×1000 slip of aluminium, copper or steel in MPa to GPa is above it,
         // so the warning above carries those; 10 MPa is no pipe).
         var absurd = CalcInputValidator.Validate(Pipe.Template, Sheet(Q("E", 10, "MPa")));
-        Assert.Contains(absurd, n => n.Severity == CalcNoticeSeverity.Block && n.Message.StartsWith("E ", StringComparison.Ordinal));
+        Assert.Contains(absurd, n => n.Severity == CalcNoticeSeverity.Block && n.Message.StartsWith("E:", StringComparison.Ordinal));
 
         // Plastic pipe (PE 100, PP-R, PVC-U and the soft end of PEX) and every metal run without the warning.
         foreach (var gpa in new[] { 0.6, 0.8, 1.0, 1.5, 3.0, 70, 120, 210 })

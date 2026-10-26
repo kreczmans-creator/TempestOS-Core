@@ -21,7 +21,7 @@ public sealed class InsulationCalculator : ICalcCalculator
     public const string MaterialKind = "material.properties";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.2", CalcDiscipline.BuildingServices, "Insulation thickness (ISO 12241 formula route)",
+        Id, "1.1.3", CalcDiscipline.BuildingServices, "Insulation thickness (ISO 12241)",
         "The insulation thickness on a pipe (cylinder) or a flat surface that meets a heat-flow limit, a limit on the surface temperature of a hot surface and an anti-condensation requirement for a cold one, each solved separately and the governing one reported; and for a chosen thickness the heat flow, the surface temperature and PASS/FAIL per criterion. Steady state, one layer, no thickness table of any standard.",
         "Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = D_i + 2t; with the inner film and pipe wall R_oth = 1/(h_i·π·D_p) + ln(D_i/D_p)/(2π·λ_w) added in series\n" +
         "Flat resistance per square metre: R = t/λ + 1/h_se (+ 1/h_i + t_w/λ_w)\n" +
@@ -68,20 +68,20 @@ public sealed class InsulationCalculator : ICalcCalculator
             new CalcClauseRef("ISO 13788", "cl. 6 (clause number to be checked against the owner's copy)", "Magnus saturation vapour pressure (shared with B7)"),
         ],
         [
-            new CalcApplicabilityRule("temperatures", "The process temperature must differ from the ambient temperature.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("criteria", "At least one criterion that applies to the sign of θ_i − θ_a must be selected (a heat-flow limit, a hot-surface limit (hot) or a dew-point margin (cold)) or a thickness chosen.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("unattainable", "A criterion that no thickness up to 1 m meets blocks the sheet when no thickness is chosen; with a chosen thickness its required thickness shows as > 1000 mm, with a warning, and the chosen thickness is checked against it.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("surface-limit", "The hot-surface limit must be above the ambient temperature.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("dew", "The dew point plus the margin must be below the ambient temperature.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("wall", "The pipe wall needs both thickness and conductivity, and must be thinner than the pipe radius.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("criterion-na", "A hot-surface limit on a cold pipe, or a dew-point margin on a hot one, is ignored.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("no-criteria", "No criterion applies but a thickness is chosen: only the heat flow and surface temperature at it are reported.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("rh-over-ice", "The ambient air is below 0 °C and the dew point is computed from RH_a: RH_a is read as relative to ice (the dew point is a frost point), whereas weather and hygrometer humidity is relative to water.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("h-se-condensation", "A fixed h_se on a cold surface with a dew-point margin gives a thinner layer than the correlation does: the generic default is not conservative against condensation.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("no-condensation-check", "The surface is colder than the air and no dew-point margin is entered, so condensation is not checked.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("bare-complies", "The bare surface meets a heat-flow limit that thin insulation on a pipe below the critical diameter breaks.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("critical-radius", "The pipe is below the critical diameter 2λ/h_se, or the chosen insulation carries more heat than the bare pipe.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("lambda-temperature", "The mean insulation temperature is more than 20 K from the temperature the conductivity applies at.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("temperatures", "The process temperature must differ from the ambient temperature.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("criteria", "At least one criterion that applies to the sign of θ_i − θ_a must be selected (a heat-flow limit, a hot-surface limit (hot) or a dew-point margin (cold)) or a thickness chosen.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("unattainable", "A criterion that no thickness up to 1 m meets blocks the sheet when no thickness is chosen; with a chosen thickness its required thickness shows as > 1000 mm, with a warning, and the chosen thickness is checked against it.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("surface-limit", "The hot-surface limit must be above the ambient temperature.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("dew", "The dew point plus the margin must be below the ambient temperature.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("wall", "The pipe wall needs both thickness and conductivity, and must be thinner than the pipe radius.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("criterion-na", "A hot-surface limit on a cold pipe, or a dew-point margin on a hot one, is ignored.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("no-criteria", "No criterion applies but a thickness is chosen: only the heat flow and surface temperature at it are reported.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("rh-over-ice", "The ambient air is below 0 °C and the dew point is computed from RH_a: RH_a is read as relative to ice (the dew point is a frost point), whereas weather and hygrometer humidity is relative to water.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("h-se-condensation", "A fixed h_se on a cold surface with a dew-point margin gives a thinner layer than the correlation does: the generic default is not conservative against condensation.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("no-condensation-check", "The surface is colder than the air and no dew-point margin is entered, so condensation is not checked.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("bare-complies", "The bare surface meets a heat-flow limit that thin insulation on a pipe below the critical diameter breaks.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("critical-radius", "The pipe is below the critical diameter 2λ/h_se, or the chosen insulation carries more heat than the bare pipe.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("lambda-temperature", "The mean insulation temperature is more than 20 K from the temperature the conductivity applies at.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-pipe-chosen", "Hot pipe, 30 mm chosen: heat flow and surface temperature",
@@ -163,6 +163,7 @@ public sealed class InsulationCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("u_dew", "u_q", "u_se");
         var pipe = c.InputText("geometry") == Pipe;
         c.Input("theta_i");
         c.Input("theta_a");

@@ -39,6 +39,13 @@ public static class CalcTemplateHasher
 
         var inputs = DefaultInputs(calculator.Template);
         var result = CalcRunner.Run(calculator, inputs);
+        return Formulas(result);
+    }
+
+    /// <summary>The formulas of a run: one line per step that is not an input.</summary>
+    public static IReadOnlyList<string> Formulas(CalcRunResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
         return result.Steps.Where(s => s.Kind != CalcStepKind.Input).Select(s => $"{s.Symbol} = {s.Formula}").ToList();
     }
 
@@ -123,6 +130,10 @@ public static class CalcTemplateHasher
             if (i.PressureBasis is { Length: > 0 } basis)
                 sb.Append("  basis=").Append(basis).Append('\n');
 
+            // C-2: only an input that was renamed carries aliases, so every other input keeps its hash.
+            if (i.Aliases is { Count: > 0 } aliases)
+                sb.Append("  aliases=").Append(string.Join(",", aliases)).Append('\n');
+
             foreach (var c in i.Columns ?? [])
                 sb.Append("  column=").Append(c.Key).Append('|').Append(c.Label).Append('|').Append(c.Kind).Append('|').Append(c.DefaultUnit).Append('|').Append(string.Join(",", c.Choices ?? [])).Append('\n');
         }
@@ -145,8 +156,19 @@ public static class CalcTemplateHasher
         }
 
         // Declared output ports are part of a template's contract; a template that declares none hashes as before.
+        // A port's public name and aliases (C-2) are hashed only when it has them, so a port that names neither keeps its hash.
         foreach (var o in t.OutputPorts ?? [])
-            sb.Append("port=").Append(o.Symbol).Append('|').Append(o.Unit).Append('|').Append(o.Description).Append('\n');
+        {
+            sb.Append("port=").Append(o.Symbol).Append('|').Append(o.Unit).Append('|').Append(o.Description);
+
+            if (o.Name is { Length: > 0 } name)
+                sb.Append("|name=").Append(name);
+
+            if (o.Aliases is { Count: > 0 } portAliases)
+                sb.Append("|aliases=").Append(string.Join(",", portAliases));
+
+            sb.Append('\n');
+        }
 
         foreach (var k in t.RecordKinds ?? [])
             sb.Append("records=").Append(k.Kind).Append('|').Append(string.Join(",", k.Symbols)).Append('\n');

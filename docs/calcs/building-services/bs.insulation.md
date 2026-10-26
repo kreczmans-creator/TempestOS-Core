@@ -1,4 +1,4 @@
-# B9 — Insulation thickness, ISO 12241 formula route (`bs.insulation@1.1.2`)
+# B9 — Insulation thickness, ISO 12241 formula route (`bs.insulation@1.1.3`)
 
 **In plain terms.** Insulation on a pipe or flat surface cuts heat loss, keeps a hot surface safe to touch and stops a cold one sweating, and the thickness needed depends on which of these you want. The worksheet finds the thickness that meets each requirement separately by the ISO 12241 formulae; the largest is the thickness to fit.
 
@@ -40,6 +40,6 @@ theta_m = (6 + 25.274)/2 = 15.637 degC
 D_crit = 2 × 0.035 / 8 = 8.75 mm
 u_q = |q| ≤ 12 W/m = 0.79941
 u_dew = θ_se ≥ 23.012 °C = 0.54661
-Governing: PASS  Chosen thickness against the heat-gain limit: u_q = 0.79941 vs u_q ≤ 1  utilisation 0.799  « ISO 12241
+Governing: PASS  Chosen thickness against the heat-gain limit: u_q = 0.80 vs u_q ≤ 1  utilisation 0.80  « ISO 12241
 ```
 <!-- hand-arithmetic:end -->

@@ -1,4 +1,4 @@
-# E6 — Load budget, PSU, transformer and battery (`elec.load-budget@1.4.1`)
+# E6 — Load budget, PSU, transformer and battery (`elec.load-budget@1.5.0`)
 
 **In plain terms.** A supply must be sized for what is connected, not just the sum of the nameplates, because loads are not all on at once. The worksheet adds each load with its duty and diversity, gives the current on each supply, sizes the DC power supply, the transformer (including the demand when motors start) and the battery for the backup time you need, and reports the heat released inside the enclosure.
 
@@ -9,6 +9,8 @@
 **Inputs.** `P_add` (kW, a linked three-phase machine such as E1's RMS power `P_rms`, drawing P_add/η_add) with `cosphi_add`, `eta_add`, `inrush_add`, `heat_add` (0–1, default 0); `loads` table (name, supply, P 0–200 kW, cosφ 0.5–1, η 0.5–1, optional `heat` 0–1, d, k 0–1, inrush 1–20, backed; ≤ 100); `U_3ph`, `U_1ph`, `U_DC`; `psu_bus` and `eta_psu`; `margin` 1.0–1.5; `theta` −20 to 70 °C; `f_derate` (record `psu.derating`); optional `P_PSU`, `S_T`; `k_T`; `t_auto` 0–72 h; `U_b`, `eta_conv`; `DoD`, `eta_b`, `k_temp`, `k_age`, optional `k_p`, `H_rate` (record `battery.factors`); optional `C_batt`.
 
 **Outputs.** `P_conn`, `P_dem`, `S_dem`, `I_3ph`, `I_1ph`, `I_DC`, `Phi`, `P_PSU_req`, `S_T_req`, `S_peak`, `S_T_req_start`, `S_T_min`, `I_b`, `Ah`, `C_req`. **Ports.** `P_dem`, `S_dem`, `I_3ph` (→ E4 I_b), `I_1ph`, `I_DC`, `Phi` (heat released inside the enclosure, → E2), `C_req`. **Checks.** selected PSU, transformer, starting peak, battery.
+
+**Port names (C-2).** Each port is listed under its public name, `<area>.<quantity>`; the output symbol stays as its symbol and as an alias, so a link, a pack binding or an inputs file written before the rename still resolves. `P_dem` = `load.power_demand`; `S_dem` = `load.apparent_demand`; `I_3ph` = `load.current_three_phase`; `I_1ph` = `load.current_single_phase`; `I_DC` = `load.current_dc`; `Phi` = `load.heat_dissipated`; `U_L` = `load.voltage_line`; `pf_link` = `load.power_factor_linked`; `C_req` = `battery.capacity_required`.
 
 **Limitations.** No harmonic or unbalance assessment; inrush only for the single largest start.
 
@@ -39,6 +41,6 @@ I_DC = 120 / 24 = 5 A
 Phi = 0.09×11 + 0.09×0 + 0.3×0.06 + 0×0.002 + 0.1×0.096 + 0.1×0.024 + PSU loss 0.013333 = 1.0333 kW
 P_DC = 120 W
 … 15 more step(s) on the sheet
-Governing: FAIL  Starting peak against transformer overload: u_inrush = 1.1112 vs u_inrush ≤ 1  utilisation 1.11
+Governing: FAIL  Starting peak against transformer overload: u_inrush = 1.12 vs u_inrush ≤ 1  utilisation 1.12
 ```
 <!-- hand-arithmetic:end -->

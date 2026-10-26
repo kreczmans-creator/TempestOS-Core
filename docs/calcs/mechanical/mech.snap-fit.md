@@ -1,4 +1,4 @@
-# M8 — Snap-fits: cantilever, annular, torsion (`mech.snap-fit@1.3.1`)
+# M8 — Snap-fits: cantilever, annular, torsion (`mech.snap-fit@1.3.2`)
 
 **In plain terms.** A snap fit is a plastic hook that bends out of the way as a part is pushed on and springs back into place. The risk is straining the plastic past what it can take, once or repeatedly. The worksheet takes the hook's shape, the material and the deflection needed to assemble it, and works out the strain at its root and the force to push it on and to take it off, for cantilever, tapered, ring and torsion forms.
 
@@ -55,6 +55,6 @@ assembly_force = 4.6886 N × (0.35 + 0.57735) / (1 − 0.20207) = 5.4491 N
 alpha_lock = arctan(1/0.35) = 70.71 deg
 tan_ar = tan(65 deg) = 2.1445
 … 1 more step(s) on the sheet
-Governing: PASS  Strain at the critical section against the permissible strain: strain_util = 0.18682 vs strain_util ≤ 1  utilisation 0.187  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+Governing: PASS  Strain at the critical section against the permissible strain: strain_util = 0.19 vs strain_util ≤ 1  utilisation 0.19  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
 ```
 <!-- hand-arithmetic:end -->

@@ -55,10 +55,10 @@ public sealed class BoltedJointCalculator : ICalcCalculator
             new CalcClauseRef("Shigley's Mechanical Engineering Design", "§8-5, §8-7", "Joint stiffness (frusta); preload and torque"),
         ],
         [
-            new CalcApplicabilityRule("separation", "The residual clamp force is below zero: the joint opens under the working load.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("geometry", "The hole must be larger than the thread and smaller than the bearing diameter.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("no-preload", "The given-preload method needs F_V.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("preload-yield", "Preload alone takes the bolt above 90 % of its proof strength.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("separation", "The residual clamp force is below zero: the joint opens under the working load.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("geometry", "The hole must be larger than the thread and smaller than the bearing diameter.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("no-preload", "The given-preload method needs F_V.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("preload-yield", "Preload alone takes the bolt above 90 % of its proof strength.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-m12-88-nut-factor", "M12×1.75 class 8.8, 93 N·m, K = 0.2",
@@ -77,7 +77,7 @@ public sealed class BoltedJointCalculator : ICalcCalculator
                 [new CalcExpectedValue("Phi", 0.30, "", 5e-5), new CalcExpectedValue("F_S_max", 20.000, "kN", 5e-5), new CalcExpectedValue("F_KR", 0, "kN", 1e-9), new CalcExpectedValue("F_A_sep", 14.286, "kN", 5e-5), new CalcExpectedValue("n_0", 0.71429, "", 5e-5), new CalcExpectedValue("sigma_z_max", 237.25, "MPa", 5e-5)]),
         ],
         DiagramKey: "bolted-joint-preload",
-        Category: "Fasteners");
+        Category: "Connections");
 
     private static CalcReferenceSource Legacy(int n) =>
         new("TempestOS calc.bolted-joint-preload (v0.21.0) hand calculation and test vector", null, $"docs/engineering/calculations/calc.bolted-joint-preload.md, Example {n}");
@@ -97,6 +97,8 @@ public sealed class BoltedJointCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
+        c.MarkUtilisation("nu_M", "u_assembly", "u_clamp", "u_fatigue", "u_strip", "u_yield");
+        c.MarkAtLeast("n_0", "n_L");
         foreach (var s in new[] { "d", "P", "R_p02", "E_S", "sigma_A", "l_k", "d_h", "d_w", "E_P", "n", "f_Z", "M_A", "K", "mu_G", "mu_K", "nu_perm", "alpha_A", "F_A", "F_KR_req", "tau_B", "m_eff", "S_strip" })
             c.Input(s);
 
