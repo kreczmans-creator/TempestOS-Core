@@ -38,7 +38,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 18/18
-  Test run: 2026-10-26 08:42 UTC
+  Test run: 2026-10-26 09:21 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -200,11 +200,11 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   WARNING record: Tabulated values not taken from a reference record: theta_e (External design temperature); layers (Layer thermal conductivity); y_tb (Thermal-bridge allowance). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.room-heat-loss@1.2.1
-  Content hash: fd9944b78380fa3a
+  Template: bs.room-heat-loss@1.2.2
+  Content hash: 8057e7a6276191a0
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 08:42 UTC
+  Test run: 2026-10-26 09:21 UTC
   Application: TempestOS test
 
 
@@ -314,7 +314,7 @@ Saturation vapour pressure at the dry-bulb temperature, over water at or above 0
   Content hash: 680e2f365a72ef0a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 08:42 UTC
+  Test run: 2026-10-26 09:21 UTC
   Application: TempestOS test
 
 
@@ -328,7 +328,7 @@ Issued: 2026-10-26    Issue: ENV-MOI-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Interstitial condensation in a layered wall by the Glaser method over twelve monthly climate steps: the temperature and saturation pressure at every layer interface, the vapour-pressure line with its tangent construction at the condensation planes, the condensate on each interface month by month carried forward from the first month of condensation (drying when the weather turns), the annual balance, the peak accumulation against the owner's limit, and the surface temperature factor f_Rsi against its minimum at the critical surface humidity.
-Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Total resistance and interface temperature: R_T = R_si + Σ R_j + R_se; θ_k = θ_i − (θ_i − θ_e)·(R_si + Σ_(j≤k) R_j)/R_T Saturation pressure (Magnus): p_sat = 610.5·exp(17.269·θ/(237.3 + θ)) over water (θ ≥ 0 °C); p_sat = 610.5·exp(21.875·θ/(265.5 + θ)) over ice (θ < 0 °C) Outside vapour pressure: p_e = RH_e·p_sat(θ_e) Inside vapour pressure: p_i = RH_i·p_sat(θ_i), or p_e + f_Δp·Δv(θ_e)·R_v·(T_i + T_e)/2 with the moisture excess Δv linear between two user points and constant beyond them (R_v = 461.5 J/(kg·K)) and the safety factor f_Δp on the pressure difference (a record, default 1.10; clause wording to be checked against the owner's copy of ISO 13788) Vapour flux through a layer: g = δ0·Δp/Δs_d with δ0 = 2×10⁻¹⁰ kg/(m·s·Pa) Tangent construction: the line from p_i to p_e is bent onto the saturation line at the interfaces it would rise above (and at wet interfaces), by the smallest-slope rule from each contact point Condensation at an interface: g_c = g_in − g_out; Mc accumulates g_c·t over 12 months from the first month of condensation (t = the row's days, else the calendar days of the month, January to December order), a wet interface (held at saturation) drying at g_c < 0 until nothing is left Annual balance and peak: PASS when no condensate remains after the 12 months; Mc_max = the most held on any interface, checked against the user's limit Wall U-value and its cross-check: U = 1/R_T; when the heat-loss calculation's U-value U_ref is given, the sheet warns if |U − U_ref|/U_ref exceeds 2 % (the two calculations then describe different constructions) Surface factor: f_Rsi = 1 − R_si,f/R_T,f with R_si,f = 0.25 m²K/W by default for an opaque element (conventional, a record; 0.13 for glazing); f_Rsi,min = the largest monthly (θ_si,min − θ_e)/(θ_i − θ_e) with p_sat(θ_si,min) = p_i/φ_crit; PASS when f_Rsi ≥ f_Rsi,min
+Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Total resistance and interface temperature: R_T = R_si + Σ R_j + R_se; θ_k = θ_i − (θ_i − θ_e)·(R_si + Σ_(j≤k) R_j)/R_T Saturation pressure (Magnus): p_sat = 610.5·exp(17.269·θ/(237.3 + θ)) over water (θ ≥ 0 °C); p_sat = 610.5·exp(21.875·θ/(265.5 + θ)) over ice (θ < 0 °C) Outside vapour pressure: p_e = RH_e·p_sat(θ_e) Inside vapour pressure: p_i = RH_i·p_sat(θ_i), or p_e + f_Δp·Δv(θ_e)·R_v·(T_i + T_e)/2 with the moisture excess Δv linear between two user points and constant beyond them (R_v = 461.5 J/(kg·K)) and the safety factor f_Δp on the pressure difference (a record, default 1.10; clause wording to be checked against the owner's copy of ISO 13788) Vapour flux through a layer: g = δ0·Δp/Δs_d with δ0 = 2×10⁻¹⁰ kg/(m·s·Pa) Tangent construction: the line from p_i to p_e is bent onto the saturation line at the interfaces it would rise above (and at wet interfaces), by the smallest-slope rule from each contact point Condensation at an interface: g_c = g_in − g_out; Mc accumulates g_c·t over 12 months from the first month of condensation (t = the row's days, else the calendar days of the month, January to December order), a wet interface (held at saturation) drying at g_c < 0 until nothing is left Refinement check: the same year is run again with every layer split into 20 equal sub-layers of the same λ and μ (inside the model, not counted against the 30-layer limit), because the saturation line is curved inside a layer and the interface-only model can miss the condensate that forms between two interfaces; the annual balance passes only when it passes both ways, and the sheet warns when the two runs differ (a verdict flips, or Mc_end or the wall peak differ by more than 10 %) Annual balance and peak: PASS when no condensate remains after the 12 months (as entered and in 20 sub-layers per layer); Mc_max = the most held on any interface, checked against the user's limit Wall U-value and its cross-check: U = 1/R_T; when the heat-loss calculation's U-value U_ref is given, the sheet warns if |U − U_ref|/U_ref exceeds 2 % (the two calculations then describe different constructions) Surface factor: f_Rsi = 1 − R_si,f/R_T,f with R_si,f = 0.25 m²K/W by default for an opaque element (conventional, a record; 0.13 for glazing); f_Rsi,min = the largest monthly (θ_si,min − θ_e)/(θ_i − θ_e) with p_sat(θ_si,min) = p_i/φ_crit; PASS when f_Rsi ≥ f_Rsi,min
   Ref: ISO 13788 cl. 5 (clause number to be checked against the owner's copy) — Hygrothermal performance of building components and elements — internal surface temperature and surface condensation
   Ref: ISO 13788 cl. 6 (clause number to be checked against the owner's copy) — Hygrothermal performance of building components and elements — interstitial condensation (Glaser method)
   Ref: ISO 13788 moisture excess and its design margin on Δp (clause number and wording to be checked against the owner's copy) — Hygrothermal performance of building components and elements — internal humidity from the humidity class
@@ -371,7 +371,7 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
 3. ASSUMPTIONS
   A1. Steady state in each month: one-dimensional diffusion of water vapour through homogeneous layers in series, with the monthly mean climate; no air movement, no liquid transport, no moisture storage, no solar or rain gain. (The Glaser method.)
   A2. Material properties (λ, μ) are constants of the layer, not functions of its moisture or temperature; condensate does not change them. (The Glaser method.)
-  A3. Condensation is checked at the interfaces between layers only; a thick layer where the plane would lie inside it should be split into thinner layers. The saturation line is joined straight between the interface values. (Stated limit.)
+  A3. Condensation is checked at the interfaces between layers; the saturation line is joined straight between the interface values, which can miss condensate that forms inside a layer. The annual balance is therefore also run with every layer split into 20 sub-layers and passes only when both pass; the limit on the condensate per interface is checked on the interfaces as entered. (Stated limit; refinement check (bs.glaser-01). Whether ISO 13788 requires sub-division is to be checked against the owner's copy.)
   A4. The Magnus saturation pressure is used over water at and above 0 °C and over ice below, and the water-vapour permeability of air is δ0 = 2×10⁻¹⁰ kg/(m·s·Pa); both are closed-form physics, not data of a standard. (Derived.)
   A5. Where a month's length is blank it is the calendar days of the month, taking the climate rows as January to December (February 28 days); enter the days where the record starts in another month. A wet interface that dries within a month is taken as dry from the next month; the month's rates are those of the wet state at its start. (Monthly steps.)
   A6. The monthly climate, the humidity-class points, the surface resistances, the critical humidity and the limit on the condensate are the user's records from the user's own licensed copies; no climate data, humidity-class table, material table or limit of any standard is shipped. (No table from a standard is shipped.)
@@ -568,15 +568,23 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
       = Jan (row 1)
       = 1
         Row of the climate that governs the surface check (0 when none applies)
-  [58] u_Mc = Mc_max / Mc_limit
+  [57] Mc_end_fine = Σ Mc after 12 months, each layer in 20 sub-layers    « ISO 13788 cl. 6
+      = 0 g/m²
+      = 0 g/m²
+        Condensate left after 12 months when every layer is split into 20 sub-layers (refinement check)
+  [58] Mc_tot_fine = max over months of Σ Mc, each layer in 20 sub-layers    « ISO 13788 cl. 6
+      = 9.8141 g/m²
+      = 9.8141 g/m²
+        Most condensate on the whole wall when every layer is split into 20 sub-layers (refinement check)
+  [60] u_Mc = Mc_max / Mc_limit
       = 9.8141 g/m² / 500 g/m²
       = 0.019628
         Utilisation of the limit on the condensate per interface
-  [59] u_f = f_Rsi,min / f_Rsi    « ISO 13788 cl. 5
+  [61] u_f = f_Rsi,min / f_Rsi    « ISO 13788 cl. 5
       = 0.60884 / 0.9048
       = 0.6729
         Utilisation of the surface temperature factor
-  [60] pass = every check passes
+  [62] pass = every check passes
       = 3 check(s)
       = 1
         1 when the annual balance, the limit and the surface factor all pass, else 0
@@ -609,6 +617,8 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
   Mc_max = 9.8141 g/m²    Most condensate on any interface
   Mc_tot = 9.8141 g/m²    Most condensate on the wall
   Mc_end = 0 g/m²    Condensate left after 12 months
+  Mc_end_fine = 0 g/m²    Condensate left after 12 months, each layer in 20 sub-layers
+  Mc_tot_fine = 9.8141 g/m²    Most condensate on the wall, each layer in 20 sub-layers
   n_diag = 1    Month of the diagram
   sd_if = [0, 0.1, 4.1, 4.18, 6.33, 6.705] m    Diffusion thickness at the nodes
   x_if = [0, 0.0125, 0.0127, 0.0927, 0.3077, 0.3227] m    Depth at the nodes
@@ -626,16 +636,16 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
 6. CHECKS (governing first)
   PASS  Surface condensation: f_Rsi against f_Rsi,min at 80 % critical humidity: u_f = 0.6729 vs u_f ≤ 1  utilisation 0.673  « ISO 13788 cl. 5
   PASS  Peak condensate on an interface against its limit (500 g/m²): u_Mc = 0.019628 vs u_Mc ≤ 1  utilisation 0.0196  « ISO 13788 cl. 6
-  PASS  Annual moisture balance: the condensate dries out within the year: Mc_end = 0 g/m² vs Mc_end ≤ 0 g/m²  utilisation 0  « ISO 13788 cl. 6
+  PASS  Annual moisture balance: the condensate dries out within the year (as entered and with every layer in 20 sub-layers): Mc_end = 0 g/m² as entered, 0 g/m² in 20 sub-layers per layer vs Mc_end ≤ 0 g/m²  utilisation 0  « ISO 13788 cl. 6
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: layers (Layer conductivity and vapour resistance); Rsi, Rse, Rsi_f (Surface resistances); climate (Monthly outside climate); dp_f (Internal humidity class); RH_crit, Mc_limit (Condensation criteria). Enter each as one so its source, edition and licence travel with it.
   WARNING input.layers[2].d: layers[2].d (Thickness) is outside its usual range 1 … 500 mm; 0.2 mm was given.
 
 8. VERIFICATION
-  Template: bs.glaser@1.2.0
-  Content hash: c1e7f4dbc79c6026
+  Template: bs.glaser@1.3.0
+  Content hash: bfa122129a1b6cf7
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 08:42 UTC
+  Test run: 2026-10-26 09:21 UTC
   Application: TempestOS test

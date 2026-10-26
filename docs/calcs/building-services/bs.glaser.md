@@ -48,7 +48,7 @@ p_ext_m = months 1 … 12 of the climate = [634.76, 666.5, 785.09, 917.96, 1137.
 p_int_m = 50 % × 2337 Pa = [1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5, 1168.5] Pa
 n_start = M11 (row 11) = 11
 Mc_1 = M1: θ_e = 2 °C; 1023.7 g/m² gained (−: dried) this month = 2069.8 g/m²
-… 29 more step(s) on the sheet
+… 31 more step(s) on the sheet
 Governing: FAIL  Peak condensate on an interface against its limit (500 g/m²): u_Mc = 6.0452 vs u_Mc ≤ 1  utilisation 6.05  « ISO 13788 cl. 6
 ```
 <!-- hand-arithmetic:end -->

@@ -25,11 +25,11 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|
 | Room A heat loss | `Phi_HL` | Sealed system | `rooms` row 1 (`Phi`), a table-cell link | 379.444 W |
-| Room B heat loss | `Phi_HL` | Sealed system | `rooms` row 2 (`Phi`), a table-cell link | 263.808 W |
-| Sealed system | `Phi_tot` | Primary pipework and pump | `Phi_load` | 643.252 W |
+| Room B heat loss | `Phi_HL` | Sealed system | `rooms` row 2 (`Phi`), a table-cell link | 304.608 W |
+| Sealed system | `Phi_tot` | Primary pipework and pump | `Phi_load` | 684.052 W |
 | Sealed system | `dT_fr` | Primary pipework and pump | `dT_load` | 10 K |
 | Sealed system | `t_m` | Primary pipework and pump | `T` | 70 degC |
-| Primary pipework and pump | `T_shaft` | Circulator motor | `T_L` | 0.000272215 N*m |
+| Primary pipework and pump | `T_shaft` | Circulator motor | `T_L` | 0.000323393 N*m |
 | Primary pipework and pump | `n_shaft` | Circulator motor | `n_L` | 2800 rpm |
 
 ## Inputs and provenance

@@ -1,6 +1,16 @@
 {
   "b1": [
     {
+      "Symbol": "D_law",
+      "Text": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)"
+    },
+    {
       "Symbol": "D_ratio",
       "Number": 1,
       "Provenance": {
@@ -258,7 +268,7 @@
       "Unit": "mm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e408aa3724524073a506e04c739fa164#OD_1",
+        "Reference": "calc:09f78c7505b348ae8f2763dd10bc8076#OD_1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -281,7 +291,7 @@
       "Unit": "%",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:c527f1f857bb4c1c9c39b1a2fb2311ec#phi_1",
+        "Reference": "calc:09ba6ec1788a4ad5a49e53d7159ad05b#phi_1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -373,7 +383,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:c527f1f857bb4c1c9c39b1a2fb2311ec#t_1_out",
+        "Reference": "calc:09ba6ec1788a4ad5a49e53d7159ad05b#t_1_out",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -385,7 +395,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:c527f1f857bb4c1c9c39b1a2fb2311ec#t_dp_1",
+        "Reference": "calc:09ba6ec1788a4ad5a49e53d7159ad05b#t_dp_1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -397,7 +407,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e408aa3724524073a506e04c739fa164#T_line",
+        "Reference": "calc:09f78c7505b348ae8f2763dd10bc8076#T_line",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
