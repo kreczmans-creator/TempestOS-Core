@@ -103,7 +103,8 @@ public sealed class GuidedToleranceTests
     [InlineData("4290.3", "±0.05")]
     [InlineData("3.93", "±0.005")]
     [InlineData("2000", "±0.5")]
-    [InlineData("1.5E+06", "±50000")]
+    [InlineData("1.5E+06", "±1 % of 1.5E+06")] // half its last place (50000) is more than 1 % of it (SEC-C-02)
+    [InlineData("5", "±1 % of 5")]
     [InlineData("0", "exactly zero")]
     [InlineData("PASS", "exact text")]
     public void The_Allowance_Is_Stated_For_The_Screen(string expected, string allowance) =>

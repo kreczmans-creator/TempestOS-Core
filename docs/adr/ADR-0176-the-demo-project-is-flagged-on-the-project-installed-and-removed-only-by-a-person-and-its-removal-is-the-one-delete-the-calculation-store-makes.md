@@ -36,3 +36,8 @@ Addendum C §C6 C-6 asks for one realistic fictional project holding every built
 ## Follow-ups
 
 - The soft delete leaves the project in `IProjectDirectory.ListAsync` (it does not filter deleted projects, for projects the person deletes from the explorer too); surfaces that list projects from it should filter deleted ones.
+- A calculation or pack can still be created in the project after it is removed (a second window that still has it open): `CreateAsync` does not refuse a deleted project, and the row is then out of reach of Remove (security review SEC-C-05, Low, open).
+
+## Changes after the Addendum C security review
+
+SEC-C-03 (`docs/reviews/security-review.md`, Addendum C). Decision 4 deleted the two scan-profile keys whatever they held. A person who had saved their own profile under `demo-press-seal-stack@1` or `demo-press-seal-gland@1` before the install (from a profile file) had it used by the install, which cannot overwrite a version, and then deleted by Remove. `DeleteDemonstrationRowsAsync` now deletes a profile version only when the stored text is the shipped profile word for word (`CalcDemoProject.ShippedProfile`); any other is kept. Test: `AddendumCSecurityRegressionTests.SEC_C_03_Remove_Keeps_A_Scan_Profile_The_Person_Saved_Under_The_Demonstrations_Id`.
