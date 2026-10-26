@@ -43,7 +43,7 @@ public static class CalcPackTemplates
     /// <summary>
     /// Motor circuit: motor (E1) → load budget (E6) → cable (E4) → voltage drop (E3) and fault protection (E5) →
     /// enclosure heat (E2). E1's RMS power (the thermal-equivalent continuous power, not the instantaneous peak) enters E6 as a linked
-    /// load; E6's bus current sizes the cable; the cable's size, length, rated current and device type code feed E3 and E5 (E5 is blocked
+    /// load; E6's bus current sizes the cable; the cable's size, length, rated current and device type code feed E3 and E5 (the protective conductor is taken as the same size as the line conductor, <c>S_cpc</c> = the cable's CSA; above 16 mm² a smaller protective conductor is usual: unlink and enter it) (E5 is blocked
     /// if the device chosen on it is not the one the cable step sized); E6's heat released inside the enclosure enters E2 (the linked
     /// motor is outside it). The steps carry example inputs except E4's two record tables, which no build ships: the chain is refused at
     /// E4 until the user supplies his own.
@@ -67,6 +67,7 @@ public static class CalcPackTemplates
             new CalcPackBinding("e4", "L", "e3", "L"),
             new CalcPackBinding("e4", "CSA", "e3", "A_c"),
             new CalcPackBinding("e4", "CSA", "e5", "S_line"),
+            new CalcPackBinding("e4", "CSA", "e5", "S_cpc"),
             new CalcPackBinding("e4", "L", "e5", "L"),
             new CalcPackBinding("e4", "I_n", "e5", "I_n"),
             new CalcPackBinding("e4", "device_code", "e5", "device_code"),
@@ -239,6 +240,7 @@ public static class CalcPackTemplates
             new CalcPackBinding("e4", "L", "e3", "L"),
             new CalcPackBinding("e4", "CSA", "e3", "A_c"),
             new CalcPackBinding("e4", "CSA", "e5", "S_line"),
+            new CalcPackBinding("e4", "CSA", "e5", "S_cpc"),
             new CalcPackBinding("e4", "L", "e5", "L"),
             new CalcPackBinding("e4", "I_n", "e5", "I_n"),
             new CalcPackBinding("e4", "device_code", "e5", "device_code"),

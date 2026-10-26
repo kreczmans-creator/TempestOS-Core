@@ -114,11 +114,11 @@ internal static class CalcPackExamples
 
     /// <summary>
     /// The device is the type C MCB the cable step sizes (the choice must agree with it or the step is blocked); the protective conductor is
-    /// the same size as the line conductor; the let-through energy is an invented figure for a small MCB, to be replaced from its datasheet.
+    /// the same size as the line conductor (linked: S_cpc is the cable step's CSA, so it follows the cable); the let-through energy is an invented figure for a small MCB, to be replaced from its datasheet.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> MotorE5 { get; } =
     [
-        Q("U_0", 230, "V"), Q("Z_e", 0.35, "ohm"), Q("S_cpc", 1.5, "mm^2"), C("device", "MCB type C (I_a = 10 I_n)"), Q("t_req", 0.4, "s"), Q("I2t_let", 1.5e4, "A^2*s"),
+        Q("U_0", 230, "V"), Q("Z_e", 0.35, "ohm"), C("device", "MCB type C (I_a = 10 I_n)"), Q("t_req", 0.4, "s"), Q("I2t_let", 1.5e4, "A^2*s"),
     ];
 
     /// <summary>A 1000 × 1200 × 300 enclosure against a wall.</summary>
@@ -579,14 +579,14 @@ internal static class CalcPackExamples
 
     /// <summary>
     /// Earth-fault disconnection of the motor supply: a 230 V to earth system (the 398 V line voltage the fault-level route uses is √3 × 230), a 0.05 Ω external loop impedance (INVENTED: a close-coupled 400 kVA transformer, whose own
-    /// impedance is 0.0159 Ω; the figure is coherent with the transformer data below, which a 0.35 Ω loop was not), a 10 mm² protective conductor (the cable step's size by hand), the type C MCB the cable step sizes (the choice must agree with it or
+    /// impedance is 0.0159 Ω; the figure is coherent with the transformer data below, which a 0.35 Ω loop was not), the protective conductor the size of the cable step's conductor (linked: S_cpc is E4's CSA), the type C MCB the cable step sizes (the choice must agree with it or
     /// the step is blocked) and a 0.4 s disconnection time. The supply transformer (400 kVA, 4 %: INVENTED) is entered here, once: its three-phase fault current <c>I_k3</c> (with the factor <c>c_k3</c> it was computed with) is the source of the
     /// motor-start step. <b>That source is the fault level at the transformer terminals, a lower bound on the dip:</b> the supply cabling and the upstream network are not in it (E9's <c>S_kQ</c> is where an upstream network is added; for a remote
     /// board enter a lower fault level). The 25 kA breaking capacity and the 8·10⁴ A²s let-through are invented illustrations, to be replaced from the device datasheet.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuE5 { get; } =
     [
-        Q("U_0", 230, "V"), Q("Z_e", 0.05, "ohm"), Q("S_cpc", 10, "mm^2"), C("device", "MCB type C (I_a = 10 I_n)"), Q("t_req", 0.4, "s"), Q("I2t_let", 8e4, "A^2*s"),
+        Q("U_0", 230, "V"), Q("Z_e", 0.05, "ohm"), C("device", "MCB type C (I_a = 10 I_n)"), Q("t_req", 0.4, "s"), Q("I2t_let", 8e4, "A^2*s"),
         Q("S_r", 400, "kVA"), Q("u_k", 4, "%"), Q("I_cn", 25, "kA"),
     ];
 
