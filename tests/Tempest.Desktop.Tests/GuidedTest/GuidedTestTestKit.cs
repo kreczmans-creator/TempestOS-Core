@@ -21,8 +21,20 @@ internal sealed class FakeWorksheet : IGuidedWorksheetHost
 
     public Dictionary<string, string> Versions { get; } = new(StringComparer.Ordinal);
 
+    /// <inheritdoc />
+    public event Action? FormChanged;
+
+    /// <summary>The form's inputs or run changed, as the real form tells the guided test.</summary>
+    public void RaiseFormChanged() => FormChanged?.Invoke();
+
+    /// <summary>When set, <see cref="Prepare"/> throws this, as a form that fails would.</summary>
+    public Exception? PrepareFailure { get; set; }
+
     public GuidedPrepareResult Prepare(string templateId, string inputsJson, bool discardUnsavedEdits)
     {
+        if (PrepareFailure is not null)
+            throw PrepareFailure;
+
         Prepared.Add((templateId, inputsJson, discardUnsavedEdits));
         return new GuidedPrepareResult(Next, Message);
     }
@@ -43,6 +55,7 @@ internal sealed class FakeWorksheet : IGuidedWorksheetHost
 internal sealed class GuidedKit : IAsyncDisposable
 {
     private readonly SqlitePersistenceStore _store;
+    private bool _broken;
 
     private GuidedKit(SqlitePersistenceStore store, string root)
     {
@@ -86,5 +99,14 @@ internal sealed class GuidedKit : IAsyncDisposable
 
     public ManualTestRunService Make() => new(_store, GuidedTestScript.Current, () => "0.26.0 (1a2b3c4)", () => "1a2b3c4", () => (TesterId, TesterName));
 
-    public ValueTask DisposeAsync() => _store.DisposeAsync();
+    /// <summary>Closes the store under the run service, so that its next read or write fails as a store that has gone away would.</summary>
+    public async ValueTask BreakStoreAsync()
+    {
+        if (!_broken)
+            await _store.DisposeAsync();
+
+        _broken = true;
+    }
+
+    public async ValueTask DisposeAsync() => await BreakStoreAsync();
 }

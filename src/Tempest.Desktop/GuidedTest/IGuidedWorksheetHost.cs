@@ -31,8 +31,18 @@ public interface IGuidedWorksheetHost
     /// </summary>
     GuidedPrepareResult Prepare(string templateId, string inputsJson, bool discardUnsavedEdits);
 
-    /// <summary>The run the form shows for <paramref name="templateId"/> now, or <see langword="null"/> when the form is not open on that template.</summary>
+    /// <summary>
+    /// The run the form shows for <paramref name="templateId"/> now, or <see langword="null"/> unless the form is exactly what <see cref="Prepare"/> left
+    /// there: the template, no calculation behind it (an unsaved scratch sheet), not marked stale, and its inputs still those loaded. A form the tester
+    /// has edited, or replaced by a saved calculation, is not the worked example and gives nothing to compare.
+    /// </summary>
     CalcRunResult? ShownRun(string templateId);
+
+    /// <summary>
+    /// Raised (on the UI thread) when the form's inputs or the run it shows change after <see cref="Prepare"/> (an edit, another template or calculation
+    /// shown), so what was compared before is out of date. Not raised for the changes <see cref="Prepare"/> itself makes.
+    /// </summary>
+    event Action? FormChanged;
 
     /// <summary>The version of the template this build ships, or <see langword="null"/> when it has none.</summary>
     string? ShippedTemplateVersion(string templateId);

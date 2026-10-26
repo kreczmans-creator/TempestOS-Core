@@ -258,6 +258,9 @@ public sealed partial class CalcSheetView : UserControl
     /// <summary>Raised on every input change with the current form; the coordinator answers with <see cref="ShowRun"/>.</summary>
     public event Action<CalcInputSet>? InputsChanged;
 
+    /// <summary>Raised after every run the form shows (<see cref="ShowRun"/>), so a reader of <see cref="LastRun"/> (the Guided test) knows what it read has been replaced.</summary>
+    public event Action? RunShown;
+
     public event Action? SaveRequested;
 
     public event Action? CheckRequested;
@@ -850,6 +853,7 @@ public sealed partial class CalcSheetView : UserControl
         _importButton.IsEnabled = SelectedTemplate is not null && !IsReadOnly;
         _attachButton.IsVisible = ExternalReportInput is not null && CurrentInstance is { Status: CalcInstanceStatus.Draft };
         UpdateActions();
+        RunShown?.Invoke();
     }
 
     public void ShowInstance(CalcInstance instance)
