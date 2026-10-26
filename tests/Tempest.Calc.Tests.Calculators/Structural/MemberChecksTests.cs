@@ -117,6 +117,56 @@ public sealed class MemberChecksTests
         Assert.Contains(high.Notices, n => n.RuleId == "high-shear");
     }
 
+    private static CalcInputSet Ub(params CalcInputValue[] overrides)
+    {
+        var baseline = Calc.Template.TestCases.Single(t => t.Id == "ka-ub-bending-shear").Inputs.ToDictionary(v => v.Symbol);
+        foreach (var o in overrides) baseline[o.Symbol] = o;
+        return new CalcInputSet([.. baseline.Values]);
+    }
+
+    [Fact]
+    public void High_Shear_Reduces_Only_The_Web_Part_Of_The_Plastic_Modulus_About_The_Major_Axis()
+    {
+        // struct.en1993-member-01: UB 305x165x40 S275, M_y 120 kN.m, V 250 kN (0.785 V_pl,Rd, rho 0.3241): the sheet cut M_y,c,Rd to (1 - rho) W_pl,y f_y = 115.80 kN.m (u 1.036, FAIL).
+        // Eq. 6.30 gives (W_pl,y - rho A_w^2/(4 t_w)) f_y = 160.62 kN.m (u 0.747). python3: A_w = (303.4 - 2 * 10.2) * 6 = 1698 mm2.
+        var r = CalcRunner.Run(Calc, Ub(CalcInputValue.Quantity("V_Ed", 250, "kN")));
+        Assert.Equal(0.324088, r.OutputSi("rho"), 6);
+        Assert.Equal(160.618, r.OutputSi("M_y_c_Rd") / 1e3, 3);
+        Assert.Equal(0.74711, r.OutputSi("u_M_y"), 4);
+
+        // The minor-axis moment is carried by the flanges: no reduction for load in the web plane (W_pl,z f_y = 142 cm3 x 275 MPa = 39.05 kN.m).
+        Assert.Equal(39.05, r.OutputSi("M_z_c_Rd") / 1e3, 6);
+    }
+
+    [Fact]
+    public void High_Shear_Without_The_Web_Dimensions_Keeps_The_Whole_Section_Reduction_And_Says_So()
+    {
+        var noDims = new CalcInputSet(Ub(CalcInputValue.Quantity("V_Ed", 250, "kN"), CalcInputValue.Quantity("A_v", 20.0676, "cm^2")).Values.Where(v => v.Symbol is not ("h" or "b" or "t_w" or "t_f" or "r")));
+        var r = CalcRunner.Run(Calc, noDims);
+        Assert.Equal((1 - 0.324088) * 623 * 275 / 1e3, r.OutputSi("M_y_c_Rd") / 1e3, 2);
+        var warning = Assert.Single(r.Notices, n => n.RuleId == "high-shear");
+        Assert.Contains("whole", warning.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_Member_Interaction_Divides_The_Moments_By_The_Characteristic_Resistance_Over_Gamma_M1()
+    {
+        // struct.en1993-member-R2: UC 203x203x46, N -900, M_y 40, gamma_M0 1.05, gamma_M1 1.1: u_member 1.1365 (moments over W f_y/gamma_M0) against 1.1479 (EN 6.61, M_Rk/gamma_M1).
+        // python3: chi_z 0.5288 (curve c); N_b,z,Rd = chi A f_y/1.1; M_Rk/1.1 = 497e3 * 355/1.1 N.mm = 160.395 kN.m.
+        var r = CalcRunner.Run(Calc, Uc(CalcInputValue.Of("gamma_M0", 1.05), CalcInputValue.Of("gamma_M1", 1.1), CalcInputValue.Quantity("N_Ed", -900, "kN"), CalcInputValue.Quantity("M_y_Ed", 40, "kN*m")));
+        var nb = r.OutputSi("N_b_Rd") / 1e3;
+        Assert.Equal(900 / nb + 40 / (497e3 * 355 / 1.1 / 1e6), r.OutputSi("u_member"), 6);
+        Assert.Equal(1.1479, r.OutputSi("u_member"), 3);
+    }
+
+    [Fact]
+    public void A_Tension_Member_Warns_That_The_Net_Section_Fracture_Is_Not_Checked()
+    {
+        // struct.en1993-member-06: only gross-section yielding was checked and nothing warned about bolt holes (N_u,Rd = 0.9 A_net f_u/gamma_M2 governs many bolted ties).
+        Assert.Contains(CalcRunner.Run(Calc, Uc(CalcInputValue.Quantity("N_Ed", 500, "kN"))).Notices, n => n.RuleId == "net-section");
+        Assert.DoesNotContain(CalcRunner.Run(Calc, Uc()).Notices, n => n.RuleId == "net-section");
+    }
+
     [Fact]
     public void Class_4_Blocks_And_Class_3_Uses_Elastic_Modulus()
     {
