@@ -380,6 +380,10 @@ public sealed class WorkspaceHost : IAsyncDisposable
             hostLogger?.Warning($"The guided test is not available: {ex.Message}");
         }
 
+        // Addendum C, C-6: the seeded demonstration project. Built here and never run: nothing at start-up installs it; Settings → Demo project does, when asked.
+        CalcDemo = new Tempest.Calc.Library.CalcDemoProjectService(CalcInstances, domainContext, Tempest.Desktop.CalcSheets.CalcCalculatorComposition.DemoCableTables(),
+            (Tempest.Core.Audit.IAuditRecorder)host.Services!.GetService(typeof(Tempest.Core.Audit.IAuditRecorder)));
+
         // One-off sweep (`ADR-0173`): Evidence a worksheet made before the managed marker existed is marked now, so the generic Evidence acts refuse it.
         try
         {
@@ -610,6 +614,9 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// <see cref="Tempest.Calc.Library.ManualTesting.IManualTestStatusSource"/> question; <see langword="null"/> before start, or when the build's script could not be read.
     /// </summary>
     public Tempest.Calc.Library.ManualTesting.ManualTestRunService? ManualTests { get; private set; }
+
+    /// <summary>Addendum C, C-6: installs and removes the seeded demonstration project; built with the worksheet service and run only by an act of the person (Settings → Demo project).</summary>
+    public Tempest.Calc.Library.CalcDemoProjectService? CalcDemo { get; private set; }
 
     /// <summary>What the start-up migration of legacy calculation records did (ADR-0167); <see langword="null"/> before start.</summary>
     public Tempest.Calc.Library.LegacyMigrationReport? LegacyMigrationReport { get; private set; }

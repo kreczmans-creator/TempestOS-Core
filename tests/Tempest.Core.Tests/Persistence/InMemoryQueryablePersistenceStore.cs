@@ -96,6 +96,18 @@ public sealed class InMemoryQueryablePersistenceStore
         }
     }
 
+    /// <summary>
+    /// Every committed row of every collection, as (collection, key) → its text, or its bytes in base 64 behind "bytes:". A synchronous window for a test that
+    /// proves what an act left untouched (Addendum C, C-6: removing the demonstration changes no row of any other project).
+    /// </summary>
+    public IReadOnlyDictionary<(string Collection, string Key), string> Snapshot()
+    {
+        lock (_publishLock)
+        {
+            return _committed.ToDictionary(kv => kv.Key, kv => kv.Value.Text ?? "bytes:" + Convert.ToBase64String(kv.Value.Bytes ?? []));
+        }
+    }
+
     /// <summary>The committed text value under <paramref name="key"/>, or <see langword="null"/>.</summary>
     public string? CommittedText(string collection, string key)
     {

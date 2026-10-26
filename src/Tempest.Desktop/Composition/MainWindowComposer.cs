@@ -358,6 +358,14 @@ internal sealed partial class MainWindowComposer
             : null;
         xeroSettings?.KeepDocumentIdentityCurrent();
 
+        // Addendum C, C-6: Settings → Demo project. The two actions ask in the confirmation dialog above, so neither can run unasked; a removal is refused
+        // while the demonstration is the open project.
+        var demoProject = host.CalcDemo is { } demoService
+            ? new Tempest.Desktop.CalcSheets.DemoProjectViewModel(
+                demoService, (title, message, confirm) => confirmationDialog.ConfirmAsync(title, message, confirm),
+                id => host.ProjectContext?.Current?.Id == id)
+            : null;
+
         var settingsView = new SettingsView(
             theme, session.UserSettings, composition.SettingsProvider, configurationProvider, persistenceRootPath,
             workingPatterns, currentPrincipalAccessor, invoicingConnector, secretStore,
@@ -366,7 +374,7 @@ internal sealed partial class MainWindowComposer
             persistenceDatabasePath: persistenceDatabasePath, auditRecorder: auditRecorder, projectContext: host.ProjectContext,
             prepareForRestartAsync: PrepareForRestartAsync, updateService: updateService, updateAvailability: updateAvailability, filePicker: evidenceFilePicker,
             signOffPolicy: (Tempest.Core.Governance.ISignOffPolicy)services.GetService(typeof(Tempest.Core.Governance.ISignOffPolicy)),
-            xeroSettings: xeroSettings);
+            xeroSettings: xeroSettings, demoProject: demoProject);
 
         var inputDialog = new InputDialog();
         var messageDialog = new MessageDialog();

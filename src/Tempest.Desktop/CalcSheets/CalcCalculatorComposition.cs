@@ -18,4 +18,14 @@ public static class CalcCalculatorComposition
         .. Tempest.Calc.Electrical.ElectricalCalculators.All,
         .. Tempest.Calc.FluidPower.FluidPowerCalculators.All,
     ];
+
+    /// <summary>
+    /// Addendum C, C-6: the cable-capacity and device-rating inputs the demonstration project's motor-supply cable steps are given. They are the electrical
+    /// calculator's own synthetic test tables (invented values, not from any regulation or manufacturer); no build ships real ones.
+    /// </summary>
+    public static IReadOnlyList<CalcInputValue> DemoCableTables() =>
+    [
+        Tempest.Calc.Electrical.ConductorSizingCalculator.SyntheticAmpacity(),
+        Tempest.Calc.Electrical.ConductorSizingCalculator.TypicalRatings(),
+    ];
 }
