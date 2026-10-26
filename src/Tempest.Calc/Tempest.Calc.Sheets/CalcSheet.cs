@@ -11,7 +11,10 @@ public enum CalcSheetStatus
     Superseded,
 }
 
-/// <summary>§3.4 item 1: the sheet header.</summary>
+/// <summary>
+/// §3.4 item 1: the sheet header. <paramref name="Watermark"/> is a notice printed at the top of the sheet (and, in the PDF, on every page's footer)
+/// when the project the calculation belongs to is marked as a demonstration (Addendum C, C-6); <see langword="null"/> on every real calculation.
+/// </summary>
 public sealed record CalcSheetHeader(
     string Project,
     string CalcId,
@@ -24,7 +27,8 @@ public sealed record CalcSheetHeader(
     DateTimeOffset? CheckedAt,
     DateTimeOffset? IssuedAt,
     string? Client = null,
-    string? IssueReference = null);
+    string? IssueReference = null,
+    string? Watermark = null);
 
 /// <summary>§3.4 item 3: one row of the inputs table.</summary>
 public sealed record CalcSheetInputRow(string Symbol, string Description, string Value, string Unit, string Source, string ValidRange);

@@ -180,8 +180,8 @@ public static class Iso286
         if (lower == "js")
             return Tolerance(sizeMm, grade) / 2;
 
-        // K, M and N up to IT8 take the deviation of the shaft letter at the grade the table lists it for: the k formula is 0 at IT8, but a K8 hole keeps the k deviation of IT4 to IT7 (mech.iso286-fit-03).
-        var shaft = ShaftFundamentalDeviation(lower, sizeMm, lower == "k" && grade == 8 ? 7 : grade);
+        // The K row's "−ei + Δ" form applies to every grade up to IT8, and the k deviation in it is the one of IT4 to IT7: the k formula is 0 below IT4 and at IT8, but a K3 or K8 hole keeps it (mech.iso286-fit-03).
+        var shaft = ShaftFundamentalDeviation(lower, sizeMm, lower == "k" && grade <= 8 ? 7 : grade);
 
         if (shaft is null)
             return null;
@@ -193,7 +193,8 @@ public static class Iso286
         if (lower == "n" && grade > 8 && StepMean(sizeMm) > 3.0)
             return 0.0;
 
-        var delta = (lower is "k" or "m" or "n" && grade <= 8) || (string.CompareOrdinal(lower, "p") >= 0 && grade <= 7)
+        // Δ is given for IT3 to IT8 only (and for P–ZC to IT7); below IT3 the standard gives none, so it is 0.
+        var delta = grade >= 3 && ((lower is "k" or "m" or "n" && grade <= 8) || (string.CompareOrdinal(lower, "p") >= 0 && grade <= 7))
             ? Tolerance(sizeMm, grade) - Tolerance(sizeMm, grade - 1)
             : 0.0;
 

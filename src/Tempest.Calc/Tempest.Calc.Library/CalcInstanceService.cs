@@ -113,6 +113,9 @@ public sealed partial class CalcInstanceService
 
     private string CurrentPrincipal() => PrincipalOverride?.Invoke() ?? _domain.ResolveCurrentPrincipalId();
 
+    /// <summary>The signed-in person, for the record import (it stamps who entered the values).</summary>
+    internal string SignedInPerson => CurrentPrincipal();
+
     private static bool IsKnownPerson(string? principal) => !string.IsNullOrWhiteSpace(principal) && !string.Equals(principal, Tempest.Core.EngineeringData.EngineeringDocumentStore.UnknownAuthorPrincipalId, StringComparison.Ordinal);
 
     /// <summary>The principals listed with <paramref name="more"/> added, without blanks, the "unknown" sentinel or repeats; <see langword="null"/> when none is left.</summary>
@@ -130,6 +133,11 @@ public sealed partial class CalcInstanceService
     public MaterialLibrary Materials => _materials ??= new MaterialLibrary(this);
 
     internal TimeProvider Time => _time;
+
+    private RecordImportService? _recordImport;
+
+    /// <summary>The reference-record import (Addendum C, C-3): Track P's record templates, preview, all-or-nothing commit, and the records a calculator is missing.</summary>
+    public RecordImportService RecordImport => _recordImport ??= new RecordImportService(this);
 
     // ------------------------------------------------------------------
     // Create, update, run
@@ -1109,7 +1117,8 @@ public sealed partial class CalcInstanceService
 
                 var project = await ProjectLabelAsync(pack.ProjectId, token).ConfigureAwait(false);
                 var cover = new CalcSheet(
-                    new CalcSheetHeader(project, pack.Title, "Calculation pack", pack.Revision, CalcSheetStatus.Issued, evidence.AuthorIdentityId, CheckerLabel(evidence.Check?.CheckerName, pack.SecondCheck), evidence.CreatedAt, evidence.Check?.DateUtc, issuedAtUtc, client, issueReference),
+                    new CalcSheetHeader(project, pack.Title, "Calculation pack", pack.Revision, CalcSheetStatus.Issued, evidence.AuthorIdentityId, CheckerLabel(evidence.Check?.CheckerName, pack.SecondCheck), evidence.CreatedAt, evidence.Check?.DateUtc, issuedAtUtc, client, issueReference,
+                        await WatermarkAsync(pack.ProjectId, token).ConfigureAwait(false)),
                     "Calculation pack: the calculations listed in the index, issued together under one issue sheet.", string.Empty, [], [], [], [], [], [], [], [],
                     new CalcSheetFooter("pack", "—", _engine.EngineVersion, members.Sum(m => m.Report.Passed), members.Sum(m => m.Report.Total), issuedAtUtc, _applicationVersion,
                         string.Join("; ", members.Select(m => FeatureNoteFor(m.Entry.Template)).Where(n => n is not null).Distinct(StringComparer.Ordinal))),
@@ -1248,7 +1257,21 @@ public sealed partial class CalcInstanceService
         return new CalcSheetHeader(
             project, instance.Name, entry.Template.Title, instance.Revision, status,
             evidence?.AuthorIdentityId ?? instance.CreatedBy, CheckerLabel(check?.CheckerName ?? instance.CheckedBy, instance.SecondCheck ?? second),
-            instance.CreatedAt, check?.DateUtc ?? instance.CheckedAt, issuedAt, client, issueReference);
+            instance.CreatedAt, check?.DateUtc ?? instance.CheckedAt, issuedAt, client, issueReference,
+            await WatermarkAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// The notice every sheet of <paramref name="projectId"/> carries when that project is a demonstration (Addendum C, C-6), or <see langword="null"/>.
+    /// It follows the project's own flag (<see cref="CalcDemoProject.IsDemo"/>), never anything written into a calculation, so a real calculation cannot
+    /// carry it and a demonstration calculation cannot lose it.
+    /// </summary>
+    private async Task<string?> WatermarkAsync(Guid? projectId, CancellationToken cancellationToken)
+    {
+        if (projectId is not { } id)
+            return null;
+
+        return CalcDemoProject.IsDemo(await _domain.Repository.FindAsync(id, cancellationToken).ConfigureAwait(false)) ? CalcDemoProject.Watermark : null;
     }
 
     private CalcSheetFooter Footer(CalcCatalogueEntry entry, KnownAnswerReport report) =>

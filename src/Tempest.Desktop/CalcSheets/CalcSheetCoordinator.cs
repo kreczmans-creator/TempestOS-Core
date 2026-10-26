@@ -96,6 +96,10 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         _view.AttachEvidenceRequested += () => _ = GuardedAsync(PickAndAttachAsync, "attach that report");
         _view.ApplyRecordRequested += id => _ = GuardedAsync(() => ApplyRecordAsync(id), "apply that record");
         _view.SaveRecordRequested += draft => _ = GuardedAsync(() => SaveRecordAsync(draft), "save that record");
+
+        // Addendum C, C-3: which records the shown calculator is missing, and the way to the records screen to fill them.
+        _view.TemplateShown += entry => _ = GuardedAsync(() => RefreshRequirementsAsync(entry), "list the records this calculation is missing");
+        _view.OpenRecordsRequested += kind => _ = GuardedAsync(() => OpenRecordsAsync(kind), "open the records screen");
         _view.OpenSavedRequested += id => _ = GuardedAsync(() => ExclusiveAsync(() => RequestOpenAsync(id)), "open that calculation");
         _view.CreatePackRequested += (templateId, title) => _ = GuardedAsync(() => ExclusiveAsync(() => CreatePackAsync(templateId, title)), "create that pack");
         _view.PackSelected += id => _ = GuardedAsync(() => SelectPackAsync(id), "list that pack");
@@ -319,6 +323,32 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
             _view.ShowTemplate(entry, updated);
 
         await ReportAsync(result, $"'{fileName}' is filed on the calculation's Evidence and cited by its input.").ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// Opens the records screen on a record kind. The composition root sets it to the Engineering area's own navigation; with none set (a worksheet
+    /// shown on its own) the form says so.
+    /// </summary>
+    public Func<string?, Task>? OpenRecordsScreenAsync { get; set; }
+
+    private async Task OpenRecordsAsync(string? kind)
+    {
+        if (OpenRecordsScreenAsync is null)
+        {
+            _view.ShowStatus("The records screen is not available here.");
+            return;
+        }
+
+        await OpenRecordsScreenAsync(kind ?? _view.SuggestedRecordKind()).ConfigureAwait(true);
+    }
+
+    /// <summary>Reads again which of the shown calculator's records are missing (after the records screen saved some).</summary>
+    public Task RefreshRequirementsAsync() => _view.SelectedTemplate is { } entry ? RefreshRequirementsAsync(entry) : Task.CompletedTask;
+
+    private async Task RefreshRequirementsAsync(CalcCatalogueEntry entry)
+    {
+        var requirements = await _service.RecordImport.RequirementsAsync(entry.Reference).ConfigureAwait(true);
+        _view.SetRecordRequirements(entry.Reference, requirements);
     }
 
     private async Task ApplyRecordAsync(Guid recordId)
@@ -880,12 +910,12 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
     }
 
     /// <summary>Parses <paramref name="text"/> as JSON (a list) or CSV, reports every notice, and re-seeds the form when nothing blocks.</summary>
-    public void ImportInputsText(string text)
+    public bool ImportInputsText(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
         if (_view.SelectedTemplate is not { } entry)
-            return;
+            return false;
 
         var (inputs, notices) = ParseInputs(entry.Template, text);
         var blocks = notices.Where(n => n.Severity == CalcNoticeSeverity.Block).ToList();
@@ -893,12 +923,13 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         if (blocks.Count > 0)
         {
             _view.ShowStatus("Nothing imported: " + string.Join(" ", blocks.Select(b => b.Message)));
-            return;
+            return false;
         }
 
         var known = inputs.Values.Count(v => entry.Template.FindInput(v.Symbol) is not null);
         _view.ApplyImportedInputs(inputs);
         _view.ShowStatus($"Imported {known} input(s){(notices.Count > 0 ? "; " + string.Join(" ", notices.Select(n => n.Message)) : ".")}");
+        return true;
     }
 
     /// <summary>JSON when the text starts a list or an object, else CSV. Shared with the tests.</summary>

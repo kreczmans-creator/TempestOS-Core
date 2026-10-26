@@ -250,6 +250,7 @@ public sealed partial class CalcSheetView : UserControl
 
         WireSavedAndPacks();
         WireGovernance();
+        InitialiseRequirements();
         Content = BuildLayout();
     }
 
@@ -257,6 +258,9 @@ public sealed partial class CalcSheetView : UserControl
 
     /// <summary>Raised on every input change with the current form; the coordinator answers with <see cref="ShowRun"/>.</summary>
     public event Action<CalcInputSet>? InputsChanged;
+
+    /// <summary>Raised after every run the form shows (<see cref="ShowRun"/>), so a reader of <see cref="LastRun"/> (the Guided test) knows what it read has been replaced.</summary>
+    public event Action? RunShown;
 
     public event Action? SaveRequested;
 
@@ -629,6 +633,14 @@ public sealed partial class CalcSheetView : UserControl
     public void ShowTemplate(CalcCatalogueEntry entry, CalcInstance? instance, CalcInputSet? seedOverride)
     {
         ArgumentNullException.ThrowIfNull(entry);
+
+        // The missing-records list belongs to one template: another template starts without it until the coordinator answers.
+        if (!string.Equals(SelectedTemplate?.Reference, entry.Reference, StringComparison.Ordinal))
+        {
+            _requirements = [];
+            _requirementsPanel.IsVisible = false;
+        }
+
         SelectedTemplate = entry;
         CurrentInstance = instance;
         IsReadOnly = instance is { IsImmutable: true };
@@ -712,6 +724,9 @@ public sealed partial class CalcSheetView : UserControl
         _diagram.ShowReading(template.Title, () => SelectedTemplate is { } t ? CalcDiagramReader.Read(t.Template, ReadForm()) : null, symbol => template.FindInput(symbol)?.Description);
         UpdateActions();
         RaiseInputsChanged();
+
+        // Addendum C, C-3: the coordinator now reads which of this template's records are missing.
+        TemplateShown?.Invoke(entry);
     }
 
     /// <summary>The reference diagram beside the inputs (ADR-0158, D-41).</summary>
@@ -850,6 +865,7 @@ public sealed partial class CalcSheetView : UserControl
         _importButton.IsEnabled = SelectedTemplate is not null && !IsReadOnly;
         _attachButton.IsVisible = ExternalReportInput is not null && CurrentInstance is { Status: CalcInstanceStatus.Draft };
         UpdateActions();
+        RunShown?.Invoke();
     }
 
     public void ShowInstance(CalcInstance instance)
@@ -1032,6 +1048,8 @@ public sealed partial class CalcSheetView : UserControl
 
         _loadingForm = true;
         SelectedTemplate = null;
+        _requirements = [];
+        _requirementsPanel.IsVisible = false;
         CurrentInstance = instance;
         IsReadOnly = true;
         ClearComparison();
@@ -1325,6 +1343,7 @@ public sealed partial class CalcSheetView : UserControl
         right.Children.Add(head);
         right.Children.Add(_reference);
         right.Children.Add(_scope);
+        right.Children.Add(_requirementsPanel);
         right.Children.Add(LabelledRow("Calculation name", _nameBox));
         _linkPanel.Children.Add(new TextBlock { Text = "Link", VerticalAlignment = VerticalAlignment.Center, FontSize = DesignTokens.FontSizeBody });
         _linkPanel.Children.Add(_linkInput);
@@ -1346,6 +1365,7 @@ public sealed partial class CalcSheetView : UserControl
         applyRow.Children.Add(new TextBlock { Text = "Take values from", VerticalAlignment = VerticalAlignment.Center, FontSize = DesignTokens.FontSizeBody });
         applyRow.Children.Add(_recordPick);
         applyRow.Children.Add(_applyRecord);
+        applyRow.Children.Add(_openRecords);
         var saveRow = new WrapPanel { Orientation = Orientation.Horizontal };
 
         foreach (var control in new Control[] { _recordKind, _recordTitle, _recordSource, _recordEdition, _recordTable, _recordHolder, _recordLicensed, _saveRecord })

@@ -48,13 +48,15 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
     private ReadOnlyMemory<byte> Finish(List<DocumentTemplate.PagePlan> pages, CalcSheet sheet)
     {
         var identity = IdentityProvider?.Invoke() ?? OrganisationIdentity.TempestDefaults;
-        DocumentTemplate.AppendFooters(pages, identity, $"{T(sheet.Footer.TemplateReference, 120)} · {T(sheet.Footer.ContentHash, 80)} · {T(sheet.Footer.EngineVersion, 40)}");
+        // A demonstration project's sheet says so in the footer of every page, not only on its first (Addendum C, C-6).
+        var demo = sheet.Header.Watermark is { Length: > 0 } ? "DEMO · " : string.Empty;
+        DocumentTemplate.AppendFooters(pages, identity, $"{demo}{T(sheet.Footer.TemplateReference, 120)} · {T(sheet.Footer.ContentHash, 80)} · {T(sheet.Footer.EngineVersion, 40)}");
 
         var metadata = new SKDocumentPdfMetadata
         {
-            Title = $"{T(sheet.Header.CalcId, 120)} — {T(sheet.Header.Title)}",
+            Title = $"{T(sheet.Header.CalcId, 120)} — {T(sheet.Header.Title)}{(demo.Length > 0 ? " (DEMO)" : string.Empty)}",
             Author = T(sheet.Header.Author),
-            Subject = "Calculation sheet",
+            Subject = demo.Length > 0 ? "Calculation sheet — DEMO" : "Calculation sheet",
             Creator = T(sheet.Footer.ApplicationVersion, 80, "TempestOS"),
             Producer = T(sheet.Footer.ApplicationVersion, 80, "TempestOS"),
             Creation = (sheet.Header.IssuedAt ?? sheet.Footer.TestRunAt ?? DateTimeOffset.UnixEpoch).UtcDateTime,
@@ -72,8 +74,14 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
         var references = new CalcBibliography.Register(sheet.ClauseRefs);
         var status = h.Status.ToString().ToUpperInvariant();
 
-        DocumentTemplate.AddHeaderBand(state, measure, $"CALCULATION SHEET — {status}", $"{T(h.CalcId, 120)}  ·  Revision {T(h.Revision, 40)}  ·  {Date(h.IssuedAt ?? h.CheckedAt ?? h.AuthoredAt)}");
+        var demoMark = h.Watermark is { Length: > 0 } ? " — DEMO" : string.Empty;
+        DocumentTemplate.AddHeaderBand(state, measure, $"CALCULATION SHEET — {status}{demoMark}", $"{T(h.CalcId, 120)}  ·  Revision {T(h.Revision, 40)}  ·  {Date(h.IssuedAt ?? h.CheckedAt ?? h.AuthoredAt)}");
         DocumentTemplate.AddGap(state, 4f);
+
+        // The notice a demonstration project's sheet carries (Addendum C, C-6): in the header band above, here in full, and in every page's footer.
+        if (h.Watermark is { Length: > 0 })
+            Line(state, measure, $"*** {T(h.Watermark)} ***");
+
         Line(state, measure, $"Project: {T(h.Project)}");
         Line(state, measure, $"Title: {T(h.Title)}");
         // Wrapped text collapses runs of spaces, so the fields are parted by a middle dot (the showcase journey found them run together).

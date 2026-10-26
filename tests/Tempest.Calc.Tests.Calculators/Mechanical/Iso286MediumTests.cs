@@ -28,6 +28,34 @@ public sealed class Iso286MediumTests
     }
 
     [Fact]
+    public void A_K3_Hole_Keeps_The_k_Deviation_Too_Not_Only_K8()
+    {
+        // mech.iso286-fit-03 (verification): the K row's "-ei + delta" form holds for every grade up to IT8, but only grade 8 was mapped to the k deviation, so K3 (k is 0 below IT4 in the shaft
+        // formula) came out 0.6 D^(1/3) = 1.712 um too high. python3, 18 to 30 mm step: D = sqrt(18 x 30) = 23.2379, i = 1.307375, k = 0.6 D^(1/3) = 1.712183 um,
+        // IT1 = 0.8 + 0.02 D = 1.264758, IT5 = 7 i = 9.151627, IT2 = IT1 (IT5/IT1)^(1/4), IT3 = IT1 (IT5/IT1)^(1/2) = 3.402145, delta(3) = IT3 - IT2 = 1.327804:
+        // K3 ES = -1.712183 + 1.327804 = -0.384379 (it was +1.327804), EI = ES - IT3 = -3.786524; K5 ES = -k + (IT5 - IT4) = -1.712183 + 3.571737 = 1.859554, EI = -7.292072 (unchanged).
+        Assert.Equal(-0.384379, Iso286.HoleFundamentalDeviation("K", 25, 3)!.Value, 5);
+        Assert.Equal(1.859554, Iso286.HoleFundamentalDeviation("K", 25, 5)!.Value, 5);
+
+        var k3 = Fit286(25, "K", 3, "h", 3);
+        Assert.Equal(-0.384379, k3.OutputSi("ES") * 1e6, 4);
+        Assert.Equal(-3.786524, k3.OutputSi("EI") * 1e6, 4);
+
+        var k5 = Fit286(25, "K", 5, "h", 5);
+        Assert.Equal(1.859554, k5.OutputSi("ES") * 1e6, 4);
+        Assert.Equal(-7.292072, k5.OutputSi("EI") * 1e6, 4);
+    }
+
+    [Fact]
+    public void Delta_Is_Zero_Below_IT3()
+    {
+        // The standard gives delta for IT3 to IT8 only. K2 and K1 keep the k deviation and no delta: ES = -1.712183 um at 25 mm (python3, k = 0.6 D^(1/3)); N2's delta is 0 too: N2 ES = -5 D^0.34.
+        Assert.Equal(-1.712183, Iso286.HoleFundamentalDeviation("K", 25, 2)!.Value, 5);
+        Assert.Equal(-1.712183, Iso286.HoleFundamentalDeviation("K", 25, 1)!.Value, 5);
+        Assert.Equal(-5 * Math.Pow(Math.Sqrt(18.0 * 30.0), 0.34), Iso286.HoleFundamentalDeviation("N", 25, 2)!.Value, 6);
+    }
+
+    [Fact]
     public void K7_K6_And_M8_Are_Unchanged_And_K9_Stays_At_Zero()
     {
         // 25 mm (python3): K7 ES = -k + (IT7 - IT6) = -1.71218 + 7.84478 = 6.13207 (the table has +6); K6 ES = -1.71218 + (IT6 - IT5) = 2.20994; M8 ES = -(IT7 - IT6) + (IT8 - IT7) = 3.92213.

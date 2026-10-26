@@ -361,6 +361,29 @@ public sealed class WorkspaceHost : IAsyncDisposable
             packTemplates: Tempest.Desktop.CalcSheets.CalcPackTemplateComposition.All(),
             principals: (Tempest.Core.Identity.IPrincipalDirectory)host.Services!.GetService(typeof(Tempest.Core.Identity.IPrincipalDirectory)));
 
+        // Addendum C, C-5 (ADR-0175): the guided test's run records. They live in their own collection, are written by nothing else and read by
+        // nothing that calculates; the build and the tester are the ones the title bar and the sign-off use. A script this build cannot read
+        // leaves the guided test out; it never stops the application from starting.
+        try
+        {
+            var testers = (Tempest.Core.Identity.ICurrentPrincipalAccessor)host.Services!.GetService(typeof(Tempest.Core.Identity.ICurrentPrincipalAccessor));
+            var services = host.Services!;
+            ManualTests = new Tempest.Calc.Library.ManualTesting.ManualTestRunService(
+                domainContext.PersistenceStore,
+                Tempest.Calc.Library.ManualTesting.GuidedTestScript.Current,
+                () => MainWindow.DescribeBuild(services),
+                () => BuildDescription.Commit(services),
+                () => testers.Current?.Identity is { } who ? (who.Id, who.DisplayName) : (string.Empty, string.Empty));
+        }
+        catch (Exception ex) when (ex is InvalidDataException or InvalidOperationException)
+        {
+            hostLogger?.Warning($"The guided test is not available: {ex.Message}");
+        }
+
+        // Addendum C, C-6: the seeded demonstration project. Built here and never run: nothing at start-up installs it; Settings → Demo project does, when asked.
+        CalcDemo = new Tempest.Calc.Library.CalcDemoProjectService(CalcInstances, domainContext, Tempest.Desktop.CalcSheets.CalcCalculatorComposition.DemoCableTables(),
+            (Tempest.Core.Audit.IAuditRecorder)host.Services!.GetService(typeof(Tempest.Core.Audit.IAuditRecorder)));
+
         // One-off sweep (`ADR-0173`): Evidence a worksheet made before the managed marker existed is marked now, so the generic Evidence acts refuse it.
         try
         {
@@ -585,6 +608,15 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
     /// <summary>`v0.26.0` (ADR-0165): the worksheet instance service (create, run, check, issue, revise, packs).</summary>
     public Tempest.Calc.Library.CalcInstanceService? CalcInstances { get; private set; }
+
+    /// <summary>
+    /// Addendum C, C-5: the guided test's run records (start, resume, record, finish, export). It also answers the verification dashboard's read-only
+    /// <see cref="Tempest.Calc.Library.ManualTesting.IManualTestStatusSource"/> question; <see langword="null"/> before start, or when the build's script could not be read.
+    /// </summary>
+    public Tempest.Calc.Library.ManualTesting.ManualTestRunService? ManualTests { get; private set; }
+
+    /// <summary>Addendum C, C-6: installs and removes the seeded demonstration project; built with the worksheet service and run only by an act of the person (Settings → Demo project).</summary>
+    public Tempest.Calc.Library.CalcDemoProjectService? CalcDemo { get; private set; }
 
     /// <summary>What the start-up migration of legacy calculation records did (ADR-0167); <see langword="null"/> before start.</summary>
     public Tempest.Calc.Library.LegacyMigrationReport? LegacyMigrationReport { get; private set; }

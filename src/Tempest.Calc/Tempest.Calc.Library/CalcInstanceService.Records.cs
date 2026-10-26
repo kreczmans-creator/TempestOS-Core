@@ -25,6 +25,35 @@ public sealed partial class CalcInstanceService
     /// </summary>
     internal async Task<(CalcDataRecord? Record, string? Refusal)> SaveRecordCoreAsync(CalcDataRecord draft, bool keepIndicativeOrigin, CancellationToken cancellationToken)
     {
+        var (record, refusal) = await PrepareRecordAsync(draft, keepIndicativeOrigin, cancellationToken).ConfigureAwait(false);
+
+        if (record is null)
+            return (null, refusal);
+
+        try
+        {
+            await _store.SaveRecordAsync(record, cancellationToken).ConfigureAwait(false);
+        }
+        catch (CalcInstanceImmutableException)
+        {
+            // Another save took this revision number first (Opus review, finding 15).
+            return (null, $"Revision {record.Revision} of '{record.Title}' was saved by someone else at the same moment; save again to make the next revision.");
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("larger than", StringComparison.Ordinal))
+        {
+            return (null, ex.Message);
+        }
+
+        return (record, null);
+    }
+
+    /// <summary>
+    /// Everything a save does short of writing: the record as it would be stored (new id or next revision, signed-in person, time, cleaned text,
+    /// material stamping, the licence lock carried over), or why it cannot be saved. The record import prepares a whole set with this and writes it
+    /// in one transaction.
+    /// </summary>
+    internal async Task<(CalcDataRecord? Record, string? Refusal)> PrepareRecordAsync(CalcDataRecord draft, bool keepIndicativeOrigin, CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(draft);
         var latest = draft.Id == Guid.Empty ? null : await _store.FindRecordAsync(draft.Id, null, cancellationToken).ConfigureAwait(false);
         var record = draft with
@@ -72,20 +101,6 @@ public sealed partial class CalcInstanceService
 
         if (record.Problem() is { } problem)
             return (null, problem);
-
-        try
-        {
-            await _store.SaveRecordAsync(record, cancellationToken).ConfigureAwait(false);
-        }
-        catch (CalcInstanceImmutableException)
-        {
-            // Another save took this revision number first (Opus review, finding 15).
-            return (null, $"Revision {record.Revision} of '{record.Title}' was saved by someone else at the same moment; save again to make the next revision.");
-        }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("larger than", StringComparison.Ordinal))
-        {
-            return (null, ex.Message);
-        }
 
         return (record, null);
     }
@@ -389,6 +404,7 @@ public sealed partial class CalcInstanceService
     internal static string Csv(string text)
     {
         var clean = CalcCsv.IsFormulaLike(text) ? "'" + text : text;
-        return clean.Contains(',', StringComparison.Ordinal) || clean.Contains('"', StringComparison.Ordinal) ? $"\"{clean.Replace("\"", "\"\"", StringComparison.Ordinal)}\"" : clean;
+        // A value with a line break is quoted too: unquoted it would end the row, and what follows would start a row of its own (C-3 review, finding 2).
+        return clean.IndexOfAny([',', '"', '\r', '\n']) >= 0 ? $"\"{clean.Replace("\"", "\"\"", StringComparison.Ordinal)}\"" : clean;
     }
 }

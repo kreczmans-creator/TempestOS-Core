@@ -189,7 +189,7 @@ public sealed class CalcInstanceStore
     /// overwrite an issued one. With <paramref name="expectedUpdatedAt"/>,
     /// the stored copy is re-read under the transaction and the write is
     /// refused (<see cref="CalcConcurrencyException"/>) when someone else
-    /// changed it since the caller read it (R-15).
+    /// changed it since the caller read it, or deleted it (R-15).
     /// </summary>
     public Task SaveInstanceAsync(CalcInstance instance, CancellationToken cancellationToken = default) => SaveInstanceAsync(instance, expectedUpdatedAt: null, cancellationToken);
 
@@ -219,6 +219,10 @@ public sealed class CalcInstanceStore
 
         if (existing is { IsImmutable: true } && !(existing.Status == CalcInstanceStatus.Issued && instance.Status == CalcInstanceStatus.Superseded && SameIssuedContent(existing, instance)))
             throw new CalcInstanceImmutableException(instance.Id, existing.Status);
+
+        // A write that expects the stored copy to be as the caller read it cannot create one: a calculation deleted since (the demonstration's removal) is not brought back by a stale update.
+        if (expectedUpdatedAt is not null && existing is null)
+            throw new CalcConcurrencyException($"Calculation '{instance.Name}' no longer exists (it was removed since you opened it); reload and try again.");
 
         if (expectedUpdatedAt is { } expected && existing is not null && existing.UpdatedAt != expected)
             throw new CalcConcurrencyException($"Calculation '{instance.Name}' was changed by someone else at {existing.UpdatedAt:O}; reload it and try again.");
@@ -283,6 +287,78 @@ public sealed class CalcInstanceStore
         }, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// The one place a calculation, a pack or a scan profile is ever deleted (Addendum C, C-6): in <b>one</b> transaction, every instance and pack row of
+    /// <paramref name="projectId"/> and the exact scan-profile versions named (the ones the install wrote), with their search-index rows. It deletes nothing else:
+    /// rows are found by the project's own key prefix, a profile id must start with <see cref="CalcDemoProject.ScanProfilePrefix"/>, and a later version of a
+    /// profile that a person saved after the install is never touched (a version is immutable and a person's own is theirs). The caller
+    /// (<see cref="CalcDemoProjectService"/>) has already proved the project is the demonstration; below that, an issued or superseded row is never
+    /// deleted — one found under the project stops the transaction with <see cref="CalcInstanceImmutableException"/> and nothing is removed.
+    /// </summary>
+    /// <returns>How many calculation rows, pack rows and scan-profile rows were deleted.</returns>
+    public async Task<(int Instances, int Packs, int ScanProfiles)> DeleteDemonstrationRowsAsync(Guid projectId, IReadOnlyCollection<(string Id, int Version)> scanProfiles, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(scanProfiles);
+
+        if (projectId == Guid.Empty)
+            throw new ArgumentException("A project id is needed to delete a demonstration's rows.", nameof(projectId));
+
+        if (scanProfiles.Any(p => !p.Id.StartsWith(CalcDemoProject.ScanProfilePrefix, StringComparison.Ordinal)))
+            throw new ArgumentException($"Only scan profiles whose id starts with '{CalcDemoProject.ScanProfilePrefix}' belong to the demonstration.", nameof(scanProfiles));
+
+        var counts = (Instances: 0, Packs: 0, ScanProfiles: 0);
+
+        await _store.ExecuteInTransactionAsync(async (tx, token) =>
+        {
+            // A transaction may be retried; count from nothing each time.
+            counts = (0, 0, 0);
+            var prefix = projectId.ToString("N") + "/";
+
+            foreach (var key in await tx.ListKeysAsync(InstanceCollection, prefix, token).ConfigureAwait(false))
+            {
+                var instance = Deserialise<CalcInstance>(await tx.ReadAsync(InstanceCollection, key, token).ConfigureAwait(false));
+
+                if (instance is { IsImmutable: true })
+                    throw new CalcInstanceImmutableException(instance.Id, instance.Status);
+
+                await tx.DeleteAsync(InstanceCollection, key, token).ConfigureAwait(false);
+
+                if (Guid.TryParseExact(key[prefix.Length..], "N", out var id))
+                    await tx.RemoveFromIndexAsync(id, token).ConfigureAwait(false);
+
+                counts.Instances++;
+            }
+
+            foreach (var key in await tx.ListKeysAsync(PackCollection, prefix, token).ConfigureAwait(false))
+            {
+                var pack = Deserialise<CalcPack>(await tx.ReadAsync(PackCollection, key, token).ConfigureAwait(false));
+
+                if (pack is { Status: CalcInstanceStatus.Issued or CalcInstanceStatus.Superseded })
+                    throw new CalcInstanceImmutableException(pack.Id, pack.Status);
+
+                await tx.DeleteAsync(PackCollection, key, token).ConfigureAwait(false);
+
+                if (Guid.TryParseExact(key[prefix.Length..], "N", out var id))
+                    await tx.RemoveFromIndexAsync(id, token).ConfigureAwait(false);
+
+                counts.Packs++;
+            }
+
+            foreach (var (profileId, version) in scanProfiles)
+            {
+                var key = ImportProfileKey(profileId, version);
+
+                if (await tx.ReadAsync(ScanProfileCollection, key, token).ConfigureAwait(false) is null)
+                    continue;
+
+                await tx.DeleteAsync(ScanProfileCollection, key, token).ConfigureAwait(false);
+                counts.ScanProfiles++;
+            }
+        }, cancellationToken).ConfigureAwait(false);
+
+        return counts;
+    }
+
     public async Task<CalcPack?> FindPackAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var key = await FindKeyAsync(PackCollection, id, cancellationToken).ConfigureAwait(false);
@@ -320,7 +396,10 @@ public sealed class CalcInstanceStore
         await _store.ExecuteInTransactionAsync((tx, token) => WriteGuardedPackAsync(tx, pack, expectedUpdatedAt, token), cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Re-reads the stored pack under the transaction, enforces that it is not issued and has not changed, then writes (the pack check commits with the Evidence check).</summary>
+    /// <summary>
+    /// Re-reads the stored pack under the transaction, enforces that it still exists, is not issued and has not changed, then writes (the pack check
+    /// commits with the Evidence check).
+    /// </summary>
     public static async Task WriteGuardedPackAsync(IPersistenceTransaction transaction, CalcPack pack, DateTimeOffset expectedUpdatedAt, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(transaction);
@@ -330,7 +409,12 @@ public sealed class CalcInstanceStore
         if (existing is { Status: CalcInstanceStatus.Issued or CalcInstanceStatus.Superseded })
             throw new CalcInstanceImmutableException(pack.Id, existing.Status);
 
-        if (existing is not null && existing.UpdatedAt != expectedUpdatedAt)
+        // As WriteGuardedAsync: a write that expects the stored pack to be as the caller read it cannot create one, so a pack removed since
+        // (the demonstration's removal) is not brought back by a stale check, second check or reopen.
+        if (existing is null)
+            throw new CalcConcurrencyException($"Pack '{pack.Title}' no longer exists (it was removed since you opened it); reload and try again.");
+
+        if (existing.UpdatedAt != expectedUpdatedAt)
             throw new CalcConcurrencyException($"Pack '{pack.Title}' was changed by someone else at {existing.UpdatedAt:O}; reload it and try again.");
 
         await WritePackAsync(transaction, pack, cancellationToken).ConfigureAwait(false);
@@ -383,6 +467,45 @@ public sealed class CalcInstanceStore
                 throw new CalcInstanceImmutableException($"Reference record {record.Id:N} revision {record.Revision} exists already; a change is a new revision.");
 
             await tx.WriteAsync(RecordCollection, key, json, token).ConfigureAwait(false);
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Saves several reference records in ONE transaction (Addendum C, C-3: a record import is all or nothing). Every record is a new revision
+    /// that must not exist yet; if any one cannot be written, or the commit fails, none of them is. The set may not repeat a record revision.
+    /// </summary>
+    public async Task SaveRecordsAsync(IReadOnlyList<CalcDataRecord> records, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(records);
+
+        if (records.Count == 0)
+            return;
+
+        var batch = new List<(string Key, string Json, CalcDataRecord Record)>(records.Count);
+
+        foreach (var record in records)
+        {
+            ArgumentNullException.ThrowIfNull(record);
+            var json = Serialise(record);
+
+            if (json.Length > MaxDocumentBytes)
+                throw new InvalidOperationException($"Reference record '{record.Id:N}' is larger than {MaxDocumentBytes / 1_000_000} MB and was not written.");
+
+            batch.Add((RecordKey(record.Id, record.Revision), json, record));
+        }
+
+        if (batch.Select(b => b.Key).Distinct(StringComparer.Ordinal).Count() != batch.Count)
+            throw new CalcInstanceImmutableException("The records to save repeat a record revision; a change is a new revision.");
+
+        await _store.ExecuteInTransactionAsync(async (tx, token) =>
+        {
+            foreach (var (key, json, record) in batch)
+            {
+                if (await tx.ReadAsync(RecordCollection, key, token).ConfigureAwait(false) is not null)
+                    throw new CalcInstanceImmutableException($"Reference record {record.Id:N} revision {record.Revision} exists already; a change is a new revision.");
+
+                await tx.WriteAsync(RecordCollection, key, json, token).ConfigureAwait(false);
+            }
         }, cancellationToken).ConfigureAwait(false);
     }
 

@@ -66,6 +66,8 @@ internal sealed record ComposedViews(
     // `v0.26.0` (ADR-0165): the worksheet calculators (§3.8a form).
     Tempest.Desktop.CalcSheets.CalcSheetView Worksheets,
     Tempest.Desktop.CalcSheets.CalcRegisterView WorksheetRegister,
+    // Addendum C, C-3: the records screen (Engineering, Modules, Calculations, Reference records).
+    Tempest.Desktop.CalcSheets.CalcRecordsView WorksheetRecords,
     LibrariesView LibrariesView,
     OrganisationPicker OrganisationPicker,
     RateCardPicker RateCardPicker,
@@ -356,6 +358,14 @@ internal sealed partial class MainWindowComposer
             : null;
         xeroSettings?.KeepDocumentIdentityCurrent();
 
+        // Addendum C, C-6: Settings → Demo project. The two actions ask in the confirmation dialog above, so neither can run unasked; a removal is refused
+        // while the demonstration is the open project.
+        var demoProject = host.CalcDemo is { } demoService
+            ? new Tempest.Desktop.CalcSheets.DemoProjectViewModel(
+                demoService, (title, message, confirm) => confirmationDialog.ConfirmAsync(title, message, confirm),
+                id => host.ProjectContext?.Current?.Id == id)
+            : null;
+
         var settingsView = new SettingsView(
             theme, session.UserSettings, composition.SettingsProvider, configurationProvider, persistenceRootPath,
             workingPatterns, currentPrincipalAccessor, invoicingConnector, secretStore,
@@ -364,7 +374,7 @@ internal sealed partial class MainWindowComposer
             persistenceDatabasePath: persistenceDatabasePath, auditRecorder: auditRecorder, projectContext: host.ProjectContext,
             prepareForRestartAsync: PrepareForRestartAsync, updateService: updateService, updateAvailability: updateAvailability, filePicker: evidenceFilePicker,
             signOffPolicy: (Tempest.Core.Governance.ISignOffPolicy)services.GetService(typeof(Tempest.Core.Governance.ISignOffPolicy)),
-            xeroSettings: xeroSettings);
+            xeroSettings: xeroSettings, demoProject: demoProject);
 
         var inputDialog = new InputDialog();
         var messageDialog = new MessageDialog();
@@ -805,6 +815,23 @@ internal sealed partial class MainWindowComposer
         var worksheets = new Tempest.Desktop.CalcSheets.CalcSheetView();
         var worksheetRegister = new Tempest.Desktop.CalcSheets.CalcRegisterView();
 
+        // Addendum C, C-3: the records screen. Who entered a record is the signed-in person, read where the author is read.
+        var recordPrincipals = (Tempest.Core.Identity.ICurrentPrincipalAccessor)host.Services!.GetService(typeof(Tempest.Core.Identity.ICurrentPrincipalAccessor));
+        var worksheetRecords = new Tempest.Desktop.CalcSheets.CalcRecordsView(new Tempest.Desktop.CalcSheets.CalcRecordsViewModel(
+            host.CalcInstances!, () => recordPrincipals.Current?.Identity.Id, (Tempest.Core.Logging.ILogger?)host.Services.GetService(typeof(Tempest.Core.Logging.ILogger))));
+
+        // Addendum C, C-4: Calculations → Verification. Read-only over the catalogue, the embedded document data, the records store (C-3's
+        // required kinds) and the guided test's run records (C-5).
+        Tempest.Desktop.CalcSheets.VerificationDashboardView? verificationDashboard = null;
+
+        if (host.CalcInstances is { } calcInstances)
+        {
+            var verificationService = ComposeVerificationService(calcInstances, host.ManualTests);
+            verificationDashboard = new Tempest.Desktop.CalcSheets.VerificationDashboardView(new Tempest.Desktop.CalcSheets.VerificationDashboardViewModel(
+                verificationService, evidenceFilePicker,
+                new Tempest.Desktop.CalcSheets.VerificationPdfRenderer { IdentityProvider = () => session.OrganisationIdentity.ToIdentity() }, ApplicationVersionText));
+        }
+
         // `WP 19.6A`: the "cited by" read side — a fresh Evidence scan
         // over the same already-composed domain, holding no state of its
         // own (`Workspace/Evidence/ReferenceCitationIndex.cs`'s own
@@ -924,7 +951,7 @@ internal sealed partial class MainWindowComposer
             host.ShellNavigator!, tasksReadModel, engineeringCalculation, referenceDataLibrariesView,
             engineeringDashboardView, callbacks.EnterEngineeringCalculationAsync, composition.CommandDispatcher, openObjectRightUp,
             engineeringAssetsView, worksheets, callbacks.EnterWorksheetsAsync,
-            worksheetRegister, callbacks.EnterCalcRegisterAsync, callbacks.OpenWorksheetInstanceAsync)
+            worksheetRegister, callbacks.EnterCalcRegisterAsync, callbacks.OpenWorksheetInstanceAsync, worksheetRecords, verificationDashboard)
         {
             WorkspaceChanges = composition.WorkspaceChanges,
         };
@@ -984,7 +1011,7 @@ internal sealed partial class MainWindowComposer
             macroManagerDialog, explorerView, inspectorView, statusBar, commandPalette, documentArea, ribbon, commandPrompt, actionReporter,
             citationPicker, subjectPicker, objectPicker, declaredFigureEntry, checkEntry, issueEntry, reviseReferenceRecordEntry, evidenceFilePicker,
             evidenceSupport, kindEditorDeclarations, navigationRail, header, moduleHost, projectDirectory, projectBrowser, projectWorkspace,
-            engineeringCalculation, worksheets, worksheetRegister, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, commercialSupport, personCatalog, personAddPrompt, timesheetEntryPrompt, deliverableCompletionPrompt,
+            engineeringCalculation, worksheets, worksheetRegister, worksheetRecords, librariesView, organisationPicker, rateCardPicker, organisationCatalog, rateCardCatalog, commercialSupport, personCatalog, personAddPrompt, timesheetEntryPrompt, deliverableCompletionPrompt,
             timesheetWeekView, invoicingView, settingsView, newProjectPrompt, projectPicker, projectQuoteView, quotesView,
             [], commandHistory, backgroundTaskRunner, keyboardBindingProvider,
             workspace, manager, principals,
@@ -1022,6 +1049,24 @@ internal sealed partial class MainWindowComposer
     {
         await host.ShutdownAsync().ConfigureAwait(false);
         await host.DisposeAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Addendum C integration: the verification dashboard's service as the app composes it. Records not entered come from C-3's required kinds
+    /// per calculator (<see cref="Tempest.Calc.Library.Dashboard.RecordRequirementsRecordsSource"/>, C-4's "usable for real work" rule kept);
+    /// the manual-test column comes from the guided test's finished runs (<paramref name="manualTests"/>, C-5) and reads "not tested" when the
+    /// build has no guided test. <c>internal</c> so a Desktop test drives the same wiring.
+    /// </summary>
+    internal static Tempest.Calc.Library.Dashboard.VerificationDashboardService ComposeVerificationService(
+        Tempest.Calc.Library.CalcInstanceService calcInstances, Tempest.Calc.Library.ManualTesting.IManualTestStatusSource? manualTests)
+    {
+        ArgumentNullException.ThrowIfNull(calcInstances);
+        return new Tempest.Calc.Library.Dashboard.VerificationDashboardService(
+            calcInstances.Catalogue, calcInstances.PackTemplates, snapshot: null,
+            records: new Tempest.Calc.Library.Dashboard.RecordRequirementsRecordsSource(calcInstances.Store),
+            manual: manualTests is null
+                ? new Tempest.Calc.Library.Dashboard.NoManualTestStatusSource()
+                : new Tempest.Calc.Library.Dashboard.GuidedManualTestStatusSource(manualTests));
     }
 
     /// <summary>

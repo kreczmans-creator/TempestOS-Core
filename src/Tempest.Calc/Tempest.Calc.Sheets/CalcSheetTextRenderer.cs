@@ -21,6 +21,11 @@ public static class CalcSheetTextRenderer
         var h = sheet.Header;
 
         sb.Append("CALCULATION SHEET — ").Append(Status(h.Status)).AppendLine();
+
+        // A demonstration project's notice, on the second line so a reader sees it before any figure (Addendum C, C-6).
+        if (h.Watermark is { Length: > 0 })
+            sb.Append("*** ").Append(Clean(h.Watermark)).AppendLine(" ***");
+
         sb.Append("Project: ").AppendLine(Clean(h.Project));
         sb.Append("Calc ID: ").Append(Clean(h.CalcId)).Append("    Revision: ").AppendLine(Clean(h.Revision));
         sb.Append("Title: ").AppendLine(Clean(h.Title));

@@ -52,7 +52,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
     public readonly record struct Required(double? Value, string? Text);
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.4.0", CalcDiscipline.Structural, "Column base plate (EN 1993-1-8)",
+        Id, "1.5.0", CalcDiscipline.Structural, "Column base plate (EN 1993-1-8)",
         "An unstiffened rectangular base plate under an I/H, RHS or CHS column on grouted concrete: bearing resistance, the force regime and holding-down bolt tension for a major-axis moment, the tension T-stub of the plate and the compression T-stub, shear by friction and anchor bolts, and the plate thickness that satisfies them together. The bolt tension and shear per anchor go to Hilti PROFIS for the anchorage, which is done outside this sheet.",
         "Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3; c = t_p·√[f_y/(3·f_jd·γ_M0)]\n" +
         "Axial (cl. 6.2.8.2): N_j,Rd = f_jd·A_eff, A_eff the bearing strips of width c round the column footprint (full rectangle when they overlap); u_N = N_c,Ed/N_j,Rd\n" +
@@ -132,7 +132,8 @@ public sealed class BasePlateCalculator : ICalcCalculator
             new CalcApplicabilityRule("x_b", "The bolt row must lie outside the column face and inside the plate edge, with m and e_min fitting between.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("z_C", "An entered compression lever arm z_C must lie inside the plate (below L/2).", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("z_C_entered", "An entered compression lever arm that differs from the section's by more than the outstand c is probably the lever arm z, not z_C.", CalcNoticeSeverity.Warning),
-            new CalcApplicabilityRule("alpha_bc", "α_bc is defined for f_yb of 235–640 MPa; an anchor bolt strength above 800 MPa has a higher yield strength than the formula covers.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("alpha_bc", "α_bc is defined for f_yb of 235–640 MPa; an anchor bolt strength above 800 MPa has a higher yield strength than the formula covers, so the sheet blocks unless the anchor design's governing utilisation u_profis is entered.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("alpha_bc_profis", "An anchor bolt strength above 800 MPa with u_profis entered: u_V is not reliable, the anchor design's utilisation counts.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("f_y_thickness", "One plate yield strength is used at every thickness; EN 10025-2 lowers it for thicker plate.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("outstand-cut", "With the bearing outstand cut at the plate edge a thicker plate can raise the compression utilisation.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("alpha_basis", "A concentration factor above 1 needs its foundation geometry stated.", CalcNoticeSeverity.Warning),
@@ -715,7 +716,17 @@ public sealed class BasePlateCalculator : ICalcCalculator
 
         // One f_y at every thickness: EN 10025-2 steps the yield strength down for thicker product (the first step is above 16 mm).
         if (tpMm > FirstYieldStepMm || required.Value is > FirstYieldStepMm)
-            c.Warn("f_y_thickness", $"f_y: one yield strength ({F(fy)} MPa) is used at every plate thickness, but EN 10025-2 lowers the yield strength of a grade as the thickness passes {F(FirstYieldStepMm)} mm and again above 40 mm. t_p = {F(tpMm)} mm" + (required.Value is { } rq ? $" and t_req = {F(rq)} mm" : string.Empty) + " pass the first step: enter the yield strength for the plate thickness in use (steel.strengths record), so M_pl,Rd and the T-stub are not overstated.");
+        {
+            var above = new List<string>();
+
+            if (tpMm > FirstYieldStepMm)
+                above.Add($"t_p = {F(tpMm)} mm");
+
+            if (required.Value is > FirstYieldStepMm and var rq)
+                above.Add($"t_req = {F(rq)} mm");
+
+            c.Warn("f_y_thickness", $"f_y: one yield strength ({F(fy)} MPa) is used at every plate thickness, but EN 10025-2 lowers the yield strength of a grade as the thickness passes {F(FirstYieldStepMm)} mm and again above 40 mm. {string.Join(" and ", above)} {(above.Count > 1 ? "are" : "is")} above the first step: enter the yield strength for the plate thickness in use (steel.strengths record), so M_pl,Rd and the T-stub are not overstated.");
+        }
 
         // With the outstand cut at the plate edge the lever arm shortens as c grows, so a thicker plate can raise u_C (the required-thickness search takes the thinnest passing plate).
         if (checkCompression && bearing.Clipped && tpMm < MaxThickness)
@@ -737,7 +748,16 @@ public sealed class BasePlateCalculator : ICalcCalculator
         c.Record("alpha_bc", "0.44 − 0.0003·f_yb", $"0.44 − 0.0003 × {F(fyb)}", new ScalarValue(alphaBc), "Anchor bolt shear factor α_bc", "EN 1993-1-8 cl. 6.2.2");
 
         if (c.Si("f_ub") / 1e6 > 800 + 1e-9)
-            c.Warn("alpha_bc", $"f_ub: α_bc is defined for an anchor bolt yield strength of 235–640 MPa, so f_yb is limited to 640 MPa, but a bolt of f_ub = {F(c.Si("f_ub") / 1e6)} MPa (class 10.9 and above) has a higher yield strength (about 900 MPa). The formula would give α_bc = {F(0.44 - 0.0003 * 900)} there, not {F(alphaBc)}: F_2,vb,Rd and u_V are overstated. Take the anchor shear resistance from the anchor design (PROFIS).");
+        {
+            var fubMpa = c.Si("f_ub") / 1e6;
+            var detail = $"f_ub: α_bc = 0.44 − 0.0003·f_yb is defined for an anchor bolt yield strength of 235–640 MPa, so f_yb is limited to 640 MPa. A bolt of f_ub = {F(fubMpa)} MPa (class 10.9 and above) has a yield strength of about 900 MPa, where the formula gives α_bc = {F(0.44 - 0.0003 * 900)}, not {F(alphaBc)}; F_2,vb,Rd and u_V would be overstated.";
+
+            if (c.Has("u_profis"))
+                c.Warn("alpha_bc_profis", detail + " The anchor shear resistance is taken from the anchor design: u_profis (the PROFIS report's governing utilisation, which includes the steel shear failure of the anchors) is counted in u_max, so do not rely on u_V.");
+            else
+                c.Block("alpha_bc", detail + " α_bc is not defined above 800 MPa, so the shear check is not run: use f_ub of 800 MPa or less, or enter u_profis, the governing utilisation of the anchor design (PROFIS), which takes the anchor shear resistance.");
+        }
+
         c.Assign("F_2_vb_Rd", "alpha_bc * f_ub * A_s / gamma_M2", "kN", "Anchor bolt shear resistance F_2,vb,Rd", "EN 1993-1-8 cl. 6.2.2");
         c.Assign("F_vb_Rd", "min(F_1_vb_Rd, F_2_vb_Rd)", "kN", "Anchor bolt shear resistance per bolt (bearing or shear)", "EN 1993-1-8 cl. 6.2.2");
         c.Assign("F_f_Rd", "C_fd * N_c_Ed", "kN", "Friction resistance, compression only", "EN 1993-1-8 cl. 6.2.2");
@@ -795,7 +815,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
         c.CheckUtilisation("Shear: friction plus anchor bolts", "u_V", "EN 1993-1-8 cl. 6.2.2");
 
         if (c.Has("u_profis"))
-            c.CheckUtilisation("Anchorage (PROFIS report, governing utilisation)", "u_anchorage", "EN 1993-1-8 cl. 6.2.6.12");
+            c.CheckUtilisation("Anchorage (PROFIS report, governing utilisation)", "u_anchorage", "PROFIS report (EN 1992-4)");
         else
             c.Warn("anchorage-result", "u_profis: the anchorage is not assessed on this sheet. The concrete failure modes of the anchors (cone, pull-out, edge, shear, interaction), which usually govern, are designed in PROFIS; u_max covers the steel parts only, whether or not a report is attached. Enter the report's governing utilisation to include it.");
 
