@@ -90,7 +90,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
       = 300 MPa
         Rotating-beam endurance limit
   [29] X1 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T_m/(πd³′), τ_a = K_fs·16T_a/(πd³′); 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
-      = x = 200 mm, d = 30 mm, k_b = 0.86173, S_e = 174.19 MPa, K_f = 1, K_fs = 1, M = 200 N·m, T = 0 N·m, σ_a = 75.451 MPa, τ_m = 0 MPa
+      = x = 200 mm, d = 30 mm, k_b = 0.86173, S_e = 174.19 MPa, K_f = 1, K_fs = 1, M = 200 N·m, T = 0 N·m, σ_a = 75.451 MPa, τ_m = 0 MPa, n_y = 5.9641
       = 2.3086
         Section at 200 mm: fatigue safety factor (DE-Goodman)
   [30] S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e′ (governing section)
@@ -161,5 +161,5 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   WARNING mass-weight: m: the carried mass (20 kg) adds no weight to the reactions, the moment or the deflection, and neither does the shaft's own weight; switch w_masses on to add them, or enter the weights as forces in F_y.
 
 8. VERIFICATION
-  Template: mech.shaft@1.3.0
+  Template: mech.shaft@1.3.1
   Known-answer cases passed: 3/3

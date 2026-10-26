@@ -45,7 +45,7 @@ public sealed class ShaftCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.Mechanical, "Shaft: static, fatigue, keys, critical speed",
+        Id, "1.3.1", CalcDiscipline.Mechanical, "Shaft: static, fatigue, keys, critical speed",
         "A stepped (optionally hollow) shaft on two bearings carrying radial loads in two planes and a torque with a steady (mean) part and an optional alternating part: bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections the user marks, slopes at the bearings, deflection at the loads, the first lateral critical speed and parallel keys.",
         "Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(M_y² + M_z²)\n" +
         "Stress at a section: σ_a = K_f·32M_a·d/(π(d⁴ − d_i⁴)), τ_m = K_fs·16T_m·d/(π(d⁴ − d_i⁴)), τ_a = K_fs·16T_a·d/(π(d⁴ − d_i⁴)); K_f = 1 + q(K_t − 1)\n" +
@@ -401,11 +401,11 @@ public sealed class ShaftCalculator : ICalcCalculator
             }).ToList();
 
             var g = candidates.MinBy(q => q.nf);
-            var (_, dmmG, kbG, seG, saG, taumG, tauaG, taupkG, nfG, _) = g;
+            var (_, dmmG, kbG, seG, saG, taumG, tauaG, taupkG, nfG, nyG) = g;
             var nyMin = candidates.Min(q => q.ny);
             var side = candidates.Count > 1 ? $" (shoulder: the side with d = {F(dmmG)} mm{(g.Seg.Di > 0 ? $", bore {F(g.Seg.Di * 1e3)} mm" : string.Empty)} governs, of {candidates.Count})" : string.Empty;
             c.Record($"X{index}", "σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T_m/(πd³′), τ_a = K_fs·16T_a/(πd³′); 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3τ_m/S_ut",
-                $"x = {F(s.X * 1e3)} mm, d = {F(dmmG)} mm, k_b = {F(kbG)}, S_e = {F(seG)} MPa, K_f = {F(kf)}, K_fs = {F(kfs)}, M = {F(ma)} N·m, T = {F(tm)} N·m, σ_a = {F(saG)} MPa, τ_m = {F(taumG)} MPa{(ta > 0 ? $", T_a = {F(ta)} N·m, τ_a = {F(tauaG)} MPa" : string.Empty)}{(tPeak > tm ? $", T_pk = {F(tPeak)} N·m, τ_pk = {F(taupkG)} MPa" : string.Empty)}{side}",
+                $"x = {F(s.X * 1e3)} mm, d = {F(dmmG)} mm, k_b = {F(kbG)}, S_e = {F(seG)} MPa, K_f = {F(kf)}, K_fs = {F(kfs)}, M = {F(ma)} N·m, T = {F(tm)} N·m, σ_a = {F(saG)} MPa, τ_m = {F(taumG)} MPa{(ta > 0 ? $", T_a = {F(ta)} N·m, τ_a = {F(tauaG)} MPa" : string.Empty)}{(tPeak > tm ? $", T_pk = {F(tPeak)} N·m, τ_pk = {F(taupkG)} MPa" : string.Empty)}, n_y = {(double.IsInfinity(nyG) ? "—" : F(nyG))}{(nyMin < nyG * (1 - 1e-12) ? $" (n_y of the other side of the shoulder, which sets n_y,min: {F(nyMin)})" : string.Empty)}{side}",
                 new ScalarValue(double.IsInfinity(nfG) ? 1e9 : nfG), $"Section at {F(s.X * 1e3)} mm: fatigue safety factor (DE-Goodman)", "Shigley 10th ed. §7-4");
 
             if (nfG < worstF)

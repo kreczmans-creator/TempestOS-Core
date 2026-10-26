@@ -25,7 +25,10 @@ public sealed class ShaftMediumFindingsTests
         var r = Run(Base(ShaftCalculator.Segments((700, 40, 0)), Q("x_A", 100, "mm"), Q("x_B", 500, "mm"), ShaftCalculator.Loads((700, 0, 0, 5)), Q("rho", 7850, "kg/m^3"), Q("n", 3800, "rpm")));
 
         var n = r.OutputSi("n_c") * 60 / (2 * Math.PI);
-        Assert.InRange(n, 7189.742 * 0.98, 7189.742 * 1.03);
+        // The sheet's own lumped-node Rayleigh value is pinned at 0.1 % (mech.shaft-01 verification); it is 0.8 % above the finite-element 7189.74 rpm (a Rayleigh quotient is an upper bound) and
+        // 0.24 % below a continuous-beam quadrature of the same quotient (python3, 70 000 stations, signed y: 7263.8 rpm; the absolute-value quotient gives 7999.7).
+        Assert.InRange(n, 7246.6 * 0.999, 7246.6 * 1.001);
+        Assert.InRange(n, 7189.742, 7189.742 * 1.01);
         Assert.True(r.OutputSi("n_c_D") * 60 / (2 * Math.PI) < n, "Dunkerley stays the lower bound");
     }
 
@@ -41,6 +44,22 @@ public sealed class ShaftMediumFindingsTests
 
         var mirrored = Run(Base(ShaftCalculator.Segments((200, 40, 0), (400, 50, 46)), ShaftCalculator.Loads((200, -2, 0, 0)), Q("rho", 0, "kg/m^3")));
         Assert.Equal(2.87001, mirrored.OutputSi("n_f_min"), 4);
+    }
+
+    [Fact]
+    public void Each_Section_Line_Prints_Its_Yield_Safety_Factor_Again()
+    {
+        // mech.shaft-02 (verification): the per-section record lost "n_y = ..." when the shoulder was checked on both sides; only n_y_min was printed. The Shigley Ch. 7 example (ka-shigley-7-1)
+        // has one section with n_y 4.489 (S_y 565.370 MPa over the von Mises stress of sigma_a 104.91 MPa and tau_pk 40.23 MPa x 3^0.5: 565.370/sqrt(104.91^2 + 3 x 40.23^2) = 4.489, python3).
+        var r = Run(new CalcInputSet([.. Shaft.Template.TestCases.Single(t => t.Id == "ka-shigley-7-1").Inputs]));
+
+        var section = Assert.Single(r.Steps, st => st.Symbol == "X1");
+        Assert.Contains("n_y = 4.489", section.Substitution, StringComparison.Ordinal);
+        Assert.Equal(4.488973, r.OutputSi("n_y_min"), 5);
+
+        // A shoulder section prints it as well (the governing side's value).
+        var shoulder = Run(Base(ShaftCalculator.Segments((200, 50, 46), (400, 40, 0)), ShaftCalculator.Loads((200, -2, 0, 0)), Q("rho", 0, "kg/m^3")));
+        Assert.Contains("n_y = ", Assert.Single(shoulder.Steps, st => st.Symbol == "X1").Substitution, StringComparison.Ordinal);
     }
 
     [Fact]

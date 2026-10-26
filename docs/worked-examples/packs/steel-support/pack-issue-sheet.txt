@@ -42,7 +42,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 47/47
-  Test run: 2026-10-26 13:10 UTC
+  Test run: 2026-10-26 13:51 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -178,7 +178,7 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   Content hash: 60a0615ba7745102
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 13:10 UTC
+  Test run: 2026-10-26 13:51 UTC
   Application: TempestOS test
 
 
@@ -383,7 +383,7 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   Content hash: a6389d664ba5a5eb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 13:10 UTC
+  Test run: 2026-10-26 13:51 UTC
   Application: TempestOS test
 
 
@@ -637,7 +637,7 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   Content hash: 1f18146732985999
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 13:10 UTC
+  Test run: 2026-10-26 13:51 UTC
   Application: TempestOS test
 
 
@@ -792,7 +792,7 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   Content hash: 51d1bceeeb8e14ba
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 13:10 UTC
+  Test run: 2026-10-26 13:51 UTC
   Application: TempestOS test
 
 
@@ -970,7 +970,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: 19e0a5764920a66d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 13:10 UTC
+  Test run: 2026-10-26 13:51 UTC
   Application: TempestOS test
 
 
@@ -1131,7 +1131,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: 19e0a5764920a66d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 13:10 UTC
+  Test run: 2026-10-26 13:51 UTC
   Application: TempestOS test
 
 
@@ -1192,7 +1192,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | link: Holding-down bolts rev A · f_yb | 235 … 640 MPa
   A_s | Anchor bolt tensile stress area (from S4) | 244.794 | mm^2 | link: Holding-down bolts rev A · A_s | 50 … 1500 mm^2
   F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 248.485 | kN | link: Holding-down bolts rev A · F_b_Rd | 1 … 2000 kN
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 81904e8869064a0fbd827be5ddee1c87/f8cc967f3870475cacc0c9bde3c2a918 | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 705aec2631544f01a077a4faf2a9c7a4/3062bad304994619934c14876879b42c | any
 
 3. ASSUMPTIONS
   A1. N_Ed is positive in compression here, the opposite of S3 (tension positive): a link from S2 must take the reaction R1_y (up positive, compression into the base), never the member force N_e1. (Sign convention.)
@@ -1404,13 +1404,13 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
 
 7. APPLICABILITY
   WARNING record: Tabulated values not taken from a reference record: alpha_cc, gamma_c (EN 1992-1-1 National Annex factors); gamma_M2 (EN 1993-1-8 National Annex factor); gamma_M0 (EN 1993-1-1 National Annex factor); C_fd (Friction coefficient plate to grout); f_y (Plate strength). Enter each as one so its source, edition and licence travel with it.
-  WARNING f_y_thickness: f_y: one yield strength (275 MPa) is used at every plate thickness, but EN 10025-2 lowers the yield strength of a grade as the thickness passes 16 mm and again above 40 mm. t_p = 25 mm and t_req = 15.423 mm pass the first step: enter the yield strength for the plate thickness in use (steel.strengths record), so M_pl,Rd and the T-stub are not overstated.
+  WARNING f_y_thickness: f_y: one yield strength (275 MPa) is used at every plate thickness, but EN 10025-2 lowers the yield strength of a grade as the thickness passes 16 mm and again above 40 mm. t_p = 25 mm is above the first step: enter the yield strength for the plate thickness in use (steel.strengths record), so M_pl,Rd and the T-stub are not overstated.
   WARNING anchorage-result: u_profis: the anchorage is not assessed on this sheet. The concrete failure modes of the anchors (cone, pull-out, edge, shear, interaction), which usually govern, are designed in PROFIS; u_max covers the steel parts only, whether or not a report is attached. Enter the report's governing utilisation to include it.
 
 8. VERIFICATION
-  Template: struct.base-plate@1.4.0
-  Content hash: cf631b3ae895bf39
+  Template: struct.base-plate@1.5.0
+  Content hash: 3ceead8d401425f4
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-26 13:10 UTC
+  Test run: 2026-10-26 13:51 UTC
   Application: TempestOS test

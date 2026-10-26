@@ -1,4 +1,4 @@
-# M4 — Shaft: static, fatigue, keys, critical speed (`mech.shaft@1.3.0`)
+# M4 — Shaft: static, fatigue, keys, critical speed (`mech.shaft@1.3.1`)
 
 **In plain terms.** A shaft carries gears, pulleys and bearings, so it bends and twists, and every turn the bending stress reverses, which is why shafts fail by fatigue at shoulders and keyways. The worksheet takes the stepped shaft, its loads and torque, finds the bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections you mark, the keys, and the speed at which the shaft would whirl.
 
@@ -11,6 +11,8 @@
 **Outputs.** `R_A`, `R_B`, `d_A`, `d_B`, `M_max`, `theta_A`, `theta_B`, `y_load`, `S_e`, `n_f_min`, `n_y_min`, per-section `X1…`, `n_c`, `n_c_D`, `r_c`, key `tau_key`, `sigma_key`, `L_key_req`. **Ports.** `R_A`, `R_B` → M5; `d_A`, `d_B` → M2; `n_f_min`, `n_c`. Links in: E1 torque and speed (the load torque `T_load` as `T`, the torque swing `T_alt` as `T_a`, the peak `T_pk` as `T_pk`; **not** the RMS torque `T_rms`, a thermal figure: before 1.2.0 the drive-train and mechanism-review packs bound it to `T` as a steady torque and the shaft saw no alternating torque).
 
 **Limitations.** Linear elastic; two simple supports (the bearings must be at least 1/200 of the shaft length apart, else the sheet blocks in its own words); no torsional vibration; first lateral mode only; K_t from records or fit equations, never a digitised chart.
+
+**Changes in 1.3.1 (mech.shaft-02, from the C-1 verification).** Each section line prints its yield safety factor again, `n_y = …`, as the governing side's value (the side with the lower fatigue factor), and names the other side's value when that is lower and sets `n_y_min`; 1.3.0 had dropped it when the shoulder was checked on both sides. Output text only; no number changes. The test of -01 now pins the sheet's own Rayleigh value of 7246.6 rpm at 0.1 % (the finite-element value 7189.7 rpm is 0.8 % below it, as an upper bound should be; a continuous-beam quadrature of the same signed quotient gives 7263.8 rpm, python3).
 
 **Changes in 1.3.0 (mech.shaft-01 to -05).** -01: the Rayleigh quotient uses the signed static deflection, so an overhung mass that lifts the span no longer inflates the numerator (bearings at 100 and 500 mm, 40 mm shaft of 700 mm, 5 kg at the tip: `n_c` 7975.0 rpm before, 7246.6 rpm now against the consistent-mass eigenvalue 7189.7 rpm; Dunkerley 7006.7 rpm stays below). -02: a shoulder is checked on both sides, each on its own diameter and bore, and the lower fatigue safety factor governs (Ø50 with a Ø46 bore beside Ø40 solid, 2 kN at the shoulder: `n_f` 5.3065 before, 2.8700 now). -03: `x_T2` has no 400 mm default; blank is the shaft length (L 800 mm, T 1 kN·m, section at 600 mm: `n_f` 5.3065 with no torque there, 2.3914 now), and a torque with a section or key outside `x_T1 … x_T2` warns (`torque-span`). -04: the carried-mass column and the shaft's own weight add no weight unless the new switch `w_masses` is on, which loads the vertical plane with m·g at the nodes (20 kg at mid-span with 2 kN: `M_max` 200 N·m, 219.61 N·m with the switch); a carried mass with the switch off warns (`mass-weight`) and the label and assumption say so. -05: the key bearing uses the lowest yield strength of the key, the shaft and the new optional `S_y_hub` (shaft 250 MPa, key 400 MPa, T 1.2 kN·m, Ø50, 14 × 9 key, n_target 2: `L_key_req` 53.33 mm before, 85.33 mm now; a 200 MPa hub gives 106.67 mm); without a hub strength the key check warns (`key-hub`).
 
@@ -31,9 +33,9 @@ y_load = 0.071775 mm at 150 = 0.071775 mm
 k_a = 4.51 × 700^-0.265 (machined or cold-drawn) = 0.79474
 k_e = 1 − 0.08 × 2.3263 = 0.81389
 S_e1 = 700 MPa = 350 MPa
-X1 = x = 120 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 1.45, M = 319.53 N·m, T = 0 N·m, σ_a = 79.334 MPa, τ_m = 0 MPa (shoulder: the side with d = 40 mm governs, of 2) = 2.3845
-X2 = x = 150 mm, d = 45 mm, k_b = 0.82514, S_e = 186.8 MPa, K_f = 1.912, K_fs = 2.8, M = 415.39 N·m, T = 300 N·m, σ_a = 88.778 MPa, τ_m = 46.947 MPa = 1.6909
-X3 = x = 180 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 1.45, M = 319.53 N·m, T = 300 N·m, σ_a = 79.334 MPa, τ_m = 34.616 MPa (shoulder: the side with d = 40 mm governs, of 2) = 1.9801
+X1 = x = 120 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 1.45, M = 319.53 N·m, T = 0 N·m, σ_a = 79.334 MPa, τ_m = 0 MPa, n_y = 6.3025 (shoulder: the side with d = 40 mm governs, of 2) = 2.3845
+X2 = x = 150 mm, d = 45 mm, k_b = 0.82514, S_e = 186.8 MPa, K_f = 1.912, K_fs = 2.8, M = 415.39 N·m, T = 300 N·m, σ_a = 88.778 MPa, τ_m = 46.947 MPa, n_y = 4.1532 = 1.6909
+X3 = x = 180 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 1.45, M = 319.53 N·m, T = 300 N·m, σ_a = 79.334 MPa, τ_m = 34.616 MPa, n_y = 5.0281 (shoulder: the side with d = 40 mm governs, of 2) = 1.9801
 … 15 more step(s) on the sheet
 Governing: PASS  Slope at the bearings against limit: u_slope = 0.8961 vs u_slope ≤ 1  utilisation 0.896
 ```

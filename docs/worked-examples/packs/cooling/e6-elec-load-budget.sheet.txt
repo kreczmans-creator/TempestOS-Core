@@ -42,7 +42,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   k_age | Ageing (end-of-life) factor | 0.8 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
 
 3. ASSUMPTIONS
-  A1. Each load's P is its electrical input; DC loads count at power factor 1 in the transformer demand; with a PSU bus chosen they count at P/η_PSU, the PSU's own loss being a load row if its heat is wanted. (Load budget convention.)
+  A1. Each load's P is its electrical input; DC loads count at power factor 1 in the transformer demand; with a PSU bus chosen they count at P/η_PSU, which already includes the supply's own loss. The sheet adds that loss to Φ itself, as P_DC·(1/η_PSU − 1), whenever psu_bus and η_PSU are set: do not add the power supply as a load row, which would count its loss twice. (Load budget convention.)
   A2. The heat released inside the enclosure is h·P·d·k per load; the default h = 1 − η is the loss of a drive or supply, electronics release all their input (h = 1) and a machine outside the panel releases none (h = 0). (Stated convention for the heat a load releases inside the panel; change h for a load that differs.)
   A3. Apparent powers are added arithmetically, which is conservative when power factors differ. (Upper bound on S.)
   A4. PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records. (Entered as reference records, which carry their source, edition and licence.)
@@ -172,9 +172,9 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   WARNING record: Tabulated values not taken from a reference record: f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.load-budget@1.4.0
-  Content hash: 11d6f81df601ffbc
+  Template: elec.load-budget@1.4.1
+  Content hash: 6cbfa0011c9a446f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 12:17 UTC
+  Test run: 2026-10-26 13:51 UTC
   Application: TempestOS test
