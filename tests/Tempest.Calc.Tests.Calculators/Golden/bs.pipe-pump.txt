@@ -129,5 +129,5 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
   WARNING laminar: segments: oil line is laminar (Re = 7.8516); f = 64/Re. The system curve and the duty point scale its friction with Q (h_f ∝ Q), not Q².
 
 8. VERIFICATION
-  Template: bs.pipe-pump@1.8.0
+  Template: bs.pipe-pump@1.8.1
   Known-answer cases passed: 5/5

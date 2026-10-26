@@ -97,6 +97,42 @@ public sealed class PipeFlowC1Tests
         Assert.Equal(3360 * 2 * Math.PI / 60, faster.OutputSi("n_shaft"), 6);
     }
 
+    private static CalcRunResult HeatLoad(double hOut, double? cp = null)
+    {
+        var inputs = new List<CalcInputValue>
+        {
+            CalcInputValue.Quantity("T", 40, "degC"), CalcInputValue.Quantity("Phi_load", 24, "kW"), CalcInputValue.Quantity("dT_load", 10, "K"),
+            PipeFlowCalculator.Segments(("loop", 40, 28, 0.045, 6, 0, 0, "discharge")), CalcInputValue.Quantity("h_out", hOut, "m"),
+        };
+
+        if (cp is { } value)
+            inputs.Add(CalcInputValue.Quantity("cp_load", value, "J/(kg*K)"));
+
+        return Run([.. inputs]);
+    }
+
+    [Fact]
+    public void A_Heat_Load_Sheet_With_No_Outlet_Head_Warns_That_The_Plant_Loss_Is_Missing()
+    {
+        // chain.wet-heating-03 and chain.cooling-02: the pack's pump head was pipe friction alone (H_sys 3.002 m of which 0.002 m friction in the reference case); the boiler, coil, valves and emitters add their own loss.
+        // Chain probe: h_out 1 m raises T_shaft 3.7 times with no notice either way.
+        Assert.Contains(HeatLoad(0).Warnings, w => w.RuleId == "plant-loss");
+        Assert.DoesNotContain(HeatLoad(2).Warnings, w => w.RuleId == "plant-loss");
+        // A flow entered directly is not a heat-load sheet.
+        Assert.DoesNotContain(Run(CalcInputValue.Quantity("Q", 1, "m^3/h"), PipeFlowCalculator.Segments(("loop", 40, 28, 0.045, 6, 0, 0, "discharge"))).Warnings, w => w.RuleId == "plant-loss");
+    }
+
+    [Fact]
+    public void A_Heat_Load_With_A_Glycol_Specific_Heat_On_Water_Warns_That_The_Fluid_Is_Not_Water()
+    {
+        // chain.cooling-03 and chain.wet-heating-06: cp 3600 reached B1 as c_p only, the density and viscosity stayed water's: Q 3.3 % high, friction about 20 % low (0.6606 m against 0.7894 m for rho 1030, mu 3.5 mPa.s).
+        Assert.Contains(HeatLoad(1, 3600).Warnings, w => w.RuleId == "fluid-cp");
+        Assert.DoesNotContain(HeatLoad(1, 4186).Warnings, w => w.RuleId == "fluid-cp");
+        Assert.DoesNotContain(HeatLoad(1, 4200).Warnings, w => w.RuleId == "fluid-cp");
+        Assert.DoesNotContain(Run(CalcInputValue.Choice("fluid", PipeFlowCalculator.FluidCustom), CalcInputValue.Quantity("rho_custom", 1030, "kg/m^3"), CalcInputValue.Quantity("mu_custom", 3.5, "mPa*s"), CalcInputValue.Quantity("T", 40, "degC"),
+            CalcInputValue.Quantity("Phi_load", 24, "kW"), CalcInputValue.Quantity("dT_load", 10, "K"), CalcInputValue.Quantity("cp_load", 3600, "J/(kg*K)"), PipeFlowCalculator.Segments(("loop", 40, 28, 0.045, 6, 0, 0, "discharge")), CalcInputValue.Quantity("h_out", 1, "m")).Warnings, w => w.RuleId == "fluid-cp");
+    }
+
     [Fact]
     public void Laminar_Friction_Scales_With_Q_In_The_System_Curve()
     {

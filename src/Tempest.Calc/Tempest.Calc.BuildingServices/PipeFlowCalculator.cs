@@ -42,7 +42,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.8.0", CalcDiscipline.BuildingServices, "Pipe pressure drop and pump duty",
+        Id, "1.8.1", CalcDiscipline.BuildingServices, "Pipe pressure drop and pump duty",
         "Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.",
         "Design flow from the heat carried, when a heat load is given in place of a flow: Q = Φ/(ρ c_p ΔT).\nMean velocity in the pipe: v = Q/(πD²/4).\nReynolds number, which decides laminar or turbulent flow: Re = ρvD/μ.\nFriction factor for laminar flow (Re < 2300): f = 64/Re.\nFriction factor for turbulent flow, Colebrook–White by fixed-point iteration (at most 100 steps) from the Swamee–Jain value, which also cross-checks it: 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)).\nHead lost in the pipe and its fittings: h_f = f (L + L_eq)/D · v²/2g + K v²/2g.\nSystem curve, with the friction of a turbulent or transitional segment and every fitting loss scaled from the design flow as Q², and the friction of a laminar segment (Re < 2300, h_f ∝ Q) as Q (a closed circuit has Σdz = 0, the rise in the flow being recovered in the return): H_sys(Q) = Σdz + h_out + Σh_f,lam·(Q/Q₀) + Σh_f,other·(Q/Q₀)².\nWater held in the pipes: V_pipe = Σ π/4·D²·L.\nDuty point, where the pump and system curves cross (every crossing is found by a scan and refined by bisection; the stable one, where the pump curve falls through the system curve, nearest the design flow is reported): H_pump(Q) = H_sys(Q).\nPump affinity laws for a change of speed n: Q ∝ n; H ∝ n². For a change of impeller diameter D, by the choice: a trimmed impeller of the same casing, Q ∝ D and H ∝ D² (the default, the usual practice for a trim); or a geometrically similar pump scaled in all dimensions, Q ∝ D³ and H ∝ D². Speed and diameter combine as Q ∝ n·D^a, H ∝ n²·D², a = 1 or 3.\nNet positive suction head available, to compare with what the pump requires: NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg, with p_v from the water correlation or, for a custom fluid, from the vapour pressure entered. The friction h_f,suction is that of the segments marked 'suction' only, at the larger of the design flow and the duty flow the pump runs at.\nShaft torque for the motor: T = P/ω with P the larger of the design-flow shaft power and the duty-point shaft power, at the speed n_pump; when a speed or diameter ratio shifts the duty, the shifted duty power at the shifted speed n_pump·n₂/n₁.",
         [
@@ -99,6 +99,8 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             new CalcApplicabilityRule("npsh-custom", "NPSH_r is entered for a custom fluid with no vapour pressure p_v_custom: NPSH_a is not computed and no NPSH check is made.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("npsh-no-suction", "NPSH_r is entered but no segment is marked 'suction' (a blank side column means discharge): NPSH_a carries no suction friction and is optimistic unless the suction line has no friction.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("no-duty", "The pump curve and the system curve do not cross within the curve's flow range.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("plant-loss", "A heat-load sheet has no outlet head h_out: the pump head then holds pipe friction only, without the water-side loss of the boiler, heat exchanger, coil, valves and emitters.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("fluid-cp", "The specific heat of the heat-load flow differs from water's by more than 5 %: the fluid is not water, but this sheet is on water unless a custom fluid is chosen, so the flow, friction and torque are those of water.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("multi-duty", "The pump curve crosses the system curve more than once: all crossings are listed and the stable one nearest the design flow is reported.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("duty-unstable", "The only crossing of the pump curve and the system curve is on a rising part of the pump curve, where the operating point is unstable.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("eta-default", "The pump efficiency is the default 0.7 for a pump of under about 1 kW shaft power: small circulators have a far lower overall efficiency, so the shaft power and torque are understated.", CalcNoticeSeverity.Warning),
@@ -247,6 +249,12 @@ public sealed class PipeFlowCalculator : ICalcCalculator
                 c.Warn("heat-flow-q", "Q: ignored, the design flow comes from the heat load; clear Q to remove this notice.");
 
             c.Assign("Q_design", "Phi_load / (rho * c_p * dT_load)", "m^3/h", "Design flow from the heat carried: Φ / (ρ c_p ΔT)");
+
+            if (c.Si("h_out") < 1e-9)
+                c.Warn("plant-loss", "h_out: the head required at the outlet is 0, so the pump head holds pipe friction only. The boiler or heat exchanger, coil, valves and emitters of the circuit have their own water-side pressure loss, usually larger than the pipe's; enter it in h_out (or as K or L_eq on a segment) from the manufacturers' data, otherwise the head and the torque handed to the motor are low.");
+
+            if (fluid == FluidWater && c.Has("cp_load") && Math.Abs(c.Si("cp_load") - 4186) > 0.05 * 4186)
+                c.Warn("fluid-cp", $"cp_load: {F(c.Si("cp_load"))} J/(kg·K) differs from water's by more than 5 %, so the circuit carries another fluid (a glycol mixture, say), but this sheet's fluid is water: its density and viscosity are water's, so the flow comes out too high and the friction and torque too low (a glycol loop is typically several times the friction). Choose the custom fluid and enter its density and viscosity.");
         }
         else
         {
