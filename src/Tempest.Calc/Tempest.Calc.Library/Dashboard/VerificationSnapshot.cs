@@ -29,8 +29,14 @@ public sealed record SnapshotFinding(string Id, string Severity, VerificationDef
 /// <summary>Track P's re-derivation report of one template or chain: the result code, the verdict line and the findings.</summary>
 public sealed record SnapshotRederivation(string Result, string Verdict, IReadOnlyList<SnapshotFinding> Findings);
 
+/// <summary>
+/// The last real run of one chain (<c>docs/testing/kat-results.json</c>, <c>packs</c>): how many steps and links the chain had then, whether
+/// its worked example was issued as one pack with every link current and the committed example unchanged, and what failed if not.
+/// </summary>
+public sealed record SnapshotPackRun(int Steps, int Bindings, bool Passed, IReadOnlyList<string> Failures);
+
 /// <summary>Everything the documents say about one template (by id) or chain (by pack template id).</summary>
-public sealed record SnapshotItem(int WorkedExamples, int ExampleChecks, int ExampleChecksPassed, SnapshotKat? Kat, SnapshotRederivation? Rederivation);
+public sealed record SnapshotItem(int WorkedExamples, int ExampleChecks, int ExampleChecksPassed, SnapshotKat? Kat, SnapshotRederivation? Rederivation, SnapshotPackRun? PackRun = null);
 
 /// <summary>
 /// Addendum C, C-4: the document-derived data the verification dashboard shows, read once by <c>scripts/generate-verification-snapshot.py</c>
@@ -114,13 +120,18 @@ public sealed class VerificationSnapshot
 
             return Parse(text.ToString());
         }
-        catch (Exception ex) when (ex is IOException or InvalidOperationException or NotSupportedException)
+#pragma warning disable CA1031 // The dashboard's data is advisory: whatever goes wrong reading it leaves the screen without document data, never throws into it.
+        catch (Exception)
         {
             return Unavailable("The verification data could not be read.");
         }
+#pragma warning restore CA1031
     }
 
-    /// <summary>Reads a snapshot from its JSON text; text over <see cref="MaxJsonChars"/> or not valid is <see cref="Unavailable"/>.</summary>
+    /// <summary>
+    /// Reads a snapshot from its JSON text; text over <see cref="MaxJsonChars"/> or not valid is <see cref="Unavailable"/>. Never throws: a null
+    /// item or finding is skipped, and any other fault in the data reads as unavailable.
+    /// </summary>
     public static VerificationSnapshot Parse(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
@@ -139,7 +150,7 @@ public sealed class VerificationSnapshot
 
             foreach (var (id, item) in (file.Items ?? []).Take(MaxItems))
             {
-                if (string.IsNullOrWhiteSpace(id) || id.Length > 64)
+                if (item is null || string.IsNullOrWhiteSpace(id) || id.Length > 64)
                     continue;
 
                 items[id] = Bound(item);
@@ -152,6 +163,12 @@ public sealed class VerificationSnapshot
         {
             return Unavailable("The verification data is not valid.");
         }
+#pragma warning disable CA1031 // See LoadEmbedded: a fault the JSON reader did not foresee (a converter, a duplicate key) still reads as unavailable.
+        catch (Exception)
+        {
+            return Unavailable("The verification data could not be read.");
+        }
+#pragma warning restore CA1031
     }
 
     private static SnapshotItem Bound(SnapshotItem item) => item with
@@ -168,11 +185,17 @@ public sealed class VerificationSnapshot
             ExamplesPassed = Math.Clamp(item.Kat.ExamplesPassed, 0, 10_000),
             FailedExamples = [.. (item.Kat.FailedExamples ?? []).Take(MaxFindingsPerItem).Select(Clip)],
         },
+        PackRun = item.PackRun is null ? null : item.PackRun with
+        {
+            Steps = Math.Clamp(item.PackRun.Steps, 0, 1_000),
+            Bindings = Math.Clamp(item.PackRun.Bindings, 0, 10_000),
+            Failures = [.. (item.PackRun.Failures ?? []).Where(f => f is not null).Take(MaxFindingsPerItem).Select(Clip)],
+        },
         Rederivation = item.Rederivation is null ? null : item.Rederivation with
         {
             Result = Clip(item.Rederivation.Result),
             Verdict = Clip(item.Rederivation.Verdict),
-            Findings = [.. (item.Rederivation.Findings ?? []).Take(MaxFindingsPerItem).Select(f => f with { Id = Clip(f.Id), Severity = Clip(f.Severity) })],
+            Findings = [.. (item.Rederivation.Findings ?? []).Where(f => f is not null).Take(MaxFindingsPerItem).Select(f => f with { Id = Clip(f.Id), Severity = Clip(f.Severity) })],
         },
     };
 

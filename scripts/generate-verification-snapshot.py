@@ -12,6 +12,9 @@ Inputs (read only, never edited):
   docs/testing/kat-results.json           the last real run of every KAT and worked example (written by KatResultsTests)
   docs/worked-examples/**/README.md       how many worked examples each template and chain has; a chain's check counts
 
+This script and tools/verification/findings.py are hashed with the documents (the "generator" group), so changing how they read
+a document makes the snapshot stale too.
+
 A test (VerificationSnapshotStaleTests) hashes the same inputs and fails when the snapshot was made from older ones.
 
 Usage (from anywhere):
@@ -56,6 +59,8 @@ def source_files():
         "knownDefects": [DEFECTS],
         "katResults": [KAT_RESULTS],
         "workedExamples": sorted(EXAMPLES.rglob("README.md")),
+        # The code that reads the documents is an input too: a change to how findings are parsed or classified changes the snapshot.
+        "generator": [pathlib.Path(__file__).resolve(), ROOT / "tools" / "verification" / "findings.py"],
     }
 
 
@@ -236,7 +241,15 @@ def build():
     defects = read_defects()
     findings = load_findings()
     per_template, packs = read_examples()
-    kat = {t["id"]: t for t in json.loads(KAT_RESULTS.read_text(encoding="utf-8"))["templates"]}
+    results = json.loads(KAT_RESULTS.read_text(encoding="utf-8"))
+    kat = {t["id"]: t for t in results["templates"]}
+    pack_runs = {p["id"]: p for p in results.get("packs", [])}
+    for t in kat.values():
+        if not (0 <= t["katsPassed"] <= t["kats"]) or (t["katsPassed"] == t["kats"]) != (not t["failedKats"]):
+            raise SystemExit(f"kat-results: {t['id']} says {t['katsPassed']} of {t['kats']} pass and lists {len(t['failedKats'])} failed cases")
+    for p in pack_runs.values():
+        if p["passed"] != (not p["failures"]):
+            raise SystemExit(f"kat-results: {p['id']} says passed={p['passed']} and lists {len(p['failures'])} failures")
 
     items = {}
 
@@ -251,6 +264,8 @@ def build():
         item(pack_id)["exampleChecksPassed"] = data["checksPassed"]
     for template_id, t in kat.items():
         item(template_id)["kat"] = {k: t[k] for k in ("version", "kats", "katsPassed", "failedKats", "examplesPassed", "failedExamples")}
+    for pack_id, p in pack_runs.items():
+        item(pack_id)["packRun"] = {k: p[k] for k in ("steps", "bindings", "passed", "failures")}
 
     for report in sorted(REDERIVATION.glob("*.md")):
         report_id = report.stem

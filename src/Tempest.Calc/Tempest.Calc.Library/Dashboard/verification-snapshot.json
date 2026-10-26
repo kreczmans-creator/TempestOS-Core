@@ -4,8 +4,9 @@
  "sources": {
   "rederivation": "3738520fd54a185312ad9441b014f89a0e52620ca01f5d3390e706fb0ae90082",
   "knownDefects": "a245de68e931920a0110eb3933900ffd1b2b65b7db5af36cc9d69c85d26702f6",
-  "katResults": "2e21ea781afa28d739d5f668e1c604e44444e4abdd2554fb42be493b7ccfb2f5",
-  "workedExamples": "7086e24fe933302712cfe3eafea13bf1408727c4459cfe3f921bf2445552f52a"
+  "katResults": "82045e98df5fce10182c1e4fab7f35838476513cfd5340aed5a4fbd304e8914a",
+  "workedExamples": "7086e24fe933302712cfe3eafea13bf1408727c4459cfe3f921bf2445552f52a",
+  "generator": "44f38f035fcf5937ab168f648e6a714578568d822ffce5c1d151e261c577171e"
  },
  "defectTotals": {
   "Critical": {
@@ -1953,7 +1954,13 @@
   "pack.actuated-linkage": {
    "workedExamples": 1,
    "exampleChecks": 12,
-   "exampleChecksPassed": 12
+   "exampleChecksPassed": 12,
+   "packRun": {
+    "steps": 3,
+    "bindings": 6,
+    "passed": true,
+    "failures": []
+   }
   },
   "pack.bracket-assembly-m2-m3-s1": {
    "workedExamples": 1,
@@ -1963,12 +1970,24 @@
   "pack.cold-pipe": {
    "workedExamples": 1,
    "exampleChecks": 2,
-   "exampleChecksPassed": 2
+   "exampleChecksPassed": 2,
+   "packRun": {
+    "steps": 3,
+    "bindings": 5,
+    "passed": true,
+    "failures": []
+   }
   },
   "pack.cooling": {
    "workedExamples": 1,
    "exampleChecks": 3,
    "exampleChecksPassed": 2,
+   "packRun": {
+    "steps": 4,
+    "bindings": 7,
+    "passed": true,
+    "failures": []
+   },
    "rederivation": {
     "result": "values-transfer",
     "verdict": "VALUES TRANSFER CORRECTLY; FOUR MEDIUM (-01 TO -04), SIX LOW, THREE INFO (reviewed 2026-10-24; no Critical or High)",
@@ -2045,6 +2064,12 @@
    "workedExamples": 1,
    "exampleChecks": 15,
    "exampleChecksPassed": 15,
+   "packRun": {
+    "steps": 5,
+    "bindings": 9,
+    "passed": true,
+    "failures": []
+   },
    "rederivation": {
     "result": "values-transfer",
     "verdict": "VALUES TRANSFER CORRECTLY; THE TORQUE LINKS ARE WRONG IN MEANING (one Critical, three High, four Medium; reviewed at 298ade36)",
@@ -2130,17 +2155,35 @@
   "pack.electronics-enclosure": {
    "workedExamples": 1,
    "exampleChecks": 7,
-   "exampleChecksPassed": 7
+   "exampleChecksPassed": 7,
+   "packRun": {
+    "steps": 5,
+    "bindings": 5,
+    "passed": true,
+    "failures": []
+   }
   },
   "pack.envelope-moisture": {
    "workedExamples": 1,
    "exampleChecks": 4,
-   "exampleChecksPassed": 4
+   "exampleChecksPassed": 4,
+   "packRun": {
+    "steps": 3,
+    "bindings": 3,
+    "passed": true,
+    "failures": []
+   }
   },
   "pack.hydraulic-power-unit": {
    "workedExamples": 1,
    "exampleChecks": 25,
    "exampleChecksPassed": 25,
+   "packRun": {
+    "steps": 8,
+    "bindings": 24,
+    "passed": true,
+    "failures": []
+   },
    "rederivation": {
     "result": "values-transfer",
     "verdict": "VALUES TRANSFER CORRECTLY; TWO HIGH (-01 INHERITED FROM F2, -02), ONE MEDIUM (-03), SIX LOW OR INFO (reviewed)",
@@ -2196,12 +2239,24 @@
   "pack.mechanism-review": {
    "workedExamples": 1,
    "exampleChecks": 20,
-   "exampleChecksPassed": 20
+   "exampleChecksPassed": 20,
+   "packRun": {
+    "steps": 6,
+    "bindings": 12,
+    "passed": true,
+    "failures": []
+   }
   },
   "pack.motor-circuit": {
    "workedExamples": 1,
    "exampleChecks": 12,
    "exampleChecksPassed": 12,
+   "packRun": {
+    "steps": 6,
+    "bindings": 16,
+    "passed": true,
+    "failures": []
+   },
    "rederivation": {
     "result": "values-transfer",
     "verdict": "VALUES TRANSFER CORRECTLY; after review THREE HIGH FINDINGS IN THE LINKS (an unlinked device type, duty-weighted current from E6 R1, an unlinked cpc size), FIVE MEDIUM",
@@ -2282,12 +2337,24 @@
   "pack.pipework-supports": {
    "workedExamples": 1,
    "exampleChecks": 9,
-   "exampleChecksPassed": 9
+   "exampleChecksPassed": 9,
+   "packRun": {
+    "steps": 3,
+    "bindings": 4,
+    "passed": true,
+    "failures": []
+   }
   },
   "pack.steel-support": {
    "workedExamples": 1,
    "exampleChecks": 28,
    "exampleChecksPassed": 28,
+   "packRun": {
+    "steps": 7,
+    "bindings": 17,
+    "passed": true,
+    "failures": []
+   },
    "rederivation": {
     "result": "values-transfer",
     "verdict": "VALUES TRANSFER CORRECTLY; SEVEN MEDIUM (-01 TO -05, -13, R1), SEVEN LOW, THREE INFO (reviewed 2026-10-24; no Critical or High)",
@@ -2389,6 +2456,12 @@
    "workedExamples": 1,
    "exampleChecks": 6,
    "exampleChecksPassed": 6,
+   "packRun": {
+    "steps": 5,
+    "bindings": 9,
+    "passed": true,
+    "failures": []
+   },
    "rederivation": {
     "result": "values-transfer",
     "verdict": "VALUES TRANSFER CORRECTLY; TWO HIGH (-01 INHERITED FROM B4, R1 AFFINITY SPEED NOT PASSED TO E1), FOUR MEDIUM (-03 to -06), NINE LOW OR INFO (after independent review)",

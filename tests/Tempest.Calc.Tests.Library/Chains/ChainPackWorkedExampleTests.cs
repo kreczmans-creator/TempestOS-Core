@@ -20,11 +20,11 @@ public sealed class ChainPackWorkedExampleTests
 {
     public static TheoryData<string> Chains => ["drive-train", "motor-circuit", "wet-heating", "cooling", "steel-support", "hydraulic-power-unit", "mechanism-review", "actuated-linkage", "envelope-moisture", "cold-pipe", "pipework-supports", "electronics-enclosure"];
 
-    private sealed record Example(CalcPackTemplate Template, string Slug, string Title, string Reference, string Client, string Project, string Note, Func<LibraryTestHost, Task<IReadOnlyDictionary<string, IReadOnlyList<CalcInputValue>>>> Inputs, string Remarks);
+    internal sealed record Example(CalcPackTemplate Template, string Slug, string Title, string Reference, string Client, string Project, string Note, Func<LibraryTestHost, Task<IReadOnlyDictionary<string, IReadOnlyList<CalcInputValue>>>> Inputs, string Remarks);
 
     private static IReadOnlyDictionary<string, IReadOnlyList<CalcInputValue>> Plain(Dictionary<string, IReadOnlyList<CalcInputValue>> inputs) => inputs;
 
-    private static readonly Example[] Examples =
+    internal static readonly Example[] Examples =
     [
         new(CalcPackTemplates.DriveTrain, "drive-train", "Conveyor head drive calc pack", "CNV-DRV-001", "Client Co", "Conveyor 7 head drive", "Checked against SPEC-CNV-07 and DRG-CNV-410 to 412 rev B.",
             host => Task.FromResult(Plain(ChainInputs.DriveTrain(host))),
@@ -106,7 +106,7 @@ public sealed class ChainPackWorkedExampleTests
         return (await factory.CreateAsync("Worked example project.")).Id;
     }
 
-    private static LibraryTestHost Host() => new(
+    internal static LibraryTestHost Host() => new(
         calculators: [.. ElectricalCalculators.All, .. MechanicalCalculators.All, .. BuildingServicesCalculators.All, .. StructuralCalculators.All, .. FluidPowerCalculators.All],
         packTemplates: CalcPackTemplates.All);
 
@@ -115,19 +115,7 @@ public sealed class ChainPackWorkedExampleTests
     public async Task Each_Chain_Is_Issued_As_One_Pack_And_Written_As_A_Worked_Example(string slug)
     {
         var example = Examples.Single(e => e.Slug == slug);
-        var host = Host();
-        var inputs = await example.Inputs(host);
-        var made = await ChainKit.InstantiateAsync(host, example.Template, example.Title, inputs, await ProjectAsync(host, example.Project));
-
-        // The steel support's anchorage is designed elsewhere: file a clearly marked placeholder against the base plate.
-        if (slug is "steel-support" or "pipework-supports")
-        {
-            var filed = await host.Service.AttachExternalEvidenceAsync(made.Instances["s6"].Id, "PROFIS-BP1-PLACEHOLDER.txt", "text/plain",
-                Encoding.UTF8.GetBytes("PLACEHOLDER. The Hilti PROFIS anchorage report for base plate BP1 is not attached yet; the engineer replaces this file with the real report. This file is not a PROFIS report."), "profis_ref");
-            Assert.True(filed.Succeeded, filed.Reason);
-        }
-
-        var sheet = await ChainKit.CheckAndIssueAsync(host, made, example.Template, example.Reference, example.Client, example.Note);
+        var (host, made, sheet) = await IssueAsync(example);
 
         if (Environment.GetEnvironmentVariable("TEMPEST_WRITE_WORKED_EXAMPLES") != "1")
             return;
@@ -149,6 +137,39 @@ public sealed class ChainPackWorkedExampleTests
 
         File.WriteAllText(Path.Combine(folder, "inputs.json"), InputsJson(example, issued));
         File.WriteAllText(Path.Combine(folder, "README.md"), Readme(example, issued));
+    }
+
+    /// <summary>
+    /// Instantiates the chain from the example's inputs and issues it as one pack, asserting what the chain tests assert (no refused or blocked step, no stale
+    /// link, full provenance, checked and issued, every step issued and read-only). <c>PackResultsTests</c> records the outcome in <c>docs/testing/kat-results.json</c>.
+    /// </summary>
+    internal static async Task<(LibraryTestHost Host, CalcPackInstantiation Made, string Sheet)> IssueAsync(Example example)
+    {
+        var host = Host();
+        var inputs = await example.Inputs(host);
+        var made = await ChainKit.InstantiateAsync(host, example.Template, example.Title, inputs, await ProjectAsync(host, example.Project));
+
+        // The steel support's anchorage is designed elsewhere: file a clearly marked placeholder against the base plate.
+        if (example.Slug is "steel-support" or "pipework-supports")
+        {
+            var filed = await host.Service.AttachExternalEvidenceAsync(made.Instances["s6"].Id, "PROFIS-BP1-PLACEHOLDER.txt", "text/plain",
+                Encoding.UTF8.GetBytes("PLACEHOLDER. The Hilti PROFIS anchorage report for base plate BP1 is not attached yet; the engineer replaces this file with the real report. This file is not a PROFIS report."), "profis_ref");
+            Assert.True(filed.Succeeded, filed.Reason);
+        }
+
+        var sheet = await ChainKit.CheckAndIssueAsync(host, made, example.Template, example.Reference, example.Client, example.Note);
+        return (host, made, sheet);
+    }
+
+    /// <summary>The issued member of every step, by step key.</summary>
+    internal static async Task<Dictionary<string, CalcInstance>> IssuedMembersAsync(LibraryTestHost host, CalcPackInstantiation made, CalcPackTemplate template)
+    {
+        var issued = new Dictionary<string, CalcInstance>(StringComparer.Ordinal);
+
+        foreach (var step in template.Steps)
+            issued[step.Key] = (await host.Store.FindInstanceAsync(made.Instances[step.Key].Id))!;
+
+        return issued;
     }
 
     [Fact]
@@ -209,7 +230,7 @@ public sealed class ChainPackWorkedExampleTests
 
     private static string Number(double? n) => (n ?? 0).ToString("G6", CultureInfo.InvariantCulture);
 
-    private static string Readme(Example example, IReadOnlyDictionary<string, CalcInstance> issued)
+    internal static string Readme(Example example, IReadOnlyDictionary<string, CalcInstance> issued)
     {
         var template = example.Template;
         var name = template.Steps.ToDictionary(s => s.Key, s => s.Name, StringComparer.Ordinal);

@@ -323,6 +323,26 @@ jobs:
             }
           }
 
+      # Addendum C, C-4: the verification dashboard shows an embedded snapshot of the Track P reports, the known-defects document, the KAT and
+      # chain results and the worked examples (and of the script that reads them). The stale-snapshot tests above fail on a stale one; this
+      # step says the same from the script's own side, and runs the script's own tests (its two readers of the known-defects document).
+      - name: Check the verification snapshot is current (Release)
+        if: matrix.configuration == 'Release' && matrix.shard == 'calc'
+        timeout-minutes: 5
+        shell: pwsh
+        run: |
+          $python = (Get-Command python3 -ErrorAction SilentlyContinue) ?? (Get-Command python)
+          & $python.Source scripts/generate-verification-snapshot.py --check
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "The verification snapshot is stale: run python3 scripts/generate-verification-snapshot.py and commit the result (exit code $LASTEXITCODE)."
+            exit $LASTEXITCODE
+          }
+          & $python.Source -m unittest discover -s tests/scripts
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "The snapshot script's tests failed (exit code $LASTEXITCODE)."
+            exit $LASTEXITCODE
+          }
+
       - name: Test Calc (Debug)
         if: matrix.configuration == 'Debug' && matrix.shard == 'calc' && github.event_name != 'pull_request'
         timeout-minutes: 25

@@ -44,6 +44,48 @@ public sealed class VerificationSnapshotTests
     }
 
     [Fact]
+    public void A_Null_Item_Is_Skipped_And_The_Other_Items_Are_Kept()
+    {
+        var snapshot = VerificationSnapshot.Parse("{\"schema\":1,\"items\":{\"a\":null,\"b\":{\"workedExamples\":2}}}");
+
+        Assert.Null(snapshot.Problem);
+        Assert.DoesNotContain("a", snapshot.Items.Keys);
+        Assert.Equal(2, snapshot.Items["b"].WorkedExamples);
+    }
+
+    [Fact]
+    public void A_Null_Finding_Is_Skipped_And_The_Other_Findings_Are_Kept()
+    {
+        var snapshot = VerificationSnapshot.Parse("{\"schema\":1,\"items\":{\"a\":{\"rederivation\":{\"result\":\"match\",\"verdict\":\"v\",\"findings\":[null,{\"id\":\"a-01\",\"severity\":\"High\",\"defect\":\"open\"},null]}}}}");
+
+        Assert.Null(snapshot.Problem);
+        var finding = Assert.Single(snapshot.Items["a"].Rederivation!.Findings);
+        Assert.Equal("a-01", finding.Id);
+    }
+
+    [Fact]
+    public void A_Null_Findings_List_Reads_As_No_Findings()
+    {
+        var snapshot = VerificationSnapshot.Parse("{\"schema\":1,\"items\":{\"a\":{\"rederivation\":{\"result\":\"match\",\"verdict\":null,\"findings\":null}}}}");
+
+        Assert.Null(snapshot.Problem);
+        Assert.Empty(snapshot.Items["a"].Rederivation!.Findings);
+    }
+
+    [Theory]
+    [InlineData("{\"schema\":1,\"items\":{\"a\":{\"rederivation\":{\"result\":\"match\",\"verdict\":\"\",\"findings\":[{\"id\":\"a-01\",\"severity\":\"High\",\"defect\":5}]}}}}")]
+    [InlineData("{\"schema\":1,\"items\":[1,2]}")]
+    [InlineData("{\"schema\":1,\"sources\":{\"a\":1},\"items\":{}}")]
+    [InlineData("{\"schema\":\"one\",\"items\":{}}")]
+    public void A_Fault_The_Reader_Does_Not_Foresee_Reads_As_Unavailable_And_Never_Throws(string json)
+    {
+        var snapshot = VerificationSnapshot.Parse(json);
+
+        Assert.Empty(snapshot.Items);
+        Assert.False(string.IsNullOrEmpty(snapshot.Problem));
+    }
+
+    [Fact]
     public void Items_Findings_And_Strings_Are_Capped()
     {
         var json = new StringBuilder("{\"schema\": 1, \"items\": {\"big\": {\"rederivation\": {\"result\": \"match\", \"verdict\": \"").Append(new string('v', 5000)).Append("\", \"findings\": [");
