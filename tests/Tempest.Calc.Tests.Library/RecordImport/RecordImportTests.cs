@@ -344,6 +344,70 @@ public sealed class RecordImportTests
         Assert.Contains(minus.Errors, e => e.Column == "medium");
     }
 
+    [Theory]
+    [InlineData("x\n=1+2")]
+    [InlineData("x\r=1+2")]
+    [InlineData("x\r\n=1+2")]
+    [InlineData("x\t=1+2")]
+    [InlineData("x\u2028=1+2")]
+    public async Task A_Text_Cell_With_A_Line_Break_Or_Control_Character_Is_Refused_Naming_The_Column_And_The_Row(string text)
+    {
+        // Review finding 2: a formula behind a line break in a quoted cell is not at the start of the cell, so the formula check missed it, and a
+        // spreadsheet or a line-based tool reading an export would take it as a row of its own.
+        var host = Host();
+        var preview = await host.Service.RecordImport.PreviewAsync(Request("51", Csv("grout[text],C_fd[-]", "Fine grout,0.2", $"\"{text}\",0.3"), Provenance("Unlicensed grout", licensed: false)));
+
+        Assert.False(preview.CanCommit);
+        var error = Assert.Single(preview.Errors);
+        Assert.Equal("grout", error.Column);
+        Assert.Equal(3, error.Line);
+        Assert.Contains("line break or other control character", error.Message, StringComparison.Ordinal);
+        Assert.Empty(await host.Store.ListRecordsAsync());
+
+        // The same cell typed on the screen goes through the same check.
+        var typed = RecordImportService.GridToCsv(RecordTemplates.Find("51")!, ["", ""], [[text, "0.3"]]);
+        var typedPreview = await host.Service.RecordImport.PreviewAsync(Request("51", typed.Bytes, fileName: null));
+        Assert.Contains(typedPreview.Errors, e => e.Column == "grout" && e.Line == 2);
+    }
+
+    [Fact]
+    public async Task A_Label_Or_Material_Name_With_A_Line_Break_Is_Refused_Too()
+    {
+        var host = Host();
+        var label = await host.Service.RecordImport.PreviewAsync(Request("06", Csv(AmbientFactors, "\"air\n=1\",PVC,20,0.99")));
+        Assert.Contains(label.Errors, e => e.Column == "medium" && e.Message.Contains("line break", StringComparison.Ordinal));
+
+        var material = await host.Service.RecordImport.PreviewAsync(Request("62", Csv("material[text],E[GPa]", "\"Steel\n=1\",200"), Provenance(string.Empty)));
+        Assert.Contains(material.Errors, e => e.Column == "material" && e.Message.Contains("line break", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_Provenance_File_Field_With_A_Line_Break_Is_Refused_Naming_The_Column_And_The_Line()
+    {
+        const string header = "kind,title,source_title,edition,amendment,table_or_clause,licence_holder,entered_by,licensed_source,origin,notes\r\n";
+        var text = header
+            + "cable.ampacity,\"Two\nlines\",Test Wiring Rules,2018,,Table 4D2A,Own copy,someone,true,UserEntered,\r\n"
+            + "cable.ampacity,Good,Test Wiring Rules,2018,,Table 4D2A,\"Own\r=1+2\",someone,true,UserEntered,\r\n"
+            + "cable.ampacity,Fine,Test Wiring Rules,2018,,Table 4D2A,Own copy,someone,true,UserEntered,Note\r\n";
+        var rows = RecordImportService.ReadProvenanceFile(Utf8(text), out var problems);
+
+        var kept = Assert.Single(rows);
+        Assert.Equal("Fine", kept.Provenance.Title);
+        Assert.Equal(2, problems.Count);
+        Assert.Contains(problems, p => p.Contains("title", StringComparison.Ordinal) && p.Contains("Line 2", StringComparison.Ordinal) && p.Contains("line break", StringComparison.Ordinal));
+        Assert.Contains(problems, p => p.Contains("licence_holder", StringComparison.Ordinal) && p.Contains("Line 4", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Provenance_Typed_On_The_Screen_With_A_Line_Break_Is_Refused()
+    {
+        var host = Host();
+        var preview = await host.Service.RecordImport.PreviewAsync(Request("47", Csv("I_n[A]", "6"), Provenance() with { SourceTitle = "Rules\n=1+2" }));
+
+        Assert.False(preview.CanCommit);
+        Assert.Contains(preview.Errors, e => e.Message.Contains("source title", StringComparison.Ordinal) && e.Message.Contains("line break", StringComparison.Ordinal));
+    }
+
     [Fact]
     public async Task A_Header_That_Is_Not_A_Column_Of_The_Template_Is_An_Error_Until_It_Is_Mapped_Or_Left_Out()
     {
@@ -826,6 +890,32 @@ public sealed class RecordImportTests
         var methods = typeof(RecordImportService).GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.DeclaredOnly).Select(m => m.Name);
         Assert.DoesNotContain(methods, n => n.Contains("Export", StringComparison.Ordinal) || n.Contains("Write", StringComparison.Ordinal));
         Assert.Equal("grout[text],C_fd[-]\r\n", RecordImportService.BlankTemplateCsv(RecordTemplates.Find("51")!));
+    }
+
+    [Theory]
+    [InlineData("line one\nline two", "\"line one\nline two\"")]
+    [InlineData("line one\rline two", "\"line one\rline two\"")]
+    [InlineData("plain", "plain")]
+    [InlineData("a,b", "\"a,b\"")]
+    [InlineData("say \"hi\"", "\"say \"\"hi\"\"\"")]
+    [InlineData("=1+2", "'=1+2")]
+    public void An_Exported_Value_With_A_Line_Break_Is_Quoted_And_A_Formula_Is_Still_Neutralised(string value, string expected) =>
+        Assert.Equal(expected, CalcInstanceService.Csv(value));
+
+    [Fact]
+    public async Task An_Exported_Record_Holding_A_Line_Break_Keeps_It_Inside_One_Quoted_Cell()
+    {
+        var host = Host();
+        var draft = new CalcDataRecord(Guid.Empty, "joint.friction", "Open grout", 0, "Test Rules", "2018", "Table 1", "Own copy", "me", false, CalcDataOrigin.UserEntered,
+            [new CalcDataValue("C_fd", Number: 0.2), new CalcDataValue("note", Text: "first\n=2+2")], DateTimeOffset.UnixEpoch, null);
+        var (saved, refusal) = await host.Service.SaveRecordAsync(draft);
+        Assert.NotNull(saved);
+        Assert.Null(refusal);
+
+        var (csv, exportRefusal) = await host.Service.ExportRecordAsync(saved.Id);
+
+        Assert.Null(exportRefusal);
+        Assert.Contains("note,,,\"first\n=2+2\"\n", csv, StringComparison.Ordinal);
     }
 
     [Fact]

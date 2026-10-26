@@ -47,7 +47,13 @@ public sealed record RecordProvenanceInput(
 
             if (text.Length > CalcDataRecord.MaxTextLength)
                 return $"The provenance's {field} is longer than {CalcDataRecord.MaxTextLength} characters.";
+
+            if (RecordText.HasControlCharacter(text))
+                return $"The provenance's {field} holds a line break or other control character. Put it on one line.";
         }
+
+        if (RecordText.HasControlCharacter(Amendment))
+            return "The provenance's amendment holds a line break or other control character. Put it on one line.";
 
         if (Amendment?.Length > CalcDataRecord.MaxTextLength)
             return $"The provenance's amendment is longer than {CalcDataRecord.MaxTextLength} characters.";

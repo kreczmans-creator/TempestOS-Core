@@ -132,6 +132,12 @@ public sealed class RecordImportService
         {
             var row = table.Rows[r];
             var line = table.Lines[r];
+            if (new[] { "kind", "title", "source_title", "edition", "amendment", "table_or_clause", "licence_holder", "entered_by", "notes" }.FirstOrDefault(name => RecordText.HasControlCharacter(Cell(row, name))) is { } broken)
+            {
+                issues.Add($"Line {line}: {broken} holds a line break or other control character. Put it on one line.");
+                continue;
+            }
+
             var licensedText = Cell(row, "licensed_source");
             bool licensed;
 
@@ -680,7 +686,9 @@ public sealed class RecordImportService
         {
             case RecordColumnKind.Text:
             case RecordColumnKind.Choice:
-                if (CsvSafeWriter.IsFormulaLike(cell.Raw))
+                if (RecordText.HasControlCharacter(cell.Raw))
+                    row.Add(RecordSeverity.Error, column.Symbol, $"{column.Symbol}: the text on line {row.Line} holds a line break or other control character. Put it on one line.");
+                else if (CsvSafeWriter.IsFormulaLike(cell.Raw))
                     row.Add(RecordSeverity.Error, column.Symbol, $"{column.Symbol}: '{Clip(cell.Raw)}' starts with = + - or @, which a spreadsheet would read as a formula. Remove the sign.");
                 else if (cell.Raw.Length > CalcDataRecord.MaxTextLength)
                     row.Add(RecordSeverity.Error, column.Symbol, $"{column.Symbol}: the text is longer than {CalcDataRecord.MaxTextLength} characters.");

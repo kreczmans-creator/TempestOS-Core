@@ -404,6 +404,7 @@ public sealed partial class CalcInstanceService
     internal static string Csv(string text)
     {
         var clean = CalcCsv.IsFormulaLike(text) ? "'" + text : text;
-        return clean.Contains(',', StringComparison.Ordinal) || clean.Contains('"', StringComparison.Ordinal) ? $"\"{clean.Replace("\"", "\"\"", StringComparison.Ordinal)}\"" : clean;
+        // A value with a line break is quoted too: unquoted it would end the row, and what follows would start a row of its own (C-3 review, finding 2).
+        return clean.IndexOfAny([',', '"', '\r', '\n']) >= 0 ? $"\"{clean.Replace("\"", "\"\"", StringComparison.Ordinal)}\"" : clean;
     }
 }

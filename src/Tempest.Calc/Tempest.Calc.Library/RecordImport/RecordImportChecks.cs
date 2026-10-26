@@ -3,6 +3,26 @@ using Tempest.Calc.Engine.Units;
 
 namespace Tempest.Calc.Library;
 
+/// <summary>The one rule about what a text cell of a record file may hold, shared by the importer, the provenance file and the provenance typed on the screen.</summary>
+internal static class RecordText
+{
+    /// <summary>
+    /// Whether the text holds a line break, a tab or any other control character, or a Unicode line or paragraph separator. A text cell is one
+    /// line: a formula behind a line break is not at the start of the cell, so the formula check would miss it, and a spreadsheet or a
+    /// line-based tool reading an export would take it as a row of its own.
+    /// </summary>
+    public static bool HasControlCharacter(string? text)
+    {
+        foreach (var c in text ?? string.Empty)
+        {
+            if (char.IsControl(c) || c is '\u2028' or '\u2029')
+                return true;
+        }
+
+        return false;
+    }
+}
+
 /// <summary>One cell of the file as read: the text, and the number or flag it holds when the column takes one.</summary>
 internal sealed class ParsedCell
 {
