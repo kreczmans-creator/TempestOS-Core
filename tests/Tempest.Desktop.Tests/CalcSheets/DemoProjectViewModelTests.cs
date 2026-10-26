@@ -325,6 +325,81 @@ public sealed class DemoProjectViewModelTests
         }
     }
 
+    /// <summary>A demo service that says it is installed and whose removal does whatever the test says: what a store failing under the real one looks like from the screen.</summary>
+    private sealed class ScriptedDemo(WorkspaceHost host, Func<Task<CalcDemoOutcome>> remove)
+        : CalcDemoProjectService(host.CalcInstances!, Resolve<EngineeringDomainContext>(host), [])
+    {
+        public override Task<CalcDemoStatus> StatusAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(new CalcDemoStatus(true, Guid.NewGuid(), "installed already"));
+
+        public override Task<CalcDemoOutcome> RemoveAsync(CancellationToken cancellationToken = default) => remove();
+    }
+
+    [AvaloniaFact]
+    public async Task A_Removal_That_Fails_In_The_Engineering_Domain_Is_Said_In_A_Sentence_And_The_Section_Refreshes_And_Reports()
+    {
+        var host = await StartAsync();
+
+        try
+        {
+            var outcomes = new List<(string Message, ActionOutcome Outcome)>();
+            var model = new DemoProjectViewModel(new ScriptedDemo(host, () => throw new EngineeringDomainException("The object could not be marked deleted")), new Asked(true).Confirm);
+            model.Completed += (message, outcome) => outcomes.Add((message, outcome));
+
+            // Nothing escapes: the exception is a sentence, the section is not left busy, and the shell is told (so it refreshes what the act may have changed).
+            await model.RemoveAsync();
+
+            var done = Assert.Single(outcomes);
+            Assert.False(done.Outcome.Succeeded);
+            Assert.True(done.Outcome.WorkspaceChanged);
+            Assert.Contains("The object could not be marked deleted", done.Message, StringComparison.Ordinal);
+            Assert.Equal(done.Message, model.Status);
+            Assert.False(model.IsBusy);
+            Assert.True(model.IsInstalled);
+            Assert.True(model.CanRemove);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task A_Removal_That_Stopped_Part_Way_Tells_The_Shell_The_Workspace_Changed_And_Says_What_To_Press()
+    {
+        var host = await StartAsync();
+
+        try
+        {
+            var outcomes = new List<(string Message, ActionOutcome Outcome)>();
+            var half = new CalcDemoOutcome(false, "The demo's calculations were removed; finishing the removal failed — press Remove demo project again.", 60, 13, PartlyDone: true);
+            var model = new DemoProjectViewModel(new ScriptedDemo(host, () => Task.FromResult(half)), new Asked(true).Confirm);
+            model.Completed += (message, outcome) => outcomes.Add((message, outcome));
+
+            await model.RemoveAsync();
+
+            var done = Assert.Single(outcomes);
+            Assert.Equal(half.Message, done.Message);
+            Assert.False(done.Outcome.Succeeded);
+            Assert.True(done.Outcome.WorkspaceChanged);
+            Assert.Equal(half.Message, model.Status);
+            Assert.True(model.CanRemove);
+
+            // A plain refusal changed nothing, so the shell is not told to rebuild.
+            var refused = new CalcDemoOutcome(false, "The demo project was not removed: the evidence 'X' is issued, and issued evidence is never deleted.");
+            var cautious = new DemoProjectViewModel(new ScriptedDemo(host, () => Task.FromResult(refused)), new Asked(true).Confirm);
+            cautious.Completed += (message, outcome) => outcomes.Add((message, outcome));
+            await cautious.RemoveAsync();
+            Assert.Equal(ActionOutcome.Failed, outcomes[^1].Outcome);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
     [AvaloniaFact]
     public async Task The_Settings_Section_Is_Absent_Unless_The_Host_Composed_The_Demo_Service()
     {

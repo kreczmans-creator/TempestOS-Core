@@ -66,7 +66,7 @@ public sealed class DemoProjectViewModel
 
     /// <summary>What an install makes, in a sentence, for the section's text.</summary>
     public static string About { get; } =
-        $"{CalcDemoProject.DisplayName} is an invented press cell with every linked chain this build ships, 13 packs of draft calculations built from invented data. "
+        $"{CalcDemoProject.DisplayName} is an invented press cell with every linked chain this build ships, 13 packs of draft calculations built from invented data (one published steel section's dimensions aside, marked indicative). "
         + "Every sheet of it says DEMO. Install it to try the application; remove it when you are done. It is never installed unless you ask, and removing it leaves every other project untouched.";
 
     /// <summary>Reads whether the demonstration is installed (on landing in Settings, and after every act).</summary>
@@ -117,7 +117,7 @@ public sealed class DemoProjectViewModel
 
         var agreed = await _confirm(
             InstallConfirmTitle,
-            $"Add the project '{CalcDemoProject.DisplayName}' to this database? It holds about sixty draft calculations in 13 packs, all built from invented data, every sheet marked DEMO. "
+            $"Add the project '{CalcDemoProject.DisplayName}' to this database? It holds about sixty draft calculations in 13 packs, all built from invented data (one published steel section's dimensions aside, marked indicative), every sheet marked DEMO. "
             + "Nothing else in your data is changed, and you can remove it again from Settings.",
             "Install").ConfigureAwait(true);
 
@@ -202,14 +202,24 @@ public sealed class DemoProjectViewModel
         {
             outcome = new CalcDemoOutcome(false, "The demo project act was cancelled; whatever it had started was undone.");
         }
-        catch (Exception ex) when (ex is InvalidOperationException or IOException or Tempest.Core.Persistence.PersistenceException)
+        catch (Exception ex)
         {
-            // The service reports its own refusals as outcomes; this is the store itself failing, said without a stack trace.
-            outcome = new CalcDemoOutcome(false, $"The demo project act failed ({ex.Message.TrimEnd('.')}); nothing more was done.");
+            // The service reports its own refusals as outcomes; this is anything else (the store, the engineering domain) failing, said without a stack trace.
+            // Whatever it was, the section is refreshed and the shell told below, because the act may have changed some of what is stored before it failed.
+            outcome = new CalcDemoOutcome(false, $"The demo project act failed ({ex.Message.TrimEnd('.')}); press the action again, or check the demo project in the Project Explorer.", PartlyDone: true);
         }
 
-        await RefreshAsync(CancellationToken.None).ConfigureAwait(true);
-        Finish(outcome.Message, outcome.Succeeded ? ActionOutcome.Changed : ActionOutcome.Failed);
+        try
+        {
+            await RefreshAsync(CancellationToken.None).ConfigureAwait(true);
+        }
+        catch (Exception)
+        {
+            // The store that just failed may fail to be read too: the sentence of the act is still told, and the next refresh reads it again.
+        }
+
+        // An act that stopped part-way still changed the workspace: the shell refreshes its lists although the act did not succeed.
+        Finish(outcome.Message, outcome.Succeeded ? ActionOutcome.Changed : outcome.PartlyDone ? new ActionOutcome(false, true) : ActionOutcome.Failed);
     }
 
     private void Finish(string message, ActionOutcome outcome)
