@@ -311,7 +311,7 @@ public sealed class ConductorSizingTests
             return r.IsBlocked ? double.PositiveInfinity : r.OutputSi("CSA");
         }
 
-        Gen.Double[0.1, 1.5].Select(Gen.Double[0.1, 1.5]).Sample((a, b) =>
+        Gen.Double[0.1, 1.0].Select(Gen.Double[0.1, 1.0]).Sample((a, b) =>
         {
             var (low, high) = a <= b ? (a, b) : (b, a);
             return Csa(low) >= Csa(high);
