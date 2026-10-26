@@ -27,7 +27,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   N_g | Grouped circuits | 2 |  | manual | 1 … 20
   system | Conductor system (AWG: geometry only, no AWG capacities are supplied) | metric |  | manual | any
   device | Protective device | MCB type C |  | manual | any
-  C_a | Ambient correction factor | 0.91 |  | manual | 0.1 … 1.5
+  C_a | Ambient correction factor (1 does not apply the ambient: enter the factor for θ_a from your licensed table) | 0.91 |  | manual | 0.1 … 1.5
   C_g | Grouping correction factor | 0.77 |  | manual | 0.1 … 1.5
   C_i | Thermal insulation correction factor | 1 |  | manual | 0.1 … 1.5
   derive_Ca | Derive C_a from the temperatures instead of the entered factor | no |  | manual | any
@@ -77,35 +77,35 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
       = MCB type C
       = 1
         Semi-enclosed fuse factor
-  [21] I_t_req = I_n / (C_a * C_g * C_i * C_c)    « BS EN 60204-1 cl. 12.4
+  [22] I_t_req = I_n / (C_a * C_g * C_i * C_c)    « BS EN 60204-1 cl. 12.4
       = 16 A / (0.91 × 0.77 × 1 × 1)
       = 22.834 A
         Required tabulated capacity
-  [22] I_t = I_t of the selected row of the ampacity record    « BS EN 60204-1 cl. 12.4
+  [23] I_t = I_t of the selected row of the ampacity record    « BS EN 60204-1 cl. 12.4
       = I_t,req = 22.834 A
       = 24.1 A
         Tabulated current-carrying capacity of the selected conductor
-  [23] CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req    « BS EN 60204-1 cl. 12.4
+  [24] CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req    « BS EN 60204-1 cl. 12.4
       = I_t,req = 22.834 A
       = 4 mm²
         Selected conductor cross-section
-  [24] I_z = I_t * C_a * C_g * C_i    « BS EN 60204-1 cl. 12.4
+  [25] I_z = I_t * C_a * C_g * C_i    « BS EN 60204-1 cl. 12.4
       = 24.1 A × 0.91 × 0.77 × 1
       = 16.887 A
         Current-carrying capacity in the installed conditions
-  [25] u_Ib = I_b / I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [26] u_Ib = I_b / I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 14.151 A / 16 A
       = 0.88442
         Design current utilisation of the device
-  [26] u_In = I_n / I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [27] u_In = I_n / I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 16 A / 16.887 A
       = 0.94748
         Device rating utilisation of the conductor
-  [27] I2 = 1.45 * I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [28] I2 = 1.45 * I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 1.45 × 16 A
       = 23.2 A
         Conventional operating current (inherent 1.45 I_n)
-  [28] u_I2 = I2 / (1.45 * I_z)    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [29] u_I2 = I2 / (1.45 * I_z)    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 23.2 A / (1.45 × 16.887 A)
       = 0.94748
         I₂ utilisation of 1.45 I_z
@@ -134,5 +134,5 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   WARNING record: Tabulated values not taken from a reference record: ampacity (Cable current-carrying capacities); C_a, C_g, C_i (Cable correction factors); ratings (Preferred device ratings). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.conductor-sizing@1.1.1
+  Template: elec.conductor-sizing@1.2.0
   Known-answer cases passed: 6/6

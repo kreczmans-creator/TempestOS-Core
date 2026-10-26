@@ -2,13 +2,13 @@ CALCULATION SHEET — ISSUED
 Project: Press 5 hydraulic power unit
 Calc ID: Motor supply fault protection    Revision: A
 Title: Fault protection: Zs, disconnection, adiabatic, fault level
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: HPU-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: HPU-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Automatic disconnection of supply in a TN system for one circuit: the earth fault loop impedance at the conductor's operating temperature against the device's maximum, the disconnection time, the protective conductor (and line conductor) against the adiabatic minimum, and the prospective three-phase fault at the origin against the device's breaking capacity.
-Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95 Maximum loop impedance: Z_s,max = C_min·U_0/I_a; I_a = 5, 10 or 20·I_n for MCB types B, C, D, or read from the time–current points at t_req (log-log) Adiabatic conductor check: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); I²t = I_f²·t_d from 0.1 s; below 0.1 s the device's let-through I²t at the maximum prospective fault (the line conductor check, reg. 434.5.2, needs it and is not made without it; the protective conductor check then uses I_f²·0.1 s at the end-of-line fault only) Protective device check: the device chosen here must be the one carried from the cable step (device_code 1 = MCB B, 2 = C, 3 = D, 4 = fuse or MCCB), else the sheet is blocked Fault level (simplified): Z_T = u_k·U_n²/S_r, I_k3 = c·U_n/(√3·Z_T), U_n = √3·U_0
+Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/S (k_R = 1.125 takes the pure-copper ρ_20 to the cable standard's maximum conductor resistance; k enters with the pure ρ_20) Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95 Maximum loop impedance: Z_s,max = C_min·U_0/I_a; I_a = 5, 10 or 20·I_n for MCB types B, C, D, or read from the time–current points at t_req (log-log) Adiabatic conductor check: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); I²t = I_f²·t_d from 0.1 s; below 0.1 s the device's let-through I²t at the maximum prospective fault, which bounds the protective and the line conductor at the origin where the earth-fault current is largest (reg. 434.5.2, 543.1.3); without it neither is checked at the origin, the sheet fails 'Conductors against let-through at the origin' and the protective conductor check uses I_f²·0.1 s at the end-of-line fault only Protective device check: the device chosen here must be the one carried from the cable step (device_code 1 = MCB B, 2 = C, 3 = D, 4 = fuse or MCCB), else the sheet is blocked Fault level (simplified): Z_T = u_k·U_n²/S_r, I_k3 = c·U_n/(√3·Z_T), U_n = √3·U_0
   Ref: BS 7671:2018 (as amended) reg. 411.3.2.2, 411.3.2.3, 411.4.4 — Automatic disconnection in TN systems: times and the loop impedance condition
   Ref: BS 7671:2018 (as amended) reg. 543.1.3, 434.5.2 — Protective conductor and fault current adiabatic checks
   Ref: BS EN 60204-1:2018 cl. 6.3.3 — Protection by automatic disconnection of supply
@@ -24,9 +24,10 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
   c_max | Voltage factor c for the maximum fault | 1.1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.1
   L | Circuit length | 30 | m | link: Motor supply cable rev A · L | 0.1 … 1000 m
   S_line | Line conductor cross-section | 10 | mm^2 | link: Motor supply cable rev A · CSA | 0.5 … 630 mm^2
-  S_cpc | Protective conductor cross-section | 10 | mm^2 | spec: SPEC-HPU-05 §6 (earthing and protection) | 0.5 … 630 mm^2
+  S_cpc | Protective conductor cross-section | 10 | mm^2 | link: Motor supply cable rev A · CSA | 0.5 … 630 mm^2
   theta | Conductor temperature for Z_s | 70 | degC | assumption: Sheet default value; no project figure given. | 20 … 90 degC
-  rho_20 | Resistivity at 20 °C | 0.000017241 | ohm*mm | assumption: Sheet default value; no project figure given. | 0.000001 … 0.0001 ohm*mm
+  rho_20 | Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R) | 0.000017241 | ohm*mm | assumption: Sheet default value; no project figure given. | 0.000001 … 0.0001 ohm*mm
+  k_R | Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the cable standard's maximum conductor resistances are 5 to 12 % above pure copper, so the default is 1.125 and Z_s is not understated; k is not changed by it) | 1.125 |  | assumption: Sheet default value; no project figure given. | 1 … 1.5
   alpha | Temperature coefficient of resistance | 0.00393 | 1/K | assumption: Sheet default value; no project figure given. | 0.001 … 0.01 1/K
   Q_c | Volumetric heat capacity | 0.00345 | J/(K*mm^3) | assumption: Sheet default value; no project figure given. | 0.001 … 0.01 J/(K*mm^3)
   beta | Reciprocal temperature coefficient β | 234.5 | K | assumption: Sheet default value; no project figure given. | 100 … 400 K
@@ -49,95 +50,96 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
   A7. C_min (Voltage factor C_min) is taken as 0.95. (Sheet default value; no project figure given.)
   A8. c_max (Voltage factor c for the maximum fault) is taken as 1.1. (Sheet default value; no project figure given.)
   A9. theta (Conductor temperature for Z_s) is taken as 70 degC. (Sheet default value; no project figure given.)
-  A10. rho_20 (Resistivity at 20 °C) is taken as 0.000017241 ohm*mm. (Sheet default value; no project figure given.)
-  A11. alpha (Temperature coefficient of resistance) is taken as 0.00393 1/K. (Sheet default value; no project figure given.)
-  A12. Q_c (Volumetric heat capacity) is taken as 0.00345 J/(K*mm^3). (Sheet default value; no project figure given.)
-  A13. beta (Reciprocal temperature coefficient β) is taken as 234.5 K. (Sheet default value; no project figure given.)
-  A14. theta_i (Initial temperature for the adiabatic check) is taken as 70 degC. (Sheet default value; no project figure given.)
-  A15. theta_f (Final temperature for the adiabatic check) is taken as 160 degC. (Sheet default value; no project figure given.)
+  A10. rho_20 (Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R)) is taken as 0.000017241 ohm*mm. (Sheet default value; no project figure given.)
+  A11. k_R (Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the cable standard's maximum conductor resistances are 5 to 12 % above pure copper, so the default is 1.125 and Z_s is not understated; k is not changed by it)) is taken as 1.125. (Sheet default value; no project figure given.)
+  A12. alpha (Temperature coefficient of resistance) is taken as 0.00393 1/K. (Sheet default value; no project figure given.)
+  A13. Q_c (Volumetric heat capacity) is taken as 0.00345 J/(K*mm^3). (Sheet default value; no project figure given.)
+  A14. beta (Reciprocal temperature coefficient β) is taken as 234.5 K. (Sheet default value; no project figure given.)
+  A15. theta_i (Initial temperature for the adiabatic check) is taken as 70 degC. (Sheet default value; no project figure given.)
+  A16. theta_f (Final temperature for the adiabatic check) is taken as 160 degC. (Sheet default value; no project figure given.)
 
 4. WORKING
-  [19] R_12 = rho_20 * L * (1 / S_line + 1 / S_cpc) * (1 + alpha * (theta - 20 degC))
-      = 0.000017241 ohm·mm × 30 m × (1 / 10 mm² + 1 / 10 mm²) × (1 + 0.00393 1/K × (70 degC − 20 degC))
-      = 0.12377 ohm
+  [20] R_12 = rho_20 * k_R * L * (1 / S_line + 1 / S_cpc) * (1 + alpha * (theta - 20 degC))
+      = 0.000017241 ohm·mm × 1.125 × 30 m × (1 / 10 mm² + 1 / 10 mm²) × (1 + 0.00393 1/K × (70 degC − 20 degC))
+      = 0.13924 ohm
         R₁ + R₂ at the conductor temperature
-  [20] Z_s = Z_e + R_12    « BS 7671 reg. 411.4.4
-      = 0.05 ohm + 0.12377 ohm
-      = 0.17377 ohm
+  [21] Z_s = Z_e + R_12    « BS 7671 reg. 411.4.4
+      = 0.05 ohm + 0.13924 ohm
+      = 0.18924 ohm
         Earth fault loop impedance
-  [21] I_f = C_min * U_0 / Z_s
-      = 0.95 × 230 V / 0.17377 ohm
-      = 1257.4 A
+  [22] I_f = C_min * U_0 / Z_s
+      = 0.95 × 230 V / 0.18924 ohm
+      = 1154.6 A
         Earth fault current
-  [22] I_a = 10 * I_n    « BS EN 60898-1
+  [23] I_a = 10 * I_n    « BS EN 60898-1
       = 10 × 40 A
       = 400 A
         Instantaneous tripping current (10 I_n)
-  [23] Z_s_max = C_min * U_0 / I_a    « BS 7671 reg. 411.4.4
+  [24] Z_s_max = C_min * U_0 / I_a    « BS 7671 reg. 411.4.4
       = 0.95 × 230 V / 400 A
       = 0.54625 ohm
         Maximum earth fault loop impedance
-  [24] u_Zs = Z_s / Z_s_max
-      = 0.17377 ohm / 0.54625 ohm
-      = 0.31812
+  [25] u_Zs = Z_s / Z_s_max
+      = 0.18924 ohm / 0.54625 ohm
+      = 0.34644
         Loop impedance utilisation
-  [25] Z_test = 0.8 * Z_s_max
+  [26] Z_test = 0.8 * Z_s_max
       = 0.8 × 0.54625 ohm
       = 0.437 ohm
         Field-test maximum at ambient (0.8 × Z_s,max, rule of thumb)
-  [26] t_d = instantaneous region (I_f ≥ I_a): t ≤ 0.1 s
-      = I_f = 1257.4 A
+  [27] t_d = instantaneous region (I_f ≥ I_a): t ≤ 0.1 s
+      = I_f = 1154.6 A
       = 0.1 s
         Disconnection time
-  [28] I2t = device let-through I²t at the maximum prospective fault
+  [29] I2t = device let-through I²t at the maximum prospective fault
       = 80000 A²s
       = 80000 A²·s
         Fault energy (let-through below 0.1 s)
-  [29] k = √[Q_c(β + 20)/ρ₂₀ · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived)    « BS 7671 reg. 543.1.3
+  [30] k = √[Q_c(β + 20)/ρ₂₀ · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived)    « BS 7671 reg. 543.1.3
       = √[0.00345 × 254.5 / 0.000017241 × ln(1 + 90/304.5)]
       = 114.84
         Adiabatic factor k, A·√s/mm² (derived, compare with the licensed table)
-  [30] S_min = √(I²t)/k    « BS 7671 reg. 543.1.3, 434.5.2
+  [31] S_min = √(I²t)/k    « BS 7671 reg. 543.1.3, 434.5.2
       = √80000 / 114.84
       = 2.463 mm²
         Minimum conductor cross-section (adiabatic)
-  [31] u_cpc = S_min / S_cpc
+  [32] u_cpc = S_min / S_cpc
       = 2.463 mm² / 10 mm²
       = 0.2463
         Protective conductor utilisation
-  [32] u_line = S_min / S_line
+  [33] u_line = S_min / S_line
       = 2.463 mm² / 10 mm²
       = 0.2463
         Line conductor utilisation (same fault energy)
-  [35] U_n = sqrt(3) * U_0
+  [36] U_n = sqrt(3) * U_0
       = sqrt(3) × 230 V
       = 398.37 V
         Line voltage
-  [36] Z_T = u_k * U_n^2 / S_r
+  [37] Z_T = u_k * U_n^2 / S_r
       = 4 % × (398.37 V)^2 / 400 kVA
       = 0.01587 ohm
         Transformer impedance
-  [37] I_k3 = c_max * U_n / (sqrt(3) * Z_T)    « IEC 60909-0 cl. 5.3
+  [38] I_k3 = c_max * U_n / (sqrt(3) * Z_T)    « IEC 60909-0 cl. 5.3
       = 1.1 × 398.37 V / (sqrt(3) × 0.01587 ohm)
       = 15.942 kA
         Prospective three-phase fault at the origin (simplified)
-  [38] c_k3 = c_max    « IEC 60909-0 cl. 5.3
+  [39] c_k3 = c_max    « IEC 60909-0 cl. 5.3
       = 1.1
       = 1.1
         Voltage factor c of the prospective fault current
-  [40] u_Icn = I_k3 / I_cn
+  [41] u_Icn = I_k3 / I_cn
       = 15.942 kA / 25 kA
       = 0.63768
         Breaking capacity utilisation
 
 5. RESULTS
-  R_12 = 0.12377 ohm    R₁ + R₂
-  Z_s = 0.17377 ohm    Loop impedance
-  I_f = 1257.4 A    Earth fault current
+  R_12 = 0.13924 ohm    R₁ + R₂
+  Z_s = 0.18924 ohm    Loop impedance
+  I_f = 1154.6 A    Earth fault current
   I_a = 400 A    Disconnection current
   t_d = 0.1 s    Disconnection time
   Z_s_max = 0.54625 ohm    Maximum loop impedance
-  u_Zs = 0.31812    Loop impedance utilisation
+  u_Zs = 0.34644    Loop impedance utilisation
   Z_test = 0.437 ohm    Field-test maximum (rule of thumb)
   k = 114.84    Adiabatic k (derived)
   S_min = 2.463 mm²    Minimum cross-section
@@ -150,18 +152,18 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
 
 6. CHECKS (governing first)
   PASS  Breaking capacity against prospective fault: u_Icn = 0.63768 vs u_Icn ≤ 1  utilisation 0.638
-  PASS  Loop impedance within maximum (disconnection in time): u_Zs = 0.31812 vs u_Zs ≤ 1  utilisation 0.318  « BS 7671 reg. 411.4.4
+  PASS  Loop impedance within maximum (disconnection in time): u_Zs = 0.34644 vs u_Zs ≤ 1  utilisation 0.346  « BS 7671 reg. 411.4.4
   PASS  Disconnection time within required: 0.1 s vs 0.4 s  utilisation 0.25  « BS 7671 reg. 411.3.2.2
   PASS  Protective conductor against adiabatic minimum: u_cpc = 0.2463 vs u_cpc ≤ 1  utilisation 0.246  « BS 7671 reg. 543.1.3
   PASS  Line conductor against adiabatic minimum: u_line = 0.2463 vs u_line ≤ 1  utilisation 0.246  « BS 7671 reg. 434.5.2
 
 7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: rho_20, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let, I_cn (Device time–current points). Enter each as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: rho_20, k_R, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let, I_cn (Device time–current points). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.fault-protection@1.2.1
-  Content hash: b8f2af25892a73e4
+  Template: elec.fault-protection@1.3.0
+  Content hash: 52adab0302839136
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 5/5
-  Test run: 2026-10-25 21:13 UTC
+  Known-answer cases passed: 6/6
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test

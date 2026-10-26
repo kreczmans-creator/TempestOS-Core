@@ -8,7 +8,7 @@ Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
-Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack). Load inertia reflected to the motor through a linear mechanism: J_refl = m k²/η. Load torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p. Reflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η). Move profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc. Move profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap. Torque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load. Alternating torque amplitude of a point-to-point cycle about T_load, for a shaft's fatigue: T_alt = (T_pk − T_dec)/2 (0 in continuous duty). Torque behind the ratio on the output shaft of a rotary mechanism: T_out = T·i·η (mean, alternating and peak), n_out = n_pk/i. Peak axial thrust of a ball screw on its support bearings: F_ax_pk = F_load + m a_pk (0 for other mechanisms). RMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle). RMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²]. Continuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i. Continuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load. Peak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load. Continuous power: P_cont = T_load ω; P_rms = P_cont. Rated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60.
+Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack). Load inertia reflected to the motor through a linear mechanism: J_refl = m k²/η. Load torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p. Reflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η). Move profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc. Move profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap. Torque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load; deceleration T_dec = −T_acc + T_load; the peak check is on the larger magnitude, SF·max(|T_pk|, |T_dec|) ≤ T_peak, and the braking power is P_brake = max(0, −T_dec·ω_pk). Design torque for a coupling or any part downstream that must carry what the drive can deliver, on the basis the owner chooses (T_basis): the load peak T_design = T_pk (default), the motor peak T_design = T_peak, a service factor on the rated torque T_design = SF_c·T_rated, or a protective limit T_design = T_lim (a torque limiter or a drive setting). Holding torque in the dwell of a linear mechanism that is not held by a brake: T_hold = m g sin θ·k (efficiency not credited: it is a torque to stand still); it is part of the RMS torque for the whole dwell. Alternating torque amplitude of a point-to-point cycle about T_load, for a shaft's fatigue: T_alt = (T_pk − T_dec)/2 (0 in continuous duty). Torque behind the ratio on the output shaft of a rotary mechanism: T_out = T·i·η (mean, alternating and peak), n_out = n_pk/i. Peak axial thrust of a ball screw on its support bearings: F_ax_pk = F_load + m a_pk (0 for other mechanisms). RMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle), the dwell at T_hold. RMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²]. Continuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i. Continuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load. Peak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load. Continuous power: P_cont = T_load ω; P_rms = P_cont; continuous duty needs the steady load torque T_L (blank or zero is refused: it would size the motor for no load). Rated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60; check P_cont ≤ P_rated, u_power = P_cont/P_rated.
   Ref: Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection — Load torque, inertia referred to the motor, duty cycles
   Ref: Manufacturer servo-sizing guides (Kollmorgen, Parker) — Reflected inertia, RMS torque, inertia ratio practice
 
@@ -24,7 +24,8 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   theta | Incline from horizontal (+ moving uphill) | 0 | deg | assumption: Sheet default value; no project figure given. | -90 … 90 deg
   F_p | Process force opposing the move (linear) | 0 | N | assumption: Sheet default value; no project figure given. | 0 … 1000000 N
   J_L | Load inertia at the output (rotary mechanisms) | 4 | kg*m^2 | spec: SPEC-CNV-07 §3 (conveyor duty) | 0 … 10000 kg*m^2
-  T_L | Constant load torque at the output (rotary) | 1800 | N*m | spec: SPEC-CNV-07 §3 (conveyor duty) | 0 … 100000 N*m
+  brake | A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor | no |  | assumption: Sheet default value; no project figure given. | any
+  T_L | Constant load torque at the output (rotary; continuous duty needs it: blank or zero is refused) | 1800 | N*m | spec: SPEC-CNV-07 §3 (conveyor duty) | 0 … 100000 N*m
   duty_mode | Duty (point-to-point move cycle, or continuous rotary running with a run-up) | continuous |  | spec: SPEC-CNV-07 §3 (conveyor duty) | any
   n_L | Load speed at the output (continuous duty) | 118 | rpm | spec: SPEC-CNV-07 §3 (conveyor duty) | 1 … 100000 rpm
   t_start | Run-up time to full speed (continuous duty) | 3 | s | spec: SPEC-CNV-07 §3 (conveyor duty) | 0.1 … 600 s
@@ -37,6 +38,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   T_rated | Candidate motor continuous (rated) torque | 200 | N*m | spec: SPEC-CNV-07 §3 (conveyor duty) | 0.01 … 100000 N*m
   T_peak | Candidate motor peak torque | 400 | N*m | spec: SPEC-CNV-07 §3 (conveyor duty) | 0.01 … 100000 N*m
   n_rated | Candidate motor rated (nameplate) speed, with the rated torque the rated power P_rated = T_rated·ω_rated (continuous duty; leave blank if not known: there is then no P_rated) | 1480 | rpm | spec: SPEC-CNV-07 §3 (conveyor duty) | 10 … 100000 rpm
+  T_basis | Design torque basis for downstream couplings (T_design): the load's peak, the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter | Load peak (T_pk) |  | assumption: Sheet default value; no project figure given. | any
   n_max | Candidate motor maximum speed | 3000 | rpm | spec: SPEC-CNV-07 §3 (conveyor duty) | 10 … 100000 rpm
   SF | Safety margin on torque | 1.25 |  | assumption: Sheet default value; no project figure given. | 1 … 3
   J_ratio_max | Inertia ratio limit (load : motor), warning | 10 |  | assumption: Sheet default value; no project figure given. | 1 … 100
@@ -51,13 +53,15 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   A7. mu (Friction coefficient (guide / bearing)) is taken as 0.1. (Sheet default value; no project figure given.)
   A8. theta (Incline from horizontal (+ moving uphill)) is taken as 0 deg. (Sheet default value; no project figure given.)
   A9. F_p (Process force opposing the move (linear)) is taken as 0 N. (Sheet default value; no project figure given.)
-  A10. profile (Motion profile) is taken as trapezoidal. (Sheet default value; no project figure given.)
-  A11. s (Move distance (linear: m; rotary: output revolutions)) is taken as 0.5. (Sheet default value; no project figure given.)
-  A12. t_move (Move time) is taken as 0.5 s. (Sheet default value; no project figure given.)
-  A13. f_acc (Acceleration (and deceleration) fraction of the move time) is taken as 0.333333. (Sheet default value; no project figure given.)
-  A14. t_dwell (Dwell between moves) is taken as 0.5 s. (Sheet default value; no project figure given.)
-  A15. SF (Safety margin on torque) is taken as 1.25. (Sheet default value; no project figure given.)
-  A16. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sheet default value; no project figure given.)
+  A10. brake (A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor) is taken as no. (Sheet default value; no project figure given.)
+  A11. profile (Motion profile) is taken as trapezoidal. (Sheet default value; no project figure given.)
+  A12. s (Move distance (linear: m; rotary: output revolutions)) is taken as 0.5. (Sheet default value; no project figure given.)
+  A13. t_move (Move time) is taken as 0.5 s. (Sheet default value; no project figure given.)
+  A14. f_acc (Acceleration (and deceleration) fraction of the move time) is taken as 0.333333. (Sheet default value; no project figure given.)
+  A15. t_dwell (Dwell between moves) is taken as 0.5 s. (Sheet default value; no project figure given.)
+  A16. T_basis (Design torque basis for downstream couplings (T_design): the load's peak, the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter) is taken as Load peak (T_pk). (Sheet default value; no project figure given.)
+  A17. SF (Safety margin on torque) is taken as 1.25. (Sheet default value; no project figure given.)
+  A18. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sheet default value; no project figure given.)
 
 4. WORKING
   [19] k = 1 / i
@@ -99,62 +103,76 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   [28] T_alt = 0 N*m
       = 0 N·m
         Alternating torque amplitude: none, continuous running is steady (the run-up is a rare peak, T_pk)
-  [29] F_ax_pk = 0 N
+  [30] T_design = T_pk
+      = 159.25 N·m
+      = 159.25 N·m
+        Design torque: the load's peak torque (run-up included)
+  [31] F_ax_pk = 0 N
       = 0 N
         Peak axial thrust on the bearings (none for a rotary mechanism)
-  [30] n_pk = omega_pk
+  [32] T_hold = 0 N*m
+      = 0 N·m
+        Holding torque in the dwell: none, continuous running has no dwell
+  [33] P_brake = 0 kW
+      = 0 kW
+        Peak braking power: none in continuous duty
+  [34] n_pk = omega_pk
       = 154.46 rad/s
       = 1475 rpm
         Motor speed
-  [31] T_out_m = T_load * i * eta
+  [35] T_out_m = T_load * i * eta
       = 151.58 N·m × 12.5 × 0.95
       = 1800 N·m
         Mean torque on the output shaft (the constant load torque)
-  [32] T_out_a = T_alt * i * eta
+  [36] T_out_a = T_alt * i * eta
       = 0 N·m × 12.5 × 0.95
       = 0 N·m
         Alternating torque amplitude on the output shaft
-  [33] T_out_pk = T_pk * i * eta
+  [37] T_out_pk = T_pk * i * eta
       = 159.25 N·m × 12.5 × 0.95
       = 1891.1 N·m
         Peak torque on the output shaft (the motor rotor's inertia torque is counted, so conservative)
-  [34] n_out = n_pk / i
+  [38] n_out = n_pk / i
       = 1475 rpm / 12.5
       = 118 rpm
         Output shaft speed
-  [35] P_cont = T_load * omega_pk
+  [39] P_cont = T_load * omega_pk
       = 151.58 N·m × 154.46 rad/s
       = 23413 W
         Continuous shaft power at the motor
-  [37] P_rated = T_rated * n_rated
+  [41] P_rated = T_rated * n_rated
       = 200 N·m × 1480 rpm
       = 30997 W
         Rated (nameplate) shaft power of the candidate motor: its rated torque times its rated speed
-  [38] P_pk = T_pk * omega_pk
+  [42] u_power = P_cont / P_rated
+      = 23413 W / 30997 W
+      = 0.75533
+        Continuous shaft power against the rated power of the candidate motor
+  [43] P_pk = T_pk * omega_pk
       = 159.25 N·m × 154.46 rad/s
       = 24.598 kW
         Peak mechanical power (end of the run-up)
-  [39] P_rms = P_cont
+  [44] P_rms = P_cont
       = 23413 W
       = 23.413 kW
         RMS mechanical power: the steady running power (thermal-equivalent continuous power)
-  [40] J_ratio = (J_refl + J_mech) / J_motor
+  [45] J_ratio = (J_refl + J_mech) / J_motor
       = (0.026947 kg·m² + 0.002 kg·m²) / 0.12 kg·m²
       = 0.24123
         Inertia ratio (load : motor)
-  [41] u_peak = SF * T_pk / T_peak
+  [46] u_peak = SF * T_pk / T_peak
       = 1.25 × 159.25 N·m / 400 N·m
       = 0.49765
         Peak torque utilisation with safety margin
-  [42] u_rms = SF * T_rms / T_rated
+  [47] u_rms = SF * T_rms / T_rated
       = 1.25 × 151.58 N·m / 200 N·m
       = 0.94737
         Continuous torque utilisation with safety margin
-  [43] u_speed = n_pk / n_max
+  [48] u_speed = n_pk / n_max
       = 1475 rpm / 3000 rpm
       = 0.49167
         Speed utilisation
-  [44] duty = T_rms / T_rated
+  [49] duty = T_rms / T_rated
       = 151.58 N·m / 200 N·m
       = 0.75789
         Thermal duty (without margin)
@@ -167,11 +185,14 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   alpha_pk = 51.487 rad/s²    Run-up angular acceleration
   T_acc = 7.6689 N·m    Run-up torque
   T_pk = 159.25 N·m    Peak torque
+  T_design = 159.25 N·m    Design torque for downstream couplings
+  T_hold = 0 N·m    Holding torque in the dwell
   T_alt = 0 N·m    Alternating torque amplitude
   F_ax_pk = 0 N    Peak axial thrust on a screw's bearings
   T_rms = 151.58 N·m    RMS torque
   n_pk = 1475 rpm    Motor speed
   P_cont = 23413 W    Continuous power
+  P_brake = 0 kW    Peak braking power
   P_pk = 24.598 kW    Peak power
   P_rms = 23.413 kW    RMS power (continuous equivalent)
   J_ratio = 0.24123    Inertia ratio
@@ -184,9 +205,11 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   T_out_pk = 1891.1 N·m    Output shaft peak torque
   n_out = 118 rpm    Output shaft speed
   P_rated = 30997 W    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
+  u_power = 0.75533    Rated power utilisation P_cont/P_rated
 
 6. CHECKS (governing first)
   PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.94737 vs u_rms ≤ 1  utilisation 0.947
+  PASS  Rated power P_cont ≤ P_rated: u_power = 0.75533 vs u_power ≤ 1  utilisation 0.755
   PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.49765 vs u_peak ≤ 1  utilisation 0.498
   PASS  Speed n_pk ≤ n_max: u_speed = 0.49167 vs u_speed ≤ 1  utilisation 0.492
 
@@ -195,9 +218,9 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   WARNING continuous-ignored: duty_mode: continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.
 
 8. VERIFICATION
-  Template: elec.motor-sizing@1.6.0
-  Content hash: 4ea5e25d0b648caa
+  Template: elec.motor-sizing@1.7.0
+  Content hash: fc37ad5186d37d4c
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 08:42 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test

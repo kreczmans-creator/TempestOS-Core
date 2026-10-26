@@ -16,7 +16,7 @@ Two rooms' design heat losses are the two rows of the sealed system's room table
 | Room B heat loss | `bs.room-heat-loss` | A | none |
 | Sealed system | `bs.sealed-system` | A | none |
 | Primary pipework and pump | `bs.pipe-pump` | A | 1 of 1 PASS |
-| Circulator motor | `elec.motor-sizing` | A | 3 of 3 PASS |
+| Circulator motor | `elec.motor-sizing` | A | 4 of 4 PASS |
 
 ## Links
 

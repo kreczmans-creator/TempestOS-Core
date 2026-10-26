@@ -65,6 +65,16 @@
       "ValueText": "0"
     },
     {
+      "Symbol": "T_basis",
+      "Text": "Load peak (T_pk)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Load peak (T_pk)"
+    },
+    {
       "Symbol": "T_peak",
       "Number": 6,
       "Unit": "N*m",
@@ -85,6 +95,16 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "2"
+    },
+    {
+      "Symbol": "brake",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
     },
     {
       "Symbol": "duty_mode",
@@ -250,7 +270,7 @@
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:717779b90cc649c8a8cda6b376f6e451#P_rms",
+        "Reference": "calc:af55fa36ad5c46398fb3325fa8d83bdf#P_rms",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -571,7 +591,7 @@
       "Unit": "A",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:5d38f2d35e4544e1a21f6de36d798ce2#I_3ph",
+        "Reference": "calc:62e708277e414732ad57e54ff556d4ae#I_3ph",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -686,7 +706,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:2456ef21798947bb94c81b3e9ea31de4@1 \u00B7 invented values for the worked example",
+        "Reference": "record:22d6bcf69872484a9abb3c1a8ee6adc3@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },
@@ -840,7 +860,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:13dde72ceac949ae956c61d97864652e@1 \u00B7 invented values for the worked example",
+        "Reference": "record:e89a9092f43a4701b645d9ff8569d104@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },
@@ -896,7 +916,7 @@
       "Unit": "mm^2",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:74f2fcb323aa41929bcbbecbef7d8dd1#CSA",
+        "Reference": "calc:0ba48aa4a5a14a849141b6ea584f2507#CSA",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -908,7 +928,7 @@
       "Unit": "A",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:74f2fcb323aa41929bcbbecbef7d8dd1#I_b",
+        "Reference": "calc:0ba48aa4a5a14a849141b6ea584f2507#I_b",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -920,7 +940,7 @@
       "Unit": "m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:74f2fcb323aa41929bcbbecbef7d8dd1#L",
+        "Reference": "calc:0ba48aa4a5a14a849141b6ea584f2507#L",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1033,14 +1053,14 @@
     },
     {
       "Symbol": "rho_20",
-      "Number": 0.01724,
+      "Number": 0.0194,
       "Unit": "ohm*mm^2/m",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0.01724"
+      "ValueText": "0.0194"
     },
     {
       "Symbol": "system",
@@ -1081,7 +1101,7 @@
       "Unit": "A",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:74f2fcb323aa41929bcbbecbef7d8dd1#I_n",
+        "Reference": "calc:0ba48aa4a5a14a849141b6ea584f2507#I_n",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1093,7 +1113,7 @@
       "Unit": "m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:74f2fcb323aa41929bcbbecbef7d8dd1#L",
+        "Reference": "calc:0ba48aa4a5a14a849141b6ea584f2507#L",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1115,8 +1135,9 @@
       "Number": 1.5,
       "Unit": "mm^2",
       "Provenance": {
-        "Kind": "Specification",
-        "Reference": "SPEC-LINE-12 \u00A76 (earthing and protection)",
+        "Kind": "Link",
+        "Reference": "calc:0ba48aa4a5a14a849141b6ea584f2507#CSA",
+        "Revision": "A",
         "IsSufficientToIssue": true
       },
       "ValueText": "1.5"
@@ -1127,7 +1148,7 @@
       "Unit": "mm^2",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:74f2fcb323aa41929bcbbecbef7d8dd1#CSA",
+        "Reference": "calc:0ba48aa4a5a14a849141b6ea584f2507#CSA",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1202,11 +1223,21 @@
       "Number": 2,
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:74f2fcb323aa41929bcbbecbef7d8dd1#device_code",
+        "Reference": "calc:0ba48aa4a5a14a849141b6ea584f2507#device_code",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
       "ValueText": "2"
+    },
+    {
+      "Symbol": "k_R",
+      "Number": 1.125,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.125"
     },
     {
       "Symbol": "rho_20",
@@ -1317,7 +1348,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:5d38f2d35e4544e1a21f6de36d798ce2#Phi",
+        "Reference": "calc:62e708277e414732ad57e54ff556d4ae#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

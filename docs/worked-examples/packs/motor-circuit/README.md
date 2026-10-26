@@ -4,7 +4,7 @@
 
 **Purpose.** Sizes a motor's supply from the motor duty to the enclosure: demand, cable and device, voltage drop, earth-fault disconnection and the heat the panel must lose.
 
-A ball-screw servo axis (50 kg, 0.5 m in 0.5 s) is sized, its panel demand and heat found, its cable and device chosen, and the voltage drop, earth-fault disconnection and enclosure temperature checked. **The cable-capacity and device-rating tables of the cable step are SYNTHETIC test values, invented for this example and labelled as such on the sheet; they are not from any regulation or manufacturer table, and the example must not be used to size a real cable.**
+A ball-screw servo axis (50 kg, 0.5 m in 0.5 s) is sized, its panel demand and heat found, its cable and device chosen, and the voltage drop, earth-fault disconnection and enclosure temperature checked. The protective conductor is taken as the same size as the cable step's line conductor (the fault-protection step's S_cpc is linked to the cable's CSA). The bus current that sizes the cable is the running current of the loads (their duty is not applied). **The cable-capacity and device-rating tables of the cable step are SYNTHETIC test values, invented for this example and labelled as such on the sheet; they are not from any regulation or manufacturer table, and the example must not be used to size a real cable.**
 
 **Issue.** Project “Line 12 axis 3”, pack “Servo axis motor circuit calc pack”, checked once as a bundle and issued under issue reference **`LINE-ELEC-001`** to Client Co in one transaction. After issue every step is read-only and carries that reference. Checked against SPEC-LINE-12 and DRG-LINE-120 rev B.
 
@@ -31,6 +31,7 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 | Cable and device | `L` | Voltage drop | `L` | 25 m |
 | Cable and device | `CSA` | Voltage drop | `A_c` | 1.5 mm^2 |
 | Cable and device | `CSA` | Fault protection | `S_line` | 1.5 mm^2 |
+| Cable and device | `CSA` | Fault protection | `S_cpc` | 1.5 mm^2 |
 | Cable and device | `L` | Fault protection | `L` | 25 m |
 | Cable and device | `I_n` | Fault protection | `I_n` | 6 A |
 | Cable and device | `device_code` | Fault protection | `device_code` | 2 |

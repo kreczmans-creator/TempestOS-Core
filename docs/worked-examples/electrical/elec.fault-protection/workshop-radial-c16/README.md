@@ -2,7 +2,7 @@
 
 **Source.** Analytic (C_min relation; derived k), TN-S supply with the declared Z_e of 0.8 Ω; let-through I²t from the MCB datasheet — Confirmed.
 
-A 40 m radial on a 16 A type C MCB. With Z_e = 0.8 Ω the loop reaches 1.336 Ω against a maximum of 1.366 Ω (utilisation 0.98): it passes, narrowly, and a measured value above the 1.09 Ω field-test figure would need investigating. A type B device would leave a wide margin. The protective conductor easily passes the adiabatic check (0.34 mm² needed).
+A 40 m radial on a 16 A type C MCB. With Z_e = 0.8 Ω the loop reaches 1.403 Ω against a maximum of 1.366 Ω (utilisation 1.03): it fails, narrowly. At the pure-copper resistance it would have passed (1.336 Ω, utilisation 0.98); the conductor resistance used here is the cable standard's maximum (5 to 12 % higher), which is what the tabulated loop impedances assume. The fault current, 155.7 A, is below the 160 A instantaneous trip, so the disconnection time and the adiabatic check are not evaluated. A run of about 37 m or less, larger conductors or a type B device (wide margin) would pass.
 
 | Input | Value | Source |
 |---|---|---|
@@ -19,6 +19,7 @@ A 40 m radial on a 16 A type C MCB. With Z_e = 0.8 Ω the loop reaches 1.336 Ω 
 | `beta` | 234.5 K | assumption: Copper reciprocal temperature coefficient. |
 | `c_max` | 1.1 | assumption: Maximum voltage factor. |
 | `device` | MCB type C (I_a = 10 I_n) | drawing: E-SCH-002 rev B |
+| `k_R` | 1.125 | assumption: Cable standard maximum conductor resistance over the pure-copper resistivity (5 to 12 % higher); 1.125 covers the sizes used. |
 | `rho_20` | 0.000017241 ohm*mm | assumption: Annealed copper resistivity. |
 | `t_req` | 0.4 s | spec: Final circuit up to 32 A, TN system |
 | `theta` | 70 degC | assumption: Thermoplastic insulation at full load. |
@@ -27,9 +28,8 @@ A 40 m radial on a 16 A type C MCB. With Z_e = 0.8 Ω the loop reaches 1.336 Ω 
 
 | Output | Expected | Computed | Result |
 |---|---|---|---|
-| `Z_s` | 1.33635 ohm | 1.33635 ohm | PASS |
+| `Z_s` | 1.40339 ohm | 1.40339 ohm | PASS |
 | `Z_s_max` | 1.36563 ohm | 1.36563 ohm | PASS |
-| `u_Zs` | 0.978563  | 0.978563  | PASS |
-| `S_min` | 0.337262 mm^2 | 0.337262 mm^2 | PASS |
+| `u_Zs` | 1.02766  | 1.02766  | PASS |
 
-Governing check: Loop impedance within maximum (disconnection in time) — PASS (utilisation 0.979). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Disconnection achieved — FAIL (utilisation —). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -575,7 +575,7 @@
               "Unit": "W",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:782c8b97f7da460d835dda92d80be2f7#Phi_HL",
+                "Reference": "calc:0de2c8f1dfdf4ea99741bd7b7cd3c9e8#Phi_HL",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -596,7 +596,7 @@
               "Unit": "W",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:a36a7c16497d467fa179c9dfd75bf03c#Phi_HL",
+                "Reference": "calc:31e1feb646e8473792cb8af4cc20e364#Phi_HL",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -688,7 +688,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:1487856b836046b89ad2d9c6dbee4d41#Phi_tot",
+        "Reference": "calc:a8c864ba39254bca885bba407d94c978#Phi_tot",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -700,7 +700,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:1487856b836046b89ad2d9c6dbee4d41#t_m",
+        "Reference": "calc:a8c864ba39254bca885bba407d94c978#t_m",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -722,7 +722,7 @@
       "Unit": "K",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:1487856b836046b89ad2d9c6dbee4d41#dT_fr",
+        "Reference": "calc:a8c864ba39254bca885bba407d94c978#dT_fr",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -929,11 +929,21 @@
       "Unit": "N*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:09c35f9154d94e998178314f73101941#T_shaft",
+        "Reference": "calc:472ad40ddaa8487787675c35bb1af0e4#T_shaft",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
       "ValueText": "0.000272215"
+    },
+    {
+      "Symbol": "T_basis",
+      "Text": "Load peak (T_pk)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Load peak (T_pk)"
     },
     {
       "Symbol": "T_peak",
@@ -956,6 +966,16 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "2"
+    },
+    {
+      "Symbol": "brake",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
     },
     {
       "Symbol": "duty_mode",
@@ -1034,7 +1054,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:09c35f9154d94e998178314f73101941#n_shaft",
+        "Reference": "calc:472ad40ddaa8487787675c35bb1af0e4#n_shaft",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

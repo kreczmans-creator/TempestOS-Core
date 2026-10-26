@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Motor control centre 3
 Calc ID: Drive panel cooling calc pack    Revision: A
 Title: Calculation pack
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: MCC-COOL-001    Client: Client Co
 
 PACK INDEX
   1. Panel load budget — Load budget, PSU, transformer and battery — rev A — ISSUED
@@ -13,7 +13,7 @@ PACK INDEX
   4. Cooling-water pipework and pump — Pipe pressure drop and pump duty — rev A — ISSUED — Velocity ≤ limit PASS
 
 REVISIONS
-  A  2026-10-25  test.engineer  First issue
+  A  2026-10-26  test.engineer  First issue
 
 1. SCOPE AND METHOD
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -39,20 +39,20 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 20/20
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
 Project: Motor control centre 3
 Calc ID: Panel load budget    Revision: A
 Title: Load budget, PSU, transformer and battery
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.
-Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative) Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC; when a bus is chosen for the DC power supply its input P_DC/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0) Power supply sizing: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude) Transformer sizing: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery sizing: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
+Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative); this duty-weighted demand sizes the transformer and the enclosure heat Running load of each load while it is on: P_i·k_i, apparent P_i·k_i/cosφ_i (the duty d is the share of time on, so it is left out: a cable, a bus and a power supply carry the load while it is on) Bus currents: I_3φ = S_3φ,run/(√3·U), I_1φ = S_1φ,run/U, I_DC = P_DC,run/U_DC, from the running loads; when a bus is chosen for the DC power supply its input P_DC,run/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0) Power supply sizing: P_PSU ≥ margin·P_DC,run/f_derate (the running DC load, duty not applied; f_derate from the manufacturer's curve at θ and altitude) Transformer sizing: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery sizing: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
   Ref: Linden's Handbook of Batteries 5th ed., Ch. 3–4 — Battery sizing and the Peukert relation
   Ref: BS EN 60204-1:2018 cl. 4.3 — Electrical supply (supply voltage tolerance; cited by number only)
 
@@ -140,18 +140,18 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
       = 57.895 + 31.579 + 26.667 + 1.6667
       = 117.81 kVA
         Demand apparent power (arithmetic)
-  [28] I_3ph = S_3φ/(√3·U_3ph)
-      = 117810 / (√3 × 400)
-      = 170.04 A
-        Three-phase bus current
-  [29] I_1ph = S_1φ/U_1ph
+  [28] I_3ph = S_3φ,run/(√3·U_3ph), S_run = Σ P_i·k_i/cosφ_i
+      = 124470 / (√3 × 400)
+      = 179.66 A
+        Three-phase bus current, loads while on (duty not applied)
+  [29] I_1ph = S_1φ,run/U_1ph, S_run = Σ P_i·k_i/cosφ_i
       = 0 / 230
       = 0 A
-        Single-phase bus current
-  [30] I_DC = P_DC/U_DC
+        Single-phase bus current, loads while on (duty not applied)
+  [30] I_DC = P_DC,run/U_DC, P_DC,run = Σ DC P_i·k_i
       = 0 / 24
       = 0 A
-        DC bus current
+        DC bus current, loads while on (duty not applied)
   [31] Phi = Σ h_i·P_i·d_i·k_i
       = 0.03×55 + 0.025×30 + 0.04×24 + 0.1×1.5
       = 3.51 kW
@@ -159,24 +159,28 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   [32] P_DC = Σ DC P_i·d_i·k_i
       = 0 W
       = 0 W
-        DC demand
-  [33] P_PSU_req = margin * P_DC / f_derate
+        DC demand (duty-weighted)
+  [33] P_DC_run = Σ DC P_i·k_i
+      = 0 W
+      = 0 W
+        DC load while on (duty not applied)
+  [34] P_PSU_req = margin * P_DC_run / f_derate
       = 1.25 × 0 W / 1
       = 0 W
-        Minimum PSU rating
-  [34] S_T_req = margin * S_dem
+        Minimum PSU rating (the supply carries the load while it is on)
+  [35] S_T_req = margin * S_dem
       = 1.25 × 117.81 kVA
       = 147.26 kVA
         Minimum transformer rating for the running load
-  [35] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
+  [36] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
       = 117.81 + 6.6667 (Servo drives (4) starting)
       = 124.47 kVA
         Peak apparent power while the largest load starts
-  [36] S_T_req_start = S_peak / k_T
+  [37] S_T_req_start = S_peak / k_T
       = 124.47 kVA / 3
       = 41.491 kVA
         Minimum transformer rating for the starting peak
-  [37] S_T_min = max(S_T_req, S_T_req_start)
+  [38] S_T_min = max(S_T_req, S_T_req_start)
       = max(147.26 kVA, 41.491 kVA)
       = 147.26 kVA
         Minimum transformer rating (running load and starting peak)
@@ -185,7 +189,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   P_conn = 116.5 kW    Connected load
   P_dem = 110.5 kW    Demand active power
   S_dem = 117.81 kVA    Demand apparent power
-  I_3ph = 170.04 A    Three-phase bus current
+  I_3ph = 179.66 A    Three-phase bus current
   I_1ph = 0 A    Single-phase bus current
   I_DC = 0 A    DC bus current
   Phi = 3.51 kW    Heat dissipated inside the enclosure
@@ -202,11 +206,11 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   WARNING record: Tabulated values not taken from a reference record: f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.load-budget@1.2.1
-  Content hash: 39f53bc4722e29b8
+  Template: elec.load-budget@1.3.0
+  Content hash: 27461dc18ad6253f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
 
 
@@ -214,9 +218,9 @@ CALCULATION SHEET — ISSUED
 Project: Motor control centre 3
 Calc ID: Enclosure heat    Revision: A
 Title: Enclosure heat dissipation and fan sizing
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.
@@ -345,7 +349,7 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   Content hash: 857f14f33a5fb9c0
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
 
 
@@ -353,9 +357,9 @@ CALCULATION SHEET — ISSUED
 Project: Motor control centre 3
 Calc ID: Cooling-water air coil    Revision: A
 Title: Heat exchanger (LMTD and ε-NTU)
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Single-phase heat exchanger with constant properties: in rating mode the duty and outlet temperatures for a given area; in sizing mode the area for a given duty. Counterflow, parallel flow, 1-shell-pass shell and tube, crossflow with both fluids unmixed (approximate), and one fluid at constant temperature.
@@ -492,7 +496,7 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with 
   Content hash: f7e1a4c344c6fcf3
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
 
 
@@ -500,9 +504,9 @@ CALCULATION SHEET — ISSUED
 Project: Motor control centre 3
 Calc ID: Cooling-water pipework and pump    Revision: A
 Title: Pipe pressure drop and pump duty
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: MCC-COOL-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: MCC-COOL-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
@@ -678,5 +682,5 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
   Content hash: 5a30160d8816872d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test

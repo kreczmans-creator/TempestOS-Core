@@ -42,8 +42,8 @@ Calculation pack: the calculations listed in the index, issued together under on
   Template: pack
   Content hash: —
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 47/47
-  Test run: 2026-10-26 08:42 UTC
+  Known-answer cases passed: 48/48
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -381,7 +381,7 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
   Content hash: cccea8851bedd98e
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-26 08:42 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
 
 
@@ -512,7 +512,7 @@ Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas 
   Content hash: 168af24288314fc8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 10/10
-  Test run: 2026-10-26 08:42 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
 
 
@@ -666,7 +666,7 @@ Design flow from the heat carried, when a heat load is given in place of a flow:
   Content hash: 5a30160d8816872d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 08:42 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
 
 
@@ -680,7 +680,7 @@ Issued: 2026-10-26    Issue: HPU-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
-Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack). Load inertia reflected to the motor through a linear mechanism: J_refl = m k²/η. Load torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p. Reflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η). Move profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc. Move profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap. Torque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load. Alternating torque amplitude of a point-to-point cycle about T_load, for a shaft's fatigue: T_alt = (T_pk − T_dec)/2 (0 in continuous duty). Torque behind the ratio on the output shaft of a rotary mechanism: T_out = T·i·η (mean, alternating and peak), n_out = n_pk/i. Peak axial thrust of a ball screw on its support bearings: F_ax_pk = F_load + m a_pk (0 for other mechanisms). RMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle). RMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²]. Continuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i. Continuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load. Peak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load. Continuous power: P_cont = T_load ω; P_rms = P_cont. Rated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60.
+Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack). Load inertia reflected to the motor through a linear mechanism: J_refl = m k²/η. Load torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p. Reflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η). Move profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc. Move profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap. Torque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load; deceleration T_dec = −T_acc + T_load; the peak check is on the larger magnitude, SF·max(|T_pk|, |T_dec|) ≤ T_peak, and the braking power is P_brake = max(0, −T_dec·ω_pk). Design torque for a coupling or any part downstream that must carry what the drive can deliver, on the basis the owner chooses (T_basis): the load peak T_design = T_pk (default), the motor peak T_design = T_peak, a service factor on the rated torque T_design = SF_c·T_rated, or a protective limit T_design = T_lim (a torque limiter or a drive setting). Holding torque in the dwell of a linear mechanism that is not held by a brake: T_hold = m g sin θ·k (efficiency not credited: it is a torque to stand still); it is part of the RMS torque for the whole dwell. Alternating torque amplitude of a point-to-point cycle about T_load, for a shaft's fatigue: T_alt = (T_pk − T_dec)/2 (0 in continuous duty). Torque behind the ratio on the output shaft of a rotary mechanism: T_out = T·i·η (mean, alternating and peak), n_out = n_pk/i. Peak axial thrust of a ball screw on its support bearings: F_ax_pk = F_load + m a_pk (0 for other mechanisms). RMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle), the dwell at T_hold. RMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²]. Continuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i. Continuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load. Peak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load. Continuous power: P_cont = T_load ω; P_rms = P_cont; continuous duty needs the steady load torque T_L (blank or zero is refused: it would size the motor for no load). Rated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60; check P_cont ≤ P_rated, u_power = P_cont/P_rated.
   Ref: Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection — Load torque, inertia referred to the motor, duty cycles
   Ref: Manufacturer servo-sizing guides (Kollmorgen, Parker) — Reflected inertia, RMS torque, inertia ratio practice
 
@@ -696,7 +696,8 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   theta | Incline from horizontal (+ moving uphill) | 0 | deg | assumption: Sheet default value; no project figure given. | -90 … 90 deg
   F_p | Process force opposing the move (linear) | 0 | N | assumption: Sheet default value; no project figure given. | 0 … 1000000 N
   J_L | Load inertia at the output (rotary mechanisms) | 0.004 | kg*m^2 | spec: SPEC-HPU-05 §5 (pump drive) | 0 … 10000 kg*m^2
-  T_L | Constant load torque at the output (rotary) | 76.9731 | N*m | link: Cylinder and pump circuit rev A · T_shaft | 0 … 100000 N*m
+  brake | A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor | no |  | assumption: Sheet default value; no project figure given. | any
+  T_L | Constant load torque at the output (rotary; continuous duty needs it: blank or zero is refused) | 76.9731 | N*m | link: Cylinder and pump circuit rev A · T_shaft | 0 … 100000 N*m
   duty_mode | Duty (point-to-point move cycle, or continuous rotary running with a run-up) | continuous |  | spec: SPEC-HPU-05 §5 (pump drive) | any
   n_L | Load speed at the output (continuous duty) | 1450 | rpm | link: Cylinder and pump circuit rev A · n_shaft | 1 … 100000 rpm
   t_start | Run-up time to full speed (continuous duty) | 2 | s | spec: SPEC-HPU-05 §5 (pump drive) | 0.1 … 600 s
@@ -709,6 +710,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   T_rated | Candidate motor continuous (rated) torque | 120 | N*m | spec: SPEC-HPU-05 §5 (pump drive) | 0.01 … 100000 N*m
   T_peak | Candidate motor peak torque | 275 | N*m | spec: SPEC-HPU-05 §5 (pump drive) | 0.01 … 100000 N*m
   n_rated | Candidate motor rated (nameplate) speed, with the rated torque the rated power P_rated = T_rated·ω_rated (continuous duty; leave blank if not known: there is then no P_rated) | 1460 | rpm | spec: SPEC-HPU-05 §5 (pump drive) | 10 … 100000 rpm
+  T_basis | Design torque basis for downstream couplings (T_design): the load's peak, the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter | Load peak (T_pk) |  | assumption: Sheet default value; no project figure given. | any
   n_max | Candidate motor maximum speed | 3000 | rpm | spec: SPEC-HPU-05 §5 (pump drive) | 10 … 100000 rpm
   SF | Safety margin on torque | 1.25 |  | assumption: Sheet default value; no project figure given. | 1 … 3
   J_ratio_max | Inertia ratio limit (load : motor), warning | 10 |  | assumption: Sheet default value; no project figure given. | 1 … 100
@@ -724,13 +726,15 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   A8. mu (Friction coefficient (guide / bearing)) is taken as 0.1. (Sheet default value; no project figure given.)
   A9. theta (Incline from horizontal (+ moving uphill)) is taken as 0 deg. (Sheet default value; no project figure given.)
   A10. F_p (Process force opposing the move (linear)) is taken as 0 N. (Sheet default value; no project figure given.)
-  A11. profile (Motion profile) is taken as trapezoidal. (Sheet default value; no project figure given.)
-  A12. s (Move distance (linear: m; rotary: output revolutions)) is taken as 0.5. (Sheet default value; no project figure given.)
-  A13. t_move (Move time) is taken as 0.5 s. (Sheet default value; no project figure given.)
-  A14. f_acc (Acceleration (and deceleration) fraction of the move time) is taken as 0.333333. (Sheet default value; no project figure given.)
-  A15. t_dwell (Dwell between moves) is taken as 0.5 s. (Sheet default value; no project figure given.)
-  A16. SF (Safety margin on torque) is taken as 1.25. (Sheet default value; no project figure given.)
-  A17. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sheet default value; no project figure given.)
+  A11. brake (A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor) is taken as no. (Sheet default value; no project figure given.)
+  A12. profile (Motion profile) is taken as trapezoidal. (Sheet default value; no project figure given.)
+  A13. s (Move distance (linear: m; rotary: output revolutions)) is taken as 0.5. (Sheet default value; no project figure given.)
+  A14. t_move (Move time) is taken as 0.5 s. (Sheet default value; no project figure given.)
+  A15. f_acc (Acceleration (and deceleration) fraction of the move time) is taken as 0.333333. (Sheet default value; no project figure given.)
+  A16. t_dwell (Dwell between moves) is taken as 0.5 s. (Sheet default value; no project figure given.)
+  A17. T_basis (Design torque basis for downstream couplings (T_design): the load's peak, the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter) is taken as Load peak (T_pk). (Sheet default value; no project figure given.)
+  A18. SF (Safety margin on torque) is taken as 1.25. (Sheet default value; no project figure given.)
+  A19. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sheet default value; no project figure given.)
 
 4. WORKING
   [19] k = 1 / i
@@ -772,62 +776,76 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   [28] T_alt = 0 N*m
       = 0 N·m
         Alternating torque amplitude: none, continuous running is steady (the run-up is a rare peak, T_pk)
-  [29] F_ax_pk = 0 N
+  [30] T_design = T_pk
+      = 85.725 N·m
+      = 85.725 N·m
+        Design torque: the load's peak torque (run-up included)
+  [31] F_ax_pk = 0 N
       = 0 N
         Peak axial thrust on the bearings (none for a rotary mechanism)
-  [30] n_pk = omega_pk
+  [32] T_hold = 0 N*m
+      = 0 N·m
+        Holding torque in the dwell: none, continuous running has no dwell
+  [33] P_brake = 0 kW
+      = 0 kW
+        Peak braking power: none in continuous duty
+  [34] n_pk = omega_pk
       = 151.84 rad/s
       = 1450 rpm
         Motor speed
-  [31] T_out_m = T_load * i * eta
+  [35] T_out_m = T_load * i * eta
       = 77.751 N·m × 1 × 0.99
       = 76.973 N·m
         Mean torque on the output shaft (the constant load torque)
-  [32] T_out_a = T_alt * i * eta
+  [36] T_out_a = T_alt * i * eta
       = 0 N·m × 1 × 0.99
       = 0 N·m
         Alternating torque amplitude on the output shaft
-  [33] T_out_pk = T_pk * i * eta
+  [37] T_out_pk = T_pk * i * eta
       = 85.725 N·m × 1 × 0.99
       = 84.868 N·m
         Peak torque on the output shaft (the motor rotor's inertia torque is counted, so conservative)
-  [34] n_out = n_pk / i
+  [38] n_out = n_pk / i
       = 1450 rpm / 1
       = 1450 rpm
         Output shaft speed
-  [35] P_cont = T_load * omega_pk
+  [39] P_cont = T_load * omega_pk
       = 77.751 N·m × 151.84 rad/s
       = 11806 W
         Continuous shaft power at the motor
-  [37] P_rated = T_rated * n_rated
+  [41] P_rated = T_rated * n_rated
       = 120 N·m × 1460 rpm
       = 18347 W
         Rated (nameplate) shaft power of the candidate motor: its rated torque times its rated speed
-  [38] P_pk = T_pk * omega_pk
+  [42] u_power = P_cont / P_rated
+      = 11806 W / 18347 W
+      = 0.64348
+        Continuous shaft power against the rated power of the candidate motor
+  [43] P_pk = T_pk * omega_pk
       = 85.725 N·m × 151.84 rad/s
       = 13.017 kW
         Peak mechanical power (end of the run-up)
-  [39] P_rms = P_cont
+  [44] P_rms = P_cont
       = 11806 W
       = 11.806 kW
         RMS mechanical power: the steady running power (thermal-equivalent continuous power)
-  [40] J_ratio = (J_refl + J_mech) / J_motor
+  [45] J_ratio = (J_refl + J_mech) / J_motor
       = (0.0040404 kg·m² + 0.001 kg·m²) / 0.1 kg·m²
       = 0.050404
         Inertia ratio (load : motor)
-  [41] u_peak = SF * T_pk / T_peak
+  [46] u_peak = SF * T_pk / T_peak
       = 1.25 × 85.725 N·m / 275 N·m
       = 0.38966
         Peak torque utilisation with safety margin
-  [42] u_rms = SF * T_rms / T_rated
+  [47] u_rms = SF * T_rms / T_rated
       = 1.25 × 77.751 N·m / 120 N·m
       = 0.8099
         Continuous torque utilisation with safety margin
-  [43] u_speed = n_pk / n_max
+  [48] u_speed = n_pk / n_max
       = 1450 rpm / 3000 rpm
       = 0.48333
         Speed utilisation
-  [44] duty = T_rms / T_rated
+  [49] duty = T_rms / T_rated
       = 77.751 N·m / 120 N·m
       = 0.64792
         Thermal duty (without margin)
@@ -840,11 +858,14 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   alpha_pk = 75.922 rad/s²    Run-up angular acceleration
   T_acc = 7.9749 N·m    Run-up torque
   T_pk = 85.725 N·m    Peak torque
+  T_design = 85.725 N·m    Design torque for downstream couplings
+  T_hold = 0 N·m    Holding torque in the dwell
   T_alt = 0 N·m    Alternating torque amplitude
   F_ax_pk = 0 N    Peak axial thrust on a screw's bearings
   T_rms = 77.751 N·m    RMS torque
   n_pk = 1450 rpm    Motor speed
   P_cont = 11806 W    Continuous power
+  P_brake = 0 kW    Peak braking power
   P_pk = 13.017 kW    Peak power
   P_rms = 11.806 kW    RMS power (continuous equivalent)
   J_ratio = 0.050404    Inertia ratio
@@ -857,9 +878,11 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   T_out_pk = 84.868 N·m    Output shaft peak torque
   n_out = 1450 rpm    Output shaft speed
   P_rated = 18347 W    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
+  u_power = 0.64348    Rated power utilisation P_cont/P_rated
 
 6. CHECKS (governing first)
   PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.8099 vs u_rms ≤ 1  utilisation 0.81
+  PASS  Rated power P_cont ≤ P_rated: u_power = 0.64348 vs u_power ≤ 1  utilisation 0.643
   PASS  Speed n_pk ≤ n_max: u_speed = 0.48333 vs u_speed ≤ 1  utilisation 0.483
   PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.38966 vs u_peak ≤ 1  utilisation 0.39
 
@@ -868,11 +891,11 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   WARNING continuous-ignored: duty_mode: continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.
 
 8. VERIFICATION
-  Template: elec.motor-sizing@1.6.0
-  Content hash: 4ea5e25d0b648caa
+  Template: elec.motor-sizing@1.7.0
+  Content hash: fc37ad5186d37d4c
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 08:42 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
 
 
@@ -909,7 +932,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   N_g | Grouped circuits | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 20
   system | Conductor system (AWG: geometry only, no AWG capacities are supplied) | metric |  | assumption: Sheet default value; no project figure given. | any
   device | Protective device | MCB type C |  | spec: SPEC-HPU-05 §6 (power supply) | any
-  C_a | Ambient correction factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1.5
+  C_a | Ambient correction factor (1 does not apply the ambient: enter the factor for θ_a from your licensed table) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1.5
   C_g | Grouping correction factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1.5
   C_i | Thermal insulation correction factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1.5
   derive_Ca | Derive C_a from the temperatures instead of the entered factor | no |  | assumption: Sheet default value; no project figure given. | any
@@ -945,7 +968,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   A11. theta_a (Ambient temperature) is taken as 30 degC. (Sheet default value; no project figure given.)
   A12. N_g (Grouped circuits) is taken as 1. (Sheet default value; no project figure given.)
   A13. system (Conductor system (AWG: geometry only, no AWG capacities are supplied)) is taken as metric. (Sheet default value; no project figure given.)
-  A14. C_a (Ambient correction factor) is taken as 1. (Sheet default value; no project figure given.)
+  A14. C_a (Ambient correction factor (1 does not apply the ambient: enter the factor for θ_a from your licensed table)) is taken as 1. (Sheet default value; no project figure given.)
   A15. C_g (Grouping correction factor) is taken as 1. (Sheet default value; no project figure given.)
   A16. C_i (Thermal insulation correction factor) is taken as 1. (Sheet default value; no project figure given.)
   A17. derive_Ca (Derive C_a from the temperatures instead of the entered factor) is taken as no. (Sheet default value; no project figure given.)
@@ -969,35 +992,35 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
       = MCB type C
       = 1
         Semi-enclosed fuse factor
-  [22] I_t_req = I_n / (C_a * C_g * C_i * C_c)    « BS EN 60204-1 cl. 12.4
+  [23] I_t_req = I_n / (C_a * C_g * C_i * C_c)    « BS EN 60204-1 cl. 12.4
       = 40 A / (1 × 1 × 1 × 1)
       = 40 A
         Required tabulated capacity
-  [23] I_t = I_t of the selected row of the ampacity record    « BS EN 60204-1 cl. 12.4
+  [24] I_t = I_t of the selected row of the ampacity record    « BS EN 60204-1 cl. 12.4
       = I_t,req = 40 A
       = 44.6 A
         Tabulated current-carrying capacity of the selected conductor
-  [24] CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req    « BS EN 60204-1 cl. 12.4
+  [25] CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req    « BS EN 60204-1 cl. 12.4
       = I_t,req = 40 A
       = 10 mm²
         Selected conductor cross-section
-  [25] I_z = I_t * C_a * C_g * C_i    « BS EN 60204-1 cl. 12.4
+  [26] I_z = I_t * C_a * C_g * C_i    « BS EN 60204-1 cl. 12.4
       = 44.6 A × 1 × 1 × 1
       = 44.6 A
         Current-carrying capacity in the installed conditions
-  [26] u_Ib = I_b / I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [27] u_Ib = I_b / I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 33.47 A / 40 A
       = 0.83675
         Design current utilisation of the device
-  [27] u_In = I_n / I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [28] u_In = I_n / I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 40 A / 44.6 A
       = 0.89686
         Device rating utilisation of the conductor
-  [28] I2 = 1.45 * I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [29] I2 = 1.45 * I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 1.45 × 40 A
       = 58 A
         Conventional operating current (inherent 1.45 I_n)
-  [29] u_I2 = I2 / (1.45 * I_z)    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [30] u_I2 = I2 / (1.45 * I_z)    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 58 A / (1.45 × 44.6 A)
       = 0.89686
         I₂ utilisation of 1.45 I_z
@@ -1026,11 +1049,11 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   WARNING record: Tabulated values not taken from a reference record: C_a, C_g, C_i (Cable correction factors). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.conductor-sizing@1.1.1
-  Content hash: b804e5325cd160b1
+  Template: elec.conductor-sizing@1.2.0
+  Content hash: 7797b9e5dc359f7a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 08:42 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
 
 
@@ -1058,7 +1081,7 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   cos_phi | Power factor (AC) | 0.86 |  | spec: SPEC-HPU-05 §6 (power supply) | 0.5 … 1
   n_par | Parallel conductors per phase | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 6
   data | Conductor data from | resistivity and area |  | assumption: Sheet default value; no project figure given. | any
-  rho_20 | Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.01724 | ohm*mm^2/m | assumption: Sheet default value; no project figure given. | 0.01 … 0.05 ohm*mm^2/m
+  rho_20 | Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.0194 | ohm*mm^2/m | assumption: Sheet default value; no project figure given. | 0.01 … 0.05 ohm*mm^2/m
   alpha | Temperature coefficient of resistance | 0.00393 |  | assumption: Sheet default value; no project figure given. | 0.003 … 0.0045
   A_c | Conductor cross-section | 10 | mm^2 | link: Motor supply cable rev A · CSA | 1 … 1000 mm^2
   T_c | Conductor operating temperature for the resistance | 70 | degC | assumption: Sheet default value; no project figure given. | 20 … 90 degC
@@ -1073,7 +1096,7 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   A3. The conductor temperature estimate scales the rated rise with (I/I_z)²; I_z is the user's tabulated value for the installation method and corrections. (BS 7671 Appendix 4 approach, formula only.)
   A4. n_par (Parallel conductors per phase) is taken as 1. (Sheet default value; no project figure given.)
   A5. data (Conductor data from) is taken as resistivity and area. (Sheet default value; no project figure given.)
-  A6. rho_20 (Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m)) is taken as 0.01724 ohm*mm^2/m. (Sheet default value; no project figure given.)
+  A6. rho_20 (Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m)) is taken as 0.0194 ohm*mm^2/m. (Sheet default value; no project figure given.)
   A7. alpha (Temperature coefficient of resistance) is taken as 0.00393. (Sheet default value; no project figure given.)
   A8. T_c (Conductor operating temperature for the resistance) is taken as 70 degC. (Sheet default value; no project figure given.)
   A9. X_km (Reactance per km per conductor) is taken as 0.08 ohm/km. (Sheet default value; no project figure given.)
@@ -1086,53 +1109,53 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
       = 0.51029
         sin φ
   [15] rho_T = rho_20 * (1 + alpha * (T_c - 20 degC) / (1 K))
-      = 0.01724 ohm·mm²/m × (1 + 0.00393 × (70 degC − 20 degC) / 1 K)
-      = 0.020628 ohm·mm²/m
+      = 0.0194 ohm·mm²/m × (1 + 0.00393 × (70 degC − 20 degC) / 1 K)
+      = 0.023212 ohm·mm²/m
         Resistivity at the operating temperature
   [16] R = rho_T * L / (A_c * n_par)
-      = 0.020628 ohm·mm²/m × 30 m / (10 mm² × 1)
-      = 0.061883 ohm
+      = 0.023212 ohm·mm²/m × 30 m / (10 mm² × 1)
+      = 0.069636 ohm
         Conductor resistance (one conductor, parallel paths combined)
   [17] X = X_km * L / n_par
       = 0.08 ohm/km × 30 m / 1
       = 0.0024 ohm
         Conductor reactance
   [18] dV = sqrt(3) * I * (R * cos_phi + X * sin_phi)
-      = sqrt(3) × 33.47 A × (0.061883 ohm × 0.86 + 0.0024 ohm × 0.51029)
-      = 3.1562 V
+      = sqrt(3) × 33.47 A × (0.069636 ohm × 0.86 + 0.0024 ohm × 0.51029)
+      = 3.5428 V
         Voltage drop
   [19] dV_pct = 100 * dV / V_n
-      = 100 × 3.1562 V / 400 V
-      = 0.78905
+      = 100 × 3.5428 V / 400 V
+      = 0.88569
         Voltage drop, per cent
   [20] P_loss = 3 * I^2 * R
-      = 3 × (33.47 A)^2 × 0.061883 ohm
-      = 207.97 W
+      = 3 × (33.47 A)^2 × 0.069636 ohm
+      = 234.03 W
         Conductor power loss
   [21] u_dv = dV_pct / dv_limit
-      = 0.78905 / 5
-      = 0.15781
+      = 0.88569 / 5
+      = 0.17714
         Drop utilisation against the limit
 
 5. RESULTS
-  R = 0.061883 ohm    Resistance
+  R = 0.069636 ohm    Resistance
   X = 0.0024 ohm    Reactance
-  dV = 3.1562 V    Voltage drop
-  dV_pct = 0.78905    Voltage drop (%)
-  P_loss = 207.97 W    Power loss
+  dV = 3.5428 V    Voltage drop
+  dV_pct = 0.88569    Voltage drop (%)
+  P_loss = 234.03 W    Power loss
 
 6. CHECKS (governing first)
-  PASS  Voltage drop ≤ limit: u_dv = 0.15781 vs u_dv ≤ 1  utilisation 0.158  « BS 7671 525
+  PASS  Voltage drop ≤ limit: u_dv = 0.17714 vs u_dv ≤ 1  utilisation 0.177  « BS 7671 525
 
 7. APPLICABILITY
   No warnings.
 
 8. VERIFICATION
-  Template: elec.voltage-drop@1.0.1
-  Content hash: 2c07193ab8ffc91f
+  Template: elec.voltage-drop@1.1.0
+  Content hash: 28e4e44162109057
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 08:42 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
 
 
@@ -1146,7 +1169,7 @@ Issued: 2026-10-26    Issue: HPU-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Automatic disconnection of supply in a TN system for one circuit: the earth fault loop impedance at the conductor's operating temperature against the device's maximum, the disconnection time, the protective conductor (and line conductor) against the adiabatic minimum, and the prospective three-phase fault at the origin against the device's breaking capacity.
-Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95 Maximum loop impedance: Z_s,max = C_min·U_0/I_a; I_a = 5, 10 or 20·I_n for MCB types B, C, D, or read from the time–current points at t_req (log-log) Adiabatic conductor check: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); I²t = I_f²·t_d from 0.1 s; below 0.1 s the device's let-through I²t at the maximum prospective fault (the line conductor check, reg. 434.5.2, needs it and is not made without it; the protective conductor check then uses I_f²·0.1 s at the end-of-line fault only) Protective device check: the device chosen here must be the one carried from the cable step (device_code 1 = MCB B, 2 = C, 3 = D, 4 = fuse or MCCB), else the sheet is blocked Fault level (simplified): Z_T = u_k·U_n²/S_r, I_k3 = c·U_n/(√3·Z_T), U_n = √3·U_0
+Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/S (k_R = 1.125 takes the pure-copper ρ_20 to the cable standard's maximum conductor resistance; k enters with the pure ρ_20) Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95 Maximum loop impedance: Z_s,max = C_min·U_0/I_a; I_a = 5, 10 or 20·I_n for MCB types B, C, D, or read from the time–current points at t_req (log-log) Adiabatic conductor check: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); I²t = I_f²·t_d from 0.1 s; below 0.1 s the device's let-through I²t at the maximum prospective fault, which bounds the protective and the line conductor at the origin where the earth-fault current is largest (reg. 434.5.2, 543.1.3); without it neither is checked at the origin, the sheet fails 'Conductors against let-through at the origin' and the protective conductor check uses I_f²·0.1 s at the end-of-line fault only Protective device check: the device chosen here must be the one carried from the cable step (device_code 1 = MCB B, 2 = C, 3 = D, 4 = fuse or MCCB), else the sheet is blocked Fault level (simplified): Z_T = u_k·U_n²/S_r, I_k3 = c·U_n/(√3·Z_T), U_n = √3·U_0
   Ref: BS 7671:2018 (as amended) reg. 411.3.2.2, 411.3.2.3, 411.4.4 — Automatic disconnection in TN systems: times and the loop impedance condition
   Ref: BS 7671:2018 (as amended) reg. 543.1.3, 434.5.2 — Protective conductor and fault current adiabatic checks
   Ref: BS EN 60204-1:2018 cl. 6.3.3 — Protection by automatic disconnection of supply
@@ -1162,9 +1185,10 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
   c_max | Voltage factor c for the maximum fault | 1.1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.1
   L | Circuit length | 30 | m | link: Motor supply cable rev A · L | 0.1 … 1000 m
   S_line | Line conductor cross-section | 10 | mm^2 | link: Motor supply cable rev A · CSA | 0.5 … 630 mm^2
-  S_cpc | Protective conductor cross-section | 10 | mm^2 | spec: SPEC-HPU-05 §6 (earthing and protection) | 0.5 … 630 mm^2
+  S_cpc | Protective conductor cross-section | 10 | mm^2 | link: Motor supply cable rev A · CSA | 0.5 … 630 mm^2
   theta | Conductor temperature for Z_s | 70 | degC | assumption: Sheet default value; no project figure given. | 20 … 90 degC
-  rho_20 | Resistivity at 20 °C | 0.000017241 | ohm*mm | assumption: Sheet default value; no project figure given. | 0.000001 … 0.0001 ohm*mm
+  rho_20 | Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R) | 0.000017241 | ohm*mm | assumption: Sheet default value; no project figure given. | 0.000001 … 0.0001 ohm*mm
+  k_R | Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the cable standard's maximum conductor resistances are 5 to 12 % above pure copper, so the default is 1.125 and Z_s is not understated; k is not changed by it) | 1.125 |  | assumption: Sheet default value; no project figure given. | 1 … 1.5
   alpha | Temperature coefficient of resistance | 0.00393 | 1/K | assumption: Sheet default value; no project figure given. | 0.001 … 0.01 1/K
   Q_c | Volumetric heat capacity | 0.00345 | J/(K*mm^3) | assumption: Sheet default value; no project figure given. | 0.001 … 0.01 J/(K*mm^3)
   beta | Reciprocal temperature coefficient β | 234.5 | K | assumption: Sheet default value; no project figure given. | 100 … 400 K
@@ -1187,95 +1211,96 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
   A7. C_min (Voltage factor C_min) is taken as 0.95. (Sheet default value; no project figure given.)
   A8. c_max (Voltage factor c for the maximum fault) is taken as 1.1. (Sheet default value; no project figure given.)
   A9. theta (Conductor temperature for Z_s) is taken as 70 degC. (Sheet default value; no project figure given.)
-  A10. rho_20 (Resistivity at 20 °C) is taken as 0.000017241 ohm*mm. (Sheet default value; no project figure given.)
-  A11. alpha (Temperature coefficient of resistance) is taken as 0.00393 1/K. (Sheet default value; no project figure given.)
-  A12. Q_c (Volumetric heat capacity) is taken as 0.00345 J/(K*mm^3). (Sheet default value; no project figure given.)
-  A13. beta (Reciprocal temperature coefficient β) is taken as 234.5 K. (Sheet default value; no project figure given.)
-  A14. theta_i (Initial temperature for the adiabatic check) is taken as 70 degC. (Sheet default value; no project figure given.)
-  A15. theta_f (Final temperature for the adiabatic check) is taken as 160 degC. (Sheet default value; no project figure given.)
+  A10. rho_20 (Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R)) is taken as 0.000017241 ohm*mm. (Sheet default value; no project figure given.)
+  A11. k_R (Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the cable standard's maximum conductor resistances are 5 to 12 % above pure copper, so the default is 1.125 and Z_s is not understated; k is not changed by it)) is taken as 1.125. (Sheet default value; no project figure given.)
+  A12. alpha (Temperature coefficient of resistance) is taken as 0.00393 1/K. (Sheet default value; no project figure given.)
+  A13. Q_c (Volumetric heat capacity) is taken as 0.00345 J/(K*mm^3). (Sheet default value; no project figure given.)
+  A14. beta (Reciprocal temperature coefficient β) is taken as 234.5 K. (Sheet default value; no project figure given.)
+  A15. theta_i (Initial temperature for the adiabatic check) is taken as 70 degC. (Sheet default value; no project figure given.)
+  A16. theta_f (Final temperature for the adiabatic check) is taken as 160 degC. (Sheet default value; no project figure given.)
 
 4. WORKING
-  [19] R_12 = rho_20 * L * (1 / S_line + 1 / S_cpc) * (1 + alpha * (theta - 20 degC))
-      = 0.000017241 ohm·mm × 30 m × (1 / 10 mm² + 1 / 10 mm²) × (1 + 0.00393 1/K × (70 degC − 20 degC))
-      = 0.12377 ohm
+  [20] R_12 = rho_20 * k_R * L * (1 / S_line + 1 / S_cpc) * (1 + alpha * (theta - 20 degC))
+      = 0.000017241 ohm·mm × 1.125 × 30 m × (1 / 10 mm² + 1 / 10 mm²) × (1 + 0.00393 1/K × (70 degC − 20 degC))
+      = 0.13924 ohm
         R₁ + R₂ at the conductor temperature
-  [20] Z_s = Z_e + R_12    « BS 7671 reg. 411.4.4
-      = 0.05 ohm + 0.12377 ohm
-      = 0.17377 ohm
+  [21] Z_s = Z_e + R_12    « BS 7671 reg. 411.4.4
+      = 0.05 ohm + 0.13924 ohm
+      = 0.18924 ohm
         Earth fault loop impedance
-  [21] I_f = C_min * U_0 / Z_s
-      = 0.95 × 230 V / 0.17377 ohm
-      = 1257.4 A
+  [22] I_f = C_min * U_0 / Z_s
+      = 0.95 × 230 V / 0.18924 ohm
+      = 1154.6 A
         Earth fault current
-  [22] I_a = 10 * I_n    « BS EN 60898-1
+  [23] I_a = 10 * I_n    « BS EN 60898-1
       = 10 × 40 A
       = 400 A
         Instantaneous tripping current (10 I_n)
-  [23] Z_s_max = C_min * U_0 / I_a    « BS 7671 reg. 411.4.4
+  [24] Z_s_max = C_min * U_0 / I_a    « BS 7671 reg. 411.4.4
       = 0.95 × 230 V / 400 A
       = 0.54625 ohm
         Maximum earth fault loop impedance
-  [24] u_Zs = Z_s / Z_s_max
-      = 0.17377 ohm / 0.54625 ohm
-      = 0.31812
+  [25] u_Zs = Z_s / Z_s_max
+      = 0.18924 ohm / 0.54625 ohm
+      = 0.34644
         Loop impedance utilisation
-  [25] Z_test = 0.8 * Z_s_max
+  [26] Z_test = 0.8 * Z_s_max
       = 0.8 × 0.54625 ohm
       = 0.437 ohm
         Field-test maximum at ambient (0.8 × Z_s,max, rule of thumb)
-  [26] t_d = instantaneous region (I_f ≥ I_a): t ≤ 0.1 s
-      = I_f = 1257.4 A
+  [27] t_d = instantaneous region (I_f ≥ I_a): t ≤ 0.1 s
+      = I_f = 1154.6 A
       = 0.1 s
         Disconnection time
-  [28] I2t = device let-through I²t at the maximum prospective fault
+  [29] I2t = device let-through I²t at the maximum prospective fault
       = 80000 A²s
       = 80000 A²·s
         Fault energy (let-through below 0.1 s)
-  [29] k = √[Q_c(β + 20)/ρ₂₀ · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived)    « BS 7671 reg. 543.1.3
+  [30] k = √[Q_c(β + 20)/ρ₂₀ · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived)    « BS 7671 reg. 543.1.3
       = √[0.00345 × 254.5 / 0.000017241 × ln(1 + 90/304.5)]
       = 114.84
         Adiabatic factor k, A·√s/mm² (derived, compare with the licensed table)
-  [30] S_min = √(I²t)/k    « BS 7671 reg. 543.1.3, 434.5.2
+  [31] S_min = √(I²t)/k    « BS 7671 reg. 543.1.3, 434.5.2
       = √80000 / 114.84
       = 2.463 mm²
         Minimum conductor cross-section (adiabatic)
-  [31] u_cpc = S_min / S_cpc
+  [32] u_cpc = S_min / S_cpc
       = 2.463 mm² / 10 mm²
       = 0.2463
         Protective conductor utilisation
-  [32] u_line = S_min / S_line
+  [33] u_line = S_min / S_line
       = 2.463 mm² / 10 mm²
       = 0.2463
         Line conductor utilisation (same fault energy)
-  [35] U_n = sqrt(3) * U_0
+  [36] U_n = sqrt(3) * U_0
       = sqrt(3) × 230 V
       = 398.37 V
         Line voltage
-  [36] Z_T = u_k * U_n^2 / S_r
+  [37] Z_T = u_k * U_n^2 / S_r
       = 4 % × (398.37 V)^2 / 400 kVA
       = 0.01587 ohm
         Transformer impedance
-  [37] I_k3 = c_max * U_n / (sqrt(3) * Z_T)    « IEC 60909-0 cl. 5.3
+  [38] I_k3 = c_max * U_n / (sqrt(3) * Z_T)    « IEC 60909-0 cl. 5.3
       = 1.1 × 398.37 V / (sqrt(3) × 0.01587 ohm)
       = 15.942 kA
         Prospective three-phase fault at the origin (simplified)
-  [38] c_k3 = c_max    « IEC 60909-0 cl. 5.3
+  [39] c_k3 = c_max    « IEC 60909-0 cl. 5.3
       = 1.1
       = 1.1
         Voltage factor c of the prospective fault current
-  [40] u_Icn = I_k3 / I_cn
+  [41] u_Icn = I_k3 / I_cn
       = 15.942 kA / 25 kA
       = 0.63768
         Breaking capacity utilisation
 
 5. RESULTS
-  R_12 = 0.12377 ohm    R₁ + R₂
-  Z_s = 0.17377 ohm    Loop impedance
-  I_f = 1257.4 A    Earth fault current
+  R_12 = 0.13924 ohm    R₁ + R₂
+  Z_s = 0.18924 ohm    Loop impedance
+  I_f = 1154.6 A    Earth fault current
   I_a = 400 A    Disconnection current
   t_d = 0.1 s    Disconnection time
   Z_s_max = 0.54625 ohm    Maximum loop impedance
-  u_Zs = 0.31812    Loop impedance utilisation
+  u_Zs = 0.34644    Loop impedance utilisation
   Z_test = 0.437 ohm    Field-test maximum (rule of thumb)
   k = 114.84    Adiabatic k (derived)
   S_min = 2.463 mm²    Minimum cross-section
@@ -1288,20 +1313,20 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S Fau
 
 6. CHECKS (governing first)
   PASS  Breaking capacity against prospective fault: u_Icn = 0.63768 vs u_Icn ≤ 1  utilisation 0.638
-  PASS  Loop impedance within maximum (disconnection in time): u_Zs = 0.31812 vs u_Zs ≤ 1  utilisation 0.318  « BS 7671 reg. 411.4.4
+  PASS  Loop impedance within maximum (disconnection in time): u_Zs = 0.34644 vs u_Zs ≤ 1  utilisation 0.346  « BS 7671 reg. 411.4.4
   PASS  Disconnection time within required: 0.1 s vs 0.4 s  utilisation 0.25  « BS 7671 reg. 411.3.2.2
   PASS  Protective conductor against adiabatic minimum: u_cpc = 0.2463 vs u_cpc ≤ 1  utilisation 0.246  « BS 7671 reg. 543.1.3
   PASS  Line conductor against adiabatic minimum: u_line = 0.2463 vs u_line ≤ 1  utilisation 0.246  « BS 7671 reg. 434.5.2
 
 7. APPLICABILITY
-  WARNING record: Tabulated values not taken from a reference record: rho_20, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let, I_cn (Device time–current points). Enter each as one so its source, edition and licence travel with it.
+  WARNING record: Tabulated values not taken from a reference record: rho_20, k_R, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let, I_cn (Device time–current points). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.fault-protection@1.2.1
-  Content hash: b8f2af25892a73e4
+  Template: elec.fault-protection@1.3.0
+  Content hash: 52adab0302839136
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 5/5
-  Test run: 2026-10-26 08:42 UTC
+  Known-answer cases passed: 6/6
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
 
 
@@ -1567,5 +1592,5 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
   Content hash: 66f32fca1f51bd3a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 08:42 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
