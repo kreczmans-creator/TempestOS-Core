@@ -1,5 +1,7 @@
 using Tempest.Calc.Library;
 using Tempest.Calc.Library.Dashboard;
+// Addendum C, C-3 adds Tempest.Calc.Library.RecordRequirement (the record import's requirement); this file means the dashboard's.
+using RecordRequirement = Tempest.Calc.Library.Dashboard.RecordRequirement;
 using Tempest.Calc.Sheets;
 using Tempest.Calc.Tests.Sheets;
 
