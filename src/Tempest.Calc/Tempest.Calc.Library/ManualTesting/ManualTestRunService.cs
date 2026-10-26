@@ -99,7 +99,7 @@ public sealed class ManualTestRunService : IManualTestStatusSource
             if (existing.Count >= _maxRuns)
                 throw new ManualTestRefusedException($"There are already {existing.Count} test runs on file, which is the most this build keeps; save the results sheets you need, then use \"Delete older finished runs\" on the Guided test screen (a run that is not finished has to be finished first).");
 
-            await tx.WriteAsync(Collection, Key(run.Id), Serialise(run), token).ConfigureAwait(false);
+            await tx.WriteAsync(Collection, Key(run.Id), Serialise(run, $"The new test run is larger than {CalcInstanceStore.MaxDocumentBytes / 1_000_000} MB and was not saved."), token).ConfigureAwait(false);
         }, cancellationToken).ConfigureAwait(false);
 
         return run;
@@ -192,7 +192,7 @@ public sealed class ManualTestRunService : IManualTestStatusSource
 
             results.Add(new ManualTestStepResult(stepId, outcome, text, values, _clock().ToUniversalTime()));
             saved = run with { Results = results };
-            await tx.WriteAsync(Collection, Key(runId), Serialise(saved), token).ConfigureAwait(false);
+            await tx.WriteAsync(Collection, Key(runId), Serialise(saved, $"The test run is larger than {CalcInstanceStore.MaxDocumentBytes / 1_000_000} MB, so the result for step '{step.Title}' was not saved; finish this run and start a new one."), token).ConfigureAwait(false);
         }, cancellationToken).ConfigureAwait(false);
 
         return saved!;
@@ -217,7 +217,7 @@ public sealed class ManualTestRunService : IManualTestStatusSource
 
             var run = await ReadForChangeAsync(tx, runId, closing: true, token).ConfigureAwait(false);
             saved = run with { FinishedUtc = _clock().ToUniversalTime() };
-            await tx.WriteAsync(Collection, Key(runId), Serialise(saved), token).ConfigureAwait(false);
+            await tx.WriteAsync(Collection, Key(runId), Serialise(saved, $"The test run is larger than {CalcInstanceStore.MaxDocumentBytes / 1_000_000} MB, so it could not be marked finished; save its results sheet and start a new run."), token).ConfigureAwait(false);
         }, cancellationToken).ConfigureAwait(false);
 
         return saved!;
@@ -356,7 +356,22 @@ public sealed class ManualTestRunService : IManualTestStatusSource
 
     private static string Clip(string text, int length) => text.Length <= length ? text : text[..(length - 1)] + "…";
 
-    private static string Serialise(ManualTestRun run) => JsonSerializer.Serialize(run, Json);
+    /// <summary>
+    /// The run as stored, refused (<see cref="ManualTestRefusedException"/>) the moment it would pass the store's document cap
+    /// (<see cref="CalcInstanceStore.MaxDocumentBytes"/>, 4 MB) like every other document the calculation store writes. The caps on a note and a values text
+    /// allow a run of several hundred results to pass it, and accented text is written six bytes to the character.
+    /// </summary>
+    private static string Serialise(ManualTestRun run, string tooLarge)
+    {
+        try
+        {
+            return CalcInstanceStore.SerialiseWithin(run, () => tooLarge, Json);
+        }
+        catch (CalcDocumentTooLargeException ex)
+        {
+            throw new ManualTestRefusedException(ex.Message);
+        }
+    }
 
     /// <summary>A document that cannot be read, or that a newer build wrote, is not a run to this build.</summary>
     private static ManualTestRun? Deserialise(string? json)

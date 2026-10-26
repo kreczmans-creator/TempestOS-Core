@@ -310,7 +310,7 @@ public sealed partial class CalcInstanceService
         {
             await _store.SaveInstanceAsync(updated, instance.UpdatedAt, cancellationToken).ConfigureAwait(false);
         }
-        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException)
+        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException or CalcDocumentTooLargeException)
         {
             return CalcActionResult.Refused(ex.Message, await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false) ?? instance);
         }
@@ -379,7 +379,7 @@ public sealed partial class CalcInstanceService
         {
             await _store.SaveInstanceAsync(updated, instance.UpdatedAt, cancellationToken).ConfigureAwait(false);
         }
-        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException)
+        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException or CalcDocumentTooLargeException)
         {
             return CalcActionResult.Refused(ex.Message, await _store.FindInstanceAsync(instanceId, cancellationToken).ConfigureAwait(false) ?? instance);
         }
@@ -467,7 +467,7 @@ public sealed partial class CalcInstanceService
         {
             await _store.SavePackAsync(pack with { SecondCheck = signature, UpdatedAt = now }, pack.UpdatedAt, cancellationToken).ConfigureAwait(false);
         }
-        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException)
+        catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException or CalcDocumentTooLargeException)
         {
             return CalcActionResult.Refused(ex.Message);
         }

@@ -704,7 +704,15 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         }
 
         var name = _view.CalculationName ?? $"{entry.Template.Title} {DateTime.UtcNow:yyyyMMdd-HHmm}";
-        var created = await _service.CreateAsync(entry.Reference, _projects.Current?.Id, name, _latest.Values).ConfigureAwait(true);
+        var result = await _service.TryCreateAsync(entry.Reference, _projects.Current?.Id, name, _latest.Values).ConfigureAwait(true);
+
+        // A calculation the store would refuse for size (past 4 MB), or one whose links are not allowed, is said in one sentence naming it; nothing was made.
+        if (result.Instance is not { } created)
+        {
+            _view.ShowStatus(result.Reason ?? "That calculation was not saved.");
+            return;
+        }
+
         _view.ShowInstance(created);
         _view.ShowStatus(_projects.HasProject
             ? $"Saved as '{created.Name}' in {_projects.Current!.DisplayName}; it is in the Calculation register and has its own Evidence."
