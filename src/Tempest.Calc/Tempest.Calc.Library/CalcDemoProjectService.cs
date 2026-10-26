@@ -2,6 +2,8 @@ using System.Text;
 using Tempest.Calc.Sheets;
 using Tempest.Core.Audit;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Evidence;
+using Tempest.Core.Persistence;
 
 namespace Tempest.Calc.Library;
 
@@ -10,7 +12,8 @@ namespace Tempest.Calc.Library;
 /// <param name="Message">One sentence for the person.</param>
 /// <param name="Calculations">How many calculations the act made or removed.</param>
 /// <param name="Packs">How many packs the act made or removed.</param>
-public sealed record CalcDemoOutcome(bool Succeeded, string Message, int Calculations = 0, int Packs = 0)
+/// <param name="PartlyDone">The act did not finish but changed what is stored (a removal that deleted the calculations and then stopped; an install whose clean-up failed), so the screens are worth refreshing.</param>
+public sealed record CalcDemoOutcome(bool Succeeded, string Message, int Calculations = 0, int Packs = 0, bool PartlyDone = false)
 {
     internal static CalcDemoOutcome Refused(string message) => new(false, message);
 }
@@ -32,13 +35,16 @@ public sealed record CalcDemoStatus(bool Installed, Guid? ProjectId, string? Ins
 /// name, and the installer is one person, so the calculations are left as drafts for the user to check.
 /// </para>
 /// <para>
-/// <b>Remove</b> is the only delete this feature makes. In one transaction it deletes the demonstration's calculation, pack and scan-profile rows
-/// (<see cref="CalcInstanceStore.DeleteDemonstrationRowsAsync"/>); it then marks the project and everything under it deleted with the platform's own
-/// soft delete (an engineering object is never erased: its history and the audit trail stay, ADR-0074). It refuses when any calculation or pack of the
-/// demonstration is issued: an issued record is never deleted. Rows of any other project are never read for deletion, let alone deleted.
+/// <b>Remove</b> is the only delete this feature makes. In one transaction it deletes the demonstration's calculation and pack rows and the two scan
+/// profiles the install wrote, at the versions it wrote (<see cref="CalcInstanceStore.DeleteDemonstrationRowsAsync"/>; a later version of those profiles that a
+/// person saved is left alone); the "Demo.Removed" audit row, with the counts, is written the moment that transaction commits; then it marks the project and
+/// everything under it deleted with the platform's own soft delete (an engineering object is never erased: its history and the audit trail stay, ADR-0074).
+/// It refuses, before anything changes and naming the record, when any calculation, pack or Evidence record under the demonstration is issued or superseded:
+/// an issued record is never deleted. If the soft delete fails after the rows are gone, the person is told to press Remove again, which finishes it. Rows of
+/// any other project are never read for deletion, let alone deleted.
 /// </para>
 /// </summary>
-public sealed class CalcDemoProjectService
+public class CalcDemoProjectService
 {
     private readonly CalcInstanceService _service;
     private readonly EngineeringDomainContext _domain;
@@ -62,7 +68,7 @@ public sealed class CalcDemoProjectService
     }
 
     /// <summary>Whether the demonstration is installed, and what an install would be refused for.</summary>
-    public async Task<CalcDemoStatus> StatusAsync(CancellationToken cancellationToken = default)
+    public virtual async Task<CalcDemoStatus> StatusAsync(CancellationToken cancellationToken = default)
     {
         var (demo, other) = await FindAsync(cancellationToken).ConfigureAwait(false);
 
@@ -82,7 +88,7 @@ public sealed class CalcDemoProjectService
     /// <summary>Installs the demonstration project, or says in a sentence why it did not.</summary>
     /// <param name="progress">Told what the install is making, one short line at a time.</param>
     /// <param name="cancellationToken">Cancels the install; what was made is removed.</param>
-    public async Task<CalcDemoOutcome> InstallAsync(IProgress<string>? progress = null, CancellationToken cancellationToken = default)
+    public virtual async Task<CalcDemoOutcome> InstallAsync(IProgress<string>? progress = null, CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -119,7 +125,7 @@ public sealed class CalcDemoProjectService
                 var calculations = await VerifyAsync(projectId.Value, cancellationToken).ConfigureAwait(false);
                 await RecordAsync("Demo.Installed", calculations, packs).ConfigureAwait(false);
 
-                return new CalcDemoOutcome(true, $"Installed the demo project '{CalcDemoProject.DisplayName}': {calculations} calculations in {packs} packs, all drafts with invented data.", calculations, packs);
+                return new CalcDemoOutcome(true, $"Installed the demo project '{CalcDemoProject.DisplayName}': {calculations} calculations in {packs} packs, all drafts; the figures are invented except one steel section's published dimensions, marked indicative.", calculations, packs);
             }
             catch (OperationCanceledException)
             {
@@ -128,8 +134,11 @@ public sealed class CalcDemoProjectService
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                await RollBackAsync(projectId).ConfigureAwait(false);
-                return CalcDemoOutcome.Refused($"The demo project could not be installed ({Sentence(ex.Message)}); nothing of it was kept.");
+                var cleared = await RollBackAsync(projectId).ConfigureAwait(false);
+                var why = $"The demo project could not be installed ({Sentence(ex.Message)})";
+                return cleared
+                    ? CalcDemoOutcome.Refused($"{why}; nothing of it was kept.")
+                    : new CalcDemoOutcome(false, $"{why}; part of it is left; use Remove demo project to clear it.", PartlyDone: true);
             }
         }
         finally
@@ -263,18 +272,19 @@ public sealed class CalcDemoProjectService
         return instances.Count;
     }
 
-    private async Task RollBackAsync(Guid? projectId)
+    /// <summary>Removes what a failed install made and says whether it all went. When it did not, the install's own failure is still the one reported, with the plain word that part is left (the project is flagged, so Remove finishes the job).</summary>
+    private async Task<bool> RollBackAsync(Guid? projectId)
     {
-        if (projectId is { } id)
+        if (projectId is not { } id)
+            return true;
+
+        try
         {
-            try
-            {
-                await RemoveProjectAsync(id, CancellationToken.None).ConfigureAwait(false);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                // The install's own failure is the one reported; the project is flagged, so Remove finishes the job.
-            }
+            return (await RemoveProjectAsync(id, CancellationToken.None).ConfigureAwait(false)).Succeeded;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return false;
         }
     }
 
@@ -299,7 +309,7 @@ public sealed class CalcDemoProjectService
     // ------------------------------------------------------------------------------------------------------------------------------
 
     /// <summary>Removes the demonstration project and everything in it, or says in a sentence why it did not. Every other project is left exactly as it was.</summary>
-    public async Task<CalcDemoOutcome> RemoveAsync(CancellationToken cancellationToken = default)
+    public virtual async Task<CalcDemoOutcome> RemoveAsync(CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
 
@@ -322,6 +332,11 @@ public sealed class CalcDemoProjectService
             {
                 return CalcDemoOutcome.Refused($"The demo project was not removed, because an issued calculation or pack in it is never deleted ({Sentence(ex.Message)}).");
             }
+            catch (Exception ex) when (ex is EngineeringDomainException or InvalidOperationException or IOException or PersistenceException)
+            {
+                // The row transaction is all or nothing, and a failure after it is answered inside RemoveProjectAsync, so what reaches here changed nothing: said in a sentence, not thrown at the screen.
+                return CalcDemoOutcome.Refused($"The demo project was not removed ({Sentence(ex.Message)}); nothing was deleted.");
+            }
         }
         finally
         {
@@ -329,7 +344,11 @@ public sealed class CalcDemoProjectService
         }
     }
 
-    /// <summary>The removal itself, for a project already proved to be the demonstration: refuse if anything in it is issued, delete the rows in one transaction, then soft-delete the objects.</summary>
+    /// <summary>
+    /// The removal itself, for a project already proved to be the demonstration: refuse if anything in it is issued, delete the rows in one transaction, record
+    /// the removal with the counts that transaction really deleted, then soft-delete the objects. The audit row comes before the soft delete because the rows
+    /// are gone for good the moment the transaction commits: a failure after it must not leave a deletion with no record.
+    /// </summary>
     private async Task<CalcDemoOutcome> RemoveProjectAsync(Guid projectId, CancellationToken cancellationToken)
     {
         // The refusal is made here, before anything changes, so a person is told which calculation is in the way; the store refuses too, below every service.
@@ -345,10 +364,58 @@ public sealed class CalcDemoProjectService
                 return CalcDemoOutcome.Refused($"The demo project was not removed: the pack '{pack.Title}' is {pack.Status.ToString().ToLowerInvariant()}, and an issued pack is never deleted.");
         }
 
-        var (instances, packs, _) = await _service.Store.DeleteDemonstrationRowsAsync(projectId, [CalcDemoProject.StackProfileId, CalcDemoProject.GlandProfileId], cancellationToken).ConfigureAwait(false);
-        await DeleteTreeAsync(projectId, cancellationToken).ConfigureAwait(false);
-        await RecordAsync("Demo.Removed", instances, packs).ConfigureAwait(false);
-        return new CalcDemoOutcome(true, $"Removed the demo project '{CalcDemoProject.DisplayName}': {instances} calculations and {packs} packs.", instances, packs);
+        if (await FirstIssuedEvidenceAsync(projectId, cancellationToken).ConfigureAwait(false) is { } issued)
+            return CalcDemoOutcome.Refused($"The demo project was not removed: the evidence '{issued.DisplayName}' is {issued.Status.ToString().ToLowerInvariant()}, and issued evidence is never deleted.");
+
+        var (instances, packs, profiles) = await _service.Store.DeleteDemonstrationRowsAsync(projectId, CalcDemoProject.ScanProfiles, cancellationToken).ConfigureAwait(false);
+
+        // From here the rows are gone. What was deleted goes on the audit trail now, whatever happens next; a retry finds no rows (0 and 0) and records nothing again.
+        Exception? unrecorded = null;
+
+        if (instances + packs + profiles > 0)
+        {
+            try
+            {
+                await RecordAsync("Demo.Removed", instances, packs).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                unrecorded = ex;
+            }
+        }
+
+        try
+        {
+            // Finished whatever the caller does now: the calculations are gone, so the project is not left live and flagged because a token was cancelled.
+            await DeleteTreeAsync(projectId, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return new CalcDemoOutcome(false, "The demo's calculations were removed; finishing the removal failed — press Remove demo project again.", instances, packs, PartlyDone: true);
+        }
+
+        var done = instances + packs == 0
+            ? $"Removed the demo project '{CalcDemoProject.DisplayName}' (its calculations had been removed already)."
+            : $"Removed the demo project '{CalcDemoProject.DisplayName}': {instances} calculations and {packs} packs.";
+        return new CalcDemoOutcome(true, unrecorded is null ? done : $"{done} The audit row for it could not be written ({Sentence(unrecorded.Message)}).", instances, packs);
+    }
+
+    /// <summary>The first Evidence record under <paramref name="projectId"/> (at any depth, deleted ones skipped) that is issued or superseded, or <see langword="null"/>.</summary>
+    private async Task<(string DisplayName, EvidenceStatus Status)?> FirstIssuedEvidenceAsync(Guid projectId, CancellationToken cancellationToken)
+    {
+        foreach (var child in await _domain.Repository.ListChildrenAsync(projectId, cancellationToken).ConfigureAwait(false))
+        {
+            if (child.IsDeleted)
+                continue;
+
+            if (await _domain.Repository.FindAsync(child.Id, cancellationToken).ConfigureAwait(false) is IEvidenceRecord { Status: EvidenceStatus.Issued or EvidenceStatus.Superseded } evidence)
+                return (child.DisplayName, evidence.Status);
+
+            if (await FirstIssuedEvidenceAsync(child.Id, cancellationToken).ConfigureAwait(false) is { } deeper)
+                return deeper;
+        }
+
+        return null;
     }
 
     /// <summary>Soft-deletes <paramref name="id"/> and everything under it, deepest first (an object with a live child cannot be deleted).</summary>

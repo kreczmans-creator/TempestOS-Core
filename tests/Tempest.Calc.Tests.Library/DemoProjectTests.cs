@@ -445,7 +445,18 @@ public sealed class DemoProjectTests(InstalledDemo demo) : IClassFixture<Install
         var demoId = (await service.StatusAsync()).ProjectId!.Value;
         Assert.NotEqual(before.Count, host.Backing.Snapshot().Count);
 
+        // One transaction means all or nothing: a failure in the middle of the batch of deletes (the 40th of about eighty) leaves every row where it was and
+        // commits nothing. A count of commits would pass for a store that deleted half and committed twice.
+        var installed = host.Backing.Snapshot();
         var commitsBefore = host.Backing.CommitCount;
+        var bomb = new CalcInstanceStore(new FailOnNthDeleteStore(host.Failing, failOn: 40));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => bomb.DeleteDemonstrationRowsAsync(demoId, CalcDemoProject.ScanProfiles));
+        AssertSame(installed, host.Backing.Snapshot());
+        Assert.Equal(commitsBefore, host.Backing.CommitCount);
+        Assert.Equal(60, (await host.Store.ListInstancesAsync(demoId)).Count);
+        Assert.Equal(13, (await host.Store.ListPacksAsync(demoId)).Count);
+        Assert.NotNull(await host.Service.FindScanProfileAsync(CalcDemoProject.StackProfileId));
+
         var outcome = await service.RemoveAsync();
         Assert.True(outcome.Succeeded, outcome.Message);
         Assert.Contains("Removed the demo project", outcome.Message, StringComparison.Ordinal);
@@ -480,7 +491,6 @@ public sealed class DemoProjectTests(InstalledDemo demo) : IClassFixture<Install
         Assert.NotNull(await host.Service.FindScanProfileAsync("real-seal-stack"));
         Assert.NotNull(await host.Store.FindRecordAsync(record!.Id));
         Assert.Null((await host.Service.SheetAsync(survivor)).Header.Watermark);
-        Assert.True(host.Backing.CommitCount > commitsBefore);
     }
 
     private static async Task<CalcPackInstantiation> InstantiateRealAsync(LibraryTestHost host, Guid? project)
@@ -571,7 +581,7 @@ public sealed class DemoProjectTests(InstalledDemo demo) : IClassFixture<Install
         Assert.True((await service.StatusAsync()).Installed);
 
         // Below the service, the store refuses to delete an issued row too, and its one transaction rolls back whole.
-        await Assert.ThrowsAsync<CalcInstanceImmutableException>(() => host.Store.DeleteDemonstrationRowsAsync(projectId, [CalcDemoProject.StackProfileId]));
+        await Assert.ThrowsAsync<CalcInstanceImmutableException>(() => host.Store.DeleteDemonstrationRowsAsync(projectId, CalcDemoProject.ScanProfiles));
         AssertSame(before, host.Backing.Snapshot());
     }
 
@@ -620,14 +630,308 @@ public sealed class DemoProjectTests(InstalledDemo demo) : IClassFixture<Install
         var before = host.Backing.Snapshot();
 
         await Assert.ThrowsAsync<ArgumentException>(() => host.Store.DeleteDemonstrationRowsAsync(Guid.Empty, []));
-        await Assert.ThrowsAsync<ArgumentException>(() => host.Store.DeleteDemonstrationRowsAsync(real.ProjectId!.Value, ["real-seal-stack"]));
-        await Assert.ThrowsAsync<ArgumentException>(() => host.Store.DeleteDemonstrationRowsAsync(real.ProjectId!.Value, ["demo-press-seal-stack", "any-other"]));
+        await Assert.ThrowsAsync<ArgumentException>(() => host.Store.DeleteDemonstrationRowsAsync(real.ProjectId!.Value, [("real-seal-stack", 1)]));
+        await Assert.ThrowsAsync<ArgumentException>(() => host.Store.DeleteDemonstrationRowsAsync(real.ProjectId!.Value, [("demo-press-seal-stack", 1), ("any-other", 1)]));
         AssertSame(before, host.Backing.Snapshot());
 
         // Given a real project's id it would delete that project's rows: which is why only the service, after proving the project is the demonstration, calls it.
-        var (instances, packs, profiles) = await host.Store.DeleteDemonstrationRowsAsync(Guid.NewGuid(), [CalcDemoProject.StackProfileId]);
+        var (instances, packs, profiles) = await host.Store.DeleteDemonstrationRowsAsync(Guid.NewGuid(), [(CalcDemoProject.StackProfileId, 1)]);
         Assert.Equal((0, 0, 0), (instances, packs, profiles));
         AssertSame(before, host.Backing.Snapshot());
+    }
+
+    /// <summary>A store whose transaction throws on its Nth delete, partway through a batch: what a failing disk or a killed process does between two writes.</summary>
+    private sealed class FailOnNthDeleteStore(Tempest.Core.Persistence.IQueryablePersistenceStore inner, int failOn) : Tempest.Core.Persistence.IQueryablePersistenceStore
+    {
+        public long CurrentSequence => inner.CurrentSequence;
+
+        public Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default) => inner.ListKeysAsync(collection, keyPrefix, cancellationToken);
+
+        public Task<IReadOnlyList<KeyValuePair<string, string>>> ReadAllAsync(string collection, CancellationToken cancellationToken = default) => inner.ReadAllAsync(collection, cancellationToken);
+
+        public Task<IReadOnlyDictionary<string, string?>> ReadManyAsync(string collection, IReadOnlyCollection<string> keys, CancellationToken cancellationToken = default) => inner.ReadManyAsync(collection, keys, cancellationToken);
+
+        public Task ExecuteInTransactionAsync(Func<Tempest.Core.Persistence.IPersistenceTransaction, CancellationToken, Task> work, CancellationToken cancellationToken = default)
+        {
+            var deletes = 0;
+            return inner.ExecuteInTransactionAsync((tx, token) => work(new Counting(tx, () => ++deletes == failOn), token), cancellationToken);
+        }
+
+        public Task<T> ExecuteInReadTransactionAsync<T>(Func<Tempest.Core.Persistence.IPersistenceReadTransaction, CancellationToken, Task<T>> read, CancellationToken cancellationToken = default) => inner.ExecuteInReadTransactionAsync(read, cancellationToken);
+
+        public Task<IReadOnlyList<Tempest.Core.Persistence.SearchHit>> SearchAsync(string query, int limit, CancellationToken cancellationToken = default) => inner.SearchAsync(query, limit, cancellationToken);
+
+        public Task<bool> IsSearchIndexEmptyAsync(CancellationToken cancellationToken = default) => inner.IsSearchIndexEmptyAsync(cancellationToken);
+
+        private sealed class Counting(Tempest.Core.Persistence.IPersistenceTransaction tx, Func<bool> failNow) : Tempest.Core.Persistence.IPersistenceTransaction
+        {
+            public Task<string?> ReadAsync(string collection, string key, CancellationToken cancellationToken = default) => tx.ReadAsync(collection, key, cancellationToken);
+
+            public Task WriteAsync(string collection, string key, string value, CancellationToken cancellationToken = default) => tx.WriteAsync(collection, key, value, cancellationToken);
+
+            public Task DeleteAsync(string collection, string key, CancellationToken cancellationToken = default) =>
+                failNow() ? throw new InvalidOperationException("Injected: the store failed in the middle of the batch.") : tx.DeleteAsync(collection, key, cancellationToken);
+
+            public Task<byte[]?> ReadBytesAsync(string collection, string key, CancellationToken cancellationToken = default) => tx.ReadBytesAsync(collection, key, cancellationToken);
+
+            public Task WriteBytesAsync(string collection, string key, ReadOnlyMemory<byte> value, CancellationToken cancellationToken = default) => tx.WriteBytesAsync(collection, key, value, cancellationToken);
+
+            public Task<IReadOnlyList<string>> ListKeysAsync(string collection, string keyPrefix, CancellationToken cancellationToken = default) => tx.ListKeysAsync(collection, keyPrefix, cancellationToken);
+
+            public Task IndexTextAsync(Guid objectId, string kind, Guid? projectId, string title, string? identifier, string? refs, CancellationToken cancellationToken = default) =>
+                tx.IndexTextAsync(objectId, kind, projectId, title, identifier, refs, cancellationToken);
+
+            public Task RemoveFromIndexAsync(Guid objectId, CancellationToken cancellationToken = default) => tx.RemoveFromIndexAsync(objectId, cancellationToken);
+        }
+    }
+
+    /// <summary>An audit recorder that lets a test break the store at a chosen moment: right after the row for <paramref name="action"/> is written.</summary>
+    private sealed class BreakingAudit(LibraryTestHost host, string action, bool alsoThrow = false) : Tempest.Core.Audit.IAuditRecorder
+    {
+        public List<(string Action, IReadOnlyDictionary<string, string>? Detail)> Rows { get; } = [];
+
+        public Task RecordAsync(string recorded, IReadOnlyDictionary<string, string>? detail = null, CancellationToken cancellationToken = default)
+        {
+            Rows.Add((recorded, detail));
+
+            if (recorded == action)
+            {
+                // Every commit from here on fails: the second step of the removal, or the install's own clean-up, cannot land.
+                host.Failing.FailEveryCommit = true;
+
+                if (alsoThrow)
+                    throw new InvalidOperationException("the audit store went away");
+            }
+
+            return Task.CompletedTask;
+        }
+    }
+
+    private static CalcDemoProjectService ServiceWith(LibraryTestHost host, Tempest.Core.Audit.IAuditRecorder audit) =>
+        new(host.Service, host.Context, [ConductorSizingCalculator.SyntheticAmpacity(), ConductorSizingCalculator.TypicalRatings()], audit);
+
+    [Fact]
+    public async Task The_Row_Deletion_Is_One_Transaction_Body_And_The_Removal_Counts_What_It_Deleted()
+    {
+        var host = DemoHost.New();
+        var service = DemoHost.Service(host);
+        Assert.True((await service.InstallAsync()).Succeeded);
+        var projectId = (await service.StatusAsync()).ProjectId!.Value;
+
+        var bodies = host.Failing.BodiesCompleted;
+        var commits = host.Backing.CommitCount;
+        var deleted = await host.Store.DeleteDemonstrationRowsAsync(projectId, CalcDemoProject.ScanProfiles);
+
+        Assert.Equal((60, 13, 2), deleted);
+        Assert.Equal(1, host.Failing.BodiesCompleted - bodies);
+        Assert.Equal(commits + 1, host.Backing.CommitCount);
+    }
+
+    [Fact]
+    public async Task Remove_Deletes_Only_The_Scan_Profile_Versions_The_Install_Wrote_And_Keeps_A_Later_Version_A_Person_Saved()
+    {
+        var host = DemoHost.New();
+        var service = DemoHost.Service(host);
+        Assert.True((await service.InstallAsync()).Succeeded);
+
+        // A person builds on the demonstration's profile: a new version of it (a profile is immutable, so a change is a version).
+        var (saved, refusal) = await host.Service.SaveScanProfileAsync(CalcDemoProject.StackProfile with { Version = 2, Title = "My own version of the groove-root profile" });
+        Assert.Null(refusal);
+        Assert.Equal(2, saved!.Version);
+        var theirs = host.Backing.Snapshot().Single(kv => kv.Key.Collection == CalcInstanceStore.ScanProfileCollection && kv.Key.Key == CalcInstanceStore.ImportProfileKey(CalcDemoProject.StackProfileId, 2));
+
+        var removed = await service.RemoveAsync();
+
+        Assert.True(removed.Succeeded, removed.Message);
+        var after = host.Backing.Snapshot();
+        Assert.False(after.ContainsKey((CalcInstanceStore.ScanProfileCollection, CalcInstanceStore.ImportProfileKey(CalcDemoProject.StackProfileId, 1))));
+        Assert.False(after.ContainsKey((CalcInstanceStore.ScanProfileCollection, CalcInstanceStore.ImportProfileKey(CalcDemoProject.GlandProfileId, 1))));
+        Assert.Equal(theirs.Value, after[theirs.Key]);
+        Assert.Equal(2, (await host.Service.FindScanProfileAsync(CalcDemoProject.StackProfileId))!.Version);
+    }
+
+    [Fact]
+    public async Task A_Failure_After_The_Rows_Are_Deleted_Is_Audited_With_The_Real_Counts_Said_In_A_Sentence_And_A_Retry_Finishes_Without_A_Second_Audit_Row()
+    {
+        var host = DemoHost.New();
+        var audit = new BreakingAudit(host, "Demo.Removed");
+        var service = ServiceWith(host, audit);
+        Assert.True((await service.InstallAsync()).Succeeded);
+        var projectId = (await service.StatusAsync()).ProjectId!.Value;
+
+        // The row transaction commits, the audit row is written, then every commit fails: the soft delete of the project cannot land.
+        var first = await service.RemoveAsync();
+
+        Assert.False(first.Succeeded);
+        Assert.True(first.PartlyDone);
+        Assert.Equal("The demo's calculations were removed; finishing the removal failed — press Remove demo project again.", first.Message);
+        Assert.Equal((60, 13), (first.Calculations, first.Packs));
+        Assert.Empty(await host.Store.ListInstancesAsync(projectId));
+        Assert.Empty(await host.Store.ListPacksAsync(projectId));
+        var row = Assert.Single(audit.Rows, r => r.Action == "Demo.Removed");
+        Assert.Equal("60", row.Detail!["Calculations"]);
+        Assert.Equal("13", row.Detail["Packs"]);
+        Assert.False(((IDeletable)(await host.Context.Repository.FindAsync(projectId))!).IsDeleted);
+        Assert.True((await service.StatusAsync()).Installed);
+
+        // Pressing the action again finishes the job, and does not write a second, empty record of a deletion that was already recorded.
+        host.Failing.FailEveryCommit = false;
+        var retry = await service.RemoveAsync();
+
+        Assert.True(retry.Succeeded, retry.Message);
+        Assert.Contains("had been removed already", retry.Message, StringComparison.Ordinal);
+        Assert.True(((IDeletable)(await host.Context.Repository.FindAsync(projectId))!).IsDeleted);
+        Assert.False((await service.StatusAsync()).Installed);
+        Assert.Single(audit.Rows, r => r.Action == "Demo.Removed");
+    }
+
+    [Fact]
+    public async Task A_Removal_The_Store_Cannot_Make_Says_So_In_A_Sentence_Changes_Nothing_And_Can_Be_Pressed_Again()
+    {
+        var host = DemoHost.New();
+        var service = DemoHost.Service(host);
+        Assert.True((await service.InstallAsync()).Succeeded);
+        var before = host.Backing.Snapshot();
+
+        host.Failing.FailNextCommit = true;
+        var outcome = await service.RemoveAsync();
+
+        Assert.False(outcome.Succeeded);
+        Assert.False(outcome.PartlyDone);
+        Assert.Contains("was not removed", outcome.Message, StringComparison.Ordinal);
+        Assert.Contains("nothing was deleted", outcome.Message, StringComparison.Ordinal);
+        AssertSame(before, host.Backing.Snapshot());
+        Assert.True((await DemoHost.Service(host).RemoveAsync()).Succeeded);
+    }
+
+    [Fact]
+    public async Task Issued_Evidence_Under_The_Demo_Refuses_The_Removal_Naming_It_And_Changes_Nothing()
+    {
+        var host = DemoHost.New();
+        var service = DemoHost.Service(host);
+        Assert.True((await service.InstallAsync()).Succeeded);
+        var projectId = (await service.StatusAsync()).ProjectId!.Value;
+
+        // A person files their own evidence under the demonstration and issues it: not a calculation or a pack, so only the Evidence check can see it.
+        var evidence = await host.Evidence.CreateAsync(projectId, "Anchorage report DEMO-ANC-1", EvidenceClassification.Calculation);
+        Assert.True((await host.Evidence.RecordCheckAsync(evidence.Id, "J. Reviewer", "Demo Client", "OK", CheckOutcome.Accepted)).Succeeded);
+        var issued = await host.Evidence.IssueAsync(evidence.Id, "DEMO-ANC-ISS-1", "A", "Demo Client");
+        Assert.True(issued.Succeeded, issued.Reason);
+        var before = host.Backing.Snapshot();
+
+        var removal = await service.RemoveAsync();
+
+        Assert.False(removal.Succeeded);
+        Assert.Contains("Anchorage report DEMO-ANC-1", removal.Message, StringComparison.Ordinal);
+        Assert.Contains("issued", removal.Message, StringComparison.Ordinal);
+        Assert.Contains("never deleted", removal.Message, StringComparison.Ordinal);
+        AssertSame(before, host.Backing.Snapshot());
+        Assert.Equal(60, (await host.Store.ListInstancesAsync(projectId)).Count);
+        Assert.False(((IDeletable)(await host.Context.Repository.FindAsync(evidence.Id))!).IsDeleted);
+        Assert.True((await service.StatusAsync()).Installed);
+
+        // A draft piece of evidence of the person's own does not stand in the way: it goes with the project, as the platform's soft delete.
+        var draftHost = DemoHost.New();
+        var draftService = DemoHost.Service(draftHost);
+        Assert.True((await draftService.InstallAsync()).Succeeded);
+        var draftProject = (await draftService.StatusAsync()).ProjectId!.Value;
+        var draft = await draftHost.Evidence.CreateAsync(draftProject, "A note of mine", EvidenceClassification.Calculation);
+        Assert.True((await draftService.RemoveAsync()).Succeeded);
+        Assert.True(((IDeletable)(await draftHost.Context.Repository.FindAsync(draft.Id))!).IsDeleted);
+    }
+
+    [Fact]
+    public async Task A_Failed_Install_Whose_Clean_Up_Also_Fails_Says_Part_Of_It_Is_Left_And_Remove_Clears_It()
+    {
+        var host = DemoHost.New();
+
+        // The install is complete (60 calculations) when its audit row fails, and the store then refuses every commit: so the clean-up fails as well.
+        var service = ServiceWith(host, new BreakingAudit(host, "Demo.Installed", alsoThrow: true));
+        var outcome = await service.InstallAsync();
+
+        Assert.False(outcome.Succeeded);
+        Assert.True(outcome.PartlyDone);
+        Assert.Contains("could not be installed", outcome.Message, StringComparison.Ordinal);
+        Assert.Contains("part of it is left; use Remove demo project to clear it", outcome.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("nothing of it was kept", outcome.Message, StringComparison.Ordinal);
+        Assert.Equal(60, host.Backing.CommittedKeys(CalcInstanceStore.InstanceCollection).Count);
+
+        // The message told the truth: the project is flagged and live, and the removal the message names clears it.
+        host.Failing.FailEveryCommit = false;
+        var status = await service.StatusAsync();
+        Assert.True(status.Installed);
+        var removed = await service.RemoveAsync();
+        Assert.True(removed.Succeeded, removed.Message);
+        Assert.Equal(60, removed.Calculations);
+        Assert.Empty(host.Backing.CommittedKeys(CalcInstanceStore.InstanceCollection));
+        Assert.Empty(host.Backing.CommittedKeys(CalcInstanceStore.PackCollection));
+        Assert.Empty(host.Backing.CommittedKeys(CalcInstanceStore.ScanProfileCollection));
+        Assert.False((await service.StatusAsync()).Installed);
+    }
+
+    [Fact]
+    public async Task A_Stale_Update_Of_A_Calculation_Deleted_Since_It_Was_Read_Is_Refused_And_Does_Not_Bring_It_Back()
+    {
+        var host = DemoHost.New();
+        var service = DemoHost.Service(host);
+        Assert.True((await service.InstallAsync()).Succeeded);
+        var projectId = (await service.StatusAsync()).ProjectId!.Value;
+        var read = (await host.Store.ListInstancesAsync(projectId))[0];
+
+        Assert.True((await service.RemoveAsync()).Succeeded);
+        var before = host.Backing.Snapshot();
+
+        var refused = await Assert.ThrowsAsync<CalcConcurrencyException>(() => host.Store.SaveInstanceAsync(read with { UpdatedAt = DateTimeOffset.UtcNow }, read.UpdatedAt));
+
+        Assert.Contains(read.Name, refused.Message, StringComparison.Ordinal);
+        Assert.Contains("no longer exists", refused.Message, StringComparison.Ordinal);
+        AssertSame(before, host.Backing.Snapshot());
+        Assert.Null(await host.Store.FindInstanceAsync(read.Id));
+        Assert.Empty(await host.Store.ListInstancesAsync(projectId));
+
+        // The same through the batch write Revise uses; and a first write (nothing expected) still creates, as every new calculation does.
+        await Assert.ThrowsAsync<CalcConcurrencyException>(() => host.Store.SaveInstancesAsync([(read, read.UpdatedAt)]));
+        AssertSame(before, host.Backing.Snapshot());
+        await host.Store.SaveInstanceAsync(read);
+        Assert.NotNull(await host.Store.FindInstanceAsync(read.Id));
+    }
+
+    [Fact]
+    public async Task The_Published_Section_Dimensions_Cite_Themselves_As_Indicative_Not_The_Invented_Specification_And_The_Install_Message_Says_So()
+    {
+        Assert.Contains("indicative", demo.Outcome.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("all drafts with invented data", demo.Outcome.Message, StringComparison.Ordinal);
+
+        var sections = new List<CalcInstance>();
+        var chosen = 0;
+
+        foreach (var instance in await InstancesAsync())
+        {
+            var h = instance.Inputs.SingleOrDefault(i => i.Symbol == "h");
+            var b = instance.Inputs.SingleOrDefault(i => i.Symbol == "b");
+
+            if (h?.Number is not 203.2 || b?.Number is not 203.6)
+                continue;
+
+            sections.Add(instance);
+
+            // Every dimension of the section this sheet states cites the published section, whatever else the sheet's figures cite.
+            foreach (var symbol in new[] { "h", "b", "t_w", "t_f", "r" }.Where(sym => instance.Inputs.Any(i => i.Symbol == sym)))
+            {
+                var provenance = instance.Inputs.Single(i => i.Symbol == symbol).Provenance!;
+                Assert.Equal(CalcDemoProject.SectionDimensions, provenance);
+                Assert.Equal("published UC 203×203×46 dimensions (indicative)", provenance.Reference);
+                Assert.DoesNotContain("DEMO-SPEC", provenance.Reference, StringComparison.Ordinal);
+            }
+
+            // The figures the demonstration does choose still cite its specification, so the exception is exactly the section.
+            chosen += instance.Inputs.Count(i => i.Provenance?.Reference?.Contains("(invented demonstration figure)", StringComparison.Ordinal) == true);
+        }
+
+        // The steel support's column (S3) and base plate (S6), and the heating-main anchor's base plate.
+        Assert.Equal(3, sections.Count);
+        Assert.True(chosen > 0);
+        Assert.Contains("published UC 203×203×46 dimensions (indicative)", CalcSheetTextRenderer.Render(await Host.Service.SheetAsync(sections[0])), StringComparison.Ordinal);
     }
 
     private static void AssertSame(IReadOnlyDictionary<(string Collection, string Key), string> expected, IReadOnlyDictionary<(string Collection, string Key), string> actual)

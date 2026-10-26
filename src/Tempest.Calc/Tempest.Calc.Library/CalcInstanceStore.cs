@@ -132,7 +132,7 @@ public sealed class CalcInstanceStore
     /// overwrite an issued one. With <paramref name="expectedUpdatedAt"/>,
     /// the stored copy is re-read under the transaction and the write is
     /// refused (<see cref="CalcConcurrencyException"/>) when someone else
-    /// changed it since the caller read it (R-15).
+    /// changed it since the caller read it, or deleted it (R-15).
     /// </summary>
     public Task SaveInstanceAsync(CalcInstance instance, CancellationToken cancellationToken = default) => SaveInstanceAsync(instance, expectedUpdatedAt: null, cancellationToken);
 
@@ -162,6 +162,10 @@ public sealed class CalcInstanceStore
 
         if (existing is { IsImmutable: true } && !(existing.Status == CalcInstanceStatus.Issued && instance.Status == CalcInstanceStatus.Superseded && SameIssuedContent(existing, instance)))
             throw new CalcInstanceImmutableException(instance.Id, existing.Status);
+
+        // A write that expects the stored copy to be as the caller read it cannot create one: a calculation deleted since (the demonstration's removal) is not brought back by a stale update.
+        if (expectedUpdatedAt is not null && existing is null)
+            throw new CalcConcurrencyException($"Calculation '{instance.Name}' no longer exists (it was removed since you opened it); reload and try again.");
 
         if (expectedUpdatedAt is { } expected && existing is not null && existing.UpdatedAt != expected)
             throw new CalcConcurrencyException($"Calculation '{instance.Name}' was changed by someone else at {existing.UpdatedAt:O}; reload it and try again.");
@@ -231,21 +235,22 @@ public sealed class CalcInstanceStore
 
     /// <summary>
     /// The one place a calculation, a pack or a scan profile is ever deleted (Addendum C, C-6): in <b>one</b> transaction, every instance and pack row of
-    /// <paramref name="projectId"/> and every version of the named demonstration scan profiles, with their search-index rows. It deletes nothing else: rows are
-    /// found by the project's own key prefix, and a profile id must start with <see cref="CalcDemoProject.ScanProfilePrefix"/>. The caller
+    /// <paramref name="projectId"/> and the exact scan-profile versions named (the ones the install wrote), with their search-index rows. It deletes nothing else:
+    /// rows are found by the project's own key prefix, a profile id must start with <see cref="CalcDemoProject.ScanProfilePrefix"/>, and a later version of a
+    /// profile that a person saved after the install is never touched (a version is immutable and a person's own is theirs). The caller
     /// (<see cref="CalcDemoProjectService"/>) has already proved the project is the demonstration; below that, an issued or superseded row is never
     /// deleted — one found under the project stops the transaction with <see cref="CalcInstanceImmutableException"/> and nothing is removed.
     /// </summary>
     /// <returns>How many calculation rows, pack rows and scan-profile rows were deleted.</returns>
-    public async Task<(int Instances, int Packs, int ScanProfiles)> DeleteDemonstrationRowsAsync(Guid projectId, IReadOnlyCollection<string> scanProfileIds, CancellationToken cancellationToken = default)
+    public async Task<(int Instances, int Packs, int ScanProfiles)> DeleteDemonstrationRowsAsync(Guid projectId, IReadOnlyCollection<(string Id, int Version)> scanProfiles, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(scanProfileIds);
+        ArgumentNullException.ThrowIfNull(scanProfiles);
 
         if (projectId == Guid.Empty)
             throw new ArgumentException("A project id is needed to delete a demonstration's rows.", nameof(projectId));
 
-        if (scanProfileIds.Any(id => !id.StartsWith(CalcDemoProject.ScanProfilePrefix, StringComparison.Ordinal)))
-            throw new ArgumentException($"Only scan profiles whose id starts with '{CalcDemoProject.ScanProfilePrefix}' belong to the demonstration.", nameof(scanProfileIds));
+        if (scanProfiles.Any(p => !p.Id.StartsWith(CalcDemoProject.ScanProfilePrefix, StringComparison.Ordinal)))
+            throw new ArgumentException($"Only scan profiles whose id starts with '{CalcDemoProject.ScanProfilePrefix}' belong to the demonstration.", nameof(scanProfiles));
 
         var counts = (Instances: 0, Packs: 0, ScanProfiles: 0);
 
@@ -285,13 +290,15 @@ public sealed class CalcInstanceStore
                 counts.Packs++;
             }
 
-            foreach (var profileId in scanProfileIds)
+            foreach (var (profileId, version) in scanProfiles)
             {
-                foreach (var key in await tx.ListKeysAsync(ScanProfileCollection, profileId + "@", token).ConfigureAwait(false))
-                {
-                    await tx.DeleteAsync(ScanProfileCollection, key, token).ConfigureAwait(false);
-                    counts.ScanProfiles++;
-                }
+                var key = ImportProfileKey(profileId, version);
+
+                if (await tx.ReadAsync(ScanProfileCollection, key, token).ConfigureAwait(false) is null)
+                    continue;
+
+                await tx.DeleteAsync(ScanProfileCollection, key, token).ConfigureAwait(false);
+                counts.ScanProfiles++;
             }
         }, cancellationToken).ConfigureAwait(false);
 
