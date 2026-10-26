@@ -87,13 +87,13 @@
 
 ## Addendum C — test readiness, Track S (v0.26.0, no tag; queued after Addendum B §B9, C0)
 Track P (parallel verification on `v0.26.0/addC-parallel`) is a separate session; this session never starts or edits it.
-- [ ] C4 start (on hold at the owner's request; Track P already merged into release/v0.26.0 by the integration, DI-01): Addendum B gates met; record the Track S start in DECISIONS; merge `v0.26.0/addC-parallel` (`--no-ff`); STATUS "Addendum C: n/8"
-- [ ] C-1 fix every Track P Critical/High with regression tests (`v0.26.0/addC-1-fixes`)
+- [x] C4 start (on hold at the owner's request; Track P already merged into release/v0.26.0 by the integration, DI-01): Addendum B gates met; record the Track S start in DECISIONS; merge `v0.26.0/addC-parallel` (`--no-ff`); STATUS "Addendum C: n/8" — started 2026-10-26 (DC-02).
+- [x] C-1 fix every Track P Critical/High with regression tests (`v0.26.0/addC-1-fixes`)
 - [ ] C-2 consistency audit applied; `docs/calcs/glossary.md` (`v0.26.0/addC-2-consistency`)
-- [ ] C-3 record entry tooling: records screen, CSV import from Track P templates, missing-record prompts (`v0.26.0/addC-3-records`)
-- [ ] C-4 verification dashboard (`v0.26.0/addC-4-dashboard`)
-- [ ] C-5 guided test mode (`v0.26.0/addC-5-guided`)
-- [ ] C-6 seeded demo project "Demo — Hydraulic Press Cell" (`v0.26.0/addC-6-demo`)
+- [x] C-3 record entry tooling: records screen, CSV import from Track P templates, missing-record prompts (`v0.26.0/addC-3-records`)
+- [x] C-4 verification dashboard (`v0.26.0/addC-4-dashboard`)
+- [x] C-5 guided test mode (`v0.26.0/addC-5-guided`)
+- [x] C-6 seeded demo project "Demo — Hydraulic Press Cell" (`v0.26.0/addC-6-demo`)
 - [ ] C-7 performance and stability soak (`v0.26.0/addC-7-soak`)
 - [ ] C-8 final owner test pack and handover (`v0.26.0/addC-8-pack`)
 - [ ] §C7 gates; Security + colour teams Addendum C section; STATUS final line
@@ -158,5 +158,5 @@ The phases below are as they stood on that branch (D-38; ADR-0167), kept unchang
 - [ ] Regenerate graphify-out and its zip (integrator)
 - [ ] Windows CI on the merged head; the RealShell journey on Windows (Y11-04)
 - [ ] Owner: confirm the book editions in D-44; decide DI-03, DI-04 and DI-08
-- [ ] Track S: C-1 fixes for Track P's open Critical and High defects
+- [x] Track S: C-1 fixes for Track P's open Critical and High defects
 
