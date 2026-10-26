@@ -125,7 +125,7 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
   WARNING interference-letter: shaft_letter: the deviation of 'p' is evaluated from the ISO 286-1 formula; the formula value of a letter from p to zc can lie several µm (up to about 9 µm in the 100 to 565 mm checks, p6 at 450 mm 62.2 against 68 µm tabulated) below the tabulated deviation, because the standard's tables add their own increments and sub-steps; the maximum interference is then understated. Enter ES_override/EI_override or es_override/ei_override from a reference record where the table governs.
 
 8. VERIFICATION
-  Template: mech.iso286-fit@1.4.0
+  Template: mech.iso286-fit@1.5.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

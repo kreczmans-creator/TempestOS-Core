@@ -113,19 +113,19 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
       = 350 MPa
         Rotating-beam endurance limit
   [30] X1 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T_m/(πd³′), τ_a = K_fs·16T_a/(πd³′); 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
-      = x = 120 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 1.45, M = 319.53 N·m, T = 0 N·m, σ_a = 79.334 MPa, τ_m = 0 MPa (shoulder: the side with d = 40 mm governs, of 2)
+      = x = 120 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 1.45, M = 319.53 N·m, T = 0 N·m, σ_a = 79.334 MPa, τ_m = 0 MPa, n_y = 6.3025 (shoulder: the side with d = 40 mm governs, of 2)
       = 2.3845
         Section at 120 mm: fatigue safety factor (DE-Goodman)
   [31] X2 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T_m/(πd³′), τ_a = K_fs·16T_a/(πd³′); 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
-      = x = 150 mm, d = 45 mm, k_b = 0.82514, S_e = 186.8 MPa, K_f = 1.912, K_fs = 2.8, M = 415.39 N·m, T = 300 N·m, σ_a = 88.778 MPa, τ_m = 46.947 MPa
+      = x = 150 mm, d = 45 mm, k_b = 0.82514, S_e = 186.8 MPa, K_f = 1.912, K_fs = 2.8, M = 415.39 N·m, T = 300 N·m, σ_a = 88.778 MPa, τ_m = 46.947 MPa, n_y = 4.1532
       = 1.6909
         Section at 150 mm: fatigue safety factor (DE-Goodman)
   [32] X3 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T_m/(πd³′), τ_a = K_fs·16T_a/(πd³′); 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
-      = x = 180 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 1.45, M = 319.53 N·m, T = 300 N·m, σ_a = 79.334 MPa, τ_m = 34.616 MPa (shoulder: the side with d = 40 mm governs, of 2)
+      = x = 180 mm, d = 40 mm, k_b = 0.83561, S_e = 189.17 MPa, K_f = 1.56, K_fs = 1.45, M = 319.53 N·m, T = 300 N·m, σ_a = 79.334 MPa, τ_m = 34.616 MPa, n_y = 5.0281 (shoulder: the side with d = 40 mm governs, of 2)
       = 1.9801
         Section at 180 mm: fatigue safety factor (DE-Goodman)
   [33] X4 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T_m/(πd³′), τ_a = K_fs·16T_a/(πd³′); 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
-      = x = 260 mm, d = 35 mm, k_b = 0.84763, S_e = 191.9 MPa, K_f = 1.48, K_fs = 1.36, M = 63.906 N·m, T = 300 N·m, σ_a = 22.47 MPa, τ_m = 48.465 MPa (shoulder: the side with d = 35 mm governs, of 2)
+      = x = 260 mm, d = 35 mm, k_b = 0.84763, S_e = 191.9 MPa, K_f = 1.48, K_fs = 1.36, M = 63.906 N·m, T = 300 N·m, σ_a = 22.47 MPa, τ_m = 48.465 MPa, n_y = 5.7538 (shoulder: the side with d = 35 mm governs, of 2)
       = 4.2192
         Section at 260 mm: fatigue safety factor (DE-Goodman)
   [34] S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e′ (governing section)
@@ -219,7 +219,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   WARNING key-hub: S_y_hub: no hub strength is entered, so the key bearing is checked against the key and the shaft only; the hub is often the weakest part, enter its yield strength.
 
 8. VERIFICATION
-  Template: mech.shaft@1.3.0
+  Template: mech.shaft@1.3.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

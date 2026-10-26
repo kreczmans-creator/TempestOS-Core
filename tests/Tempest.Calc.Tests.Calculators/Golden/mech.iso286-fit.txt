@@ -121,5 +121,5 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
   No warnings.
 
 8. VERIFICATION
-  Template: mech.iso286-fit@1.4.0
+  Template: mech.iso286-fit@1.5.0
   Known-answer cases passed: 3/3
