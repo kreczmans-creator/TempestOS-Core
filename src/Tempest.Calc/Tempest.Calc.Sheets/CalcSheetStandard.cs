@@ -50,6 +50,25 @@ public static class CalcSheetStandard
         return notice.Message;
     }
 
+    /// <summary>
+    /// The one-line verdict the Desktop form shows above the results, from the governing check: PASS or FAIL, the name and, for a ratio check, the
+    /// utilisation as the sheet prints it (the same number in the sheet, the PDF, the form and the register).
+    /// </summary>
+    public static string GoverningBanner(CalcCheck check)
+    {
+        ArgumentNullException.ThrowIfNull(check);
+        var line = $"{(check.Passed ? "PASS" : "FAIL")} — {check.Name}";
+        return check.HasUtilisation ? $"{line}: utilisation {check.UtilisationText}" : line;
+    }
+
+    /// <summary>The text of a check in the Desktop form: its name, demand against capacity and, for a ratio check, the utilisation as the sheet prints it.</summary>
+    public static string FormCheckText(CalcCheck check)
+    {
+        ArgumentNullException.ThrowIfNull(check);
+        var line = $"{check.Name}: {check.DemandText} vs {check.CapacityText}";
+        return check.HasUtilisation ? $"{line} (u = {check.UtilisationText})" : line;
+    }
+
     /// <summary>The line of a check's result: PASS or FAIL, the name, demand against capacity and, for a ratio check, the utilisation.</summary>
     public static string CheckLine(CalcCheck check)
     {
@@ -81,9 +100,9 @@ public static class CalcSheetStandard
         return [.. headline, .. rest.Where(o => !utilisations.Contains(o)), .. utilisations];
     }
 
-    /// <summary>Whether an output is a utilisation: a plain number whose symbol or description says so (<see cref="CalcDisplay.IsUtilisation"/>).</summary>
+    /// <summary>Whether an output is a utilisation: a plain number its template declared as one, or one a utilisation check was made on (<see cref="CalcOutputKind.Utilisation"/>). The symbol and the description are not looked at.</summary>
     public static bool IsUtilisation(CalcOutput output) =>
-        output.Value is ScalarValue { Dimension.IsDimensionless: true, DisplayUnit.Symbol.Length: 0 } && CalcDisplay.IsUtilisation(output.Symbol, output.Description);
+        output.Kind == CalcOutputKind.Utilisation && output.Value is ScalarValue { Dimension.IsDimensionless: true, DisplayUnit.Symbol.Length: 0 };
 
     /// <summary>The description of a result as a sheet prints it: the governing result is marked.</summary>
     public static string DescriptionOf(CalcSheet sheet, CalcOutput output) =>

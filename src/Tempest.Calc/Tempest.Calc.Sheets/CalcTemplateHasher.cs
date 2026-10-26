@@ -39,6 +39,13 @@ public static class CalcTemplateHasher
 
         var inputs = DefaultInputs(calculator.Template);
         var result = CalcRunner.Run(calculator, inputs);
+        return Formulas(result);
+    }
+
+    /// <summary>The formulas of a run: one line per step that is not an input.</summary>
+    public static IReadOnlyList<string> Formulas(CalcRunResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
         return result.Steps.Where(s => s.Kind != CalcStepKind.Input).Select(s => $"{s.Symbol} = {s.Formula}").ToList();
     }
 

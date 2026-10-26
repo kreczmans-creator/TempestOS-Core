@@ -109,6 +109,8 @@ public sealed partial class CalcSheetView : UserControl
     private readonly Button _governingLink = new() { Content = "Go to step", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
     private readonly StackPanel _results = new() { Spacing = DesignTokens.SpaceXs };
     private readonly StackPanel _checks = new() { Spacing = DesignTokens.SpaceXs };
+    private readonly List<(string Symbol, string Text)> _shownResults = [];
+    private readonly List<string> _shownChecks = [];
     private readonly StackPanel _notices = new() { Spacing = DesignTokens.SpaceXs };
     private readonly ToggleButton _showWorking = new() { Content = ShowWorkingCaption, MinHeight = DesignTokens.MinControlSize };
     private readonly StackPanel _working = new() { Spacing = DesignTokens.SpaceXs, IsVisible = false };
@@ -653,7 +655,8 @@ public sealed partial class CalcSheetView : UserControl
         _problems.Text = string.Empty;
         _status.Text = IsReadOnly ? $"This calculation is {instance!.Status}; it is read-only. Revise it to start a new revision." : string.Empty;
 
-        var seed = seedOverride ?? (instance is null ? CalcTemplateHasher.NewSheetInputs(entry.Template) : new CalcInputSet(instance.Inputs));
+        // C-2: a saved calculation that still names an input by the symbol it had before it was renamed opens under the current one (an input given under both names with different values stays as saved, and the run blocks on it).
+        var seed = seedOverride ?? (instance is null ? CalcTemplateHasher.NewSheetInputs(entry.Template) : CalcInputAliases.TryCanonicalise(entry.Template, new CalcInputSet(instance.Inputs), out var canonicalSeed, out _) ? canonicalSeed : new CalcInputSet(instance.Inputs));
         _shownLinks.Clear();
 
         foreach (var value in seed.Values.Where(v => v.Provenance is { Kind: CalcProvenanceKind.Link or CalcProvenanceKind.CadImport or CalcProvenanceKind.ScanImport }))
@@ -772,6 +775,8 @@ public sealed partial class CalcSheetView : UserControl
         _stale.IsVisible = false;
         _results.Children.Clear();
         _checks.Children.Clear();
+        _shownResults.Clear();
+        _shownChecks.Clear();
         _notices.Children.Clear();
         _working.Children.Clear();
         _stepRows.Clear();
@@ -792,7 +797,7 @@ public sealed partial class CalcSheetView : UserControl
 
         if (result.Governing is { } governing)
         {
-            _governing.Text = $"{(governing.Passed ? "PASS" : "FAIL")} — {governing.Name}: utilisation {FormatUtilisation(governing.Utilisation)}";
+            _governing.Text = CalcSheetStandard.GoverningBanner(governing);
             _governing.Foreground = governing.Passed ? Brushes.SeaGreen : Brushes.IndianRed;
             _utilisation.Value = double.IsFinite(governing.Utilisation) ? Math.Min(governing.Utilisation, 1.5) : 1.5;
             _utilisation.Foreground = governing.Passed ? Brushes.SeaGreen : Brushes.IndianRed;
@@ -816,10 +821,16 @@ public sealed partial class CalcSheetView : UserControl
         }
 
         foreach (var o in result.Outputs)
+        {
             _results.Children.Add(Readout(o.Symbol, o.ValueText, o.Description));
+            _shownResults.Add((o.Symbol, o.ValueText));
+        }
 
         foreach (var c in result.Checks.OrderByDescending(c => c.Utilisation))
+        {
             _checks.Children.Add(CheckRow(c));
+            _shownChecks.Add(CalcSheetStandard.FormCheckText(c));
+        }
 
         foreach (var n in result.Blocks)
             _notices.Children.Add(Typeset(new TextBlock { Foreground = Brushes.IndianRed, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, $"Block — {n.Message}"));
@@ -988,6 +999,13 @@ public sealed partial class CalcSheetView : UserControl
     public string? FieldProblem(string symbol) => _fields.TryGetValue(symbol, out var f) && f.Problem.IsVisible ? f.Problem.Text : null;
 
     public string GoverningText => _governing.Text ?? string.Empty;
+
+    /// <summary>The results the form shows: each output's symbol and the text <see cref="CalcOutput.ValueText"/> gives it, the same text the sheet and the PDF print.</summary>
+    public IReadOnlyList<(string Symbol, string Text)> ShownResults => _shownResults;
+
+    /// <summary>The checks the form shows, in the form they have on the sheet (<see cref="CalcSheetStandard.FormCheckText"/>), governing first.</summary>
+    public IReadOnlyList<string> ShownChecks => _shownChecks;
+
 
     public IReadOnlyList<string> WorkingLines => _working.Children.OfType<StackPanel>().SelectMany(p => p.Children.OfType<TextBlock>()).Select(SymbolText.Raw).ToList();
 
@@ -1305,8 +1323,6 @@ public sealed partial class CalcSheetView : UserControl
         f.ProvenanceRef.IsReadOnly = !enabled;
     }
 
-    private static string FormatUtilisation(double u) => double.IsInfinity(u) ? "—" : Tempest.Calc.Engine.Values.CalcValue.FormatNumber(u, 3);
-
     private static string DisciplineLabel(CalcDiscipline d) => d switch
     {
         CalcDiscipline.BuildingServices => "Building Services / HVAC",
@@ -1460,7 +1476,7 @@ public sealed partial class CalcSheetView : UserControl
     {
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("120,*,Auto"), Margin = new Thickness(0, 0, 0, DesignTokens.SpaceXs) };
         var verdict = new TextBlock { Text = check.Passed ? "PASS" : "FAIL", FontWeight = DesignTokens.WeightHeading, Foreground = check.Passed ? Brushes.SeaGreen : Brushes.IndianRed, FontSize = DesignTokens.FontSizeBody };
-        var text = Typeset(new TextBlock { FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap }, $"{check.Name}: {check.DemandText} vs {check.CapacityText} (u = {FormatUtilisation(check.Utilisation)})");
+        var text = Typeset(new TextBlock { FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap }, CalcSheetStandard.FormCheckText(check));
         var clause = new TextBlock { Text = check.Clause ?? string.Empty, FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8, Margin = new Thickness(DesignTokens.SpaceSm, 0, 0, 0) };
         AutomationProperties.SetName(text, $"Result {verdict.Text}");
         Grid.SetColumn(text, 1);

@@ -17,7 +17,9 @@ public static class CalcRunner
         ArgumentNullException.ThrowIfNull(inputs);
 
         // C-2: a symbol an input had before it was renamed is read as the input it has become.
-        inputs = CalcInputAliases.Canonicalise(calculator.Template, inputs);
+        if (!CalcInputAliases.TryCanonicalise(calculator.Template, inputs, out inputs, out var aliasConflict))
+            return CalcRunResult.Blocked([new CalcNotice("input-alias", CalcNoticeSeverity.Block, aliasConflict!)]);
+
         var notices = CalcInputValidator.Validate(calculator.Template, inputs).ToList();
 
         if (notices.Any(n => n.Severity == CalcNoticeSeverity.Block))

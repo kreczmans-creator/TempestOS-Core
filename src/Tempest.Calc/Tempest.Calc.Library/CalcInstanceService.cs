@@ -154,7 +154,10 @@ public sealed partial class CalcInstanceService
         if (inputs is not null)
         {
             // C-2: a symbol an input had before it was renamed is stored under the input it has become.
-            var list = CalcInputAliases.Canonicalise(entry.Template, inputs.ToList()).ToList();
+            if (!CalcInputAliases.TryCanonicalise(entry.Template, inputs.ToList(), out var canonicalInputs, out var aliasConflict))
+                throw new CalcLinkRefusedException(aliasConflict!);
+
+            var list = canonicalInputs.ToList();
 
             if (ProvenanceTooLong(list))
                 throw new CalcLinkRefusedException($"A provenance reference is longer than {CalcProvenance.MaxReferenceLength} characters.");
@@ -230,7 +233,10 @@ public sealed partial class CalcInstanceService
             return CalcActionResult.Refused($"Calculation '{instance.Name}' belongs to pack '{pack.Title}', which is {pack.Status}; its inputs are frozen.", instance);
 
         // C-2: a symbol an input had before it was renamed is stored under the input it has become.
-        var newInputs = CalcInputAliases.Canonicalise(entry.Template, inputs.ToList()).ToList();
+        if (!CalcInputAliases.TryCanonicalise(entry.Template, inputs.ToList(), out var canonicalNew, out var aliasConflict))
+            return CalcActionResult.Refused(aliasConflict!, instance);
+
+        var newInputs = canonicalNew.ToList();
 
         if (ProvenanceTooLong(newInputs))
             return CalcActionResult.Refused($"A provenance reference is longer than {CalcProvenance.MaxReferenceLength} characters.", instance);
