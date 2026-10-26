@@ -818,7 +818,7 @@ public sealed class RecordImportService
         var drafts = new List<(CalcDataRecord Draft, int Line, ParsedRow? Row)>();
 
         if (schema.IsMaterial)
-            await PlanMaterialsAsync(template, bound, valid, source, notes, prov, drafts, cancellationToken).ConfigureAwait(false);
+            await PlanMaterialsAsync(template, bound, valid, source, notes, prov, request.AsRevision, drafts, cancellationToken).ConfigureAwait(false);
         else if (bound.Values.Any(c => c.Role == RecordColumnRole.TableColumn))
             PlanTable(template, bound, valid, source, notes, prov, drafts, fileIssues);
         else
@@ -1026,6 +1026,7 @@ public sealed class RecordImportService
         CalcValueSource source,
         string notes,
         RecordProvenanceInput prov,
+        bool asRevision,
         List<(CalcDataRecord, int, ParsedRow?)> drafts,
         CancellationToken cancellationToken)
     {
@@ -1053,7 +1054,24 @@ public sealed class RecordImportService
                     continue;
                 }
 
-                drafts.Add((new CalcDataRecord(Guid.Empty, MaterialLibrary.Kind, name, 0, prov.SourceTitle.Trim(), prov.EditionAndAmendment, prov.TableOrClause.Trim(), prov.LicenceHolder.Trim(), person, prov.LicensedSource, prov.Origin, values, now, notes), row.Line, row));
+                // As the next revision of a material in the library, what the file leaves blank is carried forward from its latest revision (other
+                // properties, the temperature tables and curves that 63 to 65 added), as 63 to 65 carry the rest: a revision is the whole material.
+                var carriedNotes = notes;
+
+                if (asRevision && library.Where(m => string.Equals(m.Title, name, StringComparison.OrdinalIgnoreCase)).ToList() is [var prior])
+                {
+                    var carried = prior.Values.Where(v => !values.Any(n => string.Equals(n.Symbol, v.Symbol, StringComparison.Ordinal))).ToList();
+
+                    if (carried.Count > 0)
+                    {
+                        row.Add(RecordSeverity.Warning, null, $"'{name}' is saved as its next revision: {string.Join(", ", carried.Select(v => v.Symbol).Order(StringComparer.Ordinal))} are carried forward from revision {prior.Revision} because the file does not set them.");
+                        values = [.. carried, .. values];
+                    }
+
+                    carriedNotes = prior.Notes is { Length: > 0 } ? prior.Notes + NoteSeparator + notes : notes;
+                }
+
+                drafts.Add((new CalcDataRecord(Guid.Empty, MaterialLibrary.Kind, name, 0, prov.SourceTitle.Trim(), prov.EditionAndAmendment, prov.TableOrClause.Trim(), prov.LicenceHolder.Trim(), person, prov.LicensedSource, prov.Origin, values, now, carriedNotes), row.Line, row));
             }
 
             return;

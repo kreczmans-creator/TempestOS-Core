@@ -182,6 +182,48 @@ public sealed class RecordImportTests
     }
 
     [Fact]
+    public async Task A_Material_Imported_As_Its_Next_Revision_Keeps_The_Values_The_File_Does_Not_Set()
+    {
+        // Review finding 3: 62 as the next revision used to save only the columns the file filled, dropping every other property and the
+        // temperature tables added by 63. A value the file leaves blank is carried forward from the latest revision, as 63 to 65 do.
+        var host = Host();
+        var service = host.Service.RecordImport;
+        const string materialHeader = "material[text],E[GPa],G[GPa],nu[-],rho[kg/m3]";
+        var made = await service.CommitAsync(Request("62", Csv(materialHeader, "Test alloy,200,77,0.3,7800"), Provenance(string.Empty)));
+        Assert.True(made.Committed, made.Refusal);
+
+        var tables = Csv("material[text],property[text],T[degC],v[-],v_unit[text]", "Test alloy,E,20,200,GPa", "Test alloy,E,100,195,GPa", "Test alloy,E,200,185,GPa");
+        var added = await service.CommitAsync(Request("63", tables, Provenance(string.Empty)));
+        Assert.True(added.Committed, added.Refusal);
+        Assert.Equal(2, added.Records[0].Revision);
+
+        // Revision 3 changes E and leaves G blank and nu, rho out of the file: they, and the E(T) table, stay.
+        var again = Request("62", Csv("material[text],E[GPa],G[GPa]", "Test alloy,205,"), Provenance(string.Empty)) with { AsRevision = true };
+        var preview = await service.PreviewAsync(again);
+        Assert.True(preview.CanCommit, Describe(preview));
+        var carried = Assert.Single(preview.Warnings, w => w.Message.Contains("carried forward", StringComparison.Ordinal));
+        Assert.Contains("revision 2", carried.Message, StringComparison.Ordinal);
+        Assert.Contains("E(T), G, nu, rho are carried forward from revision 2", carried.Message, StringComparison.Ordinal);
+
+        var outcome = await service.CommitAsync(again);
+        Assert.True(outcome.Committed, outcome.Refusal);
+        var revised = Assert.Single(outcome.Records);
+        Assert.Equal(3, revised.Revision);
+        Assert.Equal(added.Records[0].Id, revised.Id);
+        Assert.Equal(["E", "E(T)", "G", "nu", "rho"], revised.Values.Select(v => v.Symbol).Order(StringComparer.Ordinal));
+        Assert.Equal(205, revised.Values.Single(v => v.Symbol == "E").Number);
+        Assert.Equal(3, revised.Values.Single(v => v.Symbol == "E(T)").Rows!.Count);
+        Assert.Equal(7800, revised.Values.Single(v => v.Symbol == "rho").Number);
+
+        // The earlier revision is as it was.
+        Assert.Equal(200, (await host.Store.FindRecordAsync(revised.Id, 2))!.Values.Single(v => v.Symbol == "E").Number);
+
+        // A first import of a new material has nothing to carry, and says nothing about it.
+        var fresh = await service.PreviewAsync(Request("62", Csv("material[text],E[GPa]", "Brand new,70"), Provenance(string.Empty)) with { AsRevision = true });
+        Assert.DoesNotContain(fresh.Warnings, w => w.Message.Contains("carried forward", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task A_Table_Typed_On_The_Screen_Has_No_File_Hash_And_Says_It_Was_Typed()
     {
         var host = Host();
