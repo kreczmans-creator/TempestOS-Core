@@ -34,7 +34,7 @@ t_ret = 800 mm / 165.82 mm/s = 4.8246 s
 t_cycle = 10.018 s + 4.8246 s + 0 s = 14.842 s
 dV_ret = 59.101 cm² × 800 mm = 4.7281 L
 dV = max(9.8175 L, 4.7281 L) = 9.8175 L
-… 37 more step(s) on the sheet
+… 38 more step(s) on the sheet
 Governing: PASS  Pump delivery covers the circuit flow: u_pump = 0.96794 vs u_pump ≤ 1  utilisation 0.968
 ```
 <!-- hand-arithmetic:end -->

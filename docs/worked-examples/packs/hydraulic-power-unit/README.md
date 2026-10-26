@@ -4,7 +4,7 @@
 
 **Purpose.** Takes a cylinder circuit and its pump through to the electric supply: the cylinder, pump and line velocities; the accumulator that carries the emergency stroke between the supply pressure and the lowest pressure the stroke can finish at; the pressure drop in the line to the cylinder; the motor that drives the pump continuously; the cable that supplies the motor, its voltage drop and its earth-fault disconnection; and the voltage dip when the motor starts on that cable and supply. The motor's cable tables are entered by the user: no build ships them. The pressure line takes its flow, oil density and tube bore from the cylinder step, the cable is sized for the rated power of the candidate motor, and the start is judged on the cable and the supply fault level the pack found.
 
-A 100/70 × 500 mm cylinder at 160 bar and 36 L/min, fed by a 28 cm³/rev pump at 1450 rpm (38.57 L/min delivered), presses with 80 kN and pulls with 40 kN. Its swept volume (3.927 L, the extend stroke) and its supply pressure (160 bar, a gauge pressure, so the accumulator's pressures stay on the Gauge basis; Absolute would read the linked value one atmosphere low and the sheet would warn) size an emergency-stroke accumulator (30.1 L of gas, held at 160 bar after a slow charge and discharged at n = 1.4, 10 to 50 °C, working range 120 to 160 bar; 120 bar still finishes the 80 kN push, which needs 107 bar).
+A 100/70 × 500 mm cylinder at 160 bar and 36 L/min, fed by a 28 cm³/rev pump at 1450 rpm (38.57 L/min delivered), presses with 80 kN and pulls with 40 kN. Its swept volume (3.927 L, the extend stroke) and its supply pressure (160 bar, a gauge pressure, so the accumulator's pressures stay on the Gauge basis; Absolute would read the linked value one atmosphere low and the sheet would warn) size an emergency-stroke accumulator (39.4 L of gas: the ideal gas's 30.1 L times a real-gas factor of 1.311 from the reference equation of state for nitrogen, held at 160 bar after a slow charge and discharged at n = 1.4, 10 to 50 °C, working range 120 to 160 bar; the accumulator checks that its lowest working pressure, 120 bar, still carries the 80 kN push, which needs 107 bar and which the cylinder step gives it as `p_push`).
 
 The pressure-line step judges the line the cylinder step judges, the line to the cylinder cap port: its flow is the cylinder step's `Q_prs`, the larger of the two strokes, the 75.6 L/min retract discharge (4.54 m³/h; the 36 L/min circuit flow only passes the cap port on the extend stroke), and the oil density (870 kg/m³) and the 20 mm bore (the first row of its segment table) are linked from the cylinder step's `rho` and `d_prs` too, so revising the cylinder's line bore makes the pressure line stale (a test proves it). B1 judges the cap-port line at the retract discharge, where its pressure drop (about 2.5 bar over the 78.5 cm² cap area) is the back pressure the retract stroke pushes against; neither that drop nor the supply-side drop is fed back into F1, whose back pressure and supply pressure are entered.
 
@@ -35,7 +35,7 @@ The start current is for coordination only: the star-delta 78 A stays below the 
 | Step | Calculator | Revision | Checks |
 |---|---|---|---|
 | Cylinder and pump circuit | `fp.cylinder` | A | 7 of 7 PASS |
-| Emergency stroke accumulator | `fp.accumulator` | A | 2 of 2 PASS |
+| Emergency stroke accumulator | `fp.accumulator` | A | 3 of 3 PASS |
 | Pressure line | `bs.pipe-pump` | A | 1 of 1 PASS |
 | Pump drive motor | `elec.motor-sizing` | A | 3 of 3 PASS |
 | Motor supply cable | `elec.conductor-sizing` | A | 3 of 3 PASS |
@@ -51,6 +51,7 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 |---|---|---|---|---|
 | Cylinder and pump circuit | `dV` | Emergency stroke accumulator | `dV` | 3.92699 L |
 | Cylinder and pump circuit | `p` | Emergency stroke accumulator | `p_2` | 160 bar |
+| Cylinder and pump circuit | `p_push` | Emergency stroke accumulator | `p_load` | 107.22 bar |
 | Cylinder and pump circuit | `Q_prs` | Pressure line | `Q` | 4.53765 m^3/h |
 | Cylinder and pump circuit | `rho` | Pressure line | `rho_custom` | 870 kg/m^3 |
 | Cylinder and pump circuit | `d_prs` | Pressure line | `segments` row 1 (`D`), a table-cell link | 20 mm |

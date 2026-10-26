@@ -14,7 +14,7 @@ A slider-crank ejector (a 40 kg slide on a 100 mm crank and 300 mm rod, in line,
 |---|---|---|---|
 | Ejector slider-crank | `mech.mechanism` | A | 3 of 3 PASS |
 | Replacement cylinder | `fp.cylinder` | A | 6 of 6 PASS |
-| Emergency stroke accumulator | `fp.accumulator` | A | 2 of 2 PASS |
+| Emergency stroke accumulator | `fp.accumulator` | A | 3 of 3 PASS |
 
 ## Links
 
@@ -27,6 +27,7 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 | Ejector slider-crank | `follower_force` | Replacement cylinder | `F_pull` | 3.05264 kN |
 | Replacement cylinder | `dV` | Emergency stroke accumulator | `dV` | 0.251327 L |
 | Replacement cylinder | `p` | Emergency stroke accumulator | `p_2` | 100 bar |
+| Replacement cylinder | `p_push` | Emergency stroke accumulator | `p_load` | 25.5707 bar |
 
 ## Inputs and provenance
 
