@@ -304,7 +304,7 @@
     },
     {
       "id": "mech.material-margin",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "kats": 2,
       "katsPassed": 2,
       "failedKats": [],
