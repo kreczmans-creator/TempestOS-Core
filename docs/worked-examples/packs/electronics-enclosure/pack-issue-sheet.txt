@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Controller box 7
 Calc ID: Motor controller enclosure calc pack    Revision: A
 Title: Calculation pack
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: ELX-ENC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: ELX-ENC-001    Client: Client Co
 
 PACK INDEX
   1. Power trace — PCB trace width (IPC-2221 legacy) — rev A — ISSUED — Trace width as drawn against the minimum for the rise PASS
@@ -14,7 +14,7 @@ PACK INDEX
   5. Cover plate — Plate bending — rev A — ISSUED — Deflection w_max ≤ span/ratio PASS
 
 REVISIONS
-  A  2026-10-25  test.engineer  First issue
+  A  2026-10-26  test.engineer  First issue
 
 1. SCOPE AND METHOD
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -40,16 +40,16 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 36/36
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
 Project: Controller box 7
 Calc ID: Power trace    Revision: A
 Title: PCB trace width (IPC-2221 legacy)
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: ELX-ENC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: ELX-ENC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The minimum width of a printed-circuit trace for a current and an allowed temperature rise, from the legacy IPC-2221 curve-fit, and the resistance, voltage drop and I²R loss of the trace as drawn: legacy IPC-2221 curve-fit, conservative for multilayer boards. External or internal layer; copper weight in oz/ft²; resistance at the trace's operating temperature (ambient plus rise). The IPC-2152 method (charts, plane and board-thickness factors) is not implemented.
@@ -160,7 +160,7 @@ Trace cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725
   Content hash: 0d7d5417226f1fcc
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
 
 
@@ -168,13 +168,13 @@ CALCULATION SHEET — ISSUED
 Project: Controller box 7
 Calc ID: Board load budget    Revision: A
 Title: Load budget, PSU, transformer and battery
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: ELX-ENC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: ELX-ENC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 The demand of a set of loads per supply (three-phase AC, single-phase AC, DC) and the minimum DC power supply, transformer and battery for it, each with a margin; the heat the loads dissipate for the enclosure calculation.
-Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative) Bus currents: I_3φ = S_3φ/(√3·U), I_1φ = S_1φ/U, I_DC = P_DC/U_DC; when a bus is chosen for the DC power supply its input P_DC/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0) Power supply sizing: P_PSU ≥ margin·P_DC/f_derate (f_derate from the manufacturer's curve at θ and altitude) Transformer sizing: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery sizing: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
+Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative); this duty-weighted demand sizes the transformer and the enclosure heat Running load of each load while it is on: P_i·k_i, apparent P_i·k_i/cosφ_i (the duty d is the share of time on, so it is left out: a cable, a bus and a power supply carry the load while it is on) Bus currents: I_3φ = S_3φ,run/(√3·U), I_1φ = S_1φ,run/U, I_DC = P_DC,run/U_DC, from the running loads; when a bus is chosen for the DC power supply its input P_DC,run/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i, h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0) Power supply sizing: P_PSU ≥ margin·P_DC,run/f_derate (the running DC load, duty not applied; f_derate from the manufacturer's curve at θ and altitude) Transformer sizing: S_T ≥ margin·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery sizing: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t
   Ref: Linden's Handbook of Batteries 5th ed., Ch. 3–4 — Battery sizing and the Peukert relation
   Ref: BS EN 60204-1:2018 cl. 4.3 — Electrical supply (supply voltage tolerance; cited by number only)
 
@@ -267,18 +267,18 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
       = 0.0016748 + 0.027778 + 0.22222 + 0.013333 + 0.0265
       = 0.29151 kVA
         Demand apparent power (arithmetic)
-  [30] I_3ph = S_3φ/(√3·U_3ph)
+  [30] I_3ph = S_3φ,run/(√3·U_3ph), S_run = Σ P_i·k_i/cosφ_i
       = 0 / (√3 × 400)
       = 0 A
-        Three-phase bus current
-  [31] I_1ph = S_1φ/U_1ph
+        Three-phase bus current, loads while on (duty not applied)
+  [31] I_1ph = S_1φ,run/U_1ph, S_run = Σ P_i·k_i/cosφ_i
       = 291.51 / 230
       = 1.2674 A
-        Single-phase bus current
-  [32] I_DC = P_DC/U_DC
+        Single-phase bus current, loads while on (duty not applied)
+  [32] I_DC = P_DC,run/U_DC, P_DC,run = Σ DC P_i·k_i
       = 238.51 / 24
       = 9.9378 A
-        DC bus current
+        DC bus current, loads while on (duty not applied)
   [33] Phi = Σ h_i·P_i·d_i·k_i
       = 1×0.0015073 + 1×0.025 + 0.04×0.2 + 1×0.012 + 1×0.0265
       = 0.073007 kW
@@ -286,24 +286,28 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   [34] P_DC = Σ DC P_i·d_i·k_i
       = 238.51 W
       = 238.51 W
-        DC demand
-  [35] P_PSU_req = margin * P_DC / f_derate
+        DC demand (duty-weighted)
+  [35] P_DC_run = Σ DC P_i·k_i
+      = 238.51 W
+      = 238.51 W
+        DC load while on (duty not applied)
+  [36] P_PSU_req = margin * P_DC_run / f_derate
       = 1.25 × 238.51 W / 1
       = 298.13 W
-        Minimum PSU rating
-  [36] S_T_req = margin * S_dem
+        Minimum PSU rating (the supply carries the load while it is on)
+  [37] S_T_req = margin * S_dem
       = 1.25 × 0.29151 kVA
       = 0.36439 kVA
         Minimum transformer rating for the running load
-  [37] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
+  [38] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
       = 0.29151 + 0 (24 V supply loss starting)
       = 0.29151 kVA
         Peak apparent power while the largest load starts
-  [38] S_T_req_start = S_peak / k_T
+  [39] S_T_req_start = S_peak / k_T
       = 0.29151 kVA / 3
       = 0.097169 kVA
         Minimum transformer rating for the starting peak
-  [39] S_T_min = max(S_T_req, S_T_req_start)
+  [40] S_T_min = max(S_T_req, S_T_req_start)
       = max(0.36439 kVA, 0.097169 kVA)
       = 0.36439 kVA
         Minimum transformer rating (running load and starting peak)
@@ -329,11 +333,11 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   WARNING record: Tabulated values not taken from a reference record: f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: elec.load-budget@1.2.1
-  Content hash: 39f53bc4722e29b8
+  Template: elec.load-budget@1.3.0
+  Content hash: 27461dc18ad6253f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
 
 
@@ -341,9 +345,9 @@ CALCULATION SHEET — ISSUED
 Project: Controller box 7
 Calc ID: Enclosure temperature    Revision: A
 Title: Enclosure heat dissipation and fan sizing
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: ELX-ENC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: ELX-ENC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Total heat load inside a control enclosure, the effective surface that can dissipate it for the mounting condition, the internal temperature rise with natural convection and radiation through a stated overall heat-transfer coefficient, the forced-ventilation airflow for a target rise (density corrected for altitude), the fan duty point against a fan curve and the system resistance, optional solar gain, and the cooling-unit capacity needed when the limit cannot be met.
@@ -490,7 +494,7 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   Content hash: 857f14f33a5fb9c0
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
 
 
@@ -498,9 +502,9 @@ CALCULATION SHEET — ISSUED
 Project: Controller box 7
 Calc ID: Cover latches    Revision: A
 Title: Snap-fits: cantilever, annular, torsion
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: ELX-ENC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: ELX-ENC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A plastic snap-fit joint of one of five forms: a cantilever lug of constant section, of tapered thickness or of tapered width, an annular (closed ring) snap, or a torsion bar. The strain at the critical section against the permissible strain of the plastic (one-time or repeated joining), the deflection force with the secant modulus, the assembly force (inclined entry face) and the separation force (return face) with Coulomb friction, and whether the joint is self-locking.
@@ -645,7 +649,7 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
   Content hash: 1df7e5a03f212571
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 11/11
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test
 
 
@@ -653,9 +657,9 @@ CALCULATION SHEET — ISSUED
 Project: Controller box 7
 Calc ID: Cover plate    Revision: A
 Title: Plate bending
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: ELX-ENC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: ELX-ENC-001    Client: Client Co
 
 1. SCOPE AND METHOD
 Bending of a thin, flat, isotropic plate under a lateral load by Kirchhoff small-deflection theory: circular plates (uniform pressure, central patch, ring load; clamped or simply supported) in closed form; rectangular plates simply supported (uniform pressure or central patch, Navier series) or clamped (Ritz, approximate). Maximum deflection, greatest von Mises stress at the surface, stress and deflection utilisations and the fundamental frequency.
@@ -810,5 +814,5 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
   Content hash: 82862b637af72f75
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 11/11
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test

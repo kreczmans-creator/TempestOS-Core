@@ -152,7 +152,7 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(Si(e1, "T_load") * omega, Si(e1, "P_cont"), 6);
         Assert.Equal(11805.938169574532, Si(e1, "P_cont"), 6);
         Assert.Equal(Si(e1, "P_cont"), Si(e1, "P_rms"), 6);
-        Assert.Equal(3, e1.Checks.Count);
+        Assert.Equal(4, e1.Checks.Count);
         Assert.All(e1.Checks, c => Assert.True(c.Passed, c.Name));
         Assert.Equal(0.8099023351401162, Si(e1, "u_rms"), 9);
 
@@ -187,37 +187,38 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(InputSi(e4, "cos_phi"), InputSi(e3, "cos_phi"), 15);
         Assert.Equal(InputSi(e4, "U"), InputSi(e3, "V_n"), 12);
 
-        // E3: ρ_70 = 0.01724 (1 + 0.00393 · 50) = 0.0206277 Ω·mm²/m; R = ρ_70 L/A = 0.061883 Ω; X = 0.08 Ω/km · 30 m = 0.0024 Ω; ΔV = √3 I (R cos φ + X sin φ) = 3.1562 V (0.789 % of 400 V).
-        var rho70 = 0.01724 * (1 + 0.00393 * 50);
+        // E3: ρ_70 = 0.0194 (1 + 0.00393 · 50) = 0.0232121 Ω·mm²/m (the default resistivity, the cable standard's largest class 2 maximum); R = ρ_70 L/A = 0.069636 Ω; X = 0.08 Ω/km · 30 m = 0.0024 Ω;
+        // ΔV = √3 I (R cos φ + X sin φ) = 3.5428 V (0.886 % of 400 V) (python3).
+        var rho70 = 0.0194 * (1 + 0.00393 * 50);
         Assert.Equal(rho70 * 30 / 10, Si(e3, "R"), 12);
-        Assert.Equal(0.06188297999999999, Si(e3, "R"), 12);
+        Assert.Equal(0.0696363, Si(e3, "R"), 12);
         Assert.Equal(0.0024, Si(e3, "X"), 12);
         Assert.Equal(Math.Sqrt(3) * Si(e4, "I_b") * (Si(e3, "R") * 0.86 + Si(e3, "X") * Math.Sqrt(1 - 0.86 * 0.86)), Si(e3, "dV"), 9);
-        Assert.Equal(3.1562182118909865, Si(e3, "dV"), 9);
-        Assert.Equal(0.7890545529727465, Si(e3, "dV_pct"), 9);
-        Assert.Equal(207.97164114612576, Si(e3, "P_loss"), 6);
+        Assert.Equal(3.5427654814918457, Si(e3, "dV"), 9);
+        Assert.Equal(0.8856913703729614, Si(e3, "dV_pct"), 9);
+        Assert.Equal(234.028412890652, Si(e3, "P_loss"), 6);
         Assert.Single(e3.Checks);
         Assert.All(e3.Checks, c => Assert.True(c.Passed, c.Name));
 
         // E4 → E5: the conductor area (the line conductor), the length, the device rating and the device type code; the protective conductor is typed the cable's size (guarded), and the transformer is entered here, once.
-        Assert.Equal(["I_n", "L", "S_line", "device_code"], e5.Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
+        Assert.Equal(["I_n", "L", "S_cpc", "S_line", "device_code"], e5.Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
         Assert.Equal(Si(e4, "CSA"), InputSi(e5, "S_line"), 15);
         Assert.Equal(Si(e4, "CSA"), InputSi(e5, "S_cpc"), 15);
         Assert.Equal(Si(e4, "L"), InputSi(e5, "L"), 9);
         Assert.Equal(Si(e4, "I_n"), InputSi(e5, "I_n"), 9);
         Assert.Equal(Si(e4, "device_code"), InputSi(e5, "device_code"), 9);
 
-        // E5: R1 + R2 = ρ_70 L (1/10 + 1/10) with ρ_20 = 17.241·10⁻⁶ Ω·mm = 0.123773 Ω; Z_s = 0.05 + 0.123773 = 0.173773 Ω (the 0.05 Ω external loop of a close-coupled 400 kVA transformer, invented); I_f = 0.95 · 230/Z_s = 1257.39 A against I_a = 10 · 40 = 400 A; Z_T = 0.04 · (√3 · 230)² / 400 kVA = 0.01587 Ω;
+        // E5: R1 + R2 = k_R ρ_70 L (1/10 + 1/10) with ρ_20 = 17.241·10⁻⁶ Ω·mm and k_R 1.125 (the cable standard's maximum conductor resistance) = 0.139245 Ω; Z_s = 0.05 + 0.139245 = 0.189245 Ω (the 0.05 Ω external loop of a close-coupled 400 kVA transformer, invented); I_f = 0.95 · 230/Z_s = 1257.39 A against I_a = 10 · 40 = 400 A; Z_T = 0.04 · (√3 · 230)² / 400 kVA = 0.01587 Ω;
         // I_k3 = 1.1 · √3 · 230 / (√3 · Z_T) = 15.942 kA, 63.8 % of the 25 kA breaking capacity.
-        var r12 = 17.241e-3 * (1 + 0.00393 * 50) * 30 * (1.0 / 10 + 1.0 / 10);
+        var r12 = 17.241e-3 * 1.125 * (1 + 0.00393 * 50) * 30 * (1.0 / 10 + 1.0 / 10);
         Assert.Equal(r12, Si(e5, "R_12"), 12);
-        Assert.Equal(0.12377313899999998, Si(e5, "R_12"), 12);
+        Assert.Equal(0.13924478137500002, Si(e5, "R_12"), 12);
         Assert.Equal(0.05 + r12, Si(e5, "Z_s"), 12);
         Assert.Equal(0.95 * 230 / (0.05 + r12), Si(e5, "I_f"), 9);
-        Assert.Equal(1257.3865055174035, Si(e5, "I_f"), 9);
+        Assert.Equal(1154.5893018155623, Si(e5, "I_f"), 9);
         Assert.Equal(400, Si(e5, "I_a"), 9);
         Assert.Equal(0.54625, Si(e5, "Z_s_max"), 12);
-        Assert.Equal(0.3181201629290617, Si(e5, "u_Zs"), 9);
+        Assert.Equal(0.3464435356979405, Si(e5, "u_Zs"), 9);
         Assert.Equal(114.83612782557213, Si(e5, "k"), 9);
         Assert.Equal(Math.Sqrt(8e4) / 114.83612782557213, Si(e5, "S_min") * 1e6, 9);
         Assert.Equal(0.04 * (Math.Sqrt(3) * 230) * (Math.Sqrt(3) * 230) / 400e3, Si(e5, "Z_T"), 12);
@@ -305,11 +306,11 @@ public sealed class HydraulicPowerUnitChainTests
             [
                 ("f1", "dV", "f2", "dV"), ("f1", "p", "f2", "p_2"), ("f1", "Q_prs", "b1", "Q"), ("f1", "rho", "b1", "rho_custom"), ("f1", "d_prs", "b1", "segments"), ("f1", "T_shaft", "e1", "T_L"), ("f1", "n_shaft", "e1", "n_L"), ("e1", "P_rated", "e4", "P"),
                 ("e4", "I_b", "e3", "I"), ("e4", "L", "e3", "L"), ("e4", "CSA", "e3", "A_c"),
-                ("e4", "CSA", "e5", "S_line"), ("e4", "L", "e5", "L"), ("e4", "I_n", "e5", "I_n"), ("e4", "device_code", "e5", "device_code"),
+                ("e4", "CSA", "e5", "S_line"), ("e4", "CSA", "e5", "S_cpc"), ("e4", "L", "e5", "L"), ("e4", "I_n", "e5", "I_n"), ("e4", "device_code", "e5", "device_code"),
                 ("e1", "P_rated", "e9", "P"), ("e4", "CSA", "e9", "A_c"), ("e4", "L", "e9", "L_cab"), ("e5", "I_k3", "e9", "I_k"), ("e5", "c_k3", "e9", "c_src"),
             ],
             template.Bindings.Select(b => (b.FromStep, b.Output, b.ToStep, b.Input)));
-        Assert.Equal(20, template.Bindings.Count);
+        Assert.Equal(21, template.Bindings.Count);
         Assert.Equal((0, "D"), (template.Bindings.Single(b => b.Input == "segments").Row, template.Bindings.Single(b => b.Input == "segments").Column));
 
         foreach (var b in template.Bindings.Where(b => b.Row is null))
@@ -375,7 +376,7 @@ public sealed class HydraulicPowerUnitChainTests
 
         // ... so the whole electrical tail re-pins to the same cable and the same start: the pack is re-checked on current members, not on a different design.
         Assert.Equal(Si(e4, "I_b"), InputSi(e3, "I"), 9);
-        Assert.Equal(3.1562182118909865, Si(e3, "dV"), 9);
+        Assert.Equal(3.5427654814918457, Si(e3, "dV"), 9);
         Assert.Equal(Si(e4, "CSA"), InputSi(e5, "S_line"), 15);
         Assert.Equal(15942.028985507251, Si(e5, "I_k3"), 6);
         Assert.Equal(Si(e5, "I_k3"), InputSi(e9, "I_k"), 6);

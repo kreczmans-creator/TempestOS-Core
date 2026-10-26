@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Conveyor 7 head drive
 Calc ID: Coupling flange bolts    Revision: A
 Title: Bolt group (elastic method)
-Author: unknown    Authored: 2026-10-25
-Checker: J. Reviewer    Checked: 2026-10-25
-Issued: 2026-10-25    Issue: CNV-DRV-001    Client: Client Co
+Author: unknown    Authored: 2026-10-26
+Checker: J. Reviewer    Checked: 2026-10-26
+Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
 
 1. SCOPE AND METHOD
 A pattern of bolts in a plane under in-plane forces (with eccentricity, so torsion), out-of-plane moments and axial load: the shear and tension in every bolt by the elastic (area-weighted) method, the governing bolt, and an optional lever-model prying addition.
@@ -23,7 +23,7 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   F_y | In-plane force, y | 0 | kN | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN
   e_x | Point of application, x | 0 | mm | drawing: DRG-CNV-412 rev B | -100000 … 100000 mm
   e_y | Point of application, y | 0 | mm | drawing: DRG-CNV-412 rev B | -100000 … 100000 mm
-  T_z | Additional in-plane torque about the centroid | 0.159248 | kN*m | link: Motor sizing rev A · T_pk | -1000000 … 1000000 kN*m
+  T_z | Additional in-plane torque about the centroid | 0.159248 | kN*m | link: Motor sizing rev A · T_design | -1000000 … 1000000 kN*m
   N | Axial (out-of-plane) load, tension positive | 0 | kN | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN
   M_x | Out-of-plane moment about x (tension on +y side) | 0 | kN*m | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN*m
   M_y | Out-of-plane moment about y (tension on +x side) | 0 | kN*m | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN*m
@@ -124,5 +124,5 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   Content hash: 1d9f5c56b95ecdb6
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-25 21:13 UTC
+  Test run: 2026-10-26 09:36 UTC
   Application: TempestOS test

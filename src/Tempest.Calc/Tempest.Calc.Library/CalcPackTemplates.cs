@@ -13,8 +13,9 @@ public static class CalcPackTemplates
     /// coupling: it carries the torque at the motor shaft, which E1 reports, so no ratio or efficiency is applied between them (E1 also reports the output-side torques, <c>T_out_m</c>, <c>T_out_a</c>,
     /// <c>T_out_pk</c> and <c>n_out</c>, T·i·η and n/i, for a shaft after the ratio: bind those instead). The torque on the shaft is split as the fatigue check needs it: E1's load torque <c>T_load</c>
     /// is the steady (mean) torque <c>T</c> and E1's <c>T_alt</c>, (T_pk − T_dec)/2 on a point-to-point cycle and 0 in continuous duty, is the alternating amplitude <c>T_a</c>; the RMS torque is a thermal
-    /// quantity and is not a shaft torque. E1's peak torque <c>T_pk</c> is the peak torque the load demands at the motor shaft, run-up included (the motor's own limit <c>T_peak</c> is a check on E1, not a design
-    /// torque): it is the torque the flange bolt group (M3b, <c>mech.bolt-group</c>) carries about its centroid (<c>T_z</c>) and the torque the shaft's yield check and key see (<c>T_pk</c>, M4). E1's peak axial
+    /// quantity and is not a shaft torque. E1's peak torque <c>T_pk</c> is the peak torque the load demands at the motor shaft, run-up included (the motor's own limit <c>T_peak</c> is a check on E1); it is the torque the shaft's yield check and key
+    /// see (<c>T_pk</c>, M4). The coupling flange bolt group (M3, <c>mech.bolt-group</c>) carries E1's design torque <c>T_design</c> about its centroid (<c>T_z</c>), on the basis the owner chooses in E1's <c>T_basis</c>:
+    /// the load peak <c>T_pk</c> (the default, as before), the motor's typed peak torque <c>T_peak</c>, a service factor on the rated torque (<c>SF_c</c>·<c>T_rated</c>) or a protective torque limit (<c>T_lim</c>); the basis is a design decision, not a calculation. E1's peak axial
     /// thrust <c>F_ax_pk</c> (a ball screw's; 0 for a rotary mechanism) is the bearing's axial load <c>F_a</c>, peak rather than the cube-mean equivalent, so conservative for life.
     /// The shaft's mesh forces are entered (derived for the E1 torque; re-derive them when it changes). M3 must be given its bolt pattern as an input.
     /// </summary>
@@ -37,13 +38,13 @@ public static class CalcPackTemplates
             new CalcPackBinding("e1", "F_ax_pk", "m5", "F_a"),
             new CalcPackBinding("m4", "d_A", "m2", "D"),
             new CalcPackBinding("e1", "T_pk", "m4", "T_pk"),
-            new CalcPackBinding("e1", "T_pk", "m3", "T_z"),
+            new CalcPackBinding("e1", "T_design", "m3", "T_z"),
         ]);
 
     /// <summary>
     /// Motor circuit: motor (E1) → load budget (E6) → cable (E4) → voltage drop (E3) and fault protection (E5) →
     /// enclosure heat (E2). E1's RMS power (the thermal-equivalent continuous power, not the instantaneous peak) enters E6 as a linked
-    /// load; E6's bus current sizes the cable; the cable's size, length, rated current and device type code feed E3 and E5 (E5 is blocked
+    /// load; E6's bus current sizes the cable; the cable's size, length, rated current and device type code feed E3 and E5 (the protective conductor is taken as the same size as the line conductor, <c>S_cpc</c> = the cable's CSA; above 16 mm² a smaller protective conductor is usual: unlink and enter it) (E5 is blocked
     /// if the device chosen on it is not the one the cable step sized); E6's heat released inside the enclosure enters E2 (the linked
     /// motor is outside it). The steps carry example inputs except E4's two record tables, which no build ships: the chain is refused at
     /// E4 until the user supplies his own.
@@ -67,6 +68,7 @@ public static class CalcPackTemplates
             new CalcPackBinding("e4", "L", "e3", "L"),
             new CalcPackBinding("e4", "CSA", "e3", "A_c"),
             new CalcPackBinding("e4", "CSA", "e5", "S_line"),
+            new CalcPackBinding("e4", "CSA", "e5", "S_cpc"),
             new CalcPackBinding("e4", "L", "e5", "L"),
             new CalcPackBinding("e4", "I_n", "e5", "I_n"),
             new CalcPackBinding("e4", "device_code", "e5", "device_code"),
@@ -239,6 +241,7 @@ public static class CalcPackTemplates
             new CalcPackBinding("e4", "L", "e3", "L"),
             new CalcPackBinding("e4", "CSA", "e3", "A_c"),
             new CalcPackBinding("e4", "CSA", "e5", "S_line"),
+            new CalcPackBinding("e4", "CSA", "e5", "S_cpc"),
             new CalcPackBinding("e4", "L", "e5", "L"),
             new CalcPackBinding("e4", "I_n", "e5", "I_n"),
             new CalcPackBinding("e4", "device_code", "e5", "device_code"),

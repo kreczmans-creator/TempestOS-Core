@@ -55,7 +55,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | drawing: DRG-PIP-611 rev B | 235 … 640 MPa
   A_s | Anchor bolt tensile stress area (from S4) | 244.79 | mm^2 | drawing: DRG-PIP-611 rev B | 50 … 1500 mm^2
   F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 248.48 | kN | drawing: DRG-PIP-611 rev B | 1 … 2000 kN
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: c03c66bfee144c1ebd6c3641cf89fd2e/4372520d25044ee4b39739aae642169d | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 23ad59a2ea9c4491ae7648ef644147ac/fac09009e6ab4933b8e308de99ae0955 | any
 
 3. ASSUMPTIONS
   A1. N_Ed is positive in compression here, the opposite of S3 (tension positive): a link from S2 must take the reaction R1_y (up positive, compression into the base), never the member force N_e1. (Sign convention.)
@@ -273,5 +273,5 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   Content hash: 78225cb0777ee5bb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-26 08:29 UTC
+  Test run: 2026-10-26 09:55 UTC
   Application: TempestOS test

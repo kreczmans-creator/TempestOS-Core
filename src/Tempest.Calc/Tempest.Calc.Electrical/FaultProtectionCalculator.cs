@@ -26,12 +26,12 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.1", CalcDiscipline.Electrical, "Fault protection: Zs, disconnection, adiabatic, fault level",
+        Id, "1.3.0", CalcDiscipline.Electrical, "Fault protection: Zs, disconnection, adiabatic, fault level",
         "Automatic disconnection of supply in a TN system for one circuit: the earth fault loop impedance at the conductor's operating temperature against the device's maximum, the disconnection time, the protective conductor (and line conductor) against the adiabatic minimum, and the prospective three-phase fault at the origin against the device's breaking capacity.",
-        "Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = ρ_20·L/S\n" +
+        "Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/S (k_R = 1.125 takes the pure-copper ρ_20 to the cable standard's maximum conductor resistance; k enters with the pure ρ_20)\n" +
         "Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95\n" +
         "Maximum loop impedance: Z_s,max = C_min·U_0/I_a; I_a = 5, 10 or 20·I_n for MCB types B, C, D, or read from the time–current points at t_req (log-log)\n" +
-        "Adiabatic conductor check: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); I²t = I_f²·t_d from 0.1 s; below 0.1 s the device's let-through I²t at the maximum prospective fault (the line conductor check, reg. 434.5.2, needs it and is not made without it; the protective conductor check then uses I_f²·0.1 s at the end-of-line fault only)\n" +
+        "Adiabatic conductor check: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); I²t = I_f²·t_d from 0.1 s; below 0.1 s the device's let-through I²t at the maximum prospective fault, which bounds the protective and the line conductor at the origin where the earth-fault current is largest (reg. 434.5.2, 543.1.3); without it neither is checked at the origin, the sheet fails 'Conductors against let-through at the origin' and the protective conductor check uses I_f²·0.1 s at the end-of-line fault only\n" +
         "Protective device check: the device chosen here must be the one carried from the cable step (device_code 1 = MCB B, 2 = C, 3 = D, 4 = fuse or MCCB), else the sheet is blocked\n" +
         "Fault level (simplified): Z_T = u_k·U_n²/S_r, I_k3 = c·U_n/(√3·Z_T), U_n = √3·U_0",
         [
@@ -45,7 +45,8 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
             new CalcInputSpec("S_line", "Line conductor cross-section", CalcInputKind.Quantity, "mm^2", Default: 2.5, Min: 0.5, Max: 630, HardMin: 0.5, HardMax: 630, Group: "Circuit"),
             new CalcInputSpec("S_cpc", "Protective conductor cross-section", CalcInputKind.Quantity, "mm^2", Default: 1.5, Min: 0.5, Max: 630, HardMin: 0.5, HardMax: 630, Group: "Circuit"),
             new CalcInputSpec("theta", "Conductor temperature for Z_s", CalcInputKind.Quantity, "degC", Default: 70, Min: 20, Max: 90, HardMin: 20, HardMax: 90, Group: "Circuit"),
-            new CalcInputSpec("rho_20", "Resistivity at 20 °C", CalcInputKind.Quantity, "ohm*mm", Default: CopperRho20, Min: 1e-6, Max: 1e-4, HardMin: 1e-6, HardMax: 1e-4, Group: "Conductor material"),
+            new CalcInputSpec("rho_20", "Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R)", CalcInputKind.Quantity, "ohm*mm", Default: CopperRho20, Min: 1e-6, Max: 1e-4, HardMin: 1e-6, HardMax: 1e-4, Group: "Conductor material"),
+            new CalcInputSpec("k_R", "Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the cable standard's maximum conductor resistances are 5 to 12 % above pure copper, so the default is 1.125 and Z_s is not understated; k is not changed by it)", CalcInputKind.Number, Default: 1.125, Min: 1, Max: 1.5, HardMin: 1, HardMax: 1.5, Group: "Conductor material"),
             new CalcInputSpec("alpha", "Temperature coefficient of resistance", CalcInputKind.Quantity, "1/K", Default: 0.00393, Min: 0.001, Max: 0.01, HardMin: 0.001, HardMax: 0.01, Group: "Conductor material"),
             new CalcInputSpec("Q_c", "Volumetric heat capacity", CalcInputKind.Quantity, "J/(K*mm^3)", Default: 3.45e-3, Min: 1e-3, Max: 1e-2, HardMin: 1e-3, HardMax: 1e-2, Group: "Conductor material"),
             new CalcInputSpec("beta", "Reciprocal temperature coefficient β", CalcInputKind.Quantity, "K", Default: 234.5, Min: 100, Max: 400, HardMin: 100, HardMax: 400, Group: "Conductor material"),
@@ -74,20 +75,26 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
             new CalcClauseRef("IEC 60909-0:2016", "cl. 5.3", "Voltage factor c"),
         ],
         [
-            new CalcApplicabilityRule("curve", "The time–current points must bracket the required time and the fault current.", CalcNoticeSeverity.Block),
-            new CalcApplicabilityRule("let-through", "Disconnection below 0.1 s without a let-through I²t: the protective conductor check uses I_f²·0.1 s at the end-of-line fault only and the line conductor check is not made.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("curve", "The time–current points must bracket the required disconnection time; at least two points are needed.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("curve-range", "The fault current is outside the points entered: above the highest the fastest time entered bounds the disconnection time, below the lowest no time is read. The loop impedance verdict is still given.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("resistance", "The conductor resistance factor k_R is below 1.05: R₁ + R₂ and Z_s are at about the pure resistivity, 5 to 12 % below the cable standard's maximum conductor resistances.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("let-through", "Disconnection below 0.1 s without a let-through I²t: the protective conductor check uses I_f²·0.1 s at the end-of-line fault only, the line conductor check is not made and neither conductor has been shown to withstand a fault near the origin, so the sheet fails 'Conductors against let-through at the origin' until I2t_let is entered.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("device", "The device chosen must be the one carried from the cable step (device_code).", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("adiabatic", "No disconnection time: the adiabatic check is not made.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("temperatures", "The adiabatic final temperature must exceed the initial temperature.", CalcNoticeSeverity.Block),
         ],
         [
             new CalcTestCase("ka-mcb-b32", "32 A type B MCB, 20 m of 2.5/1.5 mm² copper at 70 °C",
-                new CalcReferenceSource("Analytic (C_min relation and derived k)", null, "R_1 + R_2 = 17.241e-3·20·(1/2.5 + 1/1.5) = 0.367808 Ω at 20 °C, × 1.1965 = 0.440082 Ω; Z_s = 0.790082 Ω; I_f = 218.5/0.790082 = 276.553 A; Z_s,max = 218.5/160 = 1.365625 Ω; S_min = √(276.553²·0.1)/114.836 = 0.76155 mm²"),
-                [Q("Z_e", 0.35, "ohm"), Q("L", 20, "m"), Q("S_line", 2.5, "mm^2"), Q("S_cpc", 1.5, "mm^2"), CalcInputValue.Choice("device", McbB), Q("I_n", 32, "A")],
+                new CalcReferenceSource("Analytic (C_min relation and derived k; k_R 1, the pure resistivity)", null, "R_1 + R_2 = 17.241e-3·20·(1/2.5 + 1/1.5) = 0.367808 Ω at 20 °C, × 1.1965 = 0.440082 Ω; Z_s = 0.790082 Ω; I_f = 218.5/0.790082 = 276.553 A; Z_s,max = 218.5/160 = 1.365625 Ω; S_min = √(276.553²·0.1)/114.836 = 0.76155 mm²"),
+                [Q("Z_e", 0.35, "ohm"), Q("L", 20, "m"), Q("S_line", 2.5, "mm^2"), Q("S_cpc", 1.5, "mm^2"), CalcInputValue.Of("k_R", 1), CalcInputValue.Choice("device", McbB), Q("I_n", 32, "A")],
                 [new CalcExpectedValue("Z_s", 0.7900823, "ohm", 1e-6), new CalcExpectedValue("I_f", 276.5535, "A", 1e-6), new CalcExpectedValue("Z_s_max", 1.365625, "ohm", 1e-9), new CalcExpectedValue("u_Zs", 0.5785499, "", 1e-6), new CalcExpectedValue("k", 114.8361, "", 1e-6), new CalcExpectedValue("S_min", 0.7615538, "mm^2", 1e-6)]),
+            new CalcTestCase("ka-mcb-b32-maximum-resistance", "The same circuit at the cable standard's maximum conductor resistance (k_R 1.125, the default)",
+                new CalcReferenceSource("Analytic (C_min relation and derived k; k_R 1.125 takes the pure resistivity to the cable standard's maximum conductor resistance, recomputed in python3)", null, "R_1 + R_2 = 17.241e-3·1.125·20·(1/2.5 + 1/1.5) = 0.413784 Ω at 20 °C, × 1.1965 = 0.495093 Ω; Z_s = 0.845093 Ω; I_f = 218.5/0.845093 = 258.552 A; Z_s,max = 218.5/160 = 1.365625 Ω; u_Zs = 0.618832; S_min = √(258.552²·0.1)/114.836 = 0.711981 mm²"),
+                [Q("Z_e", 0.35, "ohm"), Q("L", 20, "m"), Q("S_line", 2.5, "mm^2"), Q("S_cpc", 1.5, "mm^2"), CalcInputValue.Choice("device", McbB), Q("I_n", 32, "A")],
+                [new CalcExpectedValue("R_12", 0.4950926, "ohm", 1e-6), new CalcExpectedValue("Z_s", 0.8450926, "ohm", 1e-6), new CalcExpectedValue("I_f", 258.5516, "A", 1e-6), new CalcExpectedValue("u_Zs", 0.6188321, "", 1e-6), new CalcExpectedValue("S_min", 0.7119815, "mm^2", 1e-6)]),
             new CalcTestCase("ka-fuse-curve", "Fuse from user-read curve points, 0.4 s",
                 new CalcReferenceSource("Analytic (log-log interpolation of illustrative points)", null, "Points (5 s, 120 A), (0.4 s, 220 A), (0.1 s, 320 A), (0.01 s, 700 A): I_a(0.4 s) = 220 A, Z_s,max = 0.993182 Ω; I_f = 276.553 A gives t_d = 0.171577 s; S_min = √(276.553²·0.171577)/114.836 = 0.99754 mm²"),
-                [Q("Z_e", 0.35, "ohm"), Q("L", 20, "m"), Q("S_line", 2.5, "mm^2"), Q("S_cpc", 1.5, "mm^2"), CalcInputValue.Choice("device", Curve), Q("I_n", 32, "A"), Points((5, 120), (0.4, 220), (0.1, 320), (0.01, 700))],
+                [Q("Z_e", 0.35, "ohm"), Q("L", 20, "m"), Q("S_line", 2.5, "mm^2"), Q("S_cpc", 1.5, "mm^2"), CalcInputValue.Of("k_R", 1), CalcInputValue.Choice("device", Curve), Q("I_n", 32, "A"), Points((5, 120), (0.4, 220), (0.1, 320), (0.01, 700))],
                 [new CalcExpectedValue("I_a", 220, "A", 1e-9), new CalcExpectedValue("Z_s_max", 0.9931818, "ohm", 1e-6), new CalcExpectedValue("t_d", 0.1715774, "s", 1e-6), new CalcExpectedValue("S_min", 0.9975407, "mm^2", 1e-6)]),
             new CalcTestCase("ka-fault-level", "Prospective fault from a 500 kVA, 5 % transformer",
                 new CalcReferenceSource("Analytic (simplified IEC 60909 form)", null, "U_n = √3·230 = 398.37 V; Z_T = 0.05·398.37²/500 kVA = 0.01587 Ω; I_k3 = 1.1·398.37/(√3·0.01587) = 15.942 kA; against I_cn 25 kA: 0.6377"),
@@ -115,7 +122,7 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
         ],
         RecordKinds:
         [
-            new CalcRecordKind("conductor.material", "Conductor material constants", ["rho_20", "alpha", "Q_c", "beta", "theta_i", "theta_f"], "Material constants (IEC 60228 / IEC 60949 values) and the insulation's initial and final temperatures, with their source."),
+            new CalcRecordKind("conductor.material", "Conductor material constants", ["rho_20", "k_R", "alpha", "Q_c", "beta", "theta_i", "theta_f"], "Material constants (IEC 60228 / IEC 60949 values) and the insulation's initial and final temperatures, with their source."),
             new CalcRecordKind("device.characteristic", "Device time–current points", ["curve", "I2t_let", "I_cn"], "Read from the manufacturer's curve and datasheet for the exact device."),
         ],
         IndependentCheck: true);
@@ -128,7 +135,7 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
 
     public void Run(CalcRunContext c)
     {
-        foreach (var s in new[] { "U_0", "Z_e", "C_min", "c_max", "L", "S_line", "S_cpc", "theta", "rho_20", "alpha", "Q_c", "beta", "theta_i", "theta_f", "I_n", "t_req" })
+        foreach (var s in new[] { "U_0", "Z_e", "C_min", "c_max", "L", "S_line", "S_cpc", "theta", "rho_20", "k_R", "alpha", "Q_c", "beta", "theta_i", "theta_f", "I_n", "t_req" })
             c.Input(s);
 
         var device = c.InputText("device");
@@ -158,7 +165,10 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
             return;
         }
 
-        c.Assign("R_12", "rho_20 * L * (1 / S_line + 1 / S_cpc) * (1 + alpha * (theta - 20 degC))", "ohm", "R₁ + R₂ at the conductor temperature");
+        c.Assign("R_12", "rho_20 * k_R * L * (1 / S_line + 1 / S_cpc) * (1 + alpha * (theta - 20 degC))", "ohm", "R₁ + R₂ at the conductor temperature");
+
+        if (c.Si("k_R") < 1.05)
+            c.Warn("resistance", $"k_R: the conductor resistance factor {F(c.Si("k_R"))} leaves R₁ + R₂ at about the pure resistivity, 5 to 12 % below the cable standard's maximum conductor resistances, so Z_s is understated; use 1.125 unless the conductor resistance is measured or taken from the maker's data.");
         c.Assign("Z_s", "Z_e + R_12", "ohm", "Earth fault loop impedance", "BS 7671 reg. 411.4.4");
         c.Assign("I_f", "C_min * U_0 / Z_s", "A", "Earth fault current");
 
@@ -186,11 +196,11 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
             if (td is null && c.Si("I_f") > points[^1].I)
             {
                 td = points.MinBy(p => p.T).T;
-                c.Warn("curve", $"curve: the fault current {F(c.Si("I_f"))} A is above the highest point entered; the fastest time entered ({F(td.Value)} s) is used as an upper bound.");
+                c.Warn("curve-range", $"curve: the fault current {F(c.Si("I_f"))} A is above the highest point entered; the fastest time entered ({F(td.Value)} s) is used as an upper bound.");
             }
             else if (td is null)
             {
-                c.Warn("curve", $"curve: the fault current {F(c.Si("I_f"))} A is below the lowest point entered; the disconnection time is not read.");
+                c.Warn("curve-range", $"curve: the fault current {F(c.Si("I_f"))} A is below the lowest point entered; the disconnection time is not read.");
             }
         }
         else
@@ -249,7 +259,7 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
         }
         else
         {
-            c.Warn("let-through", "I2t_let: disconnection is below 0.1 s and no let-through I²t is entered; the protective conductor check uses I_f²·0.1 s at the end-of-line fault only, and the line conductor check (reg. 434.5.2) is not made: it needs the device let-through I²t at the maximum prospective fault.");
+            c.Warn("let-through", "I2t_let: disconnection is below 0.1 s and no let-through I²t is entered; the protective conductor check uses I_f²·0.1 s at the end-of-line fault only, and the line conductor check (reg. 434.5.2) is not made: it needs the device let-through I²t at the maximum prospective fault. A fault near the origin carries far more current than the end-of-line fault, so neither conductor has been shown to withstand it and the check 'Conductors against let-through at the origin' fails until I2t_let is entered.");
             i2t = c.Si("I_f") * c.Si("I_f") * 0.1;
             c.Record("I2t", "I_f²·0.1 s (no let-through entered)", $"{F(c.Si("I_f"))}² × 0.1", ScalarValue.Of(i2t, "A^2*s"), "Fault energy at the end-of-line fault, clearing time taken as 0.1 s");
             lineChecked = false;
@@ -291,6 +301,8 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
 
         if (lineChecked)
             c.CheckUtilisation("Line conductor against adiabatic minimum", "u_line", "BS 7671 reg. 434.5.2");
+        else
+            c.CheckCondition("Conductors against let-through at the origin", false, "I2t_let not entered", "I²t the device lets through at the maximum prospective fault", null, "BS 7671 reg. 434.5.2, 543.1.3");
 
         if (c.Has("I_cn") && c.Has("S_r") && c.Has("u_k"))
             c.CheckUtilisation("Breaking capacity against prospective fault", "u_Icn");

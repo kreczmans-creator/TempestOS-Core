@@ -1,4 +1,4 @@
-# E5 — Fault protection: Zs, disconnection, adiabatic, fault level (`elec.fault-protection@1.2.1`)
+# E5 — Fault protection: Zs, disconnection, adiabatic, fault level (`elec.fault-protection@1.3.0`)
 
 **In plain terms.** If a live conductor touches an earthed part, the protective device must open the circuit fast enough that the fault is not dangerous. The worksheet works out the loop impedance and fault current of the circuit, whether the device opens in time, whether the protective and line conductors can carry the fault current without overheating, and whether the device can break the fault level. It demands an independent check.
 
@@ -12,25 +12,21 @@
 
 **Limitations.** TN only; single earth fault; no motor contribution, arc fault or IT systems; no BS 7671 table embedded.
 
-**Test cases.** `ka-mcb-b32` (Z_s 0.7901 Ω, Z_s,max 1.3656 Ω, S_min 0.7616 mm²), `ka-fuse-curve` (t_d 0.1716 s), `ka-fault-level` (I_k3 15.942 kA) — analytic, Confirmed; `ka-wiring-matters-b32` (1.37 Ω, IET Wiring Matters March 2023) and `ka-schneider-k` (k ≈ 143, Schneider guide) — **Unconfirmed** until checked against the articles (values as the addendum quotes them). Eaton Memshield 3 non-trip data (1.13 I_n) is not used by this calculation.
+**Changes in 1.3.0 (elec.fault-protection-01, -03, -09).** `R₁ + R₂ = k_R·ρ₂₀·L·(1/S_line + 1/S_cpc)·[1 + α(θ − 20)]`: the new input `k_R` (default 1.125, range 1 to 1.5) takes the pure-copper resistivity to the cable standard's maximum conductor resistance (5 to 12 % higher), so `Z_s` is no longer understated; `k` still uses the pure `ρ₂₀`. `k_R` below 1.05 warns (rule `resistance`). Below 0.1 s without a let-through `I²t` the protective conductor has not been shown to withstand a fault near the origin, where the earth-fault current is largest: the sheet now fails the check 'Conductors against let-through at the origin' (and says so in the `let-through` warning) until `I2t_let` is entered; with it, both conductors are checked against it. A fault current outside the entered curve points is a Warning under rule `curve-range` (above the highest point the fastest time entered is an upper bound); the Block rule `curve` is the curve that does not bracket `t_req`.
+
+**Test cases.** `ka-mcb-b32` (with `k_R` 1, the pure resistivity: Z_s 0.7901 Ω, Z_s,max 1.3656 Ω, S_min 0.7616 mm²), `ka-mcb-b32-maximum-resistance` (the default `k_R` 1.125: Z_s 0.8451 Ω, I_f 258.55 A, u_Zs 0.6188, S_min 0.7120 mm²), `ka-fuse-curve` (t_d 0.1716 s), `ka-fault-level` (I_k3 15.942 kA) — analytic, Confirmed; `ka-wiring-matters-b32` (1.37 Ω, IET Wiring Matters March 2023) and `ka-schneider-k` (k ≈ 143, Schneider guide) — **Unconfirmed** until checked against the articles (values as the addendum quotes them). Eaton Memshield 3 non-trip data (1.13 I_n) is not used by this calculation.
 
 <!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
 **Worked example, by hand.** Workshop radial: 16 A type C MCB, 40 m of 4/2.5 mm² copper ([sheet](../../worked-examples/electrical/elec.fault-protection/workshop-radial-c16/sheet.txt)).
 
 ```text
-R_12 = 0.000017241 ohm·mm × 40 m × (1 / 4 mm² + 1 / 2.5 mm²) × (1 + 0.00393 1/K × (70 degC − 20 degC)) = 0.53635 ohm
-Z_s = 0.8 ohm + 0.53635 ohm = 1.3364 ohm
-I_f = 0.95 × 230 V / 1.3364 ohm = 163.51 A
+R_12 = 0.000017241 ohm·mm × 1.125 × 40 m × (1 / 4 mm² + 1 / 2.5 mm²) × (1 + 0.00393 1/K × (70 degC − 20 degC)) = 0.60339 ohm
+Z_s = 0.8 ohm + 0.60339 ohm = 1.4034 ohm
+I_f = 0.95 × 230 V / 1.4034 ohm = 155.69 A
 I_a = 10 × 16 A = 160 A
 Z_s_max = 0.95 × 230 V / 160 A = 1.3656 ohm
-u_Zs = 1.3364 ohm / 1.3656 ohm = 0.97856
+u_Zs = 1.4034 ohm / 1.3656 ohm = 1.0277
 Z_test = 0.8 × 1.3656 ohm = 1.0925 ohm
-t_d = I_f = 163.51 A = 0.1 s
-I2t = 1500 A²s = 1500 A²·s
-k = √[0.00345 × 254.5 / 0.000017241 × ln(1 + 90/304.5)] = 114.84
-S_min = √1500 / 114.84 = 0.33726 mm²
-u_cpc = 0.33726 mm² / 2.5 mm² = 0.1349
-u_line = 0.33726 mm² / 4 mm² = 0.084315
-Governing: PASS  Loop impedance within maximum (disconnection in time): u_Zs = 0.97856 vs u_Zs ≤ 1  utilisation 0.979  « BS 7671 reg. 411.4.4
+Governing: FAIL  Disconnection achieved: I_f below the instantaneous tripping current vs disconnection within t_req  utilisation —  « BS 7671 reg. 411.3.2.2
 ```
 <!-- hand-arithmetic:end -->

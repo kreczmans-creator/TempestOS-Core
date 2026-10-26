@@ -145,6 +145,16 @@
     "ValueText": "MCB type C (I_a = 10 I_n)"
   },
   {
+    "Symbol": "k_R",
+    "Number": 1.125,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Cable standard maximum conductor resistance over the pure-copper resistivity (5 to 12 % higher); 1.125 covers the sizes used.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.125"
+  },
+  {
     "Symbol": "rho_20",
     "Number": 1.7241E-05,
     "Unit": "ohm*mm",

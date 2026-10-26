@@ -37,7 +37,7 @@ The start current is for coordination only: the star-delta 78 A stays below the 
 | Cylinder and pump circuit | `fp.cylinder` | A | 7 of 7 PASS |
 | Emergency stroke accumulator | `fp.accumulator` | A | 2 of 2 PASS |
 | Pressure line | `bs.pipe-pump` | A | 1 of 1 PASS |
-| Pump drive motor | `elec.motor-sizing` | A | 3 of 3 PASS |
+| Pump drive motor | `elec.motor-sizing` | A | 4 of 4 PASS |
 | Motor supply cable | `elec.conductor-sizing` | A | 3 of 3 PASS |
 | Motor supply voltage drop | `elec.voltage-drop` | A | 1 of 1 PASS |
 | Motor supply fault protection | `elec.fault-protection` | A | 5 of 5 PASS |
@@ -61,6 +61,7 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 | Motor supply cable | `L` | Motor supply voltage drop | `L` | 30 m |
 | Motor supply cable | `CSA` | Motor supply voltage drop | `A_c` | 10 mm^2 |
 | Motor supply cable | `CSA` | Motor supply fault protection | `S_line` | 10 mm^2 |
+| Motor supply cable | `CSA` | Motor supply fault protection | `S_cpc` | 10 mm^2 |
 | Motor supply cable | `L` | Motor supply fault protection | `L` | 30 m |
 | Motor supply cable | `I_n` | Motor supply fault protection | `I_n` | 40 A |
 | Motor supply cable | `device_code` | Motor supply fault protection | `device_code` | 2 |

@@ -32,10 +32,11 @@ public sealed class DriveTrainChainTests
         Assert.Equal(Si(e1, "n_pk"), InputSi(m5, "n"), 9);
         Assert.Equal(Si(m4, "d_A"), InputSi(m2, "D"), 9);
 
-        // E1 → M3: the motor's peak torque is the torque about the coupling flange's bolt-circle centre, N·m into kN·m.
+        // E1 → M3: E1's design torque is the torque about the coupling flange's bolt-circle centre, N·m into kN·m. On the default basis (the load peak) it is T_pk, as before (chain.drive-train-D1).
+        Assert.Equal(Si(e1, "T_pk"), Si(e1, "T_design"), 12);
         Assert.Equal(Si(e1, "T_pk"), InputSi(m3, "T_z"), 9);
         Assert.Equal(Si(e1, "T_pk"), Si(m3, "T"), 9);
-        Assert.Contains(m3.Inputs, i => i.Symbol == "T_z" && CalcLink.From(i.Provenance) is { OutputSymbol: "T_pk" });
+        Assert.Contains(m3.Inputs, i => i.Symbol == "T_z" && CalcLink.From(i.Provenance) is { OutputSymbol: "T_design" });
 
         // Four bolts on a 40 mm radius share that torque equally in shear: v = T / (n r).
         Assert.Equal(Si(e1, "T_pk") / (4 * 0.040), Si(m3, "v_max"), 6);
@@ -124,6 +125,24 @@ public sealed class DriveTrainChainTests
     }
 
     [Fact]
+    public async Task The_Coupling_Design_Torque_Follows_The_Basis_The_Owner_Chooses_On_The_Motor_Step()
+    {
+        // chain.drive-train-D1: the coupling is checked for the torque the drive can deliver when the owner says so. The shaft's own peak torque (M4 T_pk) stays the load peak.
+        var host = Host();
+        var inputs = ChainInputs.DriveTrain(host);
+        inputs["e1"] = [.. inputs["e1"].Where(v => v.Symbol != "T_basis"), CalcInputValue.Choice("T_basis", Tempest.Calc.Electrical.MotorSizingCalculator.BasisMotorPeak)];
+        var (made, refusal) = await host.Service.InstantiatePackTemplateAsync(CalcPackTemplates.DriveTrain, await host.ProjectAsync(), "Conveyor drive", inputs);
+        Assert.Null(refusal);
+        var (e1, m4, m3) = (made!.Instances["e1"], made.Instances["m4"], made.Instances["m3"]);
+
+        Assert.Equal(InputSi(e1, "T_peak"), Si(e1, "T_design"), 9);
+        Assert.True(Si(e1, "T_design") > Si(e1, "T_pk"));
+        Assert.Equal(Si(e1, "T_design"), InputSi(m3, "T_z"), 9);
+        Assert.Equal(Si(e1, "T_pk"), InputSi(m4, "T_pk"), 9);
+        Assert.Equal(Si(e1, "T_design") / (4 * 0.040), Si(m3, "v_max"), 6);
+    }
+
+    [Fact]
     public async Task Changing_The_Motor_Makes_Every_Step_Stale_Blocks_The_Pack_And_Updating_Carries_It_Through()
     {
         var host = Host();
@@ -137,6 +156,7 @@ public sealed class DriveTrainChainTests
         Assert.True(Si(e1New, "T_load") > Si(e1, "T_load"));
         Assert.Equal(Si(e1New, "T_load"), InputSi(m4, "T"), 9);
         Assert.Equal(Si(m4, "R_A"), InputSi(m5, "F_r"), 9);
+        Assert.Equal(Si(e1New, "T_design"), InputSi(m3, "T_z"), 9);
         Assert.Equal(Si(e1New, "T_pk"), InputSi(m3, "T_z"), 9);
     }
 

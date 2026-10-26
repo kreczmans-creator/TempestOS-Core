@@ -23,7 +23,7 @@ public sealed class VoltageDropCalculator : ICalcCalculator
     public const string DataMvAm = "mV/A/m figure";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.1", CalcDiscipline.Electrical, "Voltage drop and I²R loss",
+        Id, "1.1.0", CalcDiscipline.Electrical, "Voltage drop and I²R loss",
         "Voltage drop along a circuit in volts and per cent of the nominal voltage, the conductor power loss, and an estimate of the conductor operating temperature, for DC, single-phase and three-phase AC, from resistivity and cross-section (with temperature correction), from tabulated R and X per kilometre, or from a mV/A/m figure; parallel conductors per phase; the drop limit is a user input (the regulatory limits live in BS 7671 Appendix 4 and Regulation 525 and are not embedded).",
         "Conductor resistance at its operating temperature, for n conductors in parallel: R = ρ_T L/(A n), with ρ_T = ρ_20 [1 + α (T_c − 20)].\nResistance and reactance from per-length figures instead: R = R′ L/n; X = X′ L/n.\nVoltage drop on a DC circuit: ΔV = 2 I R.\nVoltage drop on a single-phase AC circuit: ΔV = 2 I (R cos φ + X sin φ).\nVoltage drop on a three-phase AC circuit: ΔV = √3 I (R cos φ + X sin φ).\nVoltage drop from a tabulated mV/A/m figure, which already carries the 2 or √3: ΔV = (mV/A/m) I L / 1000.\nPower lost in the cable: P_loss = 2 I² R (DC and single-phase); 3 I² R (three-phase).\nEstimated conductor temperature at this current: T_c,est = T_amb + (T_rated − T_amb)(I/I_z)².",
         [
@@ -34,7 +34,7 @@ public sealed class VoltageDropCalculator : ICalcCalculator
             new CalcInputSpec("cos_phi", "Power factor (AC)", CalcInputKind.Number, Default: 0.85, Min: 0.5, Max: 1, HardMin: 0.01, HardMax: 1, Group: "Circuit"),
             new CalcInputSpec("n_par", "Parallel conductors per phase", CalcInputKind.Number, Default: 1, Min: 1, Max: 6, HardMin: 1, HardMax: 20, Group: "Circuit"),
             new CalcInputSpec("data", "Conductor data from", CalcInputKind.Choice, Choices: [DataResistivity, DataPerKm, DataMvAm], DefaultChoice: DataResistivity, Group: "Conductor"),
-            new CalcInputSpec("rho_20", "Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m)", CalcInputKind.Quantity, "ohm*mm^2/m", Default: 0.01724, Min: 0.01, Max: 0.05, HardMin: 1e-4, HardMax: 10, IsOptional: true, Group: "Conductor"),
+            new CalcInputSpec("rho_20", "Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m)", CalcInputKind.Quantity, "ohm*mm^2/m", Default: 0.0194, Min: 0.01, Max: 0.05, HardMin: 1e-4, HardMax: 10, IsOptional: true, Group: "Conductor"),
             new CalcInputSpec("alpha", "Temperature coefficient of resistance", CalcInputKind.Number, Default: 0.00393, Min: 0.003, Max: 0.0045, HardMin: 0, HardMax: 0.02, Group: "Conductor"),
             new CalcInputSpec("A_c", "Conductor cross-section", CalcInputKind.Quantity, "mm^2", Default: 35, Min: 1, Max: 1000, HardMin: 0.01, HardMax: 1e5, IsOptional: true, Group: "Conductor"),
             new CalcInputSpec("T_c", "Conductor operating temperature for the resistance", CalcInputKind.Quantity, "degC", Default: 70, Min: 20, Max: 90, HardMin: -50, HardMax: 300, Group: "Conductor"),

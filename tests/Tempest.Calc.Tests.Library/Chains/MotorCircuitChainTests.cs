@@ -35,6 +35,10 @@ public sealed class MotorCircuitChainTests
         Assert.Equal(Si(e4, "L"), InputSi(e3, "L"), 9);
         Assert.Equal(Si(e4, "CSA"), InputSi(e3, "A_c"), 9);
         Assert.Equal(Si(e4, "CSA"), InputSi(e5, "S_line"), 9);
+
+        // chain.motor-circuit-06: the protective conductor follows the cable (it kept the 1.5 mm2 default whatever E4 chose).
+        Assert.Equal(Si(e4, "CSA"), InputSi(e5, "S_cpc"), 9);
+        Assert.Contains(e5.Inputs, i => i.Symbol == "S_cpc" && CalcLink.From(i.Provenance) is { OutputSymbol: "CSA" });
         Assert.Equal(Si(e4, "L"), InputSi(e5, "L"), 9);
         Assert.Equal(Si(e4, "I_n"), InputSi(e5, "I_n"), 9);
         Assert.Equal(Si(e4, "device_code"), InputSi(e5, "device_code"), 9);
@@ -49,6 +53,24 @@ public sealed class MotorCircuitChainTests
         // E3 is run as a three-phase circuit (it was DC), and the enclosure holds its limit.
         Assert.Equal("AC three-phase", e3.Inputs.Single(i => i.Symbol == "system").Text);
         Assert.All(e2.Checks, c => Assert.True(c.Passed, c.Name));
+    }
+
+    [Fact]
+    public async Task A_Panel_Load_At_Half_Duty_Sizes_The_Cable_On_Its_Running_Current_Not_Half_Of_It()
+    {
+        // chain.motor-circuit-02 (with elec.load-budget-R1): a 7.5 kW fan at d 0.5 on the bus gave I_3ph for 3.75 kW, and E4 sized the cable for it. The cable carries the fan while it is on.
+        var host = Host();
+        var inputs = ChainInputs.MotorCircuit(host);
+        var fan = CalcRow.Of(("name", new CalcCell(Text: "Supply fan")), ("supply", new CalcCell(Text: "AC three-phase")), ("P", new CalcCell(7.5, "kW")), ("cosphi", new CalcCell(0.85)), ("eta", new CalcCell(0.9)), ("heat", new CalcCell(0)), ("d", new CalcCell(0.5)), ("k", new CalcCell(1)), ("inrush", new CalcCell(1)), ("backed", new CalcCell(Flag: false)));
+        inputs["e6"] = [.. inputs["e6"].Select(v => v.Symbol == "loads" ? CalcInputValue.Table("loads", [.. v.Rows!, fan]) with { Provenance = v.Provenance } : v)];
+        var made = await ChainKit.InstantiateAsync(host, CalcPackTemplates.MotorCircuit, "Conveyor motor circuit", inputs);
+        var (e6, e4) = (made.Instances["e6"], made.Instances["e4"]);
+
+        var motor = InputSi(e6, "P_add") / InputSi(e6, "eta_add") / InputSi(e6, "cosphi_add");
+        var expected = (motor + 7500 / 0.85) / (Math.Sqrt(3) * 400);
+        Assert.Equal(expected, Si(e6, "I_3ph"), 6);
+        Assert.Equal(Si(e6, "I_3ph"), Si(e4, "I_b"), 9);
+        Assert.True(Si(e6, "I_3ph") > (motor + 0.5 * 7500 / 0.85) / (Math.Sqrt(3) * 400) + 5, "the fan counts at its running current, not at half of it");
     }
 
     [Fact]
