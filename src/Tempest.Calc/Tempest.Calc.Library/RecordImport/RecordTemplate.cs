@@ -66,7 +66,7 @@ public enum RecordCheckKind
     /// <summary>Within each group the bands [from, to] of the two columns do not overlap.</summary>
     NoOverlap,
 
-    /// <summary>The cell, when filled, lies within <see cref="RecordCheck.Lo"/> and <see cref="RecordCheck.Hi"/> (either may be open); outside it is a warning.</summary>
+    /// <summary>The cell, when filled, lies within <see cref="RecordCheck.Lo"/> and <see cref="RecordCheck.Hi"/> (either may be open); outside it is a warning, or an error for a hard range.</summary>
     Range,
 
     /// <summary>The number of data rows.</summary>
@@ -179,6 +179,12 @@ internal static class Rule
     public static RecordCheck NoOverlap(string[] group, string from, string to) => new() { Kind = RecordCheckKind.NoOverlap, Group = group, Columns = [from, to] };
 
     public static RecordCheck Warn(string column, double? lo, double? hi) => new() { Kind = RecordCheckKind.Range, Columns = [column], Lo = lo, Hi = hi, Severity = RecordSeverity.Warning };
+
+    /// <summary>
+    /// A hard range, in the template's unit, for a column no calculator reads (stored and never applied: a temperature, a thickness band, a
+    /// circuit count). No calculator limit judges such a column, so without one 1e300 would be saved as an ambient temperature. Outside it is an error.
+    /// </summary>
+    public static RecordCheck Hard(string column, double lo, double hi) => new() { Kind = RecordCheckKind.Range, Columns = [column], Lo = lo, Hi = hi, Severity = RecordSeverity.Error };
 
     public static RecordCheck Rows(int? min = null, int? max = null) => new() { Kind = RecordCheckKind.Rows, MinRows = min, MaxRows = max };
 

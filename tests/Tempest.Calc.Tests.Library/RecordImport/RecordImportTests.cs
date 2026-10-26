@@ -109,12 +109,68 @@ public sealed class RecordImportTests
         var outcome = await host.Service.RecordImport.CommitAsync(Request("06", Csv(AmbientFactors, "air,PVC,20,0.99", "air,PVC,30,0.9"), Provenance("Ambient (test)")));
 
         Assert.True(outcome.Committed, outcome.Refusal);
-        Assert.Equal(["Ambient (test) [air, PVC, theta_a 20 degC]", "Ambient (test) [air, PVC, theta_a 30 degC]"], outcome.Records.Select(r => r.Title).Order());
-        var first = outcome.Records.Single(r => r.Title.Contains("theta_a 20", StringComparison.Ordinal));
+
+        // Review finding 4: the title carries the text labels and the row number, never a number from the (licensed) table: the title is
+        // printed in the citation on every sheet.
+        Assert.Equal(["Ambient (test) [air, PVC, row 1]", "Ambient (test) [air, PVC, row 2]"], outcome.Records.Select(r => r.Title).Order());
+        var first = outcome.Records.Single(r => r.Title.EndsWith("row 1]", StringComparison.Ordinal));
         Assert.Equal(0.99, first.Values.Single(v => v.Symbol == "C_a").Number);
         Assert.Equal(20, first.Values.Single(v => v.Symbol == "theta_a").Number);
         Assert.Equal("degC", first.Values.Single(v => v.Symbol == "theta_a").Unit);
         Assert.Equal("PVC", first.Values.Single(v => v.Symbol == "insulation").Text);
+    }
+
+    [Fact]
+    public async Task A_Row_Without_A_Text_Label_Is_Titled_By_Its_Row_Number_Never_By_A_Value_From_The_Table()
+    {
+        var host = Host();
+
+        // Template 07's arrangement is a text label; n_circuits is a stored number that used to join the title.
+        var outcome = await host.Service.RecordImport.CommitAsync(Request("07", Csv("arrangement[text],n_circuits[-],C_g[-]", "Bunched,2,0.8", "Bunched,3,0.7"), Provenance("Grouping (test)")));
+        Assert.True(outcome.Committed, outcome.Refusal);
+        Assert.Equal(["Grouping (test) [Bunched, row 1]", "Grouping (test) [Bunched, row 2]"], outcome.Records.Select(r => r.Title).Order());
+
+        // No label at all: the row number.
+        var bare = await host.Service.RecordImport.CommitAsync(Request("11", Csv("factor[text],theta_a[degC],n_circuits[-],C_a[-],C_g[-]", ",35,,0.9,", ",45,,0.8,"), Provenance("Machine factors")));
+        Assert.True(bare.Committed, bare.Refusal + " " + Describe(bare.Preview));
+        Assert.Equal(["Machine factors [row 1]", "Machine factors [row 2]"], bare.Records.Select(r => r.Title).Order());
+    }
+
+    [Theory]
+    [InlineData("06", "medium[text],insulation[text],theta_a[degC],C_a[-]", "air,PVC,1e300,0.9", "theta_a")]
+    [InlineData("11", "factor[text],theta_a[degC],n_circuits[-],C_a[-],C_g[-]", "air,1e300,,0.9,", "theta_a")]
+    [InlineData("11", "factor[text],theta_a[degC],n_circuits[-],C_a[-],C_g[-]", "air,,1e300,,0.9", "n_circuits")]
+    [InlineData("07", "arrangement[text],n_circuits[-],C_g[-]", "Bunched,1e300,0.8", "n_circuits")]
+    [InlineData("08", "length_in_insulation[mm],C_i[-]", "1e300,0.8", "length_in_insulation")]
+    [InlineData("12", "grade[text],t_min[mm],t_max[mm],f_y[MPa],f_u[MPa]", "TEST,0,1e300,275,410", "t_max")]
+    [InlineData("12", "grade[text],t_min[mm],t_max[mm],f_y[MPa],f_u[MPa]", "TEST,1e300,1e301,275,410", "t_min")]
+    [InlineData("22", "material[text],d_min[mm],d_max[mm],S_ut[MPa],S_y[MPa],E[GPa]", "Steel,0,1e300,600,400,200", "d_max")]
+    [InlineData("40", "wire_grade[text],condition[text],d_min[mm],d_max[mm],f_tau[-],f_sigma[-],f_su[-]", "DH,static,0.1,1e300,0.5,0.6,0.7", "d_max")]
+    [InlineData("29", "psu[text],theta[degC],altitude[m],f_derate[-]", "P1,1e300,0,0.9", "theta")]
+    [InlineData("29", "psu[text],theta[degC],altitude[m],f_derate[-]", "P1,40,1e300,0.9", "altitude")]
+    [InlineData("30", "battery[text],theta[degC],DoD[-],eta_b[-],k_temp[-],k_age[-],k_p[-],H_rate[h]", "B1,1e300,0.8,0.9,0.9,0.9,,", "theta")]
+    [InlineData("25", "bearing_type[text],Fa_C0[-],e_lim[-],X[-],Y[-],X_0[-],Y_0[-]", "Ball,1e300,0.3,0.5,1,0.6,0.5", "Fa_C0")]
+    [InlineData("27", "fluid[text],concentration[%],t_fill[degC],t_max[degC],e_fluid[-]", "Glycol,30,1e300,1e301,0.05", "t_fill")]
+    [InlineData("16", "fluid_h[text],t_mean_h[degC],cp_h[J/(kg*K)],fluid_c[text],t_mean_c[degC],cp_c[J/(kg*K)]", "Water,1e300,4180,Glycol,20,3500", "t_mean_h")]
+    [InlineData("53", "wire[text],stress[text],N_c[-],S_e[MPa]", "DH,pulsating,1e300,400", "N_c")]
+    [InlineData("39", "grade[text],d[mm],Rm[MPa]", "DH,1e300,1500", "d")]
+    public async Task A_Stored_But_Unapplied_Number_Outside_Any_Sensible_Range_Is_Refused(string id, string header, string row, string column)
+    {
+        var host = Host();
+        var preview = await host.Service.RecordImport.PreviewAsync(Request(id, Csv(header, row), Provenance("Absurd")));
+
+        Assert.False(preview.CanCommit, Describe(preview));
+        Assert.Contains(preview.Errors, e => e.Column == column && e.Message.Contains("outside", StringComparison.Ordinal));
+        Assert.Empty(await host.Store.ListRecordsAsync());
+    }
+
+    [Fact]
+    public async Task A_Sensible_Value_In_A_Stored_Column_Is_Still_Taken()
+    {
+        var host = Host();
+        var outcome = await host.Service.RecordImport.CommitAsync(Request("06", Csv(AmbientFactors, "air,PVC,-10,1.1", "air,PVC,60,0.7"), Provenance("Ambient (test)")));
+
+        Assert.True(outcome.Committed, outcome.Refusal + " " + Describe(outcome.Preview));
     }
 
     [Fact]

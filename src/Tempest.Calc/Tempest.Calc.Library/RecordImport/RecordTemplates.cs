@@ -74,19 +74,19 @@ public static class RecordTemplates
         T("06", "bs7671.factors-ambient", "Ambient correction factors", "cable.correction-factors",
             "medium[text],insulation[text],theta_a[degC],C_a[-]",
             "One record per row (C_a). The medium, insulation and theta_a cells join the title.",
-            Req("theta_a", "C_a"), Pos("C_a"), Uniq("medium", "insulation", "theta_a"), Mono(["medium", "insulation"], "theta_a", "C_a", RecordDirection.Falling), Warn("theta_a", -20, 120)),
+            Req("theta_a", "C_a"), Pos("C_a"), Uniq("medium", "insulation", "theta_a"), Mono(["medium", "insulation"], "theta_a", "C_a", RecordDirection.Falling), Warn("theta_a", -20, 120), Hard("theta_a", -100, 500)),
 
         T("07", "bs7671.factors-grouping", "Grouping correction factors", "cable.correction-factors",
             "arrangement[text],n_circuits[-],C_g[-]",
             "One record per row (C_g). The arrangement and n_circuits cells join the title.",
             Req("n_circuits", "C_g"), Pos("C_g"), Int("n_circuits"), AtMost(1, "C_g"), Uniq("arrangement", "n_circuits"),
-            Mono(["arrangement"], "n_circuits", "C_g", RecordDirection.NotRising)),
+            Mono(["arrangement"], "n_circuits", "C_g", RecordDirection.NotRising), Hard("n_circuits", 1, 1000)),
 
         T("08", "bs7671.factors-insulation", "Thermal-insulation correction factors", "cable.correction-factors",
             "length_in_insulation[mm],C_i[-]",
             "One record per row (C_i). The length cell joins the title.",
             Req("length_in_insulation", "C_i"), Pos("length_in_insulation", "C_i"), AtMost(1, "C_i"), Uniq("length_in_insulation"), Ordered("length_in_insulation"),
-            Mono([], "length_in_insulation", "C_i", RecordDirection.NotRising)),
+            Mono([], "length_in_insulation", "C_i", RecordDirection.NotRising), Hard("length_in_insulation", 0, 100000)),
 
         Superseded("09", "bs7671.factors-protection", "Cc factor", "C_c[-]",
             "Superseded: E4 derives C_c in code, so no calculator reads a record for it."),
@@ -100,13 +100,13 @@ public static class RecordTemplates
             "factor[text],theta_a[degC],n_circuits[-],C_a[-],C_g[-]",
             "One record per row (C_a or C_g). The factor, theta_a and n_circuits cells join the title.",
             One("C_a", "C_g"), Needs("C_a", "theta_a"), Needs("C_g", "n_circuits"), Pos("C_a", "C_g"), Uniq("factor", "theta_a", "n_circuits"),
-            Mono(["factor"], "theta_a", "C_a", RecordDirection.NotRising, RecordSeverity.Warning), Mono(["factor"], "n_circuits", "C_g", RecordDirection.NotRising)),
+            Mono(["factor"], "theta_a", "C_a", RecordDirection.NotRising, RecordSeverity.Warning), Mono(["factor"], "n_circuits", "C_g", RecordDirection.NotRising), Hard("theta_a", -100, 500), Hard("n_circuits", 1, 1000)),
 
         T("12", "steel.strengths", "Steel strengths by thickness band", "steel.strengths",
             "grade[text],t_min[mm],t_max[mm],f_y[MPa],f_u[MPa]",
             "One record per row (a grade and thickness band). t_min and t_max are stored and never applied.",
             Req("grade", "t_min", "t_max", "f_y", "f_u"), Pos("f_y", "f_u"), NonNeg("t_min"), Lt("t_min", "t_max"), Lt("f_y", "f_u"), NoOverlap(["grade"], "t_min", "t_max"),
-            Mono(["grade"], "t_min", "f_y", RecordDirection.NotRising), Warn("f_u", 340, 720)),
+            Mono(["grade"], "t_min", "f_y", RecordDirection.NotRising), Warn("f_u", 340, 720), Hard("t_min", 0, 1000), Hard("t_max", 0, 1000)),
 
         T("13", "ec3.partial-factors", "EN 1993-1-1 National Annex gamma_M0", "ec3-1-1.national-annex",
             "gamma_M0[-]",
@@ -131,7 +131,7 @@ public static class RecordTemplates
             "fluid_h[text],t_mean_h[degC],cp_h[J/(kg*K)],fluid_c[text],t_mean_c[degC],cp_c[J/(kg*K)]",
             "One record per row (a pair of streams). The fluid names and mean temperatures join the title.",
             Req("fluid_h", "fluid_c", "t_mean_h", "t_mean_c", "cp_h", "cp_c"), Pos("cp_h", "cp_c"), Warn("cp_h", 500, 10000), Warn("cp_c", 500, 10000),
-            Warn("t_mean_h", -40, 200), Warn("t_mean_c", -40, 200)),
+            Warn("t_mean_h", -40, 200), Warn("t_mean_c", -40, 200), Hard("t_mean_h", -100, 1000), Hard("t_mean_c", -100, 1000)),
 
         T("17", "hydraulics.velocity-limits", "Line velocity limits", "cylinder.line-limits",
             "basis[text],v_suc_max[m/s],v_prs_max[m/s],v_ret_max[m/s]",
@@ -162,7 +162,7 @@ public static class RecordTemplates
             "material[text],d_min[mm],d_max[mm],S_ut[MPa],S_y[MPa],E[GPa]",
             "One record per row (a material and diameter band). d_min and d_max are stored and never applied.",
             Req("material", "d_min", "d_max", "S_ut", "S_y", "E"), Pos("S_ut", "S_y", "E"), NonNeg("d_min"), Lt("d_min", "d_max"), Lt("S_y", "S_ut"),
-            Warn("S_ut", 300, 2000), Warn("S_y", 150, 1900), Warn("E", 50, 250)),
+            Warn("S_ut", 300, 2000), Warn("S_y", 150, 1900), Warn("E", 50, 250), Hard("d_min", 0, 5000), Hard("d_max", 0, 5000)),
 
         T("23", "shaft.limits", "Slope and deflection limits", "shaft.limits",
             "component[text],theta_max[rad],y_max[mm]",
@@ -178,7 +178,7 @@ public static class RecordTemplates
             "bearing_type[text],Fa_C0[-],e_lim[-],X[-],Y[-],X_0[-],Y_0[-]",
             "One record per row (a bearing type and Fa/C0 band). Fa_C0 is stored and never applied.",
             Req("bearing_type", "Fa_C0", "e_lim", "X", "Y", "X_0", "Y_0"), NonNeg("Fa_C0", "e_lim", "X", "Y", "X_0", "Y_0"), Uniq("bearing_type", "Fa_C0"),
-            Ordered("Fa_C0", RecordSeverity.Error, "bearing_type"), Warn("e_lim", null, 5), Warn("X", null, 5), Warn("X_0", null, 5), Warn("Y", null, 10), Warn("Y_0", null, 10)),
+            Ordered("Fa_C0", RecordSeverity.Error, "bearing_type"), Warn("e_lim", null, 5), Warn("X", null, 5), Warn("X_0", null, 5), Warn("Y", null, 10), Warn("Y_0", null, 10), Hard("Fa_C0", 0, 100)),
 
         T("26", "bearing.aiso", "Bearing a_ISO", "bearing.aiso",
             "designation[text],contamination[text],kappa[-],a_iso[-]",
@@ -188,7 +188,7 @@ public static class RecordTemplates
         T("27", "fluid.expansion", "Heat-transfer fluid expansion", "fluid.expansion",
             "fluid[text],concentration[%],t_fill[degC],t_max[degC],e_fluid[-]",
             "One record per row. t_fill and t_max are stored and never applied.",
-            Req("t_fill", "t_max", "e_fluid"), Pos("e_fluid"), Lt("t_fill", "t_max"), Warn("e_fluid", 0.001, 0.2), Warn("concentration", 0, 60)),
+            Req("t_fill", "t_max", "e_fluid"), Pos("e_fluid"), Lt("t_fill", "t_max"), Warn("e_fluid", 0.001, 0.2), Warn("concentration", 0, 60), Hard("concentration", 0, 100), Hard("t_fill", -100, 500), Hard("t_max", -100, 500)),
 
         T("28", "emitter.rating", "Emitter exponent", "emitter.rating",
             "emitter[text],n[-]",
@@ -199,13 +199,13 @@ public static class RecordTemplates
             "psu[text],theta[degC],altitude[m],f_derate[-]",
             "One record per row (a PSU, ambient and altitude). theta and altitude are stored and never applied.",
             Req("theta", "f_derate"), Pos("f_derate"), AtMost(1, "f_derate"), Warn("f_derate", 0.1, null), Warn("theta", -20, 70),
-            Mono(["psu", "altitude"], "theta", "f_derate", RecordDirection.NotRising)),
+            Mono(["psu", "altitude"], "theta", "f_derate", RecordDirection.NotRising), Hard("theta", -100, 500), Hard("altitude", -500, 20000)),
 
         T("30", "battery.factors", "Battery factors", "battery.factors",
             "battery[text],theta[degC],DoD[-],eta_b[-],k_temp[-],k_age[-],k_p[-],H_rate[h]",
             "One record per row (a battery and temperature).",
             Req("DoD", "eta_b", "k_temp", "k_age"), Pos("DoD", "eta_b", "k_temp", "k_age"), AllOrNone("k_p", "H_rate"),
-            Warn("DoD", 0.1, 1), Warn("eta_b", 0.5, 1), Warn("k_temp", 0.3, 1.2), Warn("k_age", 0.5, 1), Warn("k_p", 1, 1.5), Warn("H_rate", 1, 100)),
+            Warn("DoD", 0.1, 1), Warn("eta_b", 0.5, 1), Warn("k_temp", 0.3, 1.2), Warn("k_age", 0.5, 1), Warn("k_p", 1, 1.5), Warn("H_rate", 1, 100), Hard("theta", -100, 500)),
 
         T("31", "oring.gland", "O-ring squeeze, fill and stretch bands", "oring.criteria",
             "basis[text],q_lo_s[%],q_hi_s[%],q_lo_d[%],q_hi_d[%],fill_lo[%],fill_hi[%],x_lo[%],x_hi[%],od_hi[%]",
@@ -245,13 +245,13 @@ public static class RecordTemplates
         T("39", "en10270.spring-wire", "Spring wire tensile strength", "spring.wire-strength",
             "grade[text],d[mm],Rm[MPa]",
             "One record per row (a grade and diameter). The grade and d cells join the title.",
-            Req("grade", "d", "Rm"), Pos("d", "Rm"), Uniq("grade", "d"), Warn("Rm", 300, 3500), Mono(["grade"], "d", "Rm", RecordDirection.NotRising, RecordSeverity.Warning)),
+            Req("grade", "d", "Rm"), Pos("d", "Rm"), Uniq("grade", "d"), Warn("Rm", 300, 3500), Mono(["grade"], "d", "Rm", RecordDirection.NotRising, RecordSeverity.Warning), Hard("d", 0, 1000)),
 
         T("40", "en13906.permissible-stress", "Permissible and ultimate stress fractions", "spring.permissible",
             "wire_grade[text],condition[text],d_min[mm],d_max[mm],f_tau[-],f_sigma[-],f_su[-]",
             "One record per row (a wire grade, condition and diameter band). d_min and d_max are stored and never applied.",
             Req("wire_grade", "condition", "d_min", "d_max", "f_tau", "f_su"), Pos("d_min", "d_max", "f_tau", "f_sigma", "f_su"), Lt("d_min", "d_max"), Uniq("wire_grade", "condition", "d_min"),
-            Warn("f_tau", 0.2, 0.8), Warn("f_sigma", 0.3, 1), Warn("f_su", 0.4, 0.9)),
+            Warn("f_tau", 0.2, 0.8), Warn("f_sigma", 0.3, 1), Warn("f_su", 0.4, 0.9), Hard("d_min", 0, 1000), Hard("d_max", 0, 1000)),
 
         T("41", "climate.design-temperatures", "External design temperature", "climate.design-temperature",
             "location[text],theta_e[degC]",
@@ -313,7 +313,7 @@ public static class RecordTemplates
         T("53", "spring.endurance", "Alternating endurance strength of the wire", "spring.endurance",
             "wire[text],stress[text],N_c[-],S_e[MPa]",
             "One record per row (a wire, stress type and life). The wire, stress and N_c cells join the title.",
-            Req("wire", "stress", "N_c", "S_e"), Pos("N_c", "S_e"), Uniq("wire", "stress", "N_c"), Warn("S_e", 50, 2000), Warn("N_c", 1e4, 1e10)),
+            Req("wire", "stress", "N_c", "S_e"), Pos("N_c", "S_e"), Uniq("wire", "stress", "N_c"), Warn("S_e", 50, 2000), Warn("N_c", 1e4, 1e10), Hard("N_c", 1, 1e15)),
 
         T("54", "accumulator.rules", "Accumulator pre-charge limits", "accumulator.rules",
             "type[text],basis[text],r_0[-],r_p[-]",

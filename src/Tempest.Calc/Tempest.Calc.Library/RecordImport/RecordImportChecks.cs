@@ -216,7 +216,9 @@ internal static class RecordTemplateChecks
                         var shown = InTemplateUnit(column, v);
 
                         if (shown is { } s && ((check.Lo is { } lo && s < lo) || (check.Hi is { } hi && s > hi)))
-                            row.Add(check.Severity, column.Symbol, $"{column.Symbol} = {Show(s)}{UnitSuffix(column)} is outside the usual range ({Range(check.Lo, check.Hi)}{UnitSuffix(column)}). Check it against your source.");
+                            row.Add(check.Severity, column.Symbol, check.Severity == RecordSeverity.Error
+                                ? $"{column.Symbol} = {Show(s)}{UnitSuffix(column)} is outside what a record can hold ({Range(check.Lo, check.Hi)}{UnitSuffix(column)}). A slip in the unit or a column is likely."
+                                : $"{column.Symbol} = {Show(s)}{UnitSuffix(column)} is outside the usual range ({Range(check.Lo, check.Hi)}{UnitSuffix(column)}). Check it against your source.");
                     }, inTemplateUnit: true);
                     break;
 

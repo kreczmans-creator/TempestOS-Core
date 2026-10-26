@@ -901,6 +901,7 @@ public sealed class RecordImportService
             var values = new List<CalcDataValue>();
             var labels = new List<string>();
             var scalars = 0;
+            var numbers = 0;
 
             foreach (var column in bound.Values.Where(c => c.Mapped))
             {
@@ -920,8 +921,9 @@ public sealed class RecordImportService
                         break;
 
                     case RecordColumnRole.Extra when cell.Number is { } x:
+                        // Stored, never applied, and never in the title: the number is from the table (often a licensed one) and the title is printed in the citation on every sheet.
                         values.Add(new CalcDataValue(column.Symbol, Number: x, Unit: UnitOrNull(column), Source: source));
-                        labels.Add($"{column.Symbol} {RecordTemplateChecks.Show(x)}{(UnitOrNull(column) is { } u ? " " + u : string.Empty)}");
+                        numbers++;
                         break;
                 }
             }
@@ -932,7 +934,9 @@ public sealed class RecordImportService
                 continue;
             }
 
-            var title = labels.Count > 0 ? $"{prov.Title.Trim()} [{string.Join(", ", labels)}]" : valid.Count > 1 ? $"{prov.Title.Trim()} [row {n}]" : prov.Title.Trim();
+            // A row is named by its text labels and, when it also holds numbers the labels do not tell apart (or has no label), by its row number: never by a value from the table.
+            List<string> parts = valid.Count > 1 && (labels.Count == 0 || numbers > 0) ? [.. labels, $"row {n}"] : labels;
+            var title = parts.Count > 0 ? $"{prov.Title.Trim()} [{string.Join(", ", parts)}]" : prov.Title.Trim();
             drafts.Add((NewDraft(template, prov, Truncate(title), values, notes, person, now), row.Line, row));
         }
     }
