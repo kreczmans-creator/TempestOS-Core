@@ -118,6 +118,53 @@ public sealed class BoltTests
     private static CalcInputSet GroupInputs(CalcInputValue bolts) => CalcTemplateHasher.DefaultInputs(Group.Template).With(bolts);
 
     [Fact]
+    public void The_Linear_Interaction_Is_Evaluated_At_Every_Bolt_Not_Only_At_The_Bolt_That_Governs_The_Circular_One()
+    {
+        // mech.bolt-group-01: 3 x 2 grid (x 0, 80, 160; y 0, 100; A 84.3 mm2), F_x 25, F_y -75 kN at (300, 100), N 55, M_x -5 kN.m, V_R 60, T_R 90 kN. Bolt 6 at (160, 100) governs the circular form (0.9024) and
+        // the sheet checked the linear form there too (0.9024, a pass), while bolt 3 at (160, 0) carries v 50.665 and t 25.833 kN: 50.665/60 + 25.833/(1.4 x 90) = 1.0494, a FAIL.
+        // python3: centroid (80, 50), T = -75 x 220 - 25 x 50 = -17 750 kN.mm, J = 40 600 A, vx = Fx/6 - T ry/J, vy = Fy/6 + T rx/J, t = N/6 + M_x ry/sum(ry^2).
+        var bolts = Bolts((0, 0), (80, 0), (160, 0), (0, 100), (80, 100), (160, 100));
+        var r = CalcRunner.Run(Group, GroupInputs(bolts)
+            .With(CalcInputValue.Quantity("F_x", 25, "kN")).With(CalcInputValue.Quantity("F_y", -75, "kN")).With(CalcInputValue.Quantity("e_x", 300, "mm")).With(CalcInputValue.Quantity("e_y", 100, "mm"))
+            .With(CalcInputValue.Quantity("N", 55, "kN")).With(CalcInputValue.Quantity("M_x", -5, "kN*m")).With(CalcInputValue.Quantity("V_R", 60, "kN")).With(CalcInputValue.Quantity("T_R", 90, "kN")));
+
+        Assert.False(r.IsBlocked);
+        Assert.Equal("bolt 6", ((Tempest.Calc.Engine.Values.TextValue)r.FindOutput("governing")!.Value).Value);
+        Assert.Equal(0.9024, r.OutputSi("u_max"), 3);
+        Assert.Equal("bolt 3", ((Tempest.Calc.Engine.Values.TextValue)r.FindOutput("governing_lin")!.Value).Value);
+        Assert.Equal(50.665 / 60 + 25.833 / (1.4 * 90), r.OutputSi("u_lin"), 3);
+        Assert.Equal(1.0494, r.OutputSi("u_lin"), 3);
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Linear shear", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Circular shear", StringComparison.Ordinal) && c.Passed);
+        Assert.False(r.Passed);
+
+        // Property: u_lin is never below the linear form at the circular-governing bolt (the old value), and for a single-row pattern with no torque the two bolts agree.
+        var square = CalcRunner.Run(Group, GroupInputs(Bolts((0, 0), (100, 0), (100, 100), (0, 100))).With(CalcInputValue.Quantity("e_x", 50, "mm")).With(CalcInputValue.Quantity("e_y", 50, "mm")));
+        Assert.Equal(square.OutputSi("v_max") / 40_000 + square.OutputSi("t_max") / (1.4 * 45_000), square.OutputSi("u_lin"), 9);
+    }
+
+    [Fact]
+    public void The_Assembly_Stress_Is_A_Check_Not_Only_A_Warning()
+    {
+        // mech.bolted-joint-R1: M12 8.8, friction method, M_A 95 N.m: sigma_red,M 736.2 MPa against R_p0.2 640 MPa, nu_M 1.150, the bolt yields in tightening, and all five checks passed.
+        // python3: d2 = 10.8634, d3 = 9.8529, A_s = 84.266 mm2, F_M = 95/(0.28 + 0.7561 + 0.93) mm = 48.319 kN, sigma_M 573.41, tau_M 266.56, sigma_red 736.18, nu_M = 1.15028.
+        var over = CalcRunner.Run(Joint, JointInputs().With(CalcInputValue.Choice("method", "friction")).With(CalcInputValue.Quantity("M_A", 95, "N*m")));
+        Assert.Equal(1.15028, over.OutputSi("nu_M"), 5);
+        Assert.Equal(1.15028, over.OutputSi("u_assembly"), 5);
+        Assert.Contains(over.Checks, c => c.Name.StartsWith("Equivalent stress at assembly", StringComparison.Ordinal) && !c.Passed);
+        Assert.False(over.Passed);
+        Assert.Contains(over.Warnings, w => w.RuleId == "preload-yield" && w.Message.Contains("yields in tightening", StringComparison.Ordinal));
+
+        // M_A 80 N.m (the worked example): nu_M 0.96866 passes against the default permitted 1.0; a permitted 0.9 (the usual VDI 2230 target) makes it a FAIL, 0.96866/0.9 = 1.0763.
+        var ok = CalcRunner.Run(Joint, JointInputs().With(CalcInputValue.Choice("method", "friction")).With(CalcInputValue.Quantity("M_A", 80, "N*m")));
+        Assert.Equal(0.96866, ok.OutputSi("nu_M"), 5);
+        Assert.Contains(ok.Checks, c => c.Name.StartsWith("Equivalent stress at assembly", StringComparison.Ordinal) && c.Passed);
+        var strict = CalcRunner.Run(Joint, JointInputs().With(CalcInputValue.Choice("method", "friction")).With(CalcInputValue.Quantity("M_A", 80, "N*m")).With(CalcInputValue.Of("nu_perm", 0.9)));
+        Assert.Equal(0.96866 / 0.9, strict.OutputSi("u_assembly"), 4);
+        Assert.Contains(strict.Checks, c => c.Name.StartsWith("Equivalent stress at assembly", StringComparison.Ordinal) && !c.Passed);
+    }
+
+    [Fact]
     public void Symmetric_Pattern_Under_Central_Load_Shares_Shear_Equally()
     {
         var r = CalcRunner.Run(Group, GroupInputs(Bolts((0, 0), (100, 0), (100, 100), (0, 100))).With(CalcInputValue.Quantity("e_x", 50, "mm")).With(CalcInputValue.Quantity("e_y", 50, "mm")));

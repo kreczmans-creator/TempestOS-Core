@@ -1,4 +1,4 @@
-# M3b — Bolt group, elastic method (`mech.bolt-group@1.2.0`)
+# M3b — Bolt group, elastic method (`mech.bolt-group@1.3.0`)
 
 **In plain terms.** When a load acts away from the centre of a bolt group, each bolt carries an equal share of the load directly plus a share of the twisting moment that grows with its distance from the centre. Adding the two as vectors gives the most heavily loaded bolt, which is then checked in shear, in tension where the load also pulls, and for the two acting together.
 
@@ -8,7 +8,7 @@
 
 **Inputs.** `bolts` table (x, y, A; ≤ 200), `F_x`, `F_y`, `e_x`, `e_y`, `T_z`, `N`, `M_x`, `M_y`, `V_R`, `T_R`, optional `a`, `b`.
 
-**Outputs.** `T`, `J`, `v_max`, `t_max`, `u_max`, `governing`; per-bolt rows `b1…bn` in the working; series: bolt pattern. **Checks.** interaction on the governing bolt; shear alone; tension alone.
+**Outputs.** `T`, `J`, `v_max`, `t_max`, `u_max`, `governing`, `u_lin`, `governing_lin` (1.3.0); per-bolt rows `b1…bn` in the working; series: bolt pattern. **Checks.** circular interaction on the governing bolt; the linear interaction `v/V_R + t/(1.4 T_R)` of EN 1993-1-8 Table 3.4 at every bolt (`u_lin` is the highest and `governing_lin` names that bolt, which need not be the one that governs the circular form: 3 × 2 grid, F_x 25, F_y −75 kN at (300, 100), N 55, M_x −5, V_R 60, T_R 90: bolt 6 governs the circular form at 0.902 and bolt 3 the linear one at 1.049, a FAIL; before 1.3.0 the linear form was evaluated only at bolt 6 and passed at 0.902); shear alone; tension alone (both at the circular-governing bolt).
 
 **Limitations.** Rigid parts, linear-elastic distribution, no bearing/slip resistance, prying as a simple lever. A single bolt takes direct shear only (the retired `calc.bolt-shear-capacity` case) and blocks under a torque; a moment about an axis all the bolts lie on blocks rather than being dropped.
 
@@ -31,7 +31,7 @@ t_max = bolt 2 = 0 kN
 u_max = √((36.443/40)² + (0/45)²) = 0.91109
 governing = bolt 2 = "bolt 2"
 u_v = 36.443 kN / 40 kN = 0.91109
-… 2 more step(s) on the sheet
+… 3 more step(s) on the sheet
 Governing: PASS  Circular shear–tension interaction (governing bolt): u_max = 0.91109 vs u_max ≤ 1  utilisation 0.911
 ```
 <!-- hand-arithmetic:end -->
