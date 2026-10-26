@@ -200,6 +200,26 @@ public sealed class RoomHeatLossTests
     }
 
     [Fact]
+    public void An_Mvhr_Supply_With_A_Blank_Infiltration_Rate_Warns_That_The_Room_Has_No_Infiltration_Loss()
+    {
+        // bs.room-heat-loss-R1: 21 / -3 C, n 0.5 h-1, V 50 m3, MVHR supply 16 C. Blank n_inf: Phi_V = 0.34 * 25 m3/h * 5 K = 42.5 W (no infiltration, no notice before);
+        // n_inf 0.2: + 0.34 * 0.2 * 50 * 24 = 81.6 W, Phi_V 124.1 W (python3 arithmetic).
+        var mvhr = Defaults().With(Q("V", 50, "m^3")).With(Q("theta_supply", 16, "degC"));
+        var blank = CalcRunner.Run(Room, mvhr);
+        Assert.Equal(42.5, blank.OutputSi("Phi_V"), 9);
+        var warning = Assert.Single(blank.Warnings, w => w.RuleId == "mvhr-no-infiltration");
+        Assert.StartsWith("n_inf:", warning.Message, StringComparison.Ordinal);
+
+        var typed = CalcRunner.Run(Room, mvhr.With(Q("n_inf", 0.2, "1/h")));
+        Assert.Equal(124.1, typed.OutputSi("Phi_V"), 9);
+        Assert.DoesNotContain(typed.Warnings, w => w.RuleId == "mvhr-no-infiltration");
+
+        // An explicit zero is the user's statement that the envelope is airtight: no warning. Natural ventilation has no MVHR rate to qualify, so none either.
+        Assert.DoesNotContain(CalcRunner.Run(Room, mvhr.With(Q("n_inf", 0, "1/h"))).Warnings, w => w.RuleId == "mvhr-no-infiltration");
+        Assert.DoesNotContain(CalcRunner.Run(Room, Defaults()).Warnings, w => w.RuleId == "mvhr-no-infiltration");
+    }
+
+    [Fact]
     public void A_Room_That_Gains_Heat_Warns()
     {
         var gain = CalcRunner.Run(Room, Defaults().With(Q("theta_supply", 21, "degC")).With(RoomHeatLossCalculator.Elements(("Party wall", 10, 40, null, null, null, null, 0.5, null))));

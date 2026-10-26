@@ -167,6 +167,24 @@ public sealed class InsulationTests
     }
 
     [Fact]
+    public void Sub_Zero_Air_With_The_Dew_Point_From_RH_Warns_That_RH_Is_Read_Over_Ice()
+    {
+        // bs.insulation-01: -30 C surface in -10 C air, 90 % RH, margin 0. RH read over ice gives -11.179 C (63.9 mm); a weather-station 90 % over water is a frost point of -10.100 C
+        // (independent python: 610.5 exp(17.269 t/(237.3 + t)), inverse over ice), 1 K away, and needs far more.
+        var flat = Sheet(CalcInputValue.Choice("geometry", InsulationCalculator.Flat), Q("theta_i", -30, "degC"), Q("theta_a", -10, "degC"), Q("RH_a", 90, "%"), Q("dew_margin", 0, "K"), Clear("q_max_m"), Clear("t_chosen"));
+        var cold = Run(flat);
+        var warning = Assert.Single(cold.Warnings, w => w.RuleId == "rh-over-ice");
+        Assert.Contains("-10.1", warning.Message, StringComparison.Ordinal);
+        Assert.Equal(-11.178796330412547 + 273.15, cold.OutputSi("theta_dew"), 9);
+
+        // Above 0 C, with the dew point entered (as the cold-pipe pack links it from B2), or without a dew-point margin, no such warning.
+        Assert.False(Warned(Run(flat.With(Q("theta_i", 5, "degC")).With(Q("theta_a", 25, "degC"))), "rh-over-ice"));
+        Assert.False(Warned(Run(flat.With(Q("theta_dew", -11.2, "degC"))), "rh-over-ice"));
+        Assert.False(Warned(Run(flat.With(Clear("dew_margin")).With(Q("q_max_A", 20, "W/m^2"))), "rh-over-ice"));
+        Assert.Contains(Insulation.Template.ApplicabilityRules, r => r.Id == "rh-over-ice" && r.Severity == CalcNoticeSeverity.Warning);
+    }
+
+    [Fact]
     public void Black_B_B_08_The_Condensation_Warning_Judges_A_Fixed_H_Se_Against_The_Correlation_At_The_Entered_Emissivity()
     {
         // The chilled-water worked example: h_se 8 and ε 0.9. The given value needs 13.16 mm, the correlation at ε 0.9 only 12.03 mm, so the

@@ -43,7 +43,7 @@ public sealed class WetHeatingChainTests
         Assert.Equal(Si(b4a, "Phi_HL"), CellSi(b6, "rooms", 0, "Phi"), 9);
         Assert.Equal(Si(b4b, "Phi_HL"), CellSi(b6, "rooms", 1, "Phi"), 9);
         Assert.Equal(379.4441, Si(b4a, "Phi_HL"), 3);
-        Assert.Equal(263.8077, Si(b4b, "Phi_HL"), 3);
+        Assert.Equal(304.6077, Si(b4b, "Phi_HL"), 3);
         Assert.Equal([(0, new CalcLink(b4a.Id, "Phi_HL", "A")), (1, new CalcLink(b4b.Id, "Phi_HL", "A"))], b6.CellLinks.Select(l => (l.Row, l.Link)));
         Assert.All(b6.CellLinks, l => Assert.Equal(("rooms", "Phi"), (l.Symbol, l.Column)));
         Assert.Empty(b6.Links);

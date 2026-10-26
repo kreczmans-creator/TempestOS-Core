@@ -410,7 +410,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:26754b10eb96441bac44b8d30a8bfcc8#Phi",
+        "Reference": "calc:1f02bcd5845e4c888a1cc3bc32815ceb#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -609,7 +609,7 @@
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:2d90366ad89449a8a903ce63be54a248#P_cool",
+        "Reference": "calc:8859eb3650fa42b68b22d4c6380e07dd#P_cool",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -643,7 +643,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:2d90366ad89449a8a903ce63be54a248#T_max",
+        "Reference": "calc:8859eb3650fa42b68b22d4c6380e07dd#T_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -748,6 +748,16 @@
   ],
   "b1": [
     {
+      "Symbol": "D_law",
+      "Text": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)"
+    },
+    {
       "Symbol": "D_ratio",
       "Number": 1,
       "Provenance": {
@@ -763,7 +773,7 @@
       "Unit": "W",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:979d63693e7c479ead64c3c737ca28b7#Q",
+        "Reference": "calc:bc8d8c959a7944abb7c9c12eb405a92e#Q",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -775,7 +785,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:979d63693e7c479ead64c3c737ca28b7#T_c_m",
+        "Reference": "calc:bc8d8c959a7944abb7c9c12eb405a92e#T_c_m",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -798,7 +808,7 @@
       "Unit": "J/(kg*K)",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:979d63693e7c479ead64c3c737ca28b7#cp_c",
+        "Reference": "calc:bc8d8c959a7944abb7c9c12eb405a92e#cp_c",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -810,7 +820,7 @@
       "Unit": "K",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:979d63693e7c479ead64c3c737ca28b7#dT_c",
+        "Reference": "calc:bc8d8c959a7944abb7c9c12eb405a92e#dT_c",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

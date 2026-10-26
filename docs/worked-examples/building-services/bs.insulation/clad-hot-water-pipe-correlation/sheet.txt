@@ -136,7 +136,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   WARNING record: Tabulated values not taken from a reference record: lambda (Material properties); h_se (Outer surface coefficient); eps (Surface emissivity); q_max_m, theta_se_max (Insulation criteria). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: bs.insulation@1.1.1
+  Template: bs.insulation@1.1.2
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 14/14

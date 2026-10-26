@@ -43,7 +43,7 @@ public sealed class GlaserCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.BuildingServices, "Glaser condensation (interstitial and surface)",
+        Id, "1.3.0", CalcDiscipline.BuildingServices, "Glaser condensation (interstitial and surface)",
         "Interstitial condensation in a layered wall by the Glaser method over twelve monthly climate steps: the temperature and saturation pressure at every layer interface, the vapour-pressure line with its tangent construction at the condensation planes, the condensate on each interface month by month carried forward from the first month of condensation (drying when the weather turns), the annual balance, the peak accumulation against the owner's limit, and the surface temperature factor f_Rsi against its minimum at the critical surface humidity.",
         "Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j\n" +
         "Total resistance and interface temperature: R_T = R_si + Σ R_j + R_se; θ_k = θ_i − (θ_i − θ_e)·(R_si + Σ_(j≤k) R_j)/R_T\n" +
@@ -53,7 +53,8 @@ public sealed class GlaserCalculator : ICalcCalculator
         "Vapour flux through a layer: g = δ0·Δp/Δs_d with δ0 = 2×10⁻¹⁰ kg/(m·s·Pa)\n" +
         "Tangent construction: the line from p_i to p_e is bent onto the saturation line at the interfaces it would rise above (and at wet interfaces), by the smallest-slope rule from each contact point\n" +
         "Condensation at an interface: g_c = g_in − g_out; Mc accumulates g_c·t over 12 months from the first month of condensation (t = the row's days, else the calendar days of the month, January to December order), a wet interface (held at saturation) drying at g_c < 0 until nothing is left\n" +
-        "Annual balance and peak: PASS when no condensate remains after the 12 months; Mc_max = the most held on any interface, checked against the user's limit\n" +
+        "Refinement check: the same year is run again with every layer split into 20 equal sub-layers of the same λ and μ (inside the model, not counted against the 30-layer limit), because the saturation line is curved inside a layer and the interface-only model can miss the condensate that forms between two interfaces; the annual balance passes only when it passes both ways, and the sheet warns when the two runs differ (a verdict flips, or Mc_end or the wall peak differ by more than 10 %)\n" +
+        "Annual balance and peak: PASS when no condensate remains after the 12 months (as entered and in 20 sub-layers per layer); Mc_max = the most held on any interface, checked against the user's limit\n" +
         "Wall U-value and its cross-check: U = 1/R_T; when the heat-loss calculation's U-value U_ref is given, the sheet warns if |U − U_ref|/U_ref exceeds 2 % (the two calculations then describe different constructions)\n" +
         "Surface factor: f_Rsi = 1 − R_si,f/R_T,f with R_si,f = 0.25 m²K/W by default for an opaque element (conventional, a record; 0.13 for glazing); f_Rsi,min = the largest monthly (θ_si,min − θ_e)/(θ_i − θ_e) with p_sat(θ_si,min) = p_i/φ_crit; PASS when f_Rsi ≥ f_Rsi,min",
         [
@@ -80,7 +81,7 @@ public sealed class GlaserCalculator : ICalcCalculator
         [
             new CalcAssumption("Steady state in each month: one-dimensional diffusion of water vapour through homogeneous layers in series, with the monthly mean climate; no air movement, no liquid transport, no moisture storage, no solar or rain gain.", "The Glaser method."),
             new CalcAssumption("Material properties (λ, μ) are constants of the layer, not functions of its moisture or temperature; condensate does not change them.", "The Glaser method."),
-            new CalcAssumption("Condensation is checked at the interfaces between layers only; a thick layer where the plane would lie inside it should be split into thinner layers. The saturation line is joined straight between the interface values.", "Stated limit."),
+            new CalcAssumption("Condensation is checked at the interfaces between layers; the saturation line is joined straight between the interface values, which can miss condensate that forms inside a layer. The annual balance is therefore also run with every layer split into 20 sub-layers and passes only when both pass; the limit on the condensate per interface is checked on the interfaces as entered.", "Stated limit; refinement check (bs.glaser-01). Whether ISO 13788 requires sub-division is to be checked against the owner's copy."),
             new CalcAssumption("The Magnus saturation pressure is used over water at and above 0 °C and over ice below, and the water-vapour permeability of air is δ0 = 2×10⁻¹⁰ kg/(m·s·Pa); both are closed-form physics, not data of a standard.", "Derived."),
             new CalcAssumption("Where a month's length is blank it is the calendar days of the month, taking the climate rows as January to December (February 28 days); enter the days where the record starts in another month. A wet interface that dries within a month is taken as dry from the next month; the month's rates are those of the wet state at its start.", "Monthly steps."),
             new CalcAssumption("The monthly climate, the humidity-class points, the surface resistances, the critical humidity and the limit on the condensate are the user's records from the user's own licensed copies; no climate data, humidity-class table, material table or limit of any standard is shipped.", "No table from a standard is shipped."),
@@ -97,6 +98,7 @@ public sealed class GlaserCalculator : ICalcCalculator
             new CalcApplicabilityRule("climate", "The climate record has exactly twelve monthly rows, each with a temperature and a humidity.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("humidity-class", "The moisture-excess mode needs both humidity-class points, the cold point below the warm one.", CalcNoticeSeverity.Block),
             new CalcApplicabilityRule("element-filter", "Rows of the layers table that belong to another element are ignored.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("layer-subdivision", "The condensate left after 12 months, or the wall peak, changes (a verdict flips, or by more than 10 %) when every layer is split into 20 sub-layers: condensate forms inside a layer. The annual balance must pass both ways.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("single-layer", "A single layer has no interface: no interstitial condensation can be found.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("p-int-saturated", "The internal vapour pressure from the humidity class exceeds saturation at the internal temperature in some month and is limited to it.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("fRsi-not-applicable", "No month has the outside air at least 1 K colder than the inside: f_Rsi,min is taken as 0.", CalcNoticeSeverity.Warning),
@@ -384,6 +386,10 @@ public sealed class GlaserCalculator : ICalcCalculator
         var year = GlaserModel.Simulate(layers, rsi, rse, thetaInt, thetaE, pInt, pExt, seconds);
         var n = layers.Count;
 
+        // Refinement check (bs.glaser-01): the same year with every layer in RefineSlices sub-layers. The interface-only model can miss
+        // condensate that forms inside a layer, so its verdict depends on how the wall was cut.
+        var fine = GlaserModel.Simulate(GlaserModel.Refine(layers), rsi, rse, thetaInt, thetaE, pInt, pExt, seconds);
+
         // Surface factor.
         var rsiF = c.Si("Rsi_f");
 
@@ -517,8 +523,20 @@ public sealed class GlaserCalculator : ICalcCalculator
         c.Record("fRsi_min", "max over months of (θ_si,min − θ_e)/(θ_i − θ_e)", any ? $"θ_si,min from p_i/φ_crit; governing month: {labels[fMonth - 1]}" : "no month with θ_e at least 1 K below θ_i", new ScalarValue(fMin), "Minimum temperature factor at the critical surface humidity", "ISO 13788 cl. 5");
         c.Record("n_fcrit", "month that governs f_Rsi,min", any ? $"{labels[fMonth - 1]} (row {fMonth})" : "none", new ScalarValue(fMonth), "Row of the climate that governs the surface check (0 when none applies)", "ISO 13788 cl. 5");
 
-        var balancePass = mcEnd <= 1e-9;
-        c.CheckCondition("Annual moisture balance: the condensate dries out within the year", balancePass, $"Mc_end = {F(mcEnd * 1000)} g/m²", "Mc_end ≤ 0 g/m²", "Mc_end", "ISO 13788 cl. 6");
+        var mcEndFine = fine.ResidualMc;
+        var mcTotFine = fine.Months.Count == 0 ? 0 : fine.Months.Max(x => x.McTotal);
+        c.Record("Mc_end_fine", "Σ Mc after 12 months, each layer in 20 sub-layers", $"{F(mcEndFine * 1000)} g/m²", Gm2(mcEndFine), "Condensate left after 12 months when every layer is split into 20 sub-layers (refinement check)", "ISO 13788 cl. 6");
+        c.Record("Mc_tot_fine", "max over months of Σ Mc, each layer in 20 sub-layers", $"{F(mcTotFine * 1000)} g/m²", Gm2(mcTotFine), "Most condensate on the whole wall when every layer is split into 20 sub-layers (refinement check)", "ISO 13788 cl. 6");
+        var balanceAsEntered = mcEnd <= 1e-9;
+        var balanceFine = mcEndFine <= 1e-9;
+        var balancePass = balanceAsEntered && balanceFine;
+        c.CheckCondition("Annual moisture balance: the condensate dries out within the year (as entered and with every layer in 20 sub-layers)", balancePass, $"Mc_end = {F(mcEnd * 1000)} g/m² as entered, {F(mcEndFine * 1000)} g/m² in 20 sub-layers per layer", "Mc_end ≤ 0 g/m²", "Mc_end", "ISO 13788 cl. 6");
+
+        var peakDiffers = Math.Abs(mcTotFine - mcPeakTotal) > 0.1 * Math.Max(mcTotFine, mcPeakTotal) && Math.Max(mcTotFine, mcPeakTotal) > 1e-6;
+        var endDiffers = Math.Abs(mcEndFine - mcEnd) > 0.1 * Math.Max(mcEndFine, mcEnd) && Math.Max(mcEndFine, mcEnd) > 1e-9;
+
+        if (balanceAsEntered != balanceFine || peakDiffers || endDiffers)
+            c.Warn("layer-subdivision", $"layers: the result depends on how the wall is cut into layers. As entered the condensate left after 12 months is {F(mcEnd * 1000)} g/m² and the wall peak is {F(mcPeakTotal * 1000)} g/m²; with every layer split into {GlaserModel.RefineSlices} sub-layers (same λ and μ) they are {F(mcEndFine * 1000)} and {F(mcTotFine * 1000)} g/m². The saturation line is curved inside a layer, so condensate can form between two interfaces. The annual-balance check passes only when both pass; the refined values are the closer to the converged Glaser result. Split thick layers (especially where μ or λ jumps) into thinner ones and compare Mc_end with Mc_end_fine; the limit on the condensate per interface is checked on the interfaces as entered only.");
 
         if (c.Has("Mc_limit"))
         {
@@ -558,7 +576,7 @@ public sealed class GlaserCalculator : ICalcCalculator
         for (var k = 1; k < n; k++)
             c.Output($"Mc_if_{k}", $"Peak condensate on interface {k}");
 
-        foreach (var (symbol, text) in new[] { ("Mc_max", "Most condensate on any interface"), ("Mc_tot", "Most condensate on the wall"), ("Mc_end", "Condensate left after 12 months"), ("n_diag", "Month of the diagram"), ("sd_if", "Diffusion thickness at the nodes"), ("x_if", "Depth at the nodes"), ("theta_if", "Temperature at the nodes"), ("psat_if", "Saturation pressure at the nodes"), ("p_if", "Vapour pressure at the nodes"), ("fRsi", "Temperature factor of the internal surface"), ("fRsi_min", "Minimum temperature factor"), ("n_fcrit", "Month governing the surface check") })
+        foreach (var (symbol, text) in new[] { ("Mc_max", "Most condensate on any interface"), ("Mc_tot", "Most condensate on the wall"), ("Mc_end", "Condensate left after 12 months"), ("Mc_end_fine", "Condensate left after 12 months, each layer in 20 sub-layers"), ("Mc_tot_fine", "Most condensate on the wall, each layer in 20 sub-layers"), ("n_diag", "Month of the diagram"), ("sd_if", "Diffusion thickness at the nodes"), ("x_if", "Depth at the nodes"), ("theta_if", "Temperature at the nodes"), ("psat_if", "Saturation pressure at the nodes"), ("p_if", "Vapour pressure at the nodes"), ("fRsi", "Temperature factor of the internal surface"), ("fRsi_min", "Minimum temperature factor"), ("n_fcrit", "Month governing the surface check") })
             c.Output(symbol, text);
 
         c.Output("R_Tf", "Total resistance for the surface check");
