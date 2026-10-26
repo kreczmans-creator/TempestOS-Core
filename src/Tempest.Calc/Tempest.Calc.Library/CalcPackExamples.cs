@@ -163,15 +163,15 @@ internal static class CalcPackExamples
     ];
 
     /// <summary>
-    /// The sealed system is given its two rooms (instantiating never creates rows); each room's Φ is a placeholder the cell links replace. The pipework
+    /// The sealed system is given its two rooms (instantiating never creates rows); each room's Φ and design temperature t_i are placeholders the cell links replace. The pipework
     /// water content is B1's V_pipe (π/4 × 0.010² × 40 m = 3.14 L), entered by hand: B1 takes its heat load from B6, so a link back from B1 would be a cycle.
     /// </summary>
     public static IReadOnlyList<CalcInputValue> WetB6 { get; } =
     [
         Q("V_pipe", 3.14, "L"),
         Table("rooms",
-            CalcRow.Of(Txt("name", "Room A"), ("Phi", new CalcCell(1, "W")), ("V_em", new CalcCell(4, "L"))),
-            CalcRow.Of(Txt("name", "Room B"), ("Phi", new CalcCell(1, "W")), ("V_em", new CalcCell(4, "L")))),
+            CalcRow.Of(Txt("name", "Room A"), ("Phi", new CalcCell(1, "W")), ("V_em", new CalcCell(4, "L")), ("t_i", new CalcCell(21, "degC"))),
+            CalcRow.Of(Txt("name", "Room B"), ("Phi", new CalcCell(1, "W")), ("V_em", new CalcCell(4, "L")), ("t_i", new CalcCell(21, "degC")))),
     ];
 
     /// <summary>
@@ -287,10 +287,10 @@ internal static class CalcPackExamples
         Q("V_R", 94.0, "kN"), Q("T_R", 141.0, "kN"),
     ];
 
-    /// <summary>The arm joint's bolt checks: M20 8.8 through a 20 mm S275 end plate; the bolt forces arrive by link from the bolt group.</summary>
+    /// <summary>The arm joint's bolt checks: M20 8.8 through a 20 mm S275 end plate against the 11 mm flange of the UC 203 × 203 × 46 column (bearing is on the thinner ply); the bolt forces arrive by link from the bolt group.</summary>
     public static IReadOnlyList<CalcInputValue> SteelS4A { get; } =
     [
-        C("grade", "8.8"), C("size", "M20"), C("steel", "S275"), Q("t", 20, "mm"),
+        C("grade", "8.8"), C("size", "M20"), C("steel", "S275"), Q("t", 20, "mm"), Q("t_2", 11, "mm"),
         Q("e_1", 40, "mm"), Q("e_2", 40, "mm"), Q("p_1", 150, "mm"), Q("p_2", 120, "mm"),
         Q("A_nt", 1200, "mm^2"), Q("A_nv", 2400, "mm^2"),
     ];

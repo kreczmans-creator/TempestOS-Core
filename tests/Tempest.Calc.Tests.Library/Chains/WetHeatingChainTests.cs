@@ -33,6 +33,22 @@ public sealed class WetHeatingChainTests
     }
 
     [Fact]
+    public async Task The_Pack_Says_What_It_Leaves_Out_And_Its_Pipework_Step_Warns_About_The_Missing_Plant_Loss()
+    {
+        // chain.wet-heating-03, -04, -06: the pump head is pipe friction only unless the plant, valve and emitter loss is entered as h_out; the pipework water content in B6 is typed;
+        // B1 is on water unless the custom fluid is chosen. The text says so, and the steps warn at run time.
+        var text = CalcPackTemplates.WetHeating.Description;
+        Assert.Contains("pipe friction only", text, StringComparison.Ordinal);
+        Assert.Contains("custom fluid", text, StringComparison.Ordinal);
+        Assert.Contains("20 L default", text, StringComparison.Ordinal);
+
+        var host = Host();
+        var made = await InstantiateAsync(host);
+        Assert.Contains(made.Instances["b1"].Warnings, w => w.RuleId == "plant-loss");
+        Assert.DoesNotContain(made.Instances["b6"].Warnings, w => w.RuleId == "v-pipe-default");
+    }
+
+    [Fact]
     public async Task Room_Heat_Reaches_The_Sealed_System_The_Pipework_Flow_And_The_Motor_Load()
     {
         var host = Host();
@@ -44,8 +60,13 @@ public sealed class WetHeatingChainTests
         Assert.Equal(Si(b4b, "Phi_HL"), CellSi(b6, "rooms", 1, "Phi"), 9);
         Assert.Equal(379.4441, Si(b4a, "Phi_HL"), 3);
         Assert.Equal(304.6077, Si(b4b, "Phi_HL"), 3);
-        Assert.Equal([(0, new CalcLink(b4a.Id, "Phi_HL", "A")), (1, new CalcLink(b4b.Id, "Phi_HL", "A"))], b6.CellLinks.Select(l => (l.Row, l.Link)));
-        Assert.All(b6.CellLinks, l => Assert.Equal(("rooms", "Phi"), (l.Symbol, l.Column)));
+        Assert.Equal([(0, new CalcLink(b4a.Id, "Phi_HL", "A")), (1, new CalcLink(b4b.Id, "Phi_HL", "A"))], b6.CellLinks.Where(l => l.Column == "Phi").Select(l => (l.Row, l.Link)));
+        Assert.All(b6.CellLinks, l => Assert.Equal("rooms", l.Symbol));
+
+        // chain.wet-heating-05: each room's design temperature (B4's theta_int) is its emitter's room temperature in B6, not the sheet's single t_i.
+        Assert.Equal([(0, new CalcLink(b4a.Id, "theta_int", "A")), (1, new CalcLink(b4b.Id, "theta_int", "A"))], b6.CellLinks.Where(l => l.Column == "t_i").Select(l => (l.Row, l.Link)));
+        Assert.Equal(Si(b4a, "theta_int"), CellSi(b6, "rooms", 0, "t_i"), 9);
+        Assert.Equal(294.15, CellSi(b6, "rooms", 1, "t_i"), 9);
         Assert.Empty(b6.Links);
         Assert.Equal(Si(b4a, "Phi_HL") + Si(b4b, "Phi_HL"), Si(b6, "Phi_tot"), 9);
 
