@@ -235,7 +235,8 @@ public sealed class CalcInstanceStore
 
     /// <summary>
     /// The one place a calculation, a pack or a scan profile is ever deleted (Addendum C, C-6): in <b>one</b> transaction, every instance and pack row of
-    /// <paramref name="projectId"/> and the exact scan-profile versions named (the ones the install wrote), with their search-index rows. It deletes nothing else:
+    /// <paramref name="projectId"/> and the exact scan-profile versions named (the ones the install wrote, each only while it is stored word for word as the
+    /// install writes it, SEC-C-03, and no calculation of another project cites it, B-C-02), with their search-index rows. It deletes nothing else:
     /// rows are found by the project's own key prefix, a profile id must start with <see cref="CalcDemoProject.ScanProfilePrefix"/>, and a later version of a
     /// profile that a person saved after the install is never touched (a version is immutable and a person's own is theirs). The caller
     /// (<see cref="CalcDemoProjectService"/>) has already proved the project is the demonstration; below that, an issued or superseded row is never
@@ -318,14 +319,10 @@ public sealed class CalcInstanceStore
                 counts.Packs++;
             }
 
+            // A profile version is deleted only when both rules allow it: it is stored word for word as the install writes it (SEC-C-03), and no
+            // calculation outside the demonstration cites it (B-C-02). Only the second is reported as kept: a person's own version was never the demonstration's.
             foreach (var (profileId, version) in scanProfiles)
             {
-                if (citedElsewhere.Contains((profileId, version)))
-                {
-                    kept.Add((profileId, version));
-                    continue;
-                }
-
                 var key = ImportProfileKey(profileId, version);
 
                 // Only the version as the install writes it: a person who saved their own profile under the demonstration's id and version before the
@@ -334,6 +331,12 @@ public sealed class CalcInstanceStore
                     || CalcDemoProject.ShippedProfile(profileId, version) is not { } shipped
                     || !string.Equals(stored, Serialise(shipped), StringComparison.Ordinal))
                     continue;
+
+                if (citedElsewhere.Contains((profileId, version)))
+                {
+                    kept.Add((profileId, version));
+                    continue;
+                }
 
                 await tx.DeleteAsync(ScanProfileCollection, key, token).ConfigureAwait(false);
                 counts.ScanProfiles++;

@@ -172,6 +172,52 @@ public sealed class AddendumCColourRegressionTests
         Assert.NotNull(await host.Service.FindScanProfileAsync(CalcDemoProject.StackProfileId, 1));
     }
 
+    /// <summary>
+    /// The two removal rules together (security SEC-C-03 and black-team B-C-02, merged in the v0.26.0 integration): a demo profile version is deleted only
+    /// when it is stored word for word as the install writes it <b>and</b> no calculation of another project cites it. Only a shipped version spared by a
+    /// citation is reported as kept; a person's own version under the demonstration's id is never the demonstration's, whether or not it is cited.
+    /// </summary>
+    [Fact]
+    public async Task Integration_SEC_C_03_And_B_C_02_Remove_Deletes_Only_A_Shipped_Demo_Profile_No_Other_Project_Cites()
+    {
+        // The stack profile: shipped and cited elsewhere, so kept and said. The gland profile: the person's own, saved before the install, not cited,
+        // so kept and not claimed as the demonstration's.
+        var host = DemoHost.New();
+        var demo = DemoHost.Service(host);
+        var myGland = CalcDemoProject.GlandProfile with { Title = "My own gland profile" };
+        Assert.Null((await host.Service.SaveScanProfileAsync(myGland)).Refusal);
+        Assert.True((await demo.InstallAsync()).Succeeded);
+        var real = await host.ProjectAsync();
+        var stack = await host.Service.CreateAsync("mech.tolerance-stack", real, "Real groove stack", CalcDemoProject.SealStackInputs());
+        Assert.True((await host.Service.ApplyScanImportAsync(stack.Id, new ScanImportRequest([CalcDemoProject.ScanFile()], CalcDemoProject.StackProfile, CalcDemoProject.ScanSettings))).Action.Succeeded);
+
+        var removed = await demo.RemoveAsync();
+
+        Assert.True(removed.Succeeded, removed.Message);
+        Assert.Contains($"The scan profile '{CalcDemoProject.StackProfileId}' version 1 was kept, because a calculation in another project uses it.", removed.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(CalcDemoProject.GlandProfileId, removed.Message, StringComparison.Ordinal);
+        Assert.Equal(CalcDemoProject.StackProfile.Title, (await host.Service.FindScanProfileAsync(CalcDemoProject.StackProfileId, 1))?.Title);
+        Assert.Equal("My own gland profile", (await host.Service.FindScanProfileAsync(CalcDemoProject.GlandProfileId, 1))?.Title);
+
+        // The other way round: the person's own stack profile is cited by their calculation, and the shipped gland profile is cited by nothing. The own
+        // version stays and is not reported as kept (no deletion was ever due); the shipped, uncited version is deleted.
+        var second = DemoHost.New();
+        var secondDemo = DemoHost.Service(second);
+        var myStack = CalcDemoProject.StackProfile with { Title = "My own seal-stack profile" };
+        Assert.Null((await second.Service.SaveScanProfileAsync(myStack)).Refusal);
+        Assert.True((await secondDemo.InstallAsync()).Succeeded);
+        var mine = await second.ProjectAsync();
+        var myCalc = await second.Service.CreateAsync("mech.tolerance-stack", mine, "My groove stack", CalcDemoProject.SealStackInputs());
+        Assert.True((await second.Service.ApplyScanImportAsync(myCalc.Id, new ScanImportRequest([CalcDemoProject.ScanFile()], myStack, CalcDemoProject.ScanSettings))).Action.Succeeded);
+
+        var deletion = await second.Store.DeleteDemonstrationAsync((await secondDemo.StatusAsync()).ProjectId!.Value, CalcDemoProject.ScanProfiles);
+
+        Assert.Equal(1, deletion.ScanProfiles);
+        Assert.Empty(deletion.KeptScanProfiles);
+        Assert.Equal("My own seal-stack profile", (await second.Service.FindScanProfileAsync(CalcDemoProject.StackProfileId, 1))?.Title);
+        Assert.Null(await second.Service.FindScanProfileAsync(CalcDemoProject.GlandProfileId, 1));
+    }
+
     private sealed class Now(Action<string> act) : IProgress<string>
     {
         public void Report(string value) => act(value);
