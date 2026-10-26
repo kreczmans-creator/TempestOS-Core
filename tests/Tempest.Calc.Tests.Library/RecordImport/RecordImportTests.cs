@@ -498,10 +498,11 @@ public sealed class RecordImportTests
         // Ambient factors fall as the ambient temperature rises: 20 degC 0.8 then 30 degC 0.9 is the wrong way round.
         var wrong = await service.PreviewAsync(Request("06", Csv(AmbientFactors, "air,PVC,20,0.8", "air,PVC,30,0.9", "air,PVC,40,0.7")));
         Assert.False(wrong.CanCommit);
-        var error = Assert.Single(wrong.Errors);
-        Assert.Equal(3, error.Line);
-        Assert.Equal("C_a", error.Column);
-        Assert.Contains("must fall as theta_a rises", error.Message, StringComparison.Ordinal);
+
+        // The break is named on both rows of the pair (20 degC and 30 degC), so neither is overlooked.
+        Assert.Equal([2, 3], wrong.Errors.Select(e => e.Line!.Value).Order());
+        Assert.All(wrong.Errors, e => Assert.Equal("C_a", e.Column));
+        Assert.All(wrong.Errors, e => Assert.Contains("must fall as theta_a rises", e.Message, StringComparison.Ordinal));
 
         // The order of the rows does not matter, only the pairing: a separate group is judged on its own.
         var fine = await service.PreviewAsync(Request("06", Csv(AmbientFactors, "air,PVC,40,0.7", "air,PVC,20,0.9", "ground,PVC,20,0.5", "ground,PVC,30,0.6")));
@@ -515,15 +516,65 @@ public sealed class RecordImportTests
     }
 
     [Fact]
+    public async Task An_Ampacity_Table_Whose_Capacity_Does_Not_Rise_With_The_Cross_Section_Is_Refused_And_Both_Rows_Are_Named()
+    {
+        var host = Host();
+        var service = host.Service.RecordImport;
+
+        // Review finding 1: the calculator picks the smallest cross-section whose I_t carries the current, so 270 A at 4 mm2 and 34 A at 6 mm2
+        // would silently pick the wrong conductor. The table is refused, not warned about.
+        var bad = Csv(Ampacity, "1.5,,15", "2.5,,20", "4,,270", "6,,34", "10,,46");
+
+        foreach (var id in new[] { "04", "10" })
+        {
+            var preview = await service.PreviewAsync(Request(id, bad));
+            Assert.False(preview.CanCommit, id);
+            Assert.Equal([4, 5], preview.Errors.Select(e => e.Line!.Value).Order());
+            Assert.All(preview.Errors, e => Assert.Equal("I_t", e.Column));
+            Assert.All(preview.Errors, e => Assert.Contains("CSA", e.Message, StringComparison.Ordinal));
+            Assert.Contains(preview.Errors, e => e.Message.Contains("CSA 4", StringComparison.Ordinal) && e.Message.Contains("CSA 6", StringComparison.Ordinal));
+
+            var outcome = await service.CommitAsync(Request(id, bad));
+            Assert.False(outcome.Committed);
+            Assert.Empty(await host.Store.ListRecordsAsync("cable.ampacity"));
+        }
+
+        // The same table with the capacity mended is accepted. An AWG table runs the other way (a larger gauge number is a thinner wire), and is judged so.
+        Assert.True((await service.PreviewAsync(Request("04", Csv(Ampacity, "1.5,,15", "2.5,,20", "4,,27", "6,,34", "10,,46")))).CanCommit);
+        Assert.True((await service.PreviewAsync(Request("04", Csv(Ampacity, ",14,15", ",12,20", ",10,27")))).CanCommit);
+
+        var awg = await service.PreviewAsync(Request("04", Csv(Ampacity, ",14,30", ",12,20", ",10,27")));
+        Assert.False(awg.CanCommit);
+        Assert.All(awg.Errors, e => Assert.Contains("AWG", e.Message, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task A_Spring_Wire_Strength_That_Rises_With_The_Diameter_Is_Warned_About_As_The_Notes_Ask_And_One_That_Falls_Is_Not()
+    {
+        var host = Host();
+        var service = host.Service.RecordImport;
+        const string header = "grade[text],d[mm],Rm[MPa]";
+
+        // Template 39's note: "Within one grade, warn when Rm rises as d rises". Each row is its own record, and the calculator reads one Rm, so it is a warning.
+        var rising = await service.PreviewAsync(Request("39", Csv(header, "DH,1,1500", "DH,2,1600")));
+        Assert.True(rising.CanCommit, Describe(rising));
+        Assert.Contains(rising.Warnings, w => w.Column == "Rm" && w.Message.Contains("must not rise as d rises", StringComparison.Ordinal));
+
+        var falling = await service.PreviewAsync(Request("39", Csv(header, "DH,1,1700", "DH,2,1600")));
+        Assert.True(falling.CanCommit, Describe(falling));
+        Assert.DoesNotContain(falling.Warnings, w => w.Column == "Rm");
+    }
+
+    [Fact]
     public async Task A_Warning_Does_Not_Stop_An_Import_But_An_Error_Does_And_Row_Counts_Are_Held()
     {
         var host = Host();
         var service = host.Service.RecordImport;
 
-        // CSA and I_t not rising together is a warning only.
-        var odd = await service.PreviewAsync(Request("04", Csv(Ampacity, "1.5,,30", "2.5,,20")));
+        // A suction velocity above the pressure-line velocity is a warning only (CSA and I_t out of step is an error: see the ampacity test).
+        var odd = await service.PreviewAsync(Request("17", Csv("basis[text],v_suc_max[m/s],v_prs_max[m/s],v_ret_max[m/s]", "Test basis,3,2,2")));
         Assert.True(odd.CanCommit, Describe(odd));
-        Assert.Contains(odd.Warnings, w => w.Column == "I_t");
+        Assert.Contains(odd.Warnings, w => w.Column == "v_suc_max");
 
         var rows = Enumerable.Range(1, 61).Select(i => $"{i},,{10 + i}").ToArray();
         var tooMany = await service.PreviewAsync(Request("04", Csv(Ampacity, rows)));

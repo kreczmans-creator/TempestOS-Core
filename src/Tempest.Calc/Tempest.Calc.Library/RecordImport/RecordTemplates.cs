@@ -65,7 +65,7 @@ public static class RecordTemplates
         T("04", "bs7671.ampacity", "Cable current-carrying capacities (installation method)", "cable.ampacity",
             "CSA[mm2],AWG[-],I_t[A]",
             "One record per file: the E4 ampacity table.",
-            Req("I_t"), Pos("I_t"), Either("CSA", "AWG"), Uniq("CSA"), Uniq("AWG"), Rows(max: 60), Mono([], "CSA", "I_t", RecordDirection.Rising, RecordSeverity.Warning)),
+            Req("I_t"), Pos("I_t"), Either("CSA", "AWG"), Uniq("CSA"), Uniq("AWG"), Rows(max: 60), Mono([], "CSA", "I_t", RecordDirection.Rising), Mono([], "AWG", "I_t", RecordDirection.Falling)),
 
         Proposed("05", "bs7671.voltage-drop", "Voltage drop per ampere per metre", "bs7671.voltage-drop",
             "conductor[text],csa[mm2],r_dc[mV/A/m],r_1ph[mV/A/m],x_1ph[mV/A/m],z_1ph[mV/A/m],r_3ph[mV/A/m],x_3ph[mV/A/m],z_3ph[mV/A/m]",
@@ -94,7 +94,7 @@ public static class RecordTemplates
         T("10", "en60204.ampacity", "Cable current-carrying capacities (machine wiring)", "cable.ampacity",
             "CSA[mm2],AWG[-],I_t[A]",
             "One record per file: the E4 ampacity table for machine wiring.",
-            Req("I_t"), Pos("I_t"), Either("CSA", "AWG"), Uniq("CSA"), Uniq("AWG"), Rows(max: 60), Mono([], "CSA", "I_t", RecordDirection.Rising, RecordSeverity.Warning)),
+            Req("I_t"), Pos("I_t"), Either("CSA", "AWG"), Uniq("CSA"), Uniq("AWG"), Rows(max: 60), Mono([], "CSA", "I_t", RecordDirection.Rising), Mono([], "AWG", "I_t", RecordDirection.Falling)),
 
         T("11", "en60204.factors", "Machine wiring correction factors", "cable.correction-factors",
             "factor[text],theta_a[degC],n_circuits[-],C_a[-],C_g[-]",
@@ -245,7 +245,7 @@ public static class RecordTemplates
         T("39", "en10270.spring-wire", "Spring wire tensile strength", "spring.wire-strength",
             "grade[text],d[mm],Rm[MPa]",
             "One record per row (a grade and diameter). The grade and d cells join the title.",
-            Req("grade", "d", "Rm"), Pos("d", "Rm"), Uniq("grade", "d"), Warn("Rm", 300, 3500), Mono(["grade"], "d", "Rm", RecordDirection.NotFalling, RecordSeverity.Warning)),
+            Req("grade", "d", "Rm"), Pos("d", "Rm"), Uniq("grade", "d"), Warn("Rm", 300, 3500), Mono(["grade"], "d", "Rm", RecordDirection.NotRising, RecordSeverity.Warning)),
 
         T("40", "en13906.permissible-stress", "Permissible and ultimate stress fractions", "spring.permissible",
             "wire_grade[text],condition[text],d_min[mm],d_max[mm],f_tau[-],f_sigma[-],f_su[-]",

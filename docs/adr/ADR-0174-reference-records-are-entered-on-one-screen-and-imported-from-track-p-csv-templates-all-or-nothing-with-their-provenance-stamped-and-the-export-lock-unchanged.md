@@ -73,6 +73,10 @@ Template 62 makes one material per row. Templates 63 (a property against tempera
 
 No change was made to `ExportRecordAsync`, `WithholdLicensedAsync`, the sheet's withheld rows or the CSV and JSON re-import rules. The import adds no path that writes a record's values out: its only output is a template's header row (`BlankTemplateCsv`). A test holds the public surface of the importer free of any export method, and tests import a licensed record, apply it, and show it is refused for export and withheld from a calculation's export.
 
+### 11. Changes made after the C-3 review
+
+- **A table a calculator selects from is refused when it runs the wrong way.** Template 04 and 10's rule that I_t rises with CSA (and, new, falls as the AWG number rises) is an **error**, not a warning: E4 picks the smallest cross-section whose I_t carries the current, so 270 A at 4 mm² followed by 34 A at 6 mm² would silently choose a wrong conductor. Every other ordering rule on a table a calculator selects or interpolates on (02, 06, 07, 08, 12, 29, 33, and 11's C_g) was already an error. The ones that stay warnings do not feed a lookup: 11's C_a (the note allows a rise below the reference ambient and E4 takes C_a as one number) and 39's Rm against d (one record per row, and M7 reads one Rm). Template 39's direction was the wrong way round against its note ("warn when Rm rises as d rises"); it now follows the note. A broken ordering is reported on **both rows** of the pair and names the two values (`I_t must rise as CSA rises: CSA 4 has I_t 270, but CSA 6 has I_t 34`).
+
 ## Consequences
 
 - A table of fifty rows is typed once on a grid, or imported from the owner's spreadsheet, and checked before anything is saved. The sheets' "a tabulated value not taken from a reference record" warning clears the way it already did.

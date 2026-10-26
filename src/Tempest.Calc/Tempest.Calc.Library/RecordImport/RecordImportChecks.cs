@@ -488,7 +488,11 @@ internal static class RecordTemplateChecks
                         _ => "not rise",
                     };
                     var where = groupNames.Count > 0 ? $" within {string.Join(", ", groupNames.Select(g => crow.Cell(g)?.Raw))}" : string.Empty;
-                    crow.Add(check.Severity, value.Symbol, $"{value.Symbol} must {wanted} as {order.Symbol} rises{where}; line {prow.Line} and this row are the other way round.");
+
+                    // Both rows of the pair carry the finding, and it names the values: the row that breaks the run may be either one (270 A at CSA 4 then 34 A at CSA 6).
+                    var named = $"{order.Symbol} {prow.Cell(order.Symbol)?.Raw} has {value.Symbol} {prow.Cell(value.Symbol)?.Raw}, but {order.Symbol} {crow.Cell(order.Symbol)?.Raw} has {value.Symbol} {crow.Cell(value.Symbol)?.Raw}";
+                    prow.Add(check.Severity, value.Symbol, $"{value.Symbol} must {wanted} as {order.Symbol} rises{where}: {named} (line {prow.Line} and line {crow.Line}).");
+                    crow.Add(check.Severity, value.Symbol, $"{value.Symbol} must {wanted} as {order.Symbol} rises{where}: {named} (line {prow.Line} and line {crow.Line}).");
                 }
             }
         }
