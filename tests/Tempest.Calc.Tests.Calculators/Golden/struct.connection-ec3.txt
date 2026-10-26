@@ -46,35 +46,35 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   A5. Group forces come from M3 and weld forces per length from M6 by link. (Group forces and weld forces are linked from the bolt-group and weld-group calculations.)
 
 4. WORKING
-  [20] f_ub = class first figure × 100    « EN 1993-1-8 Table 3.1
+  [21] f_ub = class first figure × 100    « EN 1993-1-8 Table 3.1
       = class 8.8
       = 800 MPa
         Bolt ultimate strength
-  [21] f_yb = f_ub × second figure / 10    « EN 1993-1-8 Table 3.1
+  [22] f_yb = f_ub × second figure / 10    « EN 1993-1-8 Table 3.1
       = class 8.8
       = 640 MPa
         Bolt yield strength
-  [22] A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P    « ISO 898-1 cl. 9.1
+  [23] A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P    « ISO 898-1 cl. 9.1
       = d = 20, P = 2.5 mm
       = 244.79 mm²
         Tensile stress area
-  [23] d_0 = d + 2 (≤ M24), d + 3 (≥ M27) unless entered
+  [24] d_0 = d + 2 (≤ M24), d + 3 (≥ M27) unless entered
       = 22 mm
       = 22 mm
         Hole diameter
-  [24] alpha_v = α_v (threads in the shear plane)    « EN 1993-1-8 Table 3.4
+  [25] alpha_v = α_v (threads in the shear plane)    « EN 1993-1-8 Table 3.4
       = class 8.8
       = 0.6
         Shear factor
-  [25] F_v_Rd = α_v·f_ub·A·n_s/γ_M2    « EN 1993-1-8 Table 3.4
+  [26] F_v_Rd = α_v·f_ub·A·n_s/γ_M2    « EN 1993-1-8 Table 3.4
       = 0.6 × 800 × 244.79 × 1 / 1.25
       = 94.001 kN
         Shear resistance per bolt
-  [26] alpha_b = min(α_d, f_ub/f_u, 1), α_d = min(e₁/3d₀, p₁/3d₀ − 1/4)    « EN 1993-1-8 Table 3.4
+  [27] alpha_b = min(α_d, f_ub/f_u, 1), α_d = min(e₁/3d₀, p₁/3d₀ − 1/4)    « EN 1993-1-8 Table 3.4
       = min(0.60606, 0.81061, 1.9512, 1)
       = 0.60606
         Bearing factor α_b
-  [27] k_1 = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5)    « EN 1993-1-8 Table 3.4
+  [28] k_1 = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5)    « EN 1993-1-8 Table 3.4
       = e₂ = 40, p₂ = 70, d₀ = 22
       = 2.5
         Bearing factor k₁
