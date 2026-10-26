@@ -63,6 +63,24 @@ public sealed class CalcInstanceStore
         return System.Text.Encoding.UTF8.GetString(sink.WrittenSpan);
     }
 
+    /// <summary>The sentence for a calculation whose stored record would pass <see cref="MaxDocumentBytes"/>: it names the calculation by its title, never by its identifier.</summary>
+    internal static string TooLargeMessage(string calculationName) =>
+        $"Calculation '{calculationName}' is larger than {MaxDocumentBytes / 1_000_000} MB and was not saved; take some of its table rows out and save it again.";
+
+    /// <summary>Whether <paramref name="instance"/> would be refused for size when saved, found without building more than the cap's worth of text.</summary>
+    internal static bool ExceedsDocumentCap(CalcInstance instance)
+    {
+        try
+        {
+            SerialiseWithin(instance, () => TooLargeMessage(instance.Name));
+            return false;
+        }
+        catch (InvalidOperationException)
+        {
+            return true;
+        }
+    }
+
     /// <summary>A buffer that grows in steps as the writer commits bytes to it, and throws as soon as it holds more than its limit.</summary>
     private sealed class LimitedBufferWriter(int limit, Func<string> tooLarge) : System.Buffers.IBufferWriter<byte>
     {
@@ -260,7 +278,7 @@ public sealed class CalcInstanceStore
         ArgumentNullException.ThrowIfNull(transaction);
         ArgumentNullException.ThrowIfNull(instance);
 
-        var json = SerialiseWithin(instance, () => $"Calculation instance '{instance.Id}' is larger than {MaxDocumentBytes / 1_000_000} MB and was not written.");
+        var json = SerialiseWithin(instance, () => TooLargeMessage(instance.Name));
 
         await transaction.WriteAsync(InstanceCollection, Key(instance.ProjectId, instance.Id), json, cancellationToken).ConfigureAwait(false);
         await transaction.IndexTextAsync(

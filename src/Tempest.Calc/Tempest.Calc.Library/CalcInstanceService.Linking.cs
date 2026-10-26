@@ -928,6 +928,16 @@ public sealed partial class CalcInstanceService
     }
 }
 
+/// <summary>A new calculation's stored record would pass the store's size cap (C-7h); the message names the calculation by its title.</summary>
+public sealed class CalcInstanceTooLargeException : InvalidOperationException
+{
+    public CalcInstanceTooLargeException(string message) : base(message) { }
+
+    public CalcInstanceTooLargeException() { }
+
+    public CalcInstanceTooLargeException(string message, Exception innerException) : base(message, innerException) { }
+}
+
 /// <summary>A new calculation's inputs carry a link that breaks the linking rules (ADR-0168 amendment).</summary>
 public sealed class CalcLinkRefusedException : InvalidOperationException
 {

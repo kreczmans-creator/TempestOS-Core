@@ -149,6 +149,9 @@ public sealed partial class CalcInstanceService
     /// Calculation-register entry, so the register shows the calculation
     /// from its first day and the issue later only completes it.
     /// </summary>
+    /// <exception cref="CalcLinkRefusedException">A link or a cited attachment in <paramref name="inputs"/> is not allowed.</exception>
+    /// <exception cref="CalcInstanceTooLargeException">The calculation's stored record would pass the store's 4 MB cap. Nothing is made: no Evidence, no register entry.</exception>
+    /// <remarks>A screen that takes its inputs from a person calls <see cref="TryCreateAsync"/>, which gives these two refusals as a result, as <see cref="UpdateInputsAsync(Guid, IEnumerable{CalcInputValue}, CancellationToken)"/> does.</remarks>
     public async Task<CalcInstance> CreateAsync(string templateReference, Guid? projectId, string name, IEnumerable<CalcInputValue>? inputs = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -179,17 +182,51 @@ public sealed partial class CalcInstanceService
             inputs = ScanImportVerifier.Verify(CadImportVerifier.Verify(list, null).Inputs, null).Inputs;
         }
 
-        var evidence = await _evidence.CreateManagedAsync(projectId, EvidenceTitle(cleanName, entry.Template.Title, "A"), EvidenceClassification.Calculation, Evidence.CalcWorksheetOwner, null, cancellationToken).ConfigureAwait(false);
-        var register = await CreateRegisterEntryAsync(projectId, cleanName, evidence.Id, cancellationToken).ConfigureAwait(false);
-
+        // The record is made whole before anything else is: with identifiers standing in for the Evidence and the register entry (the same length as
+        // the real ones), so that a calculation the store would refuse for size is refused here, before an Evidence record and a register entry
+        // exist for a calculation that was never saved (C-7h).
         var instance = new CalcInstance(
             id, entry.Reference, entry.ContentHash, projectId, cleanName, "A",
             inputs?.ToList() ?? DefaultInputs(entry.Template), [], [], [], [],
-            CalcInstanceStatus.Draft, evidence.Id, register?.Id, author, now, now, EditedBy: WithAuthors(null, author));
+            CalcInstanceStatus.Draft, Guid.NewGuid(), projectId is null ? null : Guid.NewGuid(), author, now, now, EditedBy: WithAuthors(null, author));
 
         instance = await RunAndSnapshotAsync(entry, instance, cancellationToken).ConfigureAwait(false);
-        await _store.SaveInstanceAsync(instance, cancellationToken).ConfigureAwait(false);
+
+        if (CalcInstanceStore.ExceedsDocumentCap(instance))
+            throw new CalcInstanceTooLargeException(CalcInstanceStore.TooLargeMessage(instance.Name));
+
+        var evidence = await _evidence.CreateManagedAsync(projectId, EvidenceTitle(cleanName, entry.Template.Title, "A"), EvidenceClassification.Calculation, Evidence.CalcWorksheetOwner, null, cancellationToken).ConfigureAwait(false);
+        var register = await CreateRegisterEntryAsync(projectId, cleanName, evidence.Id, cancellationToken).ConfigureAwait(false);
+        instance = instance with { EvidenceId = evidence.Id, RegisterObjectId = register?.Id };
+
+        try
+        {
+            await _store.SaveInstanceAsync(instance, cancellationToken).ConfigureAwait(false);
+        }
+        catch (InvalidOperationException ex) when (ex.Message.Contains("larger than", StringComparison.Ordinal))
+        {
+            // The record was within the cap a moment ago; it is the same length now, bar the register identifier. This is the edge of the cap itself.
+            throw new CalcInstanceTooLargeException(CalcInstanceStore.TooLargeMessage(instance.Name));
+        }
+
         return instance;
+    }
+
+    /// <summary>
+    /// As <see cref="CreateAsync"/>, with the two refusals it throws given as a result, the way <see cref="UpdateInputsAsync(Guid, IEnumerable{CalcInputValue}, CancellationToken)"/>
+    /// gives its: a calculation past the store's 4 MB cap, or a link or attachment the rules do not allow, comes back as <see cref="CalcActionResult.Refused"/> with
+    /// one plain sentence that names the calculation by its title. Nothing is made when it is refused. The new calculation is in <see cref="CalcActionResult.Instance"/>.
+    /// </summary>
+    public async Task<CalcActionResult> TryCreateAsync(string templateReference, Guid? projectId, string name, IEnumerable<CalcInputValue>? inputs = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return CalcActionResult.Ok(await CreateAsync(templateReference, projectId, name, inputs, cancellationToken).ConfigureAwait(false));
+        }
+        catch (Exception ex) when (ex is CalcInstanceTooLargeException or CalcLinkRefusedException)
+        {
+            return CalcActionResult.Refused(ex.Message);
+        }
     }
 
     /// <summary>Replaces the inputs of a draft instance and re-runs it. Refused once the instance is checked or issued.</summary>

@@ -154,15 +154,16 @@ internal static partial class SoakScenarios
         outcome.Fact($"Frame of {nodes.Count:N0} nodes, {members.Count:N0} members, {loads.Count:N0} loads: run (s)", run.Elapsed.TotalSeconds, "0.0");
         outcome.Fact("Frame at its caps: outcome", result.IsBlocked ? $"blocked: {result.Blocks[0].Message}" : $"{result.Outputs.Count} outputs, {result.Checks.Count} checks");
 
-        // Saving it: a saved calculation, or a refusal that says why.
+        // Saving it: a saved calculation, or a refusal that says why. The refusal is a result (C-7h), in one sentence that names the calculation by its title, and makes nothing.
         var project = await host.Host.ProjectDirectory!.CreateAsync("SOAK-5-FRAME", "Soak: frame at its caps");
+        var objectsBefore = (await host.Domain.Repository.ListAllAsync(cancellationToken)).Count;
         var save = Stopwatch.StartNew();
+        CalcActionResult? saved = null;
         Exception? thrown = null;
-        CalcInstance? created = null;
 
         try
         {
-            created = await service.CreateAsync(FrameTemplate, project.Id, "Soak frame at its caps", inputs, cancellationToken);
+            saved = await service.TryCreateAsync(FrameTemplate, project.Id, "Soak frame at its caps", inputs, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -170,7 +171,12 @@ internal static partial class SoakScenarios
         }
 
         save.Stop();
-        outcome.Expect(created is not null || thrown is InvalidOperationException { Message: { Length: > 0 and < 300 } }, () => $"Saving the frame at its caps threw {thrown?.GetType().Name}: {thrown?.Message}");
-        outcome.Fact("Frame at its caps: saved or refused", created is not null ? $"saved ({save.Elapsed.TotalSeconds:0.0} s)" : $"refused after {save.Elapsed.TotalSeconds:0.0} s: {thrown?.Message}");
+        outcome.Expect(thrown is null, () => $"Saving the frame at its caps threw {thrown?.GetType().Name}: {thrown?.Message}");
+        outcome.Expect(saved is { Succeeded: true } || saved is { Reason: { Length: > 0 and < 300 } reason } && reason.Contains("'Soak frame at its caps'", StringComparison.Ordinal) && !reason.Contains(project.Id.ToString("D"), StringComparison.Ordinal), () => $"Saving the frame at its caps was neither saved nor refused in a sentence naming it: {saved?.Reason}");
+
+        if (saved is { Succeeded: false })
+            outcome.Expect((await host.Domain.Repository.ListAllAsync(cancellationToken)).Count == objectsBefore && (await service.Store.ListInstancesAsync(project.Id, cancellationToken)).Count == 0, () => "The refused frame left an Evidence record, a register entry or a calculation behind.");
+
+        outcome.Fact("Frame at its caps: saved or refused", saved is { Succeeded: true } ? $"saved ({save.Elapsed.TotalSeconds:0.0} s)" : $"refused after {save.Elapsed.TotalSeconds:0.0} s: {saved?.Reason ?? thrown?.Message}");
     }
 }
