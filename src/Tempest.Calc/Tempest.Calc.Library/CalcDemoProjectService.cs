@@ -1,5 +1,6 @@
 using System.Text;
 using Tempest.Calc.Sheets;
+using Tempest.Core.Audit;
 using Tempest.Core.EngineeringDomain;
 
 namespace Tempest.Calc.Library;
@@ -42,6 +43,7 @@ public sealed class CalcDemoProjectService
     private readonly CalcInstanceService _service;
     private readonly EngineeringDomainContext _domain;
     private readonly IReadOnlyList<CalcInputValue> _cableTables;
+    private readonly IAuditRecorder? _audit;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     /// <param name="service">The calculation service every calculation of the demonstration is made through.</param>
@@ -50,8 +52,10 @@ public sealed class CalcDemoProjectService
     /// The cable-capacity and device-rating inputs (<c>ampacity</c> and <c>ratings</c>) the motor-supply cable steps need. No build ships real ones; the
     /// composition passes the calculator's own synthetic test tables, which this service labels as invented demonstration data.
     /// </param>
-    public CalcDemoProjectService(CalcInstanceService service, EngineeringDomainContext domain, IReadOnlyList<CalcInputValue> cableTables)
+    /// <param name="audit">Records "Demo.Installed" and "Demo.Removed" (what was made or deleted, and how many) in the audit trail, which a removal never touches; <see langword="null"/> records nothing.</param>
+    public CalcDemoProjectService(CalcInstanceService service, EngineeringDomainContext domain, IReadOnlyList<CalcInputValue> cableTables, IAuditRecorder? audit = null)
     {
+        _audit = audit;
         _service = service ?? throw new ArgumentNullException(nameof(service));
         _domain = domain ?? throw new ArgumentNullException(nameof(domain));
         _cableTables = cableTables ?? throw new ArgumentNullException(nameof(cableTables));
@@ -113,6 +117,7 @@ public sealed class CalcDemoProjectService
 
                 progress?.Report("Checking every calculation runs and is current…");
                 var calculations = await VerifyAsync(projectId.Value, cancellationToken).ConfigureAwait(false);
+                await RecordAsync("Demo.Installed", calculations, packs).ConfigureAwait(false);
 
                 return new CalcDemoOutcome(true, $"Installed the demo project '{CalcDemoProject.DisplayName}': {calculations} calculations in {packs} packs, all drafts with invented data.", calculations, packs);
             }
@@ -273,6 +278,20 @@ public sealed class CalcDemoProjectService
         }
     }
 
+    /// <summary>One audit row for the install or the removal. A removal is the only delete this feature makes, so it is the one that most needs a record that outlives it.</summary>
+    private async Task RecordAsync(string action, int calculations, int packs)
+    {
+        if (_audit is null)
+            return;
+
+        await _audit.RecordAsync(action, new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["Project"] = CalcDemoProject.Identifier,
+            ["Calculations"] = calculations.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            ["Packs"] = packs.ToString(System.Globalization.CultureInfo.InvariantCulture),
+        }).ConfigureAwait(false);
+    }
+
     private static string Sentence(string message) => message.Trim().TrimEnd('.');
 
     // ------------------------------------------------------------------------------------------------------------------------------
@@ -328,6 +347,7 @@ public sealed class CalcDemoProjectService
 
         var (instances, packs, _) = await _service.Store.DeleteDemonstrationRowsAsync(projectId, [CalcDemoProject.StackProfileId, CalcDemoProject.GlandProfileId], cancellationToken).ConfigureAwait(false);
         await DeleteTreeAsync(projectId, cancellationToken).ConfigureAwait(false);
+        await RecordAsync("Demo.Removed", instances, packs).ConfigureAwait(false);
         return new CalcDemoOutcome(true, $"Removed the demo project '{CalcDemoProject.DisplayName}': {instances} calculations and {packs} packs.", instances, packs);
     }
 

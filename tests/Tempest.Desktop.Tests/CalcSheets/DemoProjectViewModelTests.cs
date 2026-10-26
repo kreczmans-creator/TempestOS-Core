@@ -132,8 +132,18 @@ public sealed class DemoProjectViewModelTests
             Assert.Equal(baseline, await RowsAsync(host));
             Assert.Empty(outcomes);
 
+            // While the person decides the actions are off, so a second click cannot ask a second time.
+            Assert.True(model.IsBusy);
+            Assert.False(model.CanInstall);
+            Assert.False(model.CanRemove);
+            await model.InstallAsync();
+            await model.RemoveAsync();
+            Assert.Single(asked);
+
             gate.SetResult(false);
             await running;
+            Assert.False(model.IsBusy);
+            Assert.True(model.CanInstall);
 
             Assert.Equal(baseline, await RowsAsync(host));
             Assert.False(model.IsInstalled);
@@ -258,6 +268,14 @@ public sealed class DemoProjectViewModelTests
             Assert.Empty(await service.Store.ListPacksAsync(demoId));
             Assert.Empty(await service.ListScanProfilesAsync());
 
+            // The audit trail, which a removal never touches, says what was made and what was deleted.
+            var installedRow = Assert.Single(await host.AuditQuery!.QueryAsync(new Tempest.Core.Audit.AuditQueryCriteria(action: "Demo.Installed")));
+            var removedRow = Assert.Single(await host.AuditQuery.QueryAsync(new Tempest.Core.Audit.AuditQueryCriteria(action: "Demo.Removed")));
+            Assert.Equal("60", installedRow.Detail["Calculations"]);
+            Assert.Equal(CalcDemoProject.Identifier, removedRow.Detail["Project"]);
+            Assert.Equal("60", removedRow.Detail["Calculations"]);
+            Assert.Equal("13", removedRow.Detail["Packs"]);
+
             var realAfter = await service.Store.FindInstanceAsync(realCalc.Id);
             Assert.Equal(CalcInstanceStore.Serialise(realBefore!), CalcInstanceStore.Serialise(realAfter!));
             Assert.False(((IDeletable)(await Resolve<EngineeringDomainContext>(host).Repository.FindAsync(real.Id))!).IsDeleted);
@@ -267,6 +285,38 @@ public sealed class DemoProjectViewModelTests
             await Settle();
             Assert.True(FindButton(view, "Install demo project")!.IsEnabled);
             Assert.False(FindButton(view, "Remove demo project")!.IsEnabled);
+        }
+        finally
+        {
+            await host.ShutdownAsync();
+            await host.DisposeAsync();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task A_Real_Project_That_Holds_The_Demo_Number_Is_Refused_In_A_Sentence_Without_Asking_And_Is_Never_Removed()
+    {
+        var host = await StartAsync();
+
+        try
+        {
+            var real = await host.ProjectDirectory!.CreateAsync(CalcDemoProject.Identifier, "A customer's real job");
+            var yes = new Asked(true);
+            var model = new DemoProjectViewModel(host.CalcDemo!, yes.Confirm);
+            var baseline = await RowsAsync(host);
+
+            await model.InstallAsync();
+
+            Assert.Empty(yes.Calls);
+            Assert.Contains("not the demo project", model.Status, StringComparison.Ordinal);
+            Assert.False(model.IsInstalled);
+
+            await model.RemoveAsync();
+
+            Assert.Empty(yes.Calls);
+            Assert.Equal("There is no demo project to remove.", model.Status);
+            Assert.Equal(baseline, await RowsAsync(host));
+            Assert.False(((IDeletable)(await Resolve<EngineeringDomainContext>(host).Repository.FindAsync(real.Id))!).IsDeleted);
         }
         finally
         {

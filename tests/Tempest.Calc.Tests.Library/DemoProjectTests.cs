@@ -575,6 +575,43 @@ public sealed class DemoProjectTests(InstalledDemo demo) : IClassFixture<Install
         AssertSame(before, host.Backing.Snapshot());
     }
 
+    private sealed class RecordingAudit : Tempest.Core.Audit.IAuditRecorder
+    {
+        public List<(string Action, IReadOnlyDictionary<string, string>? Detail)> Rows { get; } = [];
+
+        public Task RecordAsync(string action, IReadOnlyDictionary<string, string>? detail = null, CancellationToken cancellationToken = default)
+        {
+            Rows.Add((action, detail));
+            return Task.CompletedTask;
+        }
+    }
+
+    [Fact]
+    public async Task An_Install_And_A_Removal_Each_Leave_One_Audit_Row_And_A_Refusal_Leaves_None()
+    {
+        var host = DemoHost.New();
+        var audit = new RecordingAudit();
+        var service = new CalcDemoProjectService(host.Service, host.Context, [ConductorSizingCalculator.SyntheticAmpacity(), ConductorSizingCalculator.TypicalRatings()], audit);
+
+        Assert.False((await service.RemoveAsync()).Succeeded);
+        Assert.Empty(audit.Rows);
+
+        var installed = await service.InstallAsync();
+        Assert.True(installed.Succeeded, installed.Message);
+        var row = Assert.Single(audit.Rows);
+        Assert.Equal("Demo.Installed", row.Action);
+        Assert.Equal(CalcDemoProject.Identifier, row.Detail!["Project"]);
+        Assert.Equal(installed.Calculations.ToString(System.Globalization.CultureInfo.InvariantCulture), row.Detail["Calculations"]);
+
+        Assert.False((await service.InstallAsync()).Succeeded);
+        Assert.Single(audit.Rows);
+
+        var removed = await service.RemoveAsync();
+        Assert.True(removed.Succeeded, removed.Message);
+        Assert.Equal(["Demo.Installed", "Demo.Removed"], audit.Rows.Select(r => r.Action).ToArray());
+        Assert.Equal(removed.Packs.ToString(System.Globalization.CultureInfo.InvariantCulture), audit.Rows[1].Detail!["Packs"]);
+    }
+
     [Fact]
     public async Task The_Store_Deletes_Nothing_But_A_Projects_Rows_And_Demonstration_Scan_Profiles()
     {

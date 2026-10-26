@@ -362,7 +362,8 @@ public sealed class WorkspaceHost : IAsyncDisposable
             principals: (Tempest.Core.Identity.IPrincipalDirectory)host.Services!.GetService(typeof(Tempest.Core.Identity.IPrincipalDirectory)));
 
         // Addendum C, C-6: the seeded demonstration project. Built here and never run: nothing at start-up installs it; Settings → Demo project does, when asked.
-        CalcDemo = new Tempest.Calc.Library.CalcDemoProjectService(CalcInstances, domainContext, Tempest.Desktop.CalcSheets.CalcCalculatorComposition.DemoCableTables());
+        CalcDemo = new Tempest.Calc.Library.CalcDemoProjectService(CalcInstances, domainContext, Tempest.Desktop.CalcSheets.CalcCalculatorComposition.DemoCableTables(),
+            (Tempest.Core.Audit.IAuditRecorder)host.Services!.GetService(typeof(Tempest.Core.Audit.IAuditRecorder)));
 
         // One-off sweep (`ADR-0173`): Evidence a worksheet made before the managed marker existed is marked now, so the generic Evidence acts refuse it.
         try

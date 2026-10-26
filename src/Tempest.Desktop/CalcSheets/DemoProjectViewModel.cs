@@ -28,6 +28,7 @@ public sealed class DemoProjectViewModel
     private readonly Func<string, string, string, Task<bool>> _confirm;
     private readonly Func<Guid, bool>? _isOpen;
     private bool _busy;
+    private string? _installRefusal;
 
     /// <param name="service">The demonstration project's install and removal.</param>
     /// <param name="confirm">Asks the person (title, message, confirm button) and answers whether they agreed: the shell's <c>ConfirmationDialog.ConfirmAsync</c>. It must wait for the person; an answer given without them would install or remove the demonstration unasked.</param>
@@ -74,6 +75,7 @@ public sealed class DemoProjectViewModel
         var status = await _service.StatusAsync(cancellationToken).ConfigureAwait(true);
         IsInstalled = status.Installed;
         ProjectId = status.ProjectId;
+        _installRefusal = status.InstallRefusal;
 
         if (!_busy && Status.Length == 0)
             Status = IsInstalled ? $"The demo project '{CalcDemoProject.DisplayName}' is installed." : "The demo project is not installed.";
@@ -81,18 +83,35 @@ public sealed class DemoProjectViewModel
         RaiseChanged();
     }
 
-    /// <summary>"Install demo project": asks, then installs. Does nothing while something runs.</summary>
+    /// <summary>"Install demo project": asks, then installs. Does nothing while an act is asking or running, so a second click cannot ask twice.</summary>
     public async Task InstallAsync(CancellationToken cancellationToken = default)
     {
         if (_busy)
             return;
 
+        _busy = true;
+        RaiseChanged();
+
+        try
+        {
+            await InstallCoreAsync(cancellationToken).ConfigureAwait(true);
+        }
+        finally
+        {
+            _busy = false;
+            RaiseChanged();
+        }
+    }
+
+    private async Task InstallCoreAsync(CancellationToken cancellationToken)
+    {
         Status = string.Empty;
         await RefreshAsync(cancellationToken).ConfigureAwait(true);
 
-        if (IsInstalled)
+        // Refused in a sentence, before the person is asked: it is installed already, or a project of theirs holds the demonstration's number.
+        if (_installRefusal is { } refusal)
         {
-            Finish($"The demo project '{CalcDemoProject.DisplayName}' is installed already; remove it before installing it again.", ActionOutcome.Failed);
+            Finish(refusal, ActionOutcome.Failed);
             return;
         }
 
@@ -111,12 +130,28 @@ public sealed class DemoProjectViewModel
         await RunAsync(progress => _service.InstallAsync(progress, cancellationToken), "Installing the demo project…", cancellationToken).ConfigureAwait(true);
     }
 
-    /// <summary>"Remove demo project": asks, then removes the demonstration and only the demonstration. Does nothing while something runs.</summary>
+    /// <summary>"Remove demo project": asks, then removes the demonstration and only the demonstration. Does nothing while an act is asking or running.</summary>
     public async Task RemoveAsync(CancellationToken cancellationToken = default)
     {
         if (_busy)
             return;
 
+        _busy = true;
+        RaiseChanged();
+
+        try
+        {
+            await RemoveCoreAsync(cancellationToken).ConfigureAwait(true);
+        }
+        finally
+        {
+            _busy = false;
+            RaiseChanged();
+        }
+    }
+
+    private async Task RemoveCoreAsync(CancellationToken cancellationToken)
+    {
         Status = string.Empty;
         await RefreshAsync(cancellationToken).ConfigureAwait(true);
 
@@ -148,7 +183,6 @@ public sealed class DemoProjectViewModel
 
     private async Task RunAsync(Func<IProgress<string>, Task<CalcDemoOutcome>> act, string starting, CancellationToken cancellationToken)
     {
-        _busy = true;
         Status = starting;
         RaiseChanged();
 
@@ -172,10 +206,6 @@ public sealed class DemoProjectViewModel
         {
             // The service reports its own refusals as outcomes; this is the store itself failing, said without a stack trace.
             outcome = new CalcDemoOutcome(false, $"The demo project act failed ({ex.Message.TrimEnd('.')}); nothing more was done.");
-        }
-        finally
-        {
-            _busy = false;
         }
 
         await RefreshAsync(CancellationToken.None).ConfigureAwait(true);
