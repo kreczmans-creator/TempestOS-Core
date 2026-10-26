@@ -496,6 +496,20 @@ public sealed class CalcInstanceStore
             .OrderBy(r => r.Kind, StringComparer.Ordinal).ThenBy(r => r.Title, StringComparer.Ordinal).ToList();
     }
 
+    /// <summary>
+    /// The latest revision of every record, each with whether any of its revisions is licensed (the rule of <see cref="IsLicensedInAnyRevisionAsync"/>),
+    /// from one read of the collection. For a screen that lists every record kind with its counts: asking per kind and per record would read the
+    /// collection once per kind and once more per unlicensed record (Orange O-C-01).
+    /// </summary>
+    public async Task<IReadOnlyList<(CalcDataRecord Record, bool LicensedInAnyRevision)>> ListRecordsWithLicenceAsync(CancellationToken cancellationToken = default)
+    {
+        var all = await _store.ReadAllAsync(RecordCollection, cancellationToken).ConfigureAwait(false);
+        return all.Select(kv => Deserialise<CalcDataRecord>(kv.Value)).OfType<CalcDataRecord>()
+            .GroupBy(r => r.Id)
+            .Select(g => (Record: g.OrderBy(r => r.Revision).Last(), LicensedInAnyRevision: g.Any(r => r.IsLicensed())))
+            .OrderBy(x => x.Record.Kind, StringComparer.Ordinal).ThenBy(x => x.Record.Title, StringComparer.Ordinal).ToList();
+    }
+
     public static string ImportProfileKey(string id, int version) => $"{id}@{version:D6}";
 
     /// <summary>Saves a CAD import mapping profile version (W1). A version is never overwritten: a change is a new version.</summary>

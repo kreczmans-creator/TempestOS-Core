@@ -241,6 +241,39 @@ New findings in this round:
 
 S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.
 
+## Addendum C
+
+> Failure-mode and misuse review of the four Addendum C features (C-3 record import, C-4 verification dashboard, C-5 guided test, C-6 demo installer) at `1474cd0a` on `v0.26.0/addC-reviews-colour`. A throwaway probe class in the Library test project drove the public services the way a hurried or unlucky user would: damaged stored rows, the caps reached, an old database, the demo used across projects. Real SQLite files were used where that matters. The probes were removed afterwards. The Opus review findings of each feature were fixed before its merge and are not repeated.
+
+### Reproduction
+- The Addendum C classes pass: Library 486/486 (record import, dashboard, manual testing, demo, materials, colour regressions) and Desktop 113/113 (guided test, verification dashboard, demo project and watermark, records screen, seeded unit).
+- The demo installs (60 calculations in 13 packs, all drafts, one deliberate FAIL) in 6.1 s and is removed in 0.09 s on the in-memory store.
+
+### Misuse that is caught
+- A record file of 1,001 data rows: refused whole. A file at the cap, 1,000 rows, previews and commits.
+- A title taken between preview and commit: the commit judges the file again against the store and refuses the whole file (`A_Title_Taken_Between_Preview_And_Commit_…`).
+- One bad row among good ones: nothing is saved. A failed write rolls the whole import back.
+- Install demo twice: refused in a sentence, and nothing is made. A real project that holds `DEMO0-PRESS1` is never removed as the demo.
+- Remove while a demo pack or its Evidence is issued: refused, naming it, with nothing deleted.
+- Saving a demo calculation or pack that was open while the demo was removed: refused ("no longer exists"), so it does not come back.
+- The 1,001st guided run: refused, naming the way out ("Delete older finished runs"). Measured on SQLite with 1,000 runs; deleting the 949 older finished runs took 1.4 s.
+- A guided Compare after the form was edited: the comparison and its tick are taken back.
+- An old v0.25.3 or v0.26.0-rc1 database: every new view opens empty, with no error.
+
+### Findings
+
+| ID | Sev | Where | What I did | What happened | What should happen | Status |
+|---|---|---|---|---|---|---|
+| B-C-01 | Medium | `ManualTesting/ManualTestRunService.cs` (`Deserialise`) | Stored a finished run whose `Results` held `null` (and, separately, a result with no step and one with outcome `7`). | `LatestByTemplateAsync`, `PlanTrimAsync`, `ManualTestTally.Of` and the results sheet threw `NullReferenceException`. The dashboard caught it and showed itself empty ("could not be built"). An undefined outcome counted as a Pass. ADR-0175 §3 says an unreadable document is left out instead. | Leave a damaged result out, read a missing note as empty, and never count an undefined outcome. | Fixed in this change; `AddendumCColourRegressionTests.Black_B_C_01_A_Damaged_Result_In_A_Run_Is_Left_Out_And_Stops_No_List_Sheet_Or_Dashboard` |
+| B-C-02 | Low | `CalcInstanceStore.DeleteDemonstrationRowsAsync` | Installed the demo, used its scan profile `demo-press-seal-stack@1` on a calculation in a real project, then removed the demo. | The profile was deleted. The real calculation kept its import record (1 import, no block, not stale), but the profile it names is gone from the profile list, so the import cannot be repeated from the screen. | Keep a profile version that a calculation outside the demo cites (skip it and say so), or refuse the removal naming the calculation. | Open |
+| B-C-03 | Medium | `Tempest.Workspace/Projects/ProjectDirectory.ListAsync` (ADR-0176 follow-up, DC-13) | Removed the demo, then opened the project lists. | The soft-deleted "Demo — Hydraulic Press Cell" stays in the Projects browser and the Reports project picker, because `ListAsync` does not filter deleted projects. After a re-install there are two `DEMO0-PRESS1` entries, one of them empty. | `ListAsync` leaves deleted projects out. `CreateAsync` keeps checking every project, deleted ones included, for a duplicate number. | Open: it changes the project listing the shell and the new-project prompt share, so it is left to a change that tests each surface |
+| B-C-04 | Low | `CalcDemoProjectService.InstallAsync` (cancel path); `DemoProjectViewModel.RunAsync` | Read the cancel path: on `OperationCanceledException` the install calls `RollBackAsync` and ignores its result. | The panel says "The demo project act was cancelled; whatever it had started was undone." even when the clean-up failed and part of the demo is left. The failure path already says "part of it is left". | On cancel, report a partial result (`PartlyDone`) when the clean-up fails, as the failure path does. | Open |
+| B-C-05 | Low | `EngineeringAreaView.OnSelectionChangedAsync` → `CalcRecordsView.RefreshAsync` | Read the open path of the records screen. | The tree's handler is fire-and-forget (`_ = OnSelectionChangedAsync()`), and `RefreshAsync` is not guarded. A store failure while listing the record types becomes an unobserved task: the screen does not change and nothing is said. The dashboard, the guided test and the demo panel each say a sentence. | Run the refresh through the view's own `GuardedAsync`, so the failure is a sentence in its status line. | Open |
+| B-C-06 | Info | `CalcDemoProjectService` (`_gate`) | Two app instances on one database. | The install gate is per process, so both could pass the status check and make two demo projects. Remove takes one at a time. The desktop app is single-user. | Accept, or re-check the number inside the project creation. | Accepted |
+
+### Summary
+Counts: **Medium 2** (B-C-01 fixed, B-C-03 open), **Low 3** (B-C-02, B-C-04, B-C-05), **Info 1**. The features fail safe where it matters: every write path is all or nothing, an issued record is never deleted, and an old database opens empty. What remains are rough edges after a removal (B-C-02, B-C-03) and three places where the person is told less than the code knows (B-C-04, B-C-05; B-C-01 before its fix).
+
 > The sections below were written on `release/v0.27.0` (23–24 October 2026) for the legacy calculator replacement (ADR-0167). The owner decided that nothing ships as 0.27.0: the work is part of v0.26.0 and is kept here, unchanged, as a marked part of this file.
 
 ## v0.27.0 — clean clone (2026-10-23)

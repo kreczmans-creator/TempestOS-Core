@@ -1270,13 +1270,20 @@ public sealed class RecordImportService
             return [];
 
         var result = new List<RecordRequirement>();
+        var kinds = entry.Template.RecordKinds ?? [];
 
-        foreach (var kind in entry.Template.RecordKinds ?? [])
+        if (kinds.Count == 0)
+            return result;
+
+        if (kinds.Any(k => MaterialLibrary.IsMaterial(k.Kind)))
+            await _service.Materials.EnsureSeededAsync(cancellationToken).ConfigureAwait(false);
+
+        // One read of the records for every kind the calculator declares (the worksheet asks this each time a form opens; Orange O-C-02).
+        var byKind = (await _service.Store.ListRecordsAsync(null, cancellationToken).ConfigureAwait(false)).ToLookup(r => r.Kind, StringComparer.Ordinal);
+
+        foreach (var kind in kinds)
         {
-            if (MaterialLibrary.IsMaterial(kind.Kind))
-                await _service.Materials.EnsureSeededAsync(cancellationToken).ConfigureAwait(false);
-
-            var records = await _service.Store.ListRecordsAsync(kind.Kind, cancellationToken).ConfigureAwait(false);
+            var records = byKind[kind.Kind].ToList();
             var present = MaterialLibrary.IsMaterial(kind.Kind)
                 ? records.Count > 0
                 : records.Any(r => HoldsValueFor(r, kind));
@@ -1300,20 +1307,19 @@ public sealed class RecordImportService
     {
         var list = new List<RecordTypeInfo>();
         var entries = _service.Catalogue.Current();
+        var schemas = Schemas().Values.OrderBy(s => s.Title, StringComparer.Ordinal).ThenBy(s => s.Kind, StringComparer.Ordinal).ToList();
 
-        foreach (var schema in Schemas().Values.OrderBy(s => s.Title, StringComparer.Ordinal).ThenBy(s => s.Kind, StringComparer.Ordinal))
+        if (schemas.Any(s => s.IsMaterial))
+            await _service.Materials.EnsureSeededAsync(cancellationToken).ConfigureAwait(false);
+
+        // One read of the records for the whole list, each with whether any of its revisions is licensed (Orange O-C-01: the list read the
+        // collection once per kind, and once more per unlicensed record, so the screen took seconds to open at a thousand records).
+        var byKind = (await _service.Store.ListRecordsWithLicenceAsync(cancellationToken).ConfigureAwait(false)).ToLookup(r => r.Record.Kind, StringComparer.Ordinal);
+
+        foreach (var schema in schemas)
         {
-            if (schema.IsMaterial)
-                await _service.Materials.EnsureSeededAsync(cancellationToken).ConfigureAwait(false);
-
-            var records = await _service.Store.ListRecordsAsync(schema.Kind, cancellationToken).ConfigureAwait(false);
-            var licensed = 0;
-
-            foreach (var record in records)
-            {
-                if (await _service.IsLicensedRecordAsync(record, cancellationToken).ConfigureAwait(false))
-                    licensed++;
-            }
+            var records = byKind[schema.Kind].ToList();
+            var licensed = records.Count(r => r.LicensedInAnyRevision);
 
             var requiredBy = entries
                 .Where(e => (e.Template.RecordKinds ?? []).Any(k => k.Kind == schema.Kind) && RecordRequirements.For(e.Template.Id, schema.Kind).Need == RecordNeed.Required)

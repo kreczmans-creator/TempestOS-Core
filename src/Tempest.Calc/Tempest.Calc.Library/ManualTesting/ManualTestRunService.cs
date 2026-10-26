@@ -367,7 +367,17 @@ public sealed class ManualTestRunService : IManualTestStatusSource
         try
         {
             var run = JsonSerializer.Deserialize<ManualTestRun>(json, Json);
-            return run is { Schema: <= ManualTestRun.CurrentSchema, ScriptVersion: not null, Build: not null, BuildCommit: not null, Tester: not null } ? run with { Results = run.Results ?? [] } : null;
+
+            if (run is not { Schema: <= ManualTestRun.CurrentSchema, ScriptVersion: not null, Build: not null, BuildCommit: not null, Tester: not null })
+                return null;
+
+            // A damaged result (null, with no step, or an outcome no build writes) is left out, and a missing note or values text reads as empty, so one
+            // damaged row cannot stop the run list, the results sheet or the dashboard, nor count as a Pass (Black B-C-01).
+            var results = (run.Results ?? []).OfType<ManualTestStepResult>()
+                .Where(r => r.StepId is not null && Enum.IsDefined(r.Outcome))
+                .Select(r => r.Note is null || r.ValuesShown is null ? r with { Note = r.Note ?? string.Empty, ValuesShown = r.ValuesShown ?? string.Empty } : r)
+                .ToList();
+            return run with { Results = results, TesterId = run.TesterId ?? string.Empty };
         }
         catch (JsonException)
         {
