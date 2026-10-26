@@ -26,8 +26,8 @@ public sealed class MechanicalPortTests
     {
         Gen.Double[1, 500].Sample(p =>
         {
-            var a = CalcRunner.Run(Lug, Defaults(Lug).With(CalcInputValue.Quantity("P", p, "kN")));
-            var b = CalcRunner.Run(Lug, Defaults(Lug).With(CalcInputValue.Quantity("P", 2 * p, "kN")));
+            var a = CalcRunner.Run(Lug, Defaults(Lug).With(CalcInputValue.Quantity("F_lug", p, "kN")));
+            var b = CalcRunner.Run(Lug, Defaults(Lug).With(CalcInputValue.Quantity("F_lug", 2 * p, "kN")));
             return new[] { "u_t", "u_br", "u_to", "u_p", "u_b" }.All(u => Close(b.OutputSi(u), 2 * a.OutputSi(u)));
         }, iter: 40);
     }

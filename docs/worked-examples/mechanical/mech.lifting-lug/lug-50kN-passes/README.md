@@ -6,7 +6,7 @@ A 20 mm lug on a 30 mm pin between 12 mm cheek plates. All five checks pass; the
 
 | Input | Value | Source |
 |---|---|---|
-| `P` | 50 kN | spec: LOAD-SCHEDULE-01 |
+| `F_lug` | 50 kN | spec: LOAD-SCHEDULE-01 |
 | `W` | 100 mm | drawing: DRG-LL-101 rev A |
 | `a` | 40 mm | drawing: DRG-LL-101 rev A |
 | `d_h` | 32 mm | drawing: DRG-LL-101 rev A |
@@ -17,7 +17,7 @@ A 20 mm lug on a 30 mm pin between 12 mm cheek plates. All five checks pass; the
 | `f_v` | 90 MPa | spec: SPEC-MECH-03 design criteria |
 | `f_v_pin` | 150 MPa | spec: SPEC-MECH-03 design criteria |
 | `g` | 2 mm | drawing: DRG-LL-101 rev A |
-| `t` | 20 mm | drawing: DRG-LL-101 rev A |
+| `t_lug` | 20 mm | drawing: DRG-LL-101 rev A |
 | `t_s` | 12 mm | drawing: DRG-LL-101 rev A |
 
 | Output | Expected | Computed | Result |
@@ -27,4 +27,4 @@ A 20 mm lug on a 30 mm pin between 12 mm cheek plates. All five checks pass; the
 | `sigma_b` | 122.61 MPa | 122.608 MPa | PASS |
 | `u_b` | 0.49043  | 0.490433  | PASS |
 
-Governing check: Pin bending — PASS (utilisation 0.49). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Pin bending stress against the allowable pin bending stress — PASS (utilisation 0.49). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

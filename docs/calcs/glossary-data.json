@@ -3265,6 +3265,24 @@
       ]
     },
     {
+      "symbol": "F_lug",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Load on the lug (along the lug)"
+          ],
+          "templates": [
+            "mech.lifting-lug"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "F_n",
       "meanings": [
         {
@@ -5998,7 +6016,7 @@
           "meaning": "",
           "quantity": "Moment, torque",
           "units": [
-            "N·m"
+            "kN·m"
           ],
           "descriptions": [
             "Pin bending moment"
@@ -7216,19 +7234,6 @@
           ],
           "templates": [
             "mech.thin-vessel"
-          ]
-        },
-        {
-          "meaning": "lug-load",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Load on the lug (along the lug)"
-          ],
-          "templates": [
-            "mech.lifting-lug"
           ]
         },
         {
@@ -23594,7 +23599,6 @@
           ],
           "descriptions": [
             "Lug plate thickness t",
-            "Lug thickness",
             "Plate thickness",
             "Thickness",
             "Wall / web / leg thickness t (t_w)",
@@ -23603,7 +23607,6 @@
           ],
           "templates": [
             "bs.plane-wall",
-            "mech.lifting-lug",
             "struct.base-plate",
             "struct.connection-ec3",
             "struct.lifting",
@@ -23982,6 +23985,24 @@
           ],
           "templates": [
             "mech.thin-vessel"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "t_lug",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Lug thickness"
+          ],
+          "templates": [
+            "mech.lifting-lug"
           ]
         }
       ]

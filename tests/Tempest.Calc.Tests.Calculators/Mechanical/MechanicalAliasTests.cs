@@ -12,7 +12,7 @@ public sealed class MechanicalAliasTests
 {
     public static TheoryData<string> TemplateIds => new()
     {
-        MaterialMarginCalculator.Id, FatigueMinerCalculator.Id, Iso286FitCalculator.Id, PressFitCalculator.Id, BearingLifeBasicCalculator.Id, BearingLifeCalculator.Id, BoltGroupCalculator.Id, BoltedJointCalculator.Id,
+        MaterialMarginCalculator.Id, FatigueMinerCalculator.Id, Iso286FitCalculator.Id, PressFitCalculator.Id, BearingLifeBasicCalculator.Id, BearingLifeCalculator.Id, BoltGroupCalculator.Id, BoltedJointCalculator.Id, LiftingLugCalculator.Id,
     };
 
     private static ICalcCalculator Find(string id) => id switch
@@ -25,6 +25,7 @@ public sealed class MechanicalAliasTests
         BearingLifeCalculator.Id => new BearingLifeCalculator(),
         BoltGroupCalculator.Id => new BoltGroupCalculator(),
         BoltedJointCalculator.Id => new BoltedJointCalculator(),
+        LiftingLugCalculator.Id => new LiftingLugCalculator(),
         _ => throw new ArgumentOutOfRangeException(nameof(id), id, "not a template of this test"),
     };
 

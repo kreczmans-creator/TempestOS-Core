@@ -472,9 +472,6 @@
   "internal-design-pressure": [
    "mech.thin-vessel"
   ],
-  "lug-load": [
-   "mech.lifting-lug"
-  ],
   "motor-rated-output-power": [
    "elec.conductor-sizing",
    "elec.motor-start"
@@ -1558,7 +1555,6 @@
  "t": {
   "thickness": [
    "bs.plane-wall",
-   "mech.lifting-lug",
    "struct.base-plate",
    "struct.connection-ec3",
    "struct.lifting",

@@ -145,7 +145,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `L2`: `L2:crank-length` Length (mechanism); `L2:second-run-length` Length (pipe-expansion)
 - `L_req`: `L_req:required-life` Time, rating life (bearing-life, bearing-life-basic); `L_req:required-leg-length` Length (pipe-expansion)
 - `N_Ed`: `N_Ed:axial-force-tension-positive` Force (en1993-member, ltb-interaction); `N_Ed:axial-force-compression-positive` Force (base-plate)
-- `P`: `P:motor-rated-output-power` Power, heat flow (conductor-sizing, motor-start); `P:applied-axial-load` Force (column-buckling); `P:deflection-force` Force (snap-fit); `P:dissipated-power` Power, heat flow (thermal-chain); `P:electrical-input-power` Power, heat flow (load-budget); `P:heat-loss-per-item` Power, heat flow (enclosure-heat); `P:internal-design-pressure` Stress, pressure (thin-vessel); `P:lug-load` Force (lifting-lug); `P:point-load` Force (beam-formulas); `P:total-force` Force (plate-bending)
+- `P`: `P:motor-rated-output-power` Power, heat flow (conductor-sizing, motor-start); `P:applied-axial-load` Force (column-buckling); `P:deflection-force` Force (snap-fit); `P:dissipated-power` Power, heat flow (thermal-chain); `P:electrical-input-power` Power, heat flow (load-budget); `P:heat-loss-per-item` Power, heat flow (enclosure-heat); `P:internal-design-pressure` Stress, pressure (thin-vessel); `P:point-load` Force (beam-formulas); `P:total-force` Force (plate-bending)
 - `P_b`: `P_b:bearing-force` Force (lifting); `P_b:bellows-governing-pressure` Stress, pressure (pipe-expansion)
 - `Q`: `Q:volumetric-flow` Volumetric flow (duct-sizing, pipe-pump, cylinder); `Q:heat-flow` Power, heat flow (heat-exchanger, plane-wall)
 - `R`: `R:radius` Length (containment, thin-vessel, lifting); `R:thermal-resistance` Thermal resistance (insulation, thermal-chain); `R:reliability` Percent quantity (shaft); `R:resistance` Resistance, impedance (voltage-drop)
@@ -208,7 +208,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `rho`: `rho:material-density` Density (shaft, spring, plate-bending); `rho:fluid-density` Density (cylinder); `rho:shear-reduction-factor` Plain number (en1993-member)
 - `s`: `s:fillet-leg` Length (weld-group); `s:move-distance` Plain number (motor-sizing)
 - `sigma`: `sigma:stress` Stress, pressure (material-margin, shaft-stress, thermal-expansion); `sigma:standard-deviation` Length (oring-gland, tolerance-stack)
-- `t`: `t:thickness` Length (plane-wall, lifting-lug, base-plate, connection-ec3, …); `t:time` Time (fault-protection)
+- `t`: `t:thickness` Length (plane-wall, base-plate, connection-ec3, lifting, …); `t:time` Time (fault-protection)
 - `t_2`: `t_2:leaving-dry-bulb-temperature` Temperature (psychrometrics); `t_2:other-ply-thickness` Length (connection-ec3)
 - `t_f`: `t_f:flange-thickness` Length (base-plate, en1993-member, ltb-interaction, section-properties); `t_f:flow-temperature` Temperature (sealed-system)
 - `t_req`: `t_req:required-thickness` Length (thin-vessel, base-plate); `t_req:required-disconnection-time` Time (fault-protection)
@@ -225,7 +225,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `w`: `w:distributed-load` Line force, distributed load, stiffness (beam-formulas); `w:key-width` Length (shaft); `w:mass-per-metre` Mass per length (containment)
 - `y_c`: `y_c:centroid-y` Length (weld-group, section-properties); `y_c:extreme-fibre-distance` Length (beam-formulas)
 
-## All symbols (1409 symbols in 54 templates)
+## All symbols (1411 symbols in 54 templates)
 
 One row per symbol, declared meaning and quantity type. Status `ok` is a symbol with one meaning; `RESOLVE` a symbol with several (phases B and C).
 
@@ -376,6 +376,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `F_k` | — | Plain number | — | Characteristic value (signed, in the effect unit) | struct.load-combinations | ok |
 | `F_leg` | — | Force | N | Force of the leg | bs.pipe-expansion | ok |
 | `F_load` | — | Force | N | External load on the slider (slider-crank). Positive acts in the −x d… | mech.mechanism | ok |
+| `F_lug` | — | Force | kN | Load on the lug (along the lug) | mech.lifting-lug | ok |
 | `F_n` | — | Force | kN | Force normal to the plane of the parts | struct.fillet-weld | ok |
 | `F_op` | — | Force | kN | Out-of-plane component | struct.lifting | ok |
 | `F_p` | — | Force | N | Process force opposing the move (linear) | elec.motor-sizing | ok |
@@ -527,7 +528,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `M_min` | `M_min:minimum-moment` | Moment, torque | kN·m | M min; Minimum (hogging) moment | struct.beam-formulas, struct.frame-2d | ok |
 | `M_min_e1` | — | Moment, torque | kN·m | M min, member 1 | struct.frame-2d | ok |
 | `M_op` | — | Moment, torque | kN·m | Out-of-plane moment | struct.lifting | ok |
-| `M_p` | — | Moment, torque | N·m | Pin bending moment | mech.lifting-lug | ok |
+| `M_p` | — | Moment, torque | kN·m | Pin bending moment | mech.lifting-lug | ok |
 | `M_pl_Rd` | — | Moment, torque | kN·m | Plate plastic moment | struct.base-plate | ok |
 | `M_run` | — | Moment, torque | N·m | Moment at the first run root | bs.pipe-expansion | ok |
 | `M_x` | `M_x:moment-x` | Moment, torque | kN·m | Out-of-plane moment about x (tension on +y side) | mech.bolt-group, mech.weld-group | ok |
@@ -590,16 +591,15 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `Nd` | — | Plain number | — | Design factor N_d of the Design Category (BTH-1 mode; user record) | struct.lifting | ok |
 | `OD` | `OD:pipe-outside-diameter` | Length | mm | Outside diameter of the pipe (optional; the first segment's is offere…; Pipe outside diameter | bs.pipe-expansion, bs.pipe-pump | ok |
 | `OD_max` | — | Length | mm | Largest cable diameter | elec.containment | ok |
-| `P` | `P:motor-rated-output-power` | Power, heat flow | kW | Motor rated output (shaft) power, from the nameplate (E1 P_cont is on…; Rated output (shaft) power; η converts it to input (DC: electrical po… | elec.conductor-sizing, elec.motor-start | RESOLVE (10 meanings) |
-| `P` | `P:applied-axial-load` | Force | kN | Applied axial load | struct.column-buckling | RESOLVE (10 meanings) |
-| `P` | `P:deflection-force` | Force | N | Deflection force | mech.snap-fit | RESOLVE (10 meanings) |
-| `P` | `P:dissipated-power` | Power, heat flow | W | Steady power dissipated (the heat flow through every stage) | elec.thermal-chain | RESOLVE (10 meanings) |
-| `P` | `P:electrical-input-power` | Power, heat flow | kW | Electrical input power | elec.load-budget | RESOLVE (10 meanings) |
-| `P` | `P:heat-loss-per-item` | Power, heat flow | W | Heat loss per item | elec.enclosure-heat | RESOLVE (10 meanings) |
-| `P` | `P:internal-design-pressure` | Stress, pressure | MPa | Internal design pressure | mech.thin-vessel | RESOLVE (10 meanings) |
-| `P` | `P:lug-load` | Force | kN | Load on the lug (along the lug) | mech.lifting-lug | RESOLVE (10 meanings) |
-| `P` | `P:point-load` | Force | kN | Point load (downward) | struct.beam-formulas | RESOLVE (10 meanings) |
-| `P` | `P:total-force` | Force | kN | Total force P (force basis: uniform, patch and ring loads; a ring loa… | struct.plate-bending | RESOLVE (10 meanings) |
+| `P` | `P:motor-rated-output-power` | Power, heat flow | kW | Motor rated output (shaft) power, from the nameplate (E1 P_cont is on…; Rated output (shaft) power; η converts it to input (DC: electrical po… | elec.conductor-sizing, elec.motor-start | RESOLVE (9 meanings) |
+| `P` | `P:applied-axial-load` | Force | kN | Applied axial load | struct.column-buckling | RESOLVE (9 meanings) |
+| `P` | `P:deflection-force` | Force | N | Deflection force | mech.snap-fit | RESOLVE (9 meanings) |
+| `P` | `P:dissipated-power` | Power, heat flow | W | Steady power dissipated (the heat flow through every stage) | elec.thermal-chain | RESOLVE (9 meanings) |
+| `P` | `P:electrical-input-power` | Power, heat flow | kW | Electrical input power | elec.load-budget | RESOLVE (9 meanings) |
+| `P` | `P:heat-loss-per-item` | Power, heat flow | W | Heat loss per item | elec.enclosure-heat | RESOLVE (9 meanings) |
+| `P` | `P:internal-design-pressure` | Stress, pressure | MPa | Internal design pressure | mech.thin-vessel | RESOLVE (9 meanings) |
+| `P` | `P:point-load` | Force | kN | Point load (downward) | struct.beam-formulas | RESOLVE (9 meanings) |
+| `P` | `P:total-force` | Force | kN | Total force P (force basis: uniform, patch and ring loads; a ring loa… | struct.plate-bending | RESOLVE (9 meanings) |
 | `PS` | — | Stress, pressure | bar | Vessel maximum allowable pressure PS, bar gauge (nameplate or relief … | fp.accumulator | ok |
 | `P_0` | — | Force | kN | Equivalent static load | mech.bearing-life | ok |
 | `P_E` | — | Force | kN | Euler load | struct.column-buckling | ok |
@@ -1549,7 +1549,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `sum_R_x` | — | Force | kN | Σ R_x | struct.frame-2d | ok |
 | `sum_R_y` | — | Force | kN | Σ R_y | struct.frame-2d | ok |
 | `swing` | — | Angle | ° | Rocker swing over the sweep | mech.mechanism | ok |
-| `t` | `t:thickness` | Length | mm | Lug plate thickness t; Lug thickness; Plate thickness; … (7 descriptions) | bs.plane-wall, mech.lifting-lug, struct.base-plate, struct.connection-ec3, struct.lifting, struct.plate-bending, struct.section-properties | RESOLVE (2 meanings) |
+| `t` | `t:thickness` | Length | mm | Lug plate thickness t; Plate thickness; Thickness; … (6 descriptions) | bs.plane-wall, struct.base-plate, struct.connection-ec3, struct.lifting, struct.plate-bending, struct.section-properties | RESOLVE (2 meanings) |
 | `t` | `t:time` | Time | s | Time | elec.fault-protection | RESOLVE (2 meanings) |
 | `t_1_out` | — | Temperature | °C | Dry-bulb 1 | bs.psychrometrics | ok |
 | `t_2` | `t_2:leaving-dry-bulb-temperature` | Temperature | °C | Leaving dry-bulb (sensible, cooling) | bs.psychrometrics | RESOLVE (2 meanings) |
@@ -1571,6 +1571,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `t_g` | — | Length | mm | Grout thickness (optional: checks the β_j = 2/3 condition) | struct.base-plate | ok |
 | `t_i` | — | Temperature | °C | Room design temperature (blank = the sheet's room temperature t_i); Room temperature | bs.sealed-system | ok |
 | `t_l` | — | Length | mm | Thickness, longitudinal stress | mech.thin-vessel | ok |
+| `t_lug` | — | Length | mm | Lug thickness | mech.lifting-lug | ok |
 | `t_m` | — | Temperature | °C | Mean water temperature | bs.sealed-system | ok |
 | `t_max` | — | Temperature | °C | Maximum system temperature | bs.sealed-system | ok |
 | `t_move` | — | Time | s | Move time | elec.motor-sizing | ok |

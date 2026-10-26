@@ -26,7 +26,7 @@ public static class MechanicalPortWorkedExamples
 
     private static CalcInputValue[] Lug(double p, double t, double w, double dh, double dp, double a, double ts, double g) =>
     [
-        CalcInputValue.Quantity("P", p, "kN"), CalcInputValue.Quantity("t", t, "mm"), CalcInputValue.Quantity("W", w, "mm"), CalcInputValue.Quantity("d_h", dh, "mm"),
+        CalcInputValue.Quantity("F_lug", p, "kN"), CalcInputValue.Quantity("t_lug", t, "mm"), CalcInputValue.Quantity("W", w, "mm"), CalcInputValue.Quantity("d_h", dh, "mm"),
         CalcInputValue.Quantity("d_p", dp, "mm"), CalcInputValue.Quantity("a", a, "mm"), CalcInputValue.Quantity("t_s", ts, "mm"), CalcInputValue.Quantity("g", g, "mm"),
         CalcInputValue.Quantity("f_t", 150, "MPa"), CalcInputValue.Quantity("f_br", 200, "MPa"), CalcInputValue.Quantity("f_v", 90, "MPa"),
         CalcInputValue.Quantity("f_b_pin", 250, "MPa"), CalcInputValue.Quantity("f_v_pin", 150, "MPa"),
@@ -42,11 +42,11 @@ public static class MechanicalPortWorkedExamples
     public static IReadOnlyList<WorkedExample> All { get; } =
     [
         new(LiftingLugCalculator.Id, "lug-50kN-passes", "Lifting lug, 50 kN — passes, pin bending governs", Legacy("calc.lifting-lug-pin-joint", 1),
-            Sourced("DRG-LL-101", ["P"], LugCriteria, Lug(50, 20, 100, 32, 30, 40, 12, 2)),
+            Sourced("DRG-LL-101", ["F_lug"], LugCriteria, Lug(50, 20, 100, 32, 30, 40, 12, 2)),
             [new CalcExpectedValue("sigma_t", 36.765, "MPa", 5e-5), new CalcExpectedValue("sigma_br", 83.333, "MPa", 5e-5), new CalcExpectedValue("sigma_b", 122.61, "MPa", 5e-5), new CalcExpectedValue("u_b", 0.49043, "", 5e-5)],
             "A 20 mm lug on a 30 mm pin between 12 mm cheek plates. All five checks pass; the pin in bending governs at 0.49, as it often does — the lug plate itself is lightly stressed."),
         new(LiftingLugCalculator.Id, "lug-120kN-fails", "Lifting lug, 120 kN — fails in bearing, tear-out and pin bending", Legacy("calc.lifting-lug-pin-joint", 2),
-            Sourced("DRG-LL-102", ["P"], LugCriteria, Lug(120, 15, 90, 26, 25, 30, 10, 1)),
+            Sourced("DRG-LL-102", ["F_lug"], LugCriteria, Lug(120, 15, 90, 26, 25, 30, 10, 1)),
             [new CalcExpectedValue("sigma_br", 320.00, "MPa", 5e-5), new CalcExpectedValue("tau_to", 133.33, "MPa", 5e-5), new CalcExpectedValue("sigma_b", 381.36, "MPa", 5e-5), new CalcExpectedValue("u_br", 1.6000, "", 5e-5)],
             "The same detail scaled down and loaded to 120 kN. Bearing (1.60), tear-out (1.48) and pin bending (1.53) all fail; bearing governs. A thicker lug fixes the first two; the pin needs a larger diameter."),
 
