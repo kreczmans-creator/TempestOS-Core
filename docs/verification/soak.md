@@ -6,12 +6,12 @@ Addendum C, Track S, item C-7. Scripted runs of the real services over a real SQ
 |---|---|
 | Result | **PASS**: 9 of 9 scenarios clean |
 | Mode | full (`TEMPEST_SOAK=full` runs the specification's numbers) |
-| Date | 2026-10-26 17:11 UTC |
-| Commit | `32422f6fd4` on `c7-fix` |
+| Date | 2026-10-26 19:00 UTC |
+| Commit | `fca18b77b8 (with uncommitted changes)` on `c7-fix2` |
 | Machine | Ubuntu 24.04.5 LTS; X64; 4 logical processors (Intel(R) Xeon(R) Processor @ 2.80GHz); 10.0 GiB available to the runtime; .NET 10.0.13; Server GC off |
 | Database | SQLite in WAL mode in a temporary folder, `PRAGMA synchronous = FULL (the product's setting)`, a fresh database for every pass |
 | Composition | `WorkspaceHost` (the Desktop's own composition, headless): Evidence service, PDF sheet renderer, all 54 calculators, `CalcInstanceService` |
-| Duration | 25.0 minutes for all 9 scenarios, each run twice |
+| Duration | 25.5 minutes for all 9 scenarios, each run twice |
 
 ## Summary
 
@@ -19,15 +19,15 @@ Pass 1 / pass 2 are the same scenario run twice in one process, each over a fres
 
 | Scenario | What ran | Time, s (pass 1 / 2) | Peak working set, MiB | Peak managed, MiB | DB + WAL, MiB | Heap left after disposal, last pass vs pass 1, MiB | Verdict |
 |---|---|---|---|---|---|---|---|
-| 500 calculation instances | Calculations created, run and saved: 500; Templates covered: 54; Database growth per calculation (KB): 19.3 | 25.7 / 30.9 | 288.0 | 71.6 | 23.9 | -2.3 | clean |
-| Chains of depth 20 | Calculations in chains: 420; Steps reported stale after the head changed: 200; Steps updated in order: 200 | 14.7 / 15.6 | 258.8 | 51.7 | 21.3 | 1.5 | clean |
-| 100 revise and supersede cycles | Revisions issued: 101; Edit attempts refused: 1,331; Database growth per issued revision (KB): 180.3 | 20.4 / 17.8 | 325.9 | 74.8 | 32.2 | -1.2 | clean |
-| 1,000 Monte Carlo runs | Engine runs (default samples each): 1,000; Calculator evaluations: 10,000,000; Tornado sweeps: 1,000 | 341.4 / 351.6 | 303.9 | 61.7 | 14.6 | 0.0 | clean |
-| Imports at their size caps | Largest scan table accepted (bytes): 5,242,880; CAD parameters accepted: 5,000; Refusals one past a cap: 16 | 23.4 / 23.1 | 1584.3 | 910.1 | 17.1 | 0.0 | clean |
-| Record import at its caps | Templates imported: 7; Records committed at the caps: 1,000; Refusals one past a cap: 4 | 37.2 / 35.4 | 861.8 | 389.3 | 32.7 | -0.5 | clean |
-| Demo project installed and removed | Install and remove cycles: 20; Install (mean ms): 3781; Database a removal leaves, first cycle (KiB): 780 | 84.7 / 86.6 | 347.9 | 86.3 | 31.2 | 0.0 | clean |
-| Verification dashboard built repeatedly | Reference records in the store: 10,000; Finished guided runs in the store: 1,000; Build on the full store: mean (ms): 807 | 40.7 / 38.8 | 566.7 | 320.2 | 54.7 | 0.0 | clean |
-| Guided test runs to the run cap | Runs made through the service (started, 110 steps recorded, finished): 1,000; Record one step (mean ms): 0.84; Delete older finished runs: deleted, kept (the newest 50 and those holding a template's latest result): 950, 50 | 99.3 / 96.4 | 468.0 | 225.1 | 39.3 | 0.0 | clean |
+| 500 calculation instances | Calculations created, run and saved: 500; Templates covered: 54; Database growth per calculation (KB): 19.1 | 25.4 / 22.3 | 273.5 | 69.3 | 23.7 | -1.8 | clean |
+| Chains of depth 20 | Calculations in chains: 420; Steps reported stale after the head changed: 200; Steps updated in order: 200 | 13.2 / 14.2 | 261.0 | 50.8 | 21.4 | -0.0 | clean |
+| 100 revise and supersede cycles | Revisions issued: 101; Edit attempts refused: 1,331; Database growth per issued revision (KB): 177.8 | 17.6 / 17.5 | 325.8 | 73.0 | 32.2 | -0.1 | clean |
+| 1,000 Monte Carlo runs | Engine runs (default samples each): 1,000; Calculator evaluations: 10,000,000; Tornado sweeps: 1,000 | 333.9 / 336.5 | 302.6 | 61.0 | 14.5 | -0.1 | clean |
+| Imports at their size caps | Largest scan table accepted (bytes): 5,242,880; CAD parameters accepted: 5,000; Refusals one past a cap: 16 | 23.0 / 22.7 | 1407.9 | 910.9 | 17.4 | 0.0 | clean |
+| Record import at its caps | Templates imported: 7; Records committed at the caps: 1,000; Refusals one past a cap: 4 | 38.7 / 38.3 | 650.7 | 366.8 | 32.8 | 0.0 | clean |
+| Demo project installed and removed | Install and remove cycles: 20; Install (mean ms): 4401; Database a removal leaves, first cycle (KiB): 784 | 98.9 / 90.9 | 351.0 | 83.4 | 31.0 | 0.0 | clean |
+| Verification dashboard built repeatedly | Reference records in the store: 10,000; Finished guided runs in the store: 1,000; Build on the full store: mean (ms): 854 | 45.1 / 45.6 | 580.5 | 301.9 | 54.7 | 0.0 | clean |
+| Guided test runs to the run cap | Runs made through the service (started, 110 steps recorded, finished): 1,000; Record one step (mean ms): 0.92; Delete older finished runs: deleted, kept (the newest 50 and those holding a template's latest result): 950, 50 | 109.4 / 124.4 | 479.0 | 199.3 | 39.4 | -0.0 | clean |
 
 ## 500 calculation instances
 
@@ -39,37 +39,38 @@ What ran and what it found (pass 1):
 |---|---|
 | Calculations created, run and saved | 500 |
 | Templates covered | 54 |
-| Database growth per calculation (KB) | 19.3 |
-| Create (mean ms) | 19.3 |
-| Run again (mean ms) | 22.6 |
-| Save again (mean ms) | 8.6 |
-| List the whole project (ms) | 47 |
-| Staleness of the whole project (ms) | 135 |
+| Database growth per calculation (KB) | 19.1 |
+| Create (mean ms) | 18.5 |
+| Run again (mean ms) | 22.5 |
+| Save again (mean ms) | 8.2 |
+| List the whole project (ms) | 89 |
+| Staleness of the whole project (ms) | 121 |
 | Expectations checked | 5,008 (pass 1), 5,008 (pass 2) |
 
 Measurements:
 
 | | Pass 1 | Pass 2 |
 |---|---|---|
-| Scenario time, s | 25.7 | 30.9 |
-| Host start-up, s | 10.2 | 3.7 |
-| Managed heap before, MiB (host running) | 29.1 | 28.0 |
-| Managed heap after, MiB (host running) | 31.6 | 29.4 |
-| Held for the work, MiB | 2.6 | 1.3 |
-| Managed heap after the host is disposed, MiB | 29.5 | 27.1 |
-| Peak managed heap while running, MiB | 71.6 | 65.9 |
-| Peak working set while running, MiB | 269.1 | 288.0 |
-| Process peak working set so far, MiB | 268.5 | 287.2 |
-| tempest.db + WAL before the scenario (the seeded database), MiB | 14.5 | 14.5 |
+| Scenario time, s | 25.4 | 22.3 |
+| Host start-up, s | 7.6 | 2.6 |
+| Managed heap before, MiB (host running) | 29.2 | 30.4 |
+| Managed heap after, MiB (host running) | 31.7 | 30.0 |
+| Held for the work, MiB | 2.6 | -0.4 |
+| Managed heap after the host is disposed, MiB | 29.5 | 27.8 |
+| Peak managed heap while running, MiB | 67.2 | 69.3 |
+| Peak working set while running, MiB | 272.2 | 273.5 |
+| Process peak working set so far, MiB | 271.6 | 272.8 |
+| tempest.db + WAL before the scenario (the seeded database), MiB | 14.4 | 14.5 |
 | tempest.db, MiB | 19.6 | 19.6 |
-| tempest.db-wal, MiB | 4.3 | 4.0 |
+| tempest.db-wal, MiB | 4.1 | 4.0 |
 | tempest.db after shutdown, MiB | 19.7 | 19.7 |
-| Open handles: before the host / before the scenario / after / after dispose | 193 / 259 / 259 / 260 | 260 / 267 / 267 / 260 |
-| Handles on the database files: before / after / after dispose | 7 / 7 / 0 | 7 / 7 / 0 |
-| Generation 2 collections | 4 | 4 |
-| Allocated, GiB | 1.59 | 1.59 |
+| Open handles: before the host / before the scenario / after / after dispose | 193 / 257 / 257 / 260 | 260 / 267 / 267 / 260 |
+| Handles on the database files: before / after / after dispose | 5 / 5 / 0 | 7 / 7 / 0 |
+| Growth within the host: settled heap after the first half of the items / after all of them / added by the second half, MiB (allowed) | 30.9 / 31.8 / +0.9 (4.9, 250 of 500 items) | 29.2 / 30.1 / +1.0 (4.9, 250 of 500 items) |
+| Generation 2 collections | 12 | 12 |
+| Allocated, GiB | 1.60 | 1.59 |
 
-Leak check: the heap left after disposal changed by **-2.3 MiB** from pass 1 to pass 2 (bound +4.0 MiB); no leak, slowdown or handle growth found.
+Leak check: the heap left after disposal changed by **-1.8 MiB** from pass 1 to pass 2 (bound +4.0 MiB); no leak, slowdown or handle growth found.
 
 No failed expectation, no stale-flag error, no immutability breach, no leak.
 
@@ -86,34 +87,35 @@ What ran and what it found (pass 1):
 | Calculations in chains | 420 |
 | Steps reported stale after the head changed | 200 |
 | Steps updated in order | 200 |
-| Link a step (mean ms) | 10.4 |
-| Update a step (mean ms) | 10.4 |
-| Staleness query (mean ms) | 9.0 |
+| Link a step (mean ms) | 9.1 |
+| Update a step (mean ms) | 9.9 |
+| Staleness query (mean ms) | 8.0 |
 | Expectations checked | 2,490 (pass 1), 2,490 (pass 2) |
 
 Measurements:
 
 | | Pass 1 | Pass 2 |
 |---|---|---|
-| Scenario time, s | 14.7 | 15.6 |
-| Host start-up, s | 3.5 | 3.5 |
-| Managed heap before, MiB (host running) | 27.9 | 27.9 |
-| Managed heap after, MiB (host running) | 29.4 | 29.4 |
-| Held for the work, MiB | 1.5 | 1.5 |
-| Managed heap after the host is disposed, MiB | 27.5 | 29.0 |
-| Peak managed heap while running, MiB | 51.6 | 51.7 |
-| Peak working set while running, MiB | 258.3 | 258.8 |
-| Process peak working set so far, MiB | 287.2 | 287.2 |
-| tempest.db + WAL before the scenario (the seeded database), MiB | 14.5 | 14.4 |
-| tempest.db, MiB | 17.3 | 17.3 |
+| Scenario time, s | 13.2 | 14.2 |
+| Host start-up, s | 2.4 | 2.6 |
+| Managed heap before, MiB (host running) | 28.2 | 28.1 |
+| Managed heap after, MiB (host running) | 29.5 | 29.5 |
+| Held for the work, MiB | 1.3 | 1.4 |
+| Managed heap after the host is disposed, MiB | 27.7 | 27.6 |
+| Peak managed heap while running, MiB | 50.8 | 49.5 |
+| Peak working set while running, MiB | 257.4 | 261.0 |
+| Process peak working set so far, MiB | 272.8 | 272.8 |
+| tempest.db + WAL before the scenario (the seeded database), MiB | 14.5 | 14.3 |
+| tempest.db, MiB | 17.3 | 17.4 |
 | tempest.db-wal, MiB | 4.0 | 4.0 |
 | tempest.db after shutdown, MiB | 17.4 | 17.4 |
 | Open handles: before the host / before the scenario / after / after dispose | 260 / 267 / 267 / 260 | 260 / 267 / 267 / 260 |
 | Handles on the database files: before / after / after dispose | 7 / 7 / 0 | 7 / 7 / 0 |
-| Generation 2 collections | 0 | 0 |
+| Growth within the host: settled heap after the first half of the items / after all of them / added by the second half, MiB (allowed) | 29.4 / 30.1 / +0.7 (4.3, 210 of 420 items) | 29.4 / 30.1 / +0.7 (4.3, 210 of 420 items) |
+| Generation 2 collections | 8 | 8 |
 | Allocated, GiB | 2.30 | 2.30 |
 
-Leak check: the heap left after disposal changed by **+1.5 MiB** from pass 1 to pass 2 (bound +4.0 MiB); no leak, slowdown or handle growth found.
+Leak check: the heap left after disposal changed by **-0.0 MiB** from pass 1 to pass 2 (bound +4.0 MiB); no leak, slowdown or handle growth found.
 
 No failed expectation, no stale-flag error, no immutability breach, no leak.
 
@@ -126,10 +128,10 @@ What ran and what it found (pass 1):
 | | |
 |---|---|
 | Revisions issued | 101 |
-| Database growth per issued revision (KB) | 180.3 |
-| Revise → supersede (mean ms) | 42.1 |
-| Check (mean ms) | 14.6 |
-| Issue incl. PDF sheet (mean ms) | 108.2 |
+| Database growth per issued revision (KB) | 177.8 |
+| Revise → supersede (mean ms) | 29.4 |
+| Check (mean ms) | 12.0 |
+| Issue incl. PDF sheet (mean ms) | 98.7 |
 | Edit attempts refused | 1,331 |
 | Immutability checks of issued revisions | 6,468 |
 | Longest revision label (characters) | 76 |
@@ -140,25 +142,26 @@ Measurements:
 
 | | Pass 1 | Pass 2 |
 |---|---|---|
-| Scenario time, s | 20.4 | 17.8 |
-| Host start-up, s | 5.4 | 3.3 |
-| Managed heap before, MiB (host running) | 29.8 | 30.9 |
-| Managed heap after, MiB (host running) | 31.3 | 31.1 |
+| Scenario time, s | 17.6 | 17.5 |
+| Host start-up, s | 2.7 | 2.7 |
+| Managed heap before, MiB (host running) | 28.1 | 29.2 |
+| Managed heap after, MiB (host running) | 29.6 | 29.4 |
 | Held for the work, MiB | 1.5 | 0.3 |
-| Managed heap after the host is disposed, MiB | 30.4 | 29.2 |
-| Peak managed heap while running, MiB | 70.2 | 74.8 |
-| Peak working set while running, MiB | 320.4 | 325.9 |
-| Process peak working set so far, MiB | 319.7 | 325.1 |
-| tempest.db + WAL before the scenario (the seeded database), MiB | 14.4 | 14.5 |
-| tempest.db, MiB | 28.1 | 27.9 |
-| tempest.db-wal, MiB | 4.2 | 4.2 |
+| Managed heap after the host is disposed, MiB | 28.7 | 28.6 |
+| Peak managed heap while running, MiB | 68.9 | 73.0 |
+| Peak working set while running, MiB | 324.9 | 325.8 |
+| Process peak working set so far, MiB | 324.7 | 325.5 |
+| tempest.db + WAL before the scenario (the seeded database), MiB | 14.5 | 14.5 |
+| tempest.db, MiB | 27.9 | 28.1 |
+| tempest.db-wal, MiB | 4.1 | 4.1 |
 | tempest.db after shutdown, MiB | 28.6 | 28.6 |
 | Open handles: before the host / before the scenario / after / after dispose | 260 / 267 / 267 / 260 | 260 / 267 / 267 / 260 |
 | Handles on the database files: before / after / after dispose | 7 / 7 / 0 | 7 / 7 / 0 |
-| Generation 2 collections | 9 | 9 |
-| Allocated, GiB | 2.39 | 2.38 |
+| Growth within the host: settled heap after the first half of the items / after all of them / added by the second half, MiB (allowed) | 29.5 / 29.7 / +0.2 (1.8, 50 of 101 items) | 29.5 / 29.6 / +0.1 (1.8, 50 of 101 items) |
+| Generation 2 collections | 17 | 16 |
+| Allocated, GiB | 2.39 | 2.39 |
 
-Leak check: the heap left after disposal changed by **-1.2 MiB** from pass 1 to pass 2 (bound +4.0 MiB); no leak, slowdown or handle growth found.
+Leak check: the heap left after disposal changed by **-0.1 MiB** from pass 1 to pass 2 (bound +4.0 MiB); no leak, slowdown or handle growth found.
 
 No failed expectation, no stale-flag error, no immutability breach, no leak.
 
@@ -172,41 +175,42 @@ What ran and what it found (pass 1):
 |---|---|
 | Engine runs (default samples each) | 1,000 |
 | Engine samples drawn | 10,000,000 |
-| Engine runs, total seconds | 4.4 |
-| Engine run at its 1,000,000-sample cap (ms) | 438 |
+| Engine runs, total seconds | 4.7 |
+| Engine run at its 1,000,000-sample cap (ms) | 452 |
 | Calculator runs | 1,000 |
 | Samples per calculator run | 10,000 |
 | Calculator evaluations | 10,000,000 |
-| Calculator runs, total seconds | 333.1 |
-| Calculator evaluation (mean µs) | 33.3 |
-| Calculator run at its 100,000-sample cap (s) | 3.3 |
+| Calculator runs, total seconds | 325.6 |
+| Calculator evaluation (mean µs) | 32.6 |
+| Calculator run at its 100,000-sample cap (s) | 3.1 |
 | Tornado sweeps | 1,000 |
-| Tornado sweeps, total seconds | 0.18 |
+| Tornado sweeps, total seconds | 0.13 |
 | Expectations checked | 7,022 (pass 1), 7,022 (pass 2) |
 
 Measurements:
 
 | | Pass 1 | Pass 2 |
 |---|---|---|
-| Scenario time, s | 341.4 | 351.6 |
-| Host start-up, s | 2.8 | 3.7 |
-| Managed heap before, MiB (host running) | 29.7 | 29.7 |
-| Managed heap after, MiB (host running) | 29.2 | 29.2 |
+| Scenario time, s | 333.9 | 336.5 |
+| Host start-up, s | 3.0 | 3.1 |
+| Managed heap before, MiB (host running) | 29.0 | 28.9 |
+| Managed heap after, MiB (host running) | 28.5 | 28.4 |
 | Held for the work, MiB | -0.5 | -0.5 |
-| Managed heap after the host is disposed, MiB | 28.8 | 28.8 |
-| Peak managed heap while running, MiB | 61.7 | 61.7 |
-| Peak working set while running, MiB | 303.9 | 301.3 |
-| Process peak working set so far, MiB | 325.1 | 325.1 |
-| tempest.db + WAL before the scenario (the seeded database), MiB | 14.6 | 14.5 |
-| tempest.db, MiB | 10.7 | 11.1 |
-| tempest.db-wal, MiB | 4.0 | 0.0 |
+| Managed heap after the host is disposed, MiB | 28.2 | 28.1 |
+| Peak managed heap while running, MiB | 61.0 | 60.9 |
+| Peak working set while running, MiB | 302.0 | 302.6 |
+| Process peak working set so far, MiB | 325.5 | 325.5 |
+| tempest.db + WAL before the scenario (the seeded database), MiB | 14.5 | 14.4 |
+| tempest.db, MiB | 10.5 | 11.1 |
+| tempest.db-wal, MiB | 3.9 | 0.0 |
 | tempest.db after shutdown, MiB | 11.1 | 11.1 |
 | Open handles: before the host / before the scenario / after / after dispose | 260 / 267 / 267 / 260 | 260 / 267 / 265 / 260 |
 | Handles on the database files: before / after / after dispose | 7 / 7 / 0 | 7 / 5 / 0 |
-| Generation 2 collections | 3 | 3 |
+| Growth within the host: settled heap after the first half of the items / after all of them / added by the second half, MiB (allowed) | 29.0 / 29.0 / +0.0 (8.8, 500 of 1,000 items) | 28.9 / 28.9 / +0.0 (8.8, 500 of 1,000 items) |
+| Generation 2 collections | 11 | 11 |
 | Allocated, GiB | 90.14 | 90.14 |
 
-Leak check: the heap left after disposal changed by **+0.0 MiB** from pass 1 to pass 2 (bound +4.0 MiB); no leak, slowdown or handle growth found.
+Leak check: the heap left after disposal changed by **-0.1 MiB** from pass 1 to pass 2 (bound +4.0 MiB); no leak, slowdown or handle growth found.
 
 No failed expectation, no stale-flag error, no immutability breach, no leak.
 
@@ -229,30 +233,30 @@ What ran and what it found (pass 1):
 | Refused: parameter CSV of 5,001 parameters (one over the parameter cap) | The file holds more than 5000 parameters. |
 | Refused: expression file one byte over the 5 MB cap (through the reader) | The file is larger than 5 MB and was not read. |
 | Refused: expression file one byte over the 5 MB cap (straight to the importer) | The file is larger than 5 MB and was not read. |
-| Inputs CSV at the cap: 10,000 rows, 1,000,000 bytes, read in (ms) | 102 |
+| Inputs CSV at the cap: 10,000 rows, 1,000,000 bytes, read in (ms) | 173 |
 | Refused: inputs CSV of 1,000,001 bytes (one over the 1 MB cap) | The file is larger than 1000 kB and was not read. |
 | Refused: inputs CSV of 10,001 rows with a final line break (one over the row cap) | The file has more than 10000 rows; only the first 10000 were read. |
 | Refused: inputs CSV of 10,001 rows with no final line break (one over the row cap) | The file has more than 10000 rows; only the first 10000 were read. |
-| Imported table saved and read back, calculation run (ms) | 136 |
-| Frame of 2,000 nodes, 3,910 members, 20,000 loads: run (s) | 5.6 |
+| Imported table saved and read back, calculation run (ms) | 75 |
+| Frame of 2,000 nodes, 3,910 members, 20,000 loads: run (s) | 5.3 |
 | Frame at its caps: outcome | 13 outputs, 0 checks |
-| Frame at its caps: saved or refused | refused after 5.4 s: Calculation 'Soak frame at its caps' is larger than 4 MB and was not saved; take some of its table rows out and save it again. |
-| Reference record at its caps: saved in (ms) | 25 |
+| Frame at its caps: saved or refused | refused after 5.3 s: Calculation 'Soak frame at its caps' is larger than 4 MB and was not saved; take some of its table rows out and save it again. |
+| Reference record at its caps: saved in (ms) | 39 |
 | Refused: reference record with 201 values | A reference record holds between 1 and 200 values. |
 | Refused: reference record with 501 table rows | A table in a reference record holds at most 500 rows. |
 | Refused: reference record with 51 cells in a row | A row of a reference record holds at most 50 cells of at most 200 characters. |
 | Refused: reference record with a 201-character text | A reference record's symbols, texts and units are at most 200 characters. |
-| Record of 200 tables of 500 × 50 cells | refused: Reference record 'dd0e7e0581da416688550d5d52d4a01e' is larger than 4 MB and was not written. |
+| Record of 200 tables of 500 × 50 cells | refused: Reference record 'Soak table record' is larger than 4 MB and was not written. |
 | Largest scan table accepted (bytes) | 5,242,880 |
 | Largest scan table accepted (rows) | 136,188 |
 | Scan table at the row cap (rows, header included) | 1,000,000 |
 | Largest CAD expression file accepted (bytes) | 5,242,880 |
 | CAD parameters accepted | 5,000 |
 | Refusals one past a cap | 16 |
-| Import timing | scan 5,242,880 bytes, 136,188 rows: preview 0.9 s |
-| Import timing | scan apply 0.8 s |
+| Import timing | scan 5,242,880 bytes, 136,188 rows: preview 1.0 s |
+| Import timing | scan apply 0.9 s |
 | Import timing | scan 4,000,000 bytes, 1,000,000 rows: preview 3.3 s |
-| Import timing | CAD expression file 5,242,880 bytes, 5,000 parameters: preview 0.2 s |
+| Import timing | CAD expression file 5,242,880 bytes, 5,000 parameters: preview 0.1 s |
 | Import timing | CAD parameter CSV 85,015 bytes, 5,000 parameters: preview 0.1 s |
 | Expectations checked | 79 (pass 1), 79 (pass 2) |
 
@@ -260,23 +264,24 @@ Measurements:
 
 | | Pass 1 | Pass 2 |
 |---|---|---|
-| Scenario time, s | 23.4 | 23.1 |
-| Host start-up, s | 3.3 | 3.1 |
-| Managed heap before, MiB (host running) | 29.6 | 44.0 |
-| Managed heap after, MiB (host running) | 44.0 | 44.0 |
-| Held for the work, MiB | 14.4 | 0.0 |
-| Managed heap after the host is disposed, MiB | 43.6 | 43.6 |
-| Peak managed heap while running, MiB | 909.8 | 910.1 |
-| Peak working set while running, MiB | 1204.7 | 1584.3 |
-| Process peak working set so far, MiB | 1204.1 | 1583.9 |
-| tempest.db + WAL before the scenario (the seeded database), MiB | 14.4 | 14.7 |
-| tempest.db, MiB | 11.9 | 12.8 |
-| tempest.db-wal, MiB | 4.1 | 4.3 |
+| Scenario time, s | 23.0 | 22.7 |
+| Host start-up, s | 3.1 | 2.8 |
+| Managed heap before, MiB (host running) | 28.9 | 43.4 |
+| Managed heap after, MiB (host running) | 43.3 | 43.3 |
+| Held for the work, MiB | 14.4 | -0.1 |
+| Managed heap after the host is disposed, MiB | 42.9 | 42.9 |
+| Peak managed heap while running, MiB | 910.9 | 909.4 |
+| Peak working set while running, MiB | 1318.5 | 1407.9 |
+| Process peak working set so far, MiB | 1317.9 | 1407.3 |
+| tempest.db + WAL before the scenario (the seeded database), MiB | 14.5 | 14.5 |
+| tempest.db, MiB | 12.8 | 11.9 |
+| tempest.db-wal, MiB | 4.7 | 4.0 |
 | tempest.db after shutdown, MiB | 12.8 | 12.8 |
 | Open handles: before the host / before the scenario / after / after dispose | 260 / 267 / 269 / 262 | 262 / 269 / 269 / 262 |
 | Handles on the database files: before / after / after dispose | 7 / 7 / 0 | 7 / 7 / 0 |
-| Generation 2 collections | 13 | 3 |
-| Allocated, GiB | 10.14 | 10.12 |
+| Growth within the host: settled heap after the first half of the items / after all of them / added by the second half, MiB (allowed) | not measured (a few large steps, not a repeated item) | not measured (a few large steps, not a repeated item) |
+| Generation 2 collections | 11 | 10 |
+| Allocated, GiB | 10.13 | 10.12 |
 
 Leak check: the heap left after disposal changed by **+0.0 MiB** from pass 1 to pass 2 (bound +4.0 MiB); no leak, slowdown or handle growth found.
 
@@ -290,10 +295,10 @@ What ran and what it found (pass 1):
 
 | | |
 |---|---|
-| File at the caps: preview (ms) | 433 |
-| File at the caps: commit (ms) | 494 |
+| File at the caps: preview (ms) | 416 |
+| File at the caps: commit (ms) | 499 |
 | Refused: a file one byte over the 5 MB cap | The file is larger than 5 MB and was not read. |
-| Refused: a file of 1,002 rows (one over the 1,001-row cap, the header among them) | The file has more than 1001 rows. |
+| Refused: a file of 1,002 rows (one over the 1,001-row cap, the header among them) | The file has more than 1,000 data rows; split it into files of at most 1,000 rows, each with the header. |
 | Refused: a file of 65 columns (one over the 64-column cap) | Line 1 has more than 64 columns. |
 | Refused: a field of 4,097 characters (one over the 4,096-character cap) | A field on line 2 is longer than 4096 characters. |
 | Also refused: a 4,096-character designation (past the 200 characters a record's text may hold) | Error, line 4, designation: designation: the text is longer than 200 characters. |
@@ -305,46 +310,47 @@ What ran and what it found (pass 1):
 | Licensed record: revisions saved | 101 |
 | Licensed record: attempts to release it accepted | 0 |
 | Licensed record: revisions that exported | 0 |
-| Licensed record: seconds for the revisions | 27.1 |
+| Licensed record: seconds for the revisions | 28.1 |
 | Templates imported | 7 |
 | Records committed at the caps | 1,000 |
 | Refusals one past a cap | 4 |
-| Database growth per record (KB) | 3.4 |
-| Import timing | template 24, 1,000 rows, 1,000 record(s): preview 76 ms, commit 110 ms |
-| Import timing | template 12, 1,000 rows, 1,000 record(s): preview 83 ms, commit 167 ms |
-| Import timing | template 06, 1,000 rows, 1,000 record(s): preview 164 ms, commit 176 ms |
-| Import timing | template 04, 60 rows, 1 record(s): preview 137 ms, commit 83 ms |
-| Import timing | template 02, 40 rows, 1 record(s): preview 140 ms, commit 79 ms |
-| Import timing | template 45, 12 rows, 1 record(s): preview 152 ms, commit 68 ms |
-| Import timing | template 62, 300 rows, 300 record(s): preview 219 ms, commit 224 ms |
-| Import timing | file at the caps (5,242,880 bytes, 1,001 rows, 64 columns, 4,096-character fields): preview 433 ms, commit 494 ms |
+| Database growth per record (KB) | 4.1 |
+| Import timing | template 24, 1,000 rows, 1,000 record(s): preview 79 ms, commit 145 ms |
+| Import timing | template 12, 1,000 rows, 1,000 record(s): preview 128 ms, commit 193 ms |
+| Import timing | template 06, 1,000 rows, 1,000 record(s): preview 194 ms, commit 259 ms |
+| Import timing | template 04, 60 rows, 1 record(s): preview 118 ms, commit 82 ms |
+| Import timing | template 02, 40 rows, 1 record(s): preview 188 ms, commit 78 ms |
+| Import timing | template 45, 12 rows, 1 record(s): preview 103 ms, commit 83 ms |
+| Import timing | template 62, 300 rows, 300 record(s): preview 270 ms, commit 230 ms |
+| Import timing | file at the caps (5,242,880 bytes, 1,001 rows, 64 columns, 4,096-character fields): preview 416 ms, commit 499 ms |
 | Expectations checked | 357 (pass 1), 357 (pass 2), 357 (pass 3) |
 
 Measurements:
 
 | | Pass 1 | Pass 2 | Pass 3 |
 |---|---|---|---|
-| Scenario time, s | 37.2 | 35.4 | 36.4 |
-| Host start-up, s | 3.1 | 3.4 | 2.7 |
-| Managed heap before, MiB (host running) | 44.1 | 30.1 | 30.1 |
-| Managed heap after, MiB (host running) | 29.7 | 29.7 | 29.7 |
+| Scenario time, s | 38.7 | 38.3 | 38.0 |
+| Host start-up, s | 3.3 | 3.5 | 5.0 |
+| Managed heap before, MiB (host running) | 43.4 | 29.4 | 29.4 |
+| Managed heap after, MiB (host running) | 29.0 | 29.0 | 29.0 |
 | Held for the work, MiB | -14.4 | -0.4 | -0.4 |
-| Managed heap after the host is disposed, MiB | 29.3 | 29.3 | 28.8 |
-| Peak managed heap while running, MiB | 385.9 | 389.3 | 372.3 |
-| Peak working set while running, MiB | 861.8 | 657.6 | 649.4 |
-| Process peak working set so far, MiB | 1583.9 | 1583.9 | 1583.9 |
-| tempest.db + WAL before the scenario (the seeded database), MiB | 14.4 | 14.5 | 14.6 |
-| tempest.db, MiB | 24.8 | 24.8 | 24.7 |
-| tempest.db-wal, MiB | 4.6 | 4.5 | 7.9 |
+| Managed heap after the host is disposed, MiB | 28.6 | 28.6 | 28.6 |
+| Peak managed heap while running, MiB | 366.6 | 366.8 | 364.5 |
+| Peak working set while running, MiB | 649.7 | 642.4 | 650.7 |
+| Process peak working set so far, MiB | 1407.3 | 1407.3 | 1407.3 |
+| tempest.db + WAL before the scenario (the seeded database), MiB | 14.6 | 14.5 | 14.6 |
+| tempest.db, MiB | 24.8 | 24.7 | 24.8 |
+| tempest.db-wal, MiB | 8.0 | 4.5 | 8.0 |
 | tempest.db after shutdown, MiB | 25.0 | 25.0 | 25.0 |
 | Open handles: before the host / before the scenario / after / after dispose | 262 / 269 / 269 / 262 | 262 / 269 / 269 / 262 | 262 / 269 / 269 / 262 |
 | Handles on the database files: before / after / after dispose | 7 / 7 / 0 | 7 / 7 / 0 | 7 / 7 / 0 |
-| Generation 2 collections | 43 | 44 | 45 |
-| Allocated, GiB | 9.51 | 9.51 | 9.51 |
+| Growth within the host: settled heap after the first half of the items / after all of them / added by the second half, MiB (allowed) | 159.7 / 159.3 / -0.4 (1.8, 50 of 100 items) | 159.7 / 159.3 / -0.4 (1.8, 50 of 100 items) | 159.7 / 159.3 / -0.4 (1.8, 50 of 100 items) |
+| Generation 2 collections | 50 | 50 | 51 |
+| Allocated, GiB | 9.81 | 9.81 | 9.81 |
 
-Leak check: the heap left after disposal changed by **-0.5 MiB** from pass 1 to pass 3 (bound +4.0 MiB); no leak, slowdown or handle growth found.
+Leak check: the heap left after disposal changed by **+0.0 MiB** from pass 1 to pass 3 (bound +4.0 MiB); no leak, slowdown or handle growth found.
 
-A third pass was run because pass 2 left the heap 0.0 MiB above pass 1. Pass 3 left it -0.5 MiB above pass 2, so the heap did not keep growing: a one-off step (buffers the runtime keeps for a while), not a leak.
+A third pass was run because pass 2 left the heap 0.0 MiB above pass 1. Pass 3 left it 0.0 MiB above pass 2, so the heap did not keep growing: a one-off step (buffers the runtime keeps for a while), not a leak.
 
 No failed expectation, no stale-flag error, no immutability breach, no leak.
 
@@ -358,17 +364,17 @@ What ran and what it found (pass 1):
 |---|---|
 | Install and remove cycles | 20 |
 | Calculations and packs per install | 60 and 13 |
-| Install (mean ms) | 3781 |
-| Install (first / last ms) | 3883 / 3916 |
-| Remove (mean ms) | 210 |
-| Remove (first / last ms) | 229 / 191 |
-| Database an install adds (KiB) | 1276 |
+| Install (mean ms) | 4401 |
+| Install (first / last ms) | 4076 / 3750 |
+| Remove (mean ms) | 271 |
+| Remove (first / last ms) | 191 / 181 |
+| Database an install adds (KiB) | 1272 |
 | Calculation and pack documents an install writes and a removal deletes (KiB) | 524 |
-| Database a removal gives back (KiB) | 496 |
-| Database a removal leaves, first cycle (KiB) | 780 |
-| Database a removal leaves per soft-deleted object (KiB) | 5.8 |
-| Database a removal leaves, after the last cycle (KiB, whole) | 14600 |
-| Bound on what the cycles leave (KiB) | 19564 |
+| Database a removal gives back (KiB) | 488 |
+| Database a removal leaves, first cycle (KiB) | 784 |
+| Database a removal leaves per soft-deleted object (KiB) | 5.9 |
+| Database a removal leaves, after the last cycle (KiB, whole) | 14648 |
+| Bound on what the cycles leave (KiB) | 19664 |
 | Soft-deleted objects kept per removal | 134 |
 | Real project documents compared after every install and removal | 9 |
 | Removal with an issued calculation | refused: The demo project was not removed: 'DEMO — Blank-stack tamper: Tamper cam' is issued, and an issued calculation is never deleted. |
@@ -378,23 +384,24 @@ Measurements:
 
 | | Pass 1 | Pass 2 |
 |---|---|---|
-| Scenario time, s | 84.7 | 86.6 |
-| Host start-up, s | 2.8 | 2.6 |
-| Managed heap before, MiB (host running) | 29.6 | 30.5 |
-| Managed heap after, MiB (host running) | 35.3 | 35.3 |
-| Held for the work, MiB | 5.7 | 4.7 |
-| Managed heap after the host is disposed, MiB | 29.8 | 29.8 |
-| Peak managed heap while running, MiB | 80.9 | 86.3 |
-| Peak working set while running, MiB | 347.9 | 347.1 |
-| Process peak working set so far, MiB | 1583.9 | 1583.9 |
+| Scenario time, s | 98.9 | 90.9 |
+| Host start-up, s | 3.1 | 2.5 |
+| Managed heap before, MiB (host running) | 29.4 | 30.3 |
+| Managed heap after, MiB (host running) | 35.1 | 35.0 |
+| Held for the work, MiB | 5.6 | 4.7 |
+| Managed heap after the host is disposed, MiB | 29.6 | 29.6 |
+| Peak managed heap while running, MiB | 83.4 | 83.4 |
+| Peak working set while running, MiB | 350.9 | 351.0 |
+| Process peak working set so far, MiB | 1407.3 | 1407.3 |
 | tempest.db + WAL before the scenario (the seeded database), MiB | 14.5 | 14.5 |
-| tempest.db, MiB | 26.9 | 26.8 |
-| tempest.db-wal, MiB | 4.4 | 4.5 |
-| tempest.db after shutdown, MiB | 27.1 | 27.1 |
+| tempest.db, MiB | 26.8 | 26.8 |
+| tempest.db-wal, MiB | 4.0 | 4.2 |
+| tempest.db after shutdown, MiB | 27.2 | 27.2 |
 | Open handles: before the host / before the scenario / after / after dispose | 262 / 269 / 270 / 262 | 262 / 269 / 270 / 262 |
 | Handles on the database files: before / after / after dispose | 7 / 8 / 0 | 7 / 8 / 0 |
-| Generation 2 collections | 5 | 5 |
-| Allocated, GiB | 16.11 | 16.11 |
+| Growth within the host: settled heap after the first half of the items / after all of them / added by the second half, MiB (allowed) | 35.4 / 37.9 / +2.5 (12.4, 730 of 1,460 items) | 35.4 / 37.9 / +2.4 (12.4, 730 of 1,460 items) |
+| Generation 2 collections | 11 | 11 |
+| Allocated, GiB | 16.24 | 16.24 |
 
 Leak check: the heap left after disposal changed by **+0.0 MiB** from pass 1 to pass 2 (bound +4.0 MiB); no leak, slowdown or handle growth found.
 
@@ -409,18 +416,18 @@ What ran and what it found (pass 1):
 | | |
 |---|---|
 | Reference records in the store | 10,000 |
-| Seconds to import them | 5.4 |
+| Seconds to import them | 7.0 |
 | Finished guided runs in the store | 1,000 |
 | Steps in each run | 110 |
 | Run documents (KB each) | 20.7 |
-| Reading all the records (ms) | 370 |
-| Reading all the runs for the manual status (ms) | 346 |
+| Reading all the records (ms) | 451 |
+| Reading all the runs for the manual status (ms) | 486 |
 | Dashboard rows | 66 |
 | Builds | 48 |
 | Build on the seeded database (mean ms) | 7 |
-| Build on the full store: mean (ms) | 807 |
-| Build on the full store: first / median / 95th percentile / slowest (ms) | 802 / 797 / 912 / 989 |
-| Dashboard export: markdown (ms), PDF (ms) | 6, 76 |
+| Build on the full store: mean (ms) | 854 |
+| Build on the full store: first / median / 95th percentile / slowest (ms) | 930 / 849 / 999 / 1096 |
+| Dashboard export: markdown (ms), PDF (ms) | 6, 68 |
 | Markdown export (KB), PDF export (KB) | 18, 155 |
 | Expectations checked | 69 (pass 1), 69 (pass 2) |
 
@@ -428,23 +435,24 @@ Measurements:
 
 | | Pass 1 | Pass 2 |
 |---|---|---|
-| Scenario time, s | 40.7 | 38.8 |
-| Host start-up, s | 3.1 | 2.8 |
-| Managed heap before, MiB (host running) | 30.6 | 31.0 |
-| Managed heap after, MiB (host running) | 30.9 | 30.9 |
-| Held for the work, MiB | 0.3 | -0.2 |
-| Managed heap after the host is disposed, MiB | 30.5 | 30.5 |
-| Peak managed heap while running, MiB | 320.2 | 298.2 |
-| Peak working set while running, MiB | 566.7 | 558.5 |
-| Process peak working set so far, MiB | 1583.9 | 1583.9 |
+| Scenario time, s | 45.1 | 45.6 |
+| Host start-up, s | 2.9 | 3.2 |
+| Managed heap before, MiB (host running) | 30.3 | 30.7 |
+| Managed heap after, MiB (host running) | 30.6 | 30.6 |
+| Held for the work, MiB | 0.3 | -0.1 |
+| Managed heap after the host is disposed, MiB | 30.2 | 30.2 |
+| Peak managed heap while running, MiB | 282.6 | 301.9 |
+| Peak working set while running, MiB | 561.4 | 580.5 |
+| Process peak working set so far, MiB | 1407.3 | 1407.3 |
 | tempest.db + WAL before the scenario (the seeded database), MiB | 14.5 | 14.5 |
-| tempest.db, MiB | 49.5 | 49.1 |
+| tempest.db, MiB | 49.1 | 49.5 |
 | tempest.db-wal, MiB | 5.2 | 5.2 |
-| tempest.db after shutdown, MiB | 51.5 | 51.0 |
+| tempest.db after shutdown, MiB | 51.0 | 51.4 |
 | Open handles: before the host / before the scenario / after / after dispose | 262 / 269 / 269 / 262 | 262 / 269 / 269 / 262 |
 | Handles on the database files: before / after / after dispose | 7 / 7 / 0 | 7 / 7 / 0 |
-| Generation 2 collections | 73 | 82 |
-| Allocated, GiB | 7.38 | 7.37 |
+| Growth within the host: settled heap after the first half of the items / after all of them / added by the second half, MiB (allowed) | 60.1 / 59.7 / -0.4 (1.3, 20 of 40 items) | 60.1 / 59.7 / -0.4 (1.3, 20 of 40 items) |
+| Generation 2 collections | 84 | 83 |
+| Allocated, GiB | 8.05 | 8.06 |
 
 Leak check: the heap left after disposal changed by **+0.0 MiB** from pass 1 to pass 2 (bound +4.0 MiB); no leak, slowdown or handle growth found.
 
@@ -462,49 +470,50 @@ What ran and what it found (pass 1):
 | Runs made through the service (started, 110 steps recorded, finished) | 1,000 |
 | Runs on file when the cap was tried | 1,000 |
 | Steps recorded | 110,000 |
-| Start a run (mean ms) | 1.1 |
-| Record one step (mean ms) | 0.84 |
-| Record one step (first 10 runs / last 10 runs, ms) | 0.85 / 0.77 |
-| Finish a run (mean ms) | 1.4 |
+| Start a run (mean ms) | 1.2 |
+| Record one step (mean ms) | 0.92 |
+| Record one step (first 10 runs / last 10 runs, ms) | 1.06 / 0.99 |
+| Finish a run (mean ms) | 1.5 |
 | One run's document (KB) | 22.4 |
 | Database the runs take at the cap (MiB) | 23.5 |
 | Delete older finished runs: deleted, kept (the newest 50 and those holding a template's latest result) | 950, 50 |
-| Delete older finished runs (ms) | 730 |
-| Database freed by the deletion (MiB, pages on the free list) | 22.4 |
-| Run-store read time | 1 runs: overview 0 ms, newest 100 0 ms, status of every template 0 ms, plan to delete 4 ms |
-| Run-store read time | 10 runs: overview 0 ms, newest 100 5 ms, status of every template 2 ms, plan to delete 4 ms |
-| Run-store read time | 50 runs: overview 2 ms, newest 100 19 ms, status of every template 17 ms, plan to delete 13 ms |
-| Run-store read time | 100 runs: overview 6 ms, newest 100 18 ms, status of every template 33 ms, plan to delete 19 ms |
-| Run-store read time | 250 runs: overview 9 ms, newest 100 59 ms, status of every template 79 ms, plan to delete 59 ms |
-| Run-store read time | 500 runs: overview 23 ms, newest 100 149 ms, status of every template 151 ms, plan to delete 173 ms |
-| Run-store read time | 750 runs: overview 37 ms, newest 100 226 ms, status of every template 305 ms, plan to delete 303 ms |
-| Run-store read time | 1,000 runs: overview 50 ms, newest 100 336 ms, status of every template 346 ms, plan to delete 414 ms |
-| Run-store read time | 50 runs after deleting the older runs: overview 1 ms, newest 100 9 ms, status of every template 8 ms, plan to delete 8 ms |
+| Delete older finished runs (ms) | 733 |
+| Database freed by the deletion (MiB, pages on the free list) | 22.3 |
+| Run-store read time | 1 runs: overview 0 ms, newest 100 1 ms, status of every template 1 ms, plan to delete 7 ms |
+| Run-store read time | 10 runs: overview 0 ms, newest 100 2 ms, status of every template 3 ms, plan to delete 4 ms |
+| Run-store read time | 50 runs: overview 1 ms, newest 100 9 ms, status of every template 10 ms, plan to delete 15 ms |
+| Run-store read time | 100 runs: overview 3 ms, newest 100 23 ms, status of every template 19 ms, plan to delete 34 ms |
+| Run-store read time | 250 runs: overview 11 ms, newest 100 49 ms, status of every template 65 ms, plan to delete 57 ms |
+| Run-store read time | 500 runs: overview 19 ms, newest 100 156 ms, status of every template 184 ms, plan to delete 195 ms |
+| Run-store read time | 750 runs: overview 37 ms, newest 100 337 ms, status of every template 314 ms, plan to delete 317 ms |
+| Run-store read time | 1,000 runs: overview 59 ms, newest 100 404 ms, status of every template 452 ms, plan to delete 452 ms |
+| Run-store read time | 50 runs after deleting the older runs: overview 2 ms, newest 100 14 ms, status of every template 10 ms, plan to delete 11 ms |
 | Expectations checked | 2,052 (pass 1), 2,052 (pass 2) |
 
 Measurements:
 
 | | Pass 1 | Pass 2 |
 |---|---|---|
-| Scenario time, s | 99.3 | 96.4 |
-| Host start-up, s | 2.9 | 2.7 |
-| Managed heap before, MiB (host running) | 31.0 | 30.3 |
-| Managed heap after, MiB (host running) | 29.9 | 29.9 |
+| Scenario time, s | 109.4 | 124.4 |
+| Host start-up, s | 3.5 | 3.4 |
+| Managed heap before, MiB (host running) | 30.7 | 30.0 |
+| Managed heap after, MiB (host running) | 29.6 | 29.6 |
 | Held for the work, MiB | -1.1 | -0.4 |
-| Managed heap after the host is disposed, MiB | 29.5 | 29.5 |
-| Peak managed heap while running, MiB | 225.1 | 169.6 |
-| Peak working set while running, MiB | 464.5 | 468.0 |
-| Process peak working set so far, MiB | 1583.9 | 1583.9 |
-| tempest.db + WAL before the scenario (the seeded database), MiB | 14.6 | 14.5 |
-| tempest.db, MiB | 34.7 | 34.6 |
-| tempest.db-wal, MiB | 4.1 | 4.7 |
-| tempest.db after shutdown, MiB | 34.7 | 34.6 |
+| Managed heap after the host is disposed, MiB | 29.2 | 29.2 |
+| Peak managed heap while running, MiB | 199.3 | 189.7 |
+| Peak working set while running, MiB | 454.4 | 479.0 |
+| Process peak working set so far, MiB | 1407.3 | 1407.3 |
+| tempest.db + WAL before the scenario (the seeded database), MiB | 14.5 | 14.6 |
+| tempest.db, MiB | 34.7 | 34.7 |
+| tempest.db-wal, MiB | 4.7 | 4.0 |
+| tempest.db after shutdown, MiB | 34.7 | 34.7 |
 | Open handles: before the host / before the scenario / after / after dispose | 262 / 269 / 270 / 262 | 262 / 269 / 270 / 262 |
 | Handles on the database files: before / after / after dispose | 7 / 8 / 0 | 7 / 8 / 0 |
-| Generation 2 collections | 20 | 20 |
-| Allocated, GiB | 10.86 | 10.86 |
+| Growth within the host: settled heap after the first half of the items / after all of them / added by the second half, MiB (allowed) | 29.8 / 29.8 / +0.0 (8.8, 500 of 1,000 items) | 29.8 / 29.8 / -0.0 (8.8, 500 of 1,000 items) |
+| Generation 2 collections | 24 | 25 |
+| Allocated, GiB | 17.85 | 17.85 |
 
-Leak check: the heap left after disposal changed by **+0.0 MiB** from pass 1 to pass 2 (bound +4.0 MiB); no leak, slowdown or handle growth found.
+Leak check: the heap left after disposal changed by **-0.0 MiB** from pass 1 to pass 2 (bound +4.0 MiB); no leak, slowdown or handle growth found.
 
 No failed expectation, no stale-flag error, no immutability breach, no leak.
 
@@ -516,6 +525,7 @@ No failed expectation, no stale-flag error, no immutability breach, no leak.
 - **Database size** is `tempest.db` and its write-ahead log at the end of the scenario with the host still running, and `tempest.db` again once the host is shut down and the log has been folded in.
 - **Handles** are the process's open file descriptors (`/proc/self/fd`), and, separately, those open on the database's own files, which is the footprint of the pooled SQLite connections. The process's handles after the second pass's host is disposed are compared with those after the first's (the first pass also opens what loading the application's assemblies opens, once); the database's handles must not grow during the scenario and must be none once the host is disposed.
 - **Leak check.** Each scenario runs twice in the same process. The managed heap left after the second pass's host is disposed may not exceed the first pass's by more than 4 MiB (a leak worth the name is tens of kilobytes per item over hundreds of items, many times that, and keeps growing). If it does, a third pass is run: the heap is a leak only if it is still rising by more than half the bound; a one-off step (buffers the runtime keeps for a while after a large file is read) that then stays flat is reported as such and is not. The process may end the second pass with no more than 3 more handles than the first, the database's handles may not grow by more than 3 during a scenario and must be none after the host is disposed, and the second pass may not take more than 2 times the first plus five seconds.
+- **Leak check within one host.** The comparison between passes cannot see a service that keeps what it is given in a field of its own: it is thrown away with its host, so the heap left after disposal is the same each time. So a scenario that does the same thing over and over also reports its items, and the settled heap (as above, with the host still running and everything the scenario still holds alive) is taken after the first half of them (and after any warm-up, such as the first round of the catalogue's templates) and again after the last. The second half may add no more than 1 MiB plus 16 KiB an item, with at least 10 items in it, and a finding needs every pass that was measured to exceed it. The base is what the runtime's own caches and pooled buffers settle by in a normal run; the per-item figure is a few times what the application and the scenarios legitimately keep for each item (measured, up to 5.4 KiB) and well below what a retained calculation, run or sheet costs (tens of kilobytes). It therefore catches an item-by-item retention of about 32 KiB an item or more over a few hundred items, and does not see a smaller one. It also cannot see: growth that is not in the managed heap (native memory, SQLite's page cache, file handles are counted separately), a retention that stops growing before the half (a cache that fills once), growth that depends on something the scenario does not do (a screen, a window), or a scenario with a handful of large steps instead of many items (the imports, the record import's caps, which are reported as not measured).
 - **Stale-flag errors** are both kinds: a calculation reported stale when nothing it depends on changed, and one not reported stale when something did.
 - **Immutability breaches** are any change to an issued revision after its issue: its stored record (with only its status and time set aside, the two fields supersession changes), its outputs, its sheet text, its PDF sheet in the content store, or its Evidence; and any attempt to edit one that is not refused.
 
@@ -536,7 +546,7 @@ No failed expectation, no stale-flag error, no immutability breach, no leak.
 <!-- soak:notes:begin -->
 ### Result
 
-Everything the specification asks for was run at its numbers, and so were the four scenarios added for what the release gained after the soak was first written (record import C-3, the dashboard C-4, guided runs C-5, the demo project C-6), in 25.0 minutes (the brief allowed about 40). Nothing was scaled down in this full run; the scaled-down run (an ordinary test) is. No scenario found a leak that the leak checks can see (they are limited; see "What the leak checks can and cannot see" below), a stale-flag error, an immutability breach, a cap that is not enforced or a document that changed when it should not. The first soak found two defects while it was being built and noted a third (C-7h, a calculation too large to store); all three are fixed and each has a test that failed before the fix. The four new scenarios found nothing wrong in the record import, the demonstration, the dashboard or the guided runs.
+Everything the specification asks for was run at its numbers, and so were the four scenarios added for what the release gained after the soak was first written (record import C-3, the dashboard C-4, guided runs C-5, the demo project C-6), in 25.5 minutes (the brief allowed about 40; this run is the second, made after the review's fixes, and the first's findings and numbers are kept below). Nothing was scaled down in this full run; the scaled-down run (an ordinary test) is. No scenario found a leak that the leak checks can see (they are limited; see "What the leak checks can and cannot see" below), a stale-flag error, an immutability breach, a cap that is not enforced or a document that changed when it should not. The first soak found two defects while it was being built and noted a third (C-7h, a calculation too large to store); all three are fixed and each has a test that failed before the fix. The four new scenarios found nothing wrong in the record import, the demonstration, the dashboard or the guided runs.
 
 ### Defects found and fixed
 
@@ -564,6 +574,8 @@ The review of this soak found five more, each fixed with a test that failed befo
 The screens are not driven by the soak. A retention in a view model or a window is not within what it can find.
 
 ### Observations, nothing changed
+
+- **Growth within one host, full run.** The check added after review found nothing: the second half of the items added 0.9 MiB over 250 of the 500 calculations (3.7 KiB each), 0.7 MiB over 210 of the 420 chained calculations (3.4 KiB), 0.1 to 0.2 MiB over 50 of the 101 revision cycles, nothing over 500 of the 1,000 Monte Carlo runs, 2.5 MiB over 730 of the 1,460 calculations and packs the demonstration installs (3.5 KiB each, and the same in both passes: the engineering objects a removal keeps by design), and nothing (it shrank by 0.4 MiB) over 50 of the 100 licensed revisions or 20 of the 40 dashboard builds, and nothing over 500 of the 1,000 guided runs; the allowance is 1 MiB plus 16 KiB an item (4.3 to 12.4 MiB for those). About 3.5 KiB a calculation is what the application keeps for it (its index entry and Evidence object) and is not a leak; it is also why the allowance per item is not smaller.
 
 - **Revision labels after Z.** The 27th revision of a calculation is labelled `Z+`, the 28th `Z++`, and so on: the 101st is a 76-character label. Everything works with it (Evidence, the register, file names, the PDF sheet; there is no cap on the label), but it reads badly on a sheet. An owner decision, not a fault.
 - **Scan row cap.** The 1,000,000-row cap counts every row of the file, header included, as the inputs CSV's does; a table of 1,000,000 data rows is refused ("more than 1000000 rows"). The importer took 3.7 s for the largest table that is allowed.
