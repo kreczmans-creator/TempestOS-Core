@@ -31,7 +31,7 @@ public sealed class ConnectionCalculator : ICalcCalculator
     public static IReadOnlyList<(string Grade, double BetaW)> Steels { get; } = [("S235", 0.8), ("S275", 0.85), ("S355", 0.9), ("S420", 1.0), ("S460", 1.0)];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.5.0", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
+        Id, "1.6.0", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
         "The design resistances of one bolt in a plate (shear, bearing, tension, punching, combined shear and tension), an optional block-tearing check of the bolt group, the spacing limits, and a fillet weld by the simplified and the directional method, each against its design force.",
         "Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P\n" +
         "Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane)\n" +
@@ -49,6 +49,7 @@ public sealed class ConnectionCalculator : ICalcCalculator
             new CalcInputSpec("threads", "Threads in the shear plane", CalcInputKind.Boolean, Default: 1, Group: "Bolt"),
             new CalcInputSpec("steel", "Plate steel grade (β_w)", CalcInputKind.Choice, Choices: [.. Steels.Select(s => s.Grade)], DefaultChoice: "S275", Group: "Plate"),
             new CalcInputSpec("t", "Plate thickness", CalcInputKind.Quantity, "mm", Default: 10, Min: 3, Max: 50, HardMin: 3, HardMax: 50, Group: "Plate"),
+            new CalcInputSpec("t_2", "Thickness of the other ply the bolt bears on (the column flange behind an end plate; blank = one ply only): bearing is taken on the thinner ply, with this sheet's f_u, edge distances and spacings", CalcInputKind.Quantity, "mm", Min: 3, Max: 50, HardMin: 3, HardMax: 50, IsOptional: true, Group: "Plate"),
             new CalcInputSpec("f_y", "Plate yield strength", CalcInputKind.Quantity, "MPa", Default: 275, Min: 235, Max: 460, HardMin: 235, HardMax: 460, Group: "Plate"),
             new CalcInputSpec("f_u", "Plate ultimate strength", CalcInputKind.Quantity, "MPa", Default: 410, Min: 340, Max: 720, HardMin: 340, HardMax: 720, Group: "Plate"),
             new CalcInputSpec("e_1", "End distance (load direction)", CalcInputKind.Quantity, "mm", Default: 40, Min: 10, Max: 500, HardMin: 10, HardMax: 500, Group: "Spacing"),
@@ -252,8 +253,18 @@ public sealed class ConnectionCalculator : ICalcCalculator
         if (holeType == HoleNormal && d0 > normalHole + 1e-9)
             c.Warn("hole_clearance", $"d_0: the hole ({F(d0)} mm) is larger than the normal clearance ({F(normalHole)} mm) but the hole type is Normal clearance; the bearing resistance is reduced by 0.8 as for an oversize hole (cl. 3.6.1, Table 3.4). Select the hole type to state it.");
 
-        var fbBase = Math.Max(k1, 0) * alphaB * fu * d * t / g2;
-        var fbCap = 1.5 * fu * d * t / g2;
+        // Bearing is on the thinner of the plies the bolt passes through (an end plate and the column flange behind it).
+        var tBearing = t;
+
+        if (c.Has("t_2"))
+        {
+            c.Input("t_2");
+            tBearing = Math.Min(t, c.Si("t_2") * 1e3);
+            c.Assume($"Bearing is taken on the thinner ply: {F(tBearing)} mm (t = {F(t)} mm, t_2 = {F(c.Si("t_2") * 1e3)} mm), with this sheet's f_u, edge distances and spacings for both plies; where the other ply has different distances or a lower strength, run the sheet for it as well.", "EN 1993-1-8 cl. 3.6.1, Table 3.4.");
+        }
+
+        var fbBase = Math.Max(k1, 0) * alphaB * fu * d * tBearing / g2;
+        var fbCap = 1.5 * fu * d * tBearing / g2;
         var singleLap = c.InputFlag("single_lap") && Math.Abs(ns - 1) < 1e-9;
         var fbLap = singleLap ? Math.Min(fbBase, fbCap) : fbBase;
 
@@ -262,7 +273,7 @@ public sealed class ConnectionCalculator : ICalcCalculator
 
         var fb = holeFactor * fbLap;
         var fbFormula = (singleLap ? "min(k₁·α_b, 1.5)" : "k₁·α_b") + "·f_u·d·t/γ_M2" + (holeFactor < 1 ? " × k_h" : string.Empty);
-        var fbSubstitution = singleLap ? $"min({F(k1)} × {F(alphaB)}, 1.5) × {F(fu)} × {F(d)} × {F(t)} / {F(g2)}" : $"{F(k1)} × {F(alphaB)} × {F(fu)} × {F(d)} × {F(t)} / {F(g2)}";
+        var fbSubstitution = singleLap ? $"min({F(k1)} × {F(alphaB)}, 1.5) × {F(fu)} × {F(d)} × {F(tBearing)} / {F(g2)}" : $"{F(k1)} × {F(alphaB)} × {F(fu)} × {F(d)} × {F(tBearing)} / {F(g2)}";
         c.Record("F_b_Rd", fbFormula, fbSubstitution + (holeFactor < 1 ? $" × {F(holeFactor)}" : string.Empty), ScalarValue.Of(fb / 1e3, kN), "Bearing resistance per bolt", "EN 1993-1-8 cl. 3.6.1, Table 3.4");
         c.Record("F_t_Rd", "k₂·f_ub·A_s/γ_M2, k₂ = 0.9", $"0.9 × {F(fub)} × {F(asArea)} / {F(g2)}", ScalarValue.Of(0.9 * fub * asArea / g2 / 1e3, kN), "Tension resistance per bolt", "EN 1993-1-8 Table 3.4");
         // d_m is the mean of the across-flats and the across-corners dimension of the smaller of head and nut (Table 3.4). The across-corners of a

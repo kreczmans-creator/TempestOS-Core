@@ -143,6 +143,20 @@ public sealed class ConnectionTests
     }
 
     [Fact]
+    public void Bearing_Is_Taken_On_The_Thinner_Of_Two_Plies()
+    {
+        // chain.steel-support-R1: M20 8.8, S275, e1 = e2 = 40, p1 150, p2 120: bearing on the 20 mm end plate F_b,Rd 198.79 kN; the bolts also bear on the 11 mm column flange: 109.33 kN (45 % lower).
+        // python3: alpha_b = min(40/66, 150/66 - 0.25, 800/410, 1) = 0.60606, k_1 = min(2.8 x 40/22 - 1.7, 1.4 x 120/22 - 1.7, 2.5) = 2.5, F_b = 2.5 x 0.60606 x 410 x 20 x t/1.25/1e3 kN with t 20 and 11.
+        var set = Defaults().With(CalcInputValue.Quantity("t", 20, "mm")).With(CalcInputValue.Quantity("p_1", 150, "mm")).With(CalcInputValue.Quantity("p_2", 120, "mm"));
+        Assert.Equal(198.788, CalcRunner.Run(Ec3, set).OutputSi("F_b_Rd") / 1e3, 2);
+        var two = CalcRunner.Run(Ec3, set.With(CalcInputValue.Quantity("t_2", 11, "mm")));
+        Assert.Equal(109.333, two.OutputSi("F_b_Rd") / 1e3, 2);
+
+        // A thicker second ply changes nothing.
+        Assert.Equal(198.788, CalcRunner.Run(Ec3, set.With(CalcInputValue.Quantity("t_2", 30, "mm"))).OutputSi("F_b_Rd") / 1e3, 2);
+    }
+
+    [Fact]
     public void An_Eccentric_Block_Tearing_Group_Uses_The_Halved_Tension_Term()
     {
         // struct.connection-ec3-02: A_nt 300, A_nv 900, f_u 410, f_y 275: V_eff,1 = 98.4 + 142.89 = 241.29 kN (concentric); V_eff,2 = 0.5 * 98.4 + 142.89 = 192.09 kN (eccentric).

@@ -504,6 +504,26 @@ public sealed class BasePlateTests
     private static CalcInputSet Q2(CalcInputSet set, string symbol, double value, string unit) => set.With(CalcInputValue.Quantity(symbol, value, unit));
 
     [Fact]
+    public void The_Anchorage_Result_Is_Not_Assessed_Unless_The_Report_Utilisation_Is_Entered()
+    {
+        // chain.steel-support-04 (T4): an attached Evidence placeholder passed the anchorage check with u 0 while no concrete failure mode of the anchors was computed; u_max covers the steel parts only.
+        // Now the sheet warns that the anchorage is not assessed until the governing utilisation of the PROFIS report is entered, and then checks it and counts it in u_max.
+        var none = CalcRunner.Run(Plate, Defaults());
+        var warning = Assert.Single(none.Warnings, w => w.RuleId == "anchorage-result");
+        Assert.Contains("u_max", warning.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(none.Checks, c => c.Name.StartsWith("Anchorage (PROFIS", StringComparison.Ordinal));
+
+        var pass = CalcRunner.Run(Plate, Defaults().With(CalcInputValue.Of("u_profis", 0.8)));
+        Assert.DoesNotContain(pass.Warnings, w => w.RuleId == "anchorage-result");
+        Assert.Contains(pass.Checks, c => c.Name.StartsWith("Anchorage (PROFIS", StringComparison.Ordinal) && c.Passed);
+
+        var fail = CalcRunner.Run(Plate, Defaults().With(CalcInputValue.Of("u_profis", 1.25)));
+        Assert.Contains(fail.Checks, c => c.Name.StartsWith("Anchorage (PROFIS", StringComparison.Ordinal) && !c.Passed);
+        Assert.Equal(1.25, fail.OutputSi("u_max"), 9);
+        Assert.False(fail.Passed);
+    }
+
+    [Fact]
     public void An_Entered_Lever_Arm_Beyond_The_Plate_Half_Length_Is_Blocked()
     {
         // struct.base-plate-02: z_C_in 1000 mm put the compression resultant outside the plate and gave T_Ed 128.76 kN (u_T 0.457, pass) against 370.24 kN

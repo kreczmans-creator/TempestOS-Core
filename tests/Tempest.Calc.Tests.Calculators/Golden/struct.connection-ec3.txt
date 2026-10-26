@@ -136,5 +136,5 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   WARNING single_lap: single_lap: k₁·α_b = 1.5152 exceeds 1.5, so for a single-lap joint with only one bolt row the bearing resistance is limited to 98.4 kN (1.5·f_u·d·t/γ_M2, cl. 3.6.1) against the 99.394 kN shown. Switch 'single lap, one bolt row' on if that is the joint.
 
 8. VERIFICATION
-  Template: struct.connection-ec3@1.5.0
+  Template: struct.connection-ec3@1.6.0
   Known-answer cases passed: 8/8

@@ -52,7 +52,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
     public readonly record struct Required(double? Value, string? Text);
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.Structural, "Column base plate (EN 1993-1-8)",
+        Id, "1.4.0", CalcDiscipline.Structural, "Column base plate (EN 1993-1-8)",
         "An unstiffened rectangular base plate under an I/H, RHS or CHS column on grouted concrete: bearing resistance, the force regime and holding-down bolt tension for a major-axis moment, the tension T-stub of the plate and the compression T-stub, shear by friction and anchor bolts, and the plate thickness that satisfies them together. The bolt tension and shear per anchor go to Hilti PROFIS for the anchorage, which is done outside this sheet.",
         "Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3; c = t_p·√[f_y/(3·f_jd·γ_M0)]\n" +
         "Axial (cl. 6.2.8.2): N_j,Rd = f_jd·A_eff, A_eff the bearing strips of width c round the column footprint (full rectangle when they overlap); u_N = N_c,Ed/N_j,Rd\n" +
@@ -99,6 +99,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
             new CalcInputSpec("f_yb", "Anchor bolt yield strength (α_bc is valid for 235–640 MPa)", CalcInputKind.Quantity, "MPa", Default: 640, Min: 235, Max: 640, HardMin: 235, HardMax: 640, Group: "Holding-down bolts"),
             new CalcInputSpec("A_s", "Anchor bolt tensile stress area (from S4)", CalcInputKind.Quantity, "mm^2", Default: 244.79, Min: 50, Max: 1500, HardMin: 50, HardMax: 1500, Group: "Holding-down bolts"),
             new CalcInputSpec("F_1_vb_Rd", "Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd)", CalcInputKind.Quantity, "kN", Default: 198.8, Min: 1, Max: 2000, HardMin: 1, HardMax: 2000, Group: "Holding-down bolts"),
+            new CalcInputSpec("u_profis", "Governing utilisation reported by the PROFIS anchorage design (from the attached report; blank = the anchorage is not assessed here)", CalcInputKind.Number, Min: 0, Max: 10, HardMin: 0, HardMax: 10, IsOptional: true, Group: "Anchorage"),
             new CalcInputSpec("profis_ref", "Hilti PROFIS report reference (the report is filed as Evidence)", CalcInputKind.Text, IsOptional: true, Group: "Anchorage"),
         ],
         [
@@ -138,6 +139,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
             new CalcApplicabilityRule("grout", "β_j = 2/3 needs the grout at least 0.2·f_ck and no thicker than 0.2 of the smaller plate dimension.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("prying", "With prying the prying force is not in F_t,Ed.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("anchorage", "The PROFIS report is not attached as Evidence (a typed reference is not enough).", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("anchorage-result", "The anchorage (concrete cone, pull-out, edge and shear failure of the anchors) is not assessed on this sheet and u_max excludes it, unless the report's governing utilisation u_profis is entered.", CalcNoticeSeverity.Warning),
         ],
         [
             new CalcTestCase("ka-ih-moment-bolts", "The 260×256 I-section with N = 300 kN, M = 100 kN·m, V = 80 kN; two bolts a row, bolt rows at 165 mm from the axis, no prying",
@@ -746,6 +748,14 @@ public sealed class BasePlateCalculator : ICalcCalculator
         outputs.AddRange([("alpha_bc", "Anchor shear factor α_bc"), ("F_2_vb_Rd", "Anchor shear resistance F_2,vb,Rd"), ("F_vb_Rd", "Anchor shear resistance per bolt"), ("F_f_Rd", "Friction resistance"), ("V_Rd", "Shear resistance"), ("u_V", "Shear utilisation"), ("V_b_Ed", "Shear per anchor bolt (to PROFIS)")]);
         utilisations.Add("u_V");
 
+        if (c.Has("u_profis"))
+        {
+            c.Input("u_profis");
+            c.Assign("u_anchorage", "u_profis", null, "Anchorage utilisation (governing value of the PROFIS report)");
+            utilisations.Add("u_anchorage");
+            outputs.Add(("u_anchorage", "Anchorage utilisation (PROFIS)"));
+        }
+
         var uMax = utilisations.Max(sym => c.Si(sym));
         c.Record("u_max", "max(" + string.Join(", ", utilisations) + ")", string.Join(", ", utilisations.Select(sym => $"{sym} = {F(c.Si(sym))}")), new ScalarValue(uMax), "Governing utilisation");
         outputs.Add(("u_max", "Governing utilisation"));
@@ -783,6 +793,11 @@ public sealed class BasePlateCalculator : ICalcCalculator
         c.CheckUtilisation("Base plate tension T-stub (bending at the bolts)", "u_T", "EN 1993-1-8 cl. 6.2.6.11");
         c.CheckUtilisation("Holding-down bolt tension", "u_bt", "EN 1993-1-8 cl. 6.2.6.12");
         c.CheckUtilisation("Shear: friction plus anchor bolts", "u_V", "EN 1993-1-8 cl. 6.2.2");
+
+        if (c.Has("u_profis"))
+            c.CheckUtilisation("Anchorage (PROFIS report, governing utilisation)", "u_anchorage", "EN 1993-1-8 cl. 6.2.6.12");
+        else
+            c.Warn("anchorage-result", "u_profis: the anchorage is not assessed on this sheet. The concrete failure modes of the anchors (cone, pull-out, edge, shear, interaction), which usually govern, are designed in PROFIS; u_max covers the steel parts only, whether or not a report is attached. Enter the report's governing utilisation to include it.");
 
         var profis = c.Has("profis_ref") ? c.InputText("profis_ref").Trim() : string.Empty;
 
