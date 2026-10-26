@@ -166,6 +166,37 @@ New finding in this round:
 
 S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.
 
+## Addendum C
+
+Builder quality and wording, 2026-10-26. Scope: the Addendum C Track S delta on `release/v0.26.0` (`76935116..1474cd0a`, 128 non-merge commits): C-1 fixes, C-3 record import, C-4 dashboard, C-5 guided test, C-6 demo installer and the integration. Sources: the ADRs' review sections, `LOG.md`, DC-01 … DC-14, and every message and label the four new screens show (read from the source and the tests).
+
+### Per branch
+
+| Branch | Content | Reviews run | Defects found by review | Defects found by tests or the gate | Re-work rounds | Warnings | Flaky tests |
+|---|---|---|---|---|---|---|---|
+| `addC-1-fixes` | 130 of 145 Track P findings fixed; 35 templates moved version | Opus per batch (B to E, two Medium batches) and two verification rounds (N1–N4, then nine items) | N1 (S4 hole without d₀), N2–N4 (braking torque, full-size cpc, ideal gas above 300 bar), nine second-round items; eight owner items recorded (DC-03 … DC-09) | — | 4 | 0 | 0 |
+| `addC-3-records` | Records screen, record import (ADR-0174) | Opus | 8 changes (ADR-0174 §11): the ordering of a lookup table is an error, text cells are one line, template 62 carries the material forward, titles never hold a table value, a curve may not repeat a current, a grid unit is one unit, a table added to a seed is the person's entry, no double hint | — | 1 | 0 | 0 |
+| `addC-4-dashboard` | Verification dashboard | Opus | 9 changes (`LOG.md`): chains on a recorded run, Clean needs a re-derivation, the snapshot reader never throws, CI `--check`, export hardening, markdown escaping, usable records only, "unknown" defects | — | 1 | 0 | 0 |
+| `addC-5-guided` | Guided test mode (ADR-0175) | Opus | 13 changes: 3 Medium (M1 wrong-step compare, M2 a stale compare, M3 unguarded I/O) and 10 Low (L4–L13) | — | 1 | 0 | 0 |
+| `addC-6-demo` | Demo installer (ADR-0176) | Opus | 7 changes: exact profile versions, audit before the soft delete, issued Evidence refused, every failure a sentence, a failed clean-up said, stale writes refused, the published section cited as indicative | — | 1 | 0 | 0 |
+| Integration | All five merged `--no-ff`; the dashboard wired to C-3 and C-5 | — | A stale pack write to a removed pack (`85c4b8d5`) | Two tests broke on the integrated tree: one name clash (`8f6fc524`, Green G-C-01) and one count hard-coded against the generated script (`ec11fa79`) | 1 | 0 | 0 |
+
+Every non-merge commit in the delta carries both requested trailers (128 of 128). The final gate (`LOG.md`): Engine 465, Sheets 138, Calculators 2,320, FluidPower 118, Import 625, Library 937, Core 7,235, Desktop 1,506, with 0 warnings.
+
+### Wording read
+The new screens mostly follow the house style: one sentence, active, naming what to do. Examples: "Close the demo project 'Demo — Hydraulic Press Cell' before removing it."; "Open the worksheet for this step first; the form was opened for another example, so comparing it here would read the wrong numbers."; "The unit of theta_a holds a comma, a quote, a bracket or a line break. A unit is typed on its own (mm2, kN, degC)." Refusals name the line and the column. The problems are listed below.
+
+### Findings
+
+| ID | Sev | Location | Description | Evidence | Fix / justification | Status |
+|---|---|---|---|---|---|---|
+| Y-C-01 | Low | `CalcRecordsView.cs:188, 357, 461`; `VerificationDashboardView.cs:74, 88`; `VerificationPdfRenderer.cs:57`; `VerificationMarkdown.cs:43, 112–113` | "Track P" is the name of a work stream, and it appears on the screens and in the exports: "Record template (Track P)", "Record CSV (Track P template)", "No Track P template fills this kind", the column "Track P re-derivation". An engineer who did not commission the work cannot know what it means. | Source strings. | "Record template", "Record CSV (template)", "No template fills this kind", "Independent re-derivation"; update `VerificationMarkdownTests` and the user page. | Open |
+| Y-C-02 | Low | `DemoProjectViewModel.cs` (`RunAsync`) | "The demo project act was cancelled; whatever it had started was undone." and "The demo project act failed (…)". "Act" is not a word the panel uses, and "undone" can be untrue (Black B-C-04). | Source strings. | "Installing the demo project was cancelled; what it had made was removed." (with the partial case from B-C-04), and "Installing the demo project failed: …" naming the action. | Open |
+| Y-C-03 | Low | `CalcRecordsView.cs` (`GuardedAsync`) | "Could not complete that: {message}" does not say what failed. The guided test panel says "Could not <what>: <reason>". | Source string. | Pass the action to the guard: "Could not import the file: …", "Could not read the provenance file: …". | Open |
+| Y-C-04 | Low | Record import row cap (message from the shared `ImportBudget`) | A file one row over the cap reads "The file has more than 1001 rows." The person counts data rows, and the cap is 1,000 of them; the header is the 1,001st. | Probe: 1,002 lines refused with that text. | In the record import, say "The file has more than 1,000 data rows; split it into two files." | Open |
+| Y-C-05 | Low | `VerificationDashboardView.cs:88` | Column headers "Unconf." and "Second." are abbreviations, and "Second." reads as a time. | Source strings. | "Unconfirmed" and "Secondary" (the PDF already writes "Unconf. / Secondary"). | Open |
+| Y-C-06 | Info | Review timing | Every Addendum C item was reviewed before its merge, and each review's findings were fixed with named tests before the merge. Two integration breaks came from tests that tied themselves to another item's names or counts (`8f6fc524`, `ec11fa79`). | `LOG.md`, commits. | Keep tests off generated counts; read them from the artefact (as `ec11fa79` now does). | Closed |
+
 > The sections below were written on `release/v0.27.0` (23–24 October 2026) for the legacy calculator replacement (ADR-0167). The owner decided that nothing ships as 0.27.0: the work is part of v0.26.0 and is kept here, unchanged, as a marked part of this file.
 
 ## v0.27.0 Phase 1 — foundations (2026-10-23)

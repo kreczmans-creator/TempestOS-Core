@@ -814,6 +814,55 @@ No Green item is open.
 
 S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.
 
+## Addendum C
+
+**Scope.**
+- The C-1 calculation fixes on `release/v0.26.0` at `1474cd0a` (delta `76935116..1474cd0a`): 130 of the 145 Track P findings were fixed, and 35 of the 54 templates moved version. They were re-derived by Track P and reviewed by Opus in batches with two verification rounds (DC-03 … DC-09). This section recomputes the seven new known-answer cases independently.
+- The arithmetic the C-4 dashboard and the C-5 guided test rely on: the counting rules and the tolerance rule.
+- The demo's pinned outputs are the pack templates' example inputs, already recomputed in Addendum B; `DemoProjectTests` shows that every one of its 60 calculations runs current, with the one deliberate FAIL.
+- Code quality and consistency of the four new feature areas against the codebase.
+- Read-only, except that the code findings fixed by the colour round are listed in `blue-team.md`.
+
+**Method.**
+- Each new `CalcTestCase` was read from the C# and recomputed in python3 from the relation in my own notation, not ported:
+  - E8: a fourth-order Runge–Kutta integration of the horizontal-bend equation dT/dθ = μ·√(T² + (w·g·R)²), which checks the cosh/sinh closed form the template uses.
+  - F1: Euler with the Johnson transition λ_c = π√(2E/f_y).
+  - S4: the EN 1993-1-8 bearing relation with the single-lap cap and the hole factor.
+  - E5: R₁ + R₂ with k_R, k from the adiabatic constants.
+  - Frame: statics.
+- The pass criterion is the repository's own relative tolerance. The script was scratch and is not in the repository.
+
+**Result.** 24 of 24 recomputed values agree. The worst is E5 `S_min`: 9e-7 against the 1e-6 tolerance when k is taken as the printed 114.836; it is 2e-7 with k computed in full (114.836128). Every other value agrees to 2e-10 or better.
+
+| Calculator | Case | Values | Worst rel. diff |
+|---|---|---|---|
+| `elec.containment` 1.2.0 | `ka-heavy-cable-horizontal-bend` | T_max both ways 263.2184789 N, SWP 87.73949298 N/m, u_bend 0.04 (6 × 20 mm / 3000 mm) | 9e-11 |
+| `elec.containment` 1.2.0 | `ka-heavy-cable-bend-from-rest` | T_max 143.8266655 N | 2e-10 |
+| `fp.cylinder` 1.4.0 | `ka-euler-slender` | L_eff 4100 mm, λ 410, λ_c 91.0520, F_cr 15.4939 kN, F_allow 4.42683 kN, F_stall = F_buck 80.4248 kN, u_buck 18.1676, F_ext 76.4035 kN, F_ret 57.3027 kN | 3e-16 |
+| `struct.connection-ec3` 1.6.0 | `ka-m20-single-lap-cap` | F_b,Rd 98.4 kN (the 1.5·f_u·d·t/γ_M2 cap below 149.09 kN) | 0 |
+| `struct.connection-ec3` 1.6.0 | `ka-m20-oversize-hole` | F_b,Rd 72.889 kN (× 0.8) | 1e-7 (printed to 7 figures) |
+| `elec.fault-protection` 1.3.2 | `ka-mcb-b32-maximum-resistance` | R₁₂ 0.4950926 Ω, Z_s 0.8450926 Ω, I_f 258.5516 A, u_Zs 0.6188321, S_min 0.7119815 mm² | 2e-7 (full k) |
+| `struct.frame-2d` 1.4.0 | `ka-ss-couple` | M_max +15, M_min −15 kN·m | 0 (statics: ±M/L = 5 kN, 5·3 = 15) |
+
+**The guided-test tolerance rule (C-5).** `GuidedTolerance` passes a number when the expected and shown values differ by no more than half a unit in the last place of the coarser of the two. For two decimal roundings of one true value, where one place is a refinement of the other (always true for decimal places), the finer rounding cannot leave the coarser cell, whose edges lie on the finer grid. So the bound is exact: a correct result never fails, and the ADR's claim holds. The only exception is an exact tie at equal precision rounded half-up by hand and half-even by the form, which differs by one unit and would read as a mismatch. It is vanishingly rare, and the 13 examples the rule cannot decide go to the tester by name.
+
+**The dashboard rules (C-4).**
+- A calculator passes only when every known-answer case passes at the current version and case count.
+- A chain is the worst of its own recorded run and its calculators.
+- Clean needs a re-derivation and no open defect.
+- I checked the code (`VerificationDashboardService.KatState`, `ChainRow`, `PackState`) against DC-11 and the user page, and they agree.
+
+### Findings
+
+| ID | Severity | Location | Description | Evidence | Fix or justification | Status |
+|---|---|---|---|---|---|---|
+| G-C-01 | Low | `Library/Dashboard/VerificationDashboardService.cs`, `VerificationRow.cs`; `Library/ManualTesting/IManualTestStatusSource.cs`, `ManualTestRun.cs`; `Library/RecordImport/RecordImportModels.cs` | Four type names exist twice in sibling namespaces with different members: `IManualTestStatusSource`, `ManualTestStatus` and `ManualTestOutcome` (Dashboard and ManualTesting), and `RecordRequirement` (Dashboard and Library). A file that imports both namespaces does not compile (CS0104). The integration already had to rename the test uses (`8f6fc524`), and this review's probe hit it again. `GuidedManualTestStatusSource` has to alias one side (`using Guided = …`). | Build error CS0104 in a probe that used both namespaces. | Rename the dashboard's types (for example `DashboardManualStatus`, `ManualTestState`, `RequiredRecordKind`), or make the dashboard take C-5's types directly now that both are in one assembly. | Open |
+| G-C-02 | Low | `Library/RecordImport/RecordImportService.cs` (1,328 lines), `Desktop/GuidedTest/GuidedTestViewModel.cs` (817 lines) | The two largest new files each hold several concerns: reading, column binding, unit checks, row parsing, planning, materials and requirements in one; run state, compare, draft and file I/O in the other. The rest of the Library splits a service by concern into partial files (`CalcInstanceService.*.cs`). | `wc -l`. | Split them into partial files by concern, as `CalcInstanceService` is. | Open |
+| G-C-03 | Info | `Library/Dashboard/VerificationDashboardService.cs` (`StoreRequiredRecordsSource`) | It is no longer composed in the app (`ComposeVerificationService` uses `RecordRequirementsRecordsSource`); only tests use it, and its `IsUsableForRealWork` is reused. | `grep` of `src/`. | Keep it as the simple fallback, documented as such, or fold `IsUsableForRealWork` into the C-3 source and remove it. | Open |
+| G-C-04 | Info | `RecordImportService.RequirementsAsync` against `RecordRequirementsRecordsSource` | Two rules say whether a record kind is entered. The worksheet's missing-records panel counts any record that holds a value the calculator takes. The dashboard also leaves out `Indicative` records and records titled `SYNTHETIC…`. A user record titled "SYNTHETIC …" is present on the sheet and missing on the dashboard. | Code reading. | Use one rule in both, or document the difference on the user page. | Open |
+
+C-1 itself: no new defect. Every new or changed known answer I recomputed agrees, and the owner items stay as recorded in DC-03 … DC-09.
+
 > The sections below were written on `release/v0.27.0` (23–24 October 2026) for the legacy calculator replacement (ADR-0167). The owner decided that nothing ships as 0.27.0: the work is part of v0.26.0 and is kept here, unchanged, as a marked part of this file.
 
 ## v0.27.0 Phase 5 — legacy vectors recomputed (2026-10-23)

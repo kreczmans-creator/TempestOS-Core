@@ -263,3 +263,41 @@ Paths: `Import/` is `src/Tempest.Calc/Tempest.Calc.Import/`; `Library/` is `src/
 | RR-B-03 | The start-tag scanner works on bytes. A UTF-16 part whose text holds a character with a 0x3C byte, followed by more than 64 KB without a 0x3C or 0x3E byte, is refused. Cell text is capped at 8 KB in UTF-16, and Excel and LibreOffice write UTF-8. The failure is a loud refusal, never a wrong value. | Very low / Low | Blue | Accepted |
 | RR-B-04 | `IsLicensedInAnyRevisionAsync` reads every revision of a record for each pinned input on export or sheet build. This is linear in the revisions and fine at desktop scale. | Low / Low | Blue | Accepted |
 | RR-B-05 | A comma-delimited W1 CSV under a declared decimal comma must quote every number (ADR-0171). Honest unquoted files of that shape are refused with instructions (quote the numbers or save with `;`). A decimal-point file with a numeric description after a whole number is refused or blocked. Both are loud and never read a wrong value. | Low / Low (usability) | Blue | Accepted |
+
+## Addendum C
+
+Inputs: the colour-team findings on Addendum C in `white-team.md`, `black-team.md`, `orange-team.md`, `purple-team.md`, `green-team.md`, `yellow-team.md` and `grey-team.md` (W-C, B-C, O-C, P-C, G-C, Y-C, GR-C), and the review sections of ADR-0174, ADR-0175 and ADR-0176. `security-review.md` and `red-team.md` report Addendum C separately, in parallel; their findings and mitigations are not in this table. Scope: the delta `76935116..1474cd0a` on `release/v0.26.0` (C-1 fixes, C-3 record import, C-4 dashboard, C-5 guided test, C-6 demo installer). Every Opus review finding of those features was fixed before its merge and is not repeated.
+
+Paths: `Library/` is `src/Tempest.Calc/Tempest.Calc.Library/`. The regression tests are in `tests/Tempest.Calc.Tests.Library/AddendumCColourRegressionTests.cs`.
+
+### Mitigations shipped in this round
+
+| Finding | Mitigation | Where | Regression test | Status |
+|---|---|---|---|---|
+| W-C-01 High: the ADR Register lacked ADR-0174 to ADR-0176, so the required Governance Health Check (Checks 1 and 14) fails | Three rows added and the "Last Reviewed" line updated; re-derived parity 176 files, 176 rows | `docs/governance/Architecture/ADR Register.md` | The Governance Health Check job on CI | Fixed |
+| B-C-01 Medium: one damaged result in a stored guided run crashed the run readers and emptied the dashboard; an undefined outcome counted as a Pass | `Deserialise` leaves out a null result, a result with no step and an undefined outcome; it reads a missing note, values text or tester id as empty | `Library/ManualTesting/ManualTestRunService.cs` | `Black_B_C_01_A_Damaged_Result_In_A_Run_Is_Left_Out_And_Stops_No_List_Sheet_Or_Dashboard` | Fixed |
+| O-C-01 Medium: the records screen read the whole record collection once per record kind (68), and twice more per unlicensed record; 2.2 s at 1,000 records | One read: `CalcInstanceStore.ListRecordsWithLicenceAsync` returns each latest record with whether any revision is licensed (the SEC-B-02 rule), grouped by kind; 0.18 s at 1,000 records | `Library/CalcInstanceStore.cs`, `Library/RecordImport/RecordImportService.cs` (`ListTypesAsync`) | `Orange_O_C_01_The_Records_Screen_List_Reads_The_Records_Once_Not_Once_Per_Kind_Or_Per_Record` (store calls counted; a record licensed only in revision 1 still counts as licensed) | Fixed |
+| O-C-02 Low: the worksheet's missing-records panel read the collection once per record kind each time a form opened | One read per call, grouped by kind | `Library/RecordImport/RecordImportService.cs` (`RequirementsAsync`) | Same test, second part | Fixed |
+| P-C-01 Low: the record import's row and column caps were not exercised | Test added | — | `Purple_P_C_01_A_Record_File_At_The_Row_And_Column_Caps_Is_Read_And_One_Over_Either_Is_Refused_Whole` | Fixed |
+
+### Defensive controls of the four features (as shipped, verified by Purple)
+
+| Feature | Controls |
+|---|---|
+| C-3 record import | Untrusted bytes pass only through the ADR-0171 primitives (5 MB, strict UTF-8, RFC 4180, 1,000 data rows, 64 columns, declared number format, formula-like text refused). Units are checked per column. The calculators' hard limits apply, and every stored-but-unapplied number has its own hard range. A lookup table that runs the wrong way is an error. Text cells are one line. The commit re-judges the file and writes one transaction. Provenance is required, and the signed-in person and the file hash are stamped. The record is licensed by default and no export path is added. |
+| C-4 dashboard | Reads only, through read-only interfaces. The snapshot reader never throws and caps everything. 500 rows. Exports escape markdown, force the extension, never overwrite unasked, write through a temporary file and stay under 8 MB. Any failure is a sentence. |
+| C-5 guided test | The run service holds no calculation, Evidence or issue service, and a full run changes no other collection. A signed-in tester is required and only the starter records. A finished run is immutable. The caps: 1,000 runs, a 2,000-character note refused rather than cut, 4,000 characters of values. The script is size-capped and staleness-tested. Every handler is guarded. Deletion takes only finished runs beyond 50, never a status holder, after the app's dialog. |
+| C-6 demo installer | Never at start-up, and only after the dialog. Identity is the flag and the number. The single delete is narrow: one project's key prefix, two named profile versions with the `demo-press-` prefix, one transaction, refused on any issued row, audited before the soft delete. A stale write to a removed row is refused. The watermark comes only from the project flag. |
+
+### Residual risk register (Addendum C)
+
+| ID | Risk | Likelihood / impact | Owner | Status |
+|---|---|---|---|---|
+| RR-C-01 | The removed demo project stays in the project lists as a deleted tombstone (Black B-C-03; ADR-0176 follow-up). After a re-install two `DEMO0-PRESS1` entries are listed. | High / Low (confusing, no data at risk) | Blue | Open: filter deleted projects in `ProjectDirectory.ListAsync` with the duplicate-number check still over all projects, in a change that tests each surface |
+| RR-C-02 | Removing the demo deletes its two scan-profile versions even when a calculation in a real project used them (Black B-C-02). The calculation keeps its import record but cannot repeat the import from the list. | Low / Low | Blue | Open |
+| RR-C-03 | A cancelled demo install whose clean-up fails is reported as undone (Black B-C-04). Remove clears what is left. | Very low / Low | Blue | Open |
+| RR-C-04 | A store failure while the records screen opens from the tree is not said (Black B-C-05). The next open retries. | Low / Low | Blue | Open |
+| RR-C-05 | The run store at its cap is about 53 MB with notes of 300 characters, and the dashboard reads every run (0.8–1.5 s at 1,000 runs, Orange O-C-03). "Delete older finished runs" brings it back. | Low / Low | Blue | Accepted |
+| RR-C-06 | Two app instances on one database could each install the demo (the gate is per process; Black B-C-06). | Very low / Low | Blue | Accepted |
+| RR-C-07 | Templates moved in C-1 cannot re-run earlier checked or issued owner-test calculations (DC-14, Grey GR-C-01). | Certain for owner-test data / Low (nothing is released) | Owner | Open: decide before the first release |
+| RR-C-08 | Two cable resistance defaults are recalled from a licensed table (DC-05, White W-C-02). | — / Low | Owner | Open |
