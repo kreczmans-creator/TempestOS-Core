@@ -65,7 +65,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.1", CalcDiscipline.FluidPower, "O-ring and seal gland",
+        Id, "1.3.0", CalcDiscipline.FluidPower, "O-ring and seal gland",
         "Squeeze, stretch, gland fill and extrusion gap of a radial piston, radial rod or face O-ring seal, from the ring and groove dimensions with their tolerances, at the cold and shrunk and at the hot and swollen end of the temperature and swell range. The ring's cross-section shrinks with stretch by a relation you choose (none, constant-volume rubber, the quadratic cited from Parker ORD 5700 section 3.5, or linear in stretch). The worst case and the capability indices run through the tolerance-stack engine of M1, and the seeded Monte Carlo of the engine runs the exact non-linear model and reports the fraction outside each limit. A face seal is entered with the pressure on its outside or its inside. Measured groove distributions (from the scan import) can replace the toleranced dimensions. Ring sizes, the squeeze and fill bands and the extrusion limit are your own records: no O-ring size table, gland table or extrusion chart is shipped.",
         "Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits on (groove root for a piston or face seal, rod for a rod seal); f = (1 + α(T − 20 °C))(1 + swell)^(1/3) the ring and g = 1 + α_m(T − 20 °C) the groove metal\n" +
         "Ring cross-section: W_eff = f·W·(1 − r(X))/√(1 − c), r(X) the chosen relation (none; 1 − 1/√(1+X); Y = 0.56 + 0.59X − 0.0046X² per cent as cited, used for about 3 to 25 % stretch only; ν·X) and c the compression of the ring outside diameter where it is held (rod seal in the housing groove; internal-pressure face seal on the groove outer wall), c = 1 − g·D_g/(f·(d + 2W))\n" +
@@ -94,10 +94,10 @@ public sealed class ORingGlandCalculator : ICalcCalculator
             new CalcInputSpec("D_c", "Mating part that sets the extrusion gap: the piston outside diameter, or the housing bore round the rod (not used for a face seal)", CalcInputKind.Quantity, "mm", Default: 56.9, Min: 5, Max: 1000, HardMin: 1, HardMax: 2000, Group: "Gland"),
             new CalcInputSpec("D_c_u", "Mating part diameter, upper deviation", CalcInputKind.Quantity, "mm", Default: -0.03, Min: -0.5, Max: 0.5, HardMin: -5, HardMax: 5, Group: "Gland"),
             new CalcInputSpec("D_c_l", "Mating part diameter, lower deviation", CalcInputKind.Quantity, "mm", Default: -0.06, Min: -0.5, Max: 0.5, HardMin: -5, HardMax: 5, Group: "Gland"),
-            new CalcInputSpec("h_f", "Face-seal groove depth (face seal only)", CalcInputKind.Quantity, "mm", Default: 2.7, Min: 0.3, Max: 20, HardMin: 0.1, HardMax: 50, Group: "Gland"),
+            new CalcInputSpec("h_f", "Face-seal groove depth (face seal only; the ring is compressed over h_f + e_f)", CalcInputKind.Quantity, "mm", Default: 2.7, Min: 0.3, Max: 20, HardMin: 0.1, HardMax: 50, Group: "Gland"),
             new CalcInputSpec("h_f_u", "Face-seal groove depth, upper deviation", CalcInputKind.Quantity, "mm", Default: 0.05, Min: -0.5, Max: 0.5, HardMin: -5, HardMax: 5, Group: "Gland"),
             new CalcInputSpec("h_f_l", "Face-seal groove depth, lower deviation", CalcInputKind.Quantity, "mm", Default: 0, Min: -0.5, Max: 0.5, HardMin: -5, HardMax: 5, Group: "Gland"),
-            new CalcInputSpec("e_f", "Face-seal extrusion gap between the flanges (face seal only)", CalcInputKind.Quantity, "mm", Default: 0.05, Min: 0, Max: 2, HardMin: 0, HardMax: 10, Group: "Gland"),
+            new CalcInputSpec("e_f", "Face-seal gap between the flanges (face seal only): the extrusion gap, and it adds to the compression height h_f + e_f", CalcInputKind.Quantity, "mm", Default: 0.05, Min: 0, Max: 2, HardMin: 0, HardMax: 10, Group: "Gland"),
             new CalcInputSpec("e_f_u", "Face-seal gap, upper deviation", CalcInputKind.Quantity, "mm", Default: 0.05, Min: -0.5, Max: 0.5, HardMin: -5, HardMax: 5, Group: "Gland"),
             new CalcInputSpec("e_f_l", "Face-seal gap, lower deviation", CalcInputKind.Quantity, "mm", Default: 0, Min: -0.5, Max: 0.5, HardMin: -5, HardMax: 5, Group: "Gland"),
             new CalcInputSpec("b", "Groove width b", CalcInputKind.Quantity, "mm", Default: 4.8, Min: 1, Max: 20, HardMin: 0.3, HardMax: 50, Group: "Gland"),
@@ -210,7 +210,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
                     new CalcExpectedValue("gap_max", 0.08906408, "mm", 1e-9),
                 ]),
             new CalcTestCase("ka-face-seal", "Face seal: ring stretched onto the groove seat, depth and gap entered directly (analytic)",
-                new CalcReferenceSource("Analytic worst case, recomputed in python3", null, "ring 60 ± 0.5 × 3.5 ± 0.1 on a 60.8 +0.05/0 seat, groove 2.75 +0.05/0 deep and 4.9 +0.1/0 wide, flange gap 0.05 +0.05/0: stretch 60.85/59.5 − 1 = 2.269 % at most, gap 0.10 mm at most"),
+                new CalcReferenceSource("Analytic worst case, recomputed in python3", null, "ring 60 ± 0.5 × 3.5 ± 0.1 on a 60.8 +0.05/0 seat, groove 2.75 +0.05/0 deep and 4.9 +0.1/0 wide, flange gap 0.05 +0.05/0: stretch 60.85/59.5 − 1 = 2.269 % at most, gap 0.10 mm at most; the ring is compressed over the groove depth plus the flange gap, h_f + e_f = 2.80 to 2.90 mm at the cold end (squeeze_min) and 2.75 + 0.05 = 2.80 mm at the smallest (squeeze_max), so squeeze_min = 1 − (1 − 0.160233)·2.90/2.80 and squeeze_max = 1 − (1 − 0.261855)·2.80/2.75 against the 16.0233 % and 26.1855 % of the depth alone, and the groove area b·(h_f + e_f) − 2(1 − π/4)·r² grows with it"),
                 [
                     CalcInputValue.Choice("type", TypeFace),
                     CalcInputValue.Quantity("d_r", 60, "mm"), CalcInputValue.Quantity("d_r_tol", 0.5, "mm"), CalcInputValue.Quantity("W", 3.5, "mm"), CalcInputValue.Quantity("W_tol", 0.1, "mm"),
@@ -221,12 +221,12 @@ public sealed class ORingGlandCalculator : ICalcCalculator
                     CalcInputValue.Of("n_mc", 2_000),
                 ],
                 [
-                    new CalcExpectedValue("squeeze_min", 16.0233435665, "%", 1e-9), new CalcExpectedValue("squeeze_max", 26.1854858169, "%", 1e-9),
-                    new CalcExpectedValue("fill_max", 81.4038310717, "%", 1e-9), new CalcExpectedValue("fill_min", 62.4444221122, "%", 1e-9),
+                    new CalcExpectedValue("squeeze_min", 13.0241772653, "%", 1e-9), new CalcExpectedValue("squeeze_max", 24.8434037408, "%", 1e-9),
+                    new CalcExpectedValue("fill_max", 79.9483699797, "%", 1e-9), new CalcExpectedValue("fill_min", 60.2886136783, "%", 1e-9),
                     new CalcExpectedValue("stretch", 2.2689075630, "%", 1e-9), new CalcExpectedValue("gap_max", 0.1, "mm", 1e-9),
                 ]),
             new CalcTestCase("ka-face-seal-internal", "Face seal with the pressure inside: the ring OD seats on the groove outer wall and is compressed, not stretched (analytic)",
-                new CalcReferenceSource("Analytic worst case, recomputed in python3", null, "ring 60 ± 0.5 × 3.5 ± 0.1 (OD 66.3 to 67.7 mm) on a 66.7 +0.05/0 groove outer wall, groove 2.75 +0.05/0 deep and 4.9 +0.1/0 wide, flange gap 0.05 +0.05/0: the OD stretch D_ref/OD − 1 is 66.75/66.3 − 1 = 0.679 % at most and 66.7/67.7 − 1 = −1.477 % at least, so the OD compression is 1.477 % at most (od_comp = (OD_max − D_g,min)/OD_max); the hot end compresses the ring OD by 3.862 % (f·OD against g·D_g) and thickens the section by 1/√(1 − c)"),
+                new CalcReferenceSource("Analytic worst case, recomputed in python3", null, "ring 60 ± 0.5 × 3.5 ± 0.1 (OD 66.3 to 67.7 mm) on a 66.7 +0.05/0 groove outer wall, groove 2.75 +0.05/0 deep and 4.9 +0.1/0 wide, flange gap 0.05 +0.05/0: the OD stretch D_ref/OD − 1 is 66.75/66.3 − 1 = 0.679 % at most and 66.7/67.7 − 1 = −1.477 % at least, so the OD compression is 1.477 % at most (od_comp = (OD_max − D_g,min)/OD_max); the hot end compresses the ring OD by 3.862 % (f·OD against g·D_g) and thickens the section by 1/√(1 − c); the compression height is the groove depth plus the flange gap, h_f + e_f (2.80 to 2.90 mm), so squeeze_min = 1 − (1 − 0.166788)·2.90/2.80, squeeze_max = 1 − (1 − 0.269137)·2.80/2.75 and the fills follow the groove area b·(h_f + e_f) − 2(1 − π/4)·r², and squeeze_nom = 1 − 2.85/W_eff on the nominal 2.775 + 0.075 mm (20.8772 % with the depth alone); the depth-alone values were 16.6788 %, 26.9137 %, 63.4307 % and 82.6243 %"),
                 [
                     CalcInputValue.Choice("type", TypeFace), CalcInputValue.Choice("face_p", PressureInternal),
                     CalcInputValue.Quantity("d_r", 60, "mm"), CalcInputValue.Quantity("d_r_tol", 0.5, "mm"), CalcInputValue.Quantity("W", 3.5, "mm"), CalcInputValue.Quantity("W_tol", 0.1, "mm"),
@@ -239,9 +239,9 @@ public sealed class ORingGlandCalculator : ICalcCalculator
                 [
                     new CalcExpectedValue("stretch", 0.6787330317, "%", 1e-9), new CalcExpectedValue("stretch_min", -1.4771048744, "%", 1e-9), new CalcExpectedValue("stretch_nom", -0.4104477612, "%", 1e-9),
                     new CalcExpectedValue("od_comp", 1.4771048744, "%", 1e-9), new CalcExpectedValue("od_comp_nom", 0.4104477612, "%", 1e-9), new CalcExpectedValue("c_h", 3.8619124, "%", 1e-8),
-                    new CalcExpectedValue("squeeze_min", 16.6787759509, "%", 1e-9), new CalcExpectedValue("squeeze_max", 26.9136545944, "%", 1e-9),
-                    new CalcExpectedValue("fill_min", 63.4307031934, "%", 1e-9), new CalcExpectedValue("fill_max", 82.6242783141, "%", 1e-9),
-                    new CalcExpectedValue("squeeze_nom", 20.8771662406, "%", 1e-9), new CalcExpectedValue("X_c", 1.2378342453, "%", 1e-9),
+                    new CalcExpectedValue("squeeze_min", 13.7030179491, "%", 1e-9), new CalcExpectedValue("squeeze_max", 25.5848119507, "%", 1e-9),
+                    new CalcExpectedValue("fill_min", 61.2408447515, "%", 1e-9), new CalcExpectedValue("fill_max", 81.1469962162, "%", 1e-9),
+                    new CalcExpectedValue("squeeze_nom", 18.7387112741, "%", 1e-9), new CalcExpectedValue("X_c", 1.2378342453, "%", 1e-9),
                 ]),
             new CalcTestCase("ka-gap-over-temperature", "Extrusion gap over temperature with a bore of another metal and the bore dilation under pressure (analytic)",
                 new CalcReferenceSource("Analytic worst case, recomputed in python3", null, "the defaults with the bore (sealing surface) at α_s = 2.3e-5 and the steel piston at α_m = 1.2e-5, bore dilation 0.02 mm: gap = g_s·D_s − g_m·D_c with the largest at 80 °C, D_s,max = 56.946 and D_c,min = 56.84 mm: 1.00138·56.946 − 1.00072·56.84 = 0.14366 mm, plus 0.02 mm = 0.16366 mm (0.106 mm as dimensioned); smallest gap 0.0049496 mm at −20 °C; the depth is taken with each part at its own temperature, h = (g_s·D_s − g_m·D_g)/2, so the squeeze moves with α_s: 17.335 % to 26.450 %, fill 64.245 % to 84.058 %"),
@@ -541,7 +541,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
         {
             SealKind.Piston => [V(GlandDim.Surface).Scaled(gs / 2.0, "D_s / 2"), V(GlandDim.Groove).Scaled(-gm / 2.0, "D_g / 2")],
             SealKind.Rod => [V(GlandDim.Groove).Scaled(gm / 2.0, "D_g / 2"), V(GlandDim.Surface).Scaled(-gs / 2.0, "D_s / 2")],
-            _ => [V(GlandDim.FaceDepth).Scaled(gm)],
+            _ => [V(GlandDim.FaceDepth).Scaled(gm), V(GlandDim.FaceGap).Scaled(gm, "e_f")],
         };
 
         // Each contributor, as the sheet lists them.

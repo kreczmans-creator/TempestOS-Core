@@ -29,10 +29,10 @@ Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits o
   D_c | Mating part that sets the extrusion gap: the piston outside diameter, or the housing bore round the rod (not used for a face seal) | 56.9 | mm | manual | 5 … 1000 mm
   D_c_u | Mating part diameter, upper deviation | -0.03 | mm | manual | -0.5 … 0.5 mm
   D_c_l | Mating part diameter, lower deviation | -0.06 | mm | manual | -0.5 … 0.5 mm
-  h_f | Face-seal groove depth (face seal only) | 2.7 | mm | manual | 0.3 … 20 mm
+  h_f | Face-seal groove depth (face seal only; the ring is compressed over h_f + e_f) | 2.7 | mm | manual | 0.3 … 20 mm
   h_f_u | Face-seal groove depth, upper deviation | 0.05 | mm | manual | -0.5 … 0.5 mm
   h_f_l | Face-seal groove depth, lower deviation | 0 | mm | manual | -0.5 … 0.5 mm
-  e_f | Face-seal extrusion gap between the flanges (face seal only) | 0.05 | mm | manual | 0 … 2 mm
+  e_f | Face-seal gap between the flanges (face seal only): the extrusion gap, and it adds to the compression height h_f + e_f | 0.05 | mm | manual | 0 … 2 mm
   e_f_u | Face-seal gap, upper deviation | 0.05 | mm | manual | -0.5 … 0.5 mm
   e_f_l | Face-seal gap, lower deviation | 0 | mm | manual | -0.5 … 0.5 mm
   b | Groove width b | 4.8 | mm | manual | 1 … 20 mm
@@ -324,5 +324,5 @@ Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits o
   WARNING record: Tabulated values not taken from a reference record: alpha, nu (Material properties); d_r, d_r_tol, W, W_tol (Ring size); q_lo_s, q_hi_s, q_lo_d, q_hi_d, fill_lo, fill_hi, x_lo, x_hi, od_hi (Squeeze, fill and stretch bands); gap_allow (Permitted extrusion gap). Enter each as one so its source, edition and licence travel with it.
 
 8. VERIFICATION
-  Template: fp.oring-gland@1.2.1
+  Template: fp.oring-gland@1.3.0
   Known-answer cases passed: 13/13
