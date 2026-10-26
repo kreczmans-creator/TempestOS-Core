@@ -42,6 +42,7 @@
   "mech.tolerance-stack@2.2.0": "74bf1d1b6943c7d042af30b0e1442a233d52394043b45f3e6306774bf58fc4c6",
   "mech.weld-group@1.1.1": "d7b4436f57b87af760885bbe1f2d7bb13cd0f07ae64dc4510f51b5ab5736b022",
   "struct.base-plate@1.1.1": "6790007d3e618b273c382614403d8ce838789c2c62d78091cef478818a7def4a",
+  "struct.base-plate@1.2.0": "78225cb0777ee5bb9964851193b72e3c2b50a0bf2023eb64e33bca03c96d342f",
   "struct.beam-formulas@1.0.1": "9ce95307c4fbf44bcfba1c5691cce69f323051c044581db60b36e4c494c2fa0f",
   "struct.column-buckling@1.0.1": "b92d254599e2302a71e27dbdd977e0c7deda3412ee98d94176ad7f87ca92c523",
   "struct.connection-ec3@1.2.1": "0b622311bc82e8b22056703226ed9e43d3352cad4fe111fba47d45d9ff1ec19f",

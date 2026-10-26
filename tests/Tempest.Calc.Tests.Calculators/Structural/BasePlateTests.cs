@@ -226,6 +226,37 @@ public sealed class BasePlateTests
         Assert.Contains(r.Checks, c => c.Name.StartsWith("Compression-side half annulus", StringComparison.Ordinal));
     }
 
+    private static CalcInputSet ChsMoment(double tp, double alpha) =>
+        Column(Loads(100, 150), BasePlateCalculator.ColumnChs)
+            .With(CalcInputValue.Quantity("D", 219.1, "mm")).With(CalcInputValue.Quantity("t", 8, "mm"))
+            .With(CalcInputValue.Quantity("B", 500, "mm")).With(CalcInputValue.Quantity("L", 500, "mm"))
+            .With(CalcInputValue.Quantity("x_b", 200, "mm")).With(CalcInputValue.Quantity("m", 25, "mm"))
+            .With(CalcInputValue.Quantity("l_eff", 400, "mm")).With(CalcInputValue.Quantity("F_t_Rd", 250, "kN"))
+            .With(CalcInputValue.Of("alpha", alpha)).With(CalcInputValue.Quantity("t_p", tp, "mm"));
+
+    [Theory]
+    [InlineData(60.0, 1.0, 29.24365869)]
+    [InlineData(25.0, 1.0, 29.24365869)]
+    [InlineData(60.0, 1.5, 33.64871534)]
+    [InlineData(40.0, 1.5, 33.64871534)]
+    public void A_Chs_Required_Thickness_Does_Not_Depend_On_The_Entered_Thickness_And_Passes_Its_Own_Checks(double enteredTp, double alpha, double expected)
+    {
+        // P1-struct.base-plate-01: z_C, C_Ed and T_Ed move with t_p, so t_req must re-evaluate them at every trial thickness.
+        // Independent check (python3): bisection over t with the half-annulus centroid, C_Ed and T_Ed re-evaluated at each t.
+        // The entered-thickness search gave 27.18 mm (alpha 1) and 21.67 mm (alpha 1.5) at t_p 60, both failing their own checks.
+        var r = CalcRunner.Run(Plate, ChsMoment(enteredTp, alpha));
+        var tReq = r.OutputSi("t_req") * 1e3;
+        Assert.Equal(expected, tReq, 6);
+
+        var again = CalcRunner.Run(Plate, ChsMoment(tReq + 1e-6, alpha));
+
+        foreach (var u in new[] { "u_N", "u_C", "u_T" })
+            Assert.True(again.OutputSi(u) <= 1 + 1e-6, $"{u} = {again.OutputSi(u)} at t_p = t_req");
+
+        var below = CalcRunner.Run(Plate, ChsMoment(tReq - 0.01, alpha));
+        Assert.True(new[] { below.OutputSi("u_N"), below.OutputSi("u_C"), below.OutputSi("u_T") }.Max() > 1);
+    }
+
     [Fact]
     public void A_Lever_Arm_Can_Be_Entered_And_Overrides_The_Section()
     {
