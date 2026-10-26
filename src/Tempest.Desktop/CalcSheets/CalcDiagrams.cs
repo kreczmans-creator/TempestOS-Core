@@ -825,7 +825,7 @@ public static class CalcDiagrams
                 new DiagramLabel("outside", new(55, 130), "T_amb", "T_amb"),
                 new DiagramPointLoad("sun", new(150, 44), DiagramDirection.Down, 30, "I_sun", "I_sun", new(64, 20)),
                 new DiagramCircle("fan", new(300, 38), 14, Filled: false, "V_pts", "fan", new(345, 14)),
-                new DiagramPointLoad("loss", new(340, 116), DiagramDirection.Right, 40, "h", "h", new(330, 98)),
+                new DiagramPointLoad("loss", new(340, 116), DiagramDirection.Right, 40, "h_conv", "h_conv", new(330, 98)),
             ]),
         ]);
 
