@@ -72,6 +72,14 @@ public sealed class MemberResult
         var stations = Stations(divisions);
         var candidates = new List<double>(stations);
 
+        // An applied couple makes the moment diagram jump: a station on the couple carries only the value after the jump, so the
+        // value just before it (and just after it, for a couple at the start) is a candidate too (P1-struct.frame-2d-01).
+        foreach (var a in _loads.CouplePositions)
+        {
+            candidates.Add(Math.Max(0, a - 1e-9 * Length));
+            candidates.Add(Math.Min(Length, a + 1e-9 * Length));
+        }
+
         for (var i = 0; i + 1 < stations.Count; i++)
         {
             var a = stations[i];

@@ -41,8 +41,8 @@ Calculation pack: the calculations listed in the index, issued together under on
   Template: pack
   Content hash: —
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 46/46
-  Test run: 2026-10-26 08:48 UTC
+  Known-answer cases passed: 47/47
+  Test run: 2026-10-26 08:55 UTC
   Application: TempestOS test
 
 CALCULATION SHEET — ISSUED
@@ -178,7 +178,7 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   Content hash: 60a0615ba7745102
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 08:48 UTC
+  Test run: 2026-10-26 08:55 UTC
   Application: TempestOS test
 
 
@@ -379,11 +379,11 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   No warnings.
 
 8. VERIFICATION
-  Template: struct.frame-2d@1.2.0
-  Content hash: 1b81d6b769125a7e
+  Template: struct.frame-2d@1.3.0
+  Content hash: d545dc5d7d4eb03c
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 5/5
-  Test run: 2026-10-26 08:48 UTC
+  Known-answer cases passed: 6/6
+  Test run: 2026-10-26 08:55 UTC
   Application: TempestOS test
 
 
@@ -627,7 +627,7 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   Content hash: 5c47accf06a9faee
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 08:48 UTC
+  Test run: 2026-10-26 08:55 UTC
   Application: TempestOS test
 
 
@@ -767,7 +767,7 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   Content hash: 1d9f5c56b95ecdb6
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 08:48 UTC
+  Test run: 2026-10-26 08:55 UTC
   Application: TempestOS test
 
 
@@ -941,7 +941,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: 98d5d1a33491feda
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 08:48 UTC
+  Test run: 2026-10-26 08:55 UTC
   Application: TempestOS test
 
 
@@ -1100,7 +1100,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: 98d5d1a33491feda
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 08:48 UTC
+  Test run: 2026-10-26 08:55 UTC
   Application: TempestOS test
 
 
@@ -1161,7 +1161,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | link: Holding-down bolts rev A · f_yb | 235 … 640 MPa
   A_s | Anchor bolt tensile stress area (from S4) | 244.794 | mm^2 | link: Holding-down bolts rev A · A_s | 50 … 1500 mm^2
   F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 248.485 | kN | link: Holding-down bolts rev A · F_b_Rd | 1 … 2000 kN
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 650973fd16584458b91f7c65cb88151d/78da19e25adc4924bf5b79a0ca1ae3da | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 4f84072f021d4e989a56312540da0812/c2ddcf9b5a704a82932ec67440376044 | any
 
 3. ASSUMPTIONS
   A1. N_Ed is positive in compression here, the opposite of S3 (tension positive): a link from S2 must take the reaction R1_y (up positive, compression into the base), never the member force N_e1. (Sign convention.)
@@ -1379,5 +1379,5 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   Content hash: 78225cb0777ee5bb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-26 08:48 UTC
+  Test run: 2026-10-26 08:55 UTC
   Application: TempestOS test

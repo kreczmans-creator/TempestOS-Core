@@ -87,6 +87,43 @@ public sealed class FrameTests
         }, iter: 60);
     }
 
+    [Theory]
+    [InlineData(3.0, 15.0, -15.0)]
+    [InlineData(3.3, 16.5, -13.5)]
+    [InlineData(6.0, 30.0, 0.0)]
+    [InlineData(0.0, 0.0, -30.0)]
+    public void A_Concentrated_Couple_Reports_The_Moment_On_Both_Sides_Of_The_Jump(double a, double expectedMax, double expectedMin)
+    {
+        // P1-struct.frame-2d-01. Simply supported 6 m span, 30 kN*m couple at a: R = 30/6 = 5 kN, so M(a-) = 5a and M(a+) = 5a - 30 (python3:
+        // a = 3 -> +15 / -15; a = 3.3 -> 16.5 / -13.5; a = 6 -> 30 / 0; a = 0 -> 0 / -30). The product reported only the value after the jump
+        // at a station (13.5 against 15 at a = 3, 28.5 against 30 at a = 6).
+        var r = Run(CalcInputValue.Quantity("E", 210, "GPa"), FrameCalculator.Nodes((1, 0, 0, FrameCalculator.SupportPin), (2, 6, 0, FrameCalculator.SupportRollerY)),
+            FrameCalculator.Elements((1, 1, 2, 100, 8000)), FrameCalculator.Loads((1, "moment", 1, a, 0, 0, 0, 0, 0, 30)), CalcInputValue.Of("n_div", 20));
+        Assert.Equal(expectedMax, r.OutputSi("M_max") / 1e3, 6);
+        Assert.Equal(expectedMin, r.OutputSi("M_min") / 1e3, 6);
+    }
+
+    [Theory]
+    [InlineData("point")]
+    [InlineData("moment")]
+    public void A_Point_Or_Couple_Load_With_A_Blank_Position_Is_Blocked_Instead_Of_Landing_On_The_Member_Start(string kind)
+    {
+        // P1-struct.frame-2d-02. SS 6 m, point load F_y -60 with 'a' blank gave R1_y 60, R2_y 0 and M_max 0 with no notice.
+        var blank = CalcRow.Of(("case", new CalcCell(1)), ("kind", new CalcCell(Text: kind)), ("target", new CalcCell(1)), ("F_y", new CalcCell(-60, "kN")), ("M", new CalcCell(30, "kN*m")));
+        var r = Run(CalcInputValue.Quantity("E", 210, "GPa"), FrameCalculator.Nodes((1, 0, 0, FrameCalculator.SupportPin), (2, 6, 0, FrameCalculator.SupportRollerY)),
+            FrameCalculator.Elements((1, 1, 2, 100, 8000)), CalcInputValue.Table("loads", [blank]), CalcInputValue.Of("n_div", 20));
+        Assert.True(r.IsBlocked);
+        var block = Assert.Single(r.Blocks);
+        Assert.Equal("model", block.RuleId);
+        Assert.StartsWith("loads:", block.Message, StringComparison.Ordinal);
+        Assert.Contains("enter a", block.Message, StringComparison.Ordinal);
+
+        // The same load with a = 0 typed is accepted: the start of the member is then a stated position.
+        var zero = CalcRow.Of(("case", new CalcCell(1)), ("kind", new CalcCell(Text: kind)), ("target", new CalcCell(1)), ("a", new CalcCell(0, "m")), ("F_y", new CalcCell(-60, "kN")), ("M", new CalcCell(30, "kN*m")));
+        Assert.False(Run(CalcInputValue.Quantity("E", 210, "GPa"), FrameCalculator.Nodes((1, 0, 0, FrameCalculator.SupportPin), (2, 6, 0, FrameCalculator.SupportRollerY)),
+            FrameCalculator.Elements((1, 1, 2, 100, 8000)), CalcInputValue.Table("loads", [zero]), CalcInputValue.Of("n_div", 20)).IsBlocked);
+    }
+
     [Fact]
     public void Released_End_Carries_No_Moment()
     {
