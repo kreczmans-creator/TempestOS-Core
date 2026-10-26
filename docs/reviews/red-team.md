@@ -535,6 +535,139 @@ public void A_Split_Decimal_Is_Refused_Not_Read_As_A_Whole_Number(string csv, st
 
 **Accepted and disclosed:** "Switch person…" without a password lets one human hold every role. The sheet says signatures are not authenticated, and the flag stays off until that is addressed.
 
+## Addendum C
+
+**Scope.** The Addendum C Track S delta on `release/v0.26.0` from 76935116 to 1474cd0a, as §C7 names it:
+- C-3 record import and the records screen (ADR-0174).
+- C-4 verification dashboard, its embedded snapshot and its exports.
+- C-5 guided test mode, its embedded script and `Manual.TestRuns` (ADR-0175).
+- C-6 demo installer and its removal (ADR-0176).
+- The C-1 calculator changes, where they touch input handling or numeric limits.
+
+**Method.** The fixes from each feature's Opus review were taken as the baseline and attacked around: ADR-0174 §11, ADR-0175 "Changes after review", ADR-0176, and the C-4 and C-6 review fixes in `docs/build-log/LOG.md`. Every attack ran as a throwaway xUnit probe, built with `-p:TreatWarningsAsErrors=true` and removed afterwards:
+- `Tempest.Calc.Tests.Library` used the record-import support (`RecordImportTestSupport`) and the demo host (`DemoHost`).
+- `Tempest.Calc.Tests.Calculators` checked every table KAT of every calculator again in a scaled unit.
+
+The probes below are written as the secure assertion, so each fails while its hole is open. The four that were fixed are kept as `AddendumCSecurityRegressionTests`.
+
+**Result.** 20 probe cases ran (19 Library, 1 Calculators). They produced 5 findings: 0 Critical, 0 High, 2 Medium, 3 Low. The security review logs five Info items as well. R-C-01 to R-C-04 are fixed in 0cc88a60; R-C-05 is open. Fix these two first:
+- R-C-02: an unconservative output was suggested as a guided Pass.
+- R-C-01: a decimal-comma record file was split silently.
+
+The Calculators probe's only differences were display artefacts: the tolerance stack shows its outputs in the first contributor's unit, and a 360° cam segment rescaled to 360.0000000001° is refused. Neither is a defect.
+
+### Findings
+
+| ID | Severity | Location | Description | Status |
+|---|---|---|---|---|
+| R-C-01 | Medium | `RecordImportService.cs:283,307,674-684` | Under a declared decimal comma with a comma delimiter, an unquoted `14,8` is split into two fields and read silently when the row also leaves a value off | Fixed (0cc88a60) |
+| R-C-02 | Medium | `GuidedTolerance.cs:109-124`; `GuidedAutoCompare.cs:87` | The guided auto-compare allowed up to ±50 % against an expected value written as a short exact number, and suggested an unconservative output as a Pass | Fixed (0cc88a60) |
+| R-C-03 | Low | `CalcInstanceStore.cs:293`; `CalcDemoProjectService.cs:235` | Remove demo project deleted a scan profile the person had saved under the demo's id | Fixed (0cc88a60) |
+| R-C-04 | Low | `RecordImportService.cs:180` | A provenance file's `origin = 7` made an origin no record can have | Fixed (0cc88a60) |
+| R-C-05 | Low | `CalcInstanceService.cs:152`; `CalcDemoProjectService.cs:370` | A calculation can be created in the removed demo project, and the row is then out of reach of Remove | Open |
+
+#### R-C-01 — Medium — a decimal comma split by the comma delimiter in a record file
+
+The template-24 row `6205,14,8` was meant as C = 14,8 kN with C_0 left off. The importer read it as C = 14 kN and C_0 = 8 kN, raised no warning, and allowed the commit. The same file reached the commit on template 04 (`4,,27`) and on template 06.
+
+**PoC** (Library tests; now `SEC_C_01_Under_A_Decimal_Comma_An_Unquoted_Number_In_A_Comma_Separated_File_Is_Refused`):
+```csharp
+var host = RecordImportTestSupport.Host();
+var file = Utf8("designation[text],C[kN],C_0[kN]\r\n6205,14,8\r\n");
+var preview = await host.Service.RecordImport.PreviewAsync(Request("24", file) with { Number = NumberProfile.Comma });
+Assert.False(preview.CanCommit);   // was True, with no issue at all
+```
+
+#### R-C-02 — Medium — a guided Pass for an unconservative output
+
+The expected value `I_b = 5 A` of `elec.load-budget/pump-skid-panel` was compared at ±0.5 A. An engine that under-reports the bus current by 9 % (4.55 A) therefore matched, and the step was suggested as a Pass. The same rule allowed a utilisation of 1.4 against an expected `1`. It allowed ±12.5 % on `P = 4 kN` (bearing), ±8 % on `u = 0.6` (material margin) and ±50 % on `t_wc = 0.01 in`. In the shipped script, 53 of the 541 numeric expectations allowed 1 % or more, and 17 allowed 5 % or more.
+
+**PoC** (Library tests; now `SEC_C_02_An_Engine_Regression_In_A_Worked_Example_Is_Suggested_As_A_Fail_Not_A_Pass` and the tolerance theories):
+```csharp
+Assert.Equal(GuidedCompareOutcome.Mismatch, GuidedTolerance.CompareShown("u_r0", "1", "", "1.4").Outcome);   // was Match
+var step = GuidedTestScript.Current.Find("example:elec.load-budget/pump-skid-panel")!;
+var calc = ShippedCalculators.All.Single(c => c.Template.Id == step.TemplateId);
+var run = CalcRunner.Run(calc, CalcInputJson.Read(step.InputsJson!, calc.Template).Inputs);
+var regressed = run with { Outputs = [.. run.Outputs.Select(o => o.Symbol == "I_b" ? o with { Value = ScalarValue.Of(4.55, "A") } : o)] };
+Assert.Equal(ManualTestOutcome.Fail, GuidedAutoCompare.Compare(step, regressed).Suggested);   // was Pass
+```
+
+**Fix.** The allowance is capped at 1 % of the expected value, and never below half of the form's last shown place. One more example, `mech.iso286-fit/h7-g6-25mm`, is now given to the tester to decide by hand (SEC-C-10).
+
+#### R-C-03 — Low — the demo's removal deleted a profile it had not written
+
+**PoC** (Library tests; now `SEC_C_03_Remove_Keeps_A_Scan_Profile_The_Person_Saved_Under_The_Demonstrations_Id`):
+```csharp
+var host = DemoHost.New();
+var demo = DemoHost.Service(host);
+await host.Service.SaveScanProfileAsync(CalcDemoProject.StackProfile with { Title = "MY OWN PROFILE" });
+await demo.InstallAsync();   // succeeds and uses the person's profile ("exists already; a change is a new version")
+await demo.RemoveAsync();
+Assert.NotNull(await host.Service.FindScanProfileAsync(CalcDemoProject.StackProfileId, 1));   // was deleted
+```
+
+#### R-C-04 — Low — a provenance origin given as a number
+
+**PoC** (Library tests; now `SEC_C_04_A_Provenance_Origin_Given_As_A_Number_Or_A_Combination_Is_Refused`):
+```csharp
+var file = Utf8("kind,title,source_title,edition,amendment,table_or_clause,licence_holder,licensed_source,origin\r\n" +
+                "cable.ampacity,T,S,2018,,Table 1,Me,true,7\r\n");
+var rows = RecordImportService.ReadProvenanceFile(file, out _);
+Assert.All(rows, r => Assert.True(Enum.IsDefined(r.Provenance.Origin)));   // was Origin = 7
+```
+
+#### R-C-05 — Low — a late create lands in the removed demo project
+
+**PoC** (Library tests, open):
+```csharp
+var host = DemoHost.New();
+var demo = DemoHost.Service(host);
+await demo.InstallAsync();
+var id = (await demo.StatusAsync()).ProjectId!.Value;
+await demo.RemoveAsync();
+var late = await host.Service.CreateAsync("mech.tolerance-stack", id, "late write", CalcDemoProject.SealStackInputs());
+Assert.Null(late);   // accepted; RemoveAsync then says "There is no demo project to remove" and the row stays
+```
+
+**Proposed fix.** Refuse `CreateAsync`, `CreatePackAsync` and `InstantiatePackTemplateAsync` into a deleted project, and let Remove find a deleted demo project that still holds rows.
+
+### Attacks that found nothing (the code held)
+
+- **Hostile record files.**
+  - These cells are refused with the line and the column: `NaN`, `Infinity`, `1e400`, `1e-400`, Arabic-Indic digits, `1_4` and `0x10`.
+  - The reader refuses bidi and other control characters, including those in the provenance file.
+  - A formula prefix is refused, and so is a formula behind a line break.
+  - A 2 MB file of 1,000-character labels is refused in 172 ms.
+  - A 1,000-row file previews in 21 ms and commits in 100 ms; as a revision of every record it commits in 0.5 s.
+  - A header named twice, a header that is no column of the template, two columns mapped to one, a ragged row, a malformed quote and an empty file each block the commit.
+- **Unit spoofing.** Every table KAT of every calculator was run again with each quantity cell in a scaled unit (`(u)*mm/m`). No calculator's answer changed, so a record imported in a convertible unit, which is kept as typed, is applied correctly. A unit of another dimension, a unit on a plain number and a missing unit are all refused.
+- **Licensed-record export lock.**
+  - A template-62 revision marked unlicensed over a licensed material stays licensed, and `ExportRecordAsync` refuses it.
+  - Templates 63 to 65 on a licensed material keep the licence.
+  - The records screen shows only symbols and row counts after the save, and clears the grid.
+  - There is no "load into grid" read-back.
+  - The dashboard and guided exports carry no record value.
+  - The demo stores no record and gives its synthetic cable tables as labelled inputs.
+- **Destructive paths.**
+  - Remove refuses issued or superseded calculations, packs and Evidence, in both the service and the store.
+  - Its row transaction is limited to the project's key prefix.
+  - A stale update of a removed calculation or pack is refused (`WriteGuardedAsync`, `WriteGuardedPackAsync`).
+  - An Issue that finds its row gone is refused (`WriteIssuedInstanceAsync`, read in code).
+  - "Delete older finished runs" deletes only finished runs from `Manual.TestRuns`, and keeps any run that holds a template's latest result.
+- **Identity.**
+  - A run can be added to only by the sign-in id that started it, and a run started with nobody signed in can only be finished.
+  - "Entered by" is the principal, never the file's `entered_by`.
+  - The DEMO watermark follows the project's tag, which no screen can edit, so a demo sheet cannot lose it and a real sheet cannot gain it.
+- **Embedded resources.**
+  - Read in code: the snapshot reader skips null items and findings, reads an unknown defect status, a duplicate key or over 4 M characters as "unavailable", and never throws.
+  - The guided script refuses every over-cap size.
+  - Both resources are hashed and staleness-tested in CI.
+- **Exports.**
+  - Markdown cells escape `| [ ] ( ) ! * _ \`, replace backticks and angle brackets, collapse line breaks and are clipped.
+  - The dashboard export forces `.md` or `.pdf`, refuses to replace a file the added extension names, and writes through a temporary file.
+  - The guided sheet encodes `< > &` and writes through a temporary file.
+- **C-1 numeric limits.** The hard-limit sweep over all 54 templates and the hostile-input suite pass (242 cases); the slowest is `mech.tolerance-stack` at 4 s (R-25).
+
 > The sections below were written on `release/v0.27.0` (23–24 October 2026) for the legacy calculator replacement (ADR-0167). The owner decided that nothing ships as 0.27.0: the work is part of v0.26.0 and is kept here, unchanged, as a marked part of this file.
 
 ## v0.27.0 delta (2026-10-23)
