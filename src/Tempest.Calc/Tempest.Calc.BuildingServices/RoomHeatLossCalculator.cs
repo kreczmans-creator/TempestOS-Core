@@ -54,7 +54,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.BuildingServices, "U-values and room heat loss",
+        Id, "1.4.0", CalcDiscipline.BuildingServices, "U-values and room heat loss",
         "U-values of built-up elements from their layers and surface resistances, and the steady-state design heat loss of one room: fabric loss through each element to its adjacent temperature, a thermal-bridge allowance, ventilation loss (through the outside temperature or an MVHR supply temperature), the room load for sizing emitters, the heat loss coefficient and the loss per floor area; optionally checked against target U-values.",
         "Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing\n" +
         "Element fabric loss: Φ_i = A·U·f·(θ_int − θ_adj), θ_adj = θ_e where the element faces outside\n" +
@@ -139,6 +139,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
         OutputPorts:
         [
             new CalcOutputPort("Phi_HL", "W", "Room design heat loss (→ B6 room heat required)"),
+            new CalcOutputPort("theta_int", "degC", "Internal design temperature of the room (→ B6 room temperature of that room's emitter)"),
             new CalcOutputPort("HLC", "W/K", "Heat loss coefficient"),
             new CalcOutputPort("Phi_T", "W", "Fabric heat loss including the thermal-bridge allowance"),
             new CalcOutputPort("Phi_V", "W", "Ventilation heat loss"),
@@ -471,7 +472,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
         foreach (var (symbol, text) in outputs)
             c.Output(symbol, text);
 
-        foreach (var (symbol, text) in new[] { ("A_fab", "Total fabric area"), ("A_ext", "Fabric area facing outside"), ("A_tb", "Fabric area facing outside weighted by f"), ("U_m", "Mean fabric U-value (area-weighted)"), ("U_eff", "Heat-loss weighted fabric U-value (with f)"), ("dT", "Design temperature difference"), ("Phi_el", "Element fabric loss"), ("Phi_tb", "Thermal-bridge allowance"), ("Phi_T", "Fabric heat loss"), ("q_v", "Ventilation air flow"), ("Phi_V", "Ventilation heat loss"), ("Phi_HL", "Room design heat loss"), ("HLC", "Heat loss coefficient") })
+        foreach (var (symbol, text) in new[] { ("theta_int", "Internal design temperature"), ("A_fab", "Total fabric area"), ("A_ext", "Fabric area facing outside"), ("A_tb", "Fabric area facing outside weighted by f"), ("U_m", "Mean fabric U-value (area-weighted)"), ("U_eff", "Heat-loss weighted fabric U-value (with f)"), ("dT", "Design temperature difference"), ("Phi_el", "Element fabric loss"), ("Phi_tb", "Thermal-bridge allowance"), ("Phi_T", "Fabric heat loss"), ("q_v", "Ventilation air flow"), ("Phi_V", "Ventilation heat loss"), ("Phi_HL", "Room design heat loss"), ("HLC", "Heat loss coefficient") })
             c.Output(symbol, text);
 
         if (hasFloor)

@@ -1,4 +1,4 @@
-# B4 — U-values and room heat loss (`bs.room-heat-loss@1.3.0`)
+# B4 — U-values and room heat loss (`bs.room-heat-loss@1.4.0`)
 
 **In plain terms.** A room loses heat through its walls, floor, roof and windows and by air leaking or being ventilated out. The worksheet works out the U-value of each construction from its layers (how easily heat flows through it), the heat lost through each element and by ventilation at the design temperatures, and the total heating the room needs, with an allowance for thermal bridges. It also checks each U-value against its target.
 
@@ -17,6 +17,8 @@
 **Outputs.** Per element `R_i`, `U_i`, `Phi_i` (and `u_i` against a target); `A_fab`, `A_ext`, `A_tb`, `U_m`, `U_eff`, `dT`, `Phi_el`, `Phi_tb`, `Phi_T`, `q_v`, `Phi_V` (with `q_inf` where `n_inf` is used), `Phi_HL`, `HLC`, `Phi_A`. **Ports.** `Phi_HL` (→ B6 room heat required), `HLC`, `Phi_T`, `Phi_V`, `U_1` (U-value of the first element of the elements table, added in 1.2.0 for the envelope-moisture chain: it is the B7 `U_ref` cross-check; it offers no per-layer output, so a wall's layers are typed in B7 as well). **Checks.** One utilisation check per element with a target (U/U_target ≤ 1).
 
 **Changes in 1.3.0.** `U_m` is now the area-weighted mean U-value `Σ A·U / Σ A`, as its label says; the previous value, which included the temperature factor `f`, is the new output `U_eff = Σ A·U·f / Σ A` (probe: wall 18 m² U 0.1967, roof 20 m² U 0.1776, floor 20 m² U 0.22 with f 0.7, window 4 m² U 1.4: `U_m` 0.2544 → 0.2757, `U_eff` 0.2544). No check uses either. An element that has both `f` below 1 and an adjacent temperature above `θ_e` warns that the temperature reduction is counted twice (10 m², U 0.3, θ_adj 10 °C, f 0.5, θ_int 21 °C gives 16.5 W; either reduction alone gives 33 W or 36 W); `f` is for elements facing the outside only.
+
+**Port added in 1.4.0.** `theta_int` (the internal design temperature) is an output port, so the wet-heating pack links each room's design temperature to the room temperature of its emitter in the sealed-system step.
 
 **Limitations.** Steady state, no gains, no thermal mass or dynamic simulation. Homogeneous layers only: no bridged-layer (combined) method, no corrections for fixings, ventilated cavities or inverted roofs. Ground-floor U is user-entered; there is no ground model. The thermal-bridge allowance is a single W/(m²·K) on the area facing outside (a deliberate reading of "total fabric area"): elements to heated or unheated spaces entered with an adjacent temperature above `θ_e` get no bridge allowance. A warning is raised if Φ_HL ≤ 0 (the room gains heat from warmer neighbours). No intermittency or reheat allowance except the DHDG user allowance.
 
