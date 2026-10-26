@@ -21,6 +21,8 @@ public sealed class PipeFlowCalculator : ICalcCalculator
     public const string FluidWater = "water";
     public const string FluidCustom = "custom (ρ and μ given)";
     public const string OpenCircuit = "open (the pump lifts the water by the rises entered)";
+    public const string DiameterTrim = "impeller trim (Q ∝ n·D, H ∝ n²·D²)";
+    public const string DiameterSimilar = "geometrically similar pump (Q ∝ n·D³, H ∝ n²·D²)";
     public const string ClosedCircuit = "closed (flow and return: the rises cancel, no static lift)";
 
     private const int MaxDetailedSegments = 50;
@@ -40,9 +42,9 @@ public sealed class PipeFlowCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.6.0", CalcDiscipline.BuildingServices, "Pipe pressure drop and pump duty",
+        Id, "1.7.0", CalcDiscipline.BuildingServices, "Pipe pressure drop and pump duty",
         "Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.",
-        "Design flow from the heat carried, when a heat load is given in place of a flow: Q = Φ/(ρ c_p ΔT).\nMean velocity in the pipe: v = Q/(πD²/4).\nReynolds number, which decides laminar or turbulent flow: Re = ρvD/μ.\nFriction factor for laminar flow (Re < 2300): f = 64/Re.\nFriction factor for turbulent flow, Colebrook–White by fixed-point iteration (at most 100 steps) from the Swamee–Jain value, which also cross-checks it: 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)).\nHead lost in the pipe and its fittings: h_f = f (L + L_eq)/D · v²/2g + K v²/2g.\nSystem curve, with friction scaled from the design flow as Q² (a closed circuit has Σdz = 0, the rise in the flow being recovered in the return): H_sys(Q) = Σdz + h_out + Σh_f(Q).\nWater held in the pipes: V_pipe = Σ π/4·D²·L.\nDuty point, where the pump and system curves cross (found by bisection): H_pump(Q) = H_sys(Q).\nPump affinity laws for a change of speed n or impeller diameter D: Q ∝ n D³; H ∝ n² D².\nNet positive suction head available, to compare with what the pump requires: NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg.",
+        "Design flow from the heat carried, when a heat load is given in place of a flow: Q = Φ/(ρ c_p ΔT).\nMean velocity in the pipe: v = Q/(πD²/4).\nReynolds number, which decides laminar or turbulent flow: Re = ρvD/μ.\nFriction factor for laminar flow (Re < 2300): f = 64/Re.\nFriction factor for turbulent flow, Colebrook–White by fixed-point iteration (at most 100 steps) from the Swamee–Jain value, which also cross-checks it: 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)).\nHead lost in the pipe and its fittings: h_f = f (L + L_eq)/D · v²/2g + K v²/2g.\nSystem curve, with friction scaled from the design flow as Q² (a closed circuit has Σdz = 0, the rise in the flow being recovered in the return): H_sys(Q) = Σdz + h_out + Σh_f(Q).\nWater held in the pipes: V_pipe = Σ π/4·D²·L.\nDuty point, where the pump and system curves cross (found by bisection): H_pump(Q) = H_sys(Q).\nPump affinity laws for a change of speed n: Q ∝ n; H ∝ n². For a change of impeller diameter D, by the choice: a trimmed impeller of the same casing, Q ∝ D and H ∝ D² (the default, the usual practice for a trim); or a geometrically similar pump scaled in all dimensions, Q ∝ D³ and H ∝ D². Speed and diameter combine as Q ∝ n·D^a, H ∝ n²·D², a = 1 or 3.\nNet positive suction head available, to compare with what the pump requires: NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg, with p_v from the water correlation or, for a custom fluid, from the vapour pressure entered. The friction h_f,suction is that of the segments marked 'suction' only.\nShaft torque for the motor: T = P/ω with P the larger of the design-flow shaft power and the duty-point shaft power, at the speed n_pump; when a speed or diameter ratio shifts the duty, the shifted duty power at the shifted speed n_pump·n₂/n₁.",
         [
             new CalcInputSpec("fluid", "Fluid", CalcInputKind.Choice, Choices: [FluidWater, FluidCustom], DefaultChoice: FluidWater, Group: "Fluid"),
             new CalcInputSpec("T", "Fluid temperature (mean; link B6 t_m for a heating loop)", CalcInputKind.Quantity, "degC", Default: 20, Min: 0, Max: 100, HardMin: -50, HardMax: 300, Group: "Fluid"),
@@ -60,11 +62,13 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             new CalcInputSpec("Q_pump", "Pump curve: flow points", CalcInputKind.Vector, "m^3/h", IsOptional: true, Group: "Pump"),
             new CalcInputSpec("H_pump", "Pump curve: head points", CalcInputKind.Vector, "m", IsOptional: true, Group: "Pump"),
             new CalcInputSpec("n_ratio", "Speed ratio n₂/n₁ (affinity)", CalcInputKind.Number, Default: 1, Min: 0.2, Max: 2, HardMin: 0.01, HardMax: 10, Group: "Pump"),
-            new CalcInputSpec("D_ratio", "Impeller diameter ratio D₂/D₁ (affinity)", CalcInputKind.Number, Default: 1, Min: 0.7, Max: 1.1, HardMin: 0.1, HardMax: 5, Group: "Pump"),
+            new CalcInputSpec("D_ratio", "Impeller diameter ratio D₂/D₁ (affinity; the law is chosen below)", CalcInputKind.Number, Default: 1, Min: 0.7, Max: 1.1, HardMin: 0.1, HardMax: 5, Group: "Pump"),
+            new CalcInputSpec("D_law", "Law for the diameter ratio: a trimmed impeller of the same casing (Q ∝ D, H ∝ D²) or a geometrically similar pump (Q ∝ D³, H ∝ D²)", CalcInputKind.Choice, Choices: [DiameterTrim, DiameterSimilar], DefaultChoice: DiameterTrim, Group: "Pump"),
             new CalcInputSpec("eta_pump", "Pump efficiency at duty (for shaft power)", CalcInputKind.Number, Default: 0.7, Min: 0.2, Max: 0.95, HardMin: 0.01, HardMax: 1, Group: "Pump"),
             new CalcInputSpec("n_pump", "Pump rated speed (speed of the pump curve as entered; gives the shaft torque)", CalcInputKind.Quantity, "rpm", Min: 100, Max: 6000, HardMin: 1, HardMax: 1e5, IsOptional: true, Group: "Pump"),
             new CalcInputSpec("p_atm", "Atmospheric pressure (NPSH)", CalcInputKind.Quantity, "kPa", Default: 101.325, Min: 50, Max: 110, HardMin: 1, HardMax: 1000, Group: "NPSH"),
             new CalcInputSpec("z_s", "Static head at the pump suction (+ flooded, − lift)", CalcInputKind.Quantity, "m", Default: 0, Min: -10, Max: 100, HardMin: -1e3, HardMax: 1e4, Group: "NPSH"),
+            new CalcInputSpec("p_v_custom", "Vapour pressure of the custom fluid at T, absolute (needed for NPSH_a of a custom fluid; blank = NPSH_a is not computed)", CalcInputKind.Quantity, "kPa", Min: 0, Max: 500, HardMin: 0, HardMax: 1e4, IsOptional: true, Group: "NPSH"),
             new CalcInputSpec("NPSH_r", "NPSH required by the pump (optional)", CalcInputKind.Quantity, "m", Min: 0, Max: 50, HardMin: 0, HardMax: 1e3, IsOptional: true, Group: "NPSH"),
         ],
         [
@@ -92,6 +96,8 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             new CalcApplicabilityRule("fittings", "Fitting loss coefficients K are entered for a segment below Re 4000: K is a turbulent-flow value and rises at low Re, so the fittings term K·v²/2g is understated.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("velocity", "A segment exceeds the velocity limit.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("pump-curve", "The pump curve needs at least two points with matching flow and head counts, flows increasing.", CalcNoticeSeverity.Block),
+            new CalcApplicabilityRule("npsh-custom", "NPSH_r is entered for a custom fluid with no vapour pressure p_v_custom: NPSH_a is not computed and no NPSH check is made.", CalcNoticeSeverity.Warning),
+            new CalcApplicabilityRule("npsh-no-suction", "NPSH_r is entered but no segment is marked 'suction' (a blank side column means discharge): NPSH_a carries no suction friction and is optimistic unless the suction line has no friction.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("no-duty", "The pump curve and the system curve do not cross within the curve's flow range.", CalcNoticeSeverity.Warning),
             new CalcApplicabilityRule("summary-only", "More than 50 segments: per-segment lines are omitted.", CalcNoticeSeverity.Warning),
         ],
@@ -135,7 +141,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             new CalcOutputPort("v_peak", "m/s", "Highest velocity"),
             new CalcOutputPort("T_line", "degC", "Design temperature of the line to insulate: T_line as entered, else the fluid temperature T when entered (not offered when neither is entered; → B9 process temperature)"),
             new CalcOutputPort("OD_1", "mm", "Outside diameter of the first pipe segment, where entered (→ B9 pipe outer diameter D_i)"),
-            new CalcOutputPort("NPSH_a", "m", "NPSH available (water)"),
+            new CalcOutputPort("NPSH_a", "m", "NPSH available (water, or a custom fluid with its vapour pressure)"),
             new CalcOutputPort("Q_duty", "m^3/h", "Duty flow against the pump curve"),
             new CalcOutputPort("H_duty", "m", "Duty head against the pump curve"),
             new CalcOutputPort("P_shaft", "kW", "Shaft power at the duty point"),
@@ -389,6 +395,8 @@ public sealed class PipeFlowCalculator : ICalcCalculator
         var hasPump = c.Has("Q_pump") && c.Has("H_pump");
         var etaRegistered = false;
         double? dutyShaft = null;
+        double? dutyShaft2 = null;
+        var shifted = false;
         IReadOnlyList<double> qp = [];
         IReadOnlyList<double> hp = [];
 
@@ -408,19 +416,23 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             qMaxCurve = Math.Max(qMaxCurve, qp[^1]);
             c.Input("n_ratio");
             c.Input("D_ratio");
+            c.Input("D_law");
             c.Input("eta_pump");
             etaRegistered = true;
             var nr = c.Si("n_ratio");
             var dr = c.Si("D_ratio");
+            var trim = c.InputText("D_law") == DiameterTrim;
+            var qExponent = trim ? 1 : 3;
 
             dutyShaft = Duty(c, "", "as entered", qp, hp, HSys, rho, g, m, kPa);
 
             if (Math.Abs(nr - 1) > 1e-12 || Math.Abs(dr - 1) > 1e-12)
             {
-                var qs = qp.Select(x => x * nr * dr * dr * dr).ToList();
+                shifted = true;
+                var qs = qp.Select(x => x * nr * Math.Pow(dr, qExponent)).ToList();
                 var hs = hp.Select(x => x * nr * nr * dr * dr).ToList();
-                c.Record("affinity", "Q₂ = Q₁ (n₂/n₁)(D₂/D₁)³, H₂ = H₁ (n₂/n₁)²(D₂/D₁)²", $"n₂/n₁ = {F(nr)}, D₂/D₁ = {F(dr)}", new TextValue("curve scaled"), "Affinity laws applied to the pump curve");
-                Duty(c, "2", "after the affinity shift", qs, hs, HSys, rho, g, m, kPa);
+                c.Record("affinity", trim ? "Q₂ = Q₁ (n₂/n₁)(D₂/D₁), H₂ = H₁ (n₂/n₁)²(D₂/D₁)² (impeller trim)" : "Q₂ = Q₁ (n₂/n₁)(D₂/D₁)³, H₂ = H₁ (n₂/n₁)²(D₂/D₁)² (geometrically similar pump)", $"n₂/n₁ = {F(nr)}, D₂/D₁ = {F(dr)}", new TextValue("curve scaled"), "Affinity laws applied to the pump curve");
+                dutyShaft2 = Duty(c, "2", "after the affinity shift", qs, hs, HSys, rho, g, m, kPa);
                 c.Series(new CalcSeries("Pump curve (scaled)", "Q", "m^3/h", "H", "m", qs.Zip(hs, (a, b) => (a * 3600, b)).ToList()));
             }
 
@@ -438,7 +450,15 @@ public sealed class PipeFlowCalculator : ICalcCalculator
 
             c.Assign("P_shaft_design", "P_hyd / eta_pump", "kW", "Pump shaft power at the design flow");
 
-            if (dutyShaft is not null)
+            if (shifted && dutyShaft2 is not null)
+            {
+                // chain.wet-heating-R1: the pump runs at the shifted speed, so the motor sees the shifted duty power at the shifted speed.
+                c.Assign("P_shaft_sel", "max(P_shaft_design, P_shaft2)", "kW", "Shaft power the torque covers: the larger of the design-flow value and the shifted duty-point value");
+                c.Assign("n_shaft", "n_pump * n_ratio", "rpm", "Pump shaft speed at the shifted duty (n_pump × n₂/n₁)");
+                c.Assign("T_shaft", "P_shaft_sel / n_shaft", "N*m", "Pump shaft torque P / ω at the shifted speed, P being the larger of the design-flow and shifted duty-point shaft power");
+                c.Output("P_shaft_sel", "Shaft power the torque covers (larger of design flow and shifted duty point)");
+            }
+            else if (dutyShaft is not null)
             {
                 c.Assign("P_shaft_sel", "max(P_shaft_design, P_shaft)", "kW", "Shaft power the torque covers: the larger of the design-flow value and the duty-point value");
                 c.Assign("T_shaft", "P_shaft_sel / n_pump", "N*m", "Pump shaft torque P / ω, P being the larger of the design-flow and duty-point shaft power");
@@ -449,7 +469,9 @@ public sealed class PipeFlowCalculator : ICalcCalculator
                 c.Assign("T_shaft", "P_shaft_design / n_pump", "N*m", "Pump shaft torque P / ω at the design flow");
             }
 
-            c.Assign("n_shaft", "n_pump", "rpm", "Pump shaft speed");
+            if (!(shifted && dutyShaft2 is not null))
+                c.Assign("n_shaft", "n_pump", "rpm", "Pump shaft speed");
+
             c.Output("P_shaft_design", "Shaft power at the design flow");
             c.Output("T_shaft", "Shaft torque");
             c.Output("n_shaft", "Shaft speed");
@@ -461,8 +483,22 @@ public sealed class PipeFlowCalculator : ICalcCalculator
         c.Input("p_atm");
         c.Input("z_s");
 
-        if (fluid == FluidWater)
+        var customVapour = fluid != FluidWater && c.Has("p_v_custom");
+
+        if (fluid != FluidWater && c.Has("NPSH_r") && !customVapour)
+            c.Warn("npsh-custom", "p_v_custom: NPSH_r is entered for a custom fluid but no vapour pressure; NPSH_a is not computed and NPSH_r ≤ NPSH_a is not checked, so a pass says nothing about cavitation. Enter the fluid's absolute vapour pressure at T (p_v_custom).");
+
+        if (c.Has("NPSH_r") && (fluid == FluidWater || customVapour) && !segments.Any(s => s.Suction))
+            c.Warn("npsh-no-suction", "segments: NPSH_r is entered but no segment has its Pump side set to 'suction' (a blank side means discharge), so NPSH_a carries no suction-line friction and is optimistic. Mark the suction segments, or accept that the suction line has no friction loss.");
+
+        if (fluid == FluidWater || customVapour)
         {
+            if (customVapour)
+            {
+                c.Input("p_v_custom");
+                c.Assign("p_v", "p_v_custom", "kPa", "Vapour pressure of the custom fluid at T (as entered)");
+            }
+
             c.Record("h_f_suction", "Σ h_f on the suction side", $"{segments.Count(s => s.Suction)} suction segment(s)", ScalarValue.Of(hfSuction, m), "Suction-side friction loss");
             c.Assign("NPSH_a", "p_atm / (rho * 9.80665 m/s^2) + z_s - h_f_suction - p_v / (rho * 9.80665 m/s^2)", "m", "NPSH available", "Çengel Ch. 8");
             c.Output("NPSH_a", "NPSH available");
