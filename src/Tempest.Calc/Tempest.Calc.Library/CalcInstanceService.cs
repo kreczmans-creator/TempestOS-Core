@@ -276,7 +276,7 @@ public sealed partial class CalcInstanceService
         var entry = _catalogue.Find(instance.TemplateReference);
 
         if (entry is null)
-            return CalcActionResult.Refused($"Template '{instance.TemplateReference}' is no longer registered.", instance);
+            return CalcActionResult.Refused(OlderVersionRefusal(instance), instance);
 
         if (instance.PackId is { } packId && await _store.FindPackAsync(packId, cancellationToken).ConfigureAwait(false) is { Status: not CalcInstanceStatus.Draft } pack)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' belongs to pack '{pack.Title}', which is {pack.Status}; its inputs are frozen.", instance);
@@ -590,7 +590,7 @@ public sealed partial class CalcInstanceService
         var entry = _catalogue.Find(instance.TemplateReference);
 
         if (entry is null)
-            return CalcActionResult.Refused($"Template '{instance.TemplateReference}' is no longer registered.", instance);
+            return CalcActionResult.Refused(OlderVersionRefusal(instance), instance);
 
         // ADR-0173: the competent-person attestation and the second independent check a template can demand.
         if (IssueGovernanceRefusal(instance, entry.Template) is { } governance)
@@ -1104,7 +1104,7 @@ public sealed partial class CalcInstanceService
             var entry = _catalogue.Find(member.TemplateReference);
 
             if (entry is null)
-                return CalcActionResult.Refused($"Template '{member.TemplateReference}' is no longer registered.");
+                return CalcActionResult.Refused(OlderVersionRefusal(member));
 
             // ADR-0173: the attestation per member; the second check once for the pack, below.
             if (AttestationRefusal(member, entry.Template, $"Pack member '{member.Name}'", pack) is { } attestationRefusal)

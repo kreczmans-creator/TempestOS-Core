@@ -29,7 +29,8 @@ public sealed partial class CalcInstanceService
         if (instance.Status != CalcInstanceStatus.Draft || _catalogue.Find(instance.TemplateReference) is not null)
             return null;
 
-        if (_catalogue.Find(instance.TemplateId) is not { } current)
+        // A draft made by a newer build than this one is not "revised to" this build's version; it is shown as stored (OpenOlderVersion).
+        if (_catalogue.Resolve(instance.TemplateReference).State == CalcVersionState.Newer || _catalogue.Find(instance.TemplateId) is not { } current)
             return null;
 
         var carried = new CalcInputSet();

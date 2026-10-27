@@ -12,10 +12,55 @@ public sealed record CalcCatalogueEntry(ICalcCalculator Calculator, string Conte
     public string ShortHash => CalcTemplateHasher.Short(ContentHash);
 }
 
+/// <summary>How a template reference relates to what this catalogue has installed (ADR-0177, DC-14).</summary>
+public enum CalcVersionState
+{
+    /// <summary>The formulas of exactly this version are installed: it runs as it was made.</summary>
+    Installed,
+
+    /// <summary>A version recorded as having existed whose formulas are not installed; the template's current version is.</summary>
+    Superseded,
+
+    /// <summary>An older version that the version record does not list (made on a build this one has no record of); the current version is installed.</summary>
+    Unrecorded,
+
+    /// <summary>A version newer than the current one installed here (made by a newer build).</summary>
+    Newer,
+
+    /// <summary>The template is installed but switched off by a feature flag (ADR-0173).</summary>
+    Withheld,
+
+    /// <summary>No template of this id is installed.</summary>
+    Gone,
+}
+
+/// <summary>
+/// What a catalogue knows of an <c>id@version</c> reference. <see cref="Entry"/> is set only when that version's own formulas are installed (state
+/// <see cref="CalcVersionState.Installed"/>); <see cref="Current"/> is the template's current version, when one is installed; <see cref="RecordedHash"/>
+/// is the content hash the version record holds for the reference, when it holds one.
+/// </summary>
+public sealed record CalcVersionResolution(string Reference, CalcVersionState State, CalcCatalogueEntry? Entry, CalcCatalogueEntry? Current, string? RecordedHash)
+{
+    /// <summary>Whether the reference names the template's current version.</summary>
+    public bool IsCurrent => State == CalcVersionState.Installed && Entry is not null && ReferenceEquals(Entry, Current);
+
+    /// <summary>Whether the version's formulas are not installed but the template's current version is, so a record made on it can be explained and carried forward.</summary>
+    public bool IsSuperseded => State is CalcVersionState.Superseded or CalcVersionState.Unrecorded;
+}
+
+/// <summary>A calculator was asked for by a version whose formulas are not installed (a superseded one); a <see cref="KeyNotFoundException"/> whose message says what became of it.</summary>
+public sealed class CalcVersionNotInstalledException(string message) : KeyNotFoundException(message);
+
 /// <summary>
 /// The registry of every calculator the application composes in, by id
 /// and version. Static registration only: the calculator assemblies hand
 /// their instances to the composer, nothing is loaded from a path.
+/// <para>
+/// A version is <b>resolvable</b> in two ways (ADR-0177). Its formulas can be registered beside the current ones (a frozen copy, which the
+/// catalogue has always allowed): <see cref="Find"/> then returns it and a calculation made on it runs as it was made. Otherwise the
+/// <see cref="History"/> (the committed manifest of every version ever recorded) lets <see cref="Resolve"/> say what the reference was and what it became.
+/// <see cref="Find"/> never returns another version's formulas for a versioned reference: a calculation is never silently run on code it was not made on.
+/// </para>
 /// </summary>
 public sealed class CalcCatalogue
 {
@@ -29,9 +74,13 @@ public sealed class CalcCatalogue
 
     public CalcCatalogue() : this((CalcFeatureFlags?)null) { }
 
-    public CalcCatalogue(CalcFeatureFlags? features) => Features = features ?? CalcFeatureFlags.None;
+    public CalcCatalogue(CalcFeatureFlags? features, TemplateVersionHistory? history = null)
+    {
+        Features = features ?? CalcFeatureFlags.None;
+        History = history ?? TemplateVersionHistory.Shipped;
+    }
 
-    public CalcCatalogue(IEnumerable<ICalcCalculator> calculators, CalcFeatureFlags? features = null) : this(features)
+    public CalcCatalogue(IEnumerable<ICalcCalculator> calculators, CalcFeatureFlags? features = null, TemplateVersionHistory? history = null) : this(features, history)
     {
         ArgumentNullException.ThrowIfNull(calculators);
 
@@ -41,6 +90,9 @@ public sealed class CalcCatalogue
 
     /// <summary>The optional features this catalogue was built with. Fixed for its lifetime.</summary>
     public CalcFeatureFlags Features { get; }
+
+    /// <summary>Every template version this product has recorded (the embedded manifest unless a test supplies another). Fixed for the catalogue's lifetime.</summary>
+    public TemplateVersionHistory History { get; }
 
     /// <summary>Registers a calculator. A second registration of the same id@version is refused; a newer version becomes current.</summary>
     public CalcCatalogueEntry Register(ICalcCalculator calculator)
@@ -125,7 +177,46 @@ public sealed class CalcCatalogue
     }
 
     public CalcCatalogueEntry Get(string reference) =>
-        Find(reference) ?? throw (FeatureRefusal(reference) is { } switchedOff ? new CalcFeatureDisabledException(switchedOff) : new KeyNotFoundException($"No calculator '{reference}' is registered."));
+        Find(reference) ?? throw (FeatureRefusal(reference) is { } switchedOff ? new CalcFeatureDisabledException(switchedOff)
+            : Resolve(reference) is { IsSuperseded: true, Current: { } current } ? new CalcVersionNotInstalledException($"Calculator '{reference}' has been revised to '{current.Reference}'; the formulas of the earlier version are not installed.")
+            : new KeyNotFoundException($"No calculator '{reference}' is registered."));
+
+    /// <summary>
+    /// What this catalogue knows of <paramref name="reference"/> (<c>id@version</c>, or an id alone, which is its current version): installed as itself,
+    /// a superseded version the history records, an older version it has no record of, a newer one, switched off, or gone. Never throws, never runs anything.
+    /// </summary>
+    public CalcVersionResolution Resolve(string? reference)
+    {
+        if (string.IsNullOrWhiteSpace(reference))
+            return new CalcVersionResolution(reference ?? string.Empty, CalcVersionState.Gone, null, null, null);
+
+        var at = reference.IndexOf('@', StringComparison.Ordinal);
+        var id = at < 0 ? reference : reference[..at];
+
+        lock (_gate)
+        {
+            var current = _current.GetValueOrDefault(id);
+            var recorded = History.HashOf(reference);
+
+            if (at < 0)
+                return current is not null ? new CalcVersionResolution(reference, CalcVersionState.Installed, current, current, recorded) : Absent(reference, id);
+
+            if (_byReference.TryGetValue(reference, out var exact))
+                return new CalcVersionResolution(reference, CalcVersionState.Installed, exact, current, recorded);
+
+            if (current is null)
+                return Absent(reference, id);
+
+            var version = reference[(at + 1)..];
+            var state = CompareVersions(version, current.Template.Version) > 0 ? CalcVersionState.Newer
+                : recorded is not null ? CalcVersionState.Superseded
+                : CalcVersionState.Unrecorded;
+            return new CalcVersionResolution(reference, state, null, current, recorded);
+        }
+    }
+
+    private CalcVersionResolution Absent(string reference, string id) =>
+        new(reference, _withheldCurrent.ContainsKey(id) ? CalcVersionState.Withheld : CalcVersionState.Gone, null, null, History.HashOf(reference));
 
     /// <summary>The outputs of a run of every known-answer case of a template, by the template's reference and content: the runs are the same every time a catalogue is built.</summary>
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, IReadOnlySet<string>> CaseOutputSymbols = new(StringComparer.Ordinal);

@@ -207,7 +207,7 @@ public sealed partial class CalcInstanceService
         var entry = _catalogue.Find(instance.TemplateReference);
 
         if (entry is null)
-            return CalcActionResult.Refused($"Template '{instance.TemplateReference}' is no longer registered.", instance);
+            return CalcActionResult.Refused(OlderVersionRefusal(instance), instance);
 
         var instances = await AllInstancesAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false);
         var successors = SuccessorIndex(instances);

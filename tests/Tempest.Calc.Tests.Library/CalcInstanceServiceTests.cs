@@ -278,10 +278,12 @@ public sealed class CalcInstanceServiceTests
         Assert.Null(host.Catalogue.Find(old.TemplateReference));
         await host.Store.SaveInstanceAsync(old);
 
-        // It cannot be edited where it is (the formulas of 0.9.0 are not installed), which is why the open path below exists.
+        // It cannot be edited where it is (the formulas of 0.9.0 are not installed), which is why the open path below exists; the refusal
+        // names the version it became and what to do (ADR-0177), not "no longer registered".
         var refused = await host.Service.UpdateInputsAsync(old.Id, LibraryTestHost.ProvenancedInputs(f: 99));
         Assert.False(refused.Succeeded);
-        Assert.Contains("no longer registered", refused.Reason, StringComparison.Ordinal);
+        Assert.Contains("has been revised to test.direct-stress@1.0.0", refused.Reason, StringComparison.Ordinal);
+        Assert.Contains("carry its inputs into a new sheet", refused.Reason, StringComparison.Ordinal);
 
         var plan = host.Service.PlanDraftUpgrade(old);
         Assert.NotNull(plan);
