@@ -50,7 +50,7 @@ public static class SvgPictureBuilder
     public const int MaxUseDepth = 16;
     public const int MaxNesting = 256;
     public const int MaxImageBytes = 16 * 1024 * 1024;
-    public const int MaxImageEdge = 4096;
+    public const int MaxImageEdge = 8000;
 
     /// <summary>The longest document read (F11): 16M characters, under the 25 MB attachment cap so that it binds, since the tree takes about twenty times the file.</summary>
     public const long MaxDocumentCharacters = 16L * 1024 * 1024;
@@ -118,7 +118,7 @@ public static class SvgPictureBuilder
     /// <param name="Elements">Elements drawn (or passed over by a cap), <c>use</c> targets included.</param>
     /// <param name="GradientStopParses">Stop lists parsed; every further use of the same gradient takes the parsed list (F2).</param>
     /// <param name="DecodedPixels">Pixels decoded from embedded images, each distinct image once (F4).</param>
-    /// <param name="ImagesSkipped">Embedded images not decoded because the document's pixel budget was spent (F4).</param>
+    /// <param name="ImagesSkipped">Embedded images left out for a cap: their bytes, an edge, or the document's pixel budget (F4).</param>
     /// <param name="TypefaceLookups">Distinct (family list, weight, slant) combinations resolved to a typeface; every further run with the same takes the cached face (F6).</param>
     /// <param name="FamilyLookups">Family names asked of the platform's font manager, at most <see cref="Limits.FontFamilies"/> per typeface lookup (F6).</param>
     /// <param name="OpacityLayers">Group-opacity layers recorded (F7).</param>
@@ -139,7 +139,8 @@ public static class SvgPictureBuilder
     /// <param name="NotShown">
     /// The kinds of feature the document uses that this reader does not draw, by element name and in alphabetical order (<c>clipPath</c>,
     /// <c>filter</c>, <c>foreignObject</c>, <c>marker</c>, <c>mask</c>, <c>pattern</c>, <c>textPath</c>), so the viewer can say that
-    /// some parts of the drawing are not shown rather than show it silently wrong (I2). Empty for a document drawn whole.
+    /// some parts of the drawing are not shown rather than show it silently wrong (I2); <c>image</c> for an embedded image left out for a
+    /// cap. Empty for a document drawn whole.
     /// </param>
     public sealed record SvgPicture(SKPicture Picture, SKSize Size, Statistics Statistics, IReadOnlyList<string> NotShown) : IDisposable
     {
@@ -1506,10 +1507,18 @@ public static class SvgPictureBuilder
             bounds.Add(canvas.TotalMatrix.MapRect(dest));
         }
 
+        /// <summary>An embedded image left out for a cap (its bytes, an edge, or the document's pixel budget): counted, and reported as <c>image</c> among the parts not shown.</summary>
+        private SKImage? Dropped()
+        {
+            _imagesSkipped++;
+            _notShown.Add("image");
+            return null;
+        }
+
         /// <summary>
         /// The decoded form of an embedded <c>data:</c> image, or <see langword="null"/> when it is not one this reader draws: not base64, over
         /// <see cref="Limits.ImageBytes"/>, not an image Skia decodes, an edge over <see cref="Limits.ImageEdge"/>, or more pixels than the
-        /// document has left of <see cref="Limits.DecodedPixels"/> (F4).
+        /// document has left of <see cref="Limits.DecodedPixels"/> (F4). One left out for a cap is reported as a part not shown.
         /// </summary>
         private SKImage? Decode(string href)
         {
@@ -1520,8 +1529,11 @@ public static class SvgPictureBuilder
 
             var payload = href[(comma + 1)..].Trim();
 
-            if (payload.Length == 0 || payload.Length > context.Limits.ImageBytes * 4L / 3 + 4)
+            if (payload.Length == 0)
                 return null;
+
+            if (payload.Length > context.Limits.ImageBytes * 4L / 3 + 4)
+                return Dropped();
 
             byte[] bytes;
 
@@ -1536,16 +1548,16 @@ public static class SvgPictureBuilder
 
             using var codec = SKCodec.Create(new MemoryStream(bytes));
 
-            if (codec is null || codec.Info.Width <= 0 || codec.Info.Height <= 0 || codec.Info.Width > context.Limits.ImageEdge || codec.Info.Height > context.Limits.ImageEdge)
+            if (codec is null || codec.Info.Width <= 0 || codec.Info.Height <= 0)
                 return null;
+
+            if (codec.Info.Width > context.Limits.ImageEdge || codec.Info.Height > context.Limits.ImageEdge)
+                return Dropped();
 
             var pixels = (long)codec.Info.Width * codec.Info.Height;
 
             if (_decodedPixels + pixels > context.Limits.DecodedPixels)
-            {
-                _imagesSkipped++;
-                return null;
-            }
+                return Dropped();
 
             using var bitmap = SKBitmap.Decode(codec);
 

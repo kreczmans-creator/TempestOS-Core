@@ -223,19 +223,32 @@ public sealed class SvgHostileInputTests
         Assert.Equal(255, PixelAt(picture, 45, 50).Alpha);
         Assert.Equal(0, PixelAt(picture, 80, 50).Alpha);
         Assert.Equal(64_000_000, SvgPictureBuilder.MaxDecodedPixels);
+
+        // The one left out is reported, so the viewer says the drawing is not shown whole.
+        Assert.Equal(["image"], picture.NotShown);
     }
 
     [AvaloniaFact]
-    public void An_Image_Edge_Over_4096_Pixels_Is_Not_Decoded()
+    public void An_Image_Edge_Over_8000_Pixels_Is_Not_Decoded_And_Is_Reported()
     {
-        Assert.Equal(4096, SvgPictureBuilder.MaxImageEdge);
+        // 8 000 as before DB-08's review (a scanned A2 at 300 dpi is 7 000 px); the 64-megapixel budget is what bounds one such decode.
+        Assert.Equal(8000, SvgPictureBuilder.MaxImageEdge);
 
-        using var tooWide = SvgPictureBuilder.Build(Svg($"<image width=\"100\" height=\"100\" href=\"{DataUri(OneBitPng(4097, 2))}\"/>"));
+        using var tooWide = SvgPictureBuilder.Build(Svg($"<image width=\"100\" height=\"100\" href=\"{DataUri(OneBitPng(8001, 2))}\"/>"));
         Assert.Equal(0, PixelAt(tooWide, 50, 50).Alpha);
         Assert.Equal(0, tooWide.Statistics.DecodedPixels);
+        Assert.Equal(1, tooWide.Statistics.ImagesSkipped);
+        Assert.Equal(["image"], tooWide.NotShown);
 
-        using var atTheEdge = SvgPictureBuilder.Build(Svg($"<image width=\"100\" height=\"100\" preserveAspectRatio=\"none\" href=\"{DataUri(OneBitPng(4096, 2))}\"/>"));
+        using var atTheEdge = SvgPictureBuilder.Build(Svg($"<image width=\"100\" height=\"100\" preserveAspectRatio=\"none\" href=\"{DataUri(OneBitPng(8000, 2))}\"/>"));
         Assert.Equal(255, PixelAt(atTheEdge, 50, 50).Alpha);
+        Assert.Empty(atTheEdge.NotShown);
+
+        // Over the byte cap too (a tiny limit for the test), and never for an image that is simply not an image.
+        using var tooMany = SvgPictureBuilder.Build(Svg($"<image width=\"100\" height=\"100\" href=\"{DataUri(OneBitPng(100, 100))}\"/>"), CancellationToken.None, SvgPictureBuilder.Limits.Default with { ImageBytes = 16 });
+        Assert.Equal(["image"], tooMany.NotShown);
+        using var garbage = SvgPictureBuilder.Build(Svg("<image width=\"100\" height=\"100\" href=\"data:image/png;base64,AAAA\"/>"));
+        Assert.Empty(garbage.NotShown);
     }
 
     // ------------------------------------------------------------------
