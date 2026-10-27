@@ -207,8 +207,10 @@ public sealed class WorksheetScanImportReviewTests
             Assert.Single(model.Files);
 
             var started = System.Diagnostics.Stopwatch.StartNew();
+            // Cancel as soon as the refresh has handed the parse to the pool. A delay first raced the parse: on a fast runner the 90,000 rows
+            // were read and fitted before the delay ended, and the model then rightly said "Ready to apply.".
             var refresh = model.RefreshAsync();
-            await Task.Delay(20);
+            Assert.True(model.IsBusy);
             model.Cancel();
             await refresh.WaitAsync(TimeSpan.FromSeconds(10));
 
