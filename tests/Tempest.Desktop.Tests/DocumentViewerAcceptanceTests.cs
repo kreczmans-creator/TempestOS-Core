@@ -34,7 +34,7 @@ public sealed class DocumentViewerAcceptanceTests
     private static ICommandDispatcher DispatcherOf(WorkspaceHost host) =>
         (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher));
 
-    private static async Task<(Guid DocumentId, Guid AttachmentId)> CreateDocumentWithAttachmentAsync(
+    internal static async Task<(Guid DocumentId, Guid AttachmentId)> CreateDocumentWithAttachmentAsync(
         WorkspaceHost host, string identifier, string fileName, string contentType, byte[] content)
     {
         var dispatcher = DispatcherOf(host);
@@ -58,7 +58,7 @@ public sealed class DocumentViewerAcceptanceTests
         return (document.Id, attachment.Id);
     }
 
-    private static async Task<(IHasAttachments Owner, IAttachment Attachment)> ResolveAsync(
+    internal static async Task<(IHasAttachments Owner, IAttachment Attachment)> ResolveAsync(
         WorkspaceHost host, Guid documentId, Guid attachmentId)
     {
         var document = await DomainOf(host).Repository.FindAsync(documentId);

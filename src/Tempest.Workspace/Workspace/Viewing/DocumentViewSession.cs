@@ -61,7 +61,8 @@ public sealed record DocumentViewSession
         int currentPage,
         DocumentViewport viewport,
         string? materialisedPath,
-        string? externalOpenRefusedReason = null)
+        string? externalOpenRefusedReason = null,
+        string? unavailableDetail = null)
     {
         AttachmentId = attachmentId;
         FileName = fileName;
@@ -73,7 +74,19 @@ public sealed record DocumentViewSession
         Viewport = viewport;
         MaterialisedPath = materialisedPath;
         ExternalOpenRefusedReason = externalOpenRefusedReason;
+        UnavailableDetail = unavailableDetail;
     }
+
+    /// <summary>
+    /// What happened to a document that is not showing, when the status
+    /// alone does not say it: a <see cref="DocumentViewStatus.Corrupt"/>
+    /// session whose content is intact but <em>took too long to read</em>
+    /// (the viewer gives a document a fixed time to open, so a file built
+    /// to keep the reader busy ends as a sentence, not a frozen window).
+    /// Written as the predicate of a sentence whose subject is the file
+    /// name; <see langword="null"/> whenever the status says enough.
+    /// </summary>
+    public string? UnavailableDetail { get; private init; }
 
     /// <summary>The attachment being viewed.</summary>
     public Guid AttachmentId { get; private init; }
@@ -173,7 +186,8 @@ public sealed record DocumentViewSession
         DocumentViewStatus status,
         ViewableDocumentFormat format = ViewableDocumentFormat.Unsupported,
         string? materialisedPath = null,
-        string? externalOpenRefusedReason = null)
+        string? externalOpenRefusedReason = null,
+        string? unavailableDetail = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
 
@@ -184,7 +198,8 @@ public sealed record DocumentViewSession
             attachmentId, fileName, contentType ?? string.Empty, status, format, 0, 0,
             DocumentViewport.Create(1, 1, 1, 1),
             status is DocumentViewStatus.Unsupported ? materialisedPath : null,
-            status is DocumentViewStatus.Unsupported ? externalOpenRefusedReason : null);
+            status is DocumentViewStatus.Unsupported ? externalOpenRefusedReason : null,
+            string.IsNullOrWhiteSpace(unavailableDetail) ? null : unavailableDetail.Trim());
     }
 
     /// <summary>The status a content read maps to, before any format decision.</summary>

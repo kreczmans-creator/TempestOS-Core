@@ -579,6 +579,13 @@ public sealed class DocumentViewerView : UserControl
             $"'{session.FileName}' is recorded as an attachment, but this platform holds no file for it. " +
             "Attachments created before content storage — and external references — describe a file rather than containing one."),
 
+        // F10: the content is intact but the reader was stopped at its
+        // deadline — said as that, since "damaged" would be untrue of the
+        // file and "cannot be displayed" untrue of the format.
+        DocumentViewStatus.Corrupt when session.UnavailableDetail is { } detail => (
+            "This attachment could not be read",
+            $"'{session.FileName}' {detail}"),
+
         DocumentViewStatus.Corrupt => (
             "This attachment is damaged",
             $"'{session.FileName}' has stored content, but it no longer matches the size and checksum recorded when it was attached. " +

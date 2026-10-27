@@ -618,13 +618,16 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
     private readonly Size _pageSize;
 
     /// <summary>Loads <paramref name="content"/> as an SVG.</summary>
+    /// <param name="content">The attachment's bytes.</param>
+    /// <param name="cancellationToken">Stops the read: the builder looks at it before every element, so a deadline set by the caller ends a hostile document as an <see cref="OperationCanceledException"/> rather than a hang (F10).</param>
     /// <exception cref="DocumentRenderException">The bytes are not an SVG this platform can read.</exception>
-    public SvgDocumentPageSource(byte[] content)
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled before the document was read.</exception>
+    public SvgDocumentPageSource(byte[] content, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(content);
 
         using var stream = new MemoryStream(content, writable: false);
-        _svg = Load(stream);
+        _svg = Load(stream, cancellationToken);
         _pageSize = new Size(_svg.Size.Width, _svg.Size.Height);
     }
 
@@ -635,13 +638,14 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
     /// builder.
     /// </summary>
     /// <exception cref="DocumentRenderException">The bytes are not an SVG this platform can read.</exception>
-    public SvgDocumentPageSource(Stream content)
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled before the document was read.</exception>
+    public SvgDocumentPageSource(Stream content, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(content);
 
         try
         {
-            _svg = Load(content);
+            _svg = Load(content, cancellationToken);
             _pageSize = new Size(_svg.Size.Width, _svg.Size.Height);
         }
         finally
@@ -684,7 +688,7 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
     /// <inheritdoc />
     public void Dispose() => _svg.Dispose();
 
-    private static SvgPictureBuilder.SvgPicture Load(Stream stream)
+    private static SvgPictureBuilder.SvgPicture Load(Stream stream, CancellationToken cancellationToken)
     {
         SvgPictureBuilder.SvgPicture svg;
 
@@ -694,7 +698,8 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
             using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: true))
                 markup = reader.ReadToEnd();
 
-            svg = SvgPictureBuilder.Build(SvgMarkupSanitiser.Sanitise(markup));
+            cancellationToken.ThrowIfCancellationRequested();
+            svg = SvgPictureBuilder.Build(SvgMarkupSanitiser.Sanitise(markup), cancellationToken);
 
             if (svg.Size.Width <= 0 || svg.Size.Height <= 0)
             {
@@ -706,12 +711,20 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
         {
             throw;
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // The caller's own deadline, not a fault in the file: it goes
+            // back as what it is, for the viewer to say "took too long".
+            throw;
+        }
         catch (Exception ex)
         {
             // The builder reports a malformed document by throwing (an
-            // XmlException over broken markup, most commonly) — translated
-            // here, at the boundary, into this platform's own type, exactly
-            // as PdfDocumentPageSource does for PDFium.
+            // XmlException over broken markup, most commonly; a
+            // RegexMatchTimeoutException over an attribute no honest file
+            // carries) — translated here, at the boundary, into this
+            // platform's own type, exactly as PdfDocumentPageSource does for
+            // PDFium.
             throw new DocumentRenderException($"This SVG could not be read: {ex.Message}", ex);
         }
 
@@ -769,15 +782,26 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
 /// </remarks>
 internal static class SvgMarkupSanitiser
 {
+    /// <summary>
+    /// Every pattern here gives up after this long (F1): a document is
+    /// untrusted input, and a regular expression that can be made to run
+    /// for minutes on a crafted attribute is a hang of the viewer. The two
+    /// patterns that have no lookaround or backreference also run on the
+    /// non-backtracking engine, which is linear in the input whatever the
+    /// text; <see cref="ExternalReferencePattern"/> needs both, so it keeps
+    /// the backtracking engine and relies on the timeout.
+    /// </summary>
+    private static readonly TimeSpan MatchTimeout = TimeSpan.FromMilliseconds(250);
+
     private static readonly Regex DoctypePattern = new(
-        @"<!DOCTYPE[^>[]*(\[[^\]]*\])?[^>]*>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+        @"<!DOCTYPE[^>[]*(\[[^\]]*\])?[^>]*>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.NonBacktracking, MatchTimeout);
 
     private static readonly Regex ScriptElementPattern = new(
-        @"<script\b[^>]*>.*?</script\s*>|<script\b[^>]*/\s*>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+        @"<script\b[^>]*>.*?</script\s*>|<script\b[^>]*/\s*>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.NonBacktracking, MatchTimeout);
 
     private static readonly Regex ExternalReferencePattern = new(
         @"(?<attr>xlink:href|href)\s*=\s*(?<quote>[""'])(?!\s*(#|data:))(?<value>[^""']*)\k<quote>",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        RegexOptions.IgnoreCase | RegexOptions.Compiled, MatchTimeout);
 
     /// <summary>
     /// A dangerous <c>href</c>/<c>xlink:href</c> is replaced with this,
@@ -838,7 +862,8 @@ public static class DocumentPageSourceFactory
     /// <see langword="null"/> when this platform cannot render that format.
     /// </summary>
     /// <exception cref="DocumentRenderException">The format is supported but these particular bytes could not be opened.</exception>
-    public static IDocumentPageSource? Create(ViewableDocumentFormat format, byte[] content) => format switch
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled before a source that honours it (the SVG reader) finished.</exception>
+    public static IDocumentPageSource? Create(ViewableDocumentFormat format, byte[] content, CancellationToken cancellationToken = default) => format switch
     {
         // Guarded rather than suppressed. PDFium ships native binaries for
         // Windows, Linux and macOS, which is every platform this desktop
@@ -853,7 +878,7 @@ public static class DocumentPageSourceFactory
         ViewableDocumentFormat.Image => new ImageDocumentPageSource(content),
         ViewableDocumentFormat.Text => new TextDocumentPageSource(content),
         ViewableDocumentFormat.Svg when OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()
-            => new SvgDocumentPageSource(content),
+            => new SvgDocumentPageSource(content, cancellationToken),
 
         // ExternalOnly falls to the same null the default arm returns for
         // any other unmatched format — named here rather than left to fall
@@ -882,14 +907,15 @@ public static class DocumentPageSourceFactory
     /// unsupported by calling this method first.
     /// </remarks>
     /// <exception cref="DocumentRenderException">The format is supported but these particular bytes could not be opened.</exception>
-    public static IDocumentPageSource? CreateFromStream(ViewableDocumentFormat format, Stream content) => format switch
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled before a source that honours it (the SVG reader) finished.</exception>
+    public static IDocumentPageSource? CreateFromStream(ViewableDocumentFormat format, Stream content, CancellationToken cancellationToken = default) => format switch
     {
         ViewableDocumentFormat.Pdf when OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()
             => new PdfDocumentPageSource(content),
         ViewableDocumentFormat.Image => new ImageDocumentPageSource(content),
         ViewableDocumentFormat.Text => new TextDocumentPageSource(content),
         ViewableDocumentFormat.Svg when OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()
-            => new SvgDocumentPageSource(content),
+            => new SvgDocumentPageSource(content, cancellationToken),
         _ => null,
     };
 }

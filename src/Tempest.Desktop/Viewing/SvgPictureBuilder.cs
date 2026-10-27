@@ -64,12 +64,26 @@ public static class SvgPictureBuilder
         public void Dispose() => Picture.Dispose();
     }
 
+    /// <summary>Every regular expression here gives up after this long, so no attribute value can hold the reader (F1); the caller reports the document as unreadable.</summary>
+    private static readonly TimeSpan MatchTimeout = TimeSpan.FromMilliseconds(250);
+
     /// <summary>Reads <paramref name="markup"/> and records it; a document that is not SVG throws (an <see cref="XmlException"/> for broken markup).</summary>
     /// <exception cref="XmlException">The markup is not well-formed XML.</exception>
     /// <exception cref="InvalidOperationException">The root element is not <c>svg</c>.</exception>
-    public static SvgPicture Build(string markup)
+    public static SvgPicture Build(string markup) => Build(markup, CancellationToken.None);
+
+    /// <summary>
+    /// Reads <paramref name="markup"/> and records it, stopping at <paramref name="cancellationToken"/>: the token is looked at before every
+    /// element, every gradient stop and every text run, so a caller with a deadline (the attachment viewer gives a document 15 seconds)
+    /// gets an <see cref="OperationCanceledException"/> rather than a frozen window whatever the document contains (F10).
+    /// </summary>
+    /// <exception cref="XmlException">The markup is not well-formed XML.</exception>
+    /// <exception cref="InvalidOperationException">The root element is not <c>svg</c>.</exception>
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled before the picture was recorded.</exception>
+    public static SvgPicture Build(string markup, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(markup);
+        cancellationToken.ThrowIfCancellationRequested();
 
         var settings = new XmlReaderSettings
         {
@@ -91,7 +105,8 @@ public static class SvgPictureBuilder
         if (root is null || !Is(root, "svg"))
             throw new InvalidOperationException("the file has no readable SVG content.");
 
-        var context = new Context(root);
+        cancellationToken.ThrowIfCancellationRequested();
+        var context = new Context(root, cancellationToken);
         var declared = DeclaredSize(root, context);
         context.SetViewport(declared);
 
@@ -176,6 +191,7 @@ public static class SvgPictureBuilder
     {
         public readonly Dictionary<string, XElement> ById = new(StringComparer.Ordinal);
         public readonly List<StyleRule> Rules = [];
+        public readonly CancellationToken Token;
         private float _viewportWidth;
         private float _viewportHeight;
 
@@ -194,10 +210,16 @@ public static class SvgPictureBuilder
             _ => (float)(Math.Sqrt((_viewportWidth * _viewportWidth) + (_viewportHeight * _viewportHeight)) / Math.Sqrt(2)),
         };
 
-        public Context(XElement root)
+        public Context(XElement root, CancellationToken token)
         {
+            Token = token;
+            var seen = 0;
+
             foreach (var element in root.DescendantsAndSelf())
             {
+                if ((++seen & 1023) == 0)
+                    token.ThrowIfCancellationRequested();
+
                 if (element.Attribute("id")?.Value is { Length: > 0 } id)
                     ById.TryAdd(id, element);
 
@@ -209,7 +231,7 @@ public static class SvgPictureBuilder
 
     private sealed record StyleRule(string? Tag, string? Class, string? Id, int Specificity, int Order, IReadOnlyDictionary<string, string> Declarations);
 
-    private static readonly Regex CssComment = new(@"/\*.*?\*/", RegexOptions.Singleline | RegexOptions.Compiled);
+    private static readonly Regex CssComment = new(@"/\*.*?\*/", RegexOptions.Singleline | RegexOptions.NonBacktracking, MatchTimeout);
 
     /// <summary>A plain style sheet: rules of <c>tag</c>, <c>.class</c>, <c>tag.class</c> and <c>#id</c> selectors (any other selector is ignored).</summary>
     private static void ParseStyleSheet(string css, List<StyleRule> rules)
@@ -505,6 +527,8 @@ public static class SvgPictureBuilder
 
         private void Draw(SKCanvas canvas, XElement element, Style parentStyle, int depth)
         {
+            context.Token.ThrowIfCancellationRequested();
+
             if (++_elements > MaxElements || depth > MaxNesting)
                 return;
 
@@ -896,6 +920,7 @@ public static class SvgPictureBuilder
 
             foreach (var stop in gradient.Elements().Where(e => Is(e, "stop")))
             {
+                context.Token.ThrowIfCancellationRequested();
                 var p = Properties(stop, context);
                 var offsetText = (stop.Attribute("offset")?.Value ?? "0").Trim();
                 var offset = offsetText.EndsWith('%') ? (Number(offsetText[..^1]) ?? 0) / 100f : Number(offsetText) ?? 0;
@@ -999,6 +1024,8 @@ public static class SvgPictureBuilder
 
             foreach (var node in element.Nodes())
             {
+                context.Token.ThrowIfCancellationRequested();
+
                 switch (node)
                 {
                     case XText t:
@@ -1038,7 +1065,7 @@ public static class SvgPictureBuilder
             }
         }
 
-        private static readonly Regex Whitespace = new(@"\s+", RegexOptions.Compiled);
+        private static readonly Regex Whitespace = new(@"\s+", RegexOptions.NonBacktracking, MatchTimeout);
 
         private static string Collapse(string text) => Whitespace.Replace(text, " ");
 
@@ -1149,7 +1176,7 @@ public static class SvgPictureBuilder
     // Values: numbers, lengths, colours, transforms
     // ------------------------------------------------------------------
 
-    private static readonly Regex NumberPattern = new(@"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?", RegexOptions.Compiled);
+    private static readonly Regex NumberPattern = new(@"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?", RegexOptions.NonBacktracking, MatchTimeout);
 
     private static float? Number(string? text) =>
         text is not null && float.TryParse(text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value) && float.IsFinite(value) ? value : null;
@@ -1202,7 +1229,7 @@ public static class SvgPictureBuilder
         };
     }
 
-    private static readonly Regex UrlPattern = new(@"^url\(\s*['""]?#([^'""\)\s]+)['""]?\s*\)\s*(.*)$", RegexOptions.Compiled);
+    private static readonly Regex UrlPattern = new(@"^url\(\s*['""]?#([^'""\)\s]+)['""]?\s*\)\s*(.*)$", RegexOptions.NonBacktracking, MatchTimeout);
 
     private static Paint ParsePaint(string text, SKColor currentColor, Paint inherited)
     {
@@ -1224,14 +1251,18 @@ public static class SvgPictureBuilder
         return ParseColour(text, currentColor) is { } c ? new Paint(c, null) : inherited;
     }
 
-    private static readonly Regex RgbPattern = new(@"^rgba?\(\s*([^,\s/]+)\s*[,\s]\s*([^,\s/]+)\s*[,\s]\s*([^,\s/\)]+)\s*(?:[,/]\s*([^\s\)]+)\s*)?\)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    /// <summary>No lookaround or backreference, so the non-backtracking engine (linear in the input) reads it; before, a long run of spaces inside <c>rgb()</c> was tried in quadratically many ways (F1).</summary>
+    private static readonly Regex RgbPattern = new(@"^rgba?\(\s*([^,\s/]+)\s*[,\s]\s*([^,\s/]+)\s*[,\s]\s*([^,\s/\)]+)\s*(?:[,/]\s*([^\s\)]+)\s*)?\)$", RegexOptions.IgnoreCase | RegexOptions.NonBacktracking, MatchTimeout);
+
+    /// <summary>The longest text that can be a CSS colour (<c>rgba(100%, 100%, 100%, 100%)</c> is 29 characters); anything longer is not one and is not examined (F1).</summary>
+    public const int MaxColourLength = 64;
 
     /// <summary>A CSS colour, or <see langword="null"/> when <paramref name="text"/> is not one.</summary>
     internal static SKColor? ParseColour(string text, SKColor currentColor)
     {
         text = text.Trim();
 
-        if (text.Length == 0)
+        if (text.Length == 0 || text.Length > MaxColourLength)
             return null;
 
         if (string.Equals(text, "currentColor", StringComparison.OrdinalIgnoreCase))
@@ -1285,7 +1316,7 @@ public static class SvgPictureBuilder
         return NamedColours.TryGetValue(text, out var named) ? named : null;
     }
 
-    private static readonly Regex TransformPattern = new(@"(matrix|translate|scale|rotate|skewX|skewY)\s*\(([^)]*)\)", RegexOptions.Compiled);
+    private static readonly Regex TransformPattern = new(@"(matrix|translate|scale|rotate|skewX|skewY)\s*\(([^)]*)\)", RegexOptions.NonBacktracking, MatchTimeout);
 
     /// <summary>An SVG transform list as one matrix, or <see langword="null"/> when there is none.</summary>
     internal static SKMatrix? ParseTransform(string? text)
