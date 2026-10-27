@@ -41,7 +41,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 18/18
-  Test run: 2026-10-27 07:21 UTC
+  Test run: 2026-10-27 20:42 UTC
   Application: TempestOS test
 
 9. References
@@ -223,7 +223,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   Content hash: 3868dcf1a33269a1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-27 07:21 UTC
+  Test run: 2026-10-27 20:42 UTC
   Application: TempestOS test
 
 9. References
@@ -278,7 +278,7 @@ Saturation and humidity: p_ws(T) by Hyland–Wexler over water at or above 0 °C
       = 1.2438 kPa
         Vapour pressure, state 1
   [8] T_1_out = dry-bulb (entering)
-      = 
+      = t = 21 °C
       = 21 degC
         Dry-bulb, state 1
   [9] W_1 = 0.621945 p_w/(p − p_w)
@@ -310,7 +310,7 @@ Saturation and humidity: p_ws(T) by Hyland–Wexler over water at or above 0 °C
       = 0.84365 m³/kg
         Specific volume, state 1 (per kg dry air)
   [16] rho_1 = (1 + W)/v
-      = 
+      = (1 + 0.0077297) / 0.84365
       = 1.1945 kg/m³
         Moist-air density, state 1
 
@@ -338,7 +338,7 @@ Saturation and humidity: p_ws(T) by Hyland–Wexler over water at or above 0 °C
   Content hash: 9ffd235faa1c3dae
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-27 07:21 UTC
+  Test run: 2026-10-27 20:42 UTC
   Application: TempestOS test
 
 9. References
@@ -680,7 +680,7 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
   Content hash: a1230d60eae9a8db
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-27 07:21 UTC
+  Test run: 2026-10-27 20:42 UTC
   Application: TempestOS test
 
 9. References

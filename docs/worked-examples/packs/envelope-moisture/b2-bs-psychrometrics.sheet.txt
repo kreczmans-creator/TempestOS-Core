@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Studio 3 external wall
 Calc ID: Room air state    Revision: A
 Title: Psychrometrics
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: ENV-MOI-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: ENV-MOI-001    Client: Client Co
 
 1. Scope and method
 Calculates the state of moist air from dry-bulb and one other property at a stated pressure or altitude. It then applies one air-handling process with its heat and moisture balance: sensible heating or cooling, dehumidification, humidification or mixing.
@@ -43,7 +43,7 @@ Saturation and humidity: p_ws(T) by Hyland–Wexler over water at or above 0 °C
       = 1.2438 kPa
         Vapour pressure, state 1
   [8] T_1_out = dry-bulb (entering)
-      = 
+      = t = 21 °C
       = 21 degC
         Dry-bulb, state 1
   [9] W_1 = 0.621945 p_w/(p − p_w)
@@ -75,7 +75,7 @@ Saturation and humidity: p_ws(T) by Hyland–Wexler over water at or above 0 °C
       = 0.84365 m³/kg
         Specific volume, state 1 (per kg dry air)
   [16] rho_1 = (1 + W)/v
-      = 
+      = (1 + 0.0077297) / 0.84365
       = 1.1945 kg/m³
         Moist-air density, state 1
 
@@ -103,7 +103,7 @@ Saturation and humidity: p_ws(T) by Hyland–Wexler over water at or above 0 °C
   Content hash: 9ffd235faa1c3dae
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-27 20:42 UTC
   Application: TempestOS test
 
 9. References

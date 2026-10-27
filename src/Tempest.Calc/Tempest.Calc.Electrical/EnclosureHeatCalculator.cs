@@ -255,7 +255,8 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
             else
             {
                 var vd = RootFinding.Bisect(Gap, vv[0], vv[^1], 1e-12, 200);
-                c.Record("V_duty", "p_fan(V) = p_sys (V/V_ref)², bisection", "", ScalarValue.Of(vd * 3600, "m^3/h"), "Fan duty airflow");
+                // Shot-fix integration: V_duty printed an empty substitution line ("="); it states the equation solved and the range searched.
+                c.Record("V_duty", "p_fan(V) = p_sys (V/V_ref)², bisection", $"p_fan(V) = {CalcValue.FormatNumber(pSys, 4)} × (V/{CalcValue.FormatNumber(vRef * 3600, 4)})², V from {CalcValue.FormatNumber(vv[0] * 3600, 4)} to {CalcValue.FormatNumber(vv[^1] * 3600, 4)} m³/h", ScalarValue.Of(vd * 3600, "m^3/h"), "Fan duty airflow");
                 c.Record("p_duty", "p_sys (V_duty/V_ref)²", $"{CalcValue.FormatNumber(pSys, 4)} × ({CalcValue.FormatNumber(vd * 3600, 4)}/{CalcValue.FormatNumber(vRef * 3600, 4)})²", ScalarValue.Of(pSys * (vd / vRef) * (vd / vRef), "Pa"), "Static pressure at duty");
                 c.Assign("u_fan", "V_req / V_duty", null, "Airflow utilisation (required / delivered)");
                 c.Output("V_duty", "Fan duty airflow");
