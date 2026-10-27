@@ -3,8 +3,8 @@
  "generatedBy": "scripts/generate-verification-snapshot.py",
  "sources": {
   "rederivation": "3738520fd54a185312ad9441b014f89a0e52620ca01f5d3390e706fb0ae90082",
-  "knownDefects": "b0e56871206f5470a9db9f3928d997f405aa5fe79d906184ebab1de2657ec2b0",
-  "katResults": "26a9171e22080658bf2a70848336217433991695a04856af1d0e8cfc40120ea0",
+  "knownDefects": "7b31f620002431f204885bce359ca6a72161ca0cfdae6660daa7ec8c3d8c59e3",
+  "katResults": "2a6b0f3af33935887fda27cc7a723b4a07d9a601d718250b596677835a195f30",
   "workedExamples": "70ade87cf654c504d0e07b6b2138bdd0be939e0ac2596a54400c2b1cf585f2b0",
   "generator": "44f38f035fcf5937ab168f648e6a714578568d822ffce5c1d151e261c577171e"
  },
@@ -13,13 +13,13 @@
    "fixed": 4
   },
   "High": {
-   "fixed": 51,
-   "owner-decision": 4
+   "fixed": 53,
+   "owner-decision": 2
   },
   "Medium": {
-   "fixed": 76,
+   "fixed": 78,
    "open": 7,
-   "owner-decision": 3
+   "owner-decision": 1
   }
  },
  "items": {
@@ -2667,9 +2667,9 @@
   "struct.connection-ec3": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.8.0",
-    "kats": 8,
-    "katsPassed": 8,
+    "version": "1.9.0",
+    "kats": 9,
+    "katsPassed": 9,
     "failedKats": [],
     "examplesPassed": 1,
     "failedExamples": []
@@ -2741,7 +2741,7 @@
      {
       "id": "struct.connection-ec3-R1",
       "severity": "High",
-      "defect": "owner-decision"
+      "defect": "fixed"
      },
      {
       "id": "struct.connection-ec3-R2",
@@ -2837,7 +2837,7 @@
   "struct.frame-2d": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.5.0",
+    "version": "1.6.0",
     "kats": 6,
     "katsPassed": 6,
     "failedKats": [],
@@ -2900,7 +2900,7 @@
   "struct.load-combinations": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.2.0",
+    "version": "1.3.0",
     "kats": 5,
     "katsPassed": 5,
     "failedKats": [],
@@ -2914,12 +2914,12 @@
      {
       "id": "struct.load-combinations-01",
       "severity": "Medium",
-      "defect": "owner-decision"
+      "defect": "fixed"
      },
      {
       "id": "struct.load-combinations-02",
       "severity": "Medium",
-      "defect": "owner-decision"
+      "defect": "fixed"
      },
      {
       "id": "struct.load-combinations-03",
@@ -2937,7 +2937,7 @@
   "struct.ltb-interaction": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.3.1",
+    "version": "1.3.2",
     "kats": 8,
     "katsPassed": 8,
     "failedKats": [],
@@ -2981,7 +2981,7 @@
      {
       "id": "struct.ltb-interaction-R1",
       "severity": "High",
-      "defect": "owner-decision"
+      "defect": "fixed"
      },
      {
       "id": "struct.ltb-interaction-R2",

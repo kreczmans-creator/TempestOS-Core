@@ -43,7 +43,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 22/22
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 08:08 UTC
   Application: TempestOS test
 
 9. References
@@ -296,7 +296,7 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
   Content hash: 7ccfbf19d3cec269
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 08:08 UTC
   Application: TempestOS test
 
 9. References
@@ -504,7 +504,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   Content hash: 269fa49d39e54f67
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 08:08 UTC
   Application: TempestOS test
 
 9. References
@@ -627,7 +627,7 @@ Equivalent load: F_dyn = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_
   Content hash: 91324fe50f42db2d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 08:08 UTC
   Application: TempestOS test
 
 9. References
@@ -766,11 +766,11 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
   None.
 
 8. Verification
-  Template: mech.iso286-fit@1.6.0
-  Content hash: 296fa0d64befb299
+  Template: mech.iso286-fit@1.6.1
+  Content hash: 499f772f7d32918a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 08:08 UTC
   Application: TempestOS test
 
 9. References
@@ -922,7 +922,7 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   Content hash: 6612491a876c3ed5
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 08:08 UTC
   Application: TempestOS test
 
 9. References

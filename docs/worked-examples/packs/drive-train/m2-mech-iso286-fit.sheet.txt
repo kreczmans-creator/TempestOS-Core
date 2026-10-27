@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Conveyor 7 head drive
 Calc ID: Bearing A seat fit    Revision: A
 Title: Limits and fits (ISO 286)
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: CNV-DRV-001    Client: Client Co
 
 1. Scope and method
 Calculates the limits of size of a hole and a shaft for a nominal size and ISO 286 tolerance classes, and the resulting fit with its extreme clearances and interferences. It uses the ISO 286-1 formulae, not the tables.
@@ -127,11 +127,11 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
   None.
 
 8. Verification
-  Template: mech.iso286-fit@1.6.0
-  Content hash: 296fa0d64befb299
+  Template: mech.iso286-fit@1.6.1
+  Content hash: 499f772f7d32918a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 21:44 UTC
+  Test run: 2026-10-27 08:08 UTC
   Application: TempestOS test
 
 9. References
