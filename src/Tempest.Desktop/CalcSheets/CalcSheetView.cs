@@ -916,7 +916,7 @@ public sealed partial class CalcSheetView : UserControl
 
     public void ShowProblems(IEnumerable<string> problems) => _problems.Text = string.Join(Environment.NewLine, problems);
 
-    /// <summary>Reads the form into an input set, every value as typed with its unit and provenance. Unparseable numbers become NaN so validation names them.</summary>
+    /// <summary>Reads the form into an input set, every value as typed with its unit and provenance. Unparseable numbers become NaN so validation names them; an empty required number has no number.</summary>
     public CalcInputSet ReadForm()
     {
         // The form's values carry the version the shown record was made on, so a bare number (a unit the picker could not choose) is read, or refused, by it.
@@ -941,8 +941,10 @@ public sealed partial class CalcSheetView : UserControl
 
                     if (text.Length == 0)
                     {
+                        // An empty required number is held as empty (no number), not as NaN: validation then says what to enter (the input's next
+                        // step), and the form can be written as JSON (a NaN made CalcInputJson.Write throw on the UI thread).
                         if (!f.Spec.IsOptional && f.Spec.Default is null)
-                            set.Set(new CalcInputValue(symbol, Number: double.NaN, Unit: f.Unit?.SelectedItem as string, Provenance: provenance));
+                            set.Set(new CalcInputValue(symbol, Unit: f.Unit?.SelectedItem as string, Provenance: provenance));
 
                         break;
                     }

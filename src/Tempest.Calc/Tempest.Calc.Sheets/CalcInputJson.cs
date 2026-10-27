@@ -50,10 +50,56 @@ public static class CalcInputJson
         }
     }
 
+    /// <summary>
+    /// Writes an input set. JSON has no NaN or infinity, so a number that is not finite (an empty or mistyped field on the form) is written as
+    /// absent: the number is left out, a vector holding one is left out, and a table cell keeps its unit without it. An entry left with no value at
+    /// all (an empty field) is not written, since the reader refuses an empty entry; read back, the input is simply not given. This never throws on a value.
+    /// </summary>
     public static string Write(CalcInputSet inputs)
     {
         ArgumentNullException.ThrowIfNull(inputs);
-        return JsonSerializer.Serialize(inputs.Values.OrderBy(v => v.Symbol, StringComparer.Ordinal).ToList(), Options);
+
+        var written = new List<CalcInputValue>();
+
+        foreach (var value in inputs.Values.OrderBy(v => v.Symbol, StringComparer.Ordinal))
+        {
+            var finite = Finite(value);
+
+            // An entry with no value (an empty field, or one whose only number was not finite) is left out, since the reader refuses one; a
+            // withheld licensed value is the exception and is kept as it was, so the reader can say to apply its record again.
+            if (IsEmpty(finite) && !CalcCsv.IsWithheld(finite.Provenance))
+                continue;
+
+            written.Add(finite);
+        }
+
+        return JsonSerializer.Serialize(written, Options);
+    }
+
+    private static bool IsEmpty(CalcInputValue v) => v.Number is null && v.Text is null && v.Flag is null && v.Vector is null && v.Rows is null;
+
+    /// <summary>The value with every non-finite number taken out; the same instance when it held none.</summary>
+    private static CalcInputValue Finite(CalcInputValue value)
+    {
+        var result = value;
+
+        if (value.Number is { } n && !double.IsFinite(n))
+            result = result with { Number = null };
+
+        if (value.Vector is { } vector && vector.Any(x => !double.IsFinite(x)))
+            result = result with { Vector = null };
+
+        if (value.Rows is { } rows && rows.Any(r => r is not null && r.Cells.Values.Any(c => c?.Number is { } x && !double.IsFinite(x))))
+        {
+            result = result with
+            {
+                Rows = rows.Select(r => r is null
+                    ? r!
+                    : new CalcRow(r.Cells.ToDictionary(c => c.Key, c => c.Value is { Number: { } x } cell && !double.IsFinite(x) ? cell with { Number = null } : c.Value, StringComparer.Ordinal))).ToList(),
+            };
+        }
+
+        return result;
     }
 
     /// <summary>Reads an input set; a malformed or oversized document becomes a block notice, never an exception.</summary>
