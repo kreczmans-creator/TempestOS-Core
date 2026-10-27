@@ -223,7 +223,8 @@ public sealed class PsychrometricsCalculator : ICalcCalculator
                 c.Record("Q_total", "ṁ (h₁ − h₂) − ṁ_w h_w", $"{F(mda)} × ({F(s1.Enthalpy)} − {F(s2.Enthalpy)}) − {F(mw)} × {F(4.186 * s2.T)}", ScalarValue.Of(mda * (s1.Enthalpy - s2.Enthalpy) - mw * 4.186 * s2.T, "kW"), "Total cooling load");
                 c.Record("Q_sensible", "ṁ (h₁ − h(t₂, W₁))", $"{F(mda)} × ({F(s1.Enthalpy)} − {F(hMid)})", ScalarValue.Of(mda * (s1.Enthalpy - hMid), "kW"), "Sensible part: the air cooled from t₁ to t₂ at the entering humidity ratio W₁");
                 c.Record("Q_latent", "ṁ (h(t₂, W₁) − h₂)", $"{F(mda)} × ({F(hMid)} − {F(s2.Enthalpy)})", ScalarValue.Of(mda * (hMid - s2.Enthalpy), "kW"), "Latent part: the moisture removed from W₁ to W₂ at t₂");
-                c.Record("SHR", "Q_sensible / (Q_sensible + Q_latent)", "", new ScalarValue(mda * (s1.Enthalpy - hMid) / Math.Max(1e-12, mda * (s1.Enthalpy - s2.Enthalpy))), "Sensible heat ratio");
+                // Shot-fix integration: SHR printed an empty substitution line ("="); it quotes the two parts, as the steps above do.
+                c.Record("SHR", "Q_sensible / (Q_sensible + Q_latent)", $"{F(mda * (s1.Enthalpy - hMid))} / ({F(mda * (s1.Enthalpy - hMid))} + {F(mda * (hMid - s2.Enthalpy))})", new ScalarValue(mda * (s1.Enthalpy - hMid) / Math.Max(1e-12, mda * (s1.Enthalpy - s2.Enthalpy))), "Sensible heat ratio");
                 foreach (var o in new[] { ("m_w", "Condensate"), ("Q_total", "Total cooling"), ("Q_sensible", "Sensible cooling"), ("Q_latent", "Latent cooling"), ("SHR", "Sensible heat ratio") }) c.Output(o.Item1, o.Item2);
                 break;
             }
@@ -314,7 +315,8 @@ public sealed class PsychrometricsCalculator : ICalcCalculator
         var degC = Engine.Units.UnitCatalog.Parse("degC");
         c.Record($"p_ws_{k}", $"p_ws(t) Hyland–Wexler ({label})", $"t = {F(s.T)} °C", ScalarValue.Of(s.Pws, "kPa"), $"Saturation pressure, state {k}");
         c.Record($"p_w_{k}", "p W/(0.621945 + W)", $"W = {F(s.W)}", ScalarValue.Of(s.Pw, "kPa"), $"Vapour pressure, state {k}");
-        c.Record($"T_{k}_out", $"dry-bulb ({label})", "", ScalarValue.Of(s.T, degC), $"Dry-bulb, state {k}");
+        // Shot-fix integration: the dry-bulb and density steps printed an empty substitution line ("="); each quotes the values it uses.
+        c.Record($"T_{k}_out", $"dry-bulb ({label})", $"t = {F(s.T)} °C", ScalarValue.Of(s.T, degC), $"Dry-bulb, state {k}");
         c.Record($"W_{k}", "0.621945 p_w/(p − p_w)", $"{F(s.Pw)} / ({F(s.P)} − {F(s.Pw)})", new ScalarValue(s.W * 1000), $"Humidity ratio, state {k} (g/kg dry air)");
         c.Record($"RH_{k}", "p_w / p_ws", $"{F(s.Pw)} / {F(s.Pws)}", new ScalarValue(s.RelativeHumidity * 100), $"Relative humidity, state {k} (%)");
         c.Record($"phi_{k}", "p_w / p_ws", $"{F(s.Pw)} / {F(s.Pws)}", ScalarValue.Of(s.RelativeHumidity * 100, "%"), $"Relative humidity, state {k}, as a percentage quantity (the same value as RH_{k}; a plain-number output cannot be linked to a percentage input)");
@@ -322,7 +324,7 @@ public sealed class PsychrometricsCalculator : ICalcCalculator
         c.Record($"T_wb_{k}", "adiabatic-saturation relation, bisection", $"t = {F(s.T)}, W = {F(s.W)}", ScalarValue.Of(s.WetBulb, degC), $"Wet-bulb, state {k}");
         c.Record($"h_{k}", "1.006 t + W (2501 + 1.86 t)", $"1.006 × {F(s.T)} + {F(s.W)} × (2501 + 1.86 × {F(s.T)})", new ScalarValue(s.Enthalpy), $"Enthalpy, state {k} (kJ/kg dry air)");
         c.Record($"v_{k}", "0.287042 (t + 273.15)(1 + 1.607858 W)/p", $"p = {F(s.P)} kPa", ScalarValue.Of(s.SpecificVolume, "m^3/kg"), $"Specific volume, state {k} (per kg dry air)");
-        c.Record($"rho_{k}", "(1 + W)/v", "", ScalarValue.Of(s.Density, "kg/m^3"), $"Moist-air density, state {k}");
+        c.Record($"rho_{k}", "(1 + W)/v", $"(1 + {F(s.W)}) / {F(s.SpecificVolume)}", ScalarValue.Of(s.Density, "kg/m^3"), $"Moist-air density, state {k}");
 
         foreach (var (symbol, text) in new[] { ($"T_{k}_out", $"Dry-bulb temperature, state {k}"), ($"p_ws_{k}", $"Saturation pressure, state {k}"), ($"p_w_{k}", $"Vapour pressure, state {k}"), ($"W_{k}", $"Humidity ratio, state {k}, in grams per kilogram of dry air"), ($"RH_{k}", $"Relative humidity, state {k}, as a number from 0 to 100"), ($"phi_{k}", $"Relative humidity, state {k}, as a quantity in % (for linking)"), ($"T_dp_{k}", $"Dew point, state {k}"), ($"T_wb_{k}", $"Wet-bulb temperature, state {k}"), ($"h_{k}", $"Enthalpy, state {k}, in kilojoules per kilogram of dry air"), ($"v_{k}", $"Specific volume, state {k}"), ($"rho_{k}", $"Moist-air density, state {k}") })
             c.Output(symbol, text);

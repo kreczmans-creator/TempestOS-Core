@@ -156,7 +156,7 @@ Saturated air at 20 °C against ASHRAE Table 3 (within 0.5 %, enhancement factor
 p_atm = z = 0 m = 101.32 kPa
 p_ws_1 = t = 28 °C = 3.7822 kPa
 p_w_1 = W = 0.014249 = 2.2693 kPa
-T_1_out =  = 28 degC
+T_1_out = t = 28 °C = 28 degC
 W_1 = 2.2693 / (101.32 − 2.2693) = 14.249
 RH_1 = 2.2693 / 3.7822 = 60
 phi_1 = 2.2693 / 3.7822 = 60 %
@@ -164,7 +164,7 @@ T_dp_1 = p_w = 2.2693 kPa = 19.514 degC
 T_wb_1 = t = 28, W = 0.014249 = 22.074 degC
 h_1 = 1.006 × 28 + 0.014249 × (2501 + 1.86 × 28) = 64.546
 v_1 = p = 101.32 kPa = 0.87267 m³/kg
-rho_1 =  = 1.1622 kg/m³
+rho_1 = (1 + 0.014249) / 0.87267 = 1.1622 kg/m³
 p_ws_2 = t = 12 °C = 1.4026 kPa
 p_w_2 = W = 0.0082878 = 1.3325 kPa
 … 15 more step(s) on the sheet
