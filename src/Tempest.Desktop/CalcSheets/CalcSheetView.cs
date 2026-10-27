@@ -106,6 +106,14 @@ public sealed partial class CalcSheetView : UserControl
     private readonly TextBlock _stale = new() { Text = StaleMarker, FontSize = DesignTokens.FontSizeCaption, Foreground = Brushes.DarkOrange, IsVisible = false };
     private readonly TextBlock _governing = new() { FontFamily = DesignTokens.TitleFont, FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeBody + 2, TextWrapping = TextWrapping.Wrap };
     private readonly ProgressBar _utilisation = new() { Minimum = 0, Maximum = 1.5, Height = 10, IsVisible = false };
+
+    // A yes/no check has no utilisation to draw: its verdict is shown as a plain PASS or FAIL mark in place of the bar (an empty bar read as no result).
+    private readonly TextBlock _verdictText = new() { FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeBody, Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Center };
+    private readonly TextBlock _verdictNote = new() { Text = YesNoVerdictNote, FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
+    private readonly StackPanel _verdict = new() { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm, IsVisible = false };
+
+    /// <summary>The note beside the verdict mark of a governing yes/no check.</summary>
+    public const string YesNoVerdictNote = "A yes/no check: it passes or fails, with no utilisation.";
     private readonly Button _governingLink = new() { Content = "Go to step", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
     private readonly StackPanel _results = new() { Spacing = DesignTokens.SpaceXs };
     private readonly StackPanel _checks = new() { Spacing = DesignTokens.SpaceXs };
@@ -825,7 +833,10 @@ public sealed partial class CalcSheetView : UserControl
             _governing.Foreground = governing.Passed ? Brushes.SeaGreen : Brushes.IndianRed;
             _utilisation.Value = double.IsFinite(governing.Utilisation) ? Math.Min(governing.Utilisation, 1.5) : 1.5;
             _utilisation.Foreground = governing.Passed ? Brushes.SeaGreen : Brushes.IndianRed;
-            _utilisation.IsVisible = true;
+            _utilisation.IsVisible = governing.HasUtilisation;
+            _verdictText.Text = governing.Passed ? "PASS" : "FAIL";
+            ((Border)_verdict.Children[0]).Background = governing.Passed ? Brushes.SeaGreen : Brushes.IndianRed;
+            _verdict.IsVisible = !governing.HasUtilisation;
             _governingStep = governing.StepSymbol;
             _governingLink.IsVisible = governing.StepSymbol is not null;
         }
@@ -834,6 +845,7 @@ public sealed partial class CalcSheetView : UserControl
             _governing.Text = "Blocked — " + result.Blocks[0].Message;
             _governing.Foreground = Brushes.IndianRed;
             _utilisation.IsVisible = false;
+            _verdict.IsVisible = false;
             _governingLink.IsVisible = false;
         }
         else
@@ -841,6 +853,7 @@ public sealed partial class CalcSheetView : UserControl
             _governing.Text = result.Outputs.Count == 0 ? string.Empty : "No pass/fail check in this calculation.";
             _governing.Foreground = Brushes.Gray;
             _utilisation.IsVisible = false;
+            _verdict.IsVisible = false;
             _governingLink.IsVisible = false;
         }
 
@@ -906,8 +919,15 @@ public sealed partial class CalcSheetView : UserControl
         foreach (var f in _fields.Values)
             SetEnabled(f, !IsReadOnly);
 
+        // A reference picker fills fields, so it is read-only with them (an issued form showed it still enabled).
+        foreach (var picker in _referencePickers.Values)
+            picker.IsEnabled = !IsReadOnly && picker.ItemCount > 0;
+
         UpdateActions();
     }
+
+    /// <summary>Whether the reference picker of <paramref name="library"/> can be used, as drawn.</summary>
+    public bool IsReferencePickerEnabled(string library) => _referencePickers.TryGetValue(library, out var picker) && picker.IsEnabled;
 
     public void ShowStatus(string message) => _status.Text = message;
 
@@ -1027,6 +1047,15 @@ public sealed partial class CalcSheetView : UserControl
     public string? FieldProblem(string symbol) => _fields.TryGetValue(symbol, out var f) && f.Problem.IsVisible ? f.Problem.Text : null;
 
     public string GoverningText => _governing.Text ?? string.Empty;
+
+    /// <summary>Whether the governing check's utilisation bar is drawn (a ratio check governs).</summary>
+    public bool IsUtilisationBarShown => _utilisation.IsVisible;
+
+    /// <summary>The PASS or FAIL mark drawn for a governing yes/no check, or <see langword="null"/> when none is drawn.</summary>
+    public string? GoverningVerdictMark => _verdict.IsVisible ? _verdictText.Text : null;
+
+    /// <summary>The governing text block, for a layout check (it wraps within the Results panel).</summary>
+    internal TextBlock GoverningBlock => _governing;
 
     /// <summary>The results the form shows: each output's symbol and the text <see cref="CalcOutput.ValueText"/> gives it, the same text the sheet and the PDF print.</summary>
     public IReadOnlyList<(string Symbol, string Text)> ShownResults => _shownResults;
@@ -1457,12 +1486,22 @@ public sealed partial class CalcSheetView : UserControl
         right.Children.Add(_problems);
 
         var resultsHead = new StackPanel { Spacing = DesignTokens.SpaceXs };
-        var governingRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceLg };
+        // A grid, not a horizontal stack: the governing text takes the width left beside its link and wraps (a long Blocked line was clipped).
+        var governingRow = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto") };
+        _governingLink.Margin = new Thickness(DesignTokens.SpaceLg, 0, 0, 0);
+        _governingLink.VerticalAlignment = VerticalAlignment.Top;
+        _stale.Margin = new Thickness(DesignTokens.SpaceLg, 0, 0, 0);
+        Grid.SetColumn(_governingLink, 1);
+        Grid.SetColumn(_stale, 2);
         governingRow.Children.Add(_governing);
         governingRow.Children.Add(_governingLink);
         governingRow.Children.Add(_stale);
         resultsHead.Children.Add(governingRow);
         resultsHead.Children.Add(_utilisation);
+        _verdict.Children.Add(new Border { Child = _verdictText, Padding = new Thickness(DesignTokens.SpaceSm, 2), CornerRadius = new CornerRadius(3) });
+        _verdict.Children.Add(_verdictNote);
+        AutomationProperties.SetName(_verdict, "Governing verdict");
+        resultsHead.Children.Add(_verdict);
         resultsHead.Children.Add(_results);
         resultsHead.Children.Add(_checks);
         resultsHead.Children.Add(_notices);
