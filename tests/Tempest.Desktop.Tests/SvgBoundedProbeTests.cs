@@ -161,7 +161,7 @@ public sealed class SvgBoundedProbeTests(ITestOutputHelper output)
         new("svg-as-image", () => Svg(Image(Encoding.UTF8.GetBytes(NestedSvg), "image/svg+xml")), Ok, 1),
 
         // --- opacity layers (drawn at a raster edge; see the remarks on the layer caps in the test below) ---
-        new("opacity-nested-20@8000", () => Svg(Repeat("<g opacity=\"0.9\">", 20) + "<rect width=\"1000\" height=\"1000\"/><rect width=\"1\" height=\"1\"/>" + Repeat("</g>", 20), "width=\"1000\" height=\"1000\""), Ok, 5, MaxPeakMb: 1024, Raster: 4000),
+        new("opacity-nested-20@8000", () => Svg(Repeat("<g opacity=\"0.9\">", 20) + "<rect width=\"1000\" height=\"1000\"/><rect width=\"1\" height=\"1\"/>" + Repeat("</g>", 20), "width=\"1000\" height=\"1000\""), Ok, 5, MaxPeakMb: 1400, Raster: 8000),
         new("opacity-nested-250@2000", () => Svg(Repeat("<g opacity=\"0.9\">", 250) + "<rect width=\"1000\" height=\"1000\"/><rect width=\"1\" height=\"1\"/>" + Repeat("</g>", 250), "width=\"1000\" height=\"1000\""), Ok, 5, MaxPeakMb: 1024, Raster: 2000),
         new("opacity-siblings-20k@4000", () => Svg(Repeat("<g opacity=\"0.9\"><rect width=\"1000\" height=\"1000\"/><rect width=\"1\" height=\"1\"/></g>", 20_000), "width=\"1000\" height=\"1000\""), Ok, 5, Raster: 1000),
 

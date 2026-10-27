@@ -76,9 +76,9 @@ public static class SvgProbeRunner
             {
                 try
                 {
-                    // The viewer's own rule: the longest edge of the page is at most the raster edge asked for.
+                    // The viewer at its deepest zoom: the longest edge of the page is drawn at the raster edge asked for, scaling up as well as down.
                     var longest = Math.Max(picture.Size.Width, picture.Size.Height);
-                    var scale = longest > 0 ? Math.Min(1f, raster / longest) : 1f;
+                    var scale = longest > 0 ? raster / longest : 1f;
                     var width = Math.Max(1, (int)Math.Round(picture.Size.Width * scale));
                     var height = Math.Max(1, (int)Math.Round(picture.Size.Height * scale));
                     watch.Restart();
