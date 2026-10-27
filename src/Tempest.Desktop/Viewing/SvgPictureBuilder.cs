@@ -83,6 +83,9 @@ public static class SvgPictureBuilder
     /// <summary>The most path verbs one document draws, all its shapes together (F8): Skia's edge list at draw grows with them, and four million segments of an even-odd fill exhausted it.</summary>
     public const long MaxPathVerbs = 4_000_000;
 
+    /// <summary>The most style-sheet rules a document keeps (F9); further rules are ignored.</summary>
+    public const int MaxStyleRules = 10_000;
+
     /// <summary>
     /// The caps a document is held to. The defaults are the constants above and are what the viewer uses; a test passes smaller
     /// ones so each cap is exercised on a small document, in the normal suite, instead of on the multi-megabyte file that found it.
@@ -105,6 +108,7 @@ public static class SvgPictureBuilder
         public int OpacityLayers { get; init; } = MaxOpacityLayers;
         public int ShapeDataCharacters { get; init; } = MaxShapeDataCharacters;
         public long PathVerbs { get; init; } = MaxPathVerbs;
+        public int StyleRules { get; init; } = MaxStyleRules;
     }
 
     /// <summary>What the reader counted while recording a document: the figures the caps are tested on, and what was left out.</summary>
@@ -118,7 +122,9 @@ public static class SvgPictureBuilder
     /// <param name="OpacityFolds">Elements whose group opacity was folded into their fill and stroke opacity instead, because a layer cap was reached (F7).</param>
     /// <param name="PathVerbs">Path verbs drawn, every shape together (F8).</param>
     /// <param name="ShapesSkipped">Shapes left out because their data was over <see cref="Limits.ShapeDataCharacters"/> or they would take the document past <see cref="Limits.PathVerbs"/> (F8).</param>
-    public sealed record Statistics(int Elements, int GradientStopParses, long DecodedPixels, int ImagesSkipped, int TypefaceLookups, int FamilyLookups, int OpacityLayers, int OpacityFolds, long PathVerbs, int ShapesSkipped);
+    /// <param name="StyleRules">Style-sheet rules kept (F9).</param>
+    /// <param name="StyleRulesIgnored">Style-sheet rules past <see cref="Limits.StyleRules"/>, ignored (F9).</param>
+    public sealed record Statistics(int Elements, int GradientStopParses, long DecodedPixels, int ImagesSkipped, int TypefaceLookups, int FamilyLookups, int OpacityLayers, int OpacityFolds, long PathVerbs, int ShapesSkipped, int StyleRules, int StyleRulesIgnored);
 
     private const float PixelsPerInch = 96f;
     private const float DefaultFontSize = 16f;
@@ -295,10 +301,72 @@ public static class SvgPictureBuilder
     private sealed class Context
     {
         public readonly Dictionary<string, XElement> ById = new(StringComparer.Ordinal);
-        public readonly List<StyleRule> Rules = [];
         public readonly CancellationToken Token;
         public readonly Limits Limits;
         private float _viewportWidth;
+
+        // F9: every rule is filed under its most specific part (id, else class, else tag, else universal), so the rules an element
+        // can match are the union of four short lists rather than every rule of the sheet (rules × elements: 20 000 × 20 000 never finished).
+        private readonly Dictionary<string, List<StyleRule>> _rulesById = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, List<StyleRule>> _rulesByClass = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, List<StyleRule>> _rulesByTag = new(StringComparer.Ordinal);
+        private readonly List<StyleRule> _universalRules = [];
+
+        /// <summary>Rules kept from every style sheet, in order.</summary>
+        public int RuleCount { get; private set; }
+
+        /// <summary>Rules past <see cref="Limits.StyleRules"/>, ignored.</summary>
+        public int RulesIgnored { get; private set; }
+
+        /// <summary>Files one parsed rule, or counts it as ignored past the cap.</summary>
+        public void AddRule(string? tag, string? cls, string? id, IReadOnlyDictionary<string, string> declarations)
+        {
+            if (RuleCount >= Limits.StyleRules)
+            {
+                RulesIgnored++;
+                return;
+            }
+
+            var specificity = (id is null ? 0 : 100) + (cls is null ? 0 : 10) + (tag is null ? 0 : 1);
+            var rule = new StyleRule(tag, cls, id, specificity, RuleCount++, declarations);
+            var list = id is not null ? ListFor(_rulesById, id) : cls is not null ? ListFor(_rulesByClass, cls) : tag is not null ? ListFor(_rulesByTag, tag) : _universalRules;
+            list.Add(rule);
+        }
+
+        private static List<StyleRule> ListFor(Dictionary<string, List<StyleRule>> index, string key)
+        {
+            if (!index.TryGetValue(key, out var list))
+                index[key] = list = [];
+
+            return list;
+        }
+
+        /// <summary>The rules that apply to an element of <paramref name="tag"/> with <paramref name="classes"/> and <paramref name="id"/>, least specific and earliest first.</summary>
+        public IEnumerable<StyleRule> RulesFor(string tag, string[] classes, string? id)
+        {
+            if (RuleCount == 0)
+                return [];
+
+            var candidates = new List<StyleRule>(_universalRules);
+
+            if (_rulesByTag.TryGetValue(tag, out var byTag))
+                candidates.AddRange(byTag);
+
+            foreach (var cls in classes)
+            {
+                if (_rulesByClass.TryGetValue(cls, out var byClass))
+                    candidates.AddRange(byClass);
+            }
+
+            if (id is not null && _rulesById.TryGetValue(id, out var byId))
+                candidates.AddRange(byId);
+
+            return candidates
+                .Where(r => (r.Tag is null || string.Equals(r.Tag, tag, StringComparison.Ordinal))
+                    && (r.Class is null || classes.Contains(r.Class, StringComparer.Ordinal))
+                    && (r.Id is null || string.Equals(r.Id, id, StringComparison.Ordinal)))
+                .OrderBy(r => r.Specificity).ThenBy(r => r.Order);
+        }
         private float _viewportHeight;
 
         /// <summary>Sets the viewport a percentage refers to: the root's own size (the viewer has no outer container).</summary>
@@ -331,7 +399,7 @@ public static class SvgPictureBuilder
                     ById.TryAdd(id, element);
 
                 if (Is(element, "style"))
-                    ParseStyleSheet(element.Value, Rules);
+                    ParseStyleSheet(element.Value, this);
             }
         }
     }
@@ -340,8 +408,8 @@ public static class SvgPictureBuilder
 
     private static readonly Regex CssComment = new(@"/\*.*?\*/", RegexOptions.Singleline | RegexOptions.NonBacktracking, MatchTimeout);
 
-    /// <summary>A plain style sheet: rules of <c>tag</c>, <c>.class</c>, <c>tag.class</c> and <c>#id</c> selectors (any other selector is ignored).</summary>
-    private static void ParseStyleSheet(string css, List<StyleRule> rules)
+    /// <summary>A plain style sheet: rules of <c>tag</c>, <c>.class</c>, <c>tag.class</c> and <c>#id</c> selectors (any other selector is ignored), filed in <paramref name="context"/>.</summary>
+    private static void ParseStyleSheet(string css, Context context)
     {
         css = CssComment.Replace(css, string.Empty);
 
@@ -384,8 +452,7 @@ public static class SvgPictureBuilder
                 if (tag == "*")
                     tag = null;
 
-                var specificity = (id is null ? 0 : 100) + (cls is null ? 0 : 10) + (tag is null ? 0 : 1);
-                rules.Add(new StyleRule(tag, cls, id, specificity, rules.Count, declarations));
+                context.AddRule(tag, cls, id, declarations);
             }
         }
     }
@@ -471,17 +538,13 @@ public static class SvgPictureBuilder
                 properties[name] = value;
         }
 
-        if (context.Rules.Count > 0)
+        if (context.RuleCount > 0)
         {
             var tag = element.Name.LocalName;
             var classes = (element.Attribute("class")?.Value ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var id = element.Attribute("id")?.Value;
 
-            foreach (var rule in context.Rules
-                .Where(r => (r.Tag is null || string.Equals(r.Tag, tag, StringComparison.Ordinal))
-                    && (r.Class is null || classes.Contains(r.Class, StringComparer.Ordinal))
-                    && (r.Id is null || string.Equals(r.Id, id, StringComparison.Ordinal)))
-                .OrderBy(r => r.Specificity).ThenBy(r => r.Order))
+            foreach (var rule in context.RulesFor(tag, classes, id))
             {
                 foreach (var (name, value) in rule.Declarations)
                     properties[name] = value;
@@ -633,7 +696,7 @@ public static class SvgPictureBuilder
         /// <summary>The parsed stops of every gradient used so far, by the id it was asked for (F2): a document with two thousand shapes on one gradient parses its stops once.</summary>
         private readonly Dictionary<string, List<(float Offset, SKColor Colour)>> _stops = new(StringComparer.Ordinal);
 
-        public Statistics Statistics => new(_elements, _gradientStopParses, _decodedPixels, _imagesSkipped, _typefaceLookups, _familyLookups, _opacityLayers, _opacityFolds, _pathVerbs, _shapesSkipped);
+        public Statistics Statistics => new(_elements, _gradientStopParses, _decodedPixels, _imagesSkipped, _typefaceLookups, _familyLookups, _opacityLayers, _opacityFolds, _pathVerbs, _shapesSkipped, context.RuleCount, context.RulesIgnored);
 
         /// <summary>Whether a shape of <paramref name="verbs"/> more verbs fits the document's budget (F8), counting it when it does.</summary>
         private bool TakeVerbs(long verbs)

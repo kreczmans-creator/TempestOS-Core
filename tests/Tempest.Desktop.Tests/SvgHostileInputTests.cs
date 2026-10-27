@@ -408,6 +408,56 @@ public sealed class SvgHostileInputTests
     }
 
     // ------------------------------------------------------------------
+    // F9: style rules — indexed by id, class and tag, at most 10 000
+    // ------------------------------------------------------------------
+
+    [AvaloniaFact]
+    public void Style_Rules_Are_Found_By_Index_Rather_Than_By_Scanning_Every_Rule_For_Every_Element()
+    {
+        // 8 000 class rules and one tag rule on 8 000 rects: before, 64 million predicate evaluations and 8 000 sorts (20 000 × 20 000 never finished).
+        var markup = Svg("<style>" + string.Concat(Enumerable.Range(0, 8_000).Select(i => $".c{i}{{fill:#123456}}")) + "rect{fill:#ff0000}</style>" +
+            string.Concat(Enumerable.Repeat("<rect width=\"1\" height=\"1\"/>", 8_000)));
+
+        using var picture = BuildWithin(markup, "8 000 rules on 8 000 elements");
+
+        Assert.Equal(8_001, picture.Statistics.StyleRules);
+        Assert.Equal(0, picture.Statistics.StyleRulesIgnored);
+        Assert.Equal(new SKColor(255, 0, 0), PixelAt(picture, 0, 0));
+    }
+
+    [AvaloniaFact]
+    public void Indexed_Rules_Keep_Their_Specificity_And_Order()
+    {
+        // tag < class < tag.class < id; among equals the later wins; a rule for another class or id does not apply; * applies to everything.
+        var markup = Svg("<style>*{fill:#070707} rect{fill:#010101} .a{fill:#020202} rect.a{fill:#030303} #i{fill:#040404} .b{fill:#050505} #j{fill:#060606} .z{fill:#080808} .z{fill:#090909}</style>" +
+            "<rect id=\"i\" class=\"a\" width=\"10\" height=\"10\"/><rect class=\"a\" x=\"10\" width=\"10\" height=\"10\"/><rect x=\"20\" width=\"10\" height=\"10\"/>" +
+            "<rect class=\"x a\" x=\"30\" width=\"10\" height=\"10\"/><circle cx=\"45\" cy=\"5\" r=\"5\"/><rect class=\"z\" x=\"50\" width=\"10\" height=\"10\"/>");
+
+        using var picture = SvgPictureBuilder.Build(markup);
+
+        Assert.Equal(new SKColor(4, 4, 4), PixelAt(picture, 5, 5));
+        Assert.Equal(new SKColor(3, 3, 3), PixelAt(picture, 15, 5));
+        Assert.Equal(new SKColor(1, 1, 1), PixelAt(picture, 25, 5));
+        Assert.Equal(new SKColor(3, 3, 3), PixelAt(picture, 35, 5));
+        Assert.Equal(new SKColor(7, 7, 7), PixelAt(picture, 45, 5));
+        Assert.Equal(new SKColor(9, 9, 9), PixelAt(picture, 55, 5));
+    }
+
+    [AvaloniaFact]
+    public void Style_Rules_Past_The_Cap_Are_Ignored()
+    {
+        Assert.Equal(10_000, SvgPictureBuilder.MaxStyleRules);
+        var limits = SvgPictureBuilder.Limits.Default with { StyleRules = 2 };
+        var markup = Svg("<style>rect{fill:#010101} rect{fill:#020202} rect{fill:#030303}</style><rect width=\"10\" height=\"10\"/>");
+
+        using var picture = SvgPictureBuilder.Build(markup, CancellationToken.None, limits);
+
+        Assert.Equal(2, picture.Statistics.StyleRules);
+        Assert.Equal(1, picture.Statistics.StyleRulesIgnored);
+        Assert.Equal(new SKColor(2, 2, 2), PixelAt(picture, 5, 5));
+    }
+
+    // ------------------------------------------------------------------
     // F10: a deadline, honoured by the reader and applied by the viewer
     // ------------------------------------------------------------------
 
