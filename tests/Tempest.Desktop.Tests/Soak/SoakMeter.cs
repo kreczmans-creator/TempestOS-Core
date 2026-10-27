@@ -67,9 +67,15 @@ internal static class SoakProbe
         return GC.GetTotalMemory(forceFullCollection: true);
     }
 
-    /// <summary>Open file handles of this process (the descriptors under /proc/self/fd on Linux, the handle count elsewhere).</summary>
+    /// <summary>
+    /// Open file handles of this process: the descriptors under /proc/self/fd on Linux, the File handles of its handle table on Windows
+    /// (<see cref="WindowsFileHandles"/>), the handle count elsewhere.
+    /// </summary>
     public static int OpenHandles()
     {
+        if (OperatingSystem.IsWindows() && WindowsFileHandles.Count() is { } files)
+            return files;
+
         if (OperatingSystem.IsLinux() && Directory.Exists("/proc/self/fd"))
         {
             try
@@ -229,4 +235,103 @@ internal sealed class SoakSampler : IDisposable
     }
 
     public void Dispose() => Stop();
+}
+
+/// <summary>
+/// The open file handles of this process on Windows: the entries of its handle table whose object type is File, which covers files, pipes,
+/// sockets and devices, as /proc/self/fd does on Linux. <see cref="Process.HandleCount"/> counts every kernel object instead, among them the
+/// handles each thread holds (the thread itself and the events the runtime gives it), so it moves with the thread pool's size: on the Debug
+/// Windows leg a pass that ended with a pool thread or two more than the pass before read as a leak of 4 to 6 handles with no file left
+/// open (run 40475352930, three soak scenarios). Returns <see langword="null"/> where the table cannot be read, and the caller falls back to
+/// the handle count.
+/// </summary>
+[System.Runtime.Versioning.SupportedOSPlatform("windows")]
+internal static class WindowsFileHandles
+{
+    /// <summary><c>ProcessHandleInformation</c>: a snapshot of the process's own handle table (Windows 8 and later).</summary>
+    private const int ProcessHandleInformation = 51;
+
+    private const int StatusInfoLengthMismatch = unchecked((int)0xC0000004);
+
+    /// <summary><c>PROCESS_HANDLE_SNAPSHOT_INFORMATION</c> on x64: NumberOfHandles and Reserved, then the entries.</summary>
+    private const int HeaderBytes = 16;
+
+    /// <summary><c>PROCESS_HANDLE_TABLE_ENTRY_INFO</c> on x64: HandleValue, HandleCount, PointerCount, GrantedAccess, ObjectTypeIndex, HandleAttributes, Reserved.</summary>
+    private const int EntryBytes = 40;
+
+    private const int ObjectTypeIndexOffset = 28;
+
+    private static readonly IntPtr CurrentProcess = new(-1);
+
+    private static int? s_fileTypeIndex;
+
+    /// <summary>The number of File handles this process holds, or <see langword="null"/> where that cannot be read.</summary>
+    public static int? Count()
+    {
+        if (!Environment.Is64BitProcess)
+            return null;
+
+        try
+        {
+            s_fileTypeIndex ??= FileTypeIndex();
+
+            if (s_fileTypeIndex is not { } fileType || Snapshot() is not { } table)
+                return null;
+
+            return table.Count(entry => entry.Type == fileType);
+        }
+        catch (Exception e) when (e is DllNotFoundException or EntryPointNotFoundException or MarshalDirectiveException or IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>The object type index of File in this boot: the type of a handle this method opens on a file itself.</summary>
+    private static int? FileTypeIndex()
+    {
+        using var stream = new FileStream(typeof(WindowsFileHandles).Assembly.Location, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        var handle = (long)stream.SafeFileHandle.DangerousGetHandle();
+        return Snapshot()?.Where(entry => entry.Handle == handle).Select(entry => (int?)entry.Type).FirstOrDefault();
+    }
+
+    private static List<(long Handle, int Type)>? Snapshot()
+    {
+        var size = 64 * 1024;
+
+        for (var attempt = 0; attempt < 8; attempt++)
+        {
+            var buffer = new byte[size];
+            var status = NtQueryInformationProcess(CurrentProcess, ProcessHandleInformation, buffer, buffer.Length, out var needed);
+
+            if (status == StatusInfoLengthMismatch)
+            {
+                size = Math.Max(size * 2, needed + 4096);
+                continue;
+            }
+
+            if (status != 0)
+                return null;
+
+            var count = BitConverter.ToInt64(buffer, 0);
+
+            if (count < 0 || HeaderBytes + count * EntryBytes > buffer.Length)
+                return null;
+
+            var entries = new List<(long Handle, int Type)>((int)count);
+
+            for (var i = 0; i < count; i++)
+            {
+                var offset = HeaderBytes + (i * EntryBytes);
+                entries.Add((BitConverter.ToInt64(buffer, offset), BitConverter.ToInt32(buffer, offset + ObjectTypeIndexOffset)));
+            }
+
+            return entries;
+        }
+
+        return null;
+    }
+
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [DllImport("ntdll.dll")]
+    private static extern int NtQueryInformationProcess(IntPtr processHandle, int processInformationClass, byte[] processInformation, int processInformationLength, out int returnLength);
 }
