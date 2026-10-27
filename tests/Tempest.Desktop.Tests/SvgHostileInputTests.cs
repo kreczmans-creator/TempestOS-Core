@@ -339,7 +339,7 @@ public sealed class SvgHostileInputTests
     [AvaloniaFact]
     public void Opacity_Layers_Are_Capped_In_Depth_And_Number_And_Folded_Into_The_Paint_Beyond_Them()
     {
-        Assert.Equal(8, SvgPictureBuilder.MaxOpacityLayerDepth);
+        Assert.Equal(4, SvgPictureBuilder.MaxOpacityLayerDepth);
         Assert.Equal(1_000, SvgPictureBuilder.MaxOpacityLayers);
         var limits = SvgPictureBuilder.Limits.Default with { OpacityLayerDepth = 2, OpacityLayers = 3 };
 

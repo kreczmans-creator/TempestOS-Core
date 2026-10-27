@@ -73,8 +73,8 @@ public static class SvgPictureBuilder
     /// <summary>The most family names of a <c>font-family</c> list that are looked up (F6); each is a query to the platform's font configuration.</summary>
     public const int MaxFontFamilies = 8;
 
-    /// <summary>The deepest nesting of group-opacity layers (F7): every open layer is a bitmap the size of the page at the raster scale, live at draw.</summary>
-    public const int MaxOpacityLayerDepth = 8;
+    /// <summary>The deepest nesting of group-opacity layers (F7): every open layer is a bitmap the size of the page at the raster scale, live at draw — four of them at the viewer's 8 000-pixel edge are 1 GB.</summary>
+    public const int MaxOpacityLayerDepth = 4;
 
     /// <summary>The most group-opacity layers in one document (F7); each is a page-sized clear and composite at draw.</summary>
     public const int MaxOpacityLayers = 1_000;

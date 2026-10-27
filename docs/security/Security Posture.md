@@ -351,7 +351,7 @@ above (it owns the file that needs the fix):
   also holds every hostile-input class the review measured to a cap
   (`SvgPictureBuilder.Limits`: nesting and node count refused before the
   load, gradient stops, dash values, decoded pixels, path data and verbs,
-  opacity layers, style rules, font size and family lookups), every regular
+  opacity layers (at most 4 deep, 1 000 in all), style rules, font size and family lookups), every regular
   expression has a match timeout and runs non-backtracking where it can,
   and the viewer builds a document on a pool thread under a 15-second
   deadline, reporting one that overruns instead of freezing. Confirm neither fetches or follows
