@@ -542,15 +542,15 @@ public static partial class CalcDiagrams
 
             if (pipe)
             {
-                // Section through the pipe: the bore, the pipe wall and the insulation round it.
+                // Section through the pipe: the pipe wall (its outside D_i is the inside of the insulation) and the insulation round it.
                 elements.Add(new DiagramCircle("insulation", new(110, 120), 66, Filled: true, "lambda"));
-                elements.Add(new DiagramCircle("wall", new(110, 120), 34, Filled: true, "t_w"));
-                elements.Add(new DiagramCircle("bore", new(110, 120), 30, Filled: false, "D_i"));
-                elements.Add(new DiagramDimension("diameter", new(80, 120), new(140, 120), 0, "D_i", "D_i", new(110, 170)));
+                elements.Add(new DiagramCircle("wall", new(110, 120), 34, Filled: true, "D_i"));
+                elements.Add(new DiagramCircle("bore", new(110, 120), 30, Filled: false, "t_w"));
+                elements.Add(new DiagramDimension("diameter", new(76, 120), new(144, 120), 0, "D_i", "D_i", new(110, 196)));
                 elements.Add(new DiagramDimension("thickness", new(110, 54), new(110, 86), 0, "t_chosen", "t_chosen", new(110, 36)));
                 elements.Add(new DiagramPointLoad("surface", new(212, 120), DiagramDirection.Right, 30, surface));
-                elements.Add(new DiagramLabel("wall-thickness", new(110, 204), "t_w", "t_w"));
-                elements.Add(new DiagramLabel("conductivity", new(110, 226), "lambda", "λ"));
+                elements.Add(new DiagramLabel("wall-thickness", new(110, 214), "t_w", "t_w"));
+                elements.Add(new DiagramLabel("conductivity", new(110, 232), "lambda", "λ"));
             }
             else
             {

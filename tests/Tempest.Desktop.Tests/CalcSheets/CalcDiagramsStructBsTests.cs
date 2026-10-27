@@ -244,7 +244,8 @@ public sealed class CalcDiagramsStructBsTests
             .With(CalcInputValue.Choice("geometry", InsulationCalculator.Pipe))
             .With(CalcInputValue.Choice("h_mode", InsulationCalculator.HGiven)))!;
         Assert.StartsWith("A pipe", pipe.Variant.Caption, StringComparison.Ordinal);
-        Assert.Contains(pipe.Shapes, s => s.Element is DiagramCircle { InputName: "D_i" });
+        Assert.Contains(pipe.Shapes, s => s.Element is DiagramCircle { InputName: "D_i", Radius: 34 });
+        Assert.Contains(pipe.Shapes, s => s.Element is DiagramDimension { InputName: "D_i", From.X: 76, To.X: 144 });
         Assert.Equal("t_chosen = 50 mm", pipe.LabelFor("t_chosen"));
         Assert.NotNull(pipe.LabelFor("h_se"));
         Assert.Null(pipe.LabelFor("eps"));
