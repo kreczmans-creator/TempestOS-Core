@@ -154,9 +154,9 @@ The phases below are as they stood on that branch (D-38; ADR-0167), kept unchang
 - [x] Templates changed on both lines merged and moved up a minor version (DI-06); method labels and "In plain terms" brought up to D-46 for Addenda A and B (DI-07)
 - [x] Generated files regenerated (golden, worked examples, PDFs, spec hand-arithmetic); worked-examples index counts updated
 - [x] Full gate: Engine 465/0, Sheets 135/0, Calculators 2,076/0, FluidPower 97/0, Import 625/0, Library 474/0 (+1 skip), Core 7,235/0 (+15 skip), Desktop 1,389/0; `scripts/check-licences.py` passes
-- [ ] Draw the reference diagrams for the 27 Addendum A and B templates and empty `CalcDiagramsTests.WithoutDiagramYet` (Principle 33; DI-08)
+- [x] Draw the reference diagrams for the 27 Addendum A and B templates and empty `CalcDiagramsTests.WithoutDiagramYet` (Principle 33; DI-08): 27 diagrams, 100 drawings, reviewed (DC-25, `v0.26.0/di08-all`)
 - [ ] Regenerate graphify-out and its zip (integrator)
 - [ ] Windows CI on the merged head; the RealShell journey on Windows (Y11-04)
-- [ ] Owner: confirm the book editions in D-44; decide DI-03, DI-04 and DI-08
+- [ ] Owner: confirm the book editions in D-44 (DI-03, DI-04 and DI-08 decided in DC-21)
 - [x] Track S: C-1 fixes for Track P's open Critical and High defects
 
