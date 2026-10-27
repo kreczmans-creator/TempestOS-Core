@@ -657,6 +657,12 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
     /// <inheritdoc />
     public int PageCount => 1;
 
+    /// <summary>The kinds of feature the document uses that the reader does not draw, by element name (<see cref="SvgPictureBuilder.SvgPicture.NotShown"/>); empty when it is drawn whole.</summary>
+    public IReadOnlyList<string> NotShown => _svg.NotShown;
+
+    /// <inheritdoc />
+    public string? RenderingNote => NotShown.Count == 0 ? null : $"Some parts of this drawing are not shown: {string.Join(", ", NotShown)}.";
+
     /// <inheritdoc />
     public Size PageSize(int pageIndex) => _pageSize;
 

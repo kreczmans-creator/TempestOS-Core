@@ -335,6 +335,22 @@ public class DocumentPageSourceTests
     }
 
     [AvaloniaFact]
+    public void AnSvg_ReportsThePartsItDoesNotDraw_AndNothingForOneDrawnWhole()
+    {
+        // I2: a PDF or an image is always shown as stored; an SVG says when a clip path, mask, filter, pattern, marker or text on a path was left off.
+        using var whole = DocumentPageSourceFactory.Create(ViewableDocumentFormat.Svg, RedRectangleSvg())!;
+        Assert.Null(whole.RenderingNote);
+
+        var masked = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\"><mask id=\"m\"><rect width=\"10\" height=\"10\" fill=\"#fff\"/></mask>" +
+            "<rect width=\"10\" height=\"10\" style=\"mask:url(#m)\"/></svg>";
+        using var partial = DocumentPageSourceFactory.Create(ViewableDocumentFormat.Svg, Encoding.UTF8.GetBytes(masked))!;
+        Assert.Equal("Some parts of this drawing are not shown: mask.", partial.RenderingNote);
+
+        using var pdf = DocumentPageSourceFactory.Create(ViewableDocumentFormat.Pdf, MultiPagePdf())!;
+        Assert.Null(pdf.RenderingNote);
+    }
+
+    [AvaloniaFact]
     public void AnSvgPage_RasterisesAtTheRequestedScale()
     {
         using var source = DocumentPageSourceFactory.Create(ViewableDocumentFormat.Svg, RedRectangleSvg())!;

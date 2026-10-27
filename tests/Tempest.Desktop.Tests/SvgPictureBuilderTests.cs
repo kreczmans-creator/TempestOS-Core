@@ -158,6 +158,47 @@ public sealed class SvgPictureBuilderTests
             "<rect width=\"10\" height=\"10\" fill=\"#ff0000\" filter=\"url(#f)\" clip-path=\"url(#c)\" mask=\"url(#m)\"/></svg>";
 
         Assert.Equal((0, 0, 255, 255), PixelAt(markup, 8, 8));
+
+        // I2: what was left off is named, by element, in alphabetical order; an unused definition is not.
+        using var picture = SvgPictureBuilder.Build(markup);
+        Assert.Equal(["clipPath", "filter", "mask"], picture.NotShown);
+    }
+
+    [AvaloniaFact]
+    public void Every_Feature_Left_Off_Is_Reported_And_A_Drawing_Drawn_Whole_Reports_Nothing()
+    {
+        var markup = "<svg " + Ns + " width=\"10\" height=\"10\"><defs><pattern id=\"p\" width=\"1\" height=\"1\"><rect width=\"1\" height=\"1\"/></pattern>" +
+            "<marker id=\"m\"><rect width=\"1\" height=\"1\"/></marker><path id=\"curve\" d=\"M0 5 L10 5\"/></defs>" +
+            "<rect width=\"10\" height=\"10\" fill=\"url(#p) #ff0000\" style=\"marker-end:url(#m)\"/>" +
+            "<text><textPath href=\"#curve\">along</textPath></text><foreignObject width=\"1\" height=\"1\"><div/></foreignObject></svg>";
+
+        using var picture = SvgPictureBuilder.Build(markup);
+        Assert.Equal(["foreignObject", "marker", "pattern", "textPath"], picture.NotShown);
+
+        // The pattern's fallback colour is painted, and the text on the path is not drawn in a straight line somewhere.
+        Assert.Equal((0, 0, 255, 255), PixelAt(markup, 5, 5));
+
+        using var whole = SvgPictureBuilder.Build("<svg " + Ns + " width=\"10\" height=\"10\"><defs><filter id=\"f\"/><clipPath id=\"c\"/></defs><rect width=\"10\" height=\"10\" clip-path=\"none\"/></svg>");
+        Assert.Empty(whole.NotShown);
+    }
+
+    [AvaloniaFact]
+    public void The_Viewer_Says_In_The_Page_Status_Which_Parts_Of_A_Drawing_Are_Not_Shown()
+    {
+        var markup = "<svg " + Ns + " width=\"10\" height=\"10\"><defs><clipPath id=\"c\"><rect width=\"1\" height=\"1\"/></clipPath><filter id=\"f\"/></defs>" +
+            "<rect width=\"10\" height=\"10\" clip-path=\"url(#c)\" filter=\"url(#f)\"/></svg>";
+        var source = DocumentPageSourceFactory.Create(ViewableDocumentFormat.Svg, Encoding.UTF8.GetBytes(markup))!;
+        Assert.Equal("Some parts of this drawing are not shown: clipPath, filter.", source.RenderingNote);
+
+        var viewer = new DocumentViewerView();
+        viewer.Open(DocumentViewSession.Ready(Guid.NewGuid(), "clipped.svg", "image/svg+xml", ViewableDocumentFormat.Svg, 1, 10, 10, 400, 300, source.RenderingNote), source);
+        Assert.Equal("1 page · Some parts of this drawing are not shown: clipPath, filter.", viewer.PageIndicatorText);
+
+        // A drawing drawn whole keeps the plain page count.
+        var plain = DocumentPageSourceFactory.Create(ViewableDocumentFormat.Svg, DocumentPageSourceTests.RedRectangleSvg())!;
+        Assert.Null(plain.RenderingNote);
+        viewer.Open(DocumentViewSession.Ready(Guid.NewGuid(), "plain.svg", "image/svg+xml", ViewableDocumentFormat.Svg, 1, 120, 80, 400, 300, plain.RenderingNote), plain);
+        Assert.Equal("1 page", viewer.PageIndicatorText);
     }
 
     [AvaloniaFact]

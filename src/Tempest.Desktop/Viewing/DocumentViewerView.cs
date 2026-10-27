@@ -548,9 +548,9 @@ public sealed class DocumentViewerView : UserControl
 
         SetViewControlsShown(true);
 
-        _pageIndicator.Text = session.IsMultiPage
-            ? $"Page {session.CurrentPage} of {session.PageCount}"
-            : "1 page";
+        // I2: a document shown but not whole says so in the page status, beside the page count.
+        _pageIndicator.Text = (session.IsMultiPage ? $"Page {session.CurrentPage} of {session.PageCount}" : "1 page")
+            + (session.RenderingNote is { } note ? $" · {note}" : string.Empty);
         _zoomIndicator.Text = $"{Math.Round(session.Viewport.Zoom * 100)}%";
 
         _previousPage.IsEnabled = session.CanGoToPreviousPage;

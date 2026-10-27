@@ -133,7 +133,12 @@ public static class SvgPictureBuilder
 
     /// <summary>The recorded picture and its natural size in user units (the stated width and height, else the viewBox, else the drawn content's bounds).</summary>
     /// <param name="Statistics">What the reader counted on the way, for the tests of its caps.</param>
-    public sealed record SvgPicture(SKPicture Picture, SKSize Size, Statistics Statistics) : IDisposable
+    /// <param name="NotShown">
+    /// The kinds of feature the document uses that this reader does not draw, by element name and in alphabetical order (<c>clipPath</c>,
+    /// <c>filter</c>, <c>foreignObject</c>, <c>marker</c>, <c>mask</c>, <c>pattern</c>, <c>textPath</c>), so the viewer can say that
+    /// some parts of the drawing are not shown rather than show it silently wrong (I2). Empty for a document drawn whole.
+    /// </param>
+    public sealed record SvgPicture(SKPicture Picture, SKSize Size, Statistics Statistics, IReadOnlyList<string> NotShown) : IDisposable
     {
         public void Dispose() => Picture.Dispose();
     }
@@ -228,22 +233,23 @@ public static class SvgPictureBuilder
 
         var picture = recorder.EndRecording();
         var statistics = renderer.Statistics;
+        var notShown = renderer.NotShown;
 
         if (declared is { } size)
-            return new SvgPicture(picture, size, statistics);
+            return new SvgPicture(picture, size, statistics, notShown);
 
         // No stated size and no viewBox: the picture is the drawn content, shifted to the origin.
         var content = bounds.Rect;
 
         if (content.Width <= 0 || content.Height <= 0)
-            return new SvgPicture(picture, SKSize.Empty, statistics);
+            return new SvgPicture(picture, SKSize.Empty, statistics, notShown);
 
         using var shifted = new SKPictureRecorder();
         var shiftedCanvas = shifted.BeginRecording(new SKRect(0, 0, content.Width, content.Height));
         shiftedCanvas.Translate(-content.Left, -content.Top);
         shiftedCanvas.DrawPicture(picture);
         picture.Dispose();
-        return new SvgPicture(shifted.EndRecording(), new SKSize(content.Width, content.Height), statistics);
+        return new SvgPicture(shifted.EndRecording(), new SKSize(content.Width, content.Height), statistics, notShown);
     }
 
     /// <summary>The root's own size: absolute width and height, else the viewBox's, else <see langword="null"/>.</summary>
@@ -525,6 +531,8 @@ public static class SvgPictureBuilder
         "fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset",
         "fill-opacity", "stroke-opacity", "fill-rule", "color", "font-family", "font-size", "font-weight", "font-style", "text-anchor",
         "visibility", "opacity", "display", "stop-color", "stop-opacity",
+        // Read only to report that the effect is not drawn (I2).
+        "clip-path", "mask", "filter", "marker-start", "marker-mid", "marker-end", "marker",
     ];
 
     /// <summary>Every styling property of <paramref name="element"/>: presentation attributes, then matching sheet rules, then the <c>style</c> attribute.</summary>
@@ -560,9 +568,12 @@ public static class SvgPictureBuilder
         return properties;
     }
 
-    private static Style Resolve(Style parent, XElement element, Context context)
+    private static Style Resolve(Style parent, XElement element, Context context) => Resolve(parent, element, context, out _);
+
+    /// <summary>As <see cref="Resolve(Style, XElement, Context)"/>, also giving the element's resolved properties for the caller to look at.</summary>
+    private static Style Resolve(Style parent, XElement element, Context context, out Dictionary<string, string> properties)
     {
-        var p = Properties(element, context);
+        var p = properties = Properties(element, context);
         var style = parent with { Opacity = 1f, Display = true };
 
         if (p.TryGetValue("color", out var color) && ParseColour(color, style.CurrentColor) is { } current)
@@ -687,6 +698,10 @@ public static class SvgPictureBuilder
         private long _pathVerbs;
         private int _shapesSkipped;
         private readonly Stack<XElement> _useStack = new();
+        private readonly SortedSet<string> _notShown = new(StringComparer.Ordinal);
+
+        /// <summary>The kinds of feature used but not drawn, in alphabetical order (I2).</summary>
+        public IReadOnlyList<string> NotShown => [.. _notShown];
 
         /// <summary>The typeface each (family list, bold, italic) resolved to (F6): one font-configuration query per combination, not per text run.</summary>
         private readonly Dictionary<(string Family, bool Bold, bool Italic), SKTypeface> _typefaces = [];
@@ -754,13 +769,32 @@ public static class SvgPictureBuilder
 
             // Definitions are drawn only where they are used; styling and metadata draw nothing.
             if (name is "defs" or "symbol" or "linearGradient" or "radialGradient" or "clipPath" or "mask" or "marker" or "pattern" or "filter"
-                or "style" or "title" or "desc" or "metadata" or "script" or "foreignObject")
+                or "style" or "title" or "desc" or "metadata" or "script")
                 return;
 
-            var style = Resolve(parentStyle, element, context);
+            if (name is "foreignObject")
+            {
+                _notShown.Add(name);
+                return;
+            }
+
+            var style = Resolve(parentStyle, element, context, out var properties);
 
             if (!style.Display)
                 return;
+
+            // I2: an effect this reader leaves off is reported, so the viewer can say the drawing is not shown whole.
+            if (Refers(properties, "clip-path"))
+                _notShown.Add("clipPath");
+
+            if (Refers(properties, "mask"))
+                _notShown.Add("mask");
+
+            if (Refers(properties, "filter"))
+                _notShown.Add("filter");
+
+            if (Refers(properties, "marker-start") || Refers(properties, "marker-mid") || Refers(properties, "marker-end") || Refers(properties, "marker"))
+                _notShown.Add("marker");
 
             var save = canvas.Save();
             var layered = false;
@@ -847,6 +881,10 @@ public static class SvgPictureBuilder
                 canvas.RestoreToCount(save);
             }
         }
+
+        /// <summary>Whether <paramref name="properties"/> sets <paramref name="name"/> to a <c>url(…)</c> reference (an effect, rather than <c>none</c> or nothing).</summary>
+        private static bool Refers(Dictionary<string, string> properties, string name) =>
+            properties.TryGetValue(name, out var value) && value.TrimStart().StartsWith("url(", StringComparison.OrdinalIgnoreCase);
 
         private void DrawNestedSvg(SKCanvas canvas, XElement element, Style style, int depth)
         {
@@ -1091,7 +1129,16 @@ public static class SvgPictureBuilder
 
         private SKShader? Gradient(string id, SKRect shapeBounds, byte alpha)
         {
-            if (!context.ById.TryGetValue(id, out var element) || !(Is(element, "linearGradient") || Is(element, "radialGradient")))
+            if (!context.ById.TryGetValue(id, out var element))
+                return null;
+
+            if (Is(element, "pattern"))
+            {
+                _notShown.Add("pattern");
+                return null;
+            }
+
+            if (!(Is(element, "linearGradient") || Is(element, "radialGradient")))
                 return null;
 
             if (!_stops.TryGetValue(id, out var stops))
@@ -1299,6 +1346,11 @@ public static class SvgPictureBuilder
                             runs.Add((collapsed, style, null, null, 0, 0));
                         break;
                     }
+
+                    case XElement e when Is(e, "textPath"):
+                        // I2: text on a path is not laid out by this reader; it is left out and reported rather than drawn in a straight line somewhere.
+                        _notShown.Add("textPath");
+                        break;
 
                     case XElement e when Is(e, "tspan"):
                     {

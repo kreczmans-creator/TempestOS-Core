@@ -415,7 +415,8 @@ public sealed class AttachmentViewerLauncher
                 firstPage.Width,
                 firstPage.Height,
                 viewportWidth,
-                viewportHeight),
+                viewportHeight,
+                source.RenderingNote),
             source);
     }
 

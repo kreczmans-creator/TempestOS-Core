@@ -62,7 +62,8 @@ public sealed record DocumentViewSession
         DocumentViewport viewport,
         string? materialisedPath,
         string? externalOpenRefusedReason = null,
-        string? unavailableDetail = null)
+        string? unavailableDetail = null,
+        string? renderingNote = null)
     {
         AttachmentId = attachmentId;
         FileName = fileName;
@@ -75,7 +76,17 @@ public sealed record DocumentViewSession
         MaterialisedPath = materialisedPath;
         ExternalOpenRefusedReason = externalOpenRefusedReason;
         UnavailableDetail = unavailableDetail;
+        RenderingNote = renderingNote;
     }
+
+    /// <summary>
+    /// A sentence for the page status when a ready document is shown but not
+    /// whole: an SVG whose clip paths, masks, filters, patterns, markers or
+    /// text on a path this platform does not draw says which (I2), so the
+    /// drawing is never silently wrong. <see langword="null"/> for a document
+    /// shown as stored, and for every session that is not ready.
+    /// </summary>
+    public string? RenderingNote { get; private init; }
 
     /// <summary>
     /// What happened to a document that is not showing, when the status
@@ -157,7 +168,8 @@ public sealed record DocumentViewSession
         double contentWidth,
         double contentHeight,
         double viewportWidth,
-        double viewportHeight)
+        double viewportHeight,
+        string? renderingNote = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
 
@@ -170,7 +182,8 @@ public sealed record DocumentViewSession
             Math.Max(1, pageCount),
             1,
             DocumentViewport.Create(contentWidth, contentHeight, viewportWidth, viewportHeight),
-            materialisedPath: null);
+            materialisedPath: null,
+            renderingNote: string.IsNullOrWhiteSpace(renderingNote) ? null : renderingNote.Trim());
     }
 
     /// <summary>A document that could not be shown, and the reason.</summary>
