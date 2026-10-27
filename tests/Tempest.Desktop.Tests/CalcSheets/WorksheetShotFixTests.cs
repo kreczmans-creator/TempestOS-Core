@@ -171,7 +171,14 @@ public sealed class WorksheetShotFixTests
         Assert.Empty(view.MissingRequiredKinds);
         Assert.DoesNotContain("missing", view.RequirementsSummary, StringComparison.Ordinal);
 
+        // A National Annex set with the factors left as the sheet opened them: nothing was given, so the record is missing (review item 2).
         view.SetField("factor_set", choice: "National Annex record");
+        Assert.Equal(["en1990.factors"], view.MissingRequiredKinds);
+        Assert.StartsWith("1 required record is missing", view.RequirementsSummary, StringComparison.Ordinal);
+
+        // A factor typed by hand is given, but has no source yet.
+        view.SetField("gamma_Q", text: "1.6");
+        Assert.Empty(view.MissingRequiredKinds);
         Assert.StartsWith("1 required value is typed on the form without a source", view.RequirementsSummary, StringComparison.Ordinal);
     }
 

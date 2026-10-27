@@ -63,6 +63,9 @@ public static class RecordRequirements
     /// <summary>
     /// How the form's own values stand on a record kind, apart from the records in the store: the built-in set is picked, every input of the kind
     /// holds a value with a source, a value is typed without a source, or nothing is entered. A record is only "missing" when nothing is entered.
+    /// A value counts as entered only when it was really given: it has a source other than manual, or it differs from what a new sheet opens with.
+    /// A default the form filled in, or a yes/no left as it opened, is not a record's value (the review found a new bs.insulation sheet reading
+    /// "Every record ... is entered" from its defaults alone).
     /// </summary>
     public static RecordFormState FormState(CalcTemplate template, string kind, IReadOnlyList<string> symbols, CalcInputSet inputs)
     {
@@ -74,13 +77,27 @@ public static class RecordRequirements
             return RecordFormState.BuiltIn;
 
         var specs = symbols.Select(template.FindInput).OfType<CalcInputSpec>().ToList();
-        var entered = specs.Select(s => inputs.Find(s.Symbol)).Where(HasValue).ToList();
+        var opened = CalcTemplateHasher.NewSheetInputs(template);
+        bool Given(CalcInputSpec spec) => inputs.Find(spec.Symbol) is { } v && HasValue(v) && IsGiven(spec, v, opened);
+        var entered = specs.Where(Given).Select(s => inputs.Find(s.Symbol)).ToList();
 
-        // Nothing given, or a required input of the kind left empty: the record is still needed.
+        // Nothing given, or a required input of the kind left empty: the record is still needed (one left at its default keeps the default).
         if (entered.Count == 0 || specs.Any(s => !s.IsOptional && !HasValue(inputs.Find(s.Symbol))))
             return RecordFormState.NotEntered;
 
         return entered.All(v => v!.Provenance is { IsSufficientToIssue: true }) ? RecordFormState.Sourced : RecordFormState.Typed;
+    }
+
+    /// <summary>Whether <paramref name="value"/> was given rather than left as the new sheet opened: a source other than manual, or a different value.</summary>
+    private static bool IsGiven(CalcInputSpec spec, CalcInputValue value, CalcInputSet opened)
+    {
+        if (value.Provenance is { Kind: not CalcProvenanceKind.Manual })
+            return true;
+
+        if (spec.Kind == CalcInputKind.Boolean)
+            return (value.Flag == true) != (opened.Find(spec.Symbol)?.Flag ?? spec.Default is { } d && d != 0);
+
+        return opened.Find(spec.Symbol) is not { } start || !CalcInputAliases.SameValue(spec, start, value);
     }
 
     private static bool HasValue(CalcInputValue? v) => v switch

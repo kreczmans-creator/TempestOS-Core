@@ -515,9 +515,24 @@ public sealed partial class CalcSheetView
 
         var baseline = CurrentInstance is { } instance ? instance.InputSet() : CalcTemplateHasher.NewSheetInputs(entry.Template);
 
-        // A table or vector changed in its editor is an edit (an untouched one reads back exactly as it was given).
-        if (_tables.Values.Any(t => t.IsChanged))
-            return true;
+        // A table or vector is compared by value with the stored one (or none, on a new sheet), as a scalar is: an editor that was changed
+        // and then saved is no longer an edit (the review found it still counted after Save), and one that differs from the record is.
+        foreach (var table in _tables.Values)
+        {
+            var shown = ReadTable(table);
+            var stored = baseline.Find(table.Spec.Symbol);
+
+            if (shown is null || stored is null)
+            {
+                if ((shown is null) != (stored is null))
+                    return true;
+
+                continue;
+            }
+
+            if (!CalcInputAliases.SameValue(table.Spec, stored, shown) || !SameSource(stored.Provenance, shown.Provenance))
+                return true;
+        }
 
         foreach (var value in ReadForm().Values)
         {
@@ -546,15 +561,18 @@ public sealed partial class CalcSheetView
             if (stored.Unit is not null && value.Unit is not null && !string.Equals(stored.Unit, value.Unit, StringComparison.Ordinal))
                 return true;
 
-            var storedKind = stored.Provenance?.Kind ?? CalcProvenanceKind.Manual;
-            var shownKind = value.Provenance?.Kind ?? CalcProvenanceKind.Manual;
-
-            if (storedKind != shownKind || !string.Equals(stored.Provenance?.Reference ?? string.Empty, value.Provenance?.Reference ?? string.Empty, StringComparison.Ordinal))
+            if (!SameSource(stored.Provenance, value.Provenance))
                 return true;
         }
 
         return false;
     }
+
+    /// <summary>Two sources are the same when their kind, reference and revision are (no source is a manual entry).</summary>
+    private static bool SameSource(CalcProvenance? a, CalcProvenance? b) =>
+        (a?.Kind ?? CalcProvenanceKind.Manual) == (b?.Kind ?? CalcProvenanceKind.Manual)
+        && string.Equals(a?.Reference ?? string.Empty, b?.Reference ?? string.Empty, StringComparison.Ordinal)
+        && string.Equals(a?.Revision ?? string.Empty, b?.Revision ?? string.Empty, StringComparison.Ordinal);
 
     private static bool SameNumber(double? a, double? b) => a is null || b is null ? a is null && b is null : a.Value.Equals(b.Value);
 

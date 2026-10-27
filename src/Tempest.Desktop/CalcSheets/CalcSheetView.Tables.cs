@@ -93,6 +93,13 @@ public sealed partial class CalcSheetView
 
         public List<RowEditor> Rows { get; } = [];
 
+        /// <summary>Given rows beyond the table's cap: not shown, but kept, so validation keeps blocking until they are removed on purpose.</summary>
+        public List<CalcRow> Overflow { get; } = [];
+
+        public TextBlock OverflowNote { get; } = new() { FontSize = DesignTokens.FontSizeCaption, TextWrapping = TextWrapping.Wrap, Foreground = Brushes.IndianRed, IsVisible = false };
+
+        public Button RemoveOverflow { get; } = new() { MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+
         public StackPanel RowHost { get; } = new() { Spacing = 2 };
 
         public Dictionary<string, ComboBox> ColumnUnits { get; } = new(StringComparer.Ordinal);
@@ -262,7 +269,7 @@ public sealed partial class CalcSheetView
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,90") };
         var unit = t.Seed?.Unit is { Length: > 0 } u ? u : spec.DefaultUnit;
         t.VectorInitial = t.Seed?.Vector is { } values ? string.Join(", ", values.Select(x => x.ToString("R", CultureInfo.InvariantCulture))) : string.Empty;
-        t.Vector = Input(t.VectorInitial, "numbers, separated by commas");
+        t.Vector = Input(t.VectorInitial, "numbers, separated by spaces, commas and a space, or semicolons");
         t.Vector.MaxLength = MaxVectorTextLength;
         t.Vector.TextWrapping = TextWrapping.Wrap;
         AutomationProperties.SetName(t.Vector, spec.Symbol);
@@ -334,6 +341,22 @@ public sealed partial class CalcSheetView
 
         foreach (var row in (t.Seed?.Rows ?? []).Take(t.Spec.MaxRows))
             AddRow(t, row, raise: false);
+
+        // Rows past the cap are kept, never dropped silently (review item 6): the run refuses the table until the user removes them.
+        t.Overflow.AddRange((t.Seed?.Rows ?? []).Skip(t.Spec.MaxRows));
+
+        if (t.Overflow.Count > 0)
+        {
+            var given = t.Spec.MaxRows + t.Overflow.Count;
+            t.OverflowNote.Text = $"{given} rows were given; this table takes at most {t.Spec.MaxRows}. The form shows rows 1 to {t.Spec.MaxRows}; rows {t.Spec.MaxRows + 1} to {given} are kept but not shown, and the calculation does not run until they are removed.";
+            t.OverflowNote.IsVisible = true;
+            t.RemoveOverflow.Content = $"Remove rows {t.Spec.MaxRows + 1} to {given}";
+            t.RemoveOverflow.IsVisible = true;
+            AutomationProperties.SetName(t.RemoveOverflow, $"Remove the rows of {t.Spec.Symbol} beyond {t.Spec.MaxRows}");
+            t.RemoveOverflow.Click += (_, _) => RemoveOverflowRows(t);
+            block.Children.Add(t.OverflowNote);
+            block.Children.Add(t.RemoveOverflow);
+        }
 
         UpdateRowCount(t);
     }
@@ -459,6 +482,28 @@ public sealed partial class CalcSheetView
         RaiseInputsChanged();
     }
 
+    /// <summary>The number of given rows of a table input kept beyond its cap (not shown on the form).</summary>
+    public int TableOverflowCount(string symbol) => _tables.TryGetValue(symbol, out var t) ? t.Overflow.Count : 0;
+
+    /// <summary>Removes a table input's rows beyond its cap, as its Remove button does.</summary>
+    public void RemoveTableOverflow(string symbol)
+    {
+        if (_tables.TryGetValue(symbol, out var t))
+            RemoveOverflowRows(t);
+    }
+
+    private void RemoveOverflowRows(TableEditor t)
+    {
+        if (IsReadOnly || t.Overflow.Count == 0)
+            return;
+
+        t.Overflow.Clear();
+        t.OverflowNote.IsVisible = false;
+        t.RemoveOverflow.IsVisible = false;
+        t.Dirty = true;
+        RaiseInputsChanged();
+    }
+
     private void UpdateRowCount(TableEditor t)
     {
         t.Count.Text = string.Create(CultureInfo.InvariantCulture, $"{t.Rows.Count} of at most {t.Spec.MaxRows} rows");
@@ -481,24 +526,51 @@ public sealed partial class CalcSheetView
 
         var previous = picker.Tag as string;
         var next = picker.SelectedItem as string;
-        picker.Tag = next;
 
         if (previous is not null && next is not null && previous != next
             && Tempest.Calc.Engine.Units.UnitCatalog.TryParse(previous, out var from, out _) && Tempest.Calc.Engine.Units.UnitCatalog.TryParse(next, out var to, out _) && from.Dimension == to.Dimension)
         {
+            var cells = t.Rows.SelectMany((r, i) => r.Cells.Where(c => c.Column.Key == key && c.Text is not null).Select(c => (Row: i + 1, Cell: c))).ToList();
+
+            // An entry that is not a number cannot be converted: the unit change is refused, or the entry would later be read in the new unit.
+            if (cells.FirstOrDefault(c => c.Cell.Text!.Text is { Length: > 0 } text && !double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out _)) is { Cell: not null } bad)
+            {
+                RefuseUnitChange(t, picker, previous, $"{t.Spec.Symbol}: correct row {bad.Row}, {bad.Cell.Column.Label} ('{bad.Cell.Text!.Text}'), which is not a number, before changing the unit of the column.");
+                return;
+            }
+
             _loadingForm = true;
 
-            foreach (var cell in t.Rows.SelectMany(r => r.Cells).Where(c => c.Column.Key == key && c.Text is not null))
+            foreach (var (_, cell) in cells)
             {
-                if (double.TryParse(cell.Text!.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
-                    cell.Text.Text = CalcValue.FormatNumber(to.FromSi(from.ToSi(value)), 10);
+                if (!double.TryParse(cell.Text!.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
+                    continue;
+
+                // A cell the user had not changed is still its given value, shown in the new unit: it keeps its own number, unit and source
+                // (a link or a scan import), so converting a column never strips them (review item 3).
+                var untouched = !cell.IsEdited;
+                cell.Text.Text = CalcValue.FormatNumber(to.FromSi(from.ToSi(value)), 10);
+
+                if (untouched)
+                    cell.InitialText = cell.Text.Text;
             }
 
             _loadingForm = false;
         }
 
-        t.Dirty = true;
+        picker.Tag = next;
         TableChanged(t);
+    }
+
+    /// <summary>Puts a unit picker back to the unit it had and says why the change was refused.</summary>
+    private void RefuseUnitChange(TableEditor t, ComboBox picker, string previous, string reason)
+    {
+        _loadingForm = true;
+        picker.SelectedItem = previous;
+        _loadingForm = false;
+        t.Problem.Text = reason;
+        t.Problem.Foreground = Brushes.IndianRed;
+        t.Problem.IsVisible = true;
     }
 
     private void ConvertVector(TableEditor t)
@@ -508,25 +580,43 @@ public sealed partial class CalcSheetView
 
         var previous = t.VectorUnit.Tag as string;
         var next = t.VectorUnit.SelectedItem as string;
-        t.VectorUnit.Tag = next;
 
         if (previous is not null && next is not null && previous != next
             && Tempest.Calc.Engine.Units.UnitCatalog.TryParse(previous, out var from, out _) && Tempest.Calc.Engine.Units.UnitCatalog.TryParse(next, out var to, out _) && from.Dimension == to.Dimension
-            && ParseVector(t.Vector.Text) is { } values && values.All(double.IsFinite))
+            && ParseVector(t.Vector.Text) is { } values)
         {
+            // An entry that is not a number cannot be converted: the unit change is refused, or the good entries would change unit around it (review item 4).
+            if (values.FindIndex(x => !double.IsFinite(x)) is >= 0 and var bad)
+            {
+                RefuseUnitChange(t, t.VectorUnit, previous, $"{t.Spec.Symbol}: correct value {bad + 1}, which is not a number, before changing the unit.");
+                return;
+            }
+
+            var untouched = string.Equals(t.Vector.Text ?? string.Empty, t.VectorInitial, StringComparison.Ordinal);
             _loadingForm = true;
             t.Vector.Text = string.Join(", ", values.Select(x => CalcValue.FormatNumber(to.FromSi(from.ToSi(x)), 10)));
             _loadingForm = false;
+
+            // The given values, only shown in another unit, are still the given values.
+            if (untouched)
+                t.VectorInitial = t.Vector.Text;
         }
 
-        t.Dirty = true;
+        t.VectorUnit.Tag = next;
         TableChanged(t);
     }
 
-    private static List<double>? ParseVector(string? text)
+    /// <summary>
+    /// A vector's numbers: separated by semicolons or white space, a comma allowed only as the end of an entry ("1, 2, 3"). A comma inside an entry
+    /// ("1,5", a decimal comma) makes it not a number, as it does in a single-value field, so it is refused rather than read as two values.
+    /// </summary>
+    internal static List<double>? ParseVector(string? text)
     {
-        var parts = (text ?? string.Empty).Split([',', ';', ' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        return parts.Length == 0 ? null : [.. parts.Select(p => double.TryParse(p, NumberStyles.Float, CultureInfo.InvariantCulture, out var x) ? x : double.NaN)];
+        var parts = (text ?? string.Empty).Split([';', ' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(p => p.EndsWith(',') ? p[..^1] : p)
+            .Where(p => p.Length > 0)
+            .ToList();
+        return parts.Count == 0 ? null : [.. parts.Select(p => !p.Contains(',', StringComparison.Ordinal) && double.TryParse(p, NumberStyles.Float, CultureInfo.InvariantCulture, out var x) ? x : double.NaN)];
     }
 
     private void SetTableEnabled(TableEditor t, bool enabled)
@@ -545,6 +635,7 @@ public sealed partial class CalcSheetView
 
         t.Provenance.IsEnabled = enabled;
         t.ProvenanceRef.IsReadOnly = !enabled;
+        t.RemoveOverflow.IsEnabled = enabled;
         t.Add.IsEnabled = enabled && t.Rows.Count < t.Spec.MaxRows;
     }
 
@@ -589,10 +680,10 @@ public sealed partial class CalcSheetView
             return new CalcInputValue(t.Spec.Symbol, Unit: t.VectorUnit?.SelectedItem as string ?? (t.Spec.DefaultUnit is { Length: > 0 } u ? u : null), Vector: values, Provenance: provenance);
         }
 
-        if (t.Rows.Count == 0)
+        if (t.Rows.Count == 0 && t.Overflow.Count == 0)
             return null;
 
-        return new CalcInputValue(t.Spec.Symbol, Rows: [.. t.Rows.Select(r => ReadRow(t, r))], Provenance: provenance);
+        return new CalcInputValue(t.Spec.Symbol, Rows: [.. t.Rows.Select(r => ReadRow(t, r)), .. t.Overflow], Provenance: provenance);
     }
 
     private static CalcRow ReadRow(TableEditor t, RowEditor row)

@@ -93,7 +93,7 @@ public sealed partial class CalcSheetView : UserControl
     private readonly Button _updateLinksButton = new() { MinHeight = DesignTokens.MinControlSize, IsVisible = false };
     private IReadOnlyList<LinkTarget> _linkTargets = [];
 
-    /// <summary>The link provenance each linked input was shown with, so saving the form keeps the pinned revision.</summary>
+    /// <summary>The provenance each input was shown with, so saving the form keeps a link's pin and a source's revision.</summary>
     private readonly Dictionary<string, CalcProvenance> _shownLinks = new(StringComparer.Ordinal);
 
     private readonly TreeView _catalogue = new() { MinHeight = 200 };
@@ -715,7 +715,9 @@ public sealed partial class CalcSheetView : UserControl
         _seedMadeOn = seed.MadeOn;
         _shownLinks.Clear();
 
-        foreach (var value in seed.Values.Where(v => v.Provenance is { Kind: CalcProvenanceKind.Link or CalcProvenanceKind.CadImport or CalcProvenanceKind.ScanImport }))
+        // Every source a value was shown with, so reading the form back keeps what the two fields cannot show: a link's pin, a drawing's or
+        // specification's revision (the review found a revision dropped on every read).
+        foreach (var value in seed.Values.Where(v => v.Provenance is not null))
             _shownLinks[value.Symbol] = value.Provenance!;
 
         _staleBanner.IsVisible = false;
@@ -1006,8 +1008,8 @@ public sealed partial class CalcSheetView : UserControl
         {
             var provenance = ReadProvenance(f);
 
-            // A linked input keeps its pin (upstream, output and revision) while its reference text is unchanged.
-            if (provenance.Kind is CalcProvenanceKind.Link or CalcProvenanceKind.CadImport or CalcProvenanceKind.ScanImport && _shownLinks.TryGetValue(symbol, out var shown) && shown.Kind == provenance.Kind && string.Equals(shown.Reference, provenance.Reference, StringComparison.Ordinal))
+            // A source keeps what it was shown with (a link's pin, a drawing's revision) while its kind and reference text are unchanged.
+            if (_shownLinks.TryGetValue(symbol, out var shown) && shown.Kind == provenance.Kind && string.Equals(string.IsNullOrEmpty(shown.Reference) ? null : shown.Reference, provenance.Reference, StringComparison.Ordinal))
                 provenance = shown;
             else if (provenance.Kind is CalcProvenanceKind.CadImport or CalcProvenanceKind.ScanImport)
                 provenance = CalcProvenance.Manual; // typed by hand, or the text was changed: not an import

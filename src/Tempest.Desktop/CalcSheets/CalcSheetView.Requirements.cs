@@ -133,7 +133,9 @@ public sealed partial class CalcSheetView
         }
         else
         {
-            _requirementsSummary.Text = others.Count > 0 ? "No record is required; the defaults apply until you enter the ones below." : "Every record this calculation draws on is entered.";
+            _requirementsSummary.Text = others.Count > 0 ? "No record is required; the defaults apply until you enter the ones below."
+                : requirements.Any(r => r.IsMissing) ? "No record is required; the values on the form stand in for the records not entered."
+                : "Every record this calculation draws on is entered.";
             _requirementsSummary.Foreground = null;
         }
 
