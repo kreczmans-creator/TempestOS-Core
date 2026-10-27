@@ -137,7 +137,11 @@ public sealed partial class CalcInstanceService
             else if (!OutputsAgree(stored, again))
             {
                 differing.Add(stored.Symbol);
-                details.Add($"{stored.Symbol} is {again.Text} where it was {stored.Text}");
+
+                // Two numbers that round to the same printed text differ in SI (the value the outputs hash covers), so the sentence shows the SI numbers.
+                details.Add(string.Equals(again.Text, stored.Text, StringComparison.Ordinal) && again.Si is { } nowSi && stored.Si is { } wasSi
+                    ? $"{stored.Symbol} is {nowSi.ToString("R", CultureInfo.InvariantCulture)} where it was {wasSi.ToString("R", CultureInfo.InvariantCulture)} in SI (both shown as {stored.Text})"
+                    : $"{stored.Symbol} is {again.Text} where it was {stored.Text}");
             }
         }
 

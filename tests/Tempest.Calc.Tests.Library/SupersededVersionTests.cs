@@ -27,6 +27,38 @@ public sealed class SupersededVersionTests
         }
     }
 
+    /// <summary>
+    /// The same worksheet on a length x (mm) giving y = factor · x, with what a later version may add (review of DC-14): a check the stored
+    /// calculation fails, a block on the stored input, a refusal of the stored input (an exception the runner does not turn into a block), the
+    /// output shown in another unit with the same SI value, or a value that rounds to the same printed text.
+    /// </summary>
+    private sealed class Lengths(string version, double factor = 2, string unit = "mm", bool failingCheck = false, bool passingCheck = false, bool blocksLarge = false, bool refusesLarge = false) : ICalcCalculator
+    {
+        public CalcTemplate Template { get; } = new(Id, version, CalcDiscipline.Mechanical, "Lengths", "", "", [new CalcInputSpec("x", "x", CalcInputKind.Quantity, "mm", Default: 1)], [], [], [], []);
+
+        public void Run(CalcRunContext c)
+        {
+            c.Input("x");
+
+            if (refusesLarge && c.InputSi("x") > 0.003)
+                throw new NotSupportedException("x above 3 mm is not supported by this version.");
+
+            c.Assign("y", string.Create(System.Globalization.CultureInfo.InvariantCulture, $"x * {factor}"), unit, "scaled");
+            c.Output("y", "scaled");
+
+            if (blocksLarge && c.InputSi("x") > 0.003)
+                c.Block("large", "x: above 3 mm is outside this version.");
+
+            if (failingCheck || passingCheck)
+            {
+                c.Assign("u", failingCheck ? "x / 2 mm" : "x / 20 mm", null, "Utilisation");
+                c.CheckUtilisation("Limit", "u");
+            }
+        }
+    }
+
+    private static IReadOnlyList<CalcInputValue> Lengths4() => [CalcInputValue.Quantity("x", 4, "mm", CalcProvenance.Assumed("Test value."))];
+
     private static TemplateVersionHistory Recorded(params string[] references) => new(references.Select(r => new KeyValuePair<string, string>(r, new string('a', 64))));
 
     private static IReadOnlyList<CalcInputValue> Inputs(double x = 4) => [CalcInputValue.Of("x", x, CalcProvenance.Assumed("Test value."))];
@@ -365,8 +397,113 @@ public sealed class SupersededVersionTests
         Assert.Null(withheld.Service.OpenOlderVersion(draft with { TemplateReference = lifting.Template.Id + "@0.0.1" }));
     }
 
+    /// <summary>An issued calculation of <see cref="Lengths"/> 1.0.0 on x = 4 mm (y = 8 mm), and a later build whose 1.1.0 is <paramref name="later"/>.</summary>
+    private static async Task<(CalcInstance Issued, CalcInstanceService Later)> IssuedLengthsAsync(Lengths later, double factor = 2)
+    {
+        var host = new LibraryTestHost(calculators: [new Lengths("1.0.0", factor)]);
+        var created = await host.Service.CreateAsync(Id, await host.ProjectAsync(), "Lengths", Lengths4());
+        Assert.True((await host.Service.CheckAsync(created.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted)).Succeeded);
+        var issued = await host.Service.IssueAsync(created.Id, "ISS-L1", "Client Co");
+        Assert.True(issued.Succeeded, issued.Reason);
+        var stored = (await host.Store.FindInstanceAsync(created.Id))!;
+        Assert.Equal(0.004 * factor, stored.Outputs.Single(o => o.Symbol == "y").Si!.Value, 12);
+        return (stored, LaterBuild(host, new CalcCatalogue([later], history: Recorded($"{Id}@1.0.0", $"{Id}@1.1.0"))));
+    }
+
     [Fact]
-    public async Task A_Rerun_That_The_Version_Blocks_Or_That_Adds_A_Failing_Check_Does_Not_Reproduce()
+    public async Task A_Rerun_That_The_Version_Blocks_Does_Not_Reproduce_And_Says_So()
+    {
+        var (issued, later) = await IssuedLengthsAsync(new Lengths("1.1.0", blocksLarge: true));
+
+        var rerun = later.Rerun(issued);
+
+        Assert.Equal(CalcRerunOutcome.Differs, rerun.Outcome);
+        Assert.Equal($"{Id}@1.1.0", rerun.RanOn);
+        Assert.Empty(rerun.Differing);
+        Assert.Contains($"cannot be re-run on {Id}@1.1.0, which has replaced {Id}@1.0.0: that version blocks it (x: above 3 mm is outside this version)", rerun.Message, StringComparison.Ordinal);
+        Assert.Contains("stays as stored, read-only", rerun.Message, StringComparison.Ordinal);
+        Assert.Contains($"Revise it to carry its inputs to {Id}@1.1.0", rerun.Message, StringComparison.Ordinal);
+        Assert.Equal(1, rerun.OutputsCompared);
+        Assert.Equal(CalcOlderVersionKind.StoredRecord, later.OpenOlderVersion(issued)!.Kind);
+    }
+
+    [Fact]
+    public async Task A_Rerun_Whose_Inputs_The_Version_Refuses_Does_Not_Reproduce_And_Names_The_Refusal()
+    {
+        var (issued, later) = await IssuedLengthsAsync(new Lengths("1.1.0", refusesLarge: true));
+
+        var rerun = later.Rerun(issued);
+
+        Assert.Equal(CalcRerunOutcome.Differs, rerun.Outcome);
+        Assert.Equal($"{Id}@1.1.0", rerun.RanOn);
+        Assert.Empty(rerun.Differing);
+        Assert.Contains($"cannot be re-run on {Id}@1.1.0: that version refuses its inputs (x above 3 mm is not supported by this version)", rerun.Message, StringComparison.Ordinal);
+        Assert.Contains("stays as it was issued", rerun.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Rerun_That_Adds_A_Check_The_Calculation_Fails_Does_Not_Reproduce_But_A_Check_It_Passes_Does()
+    {
+        var (issued, later) = await IssuedLengthsAsync(new Lengths("1.1.0", failingCheck: true));
+
+        var rerun = later.Rerun(issued);
+
+        Assert.Equal(CalcRerunOutcome.Differs, rerun.Outcome);
+        Assert.Equal(["Limit"], rerun.Differing);
+        Assert.Contains("it adds the check 'Limit', which this calculation does not meet", rerun.Message, StringComparison.Ordinal);
+        Assert.Equal(0, rerun.ChecksCompared);
+
+        // A check the version adds that the calculation passes is not a difference: the stored outputs are what they were.
+        var (issuedAgain, passing) = await IssuedLengthsAsync(new Lengths("1.1.0", passingCheck: true));
+        var ok = passing.Rerun(issuedAgain);
+        Assert.Equal(CalcRerunOutcome.Reproduced, ok.Outcome);
+        Assert.Empty(ok.Differing);
+    }
+
+    [Fact]
+    public async Task A_Changed_Display_Unit_With_The_Same_SI_Value_Reproduces_And_A_Changed_Value_With_The_Same_Text_Does_Not()
+    {
+        // 1.1.0 shows y in m: "0.008 m" where the record says "8 mm", the same length to the last digit.
+        var (issued, inMetres) = await IssuedLengthsAsync(new Lengths("1.1.0", unit: "m"));
+        Assert.Equal("8 mm", issued.Outputs.Single(o => o.Symbol == "y").Text);
+        var unitOnly = inMetres.Rerun(issued);
+        Assert.Equal(CalcRerunOutcome.Reproduced, unitOnly.Outcome);
+        Assert.Empty(unitOnly.Differing);
+        Assert.Contains("all 1 stored output", unitOnly.Message, StringComparison.Ordinal);
+
+        // 1.1.0 with a factor that moves y by a part in twenty million: still printed "8.400 mm", not the same number.
+        var (issuedAgain, nudged) = await IssuedLengthsAsync(new Lengths("1.1.0", factor: 2.1000001), factor: 2.1);
+        Assert.Equal("8.400 mm", issuedAgain.Outputs.Single(o => o.Symbol == "y").Text);
+        var preview = nudged.Preview(Id, new CalcInputSet(Lengths4()));
+        Assert.Equal("8.400 mm", preview.Outputs.Single(o => o.Symbol == "y").ValueText);
+        var valueOnly = nudged.Rerun(issuedAgain);
+        Assert.Equal(CalcRerunOutcome.Differs, valueOnly.Outcome);
+        Assert.Equal(["y"], valueOnly.Differing);
+        Assert.Contains("y is 0.00840000", valueOnly.Message, StringComparison.Ordinal);
+        Assert.Contains(" where it was 0.0084", valueOnly.Message, StringComparison.Ordinal);
+        Assert.Contains(" in SI (both shown as 8.400 mm)", valueOnly.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Record_Whose_Stored_Fingerprint_Is_Not_The_One_Recorded_For_Its_Version_Is_Said_To_Be_From_A_Build_Before_The_Content_Was_Final()
+    {
+        var host = new LibraryTestHost(calculators: [new Scaler("1.0.0", 2)]);
+        var issued = await IssuedOnV1Async(host, await host.ProjectAsync());
+        var recordedHash = host.Catalogue.Find(Id)!.ContentHash;
+        var later = LaterBuild(host, new CalcCatalogue([new Scaler("1.1.0", 2)], history: new TemplateVersionHistory([new($"{Id}@1.0.0", recordedHash), new($"{Id}@1.1.0", new string('b', 64))])));
+
+        // The record carries the hash the manifest records for 1.0.0: nothing to add.
+        var final = later.OpenOlderVersion(issued)!;
+        Assert.DoesNotContain("before its content was final", final.Message, StringComparison.Ordinal);
+
+        // A record made on a build of 1.0.0 whose content was not yet what the manifest records: the sentence names both fingerprints.
+        var earlyHash = new string('c', 64);
+        var early = later.OpenOlderVersion(issued with { TemplateHash = earlyHash })!;
+        Assert.Contains($"Its stored template fingerprint ({CalcTemplateHasher.Short(earlyHash)}) is not the one recorded for {Id}@1.0.0 ({CalcTemplateHasher.Short(recordedHash)}): it was made on a build of that version before its content was final.", early.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Rerun_With_Nothing_Stored_Is_Unavailable_And_A_Stored_Output_The_Version_No_Longer_Gives_Differs()
     {
         var host = new LibraryTestHost(calculators: [new Scaler("1.0.0", 2)]);
         var issued = await IssuedOnV1Async(host, await host.ProjectAsync());
