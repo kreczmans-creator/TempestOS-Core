@@ -161,7 +161,7 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
     I_sun: not entered, so the default of 0 W/m² is used.
 
 8. Verification
-  Template: elec.enclosure-heat@1.7.0
+  Template: elec.enclosure-heat@1.7.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 4/4

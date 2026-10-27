@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Motor sizing    Revision: A
 Title: Motor and actuator sizing
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: LINE-ELEC-001    Client: Client Co
 
 1. Scope and method
 Calculates the torque, speed and power a motor needs to move a load through a mechanism, and checks a candidate motor against them. A continuously running rotary load is sized from its steady torque, speed and run-up time.
@@ -227,7 +227,7 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
   J_ratio = 1.2036    Inertia ratio
   duty = 0.7201    Thermal duty
   u_peak = 0.54    Peak utilisation
-  u_rms = 0.90    Continuous utilisation
+  u_rms = 0.90    Continuous utilisation (governing)
   u_speed = 0.90    Speed utilisation
   k = 1.592 mm    Transmission constant
   v_pk = 1.500 m/s    Peak velocity
@@ -244,11 +244,11 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
   WARNING  T_dec: the motor brakes during deceleration (negative torque). The drive must absorb the regenerated energy.  [overhauling]
 
 8. Verification
-  Template: elec.motor-sizing@1.11.0
-  Content hash: 2ef4f6484897f9f6
+  Template: elec.motor-sizing@1.11.1
+  Content hash: 7ccfbf19d3cec269
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 22:43 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

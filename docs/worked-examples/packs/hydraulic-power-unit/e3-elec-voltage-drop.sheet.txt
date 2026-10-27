@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Press 5 hydraulic power unit
 Calc ID: Motor supply voltage drop    Revision: A
 Title: Voltage drop and I²R loss
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: HPU-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: HPU-001    Client: Client Co
 
 1. Scope and method
 Calculates the voltage drop, the conductor power loss and the estimated conductor temperature of a DC, single-phase or three-phase circuit. The drop limit is a user input, because the limits of BS 7671 are not embedded.
@@ -83,11 +83,12 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
         Largest voltage drop the limit allows
 
 5. Results
-  dV = 3.543 V    Voltage drop (governing)
+  dV = 3.543 V    Voltage drop
   dV_pct = 0.88569    Voltage drop (%)
   P_loss = 0.2340 kW    Power loss
   R = 0.06964 Ω    Resistance
   X = 0.002400 Ω    Reactance
+  u_dv = 0.18    Drop utilisation against the limit (governing)
 
 6. Checks (governing first)
   PASS  Voltage drop against the limit: 3.543 V vs 20 V  utilisation 0.18  « BS 7671:2018 reg. 525
@@ -100,7 +101,7 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   Content hash: 3a115f95fa99ee42
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 21:51 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

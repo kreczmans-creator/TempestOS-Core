@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Plant room 2 chilled water
 Calc ID: Pipe insulation    Revision: A
 Title: Insulation thickness (ISO 12241)
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: CHW-INS-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: CHW-INS-001    Client: Client Co
 
 1. Scope and method
 Calculates the insulation thickness of a pipe or flat surface that meets a heat-loss limit, a hot-surface limit or an anti-condensation requirement. For a chosen thickness it gives the heat flow, surface temperature and PASS or FAIL.
@@ -115,7 +115,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   R_tot = 3.363 m·K/W    Total resistance
   D_crit = 8.750 mm    Critical diameter (at the bare-surface h_se)
   governing = "anti-condensation allowance"    Governing criterion
-  u_dew = 0.33    Utilisation, anti-condensation allowance
+  u_dew = 0.33    Utilisation, anti-condensation allowance (governing)
 
 6. Checks (governing first)
   PASS  Chosen thickness against the anti-condensation allowance: 2.503 K vs 7.486 K  utilisation 0.33  « ISO 12241
@@ -128,7 +128,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   Content hash: b8b77970e70183e1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 14/14
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

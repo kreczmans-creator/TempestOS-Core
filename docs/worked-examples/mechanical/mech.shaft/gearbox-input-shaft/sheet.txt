@@ -215,6 +215,11 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   sigma_key = 74.07 MPa    Key bearing
   L_key_req = 11.11 mm    Key length required
   u_key = 0.28    Key utilisation
+  u_crit = 0.08    Utilisation of critical speed against the operating speed
+  u_f = 0.89    Fatigue utilisation
+  u_y = 0.36    Yield utilisation
+  u_slope = 0.90    Slope utilisation (governing)
+  u_defl = 0.55    Deflection utilisation
 
 6. Checks (governing first)
   PASS  Slope at the bearings against limit: 0.0008961 rad vs 0.001000 rad  utilisation 0.90

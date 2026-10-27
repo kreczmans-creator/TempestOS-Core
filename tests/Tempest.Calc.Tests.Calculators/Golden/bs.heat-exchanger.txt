@@ -122,7 +122,8 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with 
   dT_lm = 30 K    Log-mean temperature difference
   Q_lmtd = 125.40 kW    Duty by the LMTD method
   F_corr = 1    LMTD correction factor
-  u_duty = 0.96    Duty utilisation
+  u_duty = 0.96    Duty utilisation (governing)
+  u_app = 0.07    Approach utilisation (minimum / actual)
 
 6. Checks (governing first)
   PASS  Duty against required: 120 kW vs 125.40 kW  utilisation 0.96

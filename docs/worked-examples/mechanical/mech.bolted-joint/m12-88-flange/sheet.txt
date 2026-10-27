@@ -236,6 +236,10 @@ Tensile stress area: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 p_
   m_min = 6.865 mm    Engagement needed
   nu_M = 0.97    Assembly utilisation of proof strength
   u_assembly = 0.97    Assembly utilisation over the permitted ν (governing)
+  u_clamp = 0.38    Required over available residual clamp
+  u_yield = 0.83    Yield utilisation in the working state
+  u_fatigue = 0.09    Fatigue utilisation
+  u_strip = 0.57    Engagement utilisation
 
 6. Checks (governing first)
   PASS  Assembly equivalent stress against the permitted stress: 619.9 MPa vs 640 MPa  utilisation 0.97  « VDI 2230 R7
@@ -251,7 +255,7 @@ Tensile stress area: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 p_
     nu_perm: not entered, so the default of 1 is used.
 
 8. Verification
-  Template: mech.bolted-joint@1.3.0
+  Template: mech.bolted-joint@1.3.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5

@@ -224,6 +224,10 @@ Tensile stress area: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 p_
   m_min = 6.544 mm    Engagement needed
   nu_M = 0.92    Assembly utilisation of proof strength
   u_assembly = 0.92    Assembly utilisation over the permitted ν (governing)
+  u_clamp = 0.42    Required over available residual clamp
+  u_yield = 0.79    Yield utilisation in the working state
+  u_fatigue = 0.09    Fatigue utilisation
+  u_strip = 0.55    Engagement utilisation
 
 6. Checks (governing first)
   PASS  Assembly equivalent stress against the permitted stress: 590.4 MPa vs 640 MPa  utilisation 0.92  « VDI 2230 R7
@@ -237,7 +241,7 @@ Tensile stress area: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 p_
   WARNING  M_A: the preload alone takes the bolt above 90 % of its proof strength.  [preload-yield]
 
 8. Verification
-  Template: mech.bolted-joint@1.3.0
+  Template: mech.bolted-joint@1.3.1
   Known-answer cases passed: 5/5
 
 9. References

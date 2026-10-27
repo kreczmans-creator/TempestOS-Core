@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Calc test project
 Calc ID: Bracket flange bolts    Revision: A
 Title: Bolted joint (simplified VDI 2230)
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: BRK-CALC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: BRK-CALC-001    Client: Client Co
 
 1. Scope and method
 Calculates the preload from the tightening torque, the load factor, the residual clamp, separation, yield, thread stripping and fatigue amplitude of one bolt clamping members under an axial working load. It uses a simplified VDI 2230 approach.
@@ -227,6 +227,10 @@ Tensile stress area: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 p_
   m_min = 6.544 mm    Engagement needed
   nu_M = 0.92    Assembly utilisation of proof strength
   u_assembly = 0.92    Assembly utilisation over the permitted ν (governing)
+  u_clamp = 0.42    Required over available residual clamp
+  u_yield = 0.79    Yield utilisation in the working state
+  u_fatigue = 0.09    Fatigue utilisation
+  u_strip = 0.55    Engagement utilisation
 
 6. Checks (governing first)
   PASS  Assembly equivalent stress against the permitted stress: 590.4 MPa vs 640 MPa  utilisation 0.92  « VDI 2230 R7
@@ -242,11 +246,11 @@ Tensile stress area: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 p_
     nu_perm: not entered, so the default of 1 is used.
 
 8. Verification
-  Template: mech.bolted-joint@1.3.0
-  Content hash: 703b1339499cf1fc
+  Template: mech.bolted-joint@1.3.1
+  Content hash: c143be03cdb54ee7
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 23:24 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

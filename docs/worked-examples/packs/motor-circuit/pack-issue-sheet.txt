@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Servo axis motor circuit calc pack    Revision: A
 Title: Calculation pack
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: LINE-ELEC-001    Client: Client Co
 
 PACK INDEX
   1. Motor sizing — Motor and actuator sizing — rev A — ISSUED — RMS torque with the safety factor against the rated torque PASS
@@ -15,7 +15,7 @@ PACK INDEX
   6. Enclosure heat — Enclosure heat dissipation and fan sizing — rev A — ISSUED — Natural temperature rise against the allowed rise PASS
 
 REVISIONS
-  A  2026-10-26  test.engineer  First issue
+  A  2026-10-27  test.engineer  First issue
 
 1. Scope and method
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -44,7 +44,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 26/26
-  Test run: 2026-10-26 22:43 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References
@@ -54,9 +54,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Motor sizing    Revision: A
 Title: Motor and actuator sizing
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: LINE-ELEC-001    Client: Client Co
 
 1. Scope and method
 Calculates the torque, speed and power a motor needs to move a load through a mechanism, and checks a candidate motor against them. A continuously running rotary load is sized from its steady torque, speed and run-up time.
@@ -279,7 +279,7 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
   J_ratio = 1.2036    Inertia ratio
   duty = 0.7201    Thermal duty
   u_peak = 0.54    Peak utilisation
-  u_rms = 0.90    Continuous utilisation
+  u_rms = 0.90    Continuous utilisation (governing)
   u_speed = 0.90    Speed utilisation
   k = 1.592 mm    Transmission constant
   v_pk = 1.500 m/s    Peak velocity
@@ -296,11 +296,11 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
   WARNING  T_dec: the motor brakes during deceleration (negative torque). The drive must absorb the regenerated energy.  [overhauling]
 
 8. Verification
-  Template: elec.motor-sizing@1.11.0
-  Content hash: 2ef4f6484897f9f6
+  Template: elec.motor-sizing@1.11.1
+  Content hash: 7ccfbf19d3cec269
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 22:43 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References
@@ -311,9 +311,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Load budget    Revision: A
 Title: Load budget, PSU, transformer and battery
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: LINE-ELEC-001    Client: Client Co
 
 1. Scope and method
 Calculates the demand of a set of loads per supply and the minimum DC power supply, transformer and battery for it. It also gives the heat the loads dissipate for the enclosure calculation.
@@ -475,11 +475,11 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   WARNING  records: tabulated values not taken from a reference record are f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: elec.load-budget@1.6.0
-  Content hash: 8ef07d8978201310
+  Template: elec.load-budget@1.6.1
+  Content hash: 37b6289e618acdb2
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 22:43 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References
@@ -491,9 +491,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Cable and device    Revision: A
 Title: Conductor sizing and overload coordination
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: LINE-ELEC-001    Client: Client Co
 
 1. Scope and method
 Calculates the design current, the smallest preferred device rating and the smallest conductor whose tabulated capacity carries that rating. It checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z, using your own capacity and rating records.
@@ -654,7 +654,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: f8273ca4d4809d96
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 22:43 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References
@@ -670,9 +670,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Voltage drop    Revision: A
 Title: Voltage drop and I²R loss
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: LINE-ELEC-001    Client: Client Co
 
 1. Scope and method
 Calculates the voltage drop, the conductor power loss and the estimated conductor temperature of a DC, single-phase or three-phase circuit. The drop limit is a user input, because the limits of BS 7671 are not embedded.
@@ -751,11 +751,12 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
         Largest voltage drop the limit allows
 
 5. Results
-  dV = 0.7844 V    Voltage drop (governing)
+  dV = 0.7844 V    Voltage drop
   dV_pct = 0.19609    Voltage drop (%)
   P_loss = 0.002187 kW    Power loss
   R = 0.3869 Ω    Resistance
   X = 0.002000 Ω    Reactance
+  u_dv = 0.04    Drop utilisation against the limit (governing)
 
 6. Checks (governing first)
   PASS  Voltage drop against the limit: 0.7844 V vs 20 V  utilisation 0.04  « BS 7671:2018 reg. 525
@@ -768,7 +769,7 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   Content hash: 3a115f95fa99ee42
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 22:43 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References
@@ -781,9 +782,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Fault protection    Revision: A
 Title: Fault protection (BS 7671)
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: LINE-ELEC-001    Client: Client Co
 
 1. Scope and method
 Calculates automatic disconnection of supply in a TN system for one circuit: loop impedance, disconnection time and the adiabatic conductor check. It also gives the prospective three-phase fault at the origin against the breaking capacity.
@@ -912,11 +913,11 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   WARNING  records: tabulated values not taken from a reference record are rho_20, k_R, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let (Device characteristic (time–current points)). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: elec.fault-protection@1.5.0
-  Content hash: 7a65b921a6c8d035
+  Template: elec.fault-protection@1.5.1
+  Content hash: 9559cda3b9c899f8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 22:43 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References
@@ -930,9 +931,9 @@ CALCULATION SHEET — ISSUED
 Project: Line 12 axis 3
 Calc ID: Enclosure heat    Revision: A
 Title: Enclosure heat dissipation and fan sizing
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: LINE-ELEC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: LINE-ELEC-001    Client: Client Co
 
 1. Scope and method
 Calculates the heat load of a control enclosure, its natural temperature rise and the airflow for a target rise. It also gives the fan duty point and the cooling-unit capacity needed when the limit cannot be met.
@@ -1071,11 +1072,11 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   None.
 
 8. Verification
-  Template: elec.enclosure-heat@1.7.0
-  Content hash: 84d846ce9c1bea4e
+  Template: elec.enclosure-heat@1.7.1
+  Content hash: c419a03dc9212448
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 22:43 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

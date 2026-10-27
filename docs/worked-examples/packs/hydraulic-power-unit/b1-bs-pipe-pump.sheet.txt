@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Press 5 hydraulic power unit
 Calc ID: Pressure line    Revision: A
 Title: Pipe pressure drop and pump duty
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: HPU-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: HPU-001    Client: Client Co
 
 1. Scope and method
 Calculates the friction and fitting losses of series pipe segments at a given flow, the system curve and the duty point against a pump curve. It also gives the affinity-law shift for a speed or impeller change, and the NPSH.
@@ -146,11 +146,11 @@ Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place
   WARNING  segments: pressure line to cylinder has fitting losses (K = 6) at Re = 2327.1. The K values are for turbulent flow, so the fitting loss is understated here.  [fittings]
 
 8. Verification
-  Template: bs.pipe-pump@1.10.0
-  Content hash: c67e163da77aac31
+  Template: bs.pipe-pump@1.10.1
+  Content hash: 2df24301b0231856
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

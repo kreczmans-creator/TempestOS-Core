@@ -154,11 +154,16 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   M_max = 0.2000 kN·m    Largest bending moment
   theta_A = 0.002430 rad    Slope at A
   theta_B = 0.002430 rad    Slope at B
-  y_load = 0.3240 mm    Deflection at the loads (governing)
+  y_load = 0.3240 mm    Deflection at the loads
   S_e = 174.2 MPa    Endurance limit
   n_y_min = 5.9641    Lowest yield safety factor
   n_c_D = 5305 rpm    Dunkerley lower bound
   r_c = 3.5367    Critical-speed ratio
+  u_crit = 0.57    Utilisation of critical speed against the operating speed
+  u_f = 0.65    Fatigue utilisation
+  u_y = 0.25    Yield utilisation
+  u_slope = 2.43    Slope utilisation
+  u_defl = 2.50    Deflection utilisation (governing)
 
 6. Checks (governing first)
   FAIL  Deflection at the loads against limit: 0.3240 mm vs 0.1300 mm  utilisation 2.50

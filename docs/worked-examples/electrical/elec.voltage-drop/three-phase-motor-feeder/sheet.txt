@@ -99,6 +99,8 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   T_c_est = 58.25 °C    Estimated conductor temperature
   R = 0.04715 Ω    Resistance
   X = 0.006400 Ω    Reactance
+  u_dv = 0.38    Drop utilisation against the limit
+  u_Iz = 0.84    Load against the current-carrying capacity (governing)
 
 6. Checks (governing first)
   PASS  Design current against the current-carrying capacity: 100 A vs 119 A  utilisation 0.84  « BS 7671:2018 reg. 523

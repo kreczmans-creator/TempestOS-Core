@@ -76,7 +76,7 @@ Radius of gyration and slenderness: r = √(I/A); λ = L_E/r. Euler buckling str
   F_E = 449.62 kN    Euler critical load
   p_c = 133.8 MPa    Compressive strength
   lambda = 94.868    Slenderness
-  u = 0.56    Utilisation
+  u = 0.56    Utilisation (governing)
   r = 31.62 mm    Radius of gyration
   p_E = 224.8 MPa    Euler stress
   lambda_0 = 17.155    Limiting slenderness

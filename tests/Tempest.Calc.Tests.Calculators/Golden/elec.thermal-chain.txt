@@ -91,7 +91,7 @@ Temperature rise across each stage: ΔT_i = P·R_i. Total resistance of the chai
   None.
 
 8. Verification
-  Template: elec.thermal-chain@1.1.0
+  Template: elec.thermal-chain@1.1.1
   Known-answer cases passed: 4/4
 
 9. References

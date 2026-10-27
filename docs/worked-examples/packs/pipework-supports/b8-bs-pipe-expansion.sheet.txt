@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Pipe rack 4 anchor A2
 Calc ID: Pipe expansion and anchor force    Revision: A
 Title: Pipe expansion, loops and anchor forces (screening)
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: PIP-SUP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: PIP-SUP-001    Client: Client Co
 
 1. Scope and method
 Calculates the thermal growth of a pipe run between anchors, the leg or loop that absorbs it, and the force and moment on the anchors. It is a screening calculation, not a piping stress analysis.
@@ -264,11 +264,11 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   WARNING  mu: the anchor force holds no support friction. Enter μ and the weight per metre, with the length on slides, to include it.  [friction]
 
 8. Verification
-  Template: bs.pipe-expansion@1.5.0
-  Content hash: 9954299d5054c375
+  Template: bs.pipe-expansion@1.5.1
+  Content hash: 29443308b79dc6fc
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

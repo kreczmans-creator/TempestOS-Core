@@ -230,7 +230,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   z = 306.5 mm    Lever arm between the compression resultant and the bolt row
   C_Ed = 436.70 kN    Compression resultant
   C_Ed_2 = 0 kN    Compression resultant, other side
-  T_Ed = 226.70 kN    Tension resultant, more loaded row (governing)
+  T_Ed = 226.70 kN    Tension resultant, more loaded row
   T_Ed_2 = 0 kN    Tension resultant, other row
   A_flange = 48608 mm²    Compression-side bearing area
   C_Rd = 826.33 kN    Compression-side resistance
@@ -247,7 +247,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   T_mode = "mode 3 (bolt failure)"    Governing T-stub mode
   u_N = 0.11    Axial bearing utilisation
   u_C = 0.53    Compression-side utilisation
-  u_T = 0.56    Tension T-stub utilisation
+  u_T = 0.56    Tension T-stub utilisation (governing)
   u_bt = 0.56    Bolt tension utilisation
   u_V = 0.23    Shear utilisation
 

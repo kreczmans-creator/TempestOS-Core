@@ -163,7 +163,7 @@ Absolute pressures: p_a = p_gauge + p_atm, or as entered in Absolute mode Gas vo
   pssr = "7360 bar·L is at or above 250 bar·L: the exception does not apply; PSSR and PED / UK PER duties follow."    PSSR Schedule 1 250 bar·L exception (indication only)
   process = "charged as fast as it is discharged (one exponent n_gas = 1 from the pre-charge to both working pressures)"    Gas process the volume is sized for
   u_V = 0.99    Selected size utilisation
-  u_r0 = 1.00    Pre-charge rule utilisation (p0/p1)
+  u_r0 = 1.00    Pre-charge rule utilisation (p0/p1) (governing)
   u_rp = 0.62    Pressure ratio utilisation (p2/p0 at the minimum temperature)
 
 6. Checks (governing first)

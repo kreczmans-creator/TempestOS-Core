@@ -219,7 +219,7 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   N_b_y_Rd = 1287.2 kN    Buckling resistance about y-y
   N_b_z_Rd = 1279.1 kN    Buckling resistance about z-z
   u_N = 0.00    Axial utilisation
-  u_M_y = 0.70    Bending y-y utilisation
+  u_M_y = 0.70    Bending y-y utilisation (governing)
   u_M_z = 0.00    Bending z-z utilisation
   u_V = 0.31    Shear utilisation
 

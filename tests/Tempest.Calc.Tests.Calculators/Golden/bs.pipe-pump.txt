@@ -129,7 +129,7 @@ Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place
   WARNING  segments: oil line is laminar (Re = 7.8516), so f = 64/Re. The system curve and the duty point scale its friction with Q, not Q².  [laminar]
 
 8. Verification
-  Template: bs.pipe-pump@1.10.0
+  Template: bs.pipe-pump@1.10.1
   Known-answer cases passed: 5/5
 
 9. References

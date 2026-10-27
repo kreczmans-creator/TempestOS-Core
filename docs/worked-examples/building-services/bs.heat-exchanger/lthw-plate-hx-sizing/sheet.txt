@@ -132,6 +132,7 @@ Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with 
   dT_lm = 18.40 K    Log-mean temperature difference
   Q_lmtd = 120 kW    Duty by the LMTD method
   F_corr = 1    LMTD correction factor
+  u_app = 0.19    Approach utilisation (minimum / actual) (governing)
 
 6. Checks (governing first)
   PASS  Approach against minimum: 3 K vs 16.13 K  utilisation 0.19

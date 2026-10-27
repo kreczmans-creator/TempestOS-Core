@@ -117,7 +117,7 @@ Emitter temperature difference: ΔT = (T_flow + T_return)/2 − T_room, or the l
   V_em = 8 L    Emitter water content
   e_x = 0.032086    Expansion coefficient
   p_i = 79.02 kPa    Pre-charge pressure
-  u_emit = 0.94    Emitter utilisation
+  u_emit = 0.94    Emitter utilisation (governing)
 
 6. Checks (governing first)
   PASS  Selected emitters against room heat (governing room): 1.500 kW vs 1.600 kW  utilisation 0.94
@@ -127,7 +127,7 @@ Emitter temperature difference: ΔT = (T_flow + T_return)/2 − T_room, or the l
   WARNING  V_pipe: 20 L is the default, not the water content of this system's pipework, which the pipe-pump calculation gives. A larger system holds more water, so the vessel here would be undersized.  [v-pipe-default]
 
 8. Verification
-  Template: bs.sealed-system@1.5.0
+  Template: bs.sealed-system@1.5.1
   Known-answer cases passed: 4/4
 
 9. References

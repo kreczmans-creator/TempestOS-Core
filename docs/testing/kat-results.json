@@ -4,7 +4,7 @@
   "templates": [
     {
       "id": "bs.duct-sizing",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "kats": 3,
       "katsPassed": 3,
       "failedKats": [],
@@ -44,7 +44,7 @@
     },
     {
       "id": "bs.pipe-expansion",
-      "version": "1.5.0",
+      "version": "1.5.1",
       "kats": 5,
       "katsPassed": 5,
       "failedKats": [],
@@ -54,7 +54,7 @@
     },
     {
       "id": "bs.pipe-pump",
-      "version": "1.10.0",
+      "version": "1.10.1",
       "kats": 5,
       "katsPassed": 5,
       "failedKats": [],
@@ -94,7 +94,7 @@
     },
     {
       "id": "bs.sealed-system",
-      "version": "1.5.0",
+      "version": "1.5.1",
       "kats": 4,
       "katsPassed": 4,
       "failedKats": [],
@@ -124,7 +124,7 @@
     },
     {
       "id": "elec.enclosure-heat",
-      "version": "1.7.0",
+      "version": "1.7.1",
       "kats": 4,
       "katsPassed": 4,
       "failedKats": [],
@@ -134,7 +134,7 @@
     },
     {
       "id": "elec.fault-protection",
-      "version": "1.5.0",
+      "version": "1.5.1",
       "kats": 6,
       "katsPassed": 6,
       "failedKats": [],
@@ -144,7 +144,7 @@
     },
     {
       "id": "elec.load-budget",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "kats": 4,
       "katsPassed": 4,
       "failedKats": [],
@@ -154,7 +154,7 @@
     },
     {
       "id": "elec.motor-sizing",
-      "version": "1.11.0",
+      "version": "1.11.1",
       "kats": 3,
       "katsPassed": 3,
       "failedKats": [],
@@ -184,7 +184,7 @@
     },
     {
       "id": "elec.thermal-chain",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "kats": 4,
       "katsPassed": 4,
       "failedKats": [],
@@ -264,7 +264,7 @@
     },
     {
       "id": "mech.bolted-joint",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "kats": 5,
       "katsPassed": 5,
       "failedKats": [],
@@ -344,7 +344,7 @@
     },
     {
       "id": "mech.shaft-stress",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "kats": 3,
       "katsPassed": 3,
       "failedKats": [],
@@ -374,7 +374,7 @@
     },
     {
       "id": "mech.thermal-expansion",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "kats": 5,
       "katsPassed": 5,
       "failedKats": [],
@@ -514,7 +514,7 @@
     },
     {
       "id": "struct.ltb-interaction",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "kats": 8,
       "katsPassed": 8,
       "failedKats": [],
@@ -534,7 +534,7 @@
     },
     {
       "id": "struct.section-properties",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "kats": 5,
       "katsPassed": 5,
       "failedKats": [],

@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Carton tamper station 4
 Calc ID: Follower return spring    Revision: A
 Title: Helical springs
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: TMP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: TMP-001    Client: Client Co
 
 1. Scope and method
 Calculates the rate, working points, stresses, buckling, fatigue and surge of a cold-coiled round-wire helical spring: compression, extension or torsion. The characteristic is linear, with hook stresses for extension and legs for torsion springs.
@@ -261,7 +261,7 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n_active) (compression, extension)
   n_t = 12.5    Total coils
   p_coil = 12.67 mm    Pitch
   s_1 = 5.064 mm    Deflection at point 1
-  s_2 = 45.06 mm    Deflection at point 2 (governing)
+  s_2 = 45.06 mm    Deflection at point 2
   L_1 = 139.9 mm    Length at point 1
   L_2 = 99.94 mm    Length at point 2
   s_c = 70 mm    Travel to solid
@@ -280,9 +280,10 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n_active) (compression, extension)
   u_2 = 0.45    Utilisation at point 2
   u_c = 0.70    Utilisation at solid
   u_s = 0.64    Working deflection / travel to solid
-  u_n = 0.79    Working deflection / travel to L_n
+  u_n = 0.79    Working deflection / travel to L_n (governing)
   u_b = 0.00    Deflection at point 2 / buckling deflection
   u_f = 0.51    Goodman utilisation
+  u_fat = 0.61    Fatigue utilisation against the required factor
 
 6. Checks (governing first)
   PASS  Working deflection against the travel to the minimum length, keeping the coil clearance at L₂: 45.06 mm vs 57.14 mm  utilisation 0.79  « BS EN 13906-1:2013
@@ -296,10 +297,10 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n_active) (compression, extension)
 
 8. Verification
   Template: mech.spring@1.6.0
-  Content hash: 327a985e18c79f75
+  Content hash: e5989f67c99ce450
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Equipment support ES-4
 Calc ID: Arm connection bolts    Revision: A
 Title: Bolts and fillet welds (EN 1993-1-8)
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: STR-SUP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: STR-SUP-001    Client: Client Co
 
 1. Scope and method
 Calculates the design resistance of one bolt in a plate, block tearing of the bolt group, the spacing limits, and a fillet weld by the simplified and directional methods, each against its design force. Loading is static.
@@ -30,8 +30,8 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   A_nv | Net area in shear (optional; blank = no block tearing check) | 2400 | mm² | drawing: DRG-STR-312 rev B | 10 … 50000 mm²
   f_y | Plate yield strength | 275 | MPa | assumption: Sheet default value; no project figure given. | 235 … 440 MPa
   f_u | Plate ultimate tensile strength | 410 | MPa | assumption: Sheet default value; no project figure given. | 340 … 700 MPa
-  F_v_Ed | Shear per bolt | 4.7 | kN | link: Arm joint bolt group rev A · v_max | 0 … 1000 kN
-  F_t_Ed | Tension per bolt | 47 | kN | link: Arm joint bolt group rev A · t_max | 0 … 1000 kN
+  F_v_Ed | Shear per bolt | 4.7 | kN | link: Arm joint bolt group rev A · F_v_Ed_max | 0 … 1000 kN
+  F_t_Ed | Tension per bolt | 47 | kN | link: Arm joint bolt group rev A · F_t_Ed_max | 0 … 1000 kN
   V_Ed | Group force for block tearing (optional; blank = no block tearing check) | 28.2 | kN | link: Support frame rev A · V_e2 | 0 … 5000 kN
   gamma_M2 | Partial factor for bolt and weld resistance | 1.25 |  | assumption: Sheet default value; no project figure given. | 1.1 … 1.4
   gamma_M0 | Partial factor for cross-section resistance | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.1
@@ -160,7 +160,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   governing = "tension (0.333)"    Governing bolt mode
   u_v = 0.05    Shear utilisation
   u_b = 0.04    Bearing utilisation
-  u_t = 0.33    Tension utilisation
+  u_t = 0.33    Tension utilisation (governing)
   u_vt = 0.29    Combined utilisation
   u_block = 0.04    Block tearing utilisation
 
@@ -181,7 +181,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: f5c75db5b1171fa0
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 22:50 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

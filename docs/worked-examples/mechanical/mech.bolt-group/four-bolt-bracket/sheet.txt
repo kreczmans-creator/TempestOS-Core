@@ -125,6 +125,8 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   governing = "bolt 2"    Governing bolt
   governing_lin = "bolt 2"    Bolt governing the linear interaction
   u_lin = 0.91    Linear interaction utilisation (highest over all bolts)
+  u_v = 0.91    Shear utilisation of the most sheared bolt
+  u_t = 0.00    Tension utilisation of the most tensioned bolt
 
 6. Checks (governing first)
   PASS  Circular shear–tension interaction against its limit (governing bolt): 0.91109 vs 1  utilisation 0.91

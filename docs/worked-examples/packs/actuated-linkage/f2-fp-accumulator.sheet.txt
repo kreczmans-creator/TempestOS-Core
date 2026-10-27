@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Ejector station 2
 Calc ID: Emergency stroke accumulator    Revision: A
 Title: Accumulator sizing (gas law)
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: EJT-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: EJT-001    Client: Client Co
 
 1. Scope and method
 Calculates the pre-charge gas volume V0 of a hydraulic accumulator that delivers or absorbs a liquid volume ΔV between two working pressures, with the next listed size and the PSSR bar·litre product. It is not a pressure-vessel code check.
@@ -148,7 +148,7 @@ Absolute pressures: p_a = p_gauge + p_atm, or as entered in Absolute mode Gas vo
   f_T = 1.1413    Gas volume scaling T_max/T_min
   pssr = "indication not available — enter the vessel's PS and volume (or a size list)."    PSSR Schedule 1 250 bar·L exception (indication only)
   process = "charged slowly to p_2 (isothermal, exponent 1), discharged at n_gas = 1.4"    Gas process the volume is sized for
-  u_r0 = 0.93    Pre-charge rule utilisation (p0/p1)
+  u_r0 = 0.93    Pre-charge rule utilisation (p0/p1) (governing)
   u_rp = 0.56    Pressure ratio utilisation (p2/p0 at the minimum temperature)
   u_load = 0.43    Load pressure over the lowest working pressure p_1
 
@@ -167,7 +167,7 @@ Absolute pressures: p_a = p_gauge + p_atm, or as entered in Absolute mode Gas vo
   Content hash: 7ea8865ce36556d1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 10/10
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

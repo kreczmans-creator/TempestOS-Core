@@ -123,7 +123,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
 
 5. Results
   thickness = 17.81 mm    Governing required thickness
-  q_per_m = 9.593 W/m    Heat flow per metre (heat gain) (governing)
+  q_per_m = 9.593 W/m    Heat flow per metre (heat gain)
   T_se = 25.27 °C    Outer surface temperature
   T_dew = 22.01 °C    Dew point of the ambient air
   t_req_q = 17.81 mm    Required thickness, heat-gain limit
@@ -132,7 +132,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   R_tot = 2.293 m·K/W    Total resistance
   D_crit = 8.750 mm    Critical diameter (at the bare-surface h_se)
   governing = "heat-gain limit"    Governing criterion
-  u_q = 0.80    Utilisation, heat-gain limit
+  u_q = 0.80    Utilisation, heat-gain limit (governing)
   u_dew = 0.55    Utilisation, anti-condensation allowance
 
 6. Checks (governing first)

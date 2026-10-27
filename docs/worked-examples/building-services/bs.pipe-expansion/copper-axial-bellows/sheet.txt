@@ -175,7 +175,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   WARNING  mu: the anchor force holds no support friction. Enter μ and the weight per metre, with the length on slides, to include it.  [friction]
 
 8. Verification
-  Template: bs.pipe-expansion@1.5.0
+  Template: bs.pipe-expansion@1.5.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5

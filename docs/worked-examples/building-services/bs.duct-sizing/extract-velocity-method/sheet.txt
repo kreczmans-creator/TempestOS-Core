@@ -201,7 +201,7 @@ Round duct diameter from the design target: D by Colebrook with the air properti
     dp_target: not entered, so the default of 1 Pa/m is used.
 
 8. Verification
-  Template: bs.duct-sizing@1.2.0
+  Template: bs.duct-sizing@1.2.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

@@ -66,6 +66,7 @@ Equivalent dynamic load from the radial and axial loads: F_dyn = X·F_r + Y·F_a
   k_P = 0.1572    Load ratio
   L_10 = 257.42    L₁₀ (millions of revolutions)
   L_nm = 164.75    Modified life (millions of revolutions)
+  u_life = 0.73    Required over modified life (governing)
 
 6. Checks (governing first)
   PASS  Required life against modified life: 2000 h vs 2746 h  utilisation 0.73  « ISO 281:2007 cl. 6

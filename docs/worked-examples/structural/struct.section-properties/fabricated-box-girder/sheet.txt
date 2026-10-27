@@ -133,7 +133,7 @@ Area and centroid: A = ½∮(x dy − y dx); x_c = ∫x dA / A; y_c = ∫y dA / 
   WARNING  J: no torsion constant is computed for an arbitrary polygon.  [no-torsion]
 
 8. Verification
-  Template: struct.section-properties@1.2.0
+  Template: struct.section-properties@1.2.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5

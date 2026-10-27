@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Carton tamper station 4
 Calc ID: Cam shaft    Revision: A
 Title: Shaft design
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: TMP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: TMP-001    Client: Client Co
 
 1. Scope and method
 Calculates the bending moment, slope, deflection, fatigue and yield safety factors, critical speed and keys of a stepped shaft on two bearings. It takes radial loads in two planes and a steady torque with an optional alternating part.
@@ -180,6 +180,11 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   n_y_min = 21.61    Lowest yield safety factor
   n_c_D = 17662 rpm    Dunkerley lower bound
   r_c = 117.74    Critical-speed ratio
+  u_crit = 0.02    Utilisation of critical speed against the operating speed
+  u_f = 0.17    Fatigue utilisation
+  u_y = 0.07    Yield utilisation
+  u_slope = 0.46    Slope utilisation (governing)
+  u_defl = 0.28    Deflection utilisation
 
 6. Checks (governing first)
   PASS  Slope at the bearings against limit: 0.0004632 rad vs 0.001000 rad  utilisation 0.46
@@ -193,10 +198,10 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
 
 8. Verification
   Template: mech.shaft@1.7.0
-  Content hash: 566fdcc0fad69d46
+  Content hash: 269fa49d39e54f67
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

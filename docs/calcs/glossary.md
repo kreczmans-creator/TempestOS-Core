@@ -123,7 +123,7 @@ A bare symbol that means one kind of quantity wherever it appears. Another quant
 | `D` | A diameter or a depth | 17 |
 | `L` | Length | 17 |
 
-## Symbols with more than one meaning today (94)
+## Symbols with more than one meaning today (95)
 
 Each of these symbols is used for different quantities in different templates. Every use of a symbol that two or more templates share declares its meaning (`symbol:meaning`, in `GlossaryMeanings.json`), so two meanings of one quantity type (an efficiency and a Perry factor, both plain numbers) are told apart. Phases B and C resolve every one: give each quantity its own symbol (keeping the old symbol as an input or port alias), or make the templates agree. Status `RESOLVE` marks the rows in the full table below.
 
@@ -218,11 +218,12 @@ Each of these symbols is used for different quantities in different templates. E
 - `u_N`: `u_N:axial-bearing-utilisation` Plain number (base-plate); `u_N:axial-utilisation` Plain number (en1993-member)
 - `u_T`: `u_T:cable-tension-utilisation` Plain number (containment); `u_T:t-stub-tension-utilisation` Plain number (base-plate)
 - `u_b`: `u_b:bearing-utilisation` Plain number (connection-ec3, lifting); `u_b:buckling-deflection-ratio` Plain number (spring); `u_b:pin-bending-utilisation` Plain number (lifting-lug)
-- `u_f`: `u_f:goodman-utilisation` Plain number (spring); `u_f:surface-factor-utilisation` Plain number (glaser)
+- `u_f`: `u_f:goodman-utilisation` Plain number (shaft, spring); `u_f:surface-factor-utilisation` Plain number (glaser)
+- `u_n`: `u_n:minimum-length-travel-utilisation` Plain number (spring); `u_n:safety-factor-utilisation` Plain number (shaft-stress)
 - `w`: `w:distributed-load` Line force, distributed load, stiffness (beam-formulas); `w:key-width` Length (shaft); `w:mass-per-metre` Mass per length (containment)
 - `y_c`: `y_c:centroid-y` Length (weld-group, section-properties); `y_c:extreme-fibre-distance` Length (beam-formulas)
 
-## All symbols (1425 symbols in 54 templates)
+## All symbols (1436 symbols in 54 templates)
 
 One row per symbol, declared meaning and quantity type. Status `ok` is a symbol with one meaning; `RESOLVE` a symbol with several (phases B and C).
 
@@ -1659,6 +1660,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `u_T` | `u_T:t-stub-tension-utilisation` | Plain number | — | Tension T-stub utilisation | struct.base-plate | RESOLVE (2 meanings) |
 | `u_V` | `u_V:shear-utilisation` | Plain number | — | Shear utilisation | struct.base-plate, struct.en1993-member | ok |
 | `u_Zs` | — | Plain number | — | Loop impedance utilisation | elec.fault-protection | ok |
+| `u_app` | — | Plain number | — | Approach utilisation (minimum / actual) | bs.heat-exchanger | ok |
 | `u_assembly` | — | Plain number | — | Assembly utilisation over the permitted ν | mech.bolted-joint | ok |
 | `u_b` | `u_b:bearing-utilisation` | Plain number | — | Bearing utilisation; Utilisation, bearing | struct.connection-ec3, struct.lifting | RESOLVE (3 meanings) |
 | `u_b` | `u_b:buckling-deflection-ratio` | Plain number | — | Deflection at point 2 / buckling deflection | mech.spring | RESOLVE (3 meanings) |
@@ -1670,25 +1672,32 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `u_buck` | — | Plain number | — | Rod buckling utilisation (screening) | fp.cylinder | ok |
 | `u_buckling` | `u_buckling:buckling-utilisation` | Plain number | — | Buckling utilisation | struct.en1993-member, struct.ltb-interaction | ok |
 | `u_c` | — | Plain number | — | Utilisation at solid | mech.spring | ok |
+| `u_clamp` | — | Plain number | — | Required over available residual clamp | mech.bolted-joint | ok |
 | `u_cpc` | — | Plain number | — | Protective conductor utilisation | elec.fault-protection | ok |
-| `u_defl` | — | Plain number | — | Deflection utilisation | struct.plate-bending | ok |
+| `u_cpk` | — | Plain number | — | Capability utilisation | mech.tolerance-stack | ok |
+| `u_crit` | — | Plain number | — | Utilisation of critical speed against the operating speed | mech.shaft | ok |
+| `u_defl` | `u_defl:deflection-utilisation` | Plain number | — | Deflection utilisation | mech.shaft, struct.plate-bending | ok |
 | `u_dip` | — | Plain number | — | Dip utilisation at the motor terminals | elec.motor-start | ok |
 | `u_dish` | — | Plain number | — | Dishing utilisation | struct.lifting | ok |
 | `u_duty` | — | Plain number | — | Duty utilisation | bs.heat-exchanger | ok |
+| `u_dv` | — | Plain number | — | Drop utilisation against the limit | elec.voltage-drop | ok |
 | `u_emit` | — | Plain number | — | Emitter utilisation | bs.sealed-system | ok |
-| `u_f` | `u_f:goodman-utilisation` | Plain number | — | Goodman utilisation | mech.spring | RESOLVE (2 meanings) |
+| `u_f` | `u_f:goodman-utilisation` | Plain number | — | Fatigue utilisation; Goodman utilisation | mech.shaft, mech.spring | RESOLVE (2 meanings) |
 | `u_f` | `u_f:surface-factor-utilisation` | Plain number | — | Surface factor against its minimum | bs.glaser | RESOLVE (2 meanings) |
+| `u_fat` | — | Plain number | — | Fatigue utilisation against the required factor | mech.spring | ok |
+| `u_fatigue` | — | Plain number | — | Fatigue utilisation | mech.bolted-joint | ok |
 | `u_fill` | — | Plain number | — | Fill utilisation | elec.containment | ok |
 | `u_gap` | — | Plain number | — | Largest gap against the permitted gap | fp.oring-gland | ok |
 | `u_interaction` | — | Plain number | — | Interaction utilisation | struct.ltb-interaction | ok |
 | `u_k` | `u_k:transformer-impedance-voltage` | Percent quantity | % | Transformer impedance voltage | elec.fault-protection, elec.motor-start | ok |
 | `u_leg` | — | Plain number | — | Required leg over available leg | bs.pipe-expansion | ok |
-| `u_life` | — | Plain number | — | Life utilisation | mech.bearing-life | ok |
+| `u_life` | `u_life:life-utilisation` | Plain number | — | Life utilisation; Required over modified life | mech.bearing-life, mech.bearing-life-basic | ok |
 | `u_lin` | — | Plain number | — | Linear interaction utilisation (highest over all bolts) | mech.bolt-group | ok |
 | `u_max` | `u_max:governing-utilisation` | Plain number | — | Governing interaction utilisation; Governing utilisation | mech.bolt-group, struct.base-plate | ok |
 | `u_member` | `u_member:member-utilisation` | Plain number | — | Member interaction; Member utilisation | struct.en1993-member, struct.ltb-interaction | ok |
 | `u_mu` | — | Plain number | — | Required against smallest transmission angle | mech.mechanism | ok |
-| `u_n` | — | Plain number | — | Working deflection / travel to L_n | mech.spring | ok |
+| `u_n` | `u_n:minimum-length-travel-utilisation` | Plain number | — | Working deflection / travel to L_n | mech.spring | RESOLVE (2 meanings) |
+| `u_n` | `u_n:safety-factor-utilisation` | Plain number | — | Utilisation of factor of safety against the required factor | mech.shaft-stress | RESOLVE (2 meanings) |
 | `u_p` | — | Plain number | — | Pin shear utilisation | mech.lifting-lug | ok |
 | `u_peak` | — | Plain number | — | Peak utilisation | elec.motor-sizing | ok |
 | `u_profis` | — | Plain number | — | Governing utilisation reported by the PROFIS anchorage design, from t… | struct.base-plate | ok |
@@ -1709,17 +1718,21 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `u_se` | — | Plain number | — | Utilisation, surface-temperature limit | bs.insulation | ok |
 | `u_section` | — | Plain number | — | Cross-section interaction | struct.en1993-member | ok |
 | `u_sigma` | — | Plain number | — | Bending stress over Sa | bs.pipe-expansion | ok |
+| `u_slope` | — | Plain number | — | Slope utilisation | mech.shaft | ok |
 | `u_sp` | — | Plain number | — | Utilisation, fracture | struct.lifting | ok |
 | `u_speed` | — | Plain number | — | Speed utilisation | elec.motor-sizing | ok |
 | `u_stress` | — | Plain number | — | Stress utilisation | struct.plate-bending | ok |
 | `u_stretch` | — | Plain number | — | Largest stretch against its limit | fp.oring-gland | ok |
+| `u_strip` | — | Plain number | — | Engagement utilisation | mech.bolted-joint | ok |
 | `u_suc` | — | Plain number | — | Suction line velocity over its limit | fp.cylinder | ok |
-| `u_t` | `u_t:tension-utilisation` | Plain number | — | Net-section utilisation; Tension utilisation; Utilisation, tension | mech.lifting-lug, struct.connection-ec3, struct.lifting | ok |
+| `u_t` | `u_t:tension-utilisation` | Plain number | — | Net-section utilisation; Tension utilisation; Tension utilisation of the most tensioned bolt; … (4 descriptions) | mech.bolt-group, mech.lifting-lug, struct.connection-ec3, struct.lifting | ok |
 | `u_target_1` | — | Plain number | — | Cavity wall: U against target | bs.room-heat-loss | ok |
 | `u_to` | — | Plain number | — | Tear-out utilisation | mech.lifting-lug | ok |
-| `u_v` | `u_v:shear-utilisation` | Plain number | — | Shear utilisation; Utilisation, shear | struct.connection-ec3, struct.lifting | ok |
+| `u_v` | `u_v:shear-utilisation` | Plain number | — | Shear utilisation; Shear utilisation of the most sheared bolt; Utilisation, shear | mech.bolt-group, struct.connection-ec3, struct.lifting | ok |
 | `u_vt` | — | Plain number | — | Combined utilisation | struct.connection-ec3 | ok |
 | `u_w` | — | Plain number | — | Width utilisation | elec.pcb-trace | ok |
+| `u_y` | — | Plain number | — | Yield utilisation | mech.shaft | ok |
+| `u_yield` | — | Plain number | — | Yield utilisation in the working state | mech.bolted-joint | ok |
 | `upper` | — | Length | mm | Upper deviation (or total zone for position/profile) | mech.tolerance-stack | ok |
 | `util` | — | Plain number | — | Governing utilisation of the lug and the spreader | struct.lifting | ok |
 | `v` | — | Length | mm | Patch size in y (rectangular plate, central patch) | struct.plate-bending | ok |

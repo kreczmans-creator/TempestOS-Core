@@ -302,7 +302,7 @@ Round duct diameter from the design target: D by Colebrook with the air properti
     v_target: not entered, so the default of 6 m/s is used.
 
 8. Verification
-  Template: bs.duct-sizing@1.2.0
+  Template: bs.duct-sizing@1.2.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

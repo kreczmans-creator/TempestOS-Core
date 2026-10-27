@@ -110,7 +110,7 @@ Round duct diameter from the design target: D by Colebrook with the air properti
   None.
 
 8. Verification
-  Template: bs.duct-sizing@1.2.0
+  Template: bs.duct-sizing@1.2.1
   Known-answer cases passed: 3/3
 
 9. References

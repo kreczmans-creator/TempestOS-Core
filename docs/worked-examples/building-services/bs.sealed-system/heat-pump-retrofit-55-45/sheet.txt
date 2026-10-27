@@ -155,7 +155,7 @@ Emitter temperature difference: ΔT = (T_flow + T_return)/2 − T_room, or the l
   V_em = 36 L    Emitter water content
   e_x = 0.016783    Expansion coefficient
   p_i = 98.63 kPa    Pre-charge pressure
-  u_emit = 1.11    Emitter utilisation
+  u_emit = 1.11    Emitter utilisation (governing)
   u_vessel = 0.29    Vessel utilisation
 
 6. Checks (governing first)
@@ -166,7 +166,7 @@ Emitter temperature difference: ΔT = (T_flow + T_return)/2 − T_room, or the l
   WARNING  n: a tabulated value not taken from a reference record (Emitter rating (exponent)); enter it as one so its source, edition and licence travel with it.  [record.n]
 
 8. Verification
-  Template: bs.sealed-system@1.5.0
+  Template: bs.sealed-system@1.5.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 4/4

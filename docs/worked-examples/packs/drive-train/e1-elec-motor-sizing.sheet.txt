@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Conveyor 7 head drive
 Calc ID: Motor sizing    Revision: A
 Title: Motor and actuator sizing
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: CNV-DRV-001    Client: Client Co
 
 1. Scope and method
 Calculates the torque, speed and power a motor needs to move a load through a mechanism, and checks a candidate motor against them. A continuously running rotary load is sized from its steady torque, speed and run-up time.
@@ -213,7 +213,7 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
   T_out_a = 0 N·m    Output shaft alternating torque
   T_out_pk = 1891.1 N·m    Output shaft peak torque
   n_out = 118 rpm    Output shaft speed
-  n_pk = 1475 rpm    Motor speed (governing)
+  n_pk = 1475 rpm    Motor speed
   n_mean = 1475 rpm    Mean motor speed (the steady speed)
   P_pk = 24.60 kW    Peak power
   P_brake = 0 kW    Peak braking power
@@ -227,7 +227,7 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
   u_rms = 0.95    Continuous utilisation
   u_speed = 0.49    Speed utilisation
   k = 0.08    Transmission constant
-  u_rated_speed = 1.00    Motor speed over the rated speed
+  u_rated_speed = 1.00    Motor speed over the rated speed (governing)
 
 6. Checks (governing first)
   PASS  Motor speed against the rated speed: 1475 rpm vs 1480 rpm  utilisation 1.00
@@ -241,11 +241,11 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
   WARNING  duty_mode: continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.  [continuous-ignored]
 
 8. Verification
-  Template: elec.motor-sizing@1.11.0
-  Content hash: 2ef4f6484897f9f6
+  Template: elec.motor-sizing@1.11.1
+  Content hash: 7ccfbf19d3cec269
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 22:44 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

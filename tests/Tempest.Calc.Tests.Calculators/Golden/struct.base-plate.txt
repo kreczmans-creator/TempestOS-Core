@@ -220,7 +220,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   t_req = 17.61 mm    Plate thickness required (bearing, compression and tension T-stubs)
   z_C = 121.5 mm    Distance from the column axis to the compression resultant
   z = 286.5 mm    Lever arm between the compression resultant and the bolt row
-  C_Ed = 521.82 kN    Compression resultant (governing)
+  C_Ed = 521.82 kN    Compression resultant
   C_Ed_2 = 0 kN    Compression resultant, other side
   T_Ed = 221.82 kN    Tension resultant, more loaded row
   T_Ed_2 = 0 kN    Tension resultant, other row
@@ -238,7 +238,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   regime = "tension at one bolt row, compression under the other flange (Table 6.7, z = z_C + x_b)"    Force regime (Table 6.7)
   T_mode = "mode 3 (bolt failure)"    Governing T-stub mode
   u_N = 0.21    Axial bearing utilisation
-  u_C = 0.87    Compression-side utilisation
+  u_C = 0.87    Compression-side utilisation (governing)
   u_T = 0.79    Tension T-stub utilisation
   u_bt = 0.79    Bolt tension utilisation
   u_V = 0.37    Shear utilisation

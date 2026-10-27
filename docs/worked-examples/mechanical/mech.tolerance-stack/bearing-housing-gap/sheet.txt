@@ -162,6 +162,7 @@ Worst case, every contributor at its limit: T_wc = Σ|half-bands|. Root sum of s
   mc_p05 = 0.5659 mm    Monte Carlo 5 % quantile
   mc_p95 = 0.6546 mm    Monte Carlo 95 % quantile
   mc_yield = 100 %    Monte Carlo yield
+  u_cpk = 0.56    Capability utilisation (governing)
 
 6. Checks (governing first)
   PASS  C_pk against the requirement: 1.33 vs 2.3567  utilisation 0.56

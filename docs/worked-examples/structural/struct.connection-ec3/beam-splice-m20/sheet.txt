@@ -134,7 +134,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   B_p_Rd = 185.48 kN    Punching resistance
   governing = "bearing (0.553)"    Governing bolt mode
   u_v = 0.29    Shear utilisation
-  u_b = 0.55    Bearing utilisation
+  u_b = 0.55    Bearing utilisation (governing)
   u_t = 0.00    Tension utilisation
   u_vt = 0.29    Combined utilisation
 

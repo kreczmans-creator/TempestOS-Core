@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Plant room heating
 Calc ID: Sealed system    Revision: A
 Title: Sealed heating system
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: HTG-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: HTG-001    Client: Client Co
 
 1. Scope and method
 Calculates the catalogue output each room's emitter needs at the design flow, return and room temperatures, and checks it against the selected emitters. It also gives the minimum expansion vessel for the system volume, temperatures, static head and pressures.
@@ -134,11 +134,11 @@ Emitter temperature difference: ΔT = (T_flow + T_return)/2 − T_room, or the l
   WARNING  n: a tabulated value not taken from a reference record (Emitter rating (exponent)); enter it as one so its source, edition and licence travel with it.  [record.n]
 
 8. Verification
-  Template: bs.sealed-system@1.5.0
-  Content hash: 7049b66fd19cc968
+  Template: bs.sealed-system@1.5.1
+  Content hash: 0b317f14c51ed603
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

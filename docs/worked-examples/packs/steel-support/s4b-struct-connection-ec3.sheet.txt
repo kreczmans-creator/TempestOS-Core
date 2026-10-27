@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Equipment support ES-4
 Calc ID: Holding-down bolts    Revision: A
 Title: Bolts and fillet welds (EN 1993-1-8)
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: STR-SUP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: STR-SUP-001    Client: Client Co
 
 1. Scope and method
 Calculates the design resistance of one bolt in a plate, block tearing of the bolt group, the spacing limits, and a fillet weld by the simplified and directional methods, each against its design force. Loading is static.
@@ -143,7 +143,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   k_1 = 2.5    Bearing factor k₁
   B_p_Rd = 463.70 kN    Punching resistance
   governing = "shear (0)"    Governing bolt mode
-  u_v = 0.00    Shear utilisation
+  u_v = 0.00    Shear utilisation (governing)
   u_b = 0.00    Bearing utilisation
   u_t = 0.00    Tension utilisation
   u_vt = 0.00    Combined utilisation
@@ -164,7 +164,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: f5c75db5b1171fa0
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 22:50 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

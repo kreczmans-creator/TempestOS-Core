@@ -25642,6 +25642,22 @@
       ]
     },
     {
+      "symbol": "u_app",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Approach utilisation (minimum / actual)"
+          ],
+          "templates": [
+            "bs.heat-exchanger"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "u_assembly",
       "meanings": [
         {
@@ -25811,6 +25827,22 @@
       ]
     },
     {
+      "symbol": "u_clamp",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Required over available residual clamp"
+          ],
+          "templates": [
+            "mech.bolted-joint"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "u_cpc",
       "meanings": [
         {
@@ -25827,16 +25859,49 @@
       ]
     },
     {
-      "symbol": "u_defl",
+      "symbol": "u_cpk",
       "meanings": [
         {
           "meaning": "",
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
+            "Capability utilisation"
+          ],
+          "templates": [
+            "mech.tolerance-stack"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "u_crit",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Utilisation of critical speed against the operating speed"
+          ],
+          "templates": [
+            "mech.shaft"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "u_defl",
+      "meanings": [
+        {
+          "meaning": "deflection-utilisation",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
             "Deflection utilisation"
           ],
           "templates": [
+            "mech.shaft",
             "struct.plate-bending"
           ]
         }
@@ -25891,6 +25956,22 @@
       ]
     },
     {
+      "symbol": "u_dv",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Drop utilisation against the limit"
+          ],
+          "templates": [
+            "elec.voltage-drop"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "u_emit",
       "meanings": [
         {
@@ -25914,9 +25995,11 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
+            "Fatigue utilisation",
             "Goodman utilisation"
           ],
           "templates": [
+            "mech.shaft",
             "mech.spring"
           ]
         },
@@ -25929,6 +26012,38 @@
           ],
           "templates": [
             "bs.glaser"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "u_fat",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Fatigue utilisation against the required factor"
+          ],
+          "templates": [
+            "mech.spring"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "u_fatigue",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Fatigue utilisation"
+          ],
+          "templates": [
+            "mech.bolted-joint"
           ]
         }
       ]
@@ -26020,14 +26135,16 @@
       "symbol": "u_life",
       "meanings": [
         {
-          "meaning": "",
+          "meaning": "life-utilisation",
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Life utilisation"
+            "Life utilisation",
+            "Required over modified life"
           ],
           "templates": [
-            "mech.bearing-life"
+            "mech.bearing-life",
+            "mech.bearing-life-basic"
           ]
         }
       ]
@@ -26104,7 +26221,7 @@
       "symbol": "u_n",
       "meanings": [
         {
-          "meaning": "",
+          "meaning": "minimum-length-travel-utilisation",
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
@@ -26112,6 +26229,17 @@
           ],
           "templates": [
             "mech.spring"
+          ]
+        },
+        {
+          "meaning": "safety-factor-utilisation",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Utilisation of factor of safety against the required factor"
+          ],
+          "templates": [
+            "mech.shaft-stress"
           ]
         }
       ]
@@ -26437,6 +26565,22 @@
       ]
     },
     {
+      "symbol": "u_slope",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Slope utilisation"
+          ],
+          "templates": [
+            "mech.shaft"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "u_sp",
       "meanings": [
         {
@@ -26501,6 +26645,22 @@
       ]
     },
     {
+      "symbol": "u_strip",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Engagement utilisation"
+          ],
+          "templates": [
+            "mech.bolted-joint"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "u_suc",
       "meanings": [
         {
@@ -26526,9 +26686,11 @@
           "descriptions": [
             "Net-section utilisation",
             "Tension utilisation",
+            "Tension utilisation of the most tensioned bolt",
             "Utilisation, tension"
           ],
           "templates": [
+            "mech.bolt-group",
             "mech.lifting-lug",
             "struct.connection-ec3",
             "struct.lifting"
@@ -26577,9 +26739,11 @@
           "units": [],
           "descriptions": [
             "Shear utilisation",
+            "Shear utilisation of the most sheared bolt",
             "Utilisation, shear"
           ],
           "templates": [
+            "mech.bolt-group",
             "struct.connection-ec3",
             "struct.lifting"
           ]
@@ -26614,6 +26778,38 @@
           ],
           "templates": [
             "elec.pcb-trace"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "u_y",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Yield utilisation"
+          ],
+          "templates": [
+            "mech.shaft"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "u_yield",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Yield utilisation in the working state"
+          ],
+          "templates": [
+            "mech.bolted-joint"
           ]
         }
       ]

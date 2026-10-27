@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Plant room 2 chilled water
 Calc ID: Chilled water pipe insulation calc pack    Revision: A
 Title: Calculation pack
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: CHW-INS-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: CHW-INS-001    Client: Client Co
 
 PACK INDEX
   1. Chilled water pipe — Pipe pressure drop and pump duty — rev A — ISSUED — Highest velocity against limit PASS
@@ -12,7 +12,7 @@ PACK INDEX
   3. Pipe insulation — Insulation thickness (ISO 12241) — rev A — ISSUED — Chosen thickness against the anti-condensation allowance PASS
 
 REVISIONS
-  A  2026-10-26  test.engineer  First issue
+  A  2026-10-27  test.engineer  First issue
 
 1. Scope and method
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -41,7 +41,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 23/23
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References
@@ -51,9 +51,9 @@ CALCULATION SHEET — ISSUED
 Project: Plant room 2 chilled water
 Calc ID: Chilled water pipe    Revision: A
 Title: Pipe pressure drop and pump duty
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: CHW-INS-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: CHW-INS-001    Client: Client Co
 
 1. Scope and method
 Calculates the friction and fitting losses of series pipe segments at a given flow, the system curve and the duty point against a pump curve. It also gives the affinity-law shift for a speed or impeller change, and the NPSH.
@@ -211,11 +211,11 @@ Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place
   None.
 
 8. Verification
-  Template: bs.pipe-pump@1.10.0
-  Content hash: c67e163da77aac31
+  Template: bs.pipe-pump@1.10.1
+  Content hash: 2df24301b0231856
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References
@@ -229,9 +229,9 @@ CALCULATION SHEET — ISSUED
 Project: Plant room 2 chilled water
 Calc ID: Plant room air    Revision: A
 Title: Psychrometrics
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: CHW-INS-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: CHW-INS-001    Client: Client Co
 
 1. Scope and method
 Calculates the state of moist air from dry-bulb and one other property at a stated pressure or altitude. It then applies one air-handling process with its heat and moisture balance: sensible heating or cooling, dehumidification, humidification or mixing.
@@ -330,7 +330,7 @@ Saturation and humidity: p_ws(T) by Hyland–Wexler over water at or above 0 °C
   Content hash: 9ffd235faa1c3dae
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References
@@ -343,9 +343,9 @@ CALCULATION SHEET — ISSUED
 Project: Plant room 2 chilled water
 Calc ID: Pipe insulation    Revision: A
 Title: Insulation thickness (ISO 12241)
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: CHW-INS-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: CHW-INS-001    Client: Client Co
 
 1. Scope and method
 Calculates the insulation thickness of a pipe or flat surface that meets a heat-loss limit, a hot-surface limit or an anti-condensation requirement. For a chosen thickness it gives the heat flow, surface temperature and PASS or FAIL.
@@ -456,7 +456,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   R_tot = 3.363 m·K/W    Total resistance
   D_crit = 8.750 mm    Critical diameter (at the bare-surface h_se)
   governing = "anti-condensation allowance"    Governing criterion
-  u_dew = 0.33    Utilisation, anti-condensation allowance
+  u_dew = 0.33    Utilisation, anti-condensation allowance (governing)
 
 6. Checks (governing first)
   PASS  Chosen thickness against the anti-condensation allowance: 2.503 K vs 7.486 K  utilisation 0.33  « ISO 12241
@@ -469,7 +469,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   Content hash: b8b77970e70183e1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 14/14
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

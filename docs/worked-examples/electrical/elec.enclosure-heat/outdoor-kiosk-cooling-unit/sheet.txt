@@ -143,7 +143,7 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
     V_ref: not entered, so the default of 100 m³/h is used.
 
 8. Verification
-  Template: elec.enclosure-heat@1.7.0
+  Template: elec.enclosure-heat@1.7.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 4/4

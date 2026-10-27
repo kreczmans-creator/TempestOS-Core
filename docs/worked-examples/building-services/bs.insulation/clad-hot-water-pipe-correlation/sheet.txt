@@ -132,7 +132,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
 
 5. Results
   thickness = 23.37 mm    Governing required thickness
-  q_per_m = 36.77 W/m    Heat flow per metre (heat loss) (governing)
+  q_per_m = 36.77 W/m    Heat flow per metre (heat loss)
   T_se = 27.85 °C    Outer surface temperature
   t_req_q = 23.37 mm    Required thickness, heat-loss limit
   t_req_se = 7.842 mm    Required thickness, surface-temperature limit
@@ -143,7 +143,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   h_r = 0.5801 W/(m²·K)    Radiative surface coefficient
   h_se = 4.255 W/(m²·K)    Outer surface coefficient
   governing = "heat-loss limit"    Governing criterion
-  u_q = 0.61    Utilisation, heat-loss limit
+  u_q = 0.61    Utilisation, heat-loss limit (governing)
   u_se = 0.29    Utilisation, surface-temperature limit
 
 6. Checks (governing first)

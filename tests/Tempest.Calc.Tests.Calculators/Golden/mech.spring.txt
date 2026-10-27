@@ -235,7 +235,7 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n_active) (compression, extension)
   F_c = 122.1 N    Force at solid
   tau_1 = 59.71 MPa    Stress at point 1
   tau_2 = 238.8 MPa    Stress at point 2
-  tau_c = 728.9 MPa    Stress at solid (governing)
+  tau_c = 728.9 MPa    Stress at solid
   d_max = 2 mm    Maximum wire diameter
   S_a = 3.136 mm    Minimum sum of coil clearances
   L_n = 23.14 mm    Minimum spring length
@@ -245,11 +245,12 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n_active) (compression, extension)
   r_f = 35.084    Surge ratio f_n/f_op
   n_f = 2.8761    Goodman safety factor
   u_2 = 0.29    Utilisation at point 2
-  u_c = 0.90    Utilisation at solid
+  u_c = 0.90    Utilisation at solid (governing)
   u_s = 0.33    Working deflection / travel to solid
   u_n = 0.37    Working deflection / travel to L_n
   u_b = 0.00    Deflection at point 2 / buckling deflection
   u_f = 0.35    Goodman utilisation
+  u_fat = 0.42    Fatigue utilisation against the required factor
 
 6. Checks (governing first)
   PASS  Shear stress at solid length against the permissible stress: 728.9 MPa vs 810 MPa  utilisation 0.90  « BS EN 13906-1:2013

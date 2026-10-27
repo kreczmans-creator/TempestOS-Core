@@ -61,6 +61,7 @@ Bending stress, with its stress concentration: σ = K_t·32M/(πd³). Torsional 
   tau = 63.66 MPa    Torsional shear
   n_T = 2.331    Factor of safety (Tresca)
   n_VM = 2.5738    Factor of safety (von Mises)
+  u_n = 0.86    Utilisation of factor of safety against the required factor (governing)
 
 6. Checks (governing first)
   PASS  Factor of safety against the required factor: 2 vs 2.3311  utilisation 0.86  « Shigley §7-4
@@ -69,7 +70,7 @@ Bending stress, with its stress concentration: σ = K_t·32M/(πd³). Torsional 
   None.
 
 8. Verification
-  Template: mech.shaft-stress@1.1.0
+  Template: mech.shaft-stress@1.1.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

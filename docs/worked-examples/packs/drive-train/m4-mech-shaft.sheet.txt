@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Conveyor 7 head drive
 Calc ID: Shaft    Revision: A
 Title: Shaft design
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: CNV-DRV-001    Client: Client Co
 
 1. Scope and method
 Calculates the bending moment, slope, deflection, fatigue and yield safety factors, critical speed and keys of a stepped shaft on two bearings. It takes radial loads in two planes and a steady torque with an optional alternating part.
@@ -178,6 +178,11 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   n_y_min = 13.214    Lowest yield safety factor
   n_c_D = 49494 rpm    Dunkerley lower bound
   r_c = 33.554    Critical-speed ratio
+  u_crit = 0.06    Utilisation of critical speed against the operating speed
+  u_f = 0.21    Fatigue utilisation
+  u_y = 0.11    Yield utilisation
+  u_slope = 0.27    Slope utilisation (governing)
+  u_defl = 0.16    Deflection utilisation
 
 6. Checks (governing first)
   PASS  Slope at the bearings against limit: 0.0002699 rad vs 0.001000 rad  utilisation 0.27
@@ -191,10 +196,10 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
 
 8. Verification
   Template: mech.shaft@1.7.0
-  Content hash: 566fdcc0fad69d46
+  Content hash: 269fa49d39e54f67
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

@@ -226,7 +226,7 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n_active) (compression, extension)
   n_t = 11    Total coils
   p_coil = 7.111 mm    Pitch
   s_1 = 9.297 mm    Deflection at point 1
-  s_2 = 27.89 mm    Deflection at point 2 (governing)
+  s_2 = 27.89 mm    Deflection at point 2
   L_1 = 60.70 mm    Length at point 1
   L_2 = 42.11 mm    Length at point 2
   s_c = 37 mm    Travel to solid
@@ -245,9 +245,10 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n_active) (compression, extension)
   u_2 = 0.64    Utilisation at point 2
   u_c = 0.85    Utilisation at solid
   u_s = 0.75    Working deflection / travel to solid
-  u_n = 0.88    Working deflection / travel to L_n
+  u_n = 0.88    Working deflection / travel to L_n (governing)
   u_b = 0.00    Deflection at point 2 / buckling deflection
   u_f = 0.64    Goodman utilisation
+  u_fat = 0.77    Fatigue utilisation against the required factor
 
 6. Checks (governing first)
   PASS  Working deflection against the travel to the minimum length, keeping the coil clearance at L₂: 27.89 mm vs 31.71 mm  utilisation 0.88  « BS EN 13906-1:2013

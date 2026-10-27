@@ -147,6 +147,7 @@ Worst case, every contributor at its limit: T_wc = Σ|half-bands|. Root sum of s
   mc_p05 = 0.04400 mm    Monte Carlo 5 % quantile
   mc_p95 = 0.2102 mm    Monte Carlo 95 % quantile
   mc_yield = 84.61 %    Monte Carlo yield
+  u_cpk = 3.99    Capability utilisation
 
 6. Checks (governing first)
   FAIL  Worst-case range against the requirement: -0.127 … 0.381 mm vs 0.0762 … open mm

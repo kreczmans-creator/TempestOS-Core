@@ -1703,8 +1703,15 @@
    "struct.ltb-interaction"
   ]
  },
+ "u_defl": {
+  "deflection-utilisation": [
+   "mech.shaft",
+   "struct.plate-bending"
+  ]
+ },
  "u_f": {
   "goodman-utilisation": [
+   "mech.shaft",
    "mech.spring"
   ],
   "surface-factor-utilisation": [
@@ -1715,6 +1722,12 @@
   "transformer-impedance-voltage": [
    "elec.fault-protection",
    "elec.motor-start"
+  ]
+ },
+ "u_life": {
+  "life-utilisation": [
+   "mech.bearing-life",
+   "mech.bearing-life-basic"
   ]
  },
  "u_max": {
@@ -1729,8 +1742,17 @@
    "struct.ltb-interaction"
   ]
  },
+ "u_n": {
+  "minimum-length-travel-utilisation": [
+   "mech.spring"
+  ],
+  "safety-factor-utilisation": [
+   "mech.shaft-stress"
+  ]
+ },
  "u_t": {
   "tension-utilisation": [
+   "mech.bolt-group",
    "mech.lifting-lug",
    "struct.connection-ec3",
    "struct.lifting"
@@ -1738,6 +1760,7 @@
  },
  "u_v": {
   "shear-utilisation": [
+   "mech.bolt-group",
    "struct.connection-ec3",
    "struct.lifting"
   ]

@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Controller box 7
 Calc ID: Cover latches    Revision: A
 Title: Snap-fits
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: ELX-ENC-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: ELX-ENC-001    Client: Client Co
 
 1. Scope and method
 Calculates the strain, deflection force and joining forces of a plastic snap-fit: a cantilever lug, an annular ring or a torsion bar. It checks the strain against the permissible strain and whether the joint is self-locking.
@@ -140,7 +140,7 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
   alpha_lock = 73.30°    Self-locking return angle
   self_locking = "No"    Self-locking
   fillet_advisory = "The strain above is the nominal strain, with no local concentration. A sharp internal corner at the root (or at the end of the bar or ring) concentrates the strain and is the usual place for a snap-fit to break: give the root a generous fillet radius, of the order of the thickness, taper the section away from it, and apply a concentration factor from your own reference if the radius is small."    Root-fillet advisory
-  u_hold = 0.70    Holding utilisation
+  u_hold = 0.70    Holding utilisation (governing)
 
 6. Checks (governing first)
   PASS  Required holding force against the force the latches hold: 300 N vs 431.6 N  utilisation 0.70  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
@@ -152,10 +152,10 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
 
 8. Verification
   Template: mech.snap-fit@1.5.0
-  Content hash: 46293e9a5ca7bba9
+  Content hash: 32eaeb1d9537950d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 11/11
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

@@ -223,7 +223,7 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
   J_ratio = 11.765    Inertia ratio
   duty = 0.74725    Thermal duty
   u_peak = 0.70    Peak utilisation
-  u_rms = 0.93    Continuous utilisation
+  u_rms = 0.93    Continuous utilisation (governing)
   u_speed = 0.25    Speed utilisation
   k = 0.1    Transmission constant
   theta_m = 15.708 rad    Motor angle
@@ -246,7 +246,7 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
     mu: not entered, so the default of 0.1 is used.
 
 8. Verification
-  Template: elec.motor-sizing@1.11.0
+  Template: elec.motor-sizing@1.11.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

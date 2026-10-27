@@ -143,7 +143,7 @@ Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place
     eta_pump: not entered, so the default of 0.7 is used.
 
 8. Verification
-  Template: bs.pipe-pump@1.10.0
+  Template: bs.pipe-pump@1.10.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5

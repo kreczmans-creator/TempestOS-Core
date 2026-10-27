@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Equipment support ES-4
 Calc ID: Arm joint bolt group    Revision: A
 Title: Bolt group (elastic method)
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: STR-SUP-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: STR-SUP-001    Client: Client Co
 
 1. Scope and method
 Calculates the shear and tension in every bolt of a planar group under eccentric in-plane forces, torque, axial load and out-of-plane moments, by the elastic method. It also finds the governing bolt and an optional lever-model prying addition.
@@ -135,6 +135,8 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   governing = "bolt 1"    Governing bolt
   governing_lin = "bolt 1"    Bolt governing the linear interaction
   u_lin = 0.29    Linear interaction utilisation (highest over all bolts)
+  u_v = 0.05    Shear utilisation of the most sheared bolt
+  u_t = 0.33    Tension utilisation of the most tensioned bolt
 
 6. Checks (governing first)
   PASS  Circular shear–tension interaction against its limit (governing bolt): 0.33706 vs 1  utilisation 0.34
@@ -150,7 +152,7 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   Content hash: 6612491a876c3ed5
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 23:04 UTC
+  Test run: 2026-10-27 03:56 UTC
   Application: TempestOS test
 
 9. References

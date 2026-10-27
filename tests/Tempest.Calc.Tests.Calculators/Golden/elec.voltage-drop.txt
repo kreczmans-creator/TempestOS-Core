@@ -72,11 +72,12 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
         Largest voltage drop the limit allows
 
 5. Results
-  dV = 4.126 V    Voltage drop (governing)
+  dV = 4.126 V    Voltage drop
   dV_pct = 8.5949    Voltage drop (%)
   P_loss = 0.08251 kW    Power loss
   R = 0.1031 Ω    Resistance
   X = 0 Ω    Reactance
+  u_dv = 1.72    Drop utilisation against the limit (governing)
 
 6. Checks (governing first)
   FAIL  Voltage drop against the limit: 4.126 V vs 2.400 V  utilisation 1.72  « BS 7671:2018 reg. 525
