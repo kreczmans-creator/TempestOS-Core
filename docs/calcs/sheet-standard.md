@@ -118,6 +118,7 @@ grow the list. A reviewer rejects a diff that raises a number by hand. The rules
   already bumped. Where both phases bumped one template, the integrator keeps the higher version and re-records the manifest line
   (`TEMPEST_UPDATE_TEMPLATE_MANIFEST=1`, which only adds lines).
 - The guided test mode takes its tolerance from the digits the form shows, `CalcDisplay.ShownResolution(shownText)` (C2-22), not from a fixed five figures (`GuidedToleranceTests`, `AddendumCSecurityRegressionTests`).
+- Every manifest line is a resolvable version (DC-14, ADR-0177): the Library embeds the manifest, a calculation made on a superseded version opens as stored with a sentence saying whether the installed version reproduces it exactly, and Revise carries it to the current version. See `docs/calcs/workflows/dc14-template-versions.md`.
 
 ## A. Layout and section order (rows 1 to 4)
 
