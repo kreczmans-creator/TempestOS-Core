@@ -24,7 +24,8 @@ public static class CalcDiagramReader
         if (CalcDiagrams.For(template.Id) is not { } spec)
             return null;
 
-        var variant = SelectVariant(spec, template, inputs);
+        // A table-driven drawing (bolt group, weld group, polygon section) is redrawn from its rows (shot-fix C5); the PDF's Figure 1 is this reading too.
+        var variant = CalcDiagrams.Redraw(template, inputs, SelectVariant(spec, template, inputs));
         var shapes = variant.Elements.Select(e => new DiagramShapeReading(e, LabelOf(e, template, inputs))).ToList();
         var labels = shapes.Where(s => s.Element is { InputName: not null, Symbol: not null } && s.Label is not null)
             .Select(s => Spoken(s.Element.Symbol!, ValueText(template, s.Element.InputName!, inputs)))

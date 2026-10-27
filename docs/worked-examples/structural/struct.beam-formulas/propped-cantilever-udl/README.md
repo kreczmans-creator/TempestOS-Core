@@ -12,11 +12,11 @@ The same propped cantilever as the frame solver's known-answer case ka-propped-c
 | `case` | propped cantilever (fixed left, pinned right), UDL | assumption: Fixed at the wall, propped at the free end. |
 | `w` | 12 kN/m | spec: Load schedule LS-03 |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `R_B` | 36 kN | 36 kN | PASS |
-| `M_min` | -96 kN*m | -96 kN*m | PASS |
-| `M_max` | 54 kN*m | 54 kN*m | PASS |
-| `x_M` | 5 m | 5 m | PASS |
+| `R_B` | 36 kN | 36 kN | yes |
+| `M_min` | -96 kN*m | -96 kN*m | yes |
+| `M_max` | 54 kN*m | 54 kN*m | yes |
+| `x_M` | 5 m | 5 m | yes |
 
 Governing check: none. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -20,11 +20,11 @@ A 20 mm lug on a 30 mm pin between 12 mm cheek plates. All five checks pass; the
 | `t_lug` | 20 mm | drawing: DRG-LL-101 rev A |
 | `t_s` | 12 mm | drawing: DRG-LL-101 rev A |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `sigma_t` | 36.765 MPa | 36.7647 MPa | PASS |
-| `sigma_br` | 83.333 MPa | 83.3333 MPa | PASS |
-| `sigma_b` | 122.61 MPa | 122.608 MPa | PASS |
-| `u_b` | 0.49043  | 0.490433  | PASS |
+| `sigma_t` | 36.765 MPa | 36.7647 MPa | yes |
+| `sigma_br` | 83.333 MPa | 83.3333 MPa | yes |
+| `sigma_b` | 122.61 MPa | 122.608 MPa | yes |
+| `u_b` | 0.49043  | 0.490433  | yes |
 
 Governing check: Pin bending stress against the allowable pin bending stress — PASS (utilisation 0.49). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

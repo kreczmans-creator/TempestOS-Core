@@ -12,7 +12,7 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
-  hole_kind | Hole: an ISO 286 class, or a rolling-bearing bore (ES_hole and EI_hole from the bearing record, ISO 492) | ISO 286 hole class |  | default | any
+  hole_kind | Hole: an ISO 286 class, or a rolling-bearing bore (ES_hole and EI_hole from the bearing record, ISO 492) | ISO 286 hole class |  | spec: DRG-HUB-04: the hole is an ISO 286 class (H7), not a bearing bore | any
   hole_letter | Hole fundamental deviation letter | H |  | spec: DRG-HUB-04: H7/p6 | any
   hole_grade | Hole IT grade | 7 |  | spec: DRG-HUB-04: H7/p6 | 5 … 11
   shaft_letter | Shaft fundamental deviation letter | p |  | spec: DRG-HUB-04: H7/p6 | any
@@ -121,8 +121,6 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
 
 7. Applicability
   WARNING  shaft_letter: the deviation of 'p' is a formula value that can lie several µm below the table. At 450 mm, p6 gives 62.2 µm against 68 µm tabulated, so enter an override where the table governs.  [interference-letter]
-  Defaults used (inputs left empty):
-    hole_kind: not entered, so the default of 'ISO 286 hole class' is used.
 
 8. Verification
   Template: mech.iso286-fit@1.6.1

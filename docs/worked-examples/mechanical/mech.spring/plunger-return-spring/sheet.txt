@@ -18,6 +18,7 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n_active) (compression, extension)
   work | Working points given as | Loads |  | spec: Plunger assembly PLG-210 §4 rev B | any
   rm_source | Where R_m(d) comes from: typed (no default: the wire certificate or your wire standard) or the curve R_m = A/d^m of a material record | Typed R_m(d) |  | assumption: R_m(d) typed for this example; a W3 material with the curve R_m = A/d^m can be applied instead. | any
   solid_method | Solid length and clearance (compression): EN 13906-1 uses the maximum wire diameter, 1.5 d more for squared unground ends, and checks the minimum coil clearance at L₂; Shigley uses the nominal d | EN 13906-1 (d_max, coil clearance) |  | spec: Company spring standard SPR-01 (EN 13906-1 solid length and minimum coil clearance); no wire tolerance entered, so d_max is the nominal 3 mm | any
+  tors_factor | Curvature factor of the bending stress (torsion): EN 13906-3 q or Shigley K_i | EN 13906-3 (q) |  | assumption: Torsion springs only; this compression spring does not use it, so the template default is kept. | any
   d | Wire diameter | 3 | mm | drawing: PLG-210-04 rev B | 0.1 … 20 mm
   D | Mean coil diameter | 24 | mm | drawing: PLG-210-04 rev B | 0.5 … 400 mm
   n_active | Active coils (torsion: coils of the body) | 9 |  | drawing: PLG-210-04 rev B | 2 … 200
@@ -29,7 +30,7 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n_active) (compression, extension)
   Rm | Tensile strength of the wire at this diameter, typed (no default) | 1650 | MPa | assumption: Example value for a 3 mm wire. Enter R_m(d) from your own copy of the wire standard or the wire certificate (record spring.wire-strength); the standard's table is not shipped. | 300 … 3500 MPa
   F_1 | Force at working point 1 (loads) | 60 | N | spec: Plunger assembly PLG-210 §4 rev B | 0 … 20000 N
   F_2 | Force at working point 2 (loads) | 180 | N | spec: Plunger assembly PLG-210 §4 rev B | 0 … 20000 N
-  guided | Spring guided by a mandrel or in a bore (compression): the guide restrains it against buckling, so the free-buckling check is not made | no |  | default | any
+  guided | Spring guided by a mandrel or in a bore (compression): the guide restrains it against buckling, so the free-buckling check is not made | no |  | assumption: Not guided: the free-buckling check is made, the safe-side reading. Tick it only if the assembly drawing shows a mandrel or a bore round the spring. | any
   nu_seat | End-support coefficient ν (0.5 both ends fixed, 0.7 one fixed one pinned, 1 both pinned, 2 one free) | 0.5 |  | spec: Plunger assembly PLG-210 §4: both end plates flat and parallel, no rotation | 0.5 … 2
   f_op | Operating (excitation) frequency | 8 | Hz | spec: Plunger assembly PLG-210 §4: maximum cycle rate | 0 … 1000 Hz
   f_tau | Permissible shear stress as a fraction of R_m (generic textbook default; replace with the licensed EN 13906 value) | 0.45 |  | assumption: Static permissible shear stress fraction of R_m for the example; take it from your design reference (record spring.permissible). | 0.2 … 0.8
@@ -56,13 +57,15 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n_active) (compression, extension)
   A16. Surge is the first natural frequency of a spring with both ends fixed. (Shigley 10th ed. Ch. 10, critical frequency.)
   A17. A spring with one end free has half the surge frequency. (Shigley 10th ed. Ch. 10, critical frequency.)
   A18. rm_source (Where R_m(d) comes from: typed (no default: the wire certificate or your wire standard) or the curve R_m = A/d^m of a material record) is taken as Typed R_m(d). (R_m(d) typed for this example; a W3 material with the curve R_m = A/d^m can be applied instead.)
-  A19. G (Shear modulus) is taken as 79.3 GPa. (Generic spring steel shear modulus; take it from the W3 material of the wire certificate.)
-  A20. E (Young's modulus) is taken as 206 GPa. (Generic spring steel Young's modulus; take it from the W3 material of the wire certificate.)
-  A21. rho (Density) is taken as 7850 kg/m³. (Generic steel density.)
-  A22. S_e (Endurance strength for the stress kind (shear; bending in torsion) at N_c cycles, alternating (no default: from the wire maker or your fatigue reference)) is taken as 450 MPa. (Example alternating shear endurance strength at 10^7 cycles; take it from the wire maker or your fatigue reference (record spring.endurance).)
-  A23. Rm (Tensile strength of the wire at this diameter, typed (no default)) is taken as 1650 MPa. (Example value for a 3 mm wire. Enter R_m(d) from your own copy of the wire standard or the wire certificate (record spring.wire-strength); the standard's table is not shipped.)
-  A24. f_tau (Permissible shear stress as a fraction of R_m (generic textbook default; replace with the licensed EN 13906 value)) is taken as 0.45. (Static permissible shear stress fraction of R_m for the example; take it from your design reference (record spring.permissible).)
-  A25. f_su (Ultimate shear strength as a fraction of R_m (Goodman, shear; generic textbook default, replace with the licensed EN 13906 value)) is taken as 0.67. (Ultimate shear strength fraction of R_m used by the Goodman relation (textbook steel value); confirm in your reference.)
+  A19. tors_factor (Curvature factor of the bending stress (torsion): EN 13906-3 q or Shigley K_i) is taken as EN 13906-3 (q). (Torsion springs only; this compression spring does not use it, so the template default is kept.)
+  A20. G (Shear modulus) is taken as 79.3 GPa. (Generic spring steel shear modulus; take it from the W3 material of the wire certificate.)
+  A21. E (Young's modulus) is taken as 206 GPa. (Generic spring steel Young's modulus; take it from the W3 material of the wire certificate.)
+  A22. rho (Density) is taken as 7850 kg/m³. (Generic steel density.)
+  A23. S_e (Endurance strength for the stress kind (shear; bending in torsion) at N_c cycles, alternating (no default: from the wire maker or your fatigue reference)) is taken as 450 MPa. (Example alternating shear endurance strength at 10^7 cycles; take it from the wire maker or your fatigue reference (record spring.endurance).)
+  A24. Rm (Tensile strength of the wire at this diameter, typed (no default)) is taken as 1650 MPa. (Example value for a 3 mm wire. Enter R_m(d) from your own copy of the wire standard or the wire certificate (record spring.wire-strength); the standard's table is not shipped.)
+  A25. guided (Spring guided by a mandrel or in a bore (compression): the guide restrains it against buckling, so the free-buckling check is not made) is taken as no. (Not guided: the free-buckling check is made, the safe-side reading. Tick it only if the assembly drawing shows a mandrel or a bore round the spring.)
+  A26. f_tau (Permissible shear stress as a fraction of R_m (generic textbook default; replace with the licensed EN 13906 value)) is taken as 0.45. (Static permissible shear stress fraction of R_m for the example; take it from your design reference (record spring.permissible).)
+  A27. f_su (Ultimate shear strength as a fraction of R_m (Goodman, shear; generic textbook default, replace with the licensed EN 13906 value)) is taken as 0.67. (Ultimate shear strength fraction of R_m used by the Goodman relation (textbook steel value); confirm in your reference.)
 
 4. Working
   [7] C = D / d    « BS EN 13906-1:2013 / BS EN 13906-2:2013 / BS EN 13906-3:2014

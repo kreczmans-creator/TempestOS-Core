@@ -48,6 +48,16 @@
     "ValueText": "2 row(s)"
   },
   {
+    "Symbol": "factor_set",
+    "Text": "EN recommended",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "The UK National Annex partial factors are entered by hand above, each cited to its table, so no National Annex record is applied on top of them.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "EN recommended"
+  },
+  {
     "Symbol": "gamma_G_inf",
     "Number": 1,
     "Provenance": {

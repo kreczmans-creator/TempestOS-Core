@@ -16,10 +16,10 @@ Radial and axial load combine through the catalogue X and Y factors into a 3.93 
 | `n` | 1000 rpm | spec: LOAD-SCHEDULE-01 |
 | `type` | ball | drawing: DRG-GB-211 rev A |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `F_dyn` | 3.93 kN | 3.93 kN | PASS |
-| `L_10h` | 4290.3 h | 4290.33 h | PASS |
-| `L_nmh` | 2745.8 h | 2745.81 h | PASS |
+| `F_dyn` | 3.93 kN | 3.93 kN | yes |
+| `L_10h` | 4290.3 h | 4290.33 h | yes |
+| `L_nmh` | 2745.8 h | 2745.81 h | yes |
 
 Governing check: Required life against modified life — PASS (utilisation 0.73). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

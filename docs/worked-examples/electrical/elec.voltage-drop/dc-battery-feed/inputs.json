@@ -34,12 +34,34 @@
     "ValueText": "30"
   },
   {
+    "Symbol": "T_amb",
+    "Number": 30,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Reference ambient 30 \u00B0C round the battery cable; template default.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "30"
+  },
+  {
     "Symbol": "T_c",
     "Number": 70,
     "Unit": "degC",
     "Provenance": {
       "Kind": "Assumption",
       "Reference": "Design convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "70"
+  },
+  {
+    "Symbol": "T_rated",
+    "Number": 70,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Conductor rated temperature 70 \u00B0C (PVC insulation); template default.",
       "IsSufficientToIssue": true
     },
     "ValueText": "70"
@@ -75,6 +97,16 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "0.00393"
+  },
+  {
+    "Symbol": "cos_phi",
+    "Number": 0.85,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "AC only; this DC feed does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.85"
   },
   {
     "Symbol": "data",

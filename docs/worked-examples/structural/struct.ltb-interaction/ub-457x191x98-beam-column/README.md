@@ -53,20 +53,20 @@ A beam-column between lateral restraints 5 m apart, carrying 400 kN compression 
 | `use_f` | yes | assumption: The f modification of 6.3.2.3(2) is permitted; k_c from the ψ formula. |
 | `z_g` | 0 mm | assumption: End-moment loading: no transverse load, so the load height does not enter. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `C_1` | 1.31  | 1.31  | PASS |
-| `Mcr` | 808.379 kN*m | 808.379 kN*m | PASS |
-| `lambda_LT` | 0.976099  | 0.976099  | PASS |
-| `chi_LT` | 0.700215  | 0.700215  | PASS |
-| `Mb_Rd` | 539.305 kN*m | 539.305 kN*m | PASS |
-| `u_LTB` | 0.630441  | 0.630441  | PASS |
-| `N_b_Rd` | 1494.53 kN | 1494.53 kN | PASS |
-| `k_yy` | 0.810522  | 0.810522  | PASS |
-| `k_yz` | 0.82482  | 0.82482  | PASS |
-| `k_zy` | 0.951338  | 0.951338  | PASS |
-| `k_zz` | 1.3747  | 1.3747  | PASS |
-| `u_61` | 0.64441  | 0.64441  | PASS |
-| `u_62` | 0.930503  | 0.930503  | PASS |
+| `C_1` | 1.31  | 1.31  | yes |
+| `Mcr` | 808.379 kN*m | 808.379 kN*m | yes |
+| `lambda_LT` | 0.976099  | 0.976099  | yes |
+| `chi_LT` | 0.700215  | 0.700215  | yes |
+| `Mb_Rd` | 539.305 kN*m | 539.305 kN*m | yes |
+| `u_LTB` | 0.630441  | 0.630441  | yes |
+| `N_b_Rd` | 1494.53 kN | 1494.53 kN | yes |
+| `k_yy` | 0.810522  | 0.810522  | yes |
+| `k_yz` | 0.82482  | 0.82482  | yes |
+| `k_zy` | 0.951338  | 0.951338  | yes |
+| `k_zz` | 1.3747  | 1.3747  | yes |
+| `u_61` | 0.64441  | 0.64441  | yes |
+| `u_62` | 0.930503  | 0.930503  | yes |
 
 Governing check: Interaction equation 6.62 against its limit — PASS (utilisation 0.93). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

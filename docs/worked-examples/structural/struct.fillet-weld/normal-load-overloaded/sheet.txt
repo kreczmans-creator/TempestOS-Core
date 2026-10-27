@@ -12,7 +12,7 @@ Resultant force on the weld: F = √(F_∥² + F_⊥² + F_n²). Design shear st
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
-  joint | Joint type: a lap joint is reduced beyond 150 throats, and Other is for a weld whose stress follows the base metal | Lap joint |  | default | any
+  joint | Joint type: a lap joint is reduced beyond 150 throats, and Other is for a weld whose stress follows the base metal | Lap joint |  | assumption: Lap joint (template default); the weld is shorter than 150 throats, so the long-joint reduction does not apply. | any
   L | Effective weld length | 100 | mm | drawing: DRG-WD-702 rev A | 30 … 10000 mm
   a | Throat thickness | 4 | mm | drawing: DRG-WD-702 rev A | 3 … 50 mm
   f_u | Ultimate tensile strength of the weaker part joined | 490 | MPa | spec: SPEC-STR-02 design criteria | 300 … 1000 MPa
@@ -27,6 +27,7 @@ Resultant force on the weld: F = √(F_∥² + F_⊥² + F_n²). Design shear st
   A2. Equal-leg fillet: leg = √2 × throat. (Geometry.)
   A3. A lap joint longer than 150·a is reduced by β_Lw = 1.2 − 0.2·L/(150·a), not above 1. (BS EN 1993-1-8 4.11(3).)
   A4. The weld length L is the length of the lap in the direction of the force. (BS EN 1993-1-8 4.11(3).)
+  A5. joint (Joint type: a lap joint is reduced beyond 150 throats, and Other is for a weld whose stress follows the base metal) is taken as Lap joint. (Lap joint (template default); the weld is shorter than 150 throats, so the long-joint reduction does not apply.)
 
 4. Working
   [10] beta_Lw = no long-joint reduction    « BS EN 1993-1-8 4.11
@@ -82,8 +83,6 @@ Resultant force on the weld: F = √(F_∥² + F_⊥² + F_n²). Design shear st
 
 7. Applicability
   None.
-  Defaults used (inputs left empty):
-    joint: not entered, so the default of 'Lap joint' is used.
 
 8. Verification
   Template: struct.fillet-weld@1.2.0

@@ -49,8 +49,8 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
   eta_tp | Total efficiency of the pump (volumetric × hydromechanical) | 0.88 |  | assumption: Pump total efficiency at 180 bar; to be taken from the pump data sheet. | 0.7 … 1
   V_g | Pump displacement per revolution (optional; blank = no pump delivery check) | 45 | cm³/rev | spec: Hydraulic specification HS-31: fixed-displacement pump 45 cm³/rev | 1 … 500 cm³/rev
   n_p | Pump speed | 1450 | rpm | spec: Hydraulic specification HS-31: 4-pole motor, 1450 rpm | 500 … 3600 rpm
-  eta_hm | Hydromechanical efficiency of the motor | 0.9 |  | default | 0.7 … 1
-  C_d | Orifice discharge coefficient | 0.62 |  | default | 0.5 … 0.9
+  eta_hm | Hydromechanical efficiency of the motor | 0.9 |  | assumption: Hydraulic motor only; this circuit has none, so the template default is kept. | 0.7 … 1
+  C_d | Orifice discharge coefficient | 0.62 |  | assumption: Orifice only; this circuit has none, so the template default is kept. | 0.5 … 0.9
 
 3. Assumptions
   A1. The supply pressure p_sys is the gauge pressure at the cylinder port and at the pump outlet. (F = p·A·η_m, closed form.)
@@ -94,7 +94,9 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
   A39. S_f (Safety factor on the critical load) is taken as 3.5. (Safety factor chosen for this example; the design reference sets the real one.)
   A40. eta_vp (Volumetric efficiency of the pump) is taken as 0.95. (Pump volumetric efficiency at 180 bar; to be taken from the pump data sheet.)
   A41. eta_tp (Total efficiency of the pump (volumetric × hydromechanical)) is taken as 0.88. (Pump total efficiency at 180 bar; to be taken from the pump data sheet.)
-  A42. Standard connection: the extend force is the pressure on the bore area less the back pressure on the annulus area; the retract force the pressure on the annulus less the back pressure on the bore. (Continuity and force balance.)
+  A42. eta_hm (Hydromechanical efficiency of the motor) is taken as 0.9. (Hydraulic motor only; this circuit has none, so the template default is kept.)
+  A43. C_d (Orifice discharge coefficient) is taken as 0.62. (Orifice only; this circuit has none, so the template default is kept.)
+  A44. Standard connection: the extend force is the pressure on the bore area less the back pressure on the annulus area; the retract force the pressure on the annulus less the back pressure on the bore. (Continuity and force balance.)
 
 4. Working
   [28] A_b = pi * D^2 / 4
@@ -372,9 +374,6 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are E, f_y (Rod material properties); K_m (Mounting effective-length factor); S_f (Rod buckling safety factor); v_suc_max, v_prs_max, v_ret_max (Line velocity limits); hoses (Hose and pipe size list). Enter each as one so its source, edition and licence travel with it.  [record]
-  Defaults used (inputs left empty):
-    eta_hm: not entered, so the default of 0.9 is used.
-    C_d: not entered, so the default of 0.62 is used.
 
 8. Verification
   Template: fp.cylinder@1.5.0

@@ -14,7 +14,7 @@ Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits o
   Symbol | Description | Value | Unit | Source | Valid range
   type | Gland arrangement | Piston (radial) |  | spec: Cylinder datasheet LC-63: ring on the piston, sealing on the bore | any
   duty | Static or dynamic duty (selects the squeeze band) | Static |  | spec: Cylinder datasheet LC-63: locking duty, no stroke under pressure | any
-  face_p | Face seal only: which side the pressure acts on (external: the ring ID seats on the groove inner wall and is stretched; internal: the ring OD seats on the groove outer wall and is compressed) | External (ring ID seated on the groove) |  | default | any
+  face_p | Face seal only: which side the pressure acts on (external: the ring ID seats on the groove inner wall and is stretched; internal: the ring OD seats on the groove outer wall and is compressed) | External (ring ID seated on the groove) |  | assumption: Face seals only; this piston seal does not use it, so the template default is kept. | any
   d_r | Ring inside diameter d (mean of the supplier's tolerance) | 56 | mm | reference: record: oring.ring, illustrative ring size invented for this example, to be replaced by the supplier's catalogue size | 3 … 500 mm
   d_r_tol | Ring inside diameter tolerance, plus or minus | 0.45 | mm | reference: record: oring.ring, illustrative tolerance invented for this example | 0 … 2 mm
   W | Ring cross-section diameter | 3.5 | mm | reference: record: oring.ring, illustrative cross-section invented for this example | 1 … 10 mm
@@ -28,16 +28,16 @@ Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits o
   D_c | Mating part that sets the extrusion gap: the piston outside diameter, or the housing bore round the rod (not used for a face seal) | 63 | mm | drawing: LC-63-002 rev B | 5 … 1000 mm
   D_c_u | Mating part diameter, upper deviation | -0.03 | mm | drawing: LC-63-002 rev B | -0.5 … 0.5 mm
   D_c_l | Mating part diameter, lower deviation | -0.06 | mm | drawing: LC-63-002 rev B | -0.5 … 0.5 mm
-  h_f | Face-seal groove depth (face seal only), where the ring is compressed over the depth plus the gap | 2.7 | mm | default | 0.3 … 20 mm
-  h_f_u | Face-seal groove depth, upper deviation | 0.05 | mm | default | -0.5 … 0.5 mm
-  h_f_l | Face-seal groove depth, lower deviation | 0 | mm | default | -0.5 … 0.5 mm
-  e_f | Face-seal gap between the flanges (face seal only), which is the extrusion gap and adds to the compression height | 0.05 | mm | default | 0 … 2 mm
-  e_f_u | Face-seal gap, upper deviation | 0.05 | mm | default | -0.5 … 0.5 mm
-  e_f_l | Face-seal gap, lower deviation | 0 | mm | default | -0.5 … 0.5 mm
+  h_f | Face-seal groove depth (face seal only), where the ring is compressed over the depth plus the gap | 2.7 | mm | assumption: Face seals only; this piston seal does not use it, so the template default is kept. | 0.3 … 20 mm
+  h_f_u | Face-seal groove depth, upper deviation | 0.05 | mm | assumption: Face seals only; this piston seal does not use it, so the template default is kept. | -0.5 … 0.5 mm
+  h_f_l | Face-seal groove depth, lower deviation | 0 | mm | assumption: Face seals only; this piston seal does not use it, so the template default is kept. | -0.5 … 0.5 mm
+  e_f | Face-seal gap between the flanges (face seal only), which is the extrusion gap and adds to the compression height | 0.05 | mm | assumption: Face seals only; this piston seal does not use it, so the template default is kept. | 0 … 2 mm
+  e_f_u | Face-seal gap, upper deviation | 0.05 | mm | assumption: Face seals only; this piston seal does not use it, so the template default is kept. | -0.5 … 0.5 mm
+  e_f_l | Face-seal gap, lower deviation | 0 | mm | assumption: Face seals only; this piston seal does not use it, so the template default is kept. | -0.5 … 0.5 mm
   b | Groove width | 4.7 | mm | drawing: LC-63-002 rev B | 1 … 20 mm
   b_u | Groove width, upper deviation | 0.1 | mm | drawing: LC-63-002 rev B | -0.5 … 0.5 mm
   b_l | Groove width, lower deviation | 0 | mm | drawing: LC-63-002 rev B | -0.5 … 0.5 mm
-  ecc | Gland eccentricity or run-out (one-sided offset; it deepens the gland by this much where the squeeze is least and shallows it where the squeeze is most; 0 if none) | 0 | mm | default | 0 … 0.5 mm
+  ecc | Gland eccentricity or run-out (one-sided offset; it deepens the gland by this much where the squeeze is least and shallows it where the squeeze is most; 0 if none) | 0 | mm | assumption: Gland taken as concentric (no run-out) for this example; enter the run-out from the drawing when it is known. | 0 … 0.5 mm
   r_g | Groove bottom corner radius | 0.25 | mm | drawing: LC-63-002 rev B | 0 … 1 mm
   T_min | Lowest operating temperature (the ring sits at 20 °C when installed) | -25 | °C | spec: Hydraulic specification HS-63: oil temperature range −25 to +70 °C | -60 … 100 °C
   T_max | Highest operating temperature | 70 | °C | spec: Hydraulic specification HS-63: oil temperature range −25 to +70 °C | -40 … 200 °C
@@ -46,19 +46,19 @@ Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits o
   s_min | Smallest volume change of the ring in the fluid (negative for shrinkage; 0 if none) | 0 | % | assumption: No shrinkage assumed in the mineral oil. | -10 … 0 %
   s_max | Largest volume swell of the ring in the fluid | 4 | % | assumption: Volume swell of the compound in the oil, assumed 4 %; replace by the compound's immersion data. | 0 … 25 %
   red | Cross-section reduction with stretch | Incompressible rubber (derived) |  | assumption: Constant-volume rubber relation, derived. | any
-  nu | Poisson ratio of the ring, for the linear relation | 0.49 |  | default | 0.3 … 0.5
+  nu | Poisson ratio of the ring, for the linear relation | 0.49 |  | assumption: Rubber taken as nearly incompressible, ν = 0.49; take it from the compound data. | 0.3 … 0.5
   q_lo_s | Static duty: lowest acceptable squeeze (from your handbook) | 15 | % | reference: record: oring.criteria, static squeeze band, to be taken from the owner's handbook or the seal maker | 5 … 30 %
   q_hi_s | Static duty: highest acceptable squeeze | 30 | % | reference: record: oring.criteria, static squeeze band, to be taken from the owner's handbook or the seal maker | 10 … 45 %
-  q_lo_d | Dynamic duty: lowest acceptable squeeze | 10 | % | default | 5 … 25 %
-  q_hi_d | Dynamic duty: highest acceptable squeeze | 25 | % | default | 10 … 35 %
+  q_lo_d | Dynamic duty: lowest acceptable squeeze | 10 | % | assumption: Dynamic duty only; this static seal does not use it, so the template default is kept. | 5 … 25 %
+  q_hi_d | Dynamic duty: highest acceptable squeeze | 25 | % | assumption: Dynamic duty only; this static seal does not use it, so the template default is kept. | 10 … 35 %
   fill_lo | Gland fill: lowest acceptable | 60 | % | reference: record: oring.criteria, gland fill band (default 60 to 85 %) | 40 … 80 %
   fill_hi | Gland fill: highest acceptable | 85 | % | reference: record: oring.criteria, gland fill band (default 60 to 85 %) | 60 … 95 %
   x_lo | Installed stretch: lowest acceptable (negative allows a ring that is compressed on its seat) | 0 | % | reference: record: oring.criteria, installed stretch lower limit | -5 … 5 %
   x_hi | Installed stretch: highest acceptable (the installation rule is up to 6 % on a piston groove); also applied at the cold end | 6 | % | reference: record: oring.criteria, installed stretch limit (up to 6 % on a piston groove, as quoted second-hand) | 1 … 10 %
-  od_hi | Ring outside-diameter compression: highest acceptable, in a rod-seal groove or against the groove outer wall of an internal-pressure face seal (your record; the default is a placeholder equal to the stretch limit, not a handbook value) | 6 | % | default | 1 … 10 %
+  od_hi | Ring outside-diameter compression: highest acceptable, in a rod-seal groove or against the groove outer wall of an internal-pressure face seal (your record; the default is a placeholder equal to the stretch limit, not a handbook value) | 6 | % | assumption: Rod seals and internal-pressure face seals only; this piston seal does not use it, so the template default is kept. | 1 … 10 %
   H_A | Ring hardness, Shore A (for the extrusion record) | 70 |  | spec: Seal specification: compound 70 Shore A | 40 … 95
   p_op | Operating pressure (for the extrusion record, gauge) | 160 | bar g | spec: Hydraulic specification HS-63: working pressure 160 bar | 0 … 700 bar g
-  dD_p | Diametral growth under the operating pressure of the bore (piston seal) or of the housing bore round the rod (rod seal), from your cylinder or housing calculation; added to the extrusion gap (0 if not known) | 0 | mm | default | 0 … 0.5 mm
+  dD_p | Diametral growth under the operating pressure of the bore (piston seal) or of the housing bore round the rod (rod seal), from your cylinder or housing calculation; added to the extrusion gap (0 if not known) | 0 | mm | assumption: Bore growth under pressure not known for this example, so none is added to the gap; take it from the cylinder calculation. | 0 … 0.5 mm
   gap_allow | Largest permitted extrusion gap at this pressure and hardness, if you have it as one value: diametral (the clearance D_s − D_c) for a radial seal, axial for a face seal; a radial chart value is half of it | 0.2 | mm | reference: record: oring.extrusion, illustrative permitted gap invented for this example, to be replaced by the seal maker's value for 70 Shore A at 160 bar | 0.01 … 1 mm
   n_mc | Monte Carlo samples | 20000 |  | assumption: 20 000 samples. | 1000 … 100000
   seed | Monte Carlo seed | 42 |  | assumption: Fixed seed for a repeatable sheet. | 0 … 1000000
@@ -99,16 +99,29 @@ Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits o
   A31. The gap adds the diametral growth of the bore under pressure that you enter, or 0 if none. (Extrusion limits are licensed data and are not shipped.)
   A32. The permitted gap is your record, and the sheet never states a handbook value. (Extrusion limits are licensed data and are not shipped.)
   A33. With no permitted gap entered, the extrusion check fails (not verified) while the operating pressure is above zero. (Extrusion limits are licensed data and are not shipped.)
-  A34. alpha (Ring linear thermal expansion coefficient α (an indicative elastomer figure; take yours from the compound or the material library)) is taken as 0.00015 1/K. (Indicative elastomer figure; replace by the compound's value or a material from the library.)
-  A35. alpha_m (Groove metal linear thermal expansion coefficient α_m (the part that carries the groove; one material record per sheet, so this one is entered from the metal's data sheet)) is taken as 0.000012 1/K. (Steel groove metal, indicative.)
-  A36. s_min (Smallest volume change of the ring in the fluid (negative for shrinkage; 0 if none)) is taken as 0 %. (No shrinkage assumed in the mineral oil.)
-  A37. s_max (Largest volume swell of the ring in the fluid) is taken as 4 %. (Volume swell of the compound in the oil, assumed 4 %; replace by the compound's immersion data.)
-  A38. red (Cross-section reduction with stretch) is taken as Incompressible rubber (derived). (Constant-volume rubber relation, derived.)
-  A39. n_mc (Monte Carlo samples) is taken as 20000. (20 000 samples.)
-  A40. seed (Monte Carlo seed) is taken as 42. (Fixed seed for a repeatable sheet.)
-  A41. k_sigma (Standard deviations per half-band (normal tolerances and measured normals)) is taken as 3. (Normal tolerances taken as ±3σ.)
-  A42. dist (Distribution of the toleranced dimensions) is taken as Normal. (Normal distribution of the machined dimensions.)
-  A43. Static duty: the squeeze band for static seals from the oring.criteria record is used. (The bands are the user's record.)
+  A34. face_p (Face seal only: which side the pressure acts on (external: the ring ID seats on the groove inner wall and is stretched; internal: the ring OD seats on the groove outer wall and is compressed)) is taken as External (ring ID seated on the groove). (Face seals only; this piston seal does not use it, so the template default is kept.)
+  A35. h_f (Face-seal groove depth (face seal only), where the ring is compressed over the depth plus the gap) is taken as 2.7 mm. (Face seals only; this piston seal does not use it, so the template default is kept.)
+  A36. h_f_u (Face-seal groove depth, upper deviation) is taken as 0.05 mm. (Face seals only; this piston seal does not use it, so the template default is kept.)
+  A37. h_f_l (Face-seal groove depth, lower deviation) is taken as 0 mm. (Face seals only; this piston seal does not use it, so the template default is kept.)
+  A38. e_f (Face-seal gap between the flanges (face seal only), which is the extrusion gap and adds to the compression height) is taken as 0.05 mm. (Face seals only; this piston seal does not use it, so the template default is kept.)
+  A39. e_f_u (Face-seal gap, upper deviation) is taken as 0.05 mm. (Face seals only; this piston seal does not use it, so the template default is kept.)
+  A40. e_f_l (Face-seal gap, lower deviation) is taken as 0 mm. (Face seals only; this piston seal does not use it, so the template default is kept.)
+  A41. ecc (Gland eccentricity or run-out (one-sided offset; it deepens the gland by this much where the squeeze is least and shallows it where the squeeze is most; 0 if none)) is taken as 0 mm. (Gland taken as concentric (no run-out) for this example; enter the run-out from the drawing when it is known.)
+  A42. alpha (Ring linear thermal expansion coefficient α (an indicative elastomer figure; take yours from the compound or the material library)) is taken as 0.00015 1/K. (Indicative elastomer figure; replace by the compound's value or a material from the library.)
+  A43. alpha_m (Groove metal linear thermal expansion coefficient α_m (the part that carries the groove; one material record per sheet, so this one is entered from the metal's data sheet)) is taken as 0.000012 1/K. (Steel groove metal, indicative.)
+  A44. s_min (Smallest volume change of the ring in the fluid (negative for shrinkage; 0 if none)) is taken as 0 %. (No shrinkage assumed in the mineral oil.)
+  A45. s_max (Largest volume swell of the ring in the fluid) is taken as 4 %. (Volume swell of the compound in the oil, assumed 4 %; replace by the compound's immersion data.)
+  A46. red (Cross-section reduction with stretch) is taken as Incompressible rubber (derived). (Constant-volume rubber relation, derived.)
+  A47. nu (Poisson ratio of the ring, for the linear relation) is taken as 0.49. (Rubber taken as nearly incompressible, ν = 0.49; take it from the compound data.)
+  A48. q_lo_d (Dynamic duty: lowest acceptable squeeze) is taken as 10 %. (Dynamic duty only; this static seal does not use it, so the template default is kept.)
+  A49. q_hi_d (Dynamic duty: highest acceptable squeeze) is taken as 25 %. (Dynamic duty only; this static seal does not use it, so the template default is kept.)
+  A50. od_hi (Ring outside-diameter compression: highest acceptable, in a rod-seal groove or against the groove outer wall of an internal-pressure face seal (your record; the default is a placeholder equal to the stretch limit, not a handbook value)) is taken as 6 %. (Rod seals and internal-pressure face seals only; this piston seal does not use it, so the template default is kept.)
+  A51. dD_p (Diametral growth under the operating pressure of the bore (piston seal) or of the housing bore round the rod (rod seal), from your cylinder or housing calculation; added to the extrusion gap (0 if not known)) is taken as 0 mm. (Bore growth under pressure not known for this example, so none is added to the gap; take it from the cylinder calculation.)
+  A52. n_mc (Monte Carlo samples) is taken as 20000. (20 000 samples.)
+  A53. seed (Monte Carlo seed) is taken as 42. (Fixed seed for a repeatable sheet.)
+  A54. k_sigma (Standard deviations per half-band (normal tolerances and measured normals)) is taken as 3. (Normal tolerances taken as ±3σ.)
+  A55. dist (Distribution of the toleranced dimensions) is taken as Normal. (Normal distribution of the machined dimensions.)
+  A56. Static duty: the squeeze band for static seals from the oring.criteria record is used. (The bands are the user's record.)
 
 4. Working
   [42] v_W = mid ± half-band, σ (normal)
@@ -356,21 +369,7 @@ Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits o
   PASS  Extrusion gap against the permitted gap: gap_max 0.10606 mm vs ≤ 0.2 mm (entered 0.2 mm)  « oring.extrusion record
 
 7. Applicability
-  WARNING  records: tabulated values not taken from a reference record are alpha (Material properties); d_r, d_r_tol, W, W_tol (Ring size); q_lo_s, q_hi_s, fill_lo, fill_hi, x_lo, x_hi (Squeeze, fill and stretch criteria); gap_allow (Permitted extrusion gap). Enter each as one so its source, edition and licence travel with it.  [record]
-  Defaults used (inputs left empty):
-    face_p: not entered, so the default of 'External (ring ID seated on the groove)' is used.
-    h_f: not entered, so the default of 2.7 mm is used.
-    h_f_u: not entered, so the default of 0.05 mm is used.
-    h_f_l: not entered, so the default of 0 mm is used.
-    e_f: not entered, so the default of 0.05 mm is used.
-    e_f_u: not entered, so the default of 0.05 mm is used.
-    e_f_l: not entered, so the default of 0 mm is used.
-    ecc: not entered, so the default of 0 mm is used.
-    nu: not entered, so the default of 0.49 is used.
-    q_lo_d: not entered, so the default of 10 % is used.
-    q_hi_d: not entered, so the default of 25 % is used.
-    od_hi: not entered, so the default of 6 % is used.
-    dD_p: not entered, so the default of 0 mm is used.
+  WARNING  records: tabulated values not taken from a reference record are alpha, nu (Material properties); d_r, d_r_tol, W, W_tol (Ring size); q_lo_s, q_hi_s, q_lo_d, q_hi_d, fill_lo, fill_hi, x_lo, x_hi, od_hi (Squeeze, fill and stretch criteria); gap_allow (Permitted extrusion gap). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
   Template: fp.oring-gland@1.5.0

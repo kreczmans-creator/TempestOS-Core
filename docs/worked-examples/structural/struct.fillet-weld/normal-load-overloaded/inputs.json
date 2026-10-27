@@ -86,5 +86,15 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "1.25"
+  },
+  {
+    "Symbol": "joint",
+    "Text": "Lap joint",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Lap joint (template default); the weld is shorter than 150 throats, so the long-joint reduction does not apply.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Lap joint"
   }
 ]

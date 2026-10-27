@@ -9,12 +9,12 @@ A welded box drawn as an outer loop and a hole loop. The polygon route gives the
 | `shape` | polygon | drawing: DRG-BG-100 rev C |
 | `vertices` | 8 row(s) | drawing: DRG-BG-100 rev C |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `A` | 384 cm^2 | 384 cm^2 | PASS |
-| `I_y` | 193152 cm^4 | 193152 cm^4 | PASS |
-| `I_z` | 102272 cm^4 | 102272 cm^4 | PASS |
-| `W_pl_y` | 7776 cm^3 | 7776 cm^3 | PASS |
-| `W_el_y` | 6438.4 cm^3 | 6438.4 cm^3 | PASS |
+| `A` | 384 cm^2 | 384 cm^2 | yes |
+| `I_y` | 193152 cm^4 | 193152 cm^4 | yes |
+| `I_z` | 102272 cm^4 | 102272 cm^4 | yes |
+| `W_pl_y` | 7776 cm^3 | 7776 cm^3 | yes |
+| `W_el_y` | 6438.4 cm^3 | 6438.4 cm^3 | yes |
 
 Governing check: none. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

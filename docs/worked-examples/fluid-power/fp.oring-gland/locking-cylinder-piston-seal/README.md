@@ -25,17 +25,30 @@ The groove leaves a gland depth of 2.780 mm ± 0.030 for a 3.5 ± 0.1 mm ring. O
 | `b` | 4.7 mm | drawing: LC-63-002 rev B |
 | `b_l` | 0 mm | drawing: LC-63-002 rev B |
 | `b_u` | 0.1 mm | drawing: LC-63-002 rev B |
+| `dD_p` | 0 mm | assumption: Bore growth under pressure not known for this example, so none is added to the gap; take it from the cylinder calculation. |
 | `d_r` | 56 mm | reference: record: oring.ring, illustrative ring size invented for this example, to be replaced by the supplier's catalogue size |
 | `d_r_tol` | 0.45 mm | reference: record: oring.ring, illustrative tolerance invented for this example |
 | `dist` | Normal | assumption: Normal distribution of the machined dimensions. |
 | `duty` | Static | spec: Cylinder datasheet LC-63: locking duty, no stroke under pressure |
+| `e_f` | 0.05 mm | assumption: Face seals only; this piston seal does not use it, so the template default is kept. |
+| `e_f_l` | 0 mm | assumption: Face seals only; this piston seal does not use it, so the template default is kept. |
+| `e_f_u` | 0.05 mm | assumption: Face seals only; this piston seal does not use it, so the template default is kept. |
+| `ecc` | 0 mm | assumption: Gland taken as concentric (no run-out) for this example; enter the run-out from the drawing when it is known. |
+| `face_p` | External (ring ID seated on the groove) | assumption: Face seals only; this piston seal does not use it, so the template default is kept. |
 | `fill_hi` | 85 % | reference: record: oring.criteria, gland fill band (default 60 to 85 %) |
 | `fill_lo` | 60 % | reference: record: oring.criteria, gland fill band (default 60 to 85 %) |
 | `gap_allow` | 0.2 mm | reference: record: oring.extrusion, illustrative permitted gap invented for this example, to be replaced by the seal maker's value for 70 Shore A at 160 bar |
+| `h_f` | 2.7 mm | assumption: Face seals only; this piston seal does not use it, so the template default is kept. |
+| `h_f_l` | 0 mm | assumption: Face seals only; this piston seal does not use it, so the template default is kept. |
+| `h_f_u` | 0.05 mm | assumption: Face seals only; this piston seal does not use it, so the template default is kept. |
 | `k_sigma` | 3 | assumption: Normal tolerances taken as ±3σ. |
 | `n_mc` | 20000 | assumption: 20 000 samples. |
+| `nu` | 0.49 | assumption: Rubber taken as nearly incompressible, ν = 0.49; take it from the compound data. |
+| `od_hi` | 6 % | assumption: Rod seals and internal-pressure face seals only; this piston seal does not use it, so the template default is kept. |
 | `p_op` | 160 bar | spec: Hydraulic specification HS-63: working pressure 160 bar |
+| `q_hi_d` | 25 % | assumption: Dynamic duty only; this static seal does not use it, so the template default is kept. |
 | `q_hi_s` | 30 % | reference: record: oring.criteria, static squeeze band, to be taken from the owner's handbook or the seal maker |
+| `q_lo_d` | 10 % | assumption: Dynamic duty only; this static seal does not use it, so the template default is kept. |
 | `q_lo_s` | 15 % | reference: record: oring.criteria, static squeeze band, to be taken from the owner's handbook or the seal maker |
 | `r_g` | 0.25 mm | drawing: LC-63-002 rev B |
 | `red` | Incompressible rubber (derived) | assumption: Constant-volume rubber relation, derived. |
@@ -46,17 +59,17 @@ The groove leaves a gland depth of 2.780 mm ± 0.030 for a 3.5 ± 0.1 mm ring. O
 | `x_hi` | 6 % | reference: record: oring.criteria, installed stretch limit (up to 6 % on a piston groove, as quoted second-hand) |
 | `x_lo` | 0 % | reference: record: oring.criteria, installed stretch lower limit |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `squeeze_min` | 15.125 % | 15.125 % | PASS |
-| `squeeze_max` | 25.2246 % | 25.2246 % | PASS |
-| `squeeze_nom` | 19.5406 % | 19.5406 % | PASS |
-| `fill_max` | 83.7826 % | 83.7826 % | PASS |
-| `fill_min` | 63.9529 % | 63.9529 % | PASS |
-| `stretch` | 3.51035 % | 3.51035 % | PASS |
-| `gap_max` | 0.106064 mm | 0.106064 mm | PASS |
-| `p_sq_min` | 0 % | 0 % | PASS |
-| `cpk_sq_min` | 1.56122  | 1.56122  | PASS |
-| `cpk_fill_max` | 1.648  | 1.648  | PASS |
+| `squeeze_min` | 15.125 % | 15.125 % | yes |
+| `squeeze_max` | 25.2246 % | 25.2246 % | yes |
+| `squeeze_nom` | 19.5406 % | 19.5406 % | yes |
+| `fill_max` | 83.7826 % | 83.7826 % | yes |
+| `fill_min` | 63.9529 % | 63.9529 % | yes |
+| `stretch` | 3.51035 % | 3.51035 % | yes |
+| `gap_max` | 0.106064 mm | 0.106064 mm | yes |
+| `p_sq_min` | 0 % | 0 % | yes |
+| `cpk_sq_min` | 1.56122  | 1.56122  | yes |
+| `cpk_fill_max` | 1.648  | 1.648  | yes |
 
 Governing check: Squeeze minimum against the lower band limit — PASS. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

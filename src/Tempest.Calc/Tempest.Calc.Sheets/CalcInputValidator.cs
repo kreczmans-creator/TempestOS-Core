@@ -123,7 +123,7 @@ public static class CalcInputValidator
         {
             var value = inputs.Find(spec.Symbol);
 
-            if (value is null || IsEmpty(value))
+            if (value is null || IsEmpty(value) || IsOptionalBlank(spec, value))
                 continue;
 
             if ((value.Provenance is null || !value.Provenance.IsSufficientToIssue) && !TableStandsOnScanCells(value))
@@ -142,6 +142,13 @@ public static class CalcInputValidator
         v.Rows is { Count: > 0 } rows
         && rows.Any(r => r?.Cells.Values.Any(c => c?.Provenance is { Kind: CalcProvenanceKind.ScanImport }) == true)
         && rows.All(r => r is not null && r.Cells.Values.Where(c => c?.Number is not null).All(c => c.Provenance is { IsSufficientToIssue: true }));
+
+    /// <summary>
+    /// An optional text input left blank states nothing, so it needs no source (shot-fix C2: bs.glaser 'element', blank = every row, was refused the check
+    /// because the form reads a blank text box as an empty string). A blank required text is refused by validation, not here.
+    /// </summary>
+    private static bool IsOptionalBlank(CalcInputSpec spec, CalcInputValue v) =>
+        spec.IsOptional && spec.Kind == CalcInputKind.Text && string.IsNullOrWhiteSpace(v.Text) && v.Number is null && v.Flag is null && v.Vector is null && v.Rows is null;
 
     private static bool IsEmpty(CalcInputValue v) => v.Number is null && v.Text is null && v.Flag is null && v.Vector is null && v.Rows is null;
 

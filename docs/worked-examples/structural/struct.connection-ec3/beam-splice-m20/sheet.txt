@@ -15,9 +15,9 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   grade | Bolt property class | 8.8 |  | drawing: SPL-001 rev B | any
   size | Bolt size | M20 |  | drawing: SPL-001 rev B | any
   steel | Plate steel grade (β_w) | S275 |  | drawing: SPL-001 rev B | any
-  hole_type | Hole type: oversize holes reduce the bearing resistance by 0.8, a slot across the load by 0.6 (a d₀ above the normal clearance is treated as oversize) | Normal clearance |  | default | any
-  block_load | Block tearing loading: concentric (V_eff,1) or eccentric (V_eff,2, the tension term halved) | Concentric loading (V_eff,1) |  | default | any
-  single_lap | Single-lap joint with only one bolt row (limits the bearing resistance to 1.5·f_u·d·t/γ_M2, cl. 3.6.1) | no |  | default | any
+  hole_type | Hole type: oversize holes reduce the bearing resistance by 0.8, a slot across the load by 0.6 (a d₀ above the normal clearance is treated as oversize) | Normal clearance |  | drawing: SPL-001 rev B | any
+  block_load | Block tearing loading: concentric (V_eff,1) or eccentric (V_eff,2, the tension term halved) | Concentric loading (V_eff,1) |  | assumption: Shear through the bolt group centroid: concentric block tearing. | any
+  single_lap | Single-lap joint with only one bolt row (limits the bearing resistance to 1.5·f_u·d·t/γ_M2, cl. 3.6.1) | no |  | drawing: SPL-001 rev B | any
   threads | Threads in the shear plane | yes |  | assumption: Threads may lie in the shear planes (short bolts). | any
   n_s | Shear planes | 2 |  | drawing: SPL-001 rev B | 1 … 2
   t_p | Plate thickness | 10 | mm | drawing: SPL-001 rev B | 4 … 40 mm
@@ -48,9 +48,10 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   A10. Spacing minima and γ_M factors are entered from a National Annex record. (A small set of factors only; no table from a standard is shipped.)
   A11. The defaults for the spacing minima and γ_M factors are the recommended values of BS EN 1993-1-8. (A small set of factors only; no table from a standard is shipped.)
   A12. Group forces and weld forces per length come from the bolt group and weld group sheets by link. (Linked from the bolt-group and weld-group calculations.)
-  A13. threads (Threads in the shear plane) is taken as yes. (Threads may lie in the shear planes (short bolts).)
-  A14. F_v_Ed (Shear per bolt) is taken as 55 kN. (Governing bolt from the bolt-group calculation (M3).)
-  A15. F_t_Ed (Tension per bolt) is taken as 0 kN. (No tension.)
+  A13. block_load (Block tearing loading: concentric (V_eff,1) or eccentric (V_eff,2, the tension term halved)) is taken as Concentric loading (V_eff,1). (Shear through the bolt group centroid: concentric block tearing.)
+  A14. threads (Threads in the shear plane) is taken as yes. (Threads may lie in the shear planes (short bolts).)
+  A15. F_v_Ed (Shear per bolt) is taken as 55 kN. (Governing bolt from the bolt-group calculation (M3).)
+  A16. F_t_Ed (Tension per bolt) is taken as 0 kN. (No tension.)
 
 4. Working
   [20] f_ub = class first figure × 100    « EN 1993-1-8 Table 3.1
@@ -148,9 +149,6 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are gamma_M2, gamma_M0, k_e1, k_e2, k_p1, k_p2 (EN 1993-1-8 National Annex factors); f_y, f_u (Plate strengths). Enter each as one so its source, edition and licence travel with it.  [record]
-  Defaults used (inputs left empty):
-    hole_type: not entered, so the default of 'Normal clearance' is used.
-    block_load: not entered, so the default of 'Concentric loading (V_eff,1)' is used.
 
 8. Verification
   Template: struct.connection-ec3@1.9.0

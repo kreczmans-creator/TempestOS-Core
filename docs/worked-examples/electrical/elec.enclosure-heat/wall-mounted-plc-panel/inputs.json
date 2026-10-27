@@ -1,5 +1,16 @@
 [
   {
+    "Symbol": "A_sun",
+    "Number": 0,
+    "Unit": "m^2",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Wall mounted on a floor plinth: rear and bottom covered; indoors.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
     "Symbol": "D",
     "Number": 0.3,
     "Unit": "m",
@@ -20,6 +31,28 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "0.8"
+  },
+  {
+    "Symbol": "I_sun",
+    "Number": 0,
+    "Unit": "W/m^2",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Wall mounted on a floor plinth: rear and bottom covered; indoors.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "P_add",
+    "Number": 0,
+    "Unit": "kW",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "No further heat load linked into this panel.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
   },
   {
     "Symbol": "T_amb",
@@ -81,6 +114,16 @@
     "ValueText": "0.6"
   },
   {
+    "Symbol": "alpha_sun",
+    "Number": 0.5,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used indoors (no sun); template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.5"
+  },
+  {
     "Symbol": "altitude",
     "Number": 0,
     "Unit": "m",
@@ -90,6 +133,77 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "0"
+  },
+  {
+    "Symbol": "f_bottom",
+    "Number": 0,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Wall mounted on a floor plinth: rear and bottom covered; indoors.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "f_front",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Wall mounted on a floor plinth: rear and bottom covered; indoors.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "f_left",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Wall mounted on a floor plinth: rear and bottom covered; indoors.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "f_rear",
+    "Number": 0,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Wall mounted on a floor plinth: rear and bottom covered; indoors.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "f_right",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Wall mounted on a floor plinth: rear and bottom covered; indoors.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "f_top",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Wall mounted on a floor plinth: rear and bottom covered; indoors.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "h_conv",
+    "Number": 5.5,
+    "Unit": "W/(m^2*K)",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "Reference record: painted steel enclosure, still air, 5.5 W/m\u00B2K (manufacturer guide)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "5.5"
   },
   {
     "Symbol": "loads",

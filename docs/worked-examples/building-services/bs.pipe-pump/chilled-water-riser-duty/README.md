@@ -6,12 +6,14 @@ Three series segments with K fittings, a 12 m rise and 3 m terminal head. The sh
 
 | Input | Value | Source |
 |---|---|---|
+| `D_law` | impeller trim (Q ∝ n·D, H ∝ n²·D²) | assumption: The impeller is unchanged (D_ratio = 1), so the law has no effect; template default kept. |
 | `D_ratio` | 1 | assumption: Impeller unchanged. |
 | `H_pump` | [40, 36, 24, 4] m | spec: Pump datasheet P-01 rev 2, curve points |
 | `NPSH_r` | 3 m | spec: Pump datasheet P-01 rev 2 |
 | `Q` | 30 m^3/h | spec: Schedule CHW-01 design flow |
 | `Q_pump` | [0, 20, 40, 60] m^3/h | spec: Pump datasheet P-01 rev 2, curve points |
 | `T_fluid` | 6 degC | spec: SPEC-M-04 §3: 6 °C flow |
+| `circuit` | open (the pump lifts the water by the rises entered) | assumption: Open: the example counts the 12 m rise as static head, as its analytic source does. A sealed flow-and-return loop has no static lift; choose closed for one. |
 | `eta_pump` | 0.68 | spec: Pump datasheet P-01 rev 2 |
 | `fluid` | water | spec: SPEC-M-04 §3: chilled water, no glycol |
 | `h_out` | 3 m | spec: Terminal unit: 30 kPa ≈ 3 m |
@@ -21,8 +23,8 @@ Three series segments with K fittings, a 12 m rise and 3 m terminal head. The sh
 | `v_limit` | 2.5 m/s | spec: CIBSE Guide C practice limit, assumed |
 | `z_s` | 2 m | drawing: DRG-M-110 rev C |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `H_static` | 15 m | 15 m | PASS |
+| `H_static` | 15 m | 15 m | yes |
 
 Governing check: Highest velocity against limit — FAIL (utilisation 1.01). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

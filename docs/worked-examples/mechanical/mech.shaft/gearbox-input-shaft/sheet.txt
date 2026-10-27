@@ -41,7 +41,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   k_d | Temperature factor | 1 |  | assumption: Below 250 °C. | 0.5 … 1.1
   k_f | Miscellaneous factor | 1 |  | assumption: No other effects. | 0.3 … 1.5
   n_target | Target safety factor | 1.5 |  | spec: Company design standard | 1.2 … 3
-  r_c_min | Smallest ratio of the first critical speed to the operating speed | 2 |  | default | 1.5 … 4
+  r_c_min | Smallest ratio of the first critical speed to the operating speed | 2 |  | spec: Company design standard: first critical speed at least twice the running speed | 1.5 … 4
   theta_max | Slope limit at the bearings | 0.001 | rad | assumption: Deep-groove ball bearing slope limit. | 0.00001 … 0.1 rad
   y_max | Deflection limit at the loads | 0.13 | mm | assumption: Spur gear deflection limit. | 0.001 … 10 mm
   x_key | Key position | 150 | mm | drawing: GBX-SH-01 rev C | 0 … 2000 mm
@@ -233,8 +233,6 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   WARNING  records: tabulated values not taken from a reference record are S_ut, S_y, E (Shaft material); theta_max, y_max (Slope and deflection limits). Enter each as one so its source, edition and licence travel with it.  [record]
   WARNING  x_T2: the torque acts between x_T1 = 150 and x_T2 = 330 mm only. The sections at 120 mm carry no torque, so set x_T2 if it is carried there.  [torque-span]
   WARNING  S_y_hub: no hub strength is entered, so the key bearing is checked against the key and the shaft only. The hub is often the weakest part, so enter its yield strength.  [key-hub]
-  Defaults used (inputs left empty):
-    r_c_min: not entered, so the default of 2 is used.
 
 8. Verification
   Template: mech.shaft@1.7.0

@@ -41,26 +41,26 @@ A rigid-base portal column: 210 kN compression, 95 kN·m and 60 kN shear from th
 | `t_w` | 10.3 mm | spec: BS EN 10365 UC 254×254×89, to be checked against the owner's copy |
 | `x_b` | 185 mm | drawing: PF-BP-001 rev B |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `f_jd` | 17 MPa | 17 MPa | PASS |
-| `c` | 56.9873 mm | 56.9873 mm | PASS |
-| `A_eff` | 111100 mm^2 | 111100 mm^2 | PASS |
-| `N_j_Rd` | 1888.7 kN | 1888.7 kN | PASS |
-| `z_C` | 121.5 mm | 121.5 mm | PASS |
-| `z` | 306.5 mm | 306.5 mm | PASS |
-| `C_Ed` | 436.705 kN | 436.705 kN | PASS |
-| `T_Ed` | 226.705 kN | 226.705 kN | PASS |
-| `F_t_Ed` | 113.352 kN | 113.352 kN | PASS |
-| `C_Rd` | 826.33 kN | 826.33 kN | PASS |
-| `T_Rd_1` | 618.004 kN | 618.004 kN | PASS |
-| `T_Rd` | 406 kN | 406 kN | PASS |
-| `u_T` | 0.558386  | 0.558386  | PASS |
-| `F_2_vb_Rd` | 55.9488 kN | 55.9488 kN | PASS |
-| `V_Rd` | 265.795 kN | 265.795 kN | PASS |
-| `u_V` | 0.225738  | 0.225738  | PASS |
-| `V_b_Ed` | 4.5 kN | 4.5 kN | PASS |
-| `t_req` | 15.1417 mm | 15.1417 mm | PASS |
-| `u_max` | 0.558386  | 0.558386  | PASS |
+| `f_jd` | 17 MPa | 17 MPa | yes |
+| `c` | 56.9873 mm | 56.9873 mm | yes |
+| `A_eff` | 111100 mm^2 | 111100 mm^2 | yes |
+| `N_j_Rd` | 1888.7 kN | 1888.7 kN | yes |
+| `z_C` | 121.5 mm | 121.5 mm | yes |
+| `z` | 306.5 mm | 306.5 mm | yes |
+| `C_Ed` | 436.705 kN | 436.705 kN | yes |
+| `T_Ed` | 226.705 kN | 226.705 kN | yes |
+| `F_t_Ed` | 113.352 kN | 113.352 kN | yes |
+| `C_Rd` | 826.33 kN | 826.33 kN | yes |
+| `T_Rd_1` | 618.004 kN | 618.004 kN | yes |
+| `T_Rd` | 406 kN | 406 kN | yes |
+| `u_T` | 0.558386  | 0.558386  | yes |
+| `F_2_vb_Rd` | 55.9488 kN | 55.9488 kN | yes |
+| `V_Rd` | 265.795 kN | 265.795 kN | yes |
+| `u_V` | 0.225738  | 0.225738  | yes |
+| `V_b_Ed` | 4.5 kN | 4.5 kN | yes |
+| `t_req` | 15.1417 mm | 15.1417 mm | yes |
+| `u_max` | 0.558386  | 0.558386  | yes |
 
 Governing check: Tension at the bolt row against the plate T-stub resistance — PASS (utilisation 0.56). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

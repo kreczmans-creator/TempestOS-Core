@@ -8,8 +8,10 @@ A 160 kW pump on a 500 kVA, 4 % transformer fed from a weak 15 MVA network (mini
 |---|---|---|
 | `A_c` | 95 mm^2 | spec: Cable schedule CS-31: 95 mm² copper |
 | `I_LR_r` | 7 | reference: record: motor MD-21 locked-rotor current ratio 7.0 (datasheet; test value invented for this example) |
+| `I_k` | 15 kA | assumption: The source is the transformer, not a fault level, so this is not used; template default kept. |
 | `L_cab` | 60 m | drawing: E-LAY-031 rev B |
 | `P` | 160 kW | spec: Pump schedule PS-05: 160 kW motor rated output (test value invented for this example) |
+| `S_k` | 10 MVA | assumption: The source is the transformer, not a fault level, so this is not used; template default kept. |
 | `S_kQ` | 15 MVA | spec: Network operator letter NO-7: minimum fault level 15 MVA at the transformer primary (test value invented for this example) |
 | `S_n` | 500 kVA | spec: Transformer datasheet TR-01: 500 kVA rating plate |
 | `T_c` | 70 degC | assumption: Cable warm from the running load before a restart. |
@@ -22,30 +24,34 @@ A 160 kW pump on a 500 kVA, 4 % transformer fed from a weak 15 MVA network (mini
 | `cos_phi` | 0.88 | spec: Motor datasheet MD-21: 0.88 at full load (test value invented for this example) |
 | `cos_phi_st` | 0.3 | reference: record: motor MD-21 locked-rotor power factor 0.3 (datasheet; test value invented for this example) |
 | `cos_phi_target` | 0.95 | spec: Connection agreement CA-2: power factor not below 0.95 |
+| `cos_phi_vfd` | 0.95 | assumption: The starter is not a soft starter or drive, so this is not used; template default kept. |
 | `dip_limit` | 10 % | spec: Machine specification MS-3: motor terminal voltage not below 90 % while starting |
 | `dip_limit_pcc` | 7 % | spec: Connection agreement CA-2: 7 % at the point of common coupling (test value invented for this example) |
 | `eta` | 0.95 | spec: Motor datasheet MD-21: 95 % at full load (test value invented for this example) |
+| `fault_basis` | Fault level S_k (MVA) | assumption: The source is the transformer, not a fault level, so this is not used; template default kept. |
 | `harmonics` | no | assumption: No drives or other harmonic loads on the supply. |
+| `k_soft` | 3.5 | assumption: The starter is not a soft starter or drive, so this is not used; template default kept. |
+| `k_vfd` | 1.5 | assumption: The starter is not a soft starter or drive, so this is not used; template default kept. |
 | `n_par` | 1 | drawing: E-SCH-031 rev A |
 | `rho_20` | 0.01724 ohm*mm^2/m | reference: record: annealed copper 1.724e-8 Ω·m at 20 °C, derived physical constant |
 | `source` | Transformer | drawing: E-SCH-031 rev A |
 | `starter` | Star-delta | drawing: E-SCH-031 rev A |
 | `u_k` | 4 % | reference: record: transformer TR-01 impedance voltage 4 % (rating plate; test value invented for this example) |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `I_rated` | 276.244 A | 276.244 A | PASS |
-| `I_start` | 644.57 A | 644.57 A | PASS |
-| `Z_src` | 0.0234144 ohm | 0.0234144 ohm | PASS |
-| `I_dip` | 592.057 A | 592.057 A | PASS |
-| `V_m` | 367.412 V | 367.412 V | PASS |
-| `start_dip` | 8.14701 % | 8.14701 % | PASS |
-| `dip_pcc` | 5.92895 % | 5.92895 % | PASS |
-| `u_dip` | 0.814701  | 0.814701  | PASS |
-| `u_dip_pcc` | 0.846992  | 0.846992  | PASS |
-| `kvar` | 35.5467 kvar | 35.5467 kvar | PASS |
-| `I_cap` | 51.3073 A | 51.3073 A | PASS |
-| `S_sc` | 6.8334 MVA | 6.8334 MVA | PASS |
-| `h_res` | 13.865  | 13.865  | PASS |
+| `I_rated` | 276.244 A | 276.244 A | yes |
+| `I_start` | 644.57 A | 644.57 A | yes |
+| `Z_src` | 0.0234144 ohm | 0.0234144 ohm | yes |
+| `I_dip` | 592.057 A | 592.057 A | yes |
+| `V_m` | 367.412 V | 367.412 V | yes |
+| `start_dip` | 8.14701 % | 8.14701 % | yes |
+| `dip_pcc` | 5.92895 % | 5.92895 % | yes |
+| `u_dip` | 0.814701  | 0.814701  | yes |
+| `u_dip_pcc` | 0.846992  | 0.846992  | yes |
+| `kvar` | 35.5467 kvar | 35.5467 kvar | yes |
+| `I_cap` | 51.3073 A | 51.3073 A | yes |
+| `S_sc` | 6.8334 MVA | 6.8334 MVA | yes |
+| `h_res` | 13.865  | 13.865  | yes |
 
 Governing check: Point-of-common-coupling dip against the limit — PASS (utilisation 0.85). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

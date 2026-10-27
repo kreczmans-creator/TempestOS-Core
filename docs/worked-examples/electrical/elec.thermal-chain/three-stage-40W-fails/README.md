@@ -11,11 +11,11 @@ At 40 W the junction reaches 140 °C, 15 K over. The budget is 2.125 K/W; with 0
 | `T_max` | 125 degC | spec: SPEC-EL-05 thermal limits |
 | `stages` | 3 row(s) | spec: DS-PWR-902 device and heat sink datasheets rev A |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `T_1` | 140 degC | 140 degC | PASS |
-| `dT_m` | -15 K | -15 K | PASS |
-| `u` | 1.1765  | 1.17647  | PASS |
-| `R_max` | 2.125 K/W | 2.125 K/W | PASS |
+| `T_1` | 140 degC | 140 degC | yes |
+| `dT_m` | -15 K | -15 K | yes |
+| `u` | 1.1765  | 1.17647  | yes |
+| `R_max` | 2.125 K/W | 2.125 K/W | yes |
 
 Governing check: Rise from ambient against the permitted rise — FAIL (utilisation 1.18). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -10,6 +10,16 @@
     "ValueText": "0.91"
   },
   {
+    "Symbol": "C_c",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: owner\u0027s licensed table (not shipped); 1 is the neutral value, as the cable runs in trunking, not buried or in ducts",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
     "Symbol": "C_g",
     "Number": 0.77,
     "Provenance": {

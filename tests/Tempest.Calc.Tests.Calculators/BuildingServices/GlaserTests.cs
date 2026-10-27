@@ -479,4 +479,26 @@ public sealed class GlaserTests
         Assert.Equal(plain.OutputSi("Mc_max"), far.OutputSi("Mc_max"), 12);
         Assert.Equal(plain.OutputSi("pass"), far.OutputSi("pass"), 12);
     }
+
+    // ------------------------------------------------------------------ provenance
+
+    /// <summary>
+    /// Shot-fix C2: the worked example leaves the optional 'element' blank (every row belongs to the wall). The form reads that blank as an empty text,
+    /// and Record check refused it ("element: give a source"). A blank optional input states nothing, so it needs no source; a stated element still does.
+    /// </summary>
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void A_Blank_Optional_Element_Needs_No_Source_But_A_Stated_One_Does(string blank)
+    {
+        var spec = Glaser.Template.FindInput("element")!;
+        Assert.True(spec.IsOptional);
+        Assert.Equal(CalcInputKind.Text, spec.Kind);
+
+        var left = new CalcInputSet([new CalcInputValue("element", Text: blank, Provenance: CalcProvenance.Manual)]);
+        Assert.Empty(CalcInputValidator.ValidateProvenanceForIssue(Glaser.Template, left));
+
+        var stated = new CalcInputSet([new CalcInputValue("element", Text: "Wall", Provenance: CalcProvenance.Manual)]);
+        Assert.Single(CalcInputValidator.ValidateProvenanceForIssue(Glaser.Template, stated), n => n.Message.StartsWith("element: give a source", StringComparison.Ordinal));
+    }
 }

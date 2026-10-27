@@ -28,7 +28,7 @@ Tensile stress area: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 p_
   K | Nut factor (nut-factor method); F_M is the maximum preload, so enter the smallest value the joint can have | 0.2 |  | assumption: Not used by the friction method. | 0.1 … 0.35
   mu_G | Thread friction coefficient; F_M is the maximum preload, so enter the smallest value the joint can have | 0.12 |  | assumption: Lightly oiled zinc-plated thread. | 0.06 … 0.25
   mu_K | Head / nut bearing friction coefficient; F_M is the maximum preload, so enter the smallest value the joint can have | 0.12 |  | assumption: Lightly oiled head bearing. | 0.06 … 0.25
-  nu_perm | Permitted assembly utilisation ν: the equivalent stress at assembly over the proof strength (VDI 2230 R7; 0.9 is the usual target, 1.0 is the limit at which the bolt yields in tightening) | 1 |  | default | 0.5 … 1
+  nu_perm | Permitted assembly utilisation ν: the equivalent stress at assembly over the proof strength (VDI 2230 R7; 0.9 is the usual target, 1.0 is the limit at which the bolt yields in tightening) | 1 |  | assumption: Assembly utilisation up to 1.0, where the bolt reaches yield in tightening (VDI 2230 R7 limit); a 0.9 target is usual and can be entered instead. | 0.5 … 1
   alpha_A | Tightening scatter factor (F_M,max / F_M,min) | 1.6 |  | assumption: Torque wrench, VDI 2230 Table A8 order. | 1 … 4
   F_A | Axial working load (per bolt) | 60 | kN | spec: LOAD-CASE-3 | 0 … 5000 kN
   F_KR_req | Required residual clamp force | 5 | kN | spec: SPEC-FLG §6 sealing | 0 … 5000 kN
@@ -49,9 +49,10 @@ Tensile stress area: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 p_
   A10. K (Nut factor (nut-factor method); F_M is the maximum preload, so enter the smallest value the joint can have) is taken as 0.2. (Not used by the friction method.)
   A11. mu_G (Thread friction coefficient; F_M is the maximum preload, so enter the smallest value the joint can have) is taken as 0.12. (Lightly oiled zinc-plated thread.)
   A12. mu_K (Head / nut bearing friction coefficient; F_M is the maximum preload, so enter the smallest value the joint can have) is taken as 0.12. (Lightly oiled head bearing.)
-  A13. alpha_A (Tightening scatter factor (F_M,max / F_M,min)) is taken as 1.6. (Torque wrench, VDI 2230 Table A8 order.)
-  A14. tau_B (Nut / internal-thread material shear strength) is taken as 400 MPa. (Nut material shear strength.)
-  A15. S_strip (Safety factor on stripping) is taken as 1.25. (Stripping safety factor.)
+  A13. nu_perm (Permitted assembly utilisation ν: the equivalent stress at assembly over the proof strength (VDI 2230 R7; 0.9 is the usual target, 1.0 is the limit at which the bolt yields in tightening)) is taken as 1. (Assembly utilisation up to 1.0, where the bolt reaches yield in tightening (VDI 2230 R7 limit); a 0.9 target is usual and can be entered instead.)
+  A14. alpha_A (Tightening scatter factor (F_M,max / F_M,min)) is taken as 1.6. (Torque wrench, VDI 2230 Table A8 order.)
+  A15. tau_B (Nut / internal-thread material shear strength) is taken as 400 MPa. (Nut material shear strength.)
+  A16. S_strip (Safety factor on stripping) is taken as 1.25. (Stripping safety factor.)
 
 4. Working
   [24] d_2 = d - 0.6495 * p_thread    « ISO 898-1 §9.1.6
@@ -247,8 +248,6 @@ Tensile stress area: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 p_
 7. Applicability
   WARNING  M_A: the preload alone takes the bolt above 90 % of its proof strength.  [preload-yield]
   WARNING  F_KR: the residual clamp force is not positive. The joint separates under the working load, and the bolt carries all of it.  [separation]
-  Defaults used (inputs left empty):
-    nu_perm: not entered, so the default of 1 is used.
 
 8. Verification
   Template: mech.bolted-joint@1.3.1

@@ -16,11 +16,11 @@ Three metric parts with asymmetric deviations. Worst case 0.48–0.74 mm sits in
 | `notation` | BS 8888 | assumption: Metric drawing. |
 | `seed` | 1 | assumption: Fixed seed for reproducibility. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `x_mean` | 0.61 mm | 0.61 mm | PASS |
-| `t_wc` | 0.13 mm | 0.13 mm | PASS |
-| `t_rss` | 0.0806226 mm | 0.0806226 mm | PASS |
-| `cpk` | 2.35666  | 2.35666  | PASS |
+| `x_mean` | 0.61 mm | 0.61 mm | yes |
+| `t_wc` | 0.13 mm | 0.13 mm | yes |
+| `t_rss` | 0.0806226 mm | 0.0806226 mm | yes |
+| `cpk` | 2.35666  | 2.35666  | yes |
 
 Governing check: C_pk against the requirement — PASS (utilisation 0.56). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

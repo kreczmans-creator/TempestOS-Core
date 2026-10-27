@@ -53,6 +53,16 @@
     "ValueText": "120"
   },
   {
+    "Symbol": "h_steam",
+    "Number": 2676,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Dry saturated steam at atmospheric pressure, about 2676 kJ/kg from steam tables; used by the steam-humidification run only.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2676"
+  },
+  {
     "Symbol": "known",
     "Text": "relative humidity",
     "Provenance": {

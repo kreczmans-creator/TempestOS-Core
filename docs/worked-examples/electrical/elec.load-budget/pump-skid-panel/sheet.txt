@@ -20,11 +20,11 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   loads[5] |  | name = PLC and I/O; supply = DC; P = 0.096 kW; cosphi = 1; eta = 0.9; d = 1; k = 1; inrush = 1; backed = yes |  |  | 
   loads[6] |  | name = Router; supply = DC; P = 0.024 kW; cosphi = 1; eta = 0.9; d = 1; k = 1; inrush = 1; backed = yes |  |  | 
   psu_bus | AC bus that feeds the DC power supply (its input P_DC/η_PSU is added to that bus) | AC single-phase |  | drawing: E-SCH-010 rev A | any
-  P_add | Additional three-phase load (linked from the motor-sizing RMS power) | 0 | kW | default | 0 … 100 kW
-  cosphi_add | Power factor of the additional load | 0.85 |  | default | 0.6 … 1
-  eta_add | Efficiency of the additional load | 0.9 |  | default | 0.6 … 1
-  inrush_add | Starting multiple of the additional load | 1 |  | default | 1 … 10
-  heat_add | Share of the additional load's input power released inside the enclosure (a linked machine is outside it: 0) | 0 |  | default | 0 … 0.5
+  P_add | Additional three-phase load (linked from the motor-sizing RMS power) | 0 | kW | assumption: No further load linked into this panel: every load is in the table. | 0 … 100 kW
+  cosphi_add | Power factor of the additional load | 0.85 |  | assumption: Not used while P_add is 0; template default kept. | 0.6 … 1
+  eta_add | Efficiency of the additional load | 0.9 |  | assumption: Not used while P_add is 0; template default kept. | 0.6 … 1
+  inrush_add | Starting multiple of the additional load | 1 |  | assumption: Not used while P_add is 0; template default kept. | 1 … 10
+  heat_add | Share of the additional load's input power released inside the enclosure (a linked machine is outside it: 0) | 0 |  | assumption: Not used while P_add is 0; template default kept. | 0 … 0.5
   U_3ph | Three-phase line voltage | 400 | V | spec: Site supply | 12 … 690 V
   U_1ph | Single-phase voltage | 230 | V | spec: Site supply | 12 … 480 V
   U_DC | DC bus voltage | 24 | V | drawing: E-SCH-010 rev A | 12 … 600 V
@@ -55,15 +55,20 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   A8. Electronics release all their input (h = 1) and a machine outside the panel releases none (h = 0). (Stated convention for the heat a load releases inside the panel; change h for a load that differs.)
   A9. Apparent powers are added arithmetically, which is conservative when power factors differ. (Upper bound on S.)
   A10. PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records. (Entered as reference records, which carry their source, edition and licence.)
-  A11. eta_psu (DC power supply efficiency (power factor taken as 1)) is taken as 0.9. (24 V supply efficiency 90 %, power factor taken as 1.)
-  A12. SF (Sizing safety factor) is taken as 1.25. (25 % growth margin.)
-  A13. f_derate (PSU derating factor at the ambient and altitude) is taken as 1. (PSU rated to 60 °C without derating (datasheet).)
-  A14. k_T (Transformer short-time overload allowed for inrush) is taken as 3. (Short-time overload allowed by the supply authority.)
-  A15. eta_conv (Conversion efficiency battery → loads) is taken as 1. (DC UPS module, loads on the battery bus.)
-  A16. DoD (Allowed depth of discharge) is taken as 0.8. (VRLA, 80 % depth of discharge.)
-  A17. eta_b (Battery discharge efficiency) is taken as 0.95. (Discharge efficiency.)
-  A18. k_temp (Temperature capacity factor) is taken as 1. (Battery kept at 20 °C.)
-  A19. k_age (Ageing (end-of-life) factor) is taken as 0.8. (End-of-life capacity 80 %.)
+  A11. P_add (Additional three-phase load (linked from the motor-sizing RMS power)) is taken as 0 kW. (No further load linked into this panel: every load is in the table.)
+  A12. cosphi_add (Power factor of the additional load) is taken as 0.85. (Not used while P_add is 0; template default kept.)
+  A13. eta_add (Efficiency of the additional load) is taken as 0.9. (Not used while P_add is 0; template default kept.)
+  A14. inrush_add (Starting multiple of the additional load) is taken as 1. (Not used while P_add is 0; template default kept.)
+  A15. heat_add (Share of the additional load's input power released inside the enclosure (a linked machine is outside it: 0)) is taken as 0. (Not used while P_add is 0; template default kept.)
+  A16. eta_psu (DC power supply efficiency (power factor taken as 1)) is taken as 0.9. (24 V supply efficiency 90 %, power factor taken as 1.)
+  A17. SF (Sizing safety factor) is taken as 1.25. (25 % growth margin.)
+  A18. f_derate (PSU derating factor at the ambient and altitude) is taken as 1. (PSU rated to 60 °C without derating (datasheet).)
+  A19. k_T (Transformer short-time overload allowed for inrush) is taken as 3. (Short-time overload allowed by the supply authority.)
+  A20. eta_conv (Conversion efficiency battery → loads) is taken as 1. (DC UPS module, loads on the battery bus.)
+  A21. DoD (Allowed depth of discharge) is taken as 0.8. (VRLA, 80 % depth of discharge.)
+  A22. eta_b (Battery discharge efficiency) is taken as 0.95. (Discharge efficiency.)
+  A23. k_temp (Temperature capacity factor) is taken as 1. (Battery kept at 20 °C.)
+  A24. k_age (Ageing (end-of-life) factor) is taken as 0.8. (End-of-life capacity 80 %.)
 
 4. Working
   [22] L1 = P·d·k; P·d·k/cosφ
@@ -220,12 +225,6 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   WARNING  records: tabulated values not taken from a reference record are f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.  [record]
   WARNING  f_derate: the ambient is above 40 °C but no PSU derating is entered. Read the factor from the manufacturer's curve.  [derate]
   WARNING  t_auto: the power supply rating covers the DC loads only, not the battery's charging power. Check that the supply can charge the battery as well as carry the load.  [battery-charge]
-  Defaults used (inputs left empty):
-    P_add: not entered, so the default of 0 kW is used.
-    cosphi_add: not entered, so the default of 0.85 is used.
-    eta_add: not entered, so the default of 0.9 is used.
-    inrush_add: not entered, so the default of 1 is used.
-    heat_add: not entered, so the default of 0 is used.
 
 8. Verification
   Template: elec.load-budget@1.6.1

@@ -16,7 +16,7 @@ Cable area: A_cab = Σ n_i·π·d_i²/4 (n_i cables of overall diameter d_i) Con
   cables[1] |  | name = Servo power; od = 14 mm; count = 2; mass = 0.35 kg/m; T_max = 600 N |  |  | 
   cables[2] |  | name = Encoder and control; od = 9 mm; count = 4; mass = 0.12 kg/m; T_max = 200 N |  |  | 
   cont_type | Containment | Conduit (round) |  | drawing: CND-ROUTE-07 rev C | any
-  bend_model | Tension round a bend: horizontal bend with the cable's weight on the containment floor (default), or the capstan equation without the weight term | Horizontal bend, cable on the containment floor (weight term) |  | default | any
+  bend_model | Tension round a bend: horizontal bend with the cable's weight on the containment floor (default), or the capstan equation without the weight term | Horizontal bend, cable on the containment floor (weight term) |  | assumption: Horizontal bends with the cable weight on the conduit floor, as the analytic source computes them. | any
   route | Pull route in pull order (straight lengths and bends) | 6 row(s) |  | drawing: CND-ROUTE-07 rev C | any
   route[1] |  | kind = Straight; L = 6 m |  |  | 
   route[2] |  | kind = Bend; theta = 90°; R = 500 mm |  |  | 
@@ -62,6 +62,7 @@ Cable area: A_cab = Σ n_i·π·d_i²/4 (n_i cables of overall diameter d_i) Con
   A28. With the horizontal-bend (weight) model a heavy cable gains tension at a bend even from T₁ = 0. (Weight term for a horizontal bend; capstan equation as the option.)
   A29. With the capstan option a bend at the very start of a pull with no start tension adds nothing. (Weight term for a horizontal bend; capstan equation as the option.)
   A30. Enter the pulling rope or drum tension when it matters. (Weight term for a horizontal bend; capstan equation as the option.)
+  A31. bend_model (Tension round a bend: horizontal bend with the cable's weight on the containment floor (default), or the capstan equation without the weight term) is taken as Horizontal bend, cable on the containment floor (weight term). (Horizontal bends with the cable weight on the conduit floor, as the analytic source computes them.)
 
 4. Working
   [1] A_c1 = n·π·d²/4
@@ -274,8 +275,6 @@ Cable area: A_cab = Σ n_i·π·d_i²/4 (n_i cables of overall diameter d_i) Con
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are f_max (Containment space factor); n_bend (Minimum bend radius multiple); mu (Pulling friction coefficient); P_lim (Pulling tension, grip and sidewall pressure limits). Enter each as one so its source, edition and licence travel with it.  [record]
-  Defaults used (inputs left empty):
-    bend_model: not entered, so the default of 'Horizontal bend, cable on the containment floor (weight term)' is used.
 
 8. Verification
   Template: elec.containment@1.3.0

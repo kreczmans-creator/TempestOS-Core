@@ -1,5 +1,15 @@
 [
   {
+    "Symbol": "D_law",
+    "Text": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "The impeller is unchanged (D_ratio = 1), so the law has no effect; template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)"
+  },
+  {
     "Symbol": "D_ratio",
     "Number": 1,
     "Provenance": {
@@ -73,6 +83,16 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "6"
+  },
+  {
+    "Symbol": "circuit",
+    "Text": "open (the pump lifts the water by the rises entered)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Open: the example counts the 12 m rise as static head, as its analytic source does. A sealed flow-and-return loop has no static lift; choose closed for one.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "open (the pump lifts the water by the rises entered)"
   },
   {
     "Symbol": "eta_pump",

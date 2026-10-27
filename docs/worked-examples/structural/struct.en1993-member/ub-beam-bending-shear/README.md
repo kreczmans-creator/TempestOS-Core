@@ -27,6 +27,7 @@ The two-span floor beam from the S2 worked example, checked in bending and shear
 | `f_y` | 275 MPa | spec: BS EN 10025-2 S275, t ≤ 16 mm |
 | `gamma_M0` | 1 | spec: UK NA to BS EN 1993-1-1 NA.2.15 |
 | `gamma_M1` | 1 | spec: UK NA to BS EN 1993-1-1 NA.2.15 |
+| `gamma_M2` | 1.1 | spec: UK NA to BS EN 1993-1-1 NA.2.15 |
 | `h` | 303.4 mm | spec: BS EN 10365 UB 305×165×40 |
 | `k_yy` | 1 | assumption: No axial force; interaction factors irrelevant. |
 | `k_zz` | 1 | assumption: No axial force; interaction factors irrelevant. |
@@ -36,10 +37,10 @@ The two-span floor beam from the S2 worked example, checked in bending and shear
 | `t_f` | 10.2 mm | spec: BS EN 10365 UB 305×165×40 |
 | `t_w` | 6 mm | spec: BS EN 10365 UB 305×165×40 |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `M_y_c_Rd` | 171.325 kN*m | 171.325 kN*m | PASS |
-| `V_pl_Rd` | 318.62 kN | 318.616 kN | PASS |
-| `u_M_y` | 0.70043  | 0.700423  | PASS |
+| `M_y_c_Rd` | 171.325 kN*m | 171.325 kN*m | yes |
+| `V_pl_Rd` | 318.62 kN | 318.616 kN | yes |
+| `u_M_y` | 0.70043  | 0.700423  | yes |
 
 Governing check: Bending moment y-y against bending resistance — PASS (utilisation 0.70). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -29,46 +29,46 @@ Two lugs on a horizontal lifting beam carry 150 kN at a sling angle of 30° from
 | `t_p` | 25 mm | drawing: LB-150-02 rev A |
 | `theta` | 30 deg | drawing: LB-150-01 rev A |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `F_s` | 101.869 kN | 101.869 kN | PASS |
-| `F_ip` | 101.807 kN | 101.807 kN | PASS |
-| `F_op` | 12.1712 kN | 12.1712 kN | PASS |
-| `N_beam` | 50.9037 kN | 50.9037 kN | PASS |
-| `M_op` | 2.19081 kN*m | 2.19081 kN*m | PASS |
-| `Cr` | 0.885436  | 0.885436  | PASS |
-| `phi` | 50 deg | 50 deg | PASS |
-| `be_eff` | 38.3391 mm | 38.3391 mm | PASS |
-| `A_t` | 1916.95 mm^2 | 1916.95 mm^2 | PASS |
-| `A_fr` | 1874.51 mm^2 | 1874.51 mm^2 | PASS |
-| `A_v` | 2821.52 mm^2 | 2821.52 mm^2 | PASS |
-| `A_b` | 1250 mm^2 | 1250 mm^2 | PASS |
-| `Fa` | 213.636 MPa | 213.636 MPa | PASS |
-| `D_bth` | 183.365 kN | 183.365 kN | PASS |
-| `P_t` | 362.613 kN | 362.613 kN | PASS |
-| `P_sp` | 354.584 kN | 354.584 kN | PASS |
-| `P_v` | 348.014 kN | 348.014 kN | PASS |
-| `P_b` | 320.455 kN | 320.455 kN | PASS |
-| `u_t` | 0.505677  | 0.505677  | PASS |
-| `u_sp` | 0.517127  | 0.517127  | PASS |
-| `u_v` | 0.526889  | 0.526889  | PASS |
-| `u_b` | 0.572203  | 0.572203  | PASS |
-| `u_bth` | 0.572203  | 0.572203  | PASS |
-| `cap_bth` | 262.145 kN | 262.145 kN | PASS |
-| `P_en_t` | 300.323 kN | 300.323 kN | PASS |
-| `u_en_t` | 0.3392  | 0.3392  | PASS |
-| `P_en_sp` | 293.673 kN | 293.673 kN | PASS |
-| `u_en_sp` | 0.346881  | 0.346881  | PASS |
-| `P_en_v` | 255.21 kN | 255.21 kN | PASS |
-| `u_en_v` | 0.399159  | 0.399159  | PASS |
-| `P_en_b` | 195.833 kN | 195.833 kN | PASS |
-| `u_en_b` | 0.520184  | 0.520184  | PASS |
-| `u_en` | 0.520184  | 0.520184  | PASS |
-| `cap_en` | 288.359 kN | 288.359 kN | PASS |
-| `u_beam` | 0.0536113  | 0.0536113  | PASS |
-| `lug_util` | 0.572203  | 0.572203  | PASS |
-| `capacity` | 262.145 kN | 262.145 kN | PASS |
-| `util` | 0.572203  | 0.572203  | PASS |
-| `proof_load` | 225 kN | 225 kN | PASS |
+| `F_s` | 101.869 kN | 101.869 kN | yes |
+| `F_ip` | 101.807 kN | 101.807 kN | yes |
+| `F_op` | 12.1712 kN | 12.1712 kN | yes |
+| `N_beam` | 50.9037 kN | 50.9037 kN | yes |
+| `M_op` | 2.19081 kN*m | 2.19081 kN*m | yes |
+| `Cr` | 0.885436  | 0.885436  | yes |
+| `phi` | 50 deg | 50 deg | yes |
+| `be_eff` | 38.3391 mm | 38.3391 mm | yes |
+| `A_t` | 1916.95 mm^2 | 1916.95 mm^2 | yes |
+| `A_fr` | 1874.51 mm^2 | 1874.51 mm^2 | yes |
+| `A_v` | 2821.52 mm^2 | 2821.52 mm^2 | yes |
+| `A_b` | 1250 mm^2 | 1250 mm^2 | yes |
+| `Fa` | 213.636 MPa | 213.636 MPa | yes |
+| `D_bth` | 183.365 kN | 183.365 kN | yes |
+| `P_t` | 362.613 kN | 362.613 kN | yes |
+| `P_sp` | 354.584 kN | 354.584 kN | yes |
+| `P_v` | 348.014 kN | 348.014 kN | yes |
+| `P_b` | 320.455 kN | 320.455 kN | yes |
+| `u_t` | 0.505677  | 0.505677  | yes |
+| `u_sp` | 0.517127  | 0.517127  | yes |
+| `u_v` | 0.526889  | 0.526889  | yes |
+| `u_b` | 0.572203  | 0.572203  | yes |
+| `u_bth` | 0.572203  | 0.572203  | yes |
+| `cap_bth` | 262.145 kN | 262.145 kN | yes |
+| `P_en_t` | 300.323 kN | 300.323 kN | yes |
+| `u_en_t` | 0.3392  | 0.3392  | yes |
+| `P_en_sp` | 293.673 kN | 293.673 kN | yes |
+| `u_en_sp` | 0.346881  | 0.346881  | yes |
+| `P_en_v` | 255.21 kN | 255.21 kN | yes |
+| `u_en_v` | 0.399159  | 0.399159  | yes |
+| `P_en_b` | 195.833 kN | 195.833 kN | yes |
+| `u_en_b` | 0.520184  | 0.520184  | yes |
+| `u_en` | 0.520184  | 0.520184  | yes |
+| `cap_en` | 288.359 kN | 288.359 kN | yes |
+| `u_beam` | 0.0536113  | 0.0536113  | yes |
+| `lug_util` | 0.572203  | 0.572203  | yes |
+| `capacity` | 262.145 kN | 262.145 kN | yes |
+| `util` | 0.572203  | 0.572203  | yes |
+| `proof_load` | 225 kN | 225 kN | yes |
 
 Governing check: Design load against the bearing resistance (BTH-1) — PASS (utilisation 0.57). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

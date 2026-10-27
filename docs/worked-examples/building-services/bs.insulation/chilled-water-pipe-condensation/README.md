@@ -21,15 +21,15 @@ The dew point of 28 °C air at 70 % is 22.01 °C, so the surface must stay above
 | `t_chosen` | 25 mm | spec: Pipework schedule M-SCH-014: 25 mm sleeves |
 | `v_wind` | 0 m/s | assumption: Not used: h_se is given. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `T_dew` | 22.0122 degC | 22.0122 degC | PASS |
-| `t_req_dew` | 13.1616 mm | 13.1616 mm | PASS |
-| `t_req_q` | 17.8144 mm | 17.8144 mm | PASS |
-| `thickness` | 17.8144 mm | 17.8144 mm | PASS |
-| `q_per_m` | 9.59298 W/m | 9.59298 W/m | PASS |
-| `T_se` | 25.2736 degC | 25.2736 degC | PASS |
-| `u_q` | 0.799415  | 0.799415  | PASS |
-| `u_dew` | 0.546608  | 0.546608  | PASS |
+| `T_dew` | 22.0122 degC | 22.0122 degC | yes |
+| `t_req_dew` | 13.1616 mm | 13.1616 mm | yes |
+| `t_req_q` | 17.8144 mm | 17.8144 mm | yes |
+| `thickness` | 17.8144 mm | 17.8144 mm | yes |
+| `q_per_m` | 9.59298 W/m | 9.59298 W/m | yes |
+| `T_se` | 25.2736 degC | 25.2736 degC | yes |
+| `u_q` | 0.799415  | 0.799415  | yes |
+| `u_dew` | 0.546608  | 0.546608  | yes |
 
 Governing check: Chosen thickness against the heat-gain limit — PASS (utilisation 0.80). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

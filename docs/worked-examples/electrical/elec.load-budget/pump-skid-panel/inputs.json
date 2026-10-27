@@ -34,6 +34,17 @@
     "ValueText": "240"
   },
   {
+    "Symbol": "P_add",
+    "Number": 0,
+    "Unit": "kW",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "No further load linked into this panel: every load is in the table.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
     "Symbol": "SF",
     "Number": 1.25,
     "Provenance": {
@@ -112,6 +123,26 @@
     "ValueText": "24"
   },
   {
+    "Symbol": "cosphi_add",
+    "Number": 0.85,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used while P_add is 0; template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.85"
+  },
+  {
+    "Symbol": "eta_add",
+    "Number": 0.9,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used while P_add is 0; template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.9"
+  },
+  {
     "Symbol": "eta_b",
     "Number": 0.95,
     "Provenance": {
@@ -147,6 +178,26 @@
     "Provenance": {
       "Kind": "Assumption",
       "Reference": "PSU rated to 60 \u00B0C without derating (datasheet).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "heat_add",
+    "Number": 0,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used while P_add is 0; template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "inrush_add",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used while P_add is 0; template default kept.",
       "IsSufficientToIssue": true
     },
     "ValueText": "1"

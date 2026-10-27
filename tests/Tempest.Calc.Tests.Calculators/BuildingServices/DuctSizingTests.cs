@@ -89,4 +89,23 @@ public sealed class DuctSizingTests
         Assert.Contains(Run().Blocks, b => b.Message.StartsWith("sections", StringComparison.Ordinal));
         Assert.Contains(Run(DuctSizingCalculator.Sections(("a", 1, 10, DuctSizingCalculator.ShapeRound, 300, 400, 0, 0, true))).Blocks, b => b.RuleId == "geometry");
     }
+
+    /// <summary>
+    /// Shot-fix C7: step v_peak printed an empty substitution line ("=") between its formula and its result on the form, the PDF and sheet.txt.
+    /// It now names the fastest section and how many it was picked from, and every step of both worked examples has a substitution.
+    /// </summary>
+    [Theory]
+    [InlineData("bs.duct-sizing/office-supply-equal-friction")]
+    [InlineData("bs.duct-sizing/extract-velocity-method")]
+    public void The_Peak_Velocity_Step_Names_The_Fastest_Section_And_No_Step_Has_An_Empty_Substitution(string key)
+    {
+        var r = CalcRunner.Run(Calc, WorkedExamples.Get(key).Inputs);
+        Assert.False(r.IsBlocked);
+        var peak = Assert.Single(r.Steps, s => s.Symbol == "v_peak");
+        var fastest = r.Steps.Where(s => System.Text.RegularExpressions.Regex.IsMatch(s.Symbol, @"^v_s\d+$")).MaxBy(s => r.OutputSi(s.Symbol))!;
+        Assert.Equal(r.OutputSi(fastest.Symbol), r.OutputSi("v_peak"), 12);
+        Assert.Matches(@"^v of .+, the highest of \d+ section\(s\)$", peak.Substitution);
+        Assert.Equal($"v of {fastest.Formula.Split(':')[0]}, the highest of {r.Steps.Count(s => System.Text.RegularExpressions.Regex.IsMatch(s.Symbol, @"^v_s\d+$"))} section(s)", peak.Substitution);
+        Assert.DoesNotContain(r.Steps, s => string.IsNullOrWhiteSpace(s.Substitution));
+    }
 }

@@ -66,6 +66,16 @@
     "ValueText": "counterflow"
   },
   {
+    "Symbol": "const_side",
+    "Text": "hot side at constant temperature (e.g. condensing vapour)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Used only when one side is at constant temperature (C_r = 0); both streams change temperature here, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "hot side at constant temperature (e.g. condensing vapour)"
+  },
+  {
     "Symbol": "cp_c",
     "Number": 4180,
     "Unit": "J/(kg*K)",

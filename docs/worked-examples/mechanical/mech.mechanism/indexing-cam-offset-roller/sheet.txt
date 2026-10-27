@@ -13,9 +13,11 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}, with ℓ =
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   mode | Kind of mechanism | Cam |  | spec: Indexing station IDX-12 §2 rev A | any
+  circuit | Assembly circuit (four-bar, slider-crank): open is θ₄ = φ − γ (slider on the +x side of the crank pin), crossed the mirror branch | Open |  | assumption: Four-bar and slider-crank only; the cam does not use it, so the template default is kept. | any
   e_off | Offset e of the slide line above the crank centre, or of the cam follower axis at +x: positive e reduces the pressure angle where ds/dθ exceeds e (optional; blank = 0) | 10 | mm | drawing: IDX-12-CAM rev A | -1000 … 1000 mm
   steps | Intervals N of the table (N + 1 rows, a whole number, at most 3600; the peaks do not depend on it) | 72 |  | assumption: 5° table step. | 4 … 720
   n_in | Input speed (constant) | 120 | rpm | spec: Indexing station IDX-12 §2: 120 index cycles/min rev A | 0.1 … 30000 rpm
+  load_dir | External load: constant direction, or always opposing the output motion | Opposes motion |  | assumption: The follower carries no external load (F_ext = 0), so the direction has no effect; template default kept. | any
   follower | Follower type: roller (translating, pressure angle and undercut checked) or flat-faced (in-line) | Roller |  | drawing: IDX-12-CAM rev A | any
   Rb | Base-circle radius of the cam profile | 40 | mm | drawing: IDX-12-CAM rev A | 1 … 1000 mm
   R_r | Roller radius (roller follower) | 8 | mm | drawing: IDX-12-CAM rev A | 1 … 200 mm
@@ -46,12 +48,14 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}, with ℓ =
   A13. The follower force is m·a + k·s + F_pre + F_ext, and contact is lost below zero. (The spring rate and the preload are those at the base circle, and the segment table must add to 360° and close.)
   A14. Pressure angle and undercut are checked for the roller follower, and the profile radius for the flat-faced one. (The roller has the prime radius R_p = R_b + R_r.)
   A15. The output speed is a kinematic proxy at constant input speed, not the speed of an actuated cylinder. (For motor sizing, use the peak input_torque for the peak check and T_rms_in with n_in for the thermal sizing. The mean power is P_mean.)
-  A16. steps (Intervals N of the table (N + 1 rows, a whole number, at most 3600; the peaks do not depend on it)) is taken as 72. (5° table step.)
-  A17. phi_max (Maximum pressure angle allowed (roller follower)) is taken as 30 °. (Usual limit for a translating roller follower; set it from your design rule.)
-  A18. m_f (Follower mass (all moving parts that follow the cam)) is taken as 0.2 kg. (Example: follower arm, roller and tooling; take it from the CAD mass properties.)
-  A19. k_sp (Return spring rate) is taken as 5 kN/m. (Example return-spring rate; link the rate k of the spring sheet.)
-  A20. F_pre (Spring preload at the base circle) is taken as 20 N. (Example preload at the base circle; link a force of the spring sheet.)
-  A21. F_ext (External load on the follower, positive against the rise) is taken as 0 N. (No external load on the follower in this example.)
+  A16. circuit (Assembly circuit (four-bar, slider-crank): open is θ₄ = φ − γ (slider on the +x side of the crank pin), crossed the mirror branch) is taken as Open. (Four-bar and slider-crank only; the cam does not use it, so the template default is kept.)
+  A17. steps (Intervals N of the table (N + 1 rows, a whole number, at most 3600; the peaks do not depend on it)) is taken as 72. (5° table step.)
+  A18. load_dir (External load: constant direction, or always opposing the output motion) is taken as Opposes motion. (The follower carries no external load (F_ext = 0), so the direction has no effect; template default kept.)
+  A19. phi_max (Maximum pressure angle allowed (roller follower)) is taken as 30 °. (Usual limit for a translating roller follower; set it from your design rule.)
+  A20. m_f (Follower mass (all moving parts that follow the cam)) is taken as 0.2 kg. (Example: follower arm, roller and tooling; take it from the CAD mass properties.)
+  A21. k_sp (Return spring rate) is taken as 5 kN/m. (Example return-spring rate; link the rate k of the spring sheet.)
+  A22. F_pre (Spring preload at the base circle) is taken as 20 N. (Example preload at the base circle; link a force of the spring sheet.)
+  A23. F_ext (External load on the follower, positive against the rise) is taken as 0 N. (No external load on the follower in this example.)
 
 4. Working
   [15] theta_sw = θ    « Cam follower kinematics

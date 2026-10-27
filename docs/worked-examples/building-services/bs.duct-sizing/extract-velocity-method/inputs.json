@@ -22,6 +22,17 @@
     "ValueText": "600"
   },
   {
+    "Symbol": "dp_target",
+    "Number": 1,
+    "Unit": "Pa/m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Equal-friction method only; the velocity method does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
     "Symbol": "eps_rough",
     "Number": 0.15,
     "Unit": "mm",

@@ -8,15 +8,16 @@ A close-running fit from the formulae: IT7 = 20.9 µm, IT6 = 13.1 µm, g = −7.
 |---|---|---|
 | `D` | 25 mm | drawing: DRG-SHAFT-12 rev A |
 | `hole_grade` | 7 | spec: DRG-SHAFT-12 note 3 |
+| `hole_kind` | ISO 286 hole class | spec: DRG-SHAFT-12 note 3: the hole is an ISO 286 class (H7), not a bearing bore |
 | `hole_letter` | H | spec: DRG-SHAFT-12 note 3: H7/g6 |
 | `shaft_grade` | 6 | spec: DRG-SHAFT-12 note 3 |
 | `shaft_letter` | g | spec: DRG-SHAFT-12 note 3 |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `IT_hole` | 21 µm | 20.918 µm | PASS |
-| `es_shaft` | -7 µm | -7.28529 µm | PASS |
-| `c_min` | 7 µm | 7.28529 µm | PASS |
-| `c_max` | 41 µm | 41.277 µm | PASS |
+| `IT_hole` | 21 µm | 20.918 µm | yes |
+| `es_shaft` | -7 µm | -7.28529 µm | yes |
+| `c_min` | 7 µm | 7.28529 µm | yes |
+| `c_max` | 41 µm | 41.277 µm | yes |
 
 Governing check: Fit classes against the fit kind — PASS. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

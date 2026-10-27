@@ -11,11 +11,11 @@ Junction to case, interface pad and heat sink in series, 2.5 K/W in all. The jun
 | `T_max` | 125 degC | spec: SPEC-EL-05 thermal limits |
 | `stages` | 3 row(s) | spec: DS-PWR-901 device and heat sink datasheets rev A |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `T_1` | 102.5 degC | 102.5 degC | PASS |
-| `dT_m` | 22.5 K | 22.5 K | PASS |
-| `u` | 0.73529  | 0.735294  | PASS |
-| `R_max` | 3.4 K/W | 3.4 K/W | PASS |
+| `T_1` | 102.5 degC | 102.5 degC | yes |
+| `dT_m` | 22.5 K | 22.5 K | yes |
+| `u` | 0.73529  | 0.735294  | yes |
+| `R_max` | 3.4 K/W | 3.4 K/W | yes |
 
 Governing check: Rise from ambient against the permitted rise — PASS (utilisation 0.74). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

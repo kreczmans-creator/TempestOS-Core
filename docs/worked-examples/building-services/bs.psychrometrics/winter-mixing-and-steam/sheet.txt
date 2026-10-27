@@ -18,7 +18,7 @@ Saturation and humidity: p_ws(T) by Hyland–Wexler over water at or above 0 °C
   T_db | Dry-bulb temperature | 22 | °C | spec: Return air 22 °C / 40 % | -40 … 60 °C
   RH | Relative humidity | 40 |  | spec: Return air 22 °C / 40 % | 5 … 100
   m_da | Dry-air mass flow | 3 | kg/s | spec: AHU-02 return 3 kg/s | 0 … 1000 kg/s
-  h_steam | Steam enthalpy (steam humidification) | 2676 |  | default | 2500 … 3000
+  h_steam | Steam enthalpy (steam humidification) | 2676 |  | assumption: Dry saturated steam at atmospheric pressure, about 2676 kJ/kg from steam tables; used by the steam-humidification run only. | 2500 … 3000
   T_db_b | Second stream dry-bulb (mixing) | -3 | °C | spec: CIBSE Guide A winter design −3 °C / 90 %, assumed | -40 … 60 °C
   RH_b | Second stream relative humidity (mixing) | 90 |  | spec: Winter design condition | 5 … 100
   m_da_b | Second stream dry-air mass flow (mixing) | 1 | kg/s | spec: AHU-02 minimum outdoor air 1 kg/s | 0 … 1000 kg/s
@@ -31,6 +31,7 @@ Saturation and humidity: p_ws(T) by Hyland–Wexler over water at or above 0 °C
   A5. Adiabatic humidification follows a line of constant enthalpy, which is close to constant wet-bulb. (Evaporative process idealisation.)
   A6. known (Second known property) is taken as relative humidity. (RH given.)
   A7. process (Process) is taken as adiabatic mixing. (Mixing box.)
+  A8. h_steam (Steam enthalpy (steam humidification)) is taken as 2676. (Dry saturated steam at atmospheric pressure, about 2676 kJ/kg from steam tables; used by the steam-humidification run only.)
 
 4. Working
   [2] p_atm = 101.325 (1 − 2.25577e-5 z)^5.2559    « ASHRAE Ch. 1 eq. 3
@@ -215,8 +216,6 @@ Saturation and humidity: p_ws(T) by Hyland–Wexler over water at or above 0 °C
 
 7. Applicability
   None.
-  Defaults used (inputs left empty):
-    h_steam: not entered, so the default of 2676 is used.
 
 8. Verification
   Template: bs.psychrometrics@1.4.0

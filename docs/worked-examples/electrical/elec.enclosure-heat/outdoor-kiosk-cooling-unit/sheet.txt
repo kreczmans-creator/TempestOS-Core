@@ -27,13 +27,13 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   A_sun | Sunlit area | 0.48 | m² | assumption: One 600 × 800 face in the sun. | 0 … 100 m²
   alpha_sun | Surface absorptivity | 0.5 |  | assumption: Light-grey paint. | 0.1 … 1
   h_conv | Overall heat-transfer coefficient of the enclosure surface (editable reference value) | 5.5 | W/(m²·K) | reference: Reference record: painted steel enclosure, still air, 5.5 W/m²K | 3 … 8 W/(m²·K)
-  P_add | Additional heat load (linked from the load-budget dissipated heat or another calculation) | 0 | kW | default | 0 … 100 kW
+  P_add | Additional heat load (linked from the load-budget dissipated heat or another calculation) | 0 | kW | assumption: No further heat load linked into this kiosk. | 0 … 100 kW
   I_sun | Solar irradiance on the enclosure (0 = indoors) | 800 | W/m² | spec: Site conditions SC-5: 800 W/m² on the sunlit side | 0 … 1200 W/m²
   T_amb | Ambient temperature | 40 | °C | spec: Site conditions SC-5 | -20 … 55 °C
   altitude | Site altitude (air density) | 0 | m | assumption: Free-standing kiosk, bottom on a plinth. | 0 … 4000 m
   T_max | Maximum internal temperature | 45 | °C | spec: Site conditions SC-5 | 20 … 80 °C
-  p_sys | System resistance (filters, grilles) at the reference airflow | 20 | Pa | default | 0 … 500 Pa
-  V_ref | Reference airflow for the system resistance | 100 | m³/h | default | 1 … 100000 m³/h
+  p_sys | System resistance (filters, grilles) at the reference airflow | 20 | Pa | assumption: No filter fan on this kiosk (it is cooled by a cooling unit); template default kept. | 0 … 500 Pa
+  V_ref | Reference airflow for the system resistance | 100 | m³/h | assumption: No filter fan on this kiosk (it is cooled by a cooling unit); template default kept. | 1 … 100000 m³/h
 
 3. Assumptions
   A1. Heat leaves the enclosure through its exposed faces at one overall coefficient h_conv. (Plain exposed-area method of manufacturer practice, not an IEC TR 60890 verification; h_conv is a reference value the user may edit.)
@@ -57,8 +57,11 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   A19. f_bottom (Bottom exposure (0 = on the floor)) is taken as 0. (Free-standing kiosk, bottom on a plinth.)
   A20. A_sun (Sunlit area) is taken as 0.48 m². (One 600 × 800 face in the sun.)
   A21. alpha_sun (Surface absorptivity) is taken as 0.5. (Light-grey paint.)
-  A22. altitude (Site altitude (air density)) is taken as 0 m. (Free-standing kiosk, bottom on a plinth.)
-  A23. The effective surface is the plain exposed-area method of manufacturer practice: each face area weighted by how freely it sheds heat, one overall coefficient h. This is not a verification of temperature rise to IEC TR 60890 or BS EN 61439-1 cl. 10.10 (neither the surface factors nor the standard's temperature-rise correlation is used). (Stated on every run so the result is not read as an assembly verification.)
+  A22. P_add (Additional heat load (linked from the load-budget dissipated heat or another calculation)) is taken as 0 kW. (No further heat load linked into this kiosk.)
+  A23. altitude (Site altitude (air density)) is taken as 0 m. (Free-standing kiosk, bottom on a plinth.)
+  A24. p_sys (System resistance (filters, grilles) at the reference airflow) is taken as 20 Pa. (No filter fan on this kiosk (it is cooled by a cooling unit); template default kept.)
+  A25. V_ref (Reference airflow for the system resistance) is taken as 100 m³/h. (No filter fan on this kiosk (it is cooled by a cooling unit); template default kept.)
+  A26. The effective surface is the plain exposed-area method of manufacturer practice: each face area weighted by how freely it sheds heat, one overall coefficient h. This is not a verification of temperature rise to IEC TR 60890 or BS EN 61439-1 cl. 10.10 (neither the surface factors nor the standard's temperature-rise correlation is used). (Stated on every run so the result is not read as an assembly verification.)
 
 4. Working
   [18] P_loads = Σ P_i × n_i × d_i
@@ -137,10 +140,6 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
 
 7. Applicability
   WARNING  T_max: natural dissipation holds 44.55 W of 492 W. Ventilate, or fit a 447.4 W cooling unit.  [cooling-unit]
-  Defaults used (inputs left empty):
-    P_add: not entered, so the default of 0 kW is used.
-    p_sys: not entered, so the default of 20 Pa is used.
-    V_ref: not entered, so the default of 100 m³/h is used.
 
 8. Verification
   Template: elec.enclosure-heat@1.7.1

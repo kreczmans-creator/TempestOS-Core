@@ -68,6 +68,16 @@
     "ValueText": "7"
   },
   {
+    "Symbol": "bar_support",
+    "Text": "Held at one end",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Torsion-bar snap-fits only; this cantilever hook does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Held at one end"
+  },
+  {
     "Symbol": "eps_perm_once",
     "Number": 0.04,
     "Provenance": {

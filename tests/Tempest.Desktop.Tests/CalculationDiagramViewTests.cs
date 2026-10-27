@@ -381,7 +381,18 @@ public sealed class CalculationDiagramViewTests
                     diagram.ShowReading(template.Title, () => CalcDiagramReader.Read(template, inputs));
 
                     Assert.True(diagram.HasDiagram, $"{template.Id}: nothing drawn.");
-                    Assert.Same(variant, diagram.Reading!.Variant);
+                    // A table-driven drawing is redrawn from its rows (shot-fix C5): the variant read is then the redraw of this one, keyed the same.
+                    var redrawn = CalcDiagrams.Redraw(template, inputs, variant);
+
+                    if (ReferenceEquals(redrawn, variant))
+                        Assert.Same(variant, diagram.Reading!.Variant);
+                    else
+                    {
+                        Assert.Same(variant.When, diagram.Reading!.Variant.When);
+                        Assert.Equal(redrawn.Caption, diagram.Reading.Variant.Caption);
+                        Assert.Equal(redrawn.Elements.Select(e => e.Id), diagram.Reading.Shapes.Select(s => s.Element.Id));
+                    }
+
                     Assert.True(diagram.GetVisualDescendants().OfType<Shape>().Any(), $"{template.Id} '{variant.Caption}': no shape drawn.");
                     Assert.All(variant.Elements.Where(e => e.InputName is not null && e is not DiagramLabel && e.Symbol is null),
                         e => Assert.True(diagram.Draws(e.InputName!), $"{template.Id}/{e.Id}: no shape for {e.InputName}."));

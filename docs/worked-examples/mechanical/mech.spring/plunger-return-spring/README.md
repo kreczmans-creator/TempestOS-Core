@@ -21,6 +21,7 @@ A 3 mm wire coiled to 24 mm mean diameter (C = 8) with nine active coils has a r
 | `f_op` | 8 Hz | spec: Plunger assembly PLG-210 §4: maximum cycle rate |
 | `f_su` | 0.67 | assumption: Ultimate shear strength fraction of R_m used by the Goodman relation (textbook steel value); confirm in your reference. |
 | `f_tau` | 0.45 | assumption: Static permissible shear stress fraction of R_m for the example; take it from your design reference (record spring.permissible). |
+| `guided` | no | assumption: Not guided: the free-buckling check is made, the safe-side reading. Tick it only if the assembly drawing shows a mandrel or a bore round the spring. |
 | `mode` | Compression | spec: Plunger assembly PLG-210 §4 rev B |
 | `n_active` | 9 | drawing: PLG-210-04 rev B |
 | `n_f_req` | 1.2 | spec: Company spring standard SPR-01 |
@@ -28,19 +29,20 @@ A 3 mm wire coiled to 24 mm mean diameter (C = 8) with nine active coils has a r
 | `rho` | 7850 kg/m^3 | assumption: Generic steel density. |
 | `rm_source` | Typed R_m(d) | assumption: R_m(d) typed for this example; a W3 material with the curve R_m = A/d^m can be applied instead. |
 | `solid_method` | EN 13906-1 (d_max, coil clearance) | spec: Company spring standard SPR-01 (EN 13906-1 solid length and minimum coil clearance); no wire tolerance entered, so d_max is the nominal 3 mm |
+| `tors_factor` | EN 13906-3 (q) | assumption: Torsion springs only; this compression spring does not use it, so the template default is kept. |
 | `work` | Loads | spec: Plunger assembly PLG-210 §4 rev B |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `k` | 6.45345 N/mm | 6.45345 N/mm | PASS |
-| `L_s` | 33 mm | 33 mm | PASS |
-| `s_2` | 27.8921 mm | 27.8921 mm | PASS |
-| `tau_2` | 477.684 MPa | 477.684 MPa | PASS |
-| `F_c` | 238.778 N | 238.778 N | PASS |
-| `tau_c` | 633.669 MPa | 633.669 MPa | PASS |
-| `u_c` | 0.853426  | 0.853426  | PASS |
-| `f_n` | 206.997 Hz | 206.997 Hz | PASS |
-| `r_f` | 25.8746  | 25.8746  | PASS |
-| `n_f` | 1.55786  | 1.55786  | PASS |
+| `k` | 6.45345 N/mm | 6.45345 N/mm | yes |
+| `L_s` | 33 mm | 33 mm | yes |
+| `s_2` | 27.8921 mm | 27.8921 mm | yes |
+| `tau_2` | 477.684 MPa | 477.684 MPa | yes |
+| `F_c` | 238.778 N | 238.778 N | yes |
+| `tau_c` | 633.669 MPa | 633.669 MPa | yes |
+| `u_c` | 0.853426  | 0.853426  | yes |
+| `f_n` | 206.997 Hz | 206.997 Hz | yes |
+| `r_f` | 25.8746  | 25.8746  | yes |
+| `n_f` | 1.55786  | 1.55786  | yes |
 
 Governing check: Working deflection against the travel to the minimum length, keeping the coil clearance at L₂ — PASS (utilisation 0.88). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

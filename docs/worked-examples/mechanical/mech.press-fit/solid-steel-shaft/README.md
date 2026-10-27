@@ -21,12 +21,12 @@ Equal-stiffness steel parts: the interface pressure is 62 MPa, the hub bore hoop
 | `nu_h` | 0.292 | spec: steel |
 | `nu_s` | 0.292 | spec: steel |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `p_int` | 62.1 MPa | 62.1 MPa | PASS |
-| `sigma_t_hub` | 103.5 MPa | 103.5 MPa | PASS |
-| `F_a` | 87.8 kN | 87.7918 kN | PASS |
-| `T` | 2.195 kN*m | 2.1948 kN*m | PASS |
-| `dT` | 100 K | 100 K | PASS |
+| `p_int` | 62.1 MPa | 62.1 MPa | yes |
+| `sigma_t_hub` | 103.5 MPa | 103.5 MPa | yes |
+| `F_a` | 87.8 kN | 87.7918 kN | yes |
+| `T` | 2.195 kN*m | 2.1948 kN*m | yes |
+| `dT` | 100 K | 100 K | yes |
 
 Governing check: Hub von Mises stress against yield strength — PASS (utilisation 0.41). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

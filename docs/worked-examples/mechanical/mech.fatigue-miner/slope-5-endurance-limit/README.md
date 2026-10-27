@@ -12,9 +12,9 @@ The 50 MPa block lies below the 60 MPa endurance limit and does no damage, but t
 | `blocks` | 3 row(s) | spec: LOAD-SCHEDULE-01 |
 | `m` | 5 | spec: SPEC-MECH-03 design criteria |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `D_tot` | 1.433  | 1.43296  | PASS |
-| `R_f` | 0.69786  | 0.697856  | PASS |
+| `D_tot` | 1.433  | 1.43296  | yes |
+| `R_f` | 0.69786  | 0.697856  | yes |
 
 Governing check: Total damage against the damage limit — FAIL (utilisation 1.44). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -8,6 +8,7 @@ Permanent 18 kN/m and office imposed 10 kN/m. 6.10a gives 1.35×18 + 1.5×0.7×1
 |---|---|---|
 | `K_FI` | 1 | assumption: Consequence class CC2. |
 | `actions` | 2 row(s) | drawing: GA-L2-001 rev C |
+| `factor_set` | EN recommended | assumption: The UK National Annex partial factors are entered by hand above, each cited to its table, so no National Annex record is applied on top of them. |
 | `gamma_G_inf` | 1 | spec: UK NA Table NA.A1.2(B) |
 | `gamma_G_sup` | 1.35 | spec: UK NA Table NA.A1.2(B) |
 | `gamma_Q` | 1.5 | spec: UK NA Table NA.A1.2(B) |
@@ -15,10 +16,10 @@ Permanent 18 kN/m and office imposed 10 kN/m. 6.10a gives 1.35×18 + 1.5×0.7×1
 | `unit` | kN/m | assumption: Line load on the beam. |
 | `xi` | 0.925 | spec: UK NA Table NA.A1.2(B) |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `E_d_max` | 37.4775 kN/m | 37.4775 kN/m | PASS |
-| `E_k_max` | 28 kN/m | 28 kN/m | PASS |
-| `E_qp_max` | 21 kN/m | 21 kN/m | PASS |
+| `E_d_max` | 37.4775 kN/m | 37.4775 kN/m | yes |
+| `E_k_max` | 28 kN/m | 28 kN/m | yes |
+| `E_qp_max` | 21 kN/m | 21 kN/m | yes |
 
 Governing check: none. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

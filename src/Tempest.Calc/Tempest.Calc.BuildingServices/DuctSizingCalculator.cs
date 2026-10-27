@@ -153,6 +153,7 @@ public sealed class DuctSizingCalculator : ICalcCalculator
             c.Warn("summary-only", "sections: there are more than 50 sections. Per-section lines are omitted.");
 
         double dpIndex = 0, dpAll = 0, vPeak = 0;
+        var vPeakName = string.Empty;
         var mm = UnitCatalog.Parse("mm");
         var mps = UnitCatalog.Parse("m/s");
         var pa = UnitCatalog.Parse("Pa");
@@ -261,6 +262,9 @@ public sealed class DuctSizingCalculator : ICalcCalculator
             var dpSection = dpFriction + dpFit + dpEq;
             dpAll += dpSection;
             if (onIndex) dpIndex += dpSection;
+            if (v > vPeak || vPeakName.Length == 0)
+                vPeakName = name;
+
             vPeak = Math.Max(vPeak, v);
 
             if (re < Friction.TurbulentLimit)
@@ -301,7 +305,8 @@ public sealed class DuctSizingCalculator : ICalcCalculator
 
         c.Record("dp_index", "Σ section losses on the index run", $"{rows.Count(r => r.Get("index")?.Flag ?? true)} section(s)", ScalarValue.Of(dpIndex, pa), "Index-run pressure drop");
         c.Record("dp_all", "Σ section losses, all sections", $"{rows.Count} section(s)", ScalarValue.Of(dpAll, pa), "Sum over every section (not a path)");
-        c.Record("v_peak", "highest section velocity", "", ScalarValue.Of(vPeak, mps), "Highest velocity");
+        // Shot-fix C7: the step printed an empty substitution line ("="); it names the fastest section and the number compared, as dp_index names its count.
+        c.Record("v_peak", "highest section velocity", $"v of {vPeakName}, the highest of {rows.Count} section(s)", ScalarValue.Of(vPeak, mps), "Highest velocity");
         c.Record("u_dp", "dp_index / dp_limit", $"{F(dpIndex)} / {F(c.Si("dp_limit"))}", new ScalarValue(dpIndex / c.Si("dp_limit")), "Pressure-drop utilisation");
         c.Record("u_v", "v_peak / v_limit", $"{F(vPeak)} / {F(vLimit)}", new ScalarValue(vPeak / vLimit), "Velocity utilisation");
         c.Output("dp_index", "Index-run Δp");

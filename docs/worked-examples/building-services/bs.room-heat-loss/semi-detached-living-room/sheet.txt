@@ -33,7 +33,7 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   T_int | Internal design temperature | 21 | °C | spec: SPEC-A-02 §3.1: living-room design temperature | 16 … 23 °C
   theta_e | External design temperature (location record) | -3 | °C | assumption: Illustrative location design temperature; take the project's own from its design-temperature record. | -15 … 3 °C
   y_tb | Thermal-bridge allowance on the area facing outside | 0.1 | W/(m²·K) | assumption: Illustrative thermal-bridge allowance; replace with the project's bridging record. | 0 … 0.3 W/(m²·K)
-  f_add | Additional allowance on the room load (CIBSE DHDG method only) | 0 | % | default | 0 … 20 %
+  f_add | Additional allowance on the room load (CIBSE DHDG method only) | 0 | % | assumption: CIBSE DHDG method only; the EN 12831 elemental method does not use it, so no allowance is entered. | 0 … 20 %
   U_target | Target U for built-up elements without their own target (optional; blank = no global target) | 0.3 | W/(m²·K) | spec: SPEC-A-02 §4.2: external wall U-value target | 0.05 … 8 W/(m²·K)
   n | Air change rate | 0.8 | 1/h | assumption: Natural ventilation allowance for a living room. | 0.1 … 2.5 1/h
 
@@ -55,8 +55,9 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   A15. method (Calculation method (changes the citations; the DHDG option adds the allowance below)) is taken as BS EN 12831-1 elemental. (Elemental method; the design-team default.)
   A16. theta_e (External design temperature (location record)) is taken as -3 °C. (Illustrative location design temperature; take the project's own from its design-temperature record.)
   A17. y_tb (Thermal-bridge allowance on the area facing outside) is taken as 0.1 W/(m²·K). (Illustrative thermal-bridge allowance; replace with the project's bridging record.)
-  A18. n (Air change rate) is taken as 0.8 1/h. (Natural ventilation allowance for a living room.)
-  A19. Conventional BS EN ISO 6946 surface resistances (R_si 0.13 horizontal, 0.10 upward, 0.17 downward; R_se 0.04 outside, or the same as R_si where the element faces another space; m²K/W) are used where blank, for: Front wall, Gable wall, Party wall. (Small conventional set; enter your own where the construction needs other values.)
+  A18. f_add (Additional allowance on the room load (CIBSE DHDG method only)) is taken as 0 %. (CIBSE DHDG method only; the EN 12831 elemental method does not use it, so no allowance is entered.)
+  A19. n (Air change rate) is taken as 0.8 1/h. (Natural ventilation allowance for a living room.)
+  A20. Conventional BS EN ISO 6946 surface resistances (R_si 0.13 horizontal, 0.10 upward, 0.17 downward; R_se 0.04 outside, or the same as R_si where the element faces another space; m²K/W) are used where blank, for: Front wall, Gable wall, Party wall. (Small conventional set; enter your own where the construction needs other values.)
 
 4. Working
   [8] R_1 = R_si + Σ d/λ + R_g + R_se    « BS EN ISO 6946
@@ -159,39 +160,39 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
       = 0.34 Wh/(m^3*K) × 31.104 m³/h × 24 K
       = 0.25381 kW
         Ventilation heat loss (0.34 Wh/m³K = conventional ρ·c_p of air, derived)
-  [33] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
+  [34] Phi_HL = Phi_T + Phi_V    « BS EN 12831-1 cl. 6.3.2
       = 0.3843 kW + 0.25381 kW
       = 0.63811 kW
         Room design heat loss
-  [34] HLC = Phi_HL / dT
+  [35] HLC = Phi_HL / dT
       = 0.63811 kW / 24 K
       = 26.588 W/K
         Heat loss coefficient
-  [36] Phi_A = Phi_HL / A_floor
+  [37] Phi_A = Phi_HL / A_floor
       = 0.63811 kW / 16.2 m²
       = 39.39 W/m²
         Room design heat loss per floor area
-  [37] U_target_1 = target U of the element
+  [38] U_target_1 = target U of the element
       = the global target U_target
       = 0.3 W/(m²·K)
         Front wall: target U-value
-  [38] u_target_1 = U / U_target
+  [39] u_target_1 = U / U_target
       = 0.24051 / 0.3
       = 0.8017
         Front wall: utilisation of the target U-value
-  [39] U_target_3 = target U of the element
+  [40] U_target_3 = target U of the element
       = the global target U_target
       = 0.3 W/(m²·K)
         Gable wall: target U-value
-  [40] u_target_3 = U / U_target
+  [41] u_target_3 = U / U_target
       = 0.24051 / 0.3
       = 0.8017
         Gable wall: utilisation of the target U-value
-  [41] U_target_4 = target U of the element
+  [42] U_target_4 = target U of the element
       = the target entered on the element's row
       = 1.2 W/(m²·K)
         Party wall: target U-value
-  [42] u_target_4 = U / U_target
+  [43] u_target_4 = U / U_target
       = 1.1928 / 1.2
       = 0.99404
         Party wall: utilisation of the target U-value
@@ -236,8 +237,6 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are theta_e (External design temperature); layers (Layer thermal conductivity); y_tb (Thermal bridging allowance); T_int (Internal design temperatures); n (Air change rates). Enter each as one so its source, edition and licence travel with it.  [record]
-  Defaults used (inputs left empty):
-    f_add: not entered, so the default of 0 % is used.
 
 8. Verification
   Template: bs.room-heat-loss@1.6.0

@@ -18,7 +18,7 @@ Saturation and humidity: p_ws(T) by Hyland–Wexler over water at or above 0 °C
   T_db | Dry-bulb temperature | 28 | °C | spec: CIBSE Guide A summer design condition for the site, assumed | -40 … 60 °C
   RH | Relative humidity | 60 |  | spec: Design condition | 5 … 100
   m_da | Dry-air mass flow | 2.4 | kg/s | spec: AHU schedule AHU-01: 2.0 m³/s ≈ 2.4 kg/s dry air | 0 … 1000 kg/s
-  h_steam | Steam enthalpy (steam humidification) | 2676 |  | default | 2500 … 3000
+  h_steam | Steam enthalpy (steam humidification) | 2676 |  | assumption: Steam humidification only; this cooling coil does not use it, so the template default is kept. | 2500 … 3000
   T_2 | Leaving dry-bulb (sensible, cooling) | 12 | °C | spec: AHU schedule AHU-01 off-coil 12 °C | -40 … 80 °C
   RH_2 | Leaving relative humidity (cooling, evaporative) | 95 |  | assumption: Off-coil 95 % RH (typical contact factor). | 5 … 100
 
@@ -31,7 +31,8 @@ Saturation and humidity: p_ws(T) by Hyland–Wexler over water at or above 0 °C
   A6. known (Second known property) is taken as relative humidity. (RH given.)
   A7. process (Process) is taken as cooling with dehumidification. (Chilled-water coil.)
   A8. altitude (Altitude (used when no pressure is entered)) is taken as 0 m. (Sea-level site.)
-  A9. RH_2 (Leaving relative humidity (cooling, evaporative)) is taken as 95. (Off-coil 95 % RH (typical contact factor).)
+  A9. h_steam (Steam enthalpy (steam humidification)) is taken as 2676. (Steam humidification only; this cooling coil does not use it, so the template default is kept.)
+  A10. RH_2 (Leaving relative humidity (cooling, evaporative)) is taken as 95. (Off-coil 95 % RH (typical contact factor).)
 
 4. Working
   [2] p_atm = 101.325 (1 − 2.25577e-5 z)^5.2559    « ASHRAE Ch. 1 eq. 3
@@ -185,8 +186,6 @@ Saturation and humidity: p_ws(T) by Hyland–Wexler over water at or above 0 °C
 
 7. Applicability
   None.
-  Defaults used (inputs left empty):
-    h_steam: not entered, so the default of 2676 is used.
 
 8. Verification
   Template: bs.psychrometrics@1.4.0

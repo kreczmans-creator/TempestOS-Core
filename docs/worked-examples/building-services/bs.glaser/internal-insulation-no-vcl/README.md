@@ -15,22 +15,23 @@ Condensation starts at the insulation–brick interface in November, builds to 3
 | `T_int` | 20 degC | spec: SPEC-A-02 §3.1: living-room design temperature |
 | `breathable` | no | assumption: Mineral wool and brick: no timber or hygroscopic layers. |
 | `climate` | 12 row(s) | assumption: Invented illustrative maritime year; replace with the project's own monthly climate record (take it from your licensed source). |
+| `dp_f` | 1.1 | assumption: Moisture-excess mode only; this example holds a constant internal humidity, so the conventional 1.10 is kept unused. |
 | `humidity_mode` | constant internal relative humidity | assumption: Constant internal humidity; no humidity-class record is held for this project. |
 | `layers` | 3 row(s) | drawing: A-310 rev B |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `R_T` | 1.91732 m^2*K/W | 1.91732 m^2*K/W | PASS |
-| `S_d` | 2.3 m | 2.3 m | PASS |
-| `n_start` | 11  | 11  | PASS |
-| `Mc_3` | 3022.62 g/m^2 | 3022.62 g/m^2 | PASS |
-| `Mc_6` | 0 g/m^2 | 0 g/m^2 | PASS |
-| `Mc_if_2` | 3022.62 g/m^2 | 3022.62 g/m^2 | PASS |
-| `Mc_max` | 3022.62 g/m^2 | 3022.62 g/m^2 | PASS |
-| `Mc_end` | 0 g/m^2 | 0 g/m^2 | PASS |
-| `u_Mc` | 6.04525  | 6.04525  | PASS |
-| `fRsi` | 0.87729  | 0.87729  | PASS |
-| `fRsi_min` | 0.590256  | 0.590256  | PASS |
-| `pass` | 0  | 0  | PASS |
+| `R_T` | 1.91732 m^2*K/W | 1.91732 m^2*K/W | yes |
+| `S_d` | 2.3 m | 2.3 m | yes |
+| `n_start` | 11  | 11  | yes |
+| `Mc_3` | 3022.62 g/m^2 | 3022.62 g/m^2 | yes |
+| `Mc_6` | 0 g/m^2 | 0 g/m^2 | yes |
+| `Mc_if_2` | 3022.62 g/m^2 | 3022.62 g/m^2 | yes |
+| `Mc_max` | 3022.62 g/m^2 | 3022.62 g/m^2 | yes |
+| `Mc_end` | 0 g/m^2 | 0 g/m^2 | yes |
+| `u_Mc` | 6.04525  | 6.04525  | yes |
+| `fRsi` | 0.87729  | 0.87729  | yes |
+| `fRsi_min` | 0.590256  | 0.590256  | yes |
+| `pass` | 0  | 0  | yes |
 
 Governing check: Peak condensate on an interface against its limit — FAIL (utilisation 6.05). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

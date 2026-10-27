@@ -206,6 +206,16 @@
     "ValueText": "0.5"
   },
   {
+    "Symbol": "nu_perm",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Assembly utilisation up to 1.0, where the bolt reaches yield in tightening (VDI 2230 R7 limit); a 0.9 target is usual and can be entered instead.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
     "Symbol": "p_thread",
     "Number": 1.75,
     "Unit": "mm",

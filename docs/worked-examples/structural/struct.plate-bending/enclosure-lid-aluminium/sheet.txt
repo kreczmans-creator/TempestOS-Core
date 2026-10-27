@@ -24,11 +24,11 @@ Flexural rigidity: D = D_flex = E·t_p³/(12(1 − ν²)); surface stress σ = 6
   rho | Density (for the frequency) | 2700 | kg/m³ | reference: record:5eed0001-0000-4000-8000-000000000003@1 W3 generic seed 'Aluminium alloy (generic)', rho: indicative | 100 … 20000 kg/m³
   f_y | Yield strength | 150 | MPa | assumption: Assumed 0.2 % proof strength for the sheet temper (the W3 generic seed has no strength); replace with the material record from the mill certificate. | 5 … 2000 MPa
   q | Pressure on the loaded area (uniform and patch loads, pressure basis) | 20 | kPa | spec: Enclosure datasheet ENC-DS-07: 0.2 bar differential | 0.001 … 5000 kPa
-  F | Total force (force basis: uniform, patch and ring loads; a ring load always uses the force) | 5 | kN | default | 0.001 … 10000 kN
-  r0 | Patch radius (circular plate, central patch) | 50 | mm | default | 1 … 5000 mm
-  u | Patch size in x (rectangular plate, central patch) | 100 | mm | default | 1 … 10000 mm
-  v | Patch size in y (rectangular plate, central patch) | 100 | mm | default | 1 … 10000 mm
-  r_ring | Ring radius (circular plate, ring load) | 150 | mm | default | 1 … 5000 mm
+  F | Total force (force basis: uniform, patch and ring loads; a ring load always uses the force) | 5 | kN | assumption: Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept. | 0.001 … 10000 kN
+  r0 | Patch radius (circular plate, central patch) | 50 | mm | assumption: Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept. | 1 … 5000 mm
+  u | Patch size in x (rectangular plate, central patch) | 100 | mm | assumption: Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept. | 1 … 10000 mm
+  v | Patch size in y (rectangular plate, central patch) | 100 | mm | assumption: Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept. | 1 … 10000 mm
+  r_ring | Ring radius (circular plate, ring load) | 150 | mm | assumption: Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept. | 1 … 5000 mm
   gamma_M0 | Partial factor on the resistance of the cross-section | 1.1 |  | assumption: EN 1999-1-1 partial factor γ_M1 = 1.1 for the resistance of cross-sections of aluminium, entered in the γ_M0 slot; to be checked against the standard and National Annex in use | 1 … 1.5
   defl_ratio | Deflection limit as span/ratio (span = diameter of a circular plate, shorter side of a rectangle) | 250 |  | spec: Project specification: lid deflection limited to span/250 so the gasket stays seated | 50 … 2000
 
@@ -45,7 +45,12 @@ Flexural rigidity: D = D_flex = E·t_p³/(12(1 − ν²)); surface stress σ = 6
   A10. support (Edge support, all round) is taken as simply supported. (The lid sits on a gasket land and is bolted at close pitch: treated as simply supported, which is the safe side for deflection and the central stress.)
   A11. load_basis (Uniform and patch loads given as) is taken as pressure q. (Load given as a pressure.)
   A12. f_y (Yield strength) is taken as 150 MPa. (Assumed 0.2 % proof strength for the sheet temper (the W3 generic seed has no strength); replace with the material record from the mill certificate.)
-  A13. gamma_M0 (Partial factor on the resistance of the cross-section) is taken as 1.1. (EN 1999-1-1 partial factor γ_M1 = 1.1 for the resistance of cross-sections of aluminium, entered in the γ_M0 slot; to be checked against the standard and National Annex in use)
+  A13. F (Total force (force basis: uniform, patch and ring loads; a ring load always uses the force)) is taken as 5 kN. (Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept.)
+  A14. r0 (Patch radius (circular plate, central patch)) is taken as 50 mm. (Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept.)
+  A15. u (Patch size in x (rectangular plate, central patch)) is taken as 100 mm. (Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept.)
+  A16. v (Patch size in y (rectangular plate, central patch)) is taken as 100 mm. (Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept.)
+  A17. r_ring (Ring radius (circular plate, ring load)) is taken as 150 mm. (Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept.)
+  A18. gamma_M0 (Partial factor on the resistance of the cross-section) is taken as 1.1. (EN 1999-1-1 partial factor γ_M1 = 1.1 for the resistance of cross-sections of aluminium, entered in the γ_M0 slot; to be checked against the standard and National Annex in use)
 
 4. Working
   [15] F_total = q·A_loaded    « Kirchhoff theory
@@ -152,12 +157,6 @@ Flexural rigidity: D = D_flex = E·t_p³/(12(1 − ν²)); surface stress σ = 6
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are f_y (Material properties); gamma_M0 (EN 1993 National Annex factors); defl_ratio (Deflection limit). Enter each as one so its source, edition and licence travel with it.  [record]
-  Defaults used (inputs left empty):
-    F: not entered, so the default of 5 kN is used.
-    r0: not entered, so the default of 50 mm is used.
-    u: not entered, so the default of 100 mm is used.
-    v: not entered, so the default of 100 mm is used.
-    r_ring: not entered, so the default of 150 mm is used.
 
 8. Verification
   Template: struct.plate-bending@1.4.0

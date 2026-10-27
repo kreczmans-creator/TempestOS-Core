@@ -14,9 +14,9 @@ A 8 m × 5 m pinned portal under 15 kN/m roof load and a 24 kN eaves wind load. 
 | `nodes` | 4 row(s) | drawing: DRG-PF-010 rev B |
 | `report` | G+W | assumption: Gravity plus wind reported. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `sum_R_y` | 120 kN | 120 kN | PASS |
-| `sum_R_x` | -24 kN | -24 kN | PASS |
+| `sum_R_y` | 120 kN | 120 kN | yes |
+| `sum_R_x` | -24 kN | -24 kN | yes |
 
 Governing check: none. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -21,15 +21,15 @@ The bright cladding radiates little (h_r 0.58), so h_se is only 4.25 W/m²K and 
 | `theta_se_max` | 60 degC | spec: SPEC-M-12 §6: personnel protection, surface not above 60 °C |
 | `v_wind` | 0 m/s | assumption: Still air, indoors. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `t_req_q` | 23.3743 mm | 23.3743 mm | PASS |
-| `t_req_se` | 7.84229 mm | 7.84229 mm | PASS |
-| `thickness` | 23.3743 mm | 23.3743 mm | PASS |
-| `h_c` | 3.67484 W/(m^2*K) | 3.67484 W/(m^2*K) | PASS |
-| `h_r` | 0.580066 W/(m^2*K) | 0.580066 W/(m^2*K) | PASS |
-| `h_se` | 4.2549 W/(m^2*K) | 4.2549 W/(m^2*K) | PASS |
-| `q_per_m` | 36.7726 W/m | 36.7726 W/m | PASS |
-| `T_se` | 27.855 degC | 27.855 degC | PASS |
+| `t_req_q` | 23.3743 mm | 23.3743 mm | yes |
+| `t_req_se` | 7.84229 mm | 7.84229 mm | yes |
+| `thickness` | 23.3743 mm | 23.3743 mm | yes |
+| `h_c` | 3.67484 W/(m^2*K) | 3.67484 W/(m^2*K) | yes |
+| `h_r` | 0.580066 W/(m^2*K) | 0.580066 W/(m^2*K) | yes |
+| `h_se` | 4.2549 W/(m^2*K) | 4.2549 W/(m^2*K) | yes |
+| `q_per_m` | 36.7726 W/m | 36.7726 W/m | yes |
+| `T_se` | 27.855 degC | 27.855 degC | yes |
 
 Governing check: Chosen thickness against the heat-loss limit — PASS (utilisation 0.61). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

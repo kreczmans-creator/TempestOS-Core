@@ -22,12 +22,12 @@ At 55/45 °C with rooms at 21 °C the radiators give 49 % of their catalogue out
 | `p_prv` | 300 kPa | spec: Heat pump safety valve |
 | `rooms` | 5 row(s) | spec: Room heat loss calculation (B4) and radiator survey |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `f_dT` | 0.492557  | 0.492557  | PASS |
-| `R1` | 3.6544 kW | 3.6544 kW | PASS |
-| `u_emit` | 1.10739  | 1.10739  | PASS |
-| `V_s` | 91 L | 91 L | PASS |
-| `V_e` | 3.53118 L | 3.53118 L | PASS |
+| `f_dT` | 0.492557  | 0.492557  | yes |
+| `R1` | 3.6544 kW | 3.6544 kW | yes |
+| `u_emit` | 1.10739  | 1.10739  | yes |
+| `V_s` | 91 L | 91 L | yes |
+| `V_e` | 3.53118 L | 3.53118 L | yes |
 
 Governing check: Selected emitters against room heat (governing room) — FAIL (utilisation 1.11). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

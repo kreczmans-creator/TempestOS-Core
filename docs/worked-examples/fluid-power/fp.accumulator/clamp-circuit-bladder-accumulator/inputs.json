@@ -139,6 +139,16 @@
     "ValueText": "Absolute"
   },
   {
+    "Symbol": "process",
+    "Text": "By duty",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "By duty: a stored-energy duty uses the one exponent n_gas both ways, isothermal here.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "By duty"
+  },
+  {
     "Symbol": "r_0",
     "Number": 0.9,
     "Provenance": {

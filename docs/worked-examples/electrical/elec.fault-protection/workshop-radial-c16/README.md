@@ -26,10 +26,10 @@ A 40 m radial on a 16 A type C MCB. With Z_e = 0.8 Ω the loop reaches 1.403 Ω 
 | `theta_f` | 160 degC | assumption: Thermoplastic limiting temperature. |
 | `theta_i` | 70 degC | assumption: Thermoplastic operating temperature. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `Z_s` | 1.40339 ohm | 1.40339 ohm | PASS |
-| `Z_s_max` | 1.36563 ohm | 1.36563 ohm | PASS |
-| `u_Zs` | 1.02766  | 1.02766  | PASS |
+| `Z_s` | 1.40339 ohm | 1.40339 ohm | yes |
+| `Z_s_max` | 1.36563 ohm | 1.36563 ohm | yes |
+| `u_Zs` | 1.02766  | 1.02766  | yes |
 
 Governing check: Fault current against the disconnection current — FAIL. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -21,13 +21,13 @@ A 5 A motor supply rail on a 2 oz outer layer with 20 K allowed above 25 °C amb
 | `t_oz` | 1.378 mil | reference: record: IPC-2221 legacy curve-fit constants; 1.378 mil = 35 µm per oz/ft², derived |
 | `w_act` | 2.5 mm | drawing: PCB-LAY-014 rev B |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `A_req` | 98.5107 mil^2 | 98.5107 mil^2 | PASS |
-| `w_min` | 0.9079 mm | 0.9079 mm | PASS |
-| `u_w` | 0.36316  | 0.36316  | PASS |
-| `trace_R` | 10.819 mohm | 10.819 mohm | PASS |
-| `vdrop` | 54.0948 mV | 54.0948 mV | PASS |
-| `trace_Ploss` | 270.474 mW | 270.474 mW | PASS |
+| `A_req` | 98.5107 mil^2 | 98.5107 mil^2 | yes |
+| `w_min` | 0.9079 mm | 0.9079 mm | yes |
+| `u_w` | 0.36316  | 0.36316  | yes |
+| `trace_R` | 10.819 mohm | 10.819 mohm | yes |
+| `vdrop` | 54.0948 mV | 54.0948 mV | yes |
+| `trace_Ploss` | 270.474 mW | 270.474 mW | yes |
 
 Governing check: Minimum trace width against the width as drawn — PASS (utilisation 0.36). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

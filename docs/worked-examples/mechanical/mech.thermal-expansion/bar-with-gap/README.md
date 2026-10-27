@@ -14,10 +14,10 @@ The bar wants to grow 1.44 mm; the first 0.5 mm closes the gap freely and the re
 | `g` | 0.5 mm | drawing: DRG-TX-501 rev A |
 | `sigma_allow` | 150 MPa | spec: SPEC-MECH-03 design criteria |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `F` | 47 kN | 47 kN | PASS |
-| `sigma` | -94 MPa | -94 MPa | PASS |
-| `delta` | 0.5 mm | 0.5 mm | PASS |
+| `F` | 47 kN | 47 kN | yes |
+| `sigma` | -94 MPa | -94 MPa | yes |
+| `delta` | 0.5 mm | 0.5 mm | yes |
 
 Governing check: Thermal stress against allowable — PASS (utilisation 0.63). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
