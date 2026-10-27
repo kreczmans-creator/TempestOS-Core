@@ -100,7 +100,7 @@ grow the list. A reviewer rejects a diff that raises a number by hand. The rules
    `elec.pcb-trace` `copper`, `struct.base-plate` `prying`, `struct.plate-bending` `ritz-converge` (each is a probe, in `UnconservativeRuleTests` with its inputs in `ProbeInputs`, that
    runs the template on inputs that make the rule fire and requires the named check to fail); or
 3. on `tests/Tempest.Calc.Tests.Calculators/Consistency/UnconservativeAllowList.json` (`{ template: { rule: reason } }`), each with the reason it is not yet one of those and what is left to do.
-   The list has 72 entries (`UnconservativeRuleTests.Ceiling`); remove an entry and lower the ceiling in the same commit; adding one fails the build. Each reason says why the rule is not
+   The list has 73 entries (`UnconservativeRuleTests.Ceiling`); remove an entry and lower the ceiling in the same commit; adding one fails the build. It was raised once, from 72 to 73, for `struct.ltb-interaction` `welded-pair` (DC-21: the owner chose a warning for a welded section on the rolled-section pair of 6.3.2.3, because the National Annex pair is a licensed value the sheet does not hold, reason C). Each reason says why the rule is not
    yet a block or a failing check, with a letter A, B or C (C2-39).
 
 ## 3. Versions in phases B and C, and the guided test mode

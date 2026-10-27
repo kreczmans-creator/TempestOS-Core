@@ -221,6 +221,7 @@
   "struct.ltb-interaction@1.2.0": "7699f87f0b1f302bcae6e29b24b91eef27ecf08976077be5105b5ffce231d459",
   "struct.ltb-interaction@1.3.0": "ec26e9f8fc3a9edc577c40759c99deffc01570541b468e9aa074a479b1eb14ce",
   "struct.ltb-interaction@1.3.1": "652ac40fe970d089ad379445518693ad7d556cf0279047c783828441cc121680",
+  "struct.ltb-interaction@1.3.2": "24861dbf6d477993b5c01a2fe1d2cee9cddee86ddc27e288421c720873ec1ad9",
   "struct.plate-bending@1.2.2": "82862b637af72f752357986b5011869b8d454f677561c4ff8661fec80945926e",
   "struct.plate-bending@1.3.0": "de24a86c46e1b8cf236dc4aeb96ade0e7bbf723d2b837834496a52a18973704d",
   "struct.plate-bending@1.4.0": "73b2e646dac2f67578bc78e543ffd36395d457a97a0d3f63a1fb3d823d01a123",

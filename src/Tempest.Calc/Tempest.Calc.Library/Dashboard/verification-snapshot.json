@@ -3,8 +3,8 @@
  "generatedBy": "scripts/generate-verification-snapshot.py",
  "sources": {
   "rederivation": "3738520fd54a185312ad9441b014f89a0e52620ca01f5d3390e706fb0ae90082",
-  "knownDefects": "08dffa3de78548c84e4f408f14fcf37a7d9d6566045fc529dba849d2dd106531",
-  "katResults": "11bcc701929ad33f306c7ef59913890798679198faf8a60be57909acefad7824",
+  "knownDefects": "d2be432d7e913d2b201a844d455b7fc8628ac8181c995c1db2237869ee22cadc",
+  "katResults": "148523e28c538e76bf1a307a316c066b33440e0fa1ef9184fca5bc846924c2ed",
   "workedExamples": "70ade87cf654c504d0e07b6b2138bdd0be939e0ac2596a54400c2b1cf585f2b0",
   "generator": "44f38f035fcf5937ab168f648e6a714578568d822ffce5c1d151e261c577171e"
  },
@@ -13,8 +13,8 @@
    "fixed": 4
   },
   "High": {
-   "fixed": 51,
-   "owner-decision": 4
+   "fixed": 52,
+   "owner-decision": 3
   },
   "Medium": {
    "fixed": 76,
@@ -2937,7 +2937,7 @@
   "struct.ltb-interaction": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.3.1",
+    "version": "1.3.2",
     "kats": 8,
     "katsPassed": 8,
     "failedKats": [],
@@ -2981,7 +2981,7 @@
      {
       "id": "struct.ltb-interaction-R1",
       "severity": "High",
-      "defect": "owner-decision"
+      "defect": "fixed"
      },
      {
       "id": "struct.ltb-interaction-R2",

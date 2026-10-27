@@ -1,4 +1,4 @@
-# Lateral-torsional buckling and N+M interaction (EN 1993-1-1) (`struct.ltb-interaction@1.3.1`)
+# Lateral-torsional buckling and N+M interaction (EN 1993-1-1) (`struct.ltb-interaction@1.3.2`)
 
 **In plain terms.** A long slender I-beam loaded in bending can twist and buckle sideways well before the steel yields, and a column can bow before it crushes; with both loads together the two effects add. The worksheet finds the moment at which the member would buckle elastically, reduces the plain strength by how close the member is to that moment, and checks the axial force and the bending moments together against the Eurocode 3 interaction rules.
 
@@ -182,6 +182,7 @@ Applicability rules:
 | `zg-c2` | Warning | Conservative | z_g has no effect while C₂ = 0. |
 | `double-curvature` | Warning | Conservative | End moments of opposite sign are taken as double curvature (ψ < 0, C₁ up to its cap): bending-moment-diagram ordinates, not stiffness-analysis end actions. |
 | `use-f` | Warning | Conservative | The f modification belongs to 6.3.2.3 and is not applied with 6.3.2.2. |
+| `welded-pair` | Warning | Unconservative | A welded section checked by 6.3.2.3 with λ̄_LT,0 and β at the rolled-section pair and no recorded basis: the National Annex may give another pair for welded sections. |
 | `annex-a` | Warning | Conservative | Annex A coefficients are to be checked against the standard. |
 | `slender` | Warning | Conservative | Non-dimensional slenderness above 2.0. |
 
@@ -199,9 +200,13 @@ The `edition` input offers 2005+A1:2014 and 2022. The 2022 choice changes the pr
 
 Table B.1 applies to a member that is not susceptible to torsional deformation. An open I-section with `chi_LT` below 1 is susceptible unless it is restrained against twist. For such a member without a recorded basis, the sheet uses Table B.2 and warns (rule `table-b1`).
 
+The defaults `lambda_LT0` = 0.4 and `beta_LT` = 0.75 are the recommended pair of cl. 6.3.2.3, the pair for rolled sections. A National Annex may give another pair for welded sections; the sheet holds no National Annex value (they are licensed and come from an `ec3.ltb-factors` record). A welded section (`section_type` = welded I) checked by 6.3.2.3 on that pair with no basis recorded on both inputs warns (rule `welded-pair`, naming `section_type`); the warning changes no value, and a basis recorded on `lambda_LT0` and `beta_LT` (a record, a specification, an assumption) clears it. The rule is declared unconservative and sits on the unconservative allow-list with reason C (the owner chose a warning, DC-03 and DC-21).
+
 Four SCI P364 worked examples (3, 4, 11 and 12, UK NA) and one STAAD.Pro verification (UKB 356×171×51 S275, 5.7 m, M_b,Rd about 103.5 kN·m) are not pinned. Their inputs and answers cannot be stated from memory, so the owner enters them and compares the results with their own copies. LTBeam or the SCI/BCSA M_cr tool is the external oracle for M_cr.
 
 ### Changes by version
+
+**1.3.2 (DC-03 S7, owner decision DC-21).** New warning `welded-pair` for a welded section checked by 6.3.2.3 with `lambda_LT0` and `beta_LT` at the rolled-section pair 0.4 and 0.75 and no basis recorded on both: the National Annex may give another pair for welded sections. The message names `section_type`. No calculated value changes; the welded known-answer cases keep their values and now carry the warning. C-1 finding `struct.ltb-interaction-R1`.
 
 **1.3.1.** Declares the unit change of 1.3.0 (ADR-0177 review): `I_w` was in dm⁶ before 1.3.0, so a bare stored number from an earlier version is read in dm⁶, never cm⁶. No calculated value changes.
 
