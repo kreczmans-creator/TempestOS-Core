@@ -4,6 +4,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Interactivity;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
+using Tempest.Calc.BuildingServices;
 using Tempest.Calc.Library;
 using Tempest.Calc.Sheets;
 using Tempest.Core.EngineeringDomain;
@@ -294,6 +295,43 @@ public sealed class WorksheetSupersededVersionTests
         unit = view.GetLogicalDescendants().OfType<ComboBox>().Single(c => AutomationProperties.GetName(c) == "p unit");
         Assert.Equal("kPa", unit.SelectedItem);
         Assert.Equal(50, view.ReadForm().Find("p")?.Number);
+    }
+
+    [AvaloniaFact]
+    public async Task A_Bare_Sealed_System_Margin_Stored_On_1_4_0_Opens_In_Bar_Not_In_The_New_Kilopascals()
+    {
+        // C-2 integration: bs.sealed-system 1.5.0 changed p_margin (and p_f, p_prv) from bar to kPa and declares it; a draft that stored a bare 0.3 on 1.4.0
+        // meant 0.3 bar, and the unit picker seeds from the record's own version, never from the new default (0.3 kPa would be a hundred times smaller).
+        await using var fx = await StartAsync("P-VSN-SEALED");
+        var sealed = new SealedSystemCalculator();
+        var service = BuildService(fx.Host, [sealed]);
+        var draft = await service.CreateAsync(SealedSystemCalculator.Id, fx.ProjectId, "Old sealed system", []);
+        var store = new CalcInstanceStore(Domain(fx).PersistenceStore);
+        await store.SaveInstanceAsync(draft with
+        {
+            TemplateReference = $"{SealedSystemCalculator.Id}@1.4.0",
+            Inputs = [CalcInputValue.Of("p_margin", 0.3, CalcProvenance.Assumed("Test value.")), CalcInputValue.Of("p_f", 2.5, CalcProvenance.Assumed("Test value."))],
+        });
+        var stored = (await store.FindInstanceAsync(draft.Id))!;
+        Assert.Equal("1.4.0", stored.TemplateVersion);
+
+        var (view, _) = Open(fx, [sealed]);
+        var current = service.Catalogue.Get(SealedSystemCalculator.Id);
+        Assert.Equal("kPa", current.Template.FindInput("p_margin")!.DefaultUnit);
+        view.ShowTemplate(current, stored, null);
+
+        var unit = view.GetLogicalDescendants().OfType<ComboBox>().Single(c => AutomationProperties.GetName(c) == "p_margin unit");
+        Assert.Equal("bar", unit.SelectedItem);
+        Assert.Equal(("bar", 0.3), (view.ReadForm().Find("p_margin")!.Unit, view.ReadForm().Find("p_margin")!.Number));
+        var final = view.GetLogicalDescendants().OfType<ComboBox>().Single(c => AutomationProperties.GetName(c) == "p_f unit");
+        Assert.Equal("bar", final.SelectedItem);
+        Assert.Equal(("bar", 2.5), (view.ReadForm().Find("p_f")!.Unit, view.ReadForm().Find("p_f")!.Number));
+
+        // A new sheet starts in kilopascals with the new default.
+        view.ShowTemplate(current, null, null);
+        unit = view.GetLogicalDescendants().OfType<ComboBox>().Single(c => AutomationProperties.GetName(c) == "p_margin unit");
+        Assert.Equal("kPa", unit.SelectedItem);
+        Assert.Equal(30, view.ReadForm().Find("p_margin")?.Number);
     }
 
     // ---------------------------------------------------------------

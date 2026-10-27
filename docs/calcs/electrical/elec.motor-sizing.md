@@ -1,4 +1,4 @@
-# Motor and actuator sizing (`elec.motor-sizing@1.11.0`)
+# Motor and actuator sizing (`elec.motor-sizing@1.11.1`)
 
 **In plain terms.** A motor must give enough torque to accelerate the load and overcome friction and gravity, at the speed the move needs. The worksheet turns the motion profile and the mechanics (screw, belt, rack or gearbox) into the torque at the motor shaft for each part of the cycle. The peak torque must stay within the motor's short-term rating, the root-mean-square torque within its continuous rating so it does not overheat, and the load's inertia should not be too large compared with the motor's for stable control.
 
@@ -127,7 +127,7 @@ A port is listed under its public name, `<area>.<quantity>`. The output symbol s
 | `motor.torque_peak` | `T_pk` | N*m | Peak torque |
 | `motor.torque_deceleration` | `T_dec` | N*m | Torque during deceleration (point-to-point) |
 | `motor.torque_rms` | `T_rms` | N*m | RMS torque (continuous duty: the load torque) |
-| `motor.torque_design` | `T_design` | N*m | Design torque at the motor shaft for a coupling or any part downstream that must carry what the drive can deliver, on the basis chosen in T_basis: the load peak max(\|T_pk\|, \|T_dec\|) (default; T_pk in continuous duty), the motor peak T_peak, SF_c·T_rated or the protective limit T_lim (→ bolt-group T_z) |
+| `motor.torque_design` | `T_design` | N*m | Design torque at the motor shaft for a coupling or any part downstream that must carry what the drive can deliver, on the basis chosen in T_basis: the load peak max(\|T_pk\|, \|T_dec\|) (default; T_pk in continuous duty), the motor peak T_peak, SF_c·T_rated or the protective limit T_lim (→ bolt-group M_z) |
 | `motor.torque_hold` | `T_hold` | N*m | Holding torque the motor must give during the dwell of a linear axis not held by a brake, m g sin θ·k (0 for a rotary mechanism, a horizontal axis or a held axis) |
 | `motor.torque_alternating` | `T_alt` | N*m | Alternating torque amplitude of the cycle about the load torque T_load: (T_pk − T_dec)/2 on a point-to-point cycle, 0 in continuous duty (→ shaft T_a, with T_load → shaft T as the mean). At the motor shaft |
 | `motor.force_axial_peak` | `F_ax_pk` | N | Peak axial thrust a lead / ball screw puts on its support bearings, F_load + m·a_pk (→ bearing-life F_a); 0 for every other mechanism (a belt or rack load reaches its bearings as a radial force) |
@@ -197,6 +197,8 @@ Ball-screw slide and geared index table, both analytic (Confirmed; P_rms 784.142
 - `ka-continuous-pump`: Continuous rotary duty: a pump at 700 rpm through a 4:1 gearbox, 2 s run-up (analytic) (Confirmed; source: Analytic (steady torque and speed, linear run-up))
 
 ## Changes
+
+**1.11.1.** The `T_design` port description names the bolt-group input it feeds by its current symbol `M_z` (the old `T_z` is an alias since C-2 phase B). Text only; no calculated value changes.
 
 **Changes in 1.11.0 (C-2 consistency, phase C).** Layout and wording; no result changes. The checks compare physical values: `T_pk_sf` (the peak torque with the safety factor `SF`) with `T_peak`, `T_rms_sf` with `T_rated`, `n_pk` with `n_max`, and `P_cont` with `P_rated`. `P_cont` and `P_rated` are in kW. The 29 ports are named `motor.*` and their descriptions name templates, not codes. The method is eight lines; the details are in the notes below. The inputs are grouped Setup, Geometry, Loads, Factors, Requirements, Motion and Motor. The messages, assumptions and references follow the sheet standard; the manufacturer guides are no longer a reference.
 

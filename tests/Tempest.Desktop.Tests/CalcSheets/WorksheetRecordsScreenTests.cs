@@ -54,7 +54,7 @@ public sealed class WorksheetRecordsScreenTests
             Assert.Equal("test.engineer", screen.GetLogicalDescendants().OfType<TextBox>().Single(t => AutomationProperties.GetName(t) == CalcRecordsView.EnteredByName).Text);
 
             // Provenance is required: without it the import is not offered.
-            await screen.Model.LoadFileBytesAsync("ampacity.csv", Csv(Ampacity, "1.5,,15", "2.5,,20", "4,,27"));
+            await screen.Model.LoadFileBytesAsync("ampacity.csv", Csv(Ampacity, "1.5,,15", "2.5,,20", "4,,27.5"));
             await Settle();
             Assert.All(screen.Model.FilePreview!.Errors, e => Assert.Contains("provenance needs", e.Message, StringComparison.Ordinal));
             Assert.False(screen.Model.CanImportFile);
@@ -90,7 +90,7 @@ public sealed class WorksheetRecordsScreenTests
             var listed = screen.GetLogicalDescendants().OfType<TextBlock>().Single(t => (AutomationProperties.GetName(t) ?? string.Empty).StartsWith("Record: Method C ampacity", StringComparison.Ordinal));
             Assert.Contains("LICENSED (never exported)", listed.Text, StringComparison.Ordinal);
             Assert.Contains("ampacity (3 rows)", listed.Text, StringComparison.Ordinal);
-            Assert.DoesNotContain("27", listed.Text, StringComparison.Ordinal);
+            Assert.DoesNotContain("27.5", listed.Text, StringComparison.Ordinal);
 
             // What the screen saved is what the worksheet reads again, with no step in between: only the ratings are missing now.
             Assert.Equal(["device.ratings"], sheet.MissingRequiredKinds);
