@@ -65,7 +65,14 @@ internal static class PdfTextExtractor
     /// landing with no space between them changes nothing any assertion
     /// here checks for.
     /// </summary>
-    public static string ExtractText(byte[] pdfBytes)
+    public static string ExtractText(byte[] pdfBytes) => string.Concat(ExtractPages(pdfBytes));
+
+    /// <summary>
+    /// The text of each page, in page order: SkiaSharp writes one content stream per page, in the order the pages were
+    /// drawn, so each text-bearing content stream is one page (the shots harness read pages with pdftotext; this is the
+    /// same check without a tool). <see cref="CountPages"/> says how many pages the file declares, to compare against.
+    /// </summary>
+    public static IReadOnlyList<string> ExtractPages(byte[] pdfBytes)
     {
         ArgumentNullException.ThrowIfNull(pdfBytes);
 
@@ -115,7 +122,7 @@ internal static class PdfTextExtractor
             return cmap;
         }
 
-        var builder = new StringBuilder();
+        var pages = new List<string>();
         var tokenPattern = new Regex(@"/(?<font>F\d+)\s+[\d.]+\s+Tf|<(?<hex>[0-9A-Fa-f]+)>\s*(?:Tj|TJ)?", RegexOptions.Compiled);
 
         foreach (var content in EnumerateFlateDecodedStreams(pdfBytes))
@@ -123,6 +130,8 @@ internal static class PdfTextExtractor
             if (!content.Contains("BT", StringComparison.Ordinal) || (!content.Contains(" Tj", StringComparison.Ordinal) && !content.Contains(" TJ", StringComparison.Ordinal)))
                 continue;
 
+            var builder = new StringBuilder();
+            pages.Add(string.Empty);
             var activeCMap = new Dictionary<int, char>();
             var digits = 4;
 
@@ -145,9 +154,18 @@ internal static class PdfTextExtractor
                     builder.Append(activeCMap.TryGetValue(code, out var ch) ? ch : ' ');
                 }
             }
+
+            pages[^1] = builder.ToString();
         }
 
-        return builder.ToString();
+        return pages;
+    }
+
+    /// <summary>The number of pages <paramref name="pdfBytes"/> declares (<c>/Type /Page</c> objects).</summary>
+    public static int CountPages(byte[] pdfBytes)
+    {
+        ArgumentNullException.ThrowIfNull(pdfBytes);
+        return Regex.Matches(Encoding.Latin1.GetString(pdfBytes), @"/Type\s*/Page(?![s\w])").Count;
     }
 
     /// <summary>Flate-decodes <c>&lt;objectNumber&gt; 0 obj ... stream ... endstream</c>'s own stream bytes, or <see langword="null"/> if that object was not found or is not itself a stream.</summary>

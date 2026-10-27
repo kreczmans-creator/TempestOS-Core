@@ -347,10 +347,11 @@ public static class DocumentTemplate
     }
 
     /// <summary>A section heading — bold, <see cref="HeadingSize"/>, <see cref="Ink900"/> (headings on paper), <see cref="DocumentFontRole.Display"/> (`WP 21.2A`; Chakra Petch, the design system's own display face for headings).</summary>
-    public static void AddHeading(LayoutState state, SKPaint measure, string text)
+    /// <param name="keepWithNext">The height of what must follow on the same page; by default two body lines. A heading over a table passes <see cref="TableLeadHeight"/>, so it is never left above an empty header row.</param>
+    public static void AddHeading(LayoutState state, SKPaint measure, string text, float? keepWithNext = null)
     {
-        // Kept with the first two lines beneath it, so a heading never stands alone at the foot of a page (the showcase journey found one).
-        EnsureSpace(state, HeadingSize * LineLeading + 2f + BodySize * LineLeading * 2);
+        // Kept with what follows it, so a heading never stands alone at the foot of a page (the showcase journey found one).
+        EnsureSpace(state, HeadingSize * LineLeading + 2f + (keepWithNext ?? BodySize * LineLeading * 2));
         AddWrappedLine(state, measure, text, HeadingSize, bold: true, color: Ink900, fontRole: DocumentFontRole.Display);
         state.Y += 2f;
     }
@@ -358,13 +359,22 @@ public static class DocumentTemplate
     /// <summary>A word-wrapped line of running text, <paramref name="color"/> defaulting to <see cref="Slate700"/> (body text on paper) and <paramref name="fontRole"/> (`WP 21.2A`) defaulting to <see cref="DocumentFontRole.Body"/> (Inter).</summary>
     public static void AddWrappedLine(
         LayoutState state, SKPaint measure, string text, float size, bool bold, SKTextAlign align = SKTextAlign.Left, SKColor? color = null,
-        DocumentFontRole fontRole = DocumentFontRole.Body, bool symbols = false)
+        DocumentFontRole fontRole = DocumentFontRole.Body, bool symbols = false, bool keepTogether = false, float? width = null)
     {
         measure.TextSize = size;
         var lineHeight = size * LineLeading;
         var runColor = color ?? Slate700;
+        // Measured in the face the line is drawn in: a mono line measured in the body face ran past the right margin.
+        var typeface = measure.Typeface;
+        measure.Typeface = DocumentFonts.For(fontRole, bold);
+        var lines = WrapText(text, width ?? state.ContentWidth, measure, breakLongWords: true);
+        measure.Typeface = typeface;
 
-        foreach (var line in WrapText(text, state.ContentWidth, measure))
+        // A short block (a Basis line) is not split across a page break: the shots review found its last clause alone on the next page.
+        if (keepTogether && lines.Count * lineHeight <= state.ContentBottom - Margin)
+            EnsureSpace(state, lines.Count * lineHeight);
+
+        foreach (var line in lines)
         {
             EnsureSpace(state, lineHeight);
             var x = align switch
@@ -403,12 +413,11 @@ public static class DocumentTemplate
         for (var i = 1; i < headers.Length; i++)
             colX[i] = colX[i - 1] + widths[i - 1];
 
+        var lineHeight = BodySize * LineLeading;
+
         void DrawHeaderRow()
         {
-            measure.TextSize = CaptionSize;
-            var lineHeight = CaptionSize * LineLeading;
-            var rowHeight = lineHeight + CellPaddingY * 2;
-            EnsureSpace(state, rowHeight);
+            EnsureSpace(state, HeaderRowHeight);
 
             // The design system's own table header row also carries a
             // paper-100 fill; this renderer draws lines and text only (no
@@ -423,53 +432,119 @@ public static class DocumentTemplate
                 state.Page.Texts.Add(new TextRun(x, baseline, headers[i].ToUpperInvariant(), CaptionSize, true, aligns[i], Indigo600, DocumentFontRole.Display));
             }
 
-            state.Y += rowHeight;
+            state.Y += HeaderRowHeight - 2f;
             state.Page.Rules.Add(new RuleRun(ContentLeft, state.ContentRight, state.Y, 0.75f, HairlineStrong));
             state.Y += 2f;
         }
 
+        // The header row never stands alone at the foot of a page: it starts where its first row fits too (or, for a row
+        // taller than a page, that row's first lines).
+        EnsureSpace(state, TableLeadHeight(measure, widths, rows, aligns, state));
         DrawHeaderRow();
 
         foreach (var row in rows)
         {
-            measure.TextSize = BodySize;
-            var lineHeight = BodySize * LineLeading;
+            var wrapped = WrapRow(measure, row, widths, aligns);
+            var maxLines = Math.Max(1, wrapped.Max(c => c.Count));
 
-            var wrapped = new List<string>[headers.Length];
-            var maxLines = 1;
-            for (var i = 0; i < headers.Length; i++)
-            {
-                wrapped[i] = WrapText(row[i], widths[i] - CellPaddingX * 2, measure);
-                maxLines = Math.Max(maxLines, wrapped[i].Count);
-            }
-
-            var rowHeight = maxLines * lineHeight + CellPaddingY * 2;
-
-            if (EnsureSpace(state, rowHeight))
+            // A row that fits a page is kept whole, on the next page if need be. A row taller than a page (a long method
+            // relation) runs on across pages, so no line of it is lost below the footer.
+            if (maxLines * lineHeight <= RowCapacity(state) && EnsureSpace(state, maxLines * lineHeight + CellPaddingY * 2))
                 DrawHeaderRow();
 
-            var rowTop = state.Y + CellPaddingY;
-            for (var i = 0; i < headers.Length; i++)
-            {
-                // `WP 21.2A`: a right- or centre-aligned column is this
-                // table's own numeric/machine-data convention (this
-                // method's own remarks; `AddTable`'s pre-existing
-                // `columnAligns` parameter already exists so a caller can
-                // right-align "a genuinely numeric column") — drawn in
-                // Space Mono; a left-aligned column is running text, in
-                // Inter.
-                var cellFontRole = aligns[i] == SKTextAlign.Left ? DocumentFontRole.Body : DocumentFontRole.Mono;
-                var x = CellX(colX[i], widths[i], aligns[i]);
-                for (var lineIndex = 0; lineIndex < wrapped[i].Count; lineIndex++)
-                {
-                    var baseline = rowTop + BodySize + lineIndex * lineHeight;
-                    state.Page.Texts.Add(new TextRun(x, baseline, wrapped[i][lineIndex], BodySize, false, aligns[i], Slate700, cellFontRole, symbolColumns is { } sc && i < sc.Length && sc[i]));
-                }
-            }
+            var first = 0;
 
-            state.Y += rowHeight;
-            state.Page.Rules.Add(new RuleRun(ContentLeft, state.ContentRight, state.Y, 0.4f, Hairline));
+            while (first < maxLines)
+            {
+                var fits = (int)Math.Floor((state.ContentBottom - state.Y - CellPaddingY * 2) / lineHeight);
+                var pageIsFresh = state.Y <= Margin + HeaderRowHeight + 0.5f;
+
+                if (pageIsFresh)
+                    fits = Math.Max(fits, 1);
+                else if (fits < Math.Min(KeptRowLines, maxLines - first))
+                {
+                    NewPage(state);
+                    DrawHeaderRow();
+                    continue;
+                }
+
+                var take = Math.Min(fits, maxLines - first);
+                var rowTop = state.Y + CellPaddingY;
+
+                for (var i = 0; i < headers.Length; i++)
+                {
+                    // `WP 21.2A`: a right- or centre-aligned column is this
+                    // table's own numeric/machine-data convention (this
+                    // method's own remarks; `AddTable`'s pre-existing
+                    // `columnAligns` parameter already exists so a caller can
+                    // right-align "a genuinely numeric column") — drawn in
+                    // Space Mono; a left-aligned column is running text, in
+                    // Inter.
+                    var cellFontRole = CellFontRole(aligns[i]);
+                    var x = CellX(colX[i], widths[i], aligns[i]);
+                    for (var lineIndex = first; lineIndex < Math.Min(first + take, wrapped[i].Count); lineIndex++)
+                    {
+                        var baseline = rowTop + BodySize + (lineIndex - first) * lineHeight;
+                        state.Page.Texts.Add(new TextRun(x, baseline, wrapped[i][lineIndex], BodySize, false, aligns[i], Slate700, cellFontRole, symbolColumns is { } sc && i < sc.Length && sc[i]));
+                    }
+                }
+
+                state.Y += take * lineHeight + CellPaddingY * 2;
+                first += take;
+                state.Page.Rules.Add(new RuleRun(ContentLeft, state.ContentRight, state.Y, 0.4f, Hairline));
+            }
         }
+    }
+
+    /// <summary>A table's header row, from its top to the top of its first body row.</summary>
+    public const float HeaderRowHeight = CaptionSize * LineLeading + CellPaddingY * 2 + 2f;
+
+    /// <summary>The lines of a row kept together at a page break, and kept with the header row above them: a row never starts with fewer at the foot of a page.</summary>
+    private const int KeptRowLines = 2;
+
+    /// <summary>
+    /// The height a table's start needs on one page: its header row and its first row, or the first lines of a first row
+    /// taller than a page (<see cref="KeptRowLines"/>). A caller adds it to a heading's own height, so a heading is never
+    /// left above an empty header row at the foot of a page (the shots review found one). <paramref name="state"/> gives
+    /// the page geometry; portrait when it is <see langword="null"/>.
+    /// </summary>
+    public static float TableLeadHeight(SKPaint measure, float[] widths, IReadOnlyList<string[]> rows, SKTextAlign[]? columnAligns = null, LayoutState? state = null)
+    {
+        var aligns = columnAligns ?? new SKTextAlign[widths.Length];
+        var lines = Math.Max(1, rows.Count > 0 ? WrapRow(measure, rows[0], widths, aligns).Max(c => c.Count) : 1);
+        var lineHeight = BodySize * LineLeading;
+        var kept = lines * lineHeight <= RowCapacity(state) ? lines : KeptRowLines;
+        return HeaderRowHeight + kept * lineHeight + CellPaddingY * 2;
+    }
+
+    /// <summary>The tallest row body a page holds under its table header row: a row up to this height is kept whole; a taller one runs on across pages.</summary>
+    private static float RowCapacity(LayoutState? state) => (state?.ContentBottom ?? ContentBottom) - Margin - HeaderRowHeight - CellPaddingY * 2;
+
+    /// <summary>A body cell's face: a right- or centre-aligned column is machine data, in mono; a left-aligned one is running text.</summary>
+    private static DocumentFontRole CellFontRole(SKTextAlign align) => align == SKTextAlign.Left ? DocumentFontRole.Body : DocumentFontRole.Mono;
+
+    /// <summary>Each cell of <paramref name="row"/> wrapped to its column, measured in the face the cell is drawn in.</summary>
+    private static List<string>[] WrapRow(SKPaint measure, string[] row, float[] widths, SKTextAlign[] aligns)
+    {
+        var typeface = measure.Typeface;
+        var wrapped = new List<string>[widths.Length];
+
+        try
+        {
+            measure.TextSize = BodySize;
+
+            for (var i = 0; i < widths.Length; i++)
+            {
+                measure.Typeface = DocumentFonts.For(CellFontRole(aligns[i]), false);
+                wrapped[i] = WrapText(i < row.Length ? row[i] : string.Empty, widths[i] - CellPaddingX * 2, measure, breakLongWords: true);
+            }
+        }
+        finally
+        {
+            measure.Typeface = typeface;
+        }
+
+        return wrapped;
     }
 
     /// <summary>A cell's own draw-x for <paramref name="align"/> — left-padded from the column's own left edge, right-padded from its own right edge, centred otherwise.</summary>
@@ -480,8 +555,12 @@ public static class DocumentTemplate
         _ => columnLeft + CellPaddingX,
     };
 
-    /// <summary>Word-wraps <paramref name="text"/> to <paramref name="maxWidth"/> using <paramref name="measure"/>'s own current <see cref="SKPaint.TextSize"/>. A single word wider than <paramref name="maxWidth"/> is left to overflow its line rather than broken mid-word.</summary>
-    public static List<string> WrapText(string text, float maxWidth, SKPaint measure)
+    /// <summary>
+    /// Word-wraps <paramref name="text"/> to <paramref name="maxWidth"/> using <paramref name="measure"/>'s own current <see cref="SKPaint.TextSize"/>.
+    /// A single word wider than <paramref name="maxWidth"/> is left to overflow its line, unless <paramref name="breakLongWords"/> is set: then it is
+    /// broken between characters, so it never runs into the next column (a table cell; the shots review found a symbol printed over its description).
+    /// </summary>
+    public static List<string> WrapText(string text, float maxWidth, SKPaint measure, bool breakLongWords = false)
     {
         if (string.IsNullOrEmpty(text))
             return [string.Empty];
@@ -489,6 +568,9 @@ public static class DocumentTemplate
         var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (words.Length == 0)
             return [string.Empty];
+
+        if (breakLongWords && maxWidth > 0)
+            words = [.. words.SelectMany(word => BreakWord(word, maxWidth, measure))];
 
         List<string> lines = [];
         var current = new System.Text.StringBuilder();
@@ -513,6 +595,39 @@ public static class DocumentTemplate
             lines.Add(current.ToString());
 
         return lines;
+    }
+
+    /// <summary>A word wider than <paramref name="maxWidth"/>, cut into pieces that each fit (at least one character a piece); a word that fits comes back whole.</summary>
+    private static IEnumerable<string> BreakWord(string word, float maxWidth, SKPaint measure)
+    {
+        if (measure.MeasureText(word) <= maxWidth)
+        {
+            yield return word;
+            yield break;
+        }
+
+        // Character widths are summed rather than each candidate measured whole, so a long word costs one measure per character.
+        var piece = new StringBuilder();
+        var width = 0f;
+
+        foreach (var rune in word.EnumerateRunes())
+        {
+            var glyph = rune.ToString();
+            var glyphWidth = measure.MeasureText(glyph);
+
+            if (piece.Length > 0 && width + glyphWidth > maxWidth)
+            {
+                yield return piece.ToString();
+                piece.Clear();
+                width = 0f;
+            }
+
+            piece.Append(glyph);
+            width += glyphWidth;
+        }
+
+        if (piece.Length > 0)
+            yield return piece.ToString();
     }
 
     // ------------------------------------------------------------
@@ -548,6 +663,7 @@ public static class DocumentTemplate
     {
         var top = state.Y;
         float leftBlockBottom;
+        float leftBlockRight;
 
         if (DocumentLogo.HorizontalInk is { } logo && logo.Height > 0)
         {
@@ -555,6 +671,7 @@ public static class DocumentTemplate
             var logoWidth = logoHeight * logo.Width / logo.Height;
             state.Page.Images.Add(new ImageRun(ContentLeft, top, logoWidth, logoHeight));
             leftBlockBottom = top + logoHeight;
+            leftBlockRight = ContentLeft + logoWidth;
         }
         else
         {
@@ -564,16 +681,154 @@ public static class DocumentTemplate
             state.Page.Texts.Add(new TextRun(ContentLeft, wordmarkBaseline, "TEMPEST ", WordmarkSize, true, SKTextAlign.Left, Ink900, DocumentFontRole.Display));
             state.Page.Texts.Add(new TextRun(ContentLeft + tempestWidth, wordmarkBaseline, "OS", WordmarkSize, true, SKTextAlign.Left, Cyan500, DocumentFontRole.Display));
             leftBlockBottom = wordmarkBaseline;
+            leftBlockRight = ContentLeft + tempestWidth + measure.MeasureText("OS");
         }
 
         var eyebrowBaseline = top + HeaderEyebrowSize;
         state.Page.Texts.Add(new TextRun(state.ContentRight, eyebrowBaseline, documentType, HeaderEyebrowSize, true, SKTextAlign.Right, Indigo600, DocumentFontRole.Display));
 
-        var referenceBaseline = eyebrowBaseline + HeaderEyebrowSize * 0.4f + HeaderReferenceSize;
-        state.Page.Texts.Add(new TextRun(state.ContentRight, referenceBaseline, referenceLine, HeaderReferenceSize, false, SKTextAlign.Right, Slate700, DocumentFontRole.Mono));
+        // The reference line sits right of the logo, never over it (the shots review found a long calculation name over the
+        // logo and its tagline, and off the left edge of the page): it wraps to two lines, then shrinks, then is cut short.
+        var (lines, size) = FitReferenceLine(referenceLine, state.ContentRight - leftBlockRight - HeaderLogoGap);
+        var referenceBaseline = eyebrowBaseline + HeaderEyebrowSize * 0.4f + size;
+
+        for (var n = 0; n < lines.Count; n++)
+        {
+            if (n > 0)
+                referenceBaseline += size * 1.25f;
+
+            state.Page.Texts.Add(new TextRun(state.ContentRight, referenceBaseline, lines[n], size, false, SKTextAlign.Right, Slate700, DocumentFontRole.Mono));
+        }
 
         state.Y = Math.Max(leftBlockBottom, referenceBaseline) + 6f;
         AddRule(state, Indigo600, strokeWidth: 1.6f);
+    }
+
+    /// <summary>The clear space between the logo and the header band's reference line.</summary>
+    public const float HeaderLogoGap = 12f;
+
+    /// <summary>The smallest size the header band's reference line shrinks to before it is cut short.</summary>
+    public const float HeaderReferenceMinSize = 6f;
+
+    /// <summary>
+    /// The header band's reference line fitted to <paramref name="width"/>, in the mono face it is drawn in: whole on one
+    /// line at <see cref="HeaderReferenceSize"/>; else wrapped to two lines; else two lines at a smaller size, down to
+    /// <see cref="HeaderReferenceMinSize"/>; else two lines with the second cut short with an ellipsis.
+    /// </summary>
+    public static (IReadOnlyList<string> Lines, float Size) FitReferenceLine(string text, float width)
+    {
+        using var paint = new SKPaint { Typeface = DocumentFonts.For(DocumentFontRole.Mono, false) };
+        float Width(string s, float size)
+        {
+            paint.TextSize = size;
+            return MeasureInFaces(paint, s, DocumentFontRole.Mono);
+        }
+
+        if (Width(text, HeaderReferenceSize) <= width)
+            return ([text], HeaderReferenceSize);
+
+        for (var size = HeaderReferenceSize; size >= HeaderReferenceMinSize - 0.01f; size -= 0.5f)
+        {
+            if (TwoLines(text, size) is { } lines)
+                return (lines, size);
+        }
+
+        // Last resort: the first line as wrapped at the smallest size, the rest cut to fit with an ellipsis.
+        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var first = string.Empty;
+        var used = 0;
+
+        while (used < words.Length && Width(first.Length == 0 ? words[used] : $"{first} {words[used]}", HeaderReferenceMinSize) <= width)
+        {
+            first = first.Length == 0 ? words[used] : $"{first} {words[used]}";
+            used++;
+        }
+
+        if (used == 0)
+            return ([Ellipsise(text, HeaderReferenceMinSize)], HeaderReferenceMinSize);
+
+        return ([first, Ellipsise(string.Join(' ', words[used..]), HeaderReferenceMinSize)], HeaderReferenceMinSize);
+
+        // Two lines that each fit at size, broken at the word that balances them best, or null.
+        string[]? TwoLines(string s, float size)
+        {
+            var parts = s.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            string[]? best = null;
+            var bestLongest = float.MaxValue;
+
+            for (var cut = 1; cut < parts.Length; cut++)
+            {
+                var a = string.Join(' ', parts[..cut]);
+                var b = string.Join(' ', parts[cut..]);
+                var longest = Math.Max(Width(a, size), Width(b, size));
+
+                if (longest <= width && longest < bestLongest)
+                {
+                    best = [a, b];
+                    bestLongest = longest;
+                }
+            }
+
+            return best;
+        }
+
+        string Ellipsise(string s, float size)
+        {
+            if (Width(s, size) <= width)
+                return s;
+
+            var runes = s.EnumerateRunes().Select(r => r.ToString()).ToList();
+            var keep = runes.Count;
+
+            while (keep > 0 && Width(string.Concat(runes.Take(keep)).TrimEnd() + "…", size) > width)
+                keep--;
+
+            return string.Concat(runes.Take(keep)).TrimEnd() + "…";
+        }
+    }
+
+    /// <summary>The width of <paramref name="text"/> as drawn: each character in the face of <paramref name="role"/>'s chain that has it (<see cref="FallBackForMissingGlyphs"/>), at <paramref name="paint"/>'s size.</summary>
+    internal static float MeasureInFaces(SKPaint paint, string text, DocumentFontRole role)
+    {
+        var typeface = paint.Typeface;
+        var total = 0f;
+
+        try
+        {
+            var span = new StringBuilder();
+            DocumentFontRole? current = null;
+
+            void Flush()
+            {
+                if (span.Length == 0)
+                    return;
+
+                paint.Typeface = DocumentFonts.For(current ?? role, false);
+                total += paint.MeasureText(span.ToString());
+                span.Clear();
+            }
+
+            foreach (var rune in text.EnumerateRunes())
+            {
+                var face = DocumentFonts.FaceFor(rune, role, false) ?? role;
+
+                if (face != current)
+                {
+                    Flush();
+                    current = face;
+                }
+
+                span.Append(rune.ToString());
+            }
+
+            Flush();
+        }
+        finally
+        {
+            paint.Typeface = typeface;
+        }
+
+        return total;
     }
 
     /// <summary>
@@ -688,9 +943,12 @@ public static class DocumentTemplate
     }
 
     /// <summary>
-    /// A brand face (Space Mono, Chakra Petch) lacks some symbols a calculation prints — Σ in "R_tot = Σ R_i" drew as a
-    /// box (the showcase journey found it). A left-aligned run is split so each such character is drawn in the body
-    /// face, which has it, in place; any other run that has one is drawn wholly in the body face.
+    /// A face lacks some symbols a calculation prints: Space Mono has no Σ ("R_tot = Σ R_i" drew a box, the showcase
+    /// journey found it), and the body face has no ⊥, ∥ or ∮ (the fillet weld's subscripts, a section's contour
+    /// integral; the shots review found them). Each character is drawn in the first face of its run's chain that has it
+    /// (<see cref="DocumentFonts.FallbackChain"/>: own face, body face, Tempest Symbols). A left-aligned run is split
+    /// in place. A centred or right-aligned run the body face covers is drawn wholly in it; any other is split and keeps
+    /// its alignment as a whole.
     /// </summary>
     internal static void FallBackForMissingGlyphs(List<TextRun> texts)
     {
@@ -699,47 +957,72 @@ public static class DocumentTemplate
         for (var i = 0; i < texts.Count; i++)
         {
             var run = texts[i];
-
-            if (run.FontRole == DocumentFontRole.Body)
-                continue;
-
             var face = DocumentFonts.For(run.FontRole, run.Bold);
-            var body = DocumentFonts.For(DocumentFontRole.Body, run.Bold);
 
-            if (ReferenceEquals(face, body) || face.ContainsGlyphs(run.Text))
+            if (run.Text.Length == 0 || face.ContainsGlyphs(run.Text))
                 continue;
 
-            if (run.Align != SKTextAlign.Left)
+            // Each character's face, in runs of the same face.
+            var spans = new List<(string Text, DocumentFontRole Role)>();
+
+            foreach (var rune in run.Text.EnumerateRunes())
+            {
+                var role = DocumentFonts.FaceFor(rune, run.FontRole, run.Bold) ?? run.FontRole;
+
+                if (spans.Count > 0 && spans[^1].Role == role)
+                    spans[^1] = (spans[^1].Text + rune.ToString(), role);
+                else
+                    spans.Add((rune.ToString(), role));
+            }
+
+            if (spans.Count == 1 && spans[0].Role == run.FontRole)
+                continue;
+
+            if (run.Align != SKTextAlign.Left && spans.All(s => s.Role is DocumentFontRole.Body || s.Role == run.FontRole) && run.FontRole != DocumentFontRole.Body)
             {
                 texts[i] = run with { FontRole = DocumentFontRole.Body };
                 continue;
             }
 
-            var pieces = new List<TextRun>();
-            var x = run.X;
-            var start = 0;
-
-            while (start < run.Text.Length)
+            var widths = spans.Select(s =>
             {
-                var own = face.ContainsGlyphs(Rune.GetRuneAt(run.Text, start).ToString());
-                var end = start;
-
-                while (end < run.Text.Length && face.ContainsGlyphs(Rune.GetRuneAt(run.Text, end).ToString()) == own)
-                    end += Rune.GetRuneAt(run.Text, end).Utf16SequenceLength;
-
-                var piece = run.Text[start..end];
-                var role = own ? run.FontRole : DocumentFontRole.Body;
-                pieces.Add(run with { X = x, Text = piece, FontRole = role });
-                paint.Typeface = own ? face : body;
+                paint.Typeface = DocumentFonts.For(s.Role, run.Bold);
                 paint.TextSize = run.Size;
-                paint.FakeBoldText = run.Bold && role == DocumentFontRole.Body;
-                x += paint.MeasureText(piece);
-                start = end;
+                paint.FakeBoldText = run.Bold && SynthesisesBold(s.Role);
+                return paint.MeasureText(s.Text);
+            }).ToList();
+
+            var x = run.Align switch
+            {
+                SKTextAlign.Right => run.X - widths.Sum(),
+                SKTextAlign.Center => run.X - widths.Sum() / 2,
+                _ => run.X,
+            };
+
+            var pieces = new List<TextRun>(spans.Count);
+
+            for (var n = 0; n < spans.Count; n++)
+            {
+                pieces.Add(run with { X = x, Text = spans[n].Text, FontRole = spans[n].Role, Align = SKTextAlign.Left });
+                x += widths[n];
             }
 
             texts.RemoveAt(i);
             texts.InsertRange(i, pieces);
             i += pieces.Count - 1;
+        }
+    }
+
+    /// <summary>Whether a bold run in <paramref name="role"/> is set in synthetic bold: the body face and the fallback face have one weight embedded; Display and Mono have a real bold file.</summary>
+    internal static bool SynthesisesBold(DocumentFontRole role) => role is DocumentFontRole.Body or DocumentFontRole.Symbol;
+
+    /// <summary>The last step before drawing: every run's symbols typeset (<see cref="TypesetSymbols"/>) and each character given a face that has it (<see cref="FallBackForMissingGlyphs"/>). It runs once per plan; a run already prepared is left as it is.</summary>
+    internal static void PrepareText(List<PagePlan> pages)
+    {
+        foreach (var page in pages)
+        {
+            TypesetSymbols(page.Texts);
+            FallBackForMissingGlyphs(page.Texts);
         }
     }
 
@@ -759,11 +1042,7 @@ public static class DocumentTemplate
             using var imagePaint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.High };
             var logo = DocumentLogo.HorizontalInk;
 
-            foreach (var page in pages)
-            {
-                TypesetSymbols(page.Texts);
-                FallBackForMissingGlyphs(page.Texts);
-            }
+            PrepareText(pages);
 
             // `v0.26.0` (§3.6): each brand face is embedded as a subset of
             // the glyphs this document draws, not whole (`TrueTypeSubsetter`).
@@ -808,7 +1087,7 @@ public static class DocumentTemplate
                     // weight embedded, so a bold Body run still synthesises
                     // bold exactly as every renderer did before this Work
                     // Package.
-                    textPaint.FakeBoldText = text.Bold && text.FontRole == DocumentFontRole.Body;
+                    textPaint.FakeBoldText = text.Bold && SynthesisesBold(text.FontRole);
                     textPaint.TextAlign = text.Align;
                     textPaint.Color = text.Color;
                     textPaint.Typeface = subsets.TryGetValue((text.FontRole, text.Bold), out var subset) ? subset : DocumentFonts.For(text.FontRole, text.Bold);

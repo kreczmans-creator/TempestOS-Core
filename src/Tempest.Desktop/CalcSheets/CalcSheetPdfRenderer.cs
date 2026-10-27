@@ -99,23 +99,21 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
 
         if (sheet.PackIndex is { Count: > 0 } index)
         {
-            DocumentTemplate.AddHeading(state, measure, "Pack index");
-            DocumentTemplate.AddTable(
-                state, measure, ["#", "Calc", "Title", "Rev", "Status", "Governing"],
-                [W(0.05f), W(0.18f), W(0.35f), W(0.07f), W(0.12f), W(0.23f)],
-                [.. index.Select(r => new[] { r.Number.ToString(CultureInfo.InvariantCulture), CalcSheetTextRenderer.Clean(r.CalcId), CalcSheetTextRenderer.Clean(r.Title), CalcSheetTextRenderer.Clean(r.Revision), CalcSheetTextRenderer.Clean(r.Status), CalcSheetTextRenderer.Clean(r.Governing ?? "—") })],
-                [SKTextAlign.Right, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left]);
+            float[] widths = [W(0.05f), W(0.18f), W(0.35f), W(0.07f), W(0.12f), W(0.23f)];
+            SKTextAlign[] aligns = [SKTextAlign.Right, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left];
+            List<string[]> rows = [.. index.Select(r => new[] { r.Number.ToString(CultureInfo.InvariantCulture), CalcSheetTextRenderer.Clean(r.CalcId), CalcSheetTextRenderer.Clean(r.Title), CalcSheetTextRenderer.Clean(r.Revision), CalcSheetTextRenderer.Clean(r.Status), CalcSheetTextRenderer.Clean(r.Governing ?? "—") })];
+            DocumentTemplate.AddHeading(state, measure, "Pack index", DocumentTemplate.TableLeadHeight(measure, widths, rows, aligns));
+            DocumentTemplate.AddTable(state, measure, ["#", "Calc", "Title", "Rev", "Status", "Governing"], widths, rows, aligns);
             DocumentTemplate.AddGap(state, 6f);
         }
 
         if (sheet.Revisions is { Count: > 0 } revisions)
         {
-            DocumentTemplate.AddHeading(state, measure, "Revisions");
-            DocumentTemplate.AddTable(
-                state, measure, ["Rev", "Date", "By", "Description"],
-                [W(0.08f), W(0.16f), W(0.22f), W(0.54f)],
-                [.. revisions.Select(r => new[] { T(r.Revision, 40), Date(r.Date), T(r.Author), T(r.Description) })],
-                [SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left]);
+            float[] widths = [W(0.08f), W(0.16f), W(0.22f), W(0.54f)];
+            SKTextAlign[] aligns = [SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left];
+            List<string[]> rows = [.. revisions.Select(r => new[] { T(r.Revision, 40), Date(r.Date), T(r.Author), T(r.Description) })];
+            DocumentTemplate.AddHeading(state, measure, "Revisions", DocumentTemplate.TableLeadHeight(measure, widths, rows, aligns));
+            DocumentTemplate.AddTable(state, measure, ["Rev", "Date", "By", "Description"], widths, rows, aligns);
             DocumentTemplate.AddGap(state, 6f);
         }
 
@@ -123,6 +121,11 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
 
         if (sheet.Scope.Length > 0)
             Line(state, measure, sheet.Scope);
+
+        // Figure 1 sits under the scope, before the method steps, so it is on page 1 whatever the length of the method
+        // (D-45 puts it under Scope and method; the shots review found it on page 2 for 35 of 54 templates).
+        DocumentTemplate.AddGap(state, 4f);
+        AddDiagram(state, measure, sheet);
 
         if (MethodRows(sheet.Method) is { Count: > 0 } method)
         {
@@ -138,34 +141,40 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
         }
 
         if (sheet.ClauseRefs.Count > 0)
-            Line(state, measure, $"Basis: {string.Join("; ", sheet.ClauseRefs.Select(c => T(c.Title, 200) + CalcBibliography.Format(references.Cite(c))))}.", DocumentTemplate.CaptionSize);
+            Line(state, measure, $"Basis: {string.Join("; ", sheet.ClauseRefs.Select(c => T(c.Title, 200) + CalcBibliography.Format(references.Cite(c))))}.", DocumentTemplate.CaptionSize, keepTogether: true);
 
         DocumentTemplate.AddGap(state, 6f);
-        AddDiagram(state, measure, sheet);
-
-        DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Inputs);
 
         if (sheet.Inputs.Count == 0)
         {
+            DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Inputs);
             Line(state, measure, CalcSheetStandard.Empty);
             DocumentTemplate.AddGap(state, 6f);
         }
         else
         {
-            DocumentTemplate.AddTable(
-                state, measure, ["Symbol", "Description", "Value", "Unit", "Source", "Valid range"],
-                [W(0.12f), W(0.30f), W(0.12f), W(0.08f), W(0.22f), W(0.16f)],
-                [.. sheet.Inputs.Where(i => !IsElementRow(i)).Select(i => new[] { T(i.Symbol), T(i.Description), T(i.Value), T(CalcDiagramReader.Pretty(i.Unit)), T(i.Source), T(CalcDiagramReader.Pretty(i.ValidRange)) })],
-                [SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left], [true, true, false, false, false, false]);
+            string[] inputHeaders = ["Symbol", "Description", "Value", "Unit", "Source", "Valid range"];
+            SKTextAlign[] inputAligns = [SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left];
+            List<string[]> inputRows = [.. sheet.Inputs.Where(i => !IsElementRow(i)).Select(i => new[] { T(i.Symbol), T(i.Description), T(i.Value), T(CalcDiagramReader.Pretty(i.Unit)), T(i.Source), T(CalcDiagramReader.Pretty(i.ValidRange)) })];
+
+            // The symbol column widens to the longest symbol (up to a cap), taking the width from the description, so a
+            // long symbol ("combinations") never runs into its description (the shots review found it).
+            var symbolWidth = ColumnFor(measure, inputRows.Select(r => r[0]), 0.12f, 0.20f);
+            float[] inputWidths = [symbolWidth, W(0.42f) - symbolWidth, W(0.12f), W(0.08f), W(0.22f), W(0.16f)];
+
+            DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Inputs, DocumentTemplate.TableLeadHeight(measure, inputWidths, inputRows, inputAligns));
+            DocumentTemplate.AddTable(state, measure, inputHeaders, inputWidths, inputRows, inputAligns, [true, true, false, false, false, false]);
 
             // A table input's rows get the full width beneath, one line each, instead of a word per line in the
             // narrow Value column (the showcase journey found it); their source is the table input's own, above.
             if (sheet.Inputs.Where(IsElementRow).ToList() is { Count: > 0 } elements)
             {
+                // The label column fits the longest label ("combinations[1]"), so it never prints over the values.
+                var labelWidth = ColumnFor(measure, elements.Select(i => T(i.Symbol)), 0.14f, 0.40f);
                 DocumentTemplate.AddGap(state, 4f);
                 DocumentTemplate.AddTable(
                     state, measure, ["Table row", "Values"],
-                    [W(0.14f), W(0.86f)],
+                    [labelWidth, W(1f) - labelWidth],
                     [.. elements.Select(i => new[] { T(i.Symbol), T(i.Value) })],
                     [SKTextAlign.Left, SKTextAlign.Left], [true, false]);
             }
@@ -185,7 +194,8 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
         }
 
         DocumentTemplate.AddGap(state, 6f);
-        DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Working);
+        // Kept with the first step's formula, substitution and result.
+        DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Working, DocumentTemplate.BodySize * DocumentTemplate.LineLeading * 3);
 
         if (sheet.Working.Count == 0)
             Line(state, measure, CalcSheetStandard.Empty);
@@ -194,14 +204,25 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
             foreach (var s in sheet.Working)
             {
                 DocumentTemplate.EnsureSpace(state, DocumentTemplate.BodySize * DocumentTemplate.LineLeading * 3);
-                Line(state, measure, $"[{s.Ordinal}] {s.Symbol} = {s.Formula}", fontRole: DocumentFontRole.Mono, color: DocumentTemplate.Ink900, symbols: true);
 
-                if (s.Clause is { Length: > 0 })
+                // The clause reference sits at the right of the formula's first line; the formula wraps short of it, so a
+                // long formula never runs into it (the shots layout test found three that did).
+                var clause = s.Clause is { Length: > 0 } ? T(CalcBibliography.Format(references.Cite(s.Clause)), 120) : null;
+                var formulaWidth = state.ContentWidth;
+
+                if (clause is not null)
                 {
-                    // The clause reference sits in the right margin of the formula line.
-                    var last = state.Page.Texts[^1];
-                    state.Page.Texts.Add(new DocumentTemplate.TextRun(state.ContentRight, last.Y, T(CalcBibliography.Format(references.Cite(s.Clause)), 120), DocumentTemplate.CaptionSize, false, SKTextAlign.Right, DocumentTemplate.Indigo600, DocumentFontRole.Body));
+                    measure.TextSize = DocumentTemplate.CaptionSize;
+                    formulaWidth -= DocumentTemplate.MeasureInFaces(measure, clause, DocumentFontRole.Body) + ClauseGap;
                 }
+
+                // The space ensured above holds the formula's first line, so it lands on this page.
+                var page = state.Page;
+                var firstLine = page.Texts.Count;
+                DocumentTemplate.AddWrappedLine(state, measure, T($"[{s.Ordinal}] {s.Symbol} = {s.Formula}", MaxLineChars), DocumentTemplate.BodySize, bold: false, color: DocumentTemplate.Ink900, fontRole: DocumentFontRole.Mono, symbols: true, width: formulaWidth);
+
+                if (clause is not null)
+                    page.Texts.Add(new DocumentTemplate.TextRun(state.ContentRight, page.Texts[firstLine].Y, clause, DocumentTemplate.CaptionSize, false, SKTextAlign.Right, DocumentTemplate.Indigo600, DocumentFontRole.Body));
 
                 if (!string.Equals(s.Substitution, s.Formula, StringComparison.Ordinal))
                     Line(state, measure, $"      = {s.Substitution}", fontRole: DocumentFontRole.Mono, symbols: true);
@@ -215,40 +236,39 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
             DocumentTemplate.AddGap(state, 6f);
         }
 
-        DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Results);
-
         if (sheet.Outputs.Count == 0)
         {
+            DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Results);
             Line(state, measure, CalcSheetStandard.Empty);
         }
         else
         {
-            DocumentTemplate.AddTable(
-                state, measure, ["Symbol", "Value", "Description"],
-                [W(0.18f), W(0.27f), W(0.55f)],
-                [.. sheet.Outputs.Select(o => new[] { T(o.Symbol), T(o.ValueText), T(CalcSheetStandard.DescriptionOf(sheet, o)) })],
-                [SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Left], [true, true, true]);
+            float[] widths = [W(0.18f), W(0.27f), W(0.55f)];
+            SKTextAlign[] aligns = [SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Left];
+            List<string[]> rows = [.. sheet.Outputs.Select(o => new[] { T(o.Symbol), T(o.ValueText), T(CalcSheetStandard.DescriptionOf(sheet, o)) })];
+            DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Results, DocumentTemplate.TableLeadHeight(measure, widths, rows, aligns));
+            DocumentTemplate.AddTable(state, measure, ["Symbol", "Value", "Description"], widths, rows, aligns, [true, true, true]);
         }
 
         DocumentTemplate.AddGap(state, 6f);
-        DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Checks);
 
         if (sheet.Checks.Count == 0)
         {
+            DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Checks);
             Line(state, measure, CalcSheetStandard.Empty);
         }
         else
         {
-            DocumentTemplate.AddTable(
-                state, measure, ["Result", "Check", "Demand", "Capacity", "Utilisation", "Ref"],
-                [W(0.07f), W(0.19f), W(0.25f), W(0.18f), W(0.10f), W(0.21f)],
-                [.. sheet.Checks.Select(c => new[]
-                {
-                    c.Passed ? "PASS" : "FAIL", T(c.Name), T(c.DemandText), T(c.CapacityText),
-                    c.UtilisationText,
-                    c.Clause is { Length: > 0 } clause ? T(CalcBibliography.Format(references.Cite(clause))) : string.Empty,
-                })],
-                [SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Right, SKTextAlign.Right, SKTextAlign.Left], [false, true, true, true, false, false]);
+            float[] widths = [W(0.07f), W(0.19f), W(0.25f), W(0.18f), W(0.10f), W(0.21f)];
+            SKTextAlign[] aligns = [SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Right, SKTextAlign.Right, SKTextAlign.Left];
+            List<string[]> rows = [.. sheet.Checks.Select(c => new[]
+            {
+                c.Passed ? "PASS" : "FAIL", T(c.Name), T(c.DemandText), T(c.CapacityText),
+                c.UtilisationText,
+                c.Clause is { Length: > 0 } clause ? T(CalcBibliography.Format(references.Cite(clause))) : string.Empty,
+            })];
+            DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Checks, DocumentTemplate.TableLeadHeight(measure, widths, rows, aligns));
+            DocumentTemplate.AddTable(state, measure, ["Result", "Check", "Demand", "Capacity", "Utilisation", "Ref"], widths, rows, aligns, [false, true, true, true, false, false]);
         }
 
         DocumentTemplate.AddGap(state, 6f);
@@ -292,6 +312,9 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
     }
 
     private static float W(float fraction) => DocumentTemplate.ContentWidth * fraction;
+
+    /// <summary>The clear space between a working step's formula and its clause reference at the right margin.</summary>
+    private const float ClauseGap = 8f;
 
     /// <summary>The diagram's labels in the PDF, in points (the screen sets them at 13 px in a panel about 350 px wide).</summary>
     private const float DiagramLabelSize = 9.5f;
@@ -350,9 +373,11 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
     private static List<string[]> MethodRows(string method)
     {
         var lines = method.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        // Printed whole, at the paragraph cap and not the field cap: a field-capped relation lost the end of its method
+        // statement behind an ellipsis (the shots review found it on mech.snap-fit and struct.plate-bending).
         var rows = lines.Take(MaxMethodRows).Select(line => line.IndexOf(": ", StringComparison.Ordinal) is var at and > 0
-            ? new[] { T(line[..at]), T(line[(at + 2)..].TrimEnd('.')) }
-            : [T(line), string.Empty]).ToList();
+            ? new[] { T(line[..at], MaxLineChars), T(line[(at + 2)..].TrimEnd('.'), MaxLineChars) }
+            : [T(line, MaxLineChars), string.Empty]).ToList();
 
         if (lines.Length > MaxMethodRows)
             rows.Add([$"… and {lines.Length - MaxMethodRows} more line(s)", string.Empty]);
@@ -363,8 +388,30 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
     /// <summary>A table input's element row (stages[1]): no description or unit of its own, its value the row's cells as text.</summary>
     private static bool IsElementRow(CalcSheetInputRow i) => i.Symbol.Contains('[', StringComparison.Ordinal) && i.Description.Length == 0 && i.Unit.Length == 0;
 
-    private static void Line(DocumentTemplate.LayoutState state, SKPaint measure, string text, float size = DocumentTemplate.BodySize, DocumentFontRole fontRole = DocumentFontRole.Body, SKColor? color = null, bool symbols = false) =>
-        DocumentTemplate.AddWrappedLine(state, measure, T(text, MaxLineChars), size, bold: false, color: color, fontRole: fontRole, symbols: symbols);
+    private static void Line(DocumentTemplate.LayoutState state, SKPaint measure, string text, float size = DocumentTemplate.BodySize, DocumentFontRole fontRole = DocumentFontRole.Body, SKColor? color = null, bool symbols = false, bool keepTogether = false) =>
+        DocumentTemplate.AddWrappedLine(state, measure, T(text, MaxLineChars), size, bold: false, color: color, fontRole: fontRole, symbols: symbols, keepTogether: keepTogether);
+
+    /// <summary>
+    /// A left-hand column's width: wide enough for its longest word in <paramref name="cells"/> (a symbol, a table row's
+    /// label), but never below <paramref name="minFraction"/> or above <paramref name="maxFraction"/> of the content width.
+    /// Past the cap, the table breaks the word between characters rather than print it over the next column.
+    /// </summary>
+    private static float ColumnFor(SKPaint measure, IEnumerable<string> cells, float minFraction, float maxFraction)
+    {
+        measure.TextSize = DocumentTemplate.BodySize;
+        var widest = cells.SelectMany(c => c.Split(' ', StringSplitOptions.RemoveEmptyEntries)).Select(w => measure.MeasureText(w)).DefaultIfEmpty(0f).Max();
+        return Math.Clamp(widest + DocumentTemplate.CellPaddingX * 2 + 1f, W(minFraction), W(maxFraction));
+    }
+
+    /// <summary>The sheet's page plans as laid out, before symbols are typeset and footers are added: what the tests read to check where things land.</summary>
+    internal static List<DocumentTemplate.PagePlan> Plan(CalcSheet sheet)
+    {
+        ArgumentNullException.ThrowIfNull(sheet);
+        var state = DocumentTemplate.BeginLayout();
+        using var measure = new SKPaint { Typeface = SKTypeface.Default };
+        Layout(state, measure, sheet);
+        return state.Pages;
+    }
 
     /// <summary>A field of the sheet holds at most this many characters in the PDF; the sheet builder caps values and provenance, this caps everything else (R-05, R-24).</summary>
     private const int MaxFieldChars = 400;
