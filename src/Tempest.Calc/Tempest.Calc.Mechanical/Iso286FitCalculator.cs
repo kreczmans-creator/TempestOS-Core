@@ -12,7 +12,7 @@ public sealed class Iso286FitCalculator : ICalcCalculator
     public const string BearingBore = "rolling-bearing bore (deviations from the bearing record)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.6.0", CalcDiscipline.Mechanical, "Limits and fits (ISO 286)",
+        Id, "1.6.1", CalcDiscipline.Mechanical, "Limits and fits (ISO 286)",
         "Calculates the limits of size of a hole and a shaft for a nominal size and ISO 286 tolerance classes, and the resulting fit with its extreme clearances and interferences. It uses the ISO 286-1 formulae, not the tables.",
         "Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^(1/3) + 0.001·D (µm).\nWidth of the tolerance band for the grade: ITn = multiplier × i.\nFundamental deviations by letter from the published formulae, and hole deviations by the general rule: EI_hole = −es_shaft (A–H); ES_hole = −ei_shaft + Δ (K–ZC).\nLimits of size of the hole and the shaft: limit = nominal + deviation.\nFit extremes, the largest and smallest clearance (negative is interference): c_max = ES_hole − ei_shaft; c_min = EI_hole − es_shaft.\nRolling-bearing bore mode: a bearing bore is not an ISO 286 hole; it has its own tolerance (ISO 492) lying below nominal, so ES_hole and EI_hole are entered from the bearing record instead of being computed.",
         [
@@ -71,6 +71,10 @@ public sealed class Iso286FitCalculator : ICalcCalculator
             new CalcOutputPort("ei_shaft", "µm", "Shaft lower deviation", "fit.deviation_shaft_lower", ["ei"]),
             new CalcOutputPort("IT_hole", "µm", "Hole tolerance", "fit.tolerance_hole"),
             new CalcOutputPort("IT_shaft", "µm", "Shaft tolerance", "fit.tolerance_shaft"),
+            new CalcOutputPort("D_hole_max", "mm", "Hole maximum limit of size", "fit.size_hole_max"),
+            new CalcOutputPort("D_hole_min", "mm", "Hole minimum limit of size", "fit.size_hole_min"),
+            new CalcOutputPort("d_shaft_max", "mm", "Shaft maximum limit of size", "fit.size_shaft_max"),
+            new CalcOutputPort("d_shaft_min", "mm", "Shaft minimum limit of size", "fit.size_shaft_min"),
         ]);
 
     public void Run(CalcRunContext c)

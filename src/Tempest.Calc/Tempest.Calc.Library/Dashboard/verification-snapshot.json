@@ -4,7 +4,7 @@
  "sources": {
   "rederivation": "3738520fd54a185312ad9441b014f89a0e52620ca01f5d3390e706fb0ae90082",
   "knownDefects": "f503dc243b72bd6d14a26dd72c715cf4ef74eecacdd6bcf48830d5d1c2fd8ac3",
-  "katResults": "4f2f9694882c6e22eda3cf65eabe6b390c5e1e9e0f1bfaecedfcf1090fc3b66b",
+  "katResults": "177147b89f04c775d7cec30e361e99241b074b314e2449081079bdc26e14422d",
   "workedExamples": "70ade87cf654c504d0e07b6b2138bdd0be939e0ac2596a54400c2b1cf585f2b0",
   "generator": "44f38f035fcf5937ab168f648e6a714578568d822ffce5c1d151e261c577171e"
  },
@@ -1457,7 +1457,7 @@
   "mech.iso286-fit": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.6.0",
+    "version": "1.6.1",
     "kats": 3,
     "katsPassed": 3,
     "failedKats": [],

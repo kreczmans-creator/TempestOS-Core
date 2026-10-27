@@ -125,7 +125,7 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
     hole_kind: not entered, so the default of 'ISO 286 hole class' is used.
 
 8. Verification
-  Template: mech.iso286-fit@1.6.0
+  Template: mech.iso286-fit@1.6.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

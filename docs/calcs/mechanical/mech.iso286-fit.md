@@ -1,4 +1,4 @@
-# Limits and fits (ISO 286) (`mech.iso286-fit@1.6.0`)
+# Limits and fits (ISO 286) (`mech.iso286-fit@1.6.1`)
 
 **In plain terms.** A hole and a shaft each get a tolerance band from the ISO system: the letter fixes how far the band sits from the nominal size and the number fixes how wide it is. Pairing the largest hole with the smallest shaft gives the loosest fit, and the smallest hole with the largest shaft the tightest. If the hole is always larger the fit has clearance, if it is always smaller it has interference, and if the bands overlap it is a transition fit that can go either way.
 
@@ -77,6 +77,10 @@ A port keeps its output symbol; a link, a pack binding or an inputs file written
 | `fit.deviation_shaft_lower` | `ei_shaft` (also `ei`) | µm | Shaft lower deviation |
 | `fit.tolerance_hole` | `IT_hole` | µm | Hole tolerance |
 | `fit.tolerance_shaft` | `IT_shaft` | µm | Shaft tolerance |
+| `fit.size_hole_max` | `D_hole_max` | mm | Hole maximum limit of size |
+| `fit.size_hole_min` | `D_hole_min` | mm | Hole minimum limit of size |
+| `fit.size_shaft_max` | `d_shaft_max` | mm | Shaft maximum limit of size |
+| `fit.size_shaft_min` | `d_shaft_min` | mm | Shaft minimum limit of size |
 
 ## Checks
 
@@ -100,6 +104,8 @@ Applicability rules:
 The sheet gives unrounded formula values. For the clearance and transition letters (a to n) the tabulated values differ by the standard's rounding, about 1 µm. For the interference letters p to zc the tables also carry the standard's own increments and sub-steps (p6 at 450 mm: 62.2 µm from the formula against 68 µm tabulated; up to about 9 µm in the 100 to 565 mm checks). The formula value can therefore lie several µm below the tabulated one, and the maximum interference is understated. Since 1.3.0 the sheet warns (`interference-letter`) for any p to zc letter taken from the formula, and the overrides carry the tabulated value. Letters a, b, c and j need overrides.
 
 ## Changes
+
+**1.6.1.** Declares the four limits of size as ports (`fit.size_hole_max`, `fit.size_hole_min`, `fit.size_shaft_max`, `fit.size_shaft_min`): a downstream sheet that takes a bore or a seat size (a press fit, a bearing seat, the next step of a chain) links to them, as it could before 1.6.0 declared ports and offered only the deviations and tolerances. No calculated value changes.
 
 **1.6.0 (C-2, phase B).** The four deviation overrides are now `ES_hole_override`, `EI_hole_override`, `es_shaft_override` and `ei_shaft_override` (the old `ES_override`, `EI_override`, `es_override` and `ei_override` are aliases: an inputs file, a CSV, a saved draft, a pack example and a scan-import profile that use them still load). The four deviation outputs are renamed as above. The inputs are grouped (`Setup`: the kind, letters and grades; `Geometry`: `D`; `Overrides`) and have usual ranges. The sheet declares ten ports (`fit.clearance_max`, `fit.clearance_min`, `fit.interference_max`, `fit.interference_min`, the four deviations and the two tolerances). The blocks for a missing override, a missing t or T letter and an unknown letter have the rule ids `shaft-override`, `hole-override`, `shaft-letter` and `hole-letter` (declared, without the `input.` prefix). The messages are sentences of at most 20 words. The check is named "Fit classes against the fit kind". No calculated value changes.
 
