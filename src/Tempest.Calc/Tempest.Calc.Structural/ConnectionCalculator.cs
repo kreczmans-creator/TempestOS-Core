@@ -31,10 +31,10 @@ public sealed class ConnectionCalculator : ICalcCalculator
     public static IReadOnlyList<(string Grade, double BetaW)> Steels { get; } = [("S235", 0.8), ("S275", 0.85), ("S355", 0.9), ("S420", 1.0), ("S460", 1.0)];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.8.0", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
+        Id, "1.9.0", CalcDiscipline.Structural, "Bolts and fillet welds (EN 1993-1-8)",
         "Calculates the design resistance of one bolt in a plate, block tearing of the bolt group, the spacing limits, and a fillet weld by the simplified and directional methods, each against its design force. Loading is static.",
         "Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P\n" +
-        "Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane)\n" +
+        "Shear (cl. 3.6, Table 3.4): F_v,Rd = k_v12·α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane); k_v12 = 0.85 for an M12 bolt of class 4.8, 5.8, 6.8, 8.8 or 10.9 in its normal clearance hole d₀ = d + 2 (Table 3.4, note on M12 bolts), else 1\n" +
         "Bolt bearing resistance: F_b,Rd = k_h·min(k₁·α_b·f_u·d·t/γ_M2, [single lap, one bolt row: 1.5·f_u·d·t/γ_M2]); α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5); k_h = 1 (normal holes), 0.8 (oversize), 0.6 (slot across the load)\n" +
         "Bolt tension resistance: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1\n" +
         "Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for a group loaded concentrically; V_eff,2,Rd = 0.5·f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for an eccentrically loaded group\n" +
@@ -83,6 +83,7 @@ public sealed class ConnectionCalculator : ICalcCalculator
             new CalcAssumption("Bearing across the load is taken at an edge bolt, with k₁ from e₂ and p₂.", "Conservative for every bolt in the group."),
             new CalcAssumption("Oversize holes reduce the bearing resistance by 0.8, and a slot across the load by 0.6.", "BS EN 1993-1-8:2005 cl. 3.6.1, Table 3.4."),
             new CalcAssumption("A hole above the normal clearance, with the hole type left at normal, is treated as oversize.", "BS EN 1993-1-8:2005 cl. 3.6.1, Table 3.4."),
+            new CalcAssumption("A 12 mm bolt in its normal clearance hole takes 0.85 on its shear resistance, except classes 4.6 and 5.6.", "BS EN 1993-1-8:2005 Table 3.4, the note on 12 mm and 14 mm bolts in 2 mm clearance holes."),
             new CalcAssumption("The single-lap cap on the bearing resistance applies only when the single-lap switch is on.", "BS EN 1993-1-8:2005 cl. 3.6.1; a warning says when it would bind."),
             new CalcAssumption("Spacing minima and γ_M factors are entered from a National Annex record.", "A small set of factors only; no table from a standard is shipped."),
             new CalcAssumption("The defaults for the spacing minima and γ_M factors are the recommended values of BS EN 1993-1-8.", "A small set of factors only; no table from a standard is shipped."),
@@ -121,6 +122,10 @@ public sealed class ConnectionCalculator : ICalcCalculator
                 new CalcReferenceSource("Analytic (EN 1993-1-8 cl. 3.6.1, Table 3.4 hole factor)", "BS EN 1993-1-8:2005", "d₀ 24: α_d = 40/72 = 0.5556, k₁ = min(2.8·40/24 − 1.7, 2.5) = 2.5, 2.5·0.5556·410·20·10/1.25 = 91.111 kN; × 0.8 (oversize) = 72.889 kN; × 0.6 (slot across the load) = 54.667 kN"),
                 [Choice("grade", "8.8"), Choice("size", "M20"), Q("d_0", 24, "mm"), Choice("hole_type", HoleOversize)],
                 [new CalcExpectedValue("F_b_Rd", 72.88889, "kN", 1e-6)]),
+            new CalcTestCase("ka-m12-88-clearance-shear", "M12 8.8 at 30 kN shear in its 14 mm normal clearance hole: k_v12 = 0.85, the shear check fails at 1.09 (it passed at 0.927 before the factor)",
+                new CalcReferenceSource("Analytic (EN 1993-1-8 Table 3.4 and its note on M12 bolts in 2 mm clearance holes)", "BS EN 1993-1-8:2005", "A_s = 84.267 mm²; F_v,Rd = 0.85 × 0.6·800·84.267/1.25 = 0.85 × 32.358 = 27.505 kN; u_v = 30/27.505 = 1.0907 (FAIL; 30/32.358 = 0.9271 passed before the factor); C-1 finding struct.connection-ec3-R1, owner decision DC-03 and DC-21"),
+                [Choice("grade", "8.8"), Choice("size", "M12"), Q("F_v_Ed", 30, "kN")],
+                [new CalcExpectedValue("A_s", 84.26654, "mm^2", 1e-6), new CalcExpectedValue("k_v12", 0.85, "", 1e-12), new CalcExpectedValue("F_v_Rd", 27.5046, "kN", 1e-5), new CalcExpectedValue("u_v", 1.090727, "", 1e-6)]),
             new CalcTestCase("ka-m20-109-threads", "M20 10.9 with threads in the shear plane: α_v = 0.5",
                 new CalcReferenceSource("Analytic (EN 1993-1-8 Table 3.4)", "BS EN 1993-1-8:2005", "F_v,Rd = 0.5·1000·244.79/1.25 = 97.918 kN (with the shank in the plane it would be 0.6·1000·314.16/1.25 = 150.80 kN)"),
                 [Choice("grade", "10.9"), Choice("size", "M20")],
@@ -163,6 +168,13 @@ public sealed class ConnectionCalculator : ICalcCalculator
 
     /// <summary>EN 1993-1-8 Table 3.4 α_v for a class: 0.5 for 4.8, 5.8, 6.8 and 10.9 when threads are in the shear plane, otherwise 0.6.</summary>
     public static double AlphaV(string grade, bool threadsInPlane) => threadsInPlane && grade is "4.8" or "5.8" or "6.8" or "10.9" ? 0.5 : 0.6;
+
+    /// <summary>
+    /// The factor on F_v,Rd of EN 1993-1-8 Table 3.4 (its note on M12 and M14 bolts in 2 mm clearance holes): 0.85 for an M12 bolt of class 4.8, 5.8, 6.8, 8.8 or 10.9
+    /// in its normal clearance hole (d₀ = d + 2 mm, hole type normal), otherwise 1. It applies only where the sheet knows both the size and the hole (owner decision DC-03, DC-21).
+    /// </summary>
+    public static double ClearanceShearFactor(string grade, double d, double d0, string holeType) =>
+        Math.Abs(d - 12) < 1e-9 && holeType == HoleNormal && Math.Abs(d0 - (d + 2)) < 1e-9 && grade is "4.8" or "5.8" or "6.8" or "8.8" or "10.9" ? 0.85 : 1.0;
 
     /// <summary>f_ub and f_yb from the property class name.</summary>
     public static (double Fub, double Fyb) Strengths(string grade)
@@ -229,7 +241,12 @@ public sealed class ConnectionCalculator : ICalcCalculator
         var alphaV = AlphaV(grade, threads);
         var shearArea = threads ? asArea : Math.PI / 4 * d * d;
         c.Record("alpha_v", threads ? "α_v (threads in the shear plane)" : "α_v (shank in the shear plane)", $"class {grade}", new ScalarValue(alphaV), "Shear factor", "EN 1993-1-8 Table 3.4");
-        c.Record("F_v_Rd", "α_v·f_ub·A·n_s/γ_M2", $"{F(alphaV)} × {F(fub)} × {F(shearArea)} × {F(ns)} / {F(g2)}", ScalarValue.Of(alphaV * fub * shearArea * ns / g2 / 1e3, kN), "Shear resistance per bolt", "EN 1993-1-8 Table 3.4");
+        var kv12 = ClearanceShearFactor(grade, d, d0, holeTypeEntered);
+
+        if (kv12 < 1)
+            c.Record("k_v12", "0.85 for an M12 bolt of class 4.8, 5.8, 6.8, 8.8 or 10.9 in its normal clearance hole d₀ = d + 2", $"{size.Name} class {grade}, d₀ = {F(d0)} mm, hole type {holeTypeEntered}", new ScalarValue(kv12), "Shear factor for an M12 bolt in a 2 mm clearance hole", "EN 1993-1-8 Table 3.4, note on M12 bolts");
+
+        c.Record("F_v_Rd", kv12 < 1 ? "k_v12·α_v·f_ub·A·n_s/γ_M2" : "α_v·f_ub·A·n_s/γ_M2", (kv12 < 1 ? $"{F(kv12)} × " : string.Empty) + $"{F(alphaV)} × {F(fub)} × {F(shearArea)} × {F(ns)} / {F(g2)}", ScalarValue.Of(kv12 * alphaV * fub * shearArea * ns / g2 / 1e3, kN), "Shear resistance per bolt", "EN 1993-1-8 Table 3.4");
 
         var alphaEnd = e1 / (3 * d0);
         var alphaInner = p1 is { } pitch ? pitch / (3 * d0) - 0.25 : double.PositiveInfinity;
@@ -303,6 +320,9 @@ public sealed class ConnectionCalculator : ICalcCalculator
 
         var spacingOk = e1 >= c.InputSi("k_e1") * d0 && e2 >= c.InputSi("k_e2") * d0 && (p1 is not { } a1 || a1 >= c.InputSi("k_p1") * d0) && (p2 is not { } a2 || a2 >= c.InputSi("k_p2") * d0);
         var outputs = new List<(string, string)> { ("f_ub", "Bolt ultimate tensile strength"), ("f_yb", "Bolt yield strength"), ("A_s", "Stress area"), ("alpha_v", "Shear factor"), ("F_v_Rd", "Shear resistance"), ("alpha_b", "Bearing factor"), ("k_1", "Bearing factor k₁"), ("F_b_Rd", "Bearing resistance"), ("F_t_Rd", "Tension resistance"), ("B_p_Rd", "Punching resistance"), ("u_v", "Shear utilisation"), ("u_b", "Bearing utilisation"), ("u_t", "Tension utilisation"), ("u_vt", "Combined utilisation") };
+
+        if (kv12 < 1)
+            outputs.Insert(4, ("k_v12", "Shear factor for the 2 mm clearance hole"));
 
         if (c.Has("V_Ed") || c.Has("A_nt") || c.Has("A_nv"))
         {

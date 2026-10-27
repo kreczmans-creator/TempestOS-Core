@@ -3,8 +3,8 @@
  "generatedBy": "scripts/generate-verification-snapshot.py",
  "sources": {
   "rederivation": "3738520fd54a185312ad9441b014f89a0e52620ca01f5d3390e706fb0ae90082",
-  "knownDefects": "f503dc243b72bd6d14a26dd72c715cf4ef74eecacdd6bcf48830d5d1c2fd8ac3",
-  "katResults": "177147b89f04c775d7cec30e361e99241b074b314e2449081079bdc26e14422d",
+  "knownDefects": "08dffa3de78548c84e4f408f14fcf37a7d9d6566045fc529dba849d2dd106531",
+  "katResults": "11bcc701929ad33f306c7ef59913890798679198faf8a60be57909acefad7824",
   "workedExamples": "70ade87cf654c504d0e07b6b2138bdd0be939e0ac2596a54400c2b1cf585f2b0",
   "generator": "44f38f035fcf5937ab168f648e6a714578568d822ffce5c1d151e261c577171e"
  },
@@ -13,8 +13,8 @@
    "fixed": 4
   },
   "High": {
-   "fixed": 50,
-   "owner-decision": 5
+   "fixed": 51,
+   "owner-decision": 4
   },
   "Medium": {
    "fixed": 76,
@@ -2667,9 +2667,9 @@
   "struct.connection-ec3": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.8.0",
-    "kats": 8,
-    "katsPassed": 8,
+    "version": "1.9.0",
+    "kats": 9,
+    "katsPassed": 9,
     "failedKats": [],
     "examplesPassed": 1,
     "failedExamples": []
@@ -2741,7 +2741,7 @@
      {
       "id": "struct.connection-ec3-R1",
       "severity": "High",
-      "defect": "owner-decision"
+      "defect": "fixed"
      },
      {
       "id": "struct.connection-ec3-R2",

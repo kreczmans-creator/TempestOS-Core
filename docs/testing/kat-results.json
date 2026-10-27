@@ -454,9 +454,9 @@
     },
     {
       "id": "struct.connection-ec3",
-      "version": "1.8.0",
-      "kats": 8,
-      "katsPassed": 8,
+      "version": "1.9.0",
+      "kats": 9,
+      "katsPassed": 9,
       "failedKats": [],
       "examples": 1,
       "examplesPassed": 1,

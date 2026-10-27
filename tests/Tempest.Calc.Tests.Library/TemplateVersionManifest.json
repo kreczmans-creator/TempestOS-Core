@@ -193,6 +193,7 @@
   "struct.connection-ec3@1.6.0": "19e0a5764920a66d0798b6584ec49fe86bf0e01f08f39b070d2f8eb555a269ba",
   "struct.connection-ec3@1.7.0": "e5ff72f057654ae1723eca498a2d6385600e2771672ab406417a94a7a3922a04",
   "struct.connection-ec3@1.8.0": "f5c75db5b1171fa035eba463fe08f0cc5c32527057f186d4d0bf3612ca4e484f",
+  "struct.connection-ec3@1.9.0": "9d487fad84a4c3c8bd887506d7d3af66b37e06f157127b9d9dfd805236a0440b",
   "struct.en1993-member@1.1.0": "2cf9aafbdb831be1f2016459bbdfbaa512fc8b0b0f097006f0152b3756080ed8",
   "struct.en1993-member@1.2.0": "5c47accf06a9faeeb35a78a74bb4d1388b0e3bce63f553edeba55f96870c3931",
   "struct.en1993-member@1.3.0": "1f181467329859993ee57de4e3dc090ae04173549f6bebd97735469a60bdddf5",
