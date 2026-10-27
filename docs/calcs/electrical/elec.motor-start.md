@@ -27,6 +27,8 @@ Calculates the voltage dip when a three-phase induction motor starts, from the s
 - Dip `= 100·(1 − |V|/E)`. `dV_cab = √3·Re[I·Z_c·V̄_m/|V_m|]` is the cable drop along the starting voltage; it equals voltage-drop's `√3·I·(R cos φ + X sin φ)` at the dipped current `I_dip` and the starting power factor (proved in a test by running voltage-drop). `k_T = (|V_m|/E)²` is the torque factor of a passive start (not given for a regulated start, where torque follows current).
 - PF correction: `P_in = P/η` (or `√3·U·I_n·cos φ` when `I_n` is entered, with a warning if the two differ by more than 5 %), `Q_c = P_in(tan φ₁ − tan φ₂)` where φ₁ is the motor's (a drive's displacement factor with a drive; zero, with a warning, when the target is not above it), `I_c = Q_c/(√3·U)`, running current before and after. Resonance: `S_sc = U²/|Z_s|`, `h ≈ √(S_sc/Q_c)`; `|Z_s|` stands in for `X_s`, so h reads 1 to 1.4 % low.
 
+**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram (ADR-0158, DI-08). It is not to scale and shows inputs only, never a result. It draws the source, the starter, the cable run and the motor, with the source data across the top. One variant per `starter`; the soft starter and the drive label their current limits. It binds `u_k`, `S_k`, `I_k`, `XR`, `S_n`, `A_c`, `P`, `L_cab`, `cos_phi_st`, `U`, `eta`, `cos_phi`, `I_LR_r`, `T_c`, `n_par`, `dip_limit`, `starter`, `k_soft`, `k_vfd` and `cos_phi_vfd`.
+
 ## Inputs
 
 | Symbol | Description | Unit | Default | Usual range | Group |

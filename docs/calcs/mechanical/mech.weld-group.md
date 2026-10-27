@@ -20,6 +20,8 @@ The sheet shares the group-geometry kernel (`GroupGeometry`) with the bolt group
 
 A group that lies on one line (a single weld) resists direct shear, in-plane torsion and the moment that bends the line. It does not resist a moment about the line itself. That one component blocks the sheet (rule `collinear`), and the rest is computed.
 
+**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram (ADR-0158, DI-08). It is not to scale and shows inputs only, never a result. It draws the weld group in plan: two lines for the welds as listed, and the load point. The forces and moments act at the load point, positive as drawn; a section beside it shows the leg. It binds `welds`, `M_z`, `e_x`, `e_y`, `F_y`, `F_x`, `F_z`, `M_x`, `M_y`, `s` and `f_w`.
+
 ## Inputs
 
 | Symbol | Meaning | Unit | Group |

@@ -20,6 +20,8 @@ The wire is up to 20 mm. Compression is the first mode: rate, working points (gi
 - Wire strength `R_m(d)` (`rm_source`): typed (`Rm`, **no default**; blank blocks with what to enter, rule `wire-strength`) or taken from the curve of a material record, `R_m = A/d^m` with `A` = `Rm_A` (MPa, for `d` in mm) and `m` = `Rm_m` (both `MaterialProperty`, in the record kind `material.properties`, pinned by revision: a new revision makes the sheet stale). The curve value must lie in 50 … 5000 MPa. The diameter range over which the fit holds is the material record's to state and the user's to respect; the sheet does not know it.
 - Surge: `f_n = (d/(2π n_active D²))√(G/(2ρ))`, both ends fixed (the same as `½√(k/m)` with the wire mass). With an operating frequency `f_op`, `r_f = f_n/f_op`, WARN (rule `surge`) when `r_f < 13`.
 
+**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram (ADR-0158, DI-08). It is not to scale and shows inputs only, never a result. It draws the spring that `mode` selects, with its loads at the two working points. A compression spring sits between its seats; an extension spring has its hooks; a torsion spring has its legs. One variant per `mode`. It binds `n_active`, `d`, `D`, `L0`, `F_1`, `F_2`, `ends`, `corr`, `G`, `Rm`, `S_e`, `n_f_req`, `f_op`, `work`, `mode`, `r_h1`, `r_h2`, `F_0`, `l_leg_1`, `l_leg_2`, `M_2`, `M_1` and `E`.
+
 ## Inputs
 
 | Symbol | Meaning | Unit | Group |

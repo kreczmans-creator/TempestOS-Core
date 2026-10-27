@@ -21,6 +21,8 @@ Calculates the thermal growth of a pipe run between anchors, the leg or loop tha
 
 `d_i = OD − 2t`, `A_m = π/4(OD² − d_i²)`, `I = π/64(OD⁴ − d_i⁴)`, `Z = I/(OD/2)`. `ΔT = T_operate − T_install` (or entered; negative for a cold line). `ΔL = α·L·|ΔT|` (magnitude; `dL_signed = α·L·ΔT` and the text `direction` give the sign: growth presses on the anchors, contraction pulls). Fully restrained: `σ_r = E·α·|ΔT|`, `F_r = E_r·α·|ΔT|·A_m`, `u_res = σ_r/Sa` (information: above 1 the movement has to be absorbed).
 
+**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram (ADR-0158, DI-08). It is not to scale and shows inputs only, never a result. It draws the layout that `layout` selects: an offset leg, a U-loop or an axial bellows. An offset leg is an L-bend, or a Z-bend when `L2` is given; the pipe section is drawn beside it. One variant per `layout`, and one more for the Z-bend. It binds `OD`, `t_wall`, `T_install`, `T_operate`, `dT_in`, `E`, `alpha`, `Sa`, `L`, `mu`, `H`, `layout`, `L2`, `k_b`, `P_b`, `A_eff` and `dL_rated`.
+
 ## Inputs
 
 | Symbol | Description | Unit | Default | Usual range | Hard range | Group |

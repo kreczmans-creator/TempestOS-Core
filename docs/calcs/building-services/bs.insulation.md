@@ -21,6 +21,8 @@ Calculates the insulation thickness of a pipe or flat surface that meets a heat-
 
 Pipe, per metre: `R_tot = R_oth + ln(D_e/D_i)/(2πλ) + 1/(h_se·π·D_e)`, `D_e = D_i + 2t`; flat, per square metre: `R_tot = R_oth + t/λ + 1/h_se`. `q = (θ_i − θ_a)/R_tot` (positive from the process to the ambient; the sheet reports the magnitude and says "heat loss" or "heat gain"); `θ_se = θ_a + q/(h_se·π·D_e)` (pipe) or `θ_a + q/h_se` (flat). `R_oth` is the optional inner film `1/(h_i·π·D_p)` and pipe wall `ln(D_i/D_p)/(2πλ_w)` (flat: `1/h_i + t_w/λ_w`), both off unless entered; with neither, the pipe's outer wall is at the process temperature.
 
+**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram (ADR-0158, DI-08). It is not to scale and shows inputs only, never a result. It draws the pipe in section, or the flat surface, with its wall and the insulation on it. The heat leaves the surface; the conditions and limits stand in one column. One variant per `geometry` and per `h_mode`. It binds `t_w`, `lambda`, `t_chosen`, `eps`, `L_surf`, `T_proc`, `T_amb`, `RH_a`, `v_wind`, `T_dew`, `h_i`, `q_max_A`, `theta_se_max`, `dew_margin`, `geometry`, `h_mode`, `h_se`, `D_i` and `q_max_m`.
+
 ## Inputs
 
 | Symbol | Description | Unit | Default | Usual range | Hard range | Group |

@@ -14,6 +14,8 @@ Calculates the minimum width of a printed-circuit trace for a current and an all
 - Resistivity at the operating temperature: ρ_T = ρ_20·[1 + α·(T_amb + ΔT − 20)]
 - Trace resistance: R = ρ_T·L/(w_act·t); voltage drop ΔV = I·R; loss P = I²·R
 
+**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram (ADR-0158, DI-08). It is not to scale and shows inputs only, never a result. It draws the trace in plan with its width, length and current, and the board in section with the copper. One variant per `layer`: the copper on the board's face or inside it. It binds `w_act`, `L`, `I`, `Cu_oz`, `t_oz`, `T_amb`, `dT`, `n_dT`, `k_ext`, `k_int`, `n_A` and `layer`.
+
 ## Inputs
 
 | Symbol | Description | Unit | Default | Usual range | Group |

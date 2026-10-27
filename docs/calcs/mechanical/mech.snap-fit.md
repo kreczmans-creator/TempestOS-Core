@@ -26,6 +26,8 @@ Euler–Bernoulli beam theory. Position `t = x/l` from the root; tip load `F_def
 - *Root fillet.* An always-present advisory (`fillet_advisory`): the strain is nominal; a sharp corner at the root concentrates it; fillet generously and apply your own concentration factor if the radius is small. When a steep thickness taper puts the strain peak inside the beam, the advisory names where (`t_crit·l` from the root). No concentration chart is shipped.
 - *Friction.* `μ` is a typed input (record `snapfit.friction`). A W3 material can hold friction coefficients by pair (`mu_pairs`), but the sheet does not read them: a change to a W3 friction pair does **not** make the sheet stale. Read `μ` from the pair and type it, with its source.
 
+**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram (ADR-0158, DI-08). It is not to scale and shows inputs only, never a result. It draws the form that `mode` selects: a cantilever, an annular ring or a torsion bar. The cantilever is drawn in constant section, tapered thickness or tapered width. One variant per `mode`. It binds `h`, `y`, `alpha`, `alpha_r`, `l`, `b`, `Es`, `eps_perm_once`, `mu`, `T_use`, `n_latch`, `mode`, `h_ratio`, `b_ratio`, `D_ring`, `dD`, `K_ann`, `r_bar`, `a_arm`, `bar_support` and `nu`.
+
 ## Inputs
 
 | Symbol | Meaning | Unit | Group |
