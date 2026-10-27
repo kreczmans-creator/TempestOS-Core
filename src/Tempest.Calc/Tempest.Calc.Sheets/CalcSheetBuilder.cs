@@ -35,7 +35,9 @@ public static class CalcSheetBuilder
                 continue;
 
             var shown = value ?? DefaultValue(spec);
-            var unit = spec.Kind is CalcInputKind.Quantity or CalcInputKind.Vector ? (shown.Unit ?? spec.DefaultUnit) : string.Empty;
+
+            // A bare number prints in the default unit of the version it was recorded on; one that cannot be told apart prints with no unit (the run has blocked on it).
+            var unit = spec.Kind is CalcInputKind.Quantity or CalcInputKind.Vector ? (CalcInputUnits.TryResolve(spec, shown, inputs.MadeOn, out var read, out _) ? read : string.Empty) : string.Empty;
             var source = Truncate(shown.Provenance?.ToString() ?? (value is null ? "default" : "manual"));
             var range = RangeIn(spec, unit);
 
@@ -58,7 +60,7 @@ public static class CalcSheetBuilder
             else if (spec.Kind == CalcInputKind.Table && shown.Rows is { Count: > 0 } rows && spec.Columns is { Count: > 0 } columns)
             {
                 for (var r = 0; r < Math.Min(rows.Count, MaxTableRowsOnSheet); r++)
-                    inputRows.Add(new CalcSheetInputRow($"{spec.Symbol}[{r + 1}]", string.Empty, Truncate(RowText(rows[r], columns)), string.Empty, string.Empty, string.Empty));
+                    inputRows.Add(new CalcSheetInputRow($"{spec.Symbol}[{r + 1}]", string.Empty, Truncate(RowText(spec, r, rows[r], columns, inputs.MadeOn)), string.Empty, string.Empty, string.Empty));
 
                 if (rows.Count > MaxTableRowsOnSheet)
                     inputRows.Add(new CalcSheetInputRow($"{spec.Symbol}[…]", string.Empty, $"… and {rows.Count - MaxTableRowsOnSheet} more row(s)", string.Empty, string.Empty, string.Empty));
@@ -135,7 +137,7 @@ public static class CalcSheetBuilder
     /// <summary>Rows of one table input written on the sheet; the rest is counted.</summary>
     public const int MaxTableRowsOnSheet = 100;
 
-    private static string RowText(CalcRow row, IReadOnlyList<CalcColumnSpec> columns)
+    private static string RowText(CalcInputSpec spec, int r, CalcRow row, IReadOnlyList<CalcColumnSpec> columns, string? madeOn)
     {
         var parts = new List<string>(columns.Count);
 
@@ -148,7 +150,7 @@ public static class CalcSheetBuilder
 
             var text = cell switch
             {
-                { Number: { } n } => CalcValue.FormatNumber(n) + ((cell.Unit ?? col.DefaultUnit) is { Length: > 0 } u ? (CalcUnitText.Pretty(u) is "°" ? "°" : " " + CalcUnitText.Pretty(u)) : string.Empty),
+                { Number: { } n } => CalcValue.FormatNumber(n) + (CellUnit(spec, col, r, cell, madeOn) is { Length: > 0 } u ? (CalcUnitText.Pretty(u) is "°" ? "°" : " " + CalcUnitText.Pretty(u)) : string.Empty),
                 { Text: { } t } => t,
                 { Flag: { } f } => f ? "yes" : "no",
                 _ => "—",
@@ -160,6 +162,10 @@ public static class CalcSheetBuilder
     }
 
     /// <summary>The valid range in the unit the value was entered in, so "0.003 in" is not checked against "… mm" (Black B-20); the template's text when the unit is unknown or the same.</summary>
+    /// <summary>The unit a table cell prints in: its own, or its column's default on the version the record was made on; none where that cannot be told.</summary>
+    private static string CellUnit(CalcInputSpec spec, CalcColumnSpec col, int row, CalcCell cell, string? madeOn) =>
+        CalcInputUnits.TryResolve(col, $"{spec.Symbol}[{row + 1}].{col.Key}", cell.Unit, madeOn, out var unit, out _) ? unit : string.Empty;
+
     private static string RangeIn(CalcInputSpec spec, string unit)
     {
         if (spec.Kind != CalcInputKind.Quantity || unit.Length == 0 || string.Equals(unit, spec.DefaultUnit, StringComparison.Ordinal) || (spec.Min ?? spec.HardMin) is null && (spec.Max ?? spec.HardMax) is null)

@@ -155,7 +155,7 @@ public sealed class CalcRunContext
     public CalcValue Input(string symbol)
     {
         var spec = Template.FindInput(symbol) ?? throw new CalcEvaluationException($"'{symbol}' is not an input of {Template.Id}.");
-        var value = CalcInputBinder.Bind(spec, Inputs.Find(symbol));
+        var value = CalcInputBinder.Bind(spec, Inputs.Find(symbol), Inputs.MadeOn);
 
         // A pressure entered in bar is shown with its basis ("90 bar a"): the label changes the text, never the number.
         if (value is ScalarValue { DisplayUnit.Symbol: "bar" } pressure && spec.BasisLabel(ChoiceOf) is { } basis)

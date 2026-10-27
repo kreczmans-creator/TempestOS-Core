@@ -91,7 +91,7 @@ public sealed partial class CalcInstanceService
         if (FindOutput(upstream, outputSymbol) is not { Si: { } } output)
             return CalcActionResult.Refused($"'{upstream.Name}' has no numeric output '{outputSymbol}'.", instance);
 
-        if (PortProblem(upstream, outputSymbol) is { } notPort)
+        if ((PortProblem(upstream, outputSymbol) ?? MeaningProblem(upstream, outputSymbol)) is { } notPort)
             return CalcActionResult.Refused(notPort, instance);
 
         if (ValueFor(spec, output) is not { } value)
@@ -169,7 +169,7 @@ public sealed partial class CalcInstanceService
         if (FindOutput(upstream, outputSymbol) is not { Si: { } } output)
             return CalcActionResult.Refused($"'{upstream.Name}' has no numeric output '{outputSymbol}'.", instance);
 
-        if (PortProblem(upstream, outputSymbol) is { } notPort)
+        if ((PortProblem(upstream, outputSymbol) ?? MeaningProblem(upstream, outputSymbol)) is { } notPort)
             return CalcActionResult.Refused(notPort, instance);
 
         if (ConvertFor(spec.Kind, spec.DefaultUnit, output) is not { } converted)
@@ -207,7 +207,7 @@ public sealed partial class CalcInstanceService
         var entry = _catalogue.Find(instance.TemplateReference);
 
         if (entry is null)
-            return CalcActionResult.Refused($"Template '{instance.TemplateReference}' is no longer registered.", instance);
+            return CalcActionResult.Refused(OlderVersionRefusal(instance), instance);
 
         var instances = await AllInstancesAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false);
         var successors = SuccessorIndex(instances);
@@ -232,6 +232,9 @@ public sealed partial class CalcInstanceService
                 || entry.Template.FindInput(input.Symbol) is not { } spec || ValueFor(spec, output) is not { } value)
                 return CalcActionResult.Refused($"'{current.Name}' rev {current.Revision} no longer gives '{link.OutputSymbol}' in a unit '{input.Symbol}' takes; re-link it by hand.", instance);
 
+            if ((RepinMeaningProblem(pinned, current, input.Symbol, link.OutputSymbol) ?? MeaningProblem(current, link.OutputSymbol)) is { } changedMeaning)
+                return CalcActionResult.Refused(changedMeaning, instance);
+
             if (Problem(current) is { } problem)
                 return CalcActionResult.Refused(problem.Replace("{input}", input.Symbol, StringComparison.Ordinal), instance);
 
@@ -251,6 +254,9 @@ public sealed partial class CalcInstanceService
             if (FindOutput(current, link.OutputSymbol) is not { Si: { } } output
                 || spec is not { Kind: CalcInputKind.Quantity or CalcInputKind.Number } || ConvertFor(spec.Kind, spec.DefaultUnit, output) is not { } converted)
                 return CalcActionResult.Refused($"'{current.Name}' rev {current.Revision} no longer gives '{link.OutputSymbol}' in a unit '{label}' takes; re-link it by hand.", instance);
+
+            if ((RepinMeaningProblem(pinned, current, label, link.OutputSymbol) ?? MeaningProblem(current, link.OutputSymbol)) is { } changedMeaning)
+                return CalcActionResult.Refused(changedMeaning, instance);
 
             if (Problem(current) is { } problem)
                 return CalcActionResult.Refused(problem.Replace("{input}", label, StringComparison.Ordinal), instance);
@@ -437,6 +443,8 @@ public sealed partial class CalcInstanceService
                 reasons.Add($"'{label}' is pinned to '{upstream.Name}' rev {upstream.Revision}, which is superseded by rev {latest.Revision}; update to revision {latest.Revision}.");
             else if (FindOutput(upstream, link.OutputSymbol) is not { Si: { } si })
                 reasons.Add($"'{upstream.Name}' rev {upstream.Revision} no longer gives '{link.OutputSymbol}'.");
+            else if (MeaningProblem(upstream, link.OutputSymbol) is { } changedMeaning)
+                reasons.Add(changedMeaning);
             else if (!SameValue(takenSi, si))
                 reasons.Add($"'{upstream.Name}' rev {upstream.Revision} now gives a different '{link.OutputSymbol}' than the value '{label}' took.");
 
@@ -725,7 +733,7 @@ public sealed partial class CalcInstanceService
                     || ConvertFor(k, defaultUnit, output) is null)
                     return $"'{label}' is linked to '{upstream.Name}'.{link.OutputSymbol}, which it cannot take (missing, or a different dimension).";
 
-                if (PortProblem(upstream, link.OutputSymbol) is { } notPort)
+                if ((PortProblem(upstream, link.OutputSymbol) ?? MeaningProblem(upstream, link.OutputSymbol)) is { } notPort)
                     return notPort;
             }
 
@@ -770,6 +778,36 @@ public sealed partial class CalcInstanceService
             return null;
 
         return $"'{upstream.Name}'.{outputSymbol} is not an output {template.Title} offers for linking; link to one of: {string.Join(", ", ports.Select(p => p.PublicName))}.";
+    }
+
+    /// <summary>
+    /// Why <paramref name="nameOrSymbol"/> cannot be taken from <paramref name="upstream"/> although it has such an output: the template's current
+    /// version declares that this symbol or public name came to mean something else at a version later than the one the upstream was made on
+    /// (<see cref="CalcOutputPort.MeaningChangedAt"/>), so the stored number is not what the name now says. The link is refused, never rebound;
+    /// a link under an alias (the old symbol of what the port is now) keeps its meaning. <see langword="null"/> when there is no such change.
+    /// </summary>
+    private string? MeaningProblem(CalcInstance upstream, string nameOrSymbol)
+    {
+        if (_catalogue.Find(upstream.TemplateId) is not { } current || current.Template.FindPort(nameOrSymbol) is not { } port || !port.MeaningChangedSince(nameOrSymbol, upstream.TemplateVersion))
+            return null;
+
+        return $"'{upstream.Name}' rev {upstream.Revision} was made on {upstream.TemplateReference}, where {port.MeaningChangeText(upstream.TemplateId, upstream.TemplateReference)}, so '{nameOrSymbol}' is not linked from it: revise '{upstream.Name}' onto {current.Reference} and link to that revision.";
+    }
+
+    /// <summary>
+    /// Why a link that took <paramref name="symbol"/> from <paramref name="pinned"/> is not moved to <paramref name="current"/>, the latest revision of
+    /// that calculation: the pinned revision was made before the template declared that the symbol came to mean something else
+    /// (<see cref="CalcOutputPort.MeaningChangedAt"/>), so the value the link took is not what the same name gives on the revision it would be moved
+    /// to. Refused, never rebound; the link stays pinned where it was. <see langword="null"/> when the meaning is unchanged or the link is under an alias.
+    /// </summary>
+    private string? RepinMeaningProblem(CalcInstance pinned, CalcInstance current, string label, string symbol)
+    {
+        if (_catalogue.Find(pinned.TemplateId) is not { } template || template.Template.FindPort(symbol) is not { } port || !port.MeaningChangedSince(symbol, pinned.TemplateVersion))
+            return null;
+
+        return current.Id == pinned.Id
+            ? MeaningProblem(pinned, symbol)
+            : $"'{label}' took '{symbol}' from '{pinned.Name}' rev {pinned.Revision}, made on {pinned.TemplateReference}, where {port.MeaningChangeText(pinned.TemplateId, pinned.TemplateReference)}, so the link is not moved to rev {current.Revision}: link '{label}' by hand to the output of rev {current.Revision} that gives what it takes.";
     }
 
     /// <summary>

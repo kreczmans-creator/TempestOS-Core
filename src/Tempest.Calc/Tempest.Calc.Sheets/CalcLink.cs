@@ -39,8 +39,33 @@ public sealed record CalcLink(Guid UpstreamId, string OutputSymbol, string Revis
 /// Further names that still resolve to this port: a symbol the output had before it was renamed. A link saved under an old symbol keeps
 /// resolving; nothing writes an alias.
 /// </param>
-public sealed record CalcOutputPort(string Symbol, string Unit, string Description, string? Name = null, IReadOnlyList<string>? Aliases = null)
+/// <param name="MeaningChangedAt">
+/// The template version at which this port's symbol (and public name) came to mean something else (an axis swapped: <c>W_el_y</c> minor → major),
+/// with <paramref name="MeaningWas"/> and <paramref name="MeaningNow"/> saying what in plain words. A link or a pack binding that names the symbol
+/// or the public name on a calculation made before that version is refused rather than rebound (ADR-0177 review); a link under an alias keeps
+/// resolving, since the alias is declared precisely because that old symbol is this port.
+/// </param>
+/// <param name="MeaningWas">What the symbol meant before <paramref name="MeaningChangedAt"/>.</param>
+/// <param name="MeaningNow">What it means from <paramref name="MeaningChangedAt"/> on.</param>
+public sealed record CalcOutputPort(string Symbol, string Unit, string Description, string? Name = null, IReadOnlyList<string>? Aliases = null, string? MeaningChangedAt = null, string? MeaningWas = null, string? MeaningNow = null)
 {
+    /// <summary>Whether this port declares that its meaning changed at a version (<see cref="MeaningChangedAt"/>).</summary>
+    public bool HasMeaningChange => MeaningChangedAt is { Length: > 0 };
+
+    /// <summary>
+    /// Whether <paramref name="nameOrSymbol"/>, on a calculation made on template version <paramref name="version"/>, names a value that meant
+    /// something else: the name is the port's symbol or public name (an alias keeps its meaning), the port declares a change, and the version is
+    /// older than it.
+    /// </summary>
+    public bool MeaningChangedSince(string nameOrSymbol, string version) =>
+        HasMeaningChange
+        && (string.Equals(Symbol, nameOrSymbol, StringComparison.Ordinal) || (Name is { Length: > 0 } && string.Equals(Name, nameOrSymbol, StringComparison.Ordinal)))
+        && CalcTemplateVersion.Compare(version, MeaningChangedAt!) < 0;
+
+    /// <summary>"W_el_y meant … on id@1.1.0; since id@1.2.0 it means …", for the sentence that refuses the link or binding; names the port's symbol whatever name the link used.</summary>
+    public string MeaningChangeText(string templateId, string oldReference) =>
+        CalcTemplateVersion.MeaningChangeText(Symbol, templateId, oldReference, MeaningChangedAt, MeaningWas, MeaningNow);
+
     /// <summary>The name a port is listed under: its public <see cref="Name"/>, or its <see cref="Symbol"/> until it has one.</summary>
     public string PublicName => Name is { Length: > 0 } ? Name : Symbol;
 

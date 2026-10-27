@@ -147,6 +147,9 @@ public sealed partial class CalcSheetView : UserControl
     private readonly StackPanel _scanHost = new();
     private readonly Dictionary<string, StackPanel> _stepRows = new(StringComparer.Ordinal);
     private bool _loadingForm;
+
+    // Whether the form shows a calculation as its stored record (ADR-0177): read-only text, with Revise as the only way forward.
+    private bool _storedRecord;
     private string? _governingStep;
 
     private sealed record FieldControls(CalcInputSpec Spec, TextBox? Text, ComboBox? Unit, ComboBox? Choice, CheckBox? Flag, ComboBox Provenance, TextBox ProvenanceRef, TextBlock Problem, Grid Row);
@@ -260,6 +263,9 @@ public sealed partial class CalcSheetView : UserControl
 
     /// <summary>Raised on every input change with the current form; the coordinator answers with <see cref="ShowRun"/>.</summary>
     public event Action<CalcInputSet>? InputsChanged;
+
+    /// <summary>The template version the shown values were recorded on (<see cref="CalcInputSet.MadeOn"/>): the record's own, or none for a new sheet.</summary>
+    private string? _seedMadeOn;
 
     /// <summary>Raised after every run the form shows (<see cref="ShowRun"/>), so a reader of <see cref="LastRun"/> (the Guided test) knows what it read has been replaced.</summary>
     public event Action? RunShown;
@@ -646,6 +652,7 @@ public sealed partial class CalcSheetView : UserControl
         SelectedTemplate = entry;
         CurrentInstance = instance;
         IsReadOnly = instance is { IsImmutable: true };
+        _storedRecord = false;
         ClearComparison();
         _loadingForm = true;
 
@@ -668,7 +675,8 @@ public sealed partial class CalcSheetView : UserControl
         _status.Text = IsReadOnly ? $"This calculation is {instance!.Status}; it is read-only. Revise it to start a new revision." : string.Empty;
 
         // C-2: a saved calculation that still names an input by the symbol it had before it was renamed opens under the current one (an input given under both names with different values stays as saved, and the run blocks on it).
-        var seed = seedOverride ?? (instance is null ? CalcTemplateHasher.NewSheetInputs(entry.Template) : CalcInputAliases.TryCanonicalise(entry.Template, new CalcInputSet(instance.Inputs), out var canonicalSeed, out _) ? canonicalSeed : new CalcInputSet(instance.Inputs));
+        var seed = seedOverride ?? (instance is null ? CalcTemplateHasher.NewSheetInputs(entry.Template) : CalcInputAliases.TryCanonicalise(entry.Template, instance.InputSet(), out var canonicalSeed, out _) ? canonicalSeed : instance.InputSet());
+        _seedMadeOn = seed.MadeOn;
         _shownLinks.Clear();
 
         foreach (var value in seed.Values.Where(v => v.Provenance is { Kind: CalcProvenanceKind.Link or CalcProvenanceKind.CadImport or CalcProvenanceKind.ScanImport }))
@@ -910,7 +918,8 @@ public sealed partial class CalcSheetView : UserControl
     /// <summary>Reads the form into an input set, every value as typed with its unit and provenance. Unparseable numbers become NaN so validation names them.</summary>
     public CalcInputSet ReadForm()
     {
-        var set = new CalcInputSet();
+        // The form's values carry the version the shown record was made on, so a bare number (a unit the picker could not choose) is read, or refused, by it.
+        var set = new CalcInputSet { MadeOn = _seedMadeOn };
 
         foreach (var (symbol, f) in _fields)
         {
@@ -1068,6 +1077,37 @@ public sealed partial class CalcSheetView : UserControl
         ArgumentNullException.ThrowIfNull(instance);
         ArgumentNullException.ThrowIfNull(sheetText);
 
+        _storedRecord = false;
+        ShowReadOnlyText(instance, sheetText, LegacyArchiveSheet.MethodText, "ARCHIVE", Brushes.Gray, ArchiveSheetName);
+        _status.Text = "A migrated legacy calculation record: read-only. Re-enter its inputs in the matching worksheet template for a sheet with working.";
+    }
+
+    /// <summary>Automation name of the read-only text a calculation made on a template version that is not installed shows (ADR-0177).</summary>
+    public const string StoredRecordName = "Stored calculation record";
+
+    /// <summary>What the scope line says over a stored record.</summary>
+    public const string StoredRecordScope = "The formulas of the template version this calculation was made on are not installed in this build, so it is shown as it was stored, read-only: the sheet as issued, or the stored results of a calculation that was never issued. Revise carries its inputs to the current version as a new revision.";
+
+    /// <summary>
+    /// Shows a checked, issued or superseded calculation whose own template version is not installed (ADR-0177, DC-14) as the record it
+    /// stored: the sheet as issued, or a summary of its stored results, read-only, with no form. The coordinator sets the status line to the
+    /// sentence that says what became of the version and what a re-run on the installed version came to. Revise is offered for an issued
+    /// calculation and for a checked one (both carry the inputs to the current version); nothing else can be done to it here.
+    /// </summary>
+    public void ShowStoredRecord(CalcInstance instance, string recordText)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(recordText);
+
+        _storedRecord = true;
+        var colour = instance.Status == CalcInstanceStatus.Issued ? Brushes.SeaGreen : instance.Status == CalcInstanceStatus.Superseded ? Brushes.Gray : Brushes.DarkOrange;
+        ShowReadOnlyText(instance, recordText, StoredRecordScope, instance.Status.ToString().ToUpperInvariant(), colour, StoredRecordName);
+        _status.Text = $"'{instance.Name}' rev {instance.Revision} is shown as stored, read-only.";
+    }
+
+    /// <summary>The one read-only text display: no form, no fields, no diagram; the lifecycle actions follow <see cref="UpdateActions"/>.</summary>
+    private void ShowReadOnlyText(CalcInstance instance, string text, string scope, string watermark, IBrush watermarkColour, string automationName)
+    {
         _loadingForm = true;
         SelectedTemplate = null;
         _requirements = [];
@@ -1080,19 +1120,21 @@ public sealed partial class CalcSheetView : UserControl
         LastRun = null;
         _title.Text = instance.Name;
         _reference.Text = instance.TemplateReference;
-        _scope.Text = LegacyArchiveSheet.MethodText;
-        _watermark.Text = "ARCHIVE";
+        _scope.Text = scope;
+        _watermark.Text = watermark;
         _watermark.IsVisible = true;
-        _watermark.Foreground = Brushes.Gray;
+        _watermark.Foreground = watermarkColour;
+        _staleBanner.IsVisible = false;
+        _updateLinksButton.IsVisible = false;
+        _linkPanel.IsVisible = false;
         _form.Children.Clear();
         _fields.Clear();
         _referencePickers.Clear();
         _carriedInputs.Clear();
         _problems.Text = string.Empty;
-        var text = new SelectableTextBlock { Text = sheetText, FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeCaption + 1, TextWrapping = TextWrapping.NoWrap };
-        AutomationProperties.SetName(text, ArchiveSheetName);
-        _form.Children.Add(new ScrollViewer { Content = text, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto });
-        _status.Text = "A migrated legacy calculation record: read-only. Re-enter its inputs in the matching worksheet template for a sheet with working.";
+        var block = new SelectableTextBlock { Text = text, FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeCaption + 1, TextWrapping = TextWrapping.NoWrap };
+        AutomationProperties.SetName(block, automationName);
+        _form.Children.Add(new ScrollViewer { Content = block, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto });
         _exportButton.IsEnabled = false;
         _importButton.IsEnabled = false;
         _loadingForm = false;
@@ -1104,12 +1146,14 @@ public sealed partial class CalcSheetView : UserControl
         var instance = CurrentInstance;
         _saveButton.Content = instance is null ? SaveCaption : "Save changes";
         _saveButton.IsEnabled = !IsReadOnly && SelectedTemplate is not null && LastRun is { IsBlocked: false };
-        _checkButton.IsVisible = instance is { Status: CalcInstanceStatus.Draft, IsLegacyArchive: false };
+        _checkButton.IsVisible = instance is { Status: CalcInstanceStatus.Draft, IsLegacyArchive: false } && !_storedRecord;
         _compareButton.IsVisible = instance is { PredecessorId: not null, IsLegacyArchive: false };
-        _issueButton.IsVisible = instance is { Status: CalcInstanceStatus.Checked };
-        _reviseButton.IsVisible = instance is { Status: CalcInstanceStatus.Issued };
-        _importCadButton.IsEnabled = instance is { Status: CalcInstanceStatus.Draft };
-        _importScanButton.IsEnabled = instance is { Status: CalcInstanceStatus.Draft };
+        _issueButton.IsVisible = instance is { Status: CalcInstanceStatus.Checked } && !_storedRecord;
+
+        // A stored record (ADR-0177) cannot be issued on a version that is not installed; a checked one is revised forward instead, as an issued one is.
+        _reviseButton.IsVisible = instance is { Status: CalcInstanceStatus.Issued } || (_storedRecord && instance is { Status: CalcInstanceStatus.Checked });
+        _importCadButton.IsEnabled = instance is { Status: CalcInstanceStatus.Draft } && !_storedRecord;
+        _importScanButton.IsEnabled = instance is { Status: CalcInstanceStatus.Draft } && !_storedRecord;
         UpdateGovernance();
     }
 
@@ -1161,8 +1205,15 @@ public sealed partial class CalcSheetView : UserControl
                     if (seed?.Unit is { Length: > 0 } seedUnit && !units.Contains(seedUnit))
                         units.Add(seedUnit);
 
+                    // A bare stored number is shown in the default unit of the version it was recorded on, never the new one (ADR-0177 review,
+                    // CalcInputUnits); one the record cannot date is shown with no unit chosen, and the run refuses it with the sentence.
+                    var resolved = CalcInputUnits.TryResolve(spec, seed, _seedMadeOn, out var read, out _) ? read : null;
+
+                    if (resolved is { Length: > 0 } && !units.Contains(resolved))
+                        units.Add(resolved);
+
                     unit.ItemsSource = units;
-                    unit.SelectedItem = seed?.Unit is { } u && units.Contains(u) ? u : spec.DefaultUnit;
+                    unit.SelectedItem = seed?.Unit is { } u && units.Contains(u) ? u : resolved;
                     unit.Tag = unit.SelectedItem;
                     unit.SelectionChanged += (_, _) => OnUnitChanged(spec.Symbol);
                     AutomationProperties.SetName(unit, $"{spec.Symbol} unit");
