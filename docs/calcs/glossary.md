@@ -223,7 +223,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `w`: `w:distributed-load` Line force, distributed load, stiffness (beam-formulas); `w:key-width` Length (shaft); `w:mass-per-metre` Mass per length (containment)
 - `y_c`: `y_c:centroid-y` Length (weld-group, section-properties); `y_c:extreme-fibre-distance` Length (beam-formulas)
 
-## All symbols (1436 symbols in 54 templates)
+## All symbols (1437 symbols in 54 templates)
 
 One row per symbol, declared meaning and quantity type. Status `ok` is a symbol with one meaning; `RESOLVE` a symbol with several (phases B and C).
 
@@ -274,8 +274,9 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `C_Rd` | — | Force | kN | Compression-side resistance | struct.base-plate | ok |
 | `C_a` | — | Plain number | — | Ambient correction factor (1 does not apply the ambient: enter the fa…; Ambient factor | elec.conductor-sizing | ok |
 | `C_batt` | — | Charge | A·h | Selected battery capacity | elec.load-budget | ok |
-| `C_c` | — | Plain number | — | Semi-enclosed fuse factor | elec.conductor-sizing | ok |
+| `C_c` | — | Plain number | — | Buried or ducted installation factor; Buried or ducted installation factor, at most 1 (1 does not apply it:… | elec.conductor-sizing | ok |
 | `C_d` | — | Plain number | — | Orifice discharge coefficient | fp.cylinder | ok |
+| `C_f` | — | Plain number | — | Semi-enclosed fuse factor | elec.conductor-sizing | ok |
 | `C_fd` | — | Plain number | — | Friction coefficient, plate to grout | struct.base-plate | ok |
 | `C_g` | — | Plain number | — | Grouping correction factor (at most 1) | elec.conductor-sizing | ok |
 | `C_i` | — | Plain number | — | Thermal insulation correction factor (at most 1) | elec.conductor-sizing | ok |

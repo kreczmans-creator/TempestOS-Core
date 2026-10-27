@@ -1,4 +1,4 @@
-# Conductor sizing and overload coordination (`elec.conductor-sizing@1.4.0`)
+# Conductor sizing and overload coordination (`elec.conductor-sizing@1.5.0`)
 
 **In plain terms.** A cable must be big enough to carry the circuit's current without overheating, and the device protecting it must trip before the cable is damaged. The worksheet takes the load current, picks the smallest standard device that carries it, finds the smallest cable whose rated capacity, once reduced for temperature and grouping, carries the device rating, and checks that the device really protects the cable.
 
@@ -12,8 +12,8 @@ Calculates the design current, the smallest preferred device rating and the smal
 
 - Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b
 - Protective device rating: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b
-- Fuse factor: C_c = 0.725 for a semi-enclosed fuse (1.45/2, derived), else 1
-- Required tabulated capacity: I_t,req = I_n/(C_a·C_g·C_i·C_c); optional derived C_a = √[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table)
+- Device and installation factors: C_f = 0.725 for a semi-enclosed fuse (1.45/2, derived), else 1; C_c = the entered factor for a cable buried direct or in ducts, 1 when none applies
+- Required tabulated capacity: I_t,req = I_n/(C_a·C_g·C_i·C_f·C_c); optional derived C_a = √[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table)
 - Conductor cross-section: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived)
 - Carrying capacity: I_z = I_t·C_a·C_g·C_i
 - Device and conductor coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; I₂ = 2·I_n by default for a semi-enclosed fuse; an entered I₂ (datasheet) is always checked; in the BS 7671 installation context a gG fuse to BS 88 (and an MCCB or MPCB entered without I₂, taken as I₂ ≤ 1.45·I_n) has the I₂ condition deemed satisfied when I_n ≤ I_z; in the machine-wiring context (IEC 60269-1 gG fuses have I₂ = 1.6·I_n, not 1.45·I_n) I₂ must be entered
@@ -23,10 +23,11 @@ Calculates the design current, the smallest preferred device rating and the smal
 
 - `I_b = P/(√3·U·cosφ·η)` three-phase, `P/(U·cosφ·η)` single-phase, with `P` the **rated output (shaft) power** and η converting it to input; `P/U` DC, where `P` is the electrical power drawn (power factor and efficiency not applied); or the linked `I_b_in`, which replaces the computed value.
 - `I_n` = smallest rating in the `ratings` record with `I_n ≥ I_b`.
-- `C_c = 0.725` for a semi-enclosed fuse only (1.45 divided by an assumed fusing factor of 2, derived), else 1.
-- `I_t,req = I_n/(C_a·C_g·C_i·C_c)`. `C_a` is entered, or with `derive_Ca` derived as `√[(T_user − T_amb)/(T_user − T_ref)]`, labelled "derived approximation — compare with the licensed table" (T_user 70 °C for PVC, 90 °C for XLPE, the entered `T_user` for "user"; T_ref default 30 °C).
+- `C_f = 0.725` for a semi-enclosed fuse only (1.45 divided by an assumed fusing factor of 2, derived), else 1.
+- `C_c` is the factor for a cable buried direct or in ducts, a free input (default 1, usual range 0.5 to 1, hard range 0.1 to 1): its value is in the owner's licensed copy of the wiring regulations (BS 7671 App. 4) and is not shipped. The sheet says on every run whether it is applied (an assumption line: `No factor for a cable buried direct or in ducts is applied (C_c = 1).` or `The factor C_c = 0.9 for a cable buried direct or in ducts is applied with the other factors.`) and the required-capacity step shows it in the substitution. There is no installation choice to warn from: `method` is a descriptive key and is not interpreted, so a buried circuit with `C_c` left at 1 is sized as if above ground, with that note on the sheet.
+- `I_t,req = I_n/(C_a·C_g·C_i·C_f·C_c)`. The fuse factor and the installation factor combine as a product (a semi-enclosed fuse on a buried circuit: 0.725 × C_c). `C_a` is entered, or with `derive_Ca` derived as `√[(T_user − T_amb)/(T_user − T_ref)]`, labelled "derived approximation — compare with the licensed table" (T_user 70 °C for PVC, 90 °C for XLPE, the entered `T_user` for "user"; T_ref default 30 °C).
 - `CSA` = smallest cross-section in the `ampacity` record with `I_t ≥ I_t,req` (row order does not matter). With the AWG system the row carries the gauge n and the area is the derived geometry `d = 0.127·92^((36 − n)/39) mm`, `A = π d²/4`; no AWG capacity is supplied.
-- `I_z = I_t·C_a·C_g·C_i` (the factors actually applied; C_c is not part of it).
+- `I_z = I_t·C_a·C_g·C_i` (the factors actually applied; C_f and C_c are not part of it: they are factors on the device rating side of the coordination, not on the cable's capacity).
 - Checks (BS 7671 reg. 433.1.1; BS EN 60204-1 cl. 12.4 and 7.2 in the machine context): `I_b ≤ I_n`, `I_n ≤ I_z`, `I₂ ≤ 1.45·I_z`. For MCB types B, C, D `I₂ = 1.45·I_n` is inherent. An entered `I2` (datasheet) is always checked. For a semi-enclosed fuse `I₂ = 2·I_n` by default (reg. 433.1.202). In the **BS 7671 installation context** a gG fuse to BS 88 without `I2` shows no `I₂`: the condition is deemed satisfied when `I_n ≤ I_z` (reg. 433.1.201, cited by number; shown as a check with its real ratio `I_n/I_z`), and an MCCB or MPCB without `I2` is treated the same with a warning that this presumes `I₂` not above 1.45·`I_n`. In the **machine-wiring context** a gG fuse, MCCB or MPCB without `I2` is **blocked** (`I2:`): an IEC 60269-1 gG fuse has `I₂ = 1.6·I_n`, not 1.45·`I_n`, so the BS 88 deeming rule is not carried over (Green G-B-02, G-B-13). The two regulation numbers 433.1.201 and 433.1.202 are cited as given to me and are to be checked against the owner's copy.
 
 ## Inputs
@@ -54,6 +55,7 @@ Calculates the design current, the smallest preferred device rating and the smal
 | `C_a` | Ambient correction factor (1 does not apply the ambient: enter the factor for θ_a from your licensed table) |  | 1 | 0.5 to 1.3 | Factors |
 | `C_g` | Grouping correction factor (at most 1) |  | 1 | 0.3 to 1 | Factors |
 | `C_i` | Thermal insulation correction factor (at most 1) |  | 1 | 0.3 to 1 | Factors |
+| `C_c` | Buried or ducted installation factor, at most 1 (1 does not apply it: enter the factor for a cable buried direct or in ducts from your licensed table) |  | 1 | 0.5 to 1 | Factors |
 | `derive_Ca` | Derive C_a from the temperatures instead of the entered factor |  | 0 |  | Factors |
 | `I2` | Conventional operating current I₂ (gG fuse, MCCB, MPCB: required in the machine-wiring context; a semi-enclosed fuse defaults to 2 I_n) (optional) | A |  | 1 to 10000 | Device |
 
@@ -65,11 +67,12 @@ Calculates the design current, the smallest preferred device rating and the smal
 - The method key is descriptive and is not interpreted. Basis: Records carry their source and edition.
 - A gG fuse is deemed to meet I₂ ≤ 1.45·I_z when I_n ≤ I_z only under BS 7671. Basis: BS 7671 reg. 433.1.201; IEC 60269-1.
 - An IEC 60269-1 gG fuse has I₂ = 1.6·I_n, so in the machine-wiring context I₂ is entered from the datasheet. Basis: BS 7671 reg. 433.1.201; IEC 60269-1.
-- The ambient, grouping and insulation factors are applied as a product. Basis: The count is carried to the sheet and warns when C_g = 1 with more than one circuit.
+- The ambient, grouping, insulation, fuse and installation factors are applied as a product. Basis: The count is carried to the sheet and warns when C_g = 1 with more than one circuit.
 - C_g is not looked up from the number of grouped circuits. Basis: The count is carried to the sheet and warns when C_g = 1 with more than one circuit.
 - The optional derived C_a is an approximation for the temperature difference only. Basis: Derived, not tabulated.
 - The derived C_a is labelled as an approximation, so compare it with the licensed table. Basis: Derived, not tabulated.
-- C_c = 0.725 applies to a semi-enclosed fuse only: 1.45 divided by an assumed fusing factor of 2. Basis: Derived.
+- C_f = 0.725 applies to a semi-enclosed fuse only: 1.45 divided by an assumed fusing factor of 2. Basis: Derived.
+- C_c is the factor for a cable buried direct or in ducts, entered from the user's licensed table. Basis: BS 7671 App. 4 names the factor; its value is licensed and is not shipped.
 - AWG areas follow the geometry d = 0.127·92^((36 − n)/39) mm. Basis: Derived.
 - No AWG capacity is supplied. Basis: Derived.
 - DC circuits use I_b = P/U. Basis: Method.
@@ -81,7 +84,8 @@ Calculates the design current, the smallest preferred device rating and the smal
 |---|---|---|
 | `I_b` | Design current | A |
 | `I_n` | Rated current of the device | A |
-| `C_c` | Semi-enclosed fuse factor |  |
+| `C_f` | Semi-enclosed fuse factor |  |
+| `C_c` | Buried or ducted installation factor |  |
 | `C_a` | Ambient factor |  |
 | `I_t_req` | Required tabulated capacity | A |
 | `CSA` | Selected cross-section | mm² |
@@ -149,21 +153,25 @@ Single circuit, one installation method per run; the factors are applied as a pr
 - BS EN 60204-1:2018, cl. 7.2: Overcurrent protection
 - BS EN 60898-1:2019, cl. (number to be checked): Circuit-breakers for overcurrent protection: conventional tripping current
 - BS 7671:2018, reg. 433.1.201, 433.1.202: Overload protection by gG fuses and semi-enclosed fuses: deemed conditions
+- BS 7671:2018, App. 4 §5 (section number to be checked against the owner's copy): Rating factors for the protective device type and for a cable buried in the ground or in ducts
 
 ## Test cases
 
 ### Notes on the cases
 
-All analytic and Confirmed, recomputed in Python. The capacities (1.5→12.3, 2.5→17.7, 4→24.1, 6→31.9, 10→44.6 A; AWG 14→11.2, 12→16.9, 10→26.3, 8→37.4 A; and, in the behaviour tests, 11.4/16.2/23.7/30.8/43.1 A, AWG 18.4 and 27.3 A and C_g 0.58, all invented) and the factors (C_a 0.91, C_g 0.77) are synthetic values invented for these tests, not taken from any table; the ratings 6, 10, 16, 20, 25, 32, 40, 50, 63 A are the typical preferred series. `ka-three-phase-mcb-c` (T_amb 35 °C, two circuits; I_b 14.1507 A, I_n 16 A, I_t,req 22.8343 A, 4 mm², I_z 16.8869 A), `ka-single-phase` (I_b 15.2555 A, 2.5 mm², I_z 17.7 A), `ka-dc` (I_b 25 A, I_t,req 27.4725 A, 6 mm², I_z 29.029 A; a gG fuse in the machine context with `I2` = 40 A entered, u_I2 = 0.95030), `ka-semi-enclosed` (C_c 0.725, I_t,req 27.5862 A, 6 mm², I₂ 40 A), `ka-derived-ca` (C_a = √(30/40) = 0.866025), `ka-awg-10` (AWG 10 = 5.2612 mm², on a type C MCB). Not pinned — owner check: the Schneider *Electrical Installation Guide* chapter G worked examples, the IET *Electrical Installation Design Guide* examples and the Kollmorgen current-carrying-capacity note; no value from them is in source, tests or docs. The worked example `conveyor-motor-circuit` (4 kW rated output, type C MCB, machine panel) uses synthetic values entered with record-style provenance.
+All analytic and Confirmed, recomputed in Python. The capacities (1.5→12.3, 2.5→17.7, 4→24.1, 6→31.9, 10→44.6 A; AWG 14→11.2, 12→16.9, 10→26.3, 8→37.4 A; and, in the behaviour tests, 11.4/16.2/23.7/30.8/43.1 A, AWG 18.4 and 27.3 A and C_g 0.58, all invented) and the factors (C_a 0.91, C_g 0.77) are synthetic values invented for these tests, not taken from any table; the ratings 6, 10, 16, 20, 25, 32, 40, 50, 63 A are the typical preferred series. `ka-three-phase-mcb-c` (T_amb 35 °C, two circuits; I_b 14.1507 A, I_n 16 A, I_t,req 22.8343 A, 4 mm², I_z 16.8869 A), `ka-single-phase` (I_b 15.2555 A, 2.5 mm², I_z 17.7 A), `ka-dc` (I_b 25 A, I_t,req 27.4725 A, 6 mm², I_z 29.029 A; a gG fuse in the machine context with `I2` = 40 A entered, u_I2 = 0.95030), `ka-semi-enclosed` (C_f 0.725, I_t,req 27.5862 A, 6 mm², I₂ 40 A), `ka-buried-cc` (C_c 0.9 on the 7.5 kW load with every other factor 1: I_t,req = 16/0.9 = 17.7778 A, 4 mm² where every factor at 1 gave 2.5 mm², I_z 24.1 A, u_In 0.66390; the 0.9 is an illustrative input, not the licensed value), `ka-derived-ca` (C_a = √(30/40) = 0.866025), `ka-awg-10` (AWG 10 = 5.2612 mm², on a type C MCB). Not pinned — owner check: the Schneider *Electrical Installation Guide* chapter G worked examples, the IET *Electrical Installation Design Guide* examples and the Kollmorgen current-carrying-capacity note; no value from them is in source, tests or docs. The worked example `conveyor-motor-circuit` (4 kW rated output, type C MCB, machine panel) uses synthetic values entered with record-style provenance.
 
 - `ka-three-phase-mcb-c`: Three-phase 7.5 kW (output) load on a type C MCB, θ_a 35 °C with C_a 0.91, two circuits with C_g 0.77 (Confirmed; source: Analytic (synthetic test values invented for these tests, not taken from any table))
 - `ka-single-phase`: Single-phase 3 kW (output) load on a type B MCB (Confirmed; source: Analytic (synthetic test values invented for these tests, not taken from any table))
 - `ka-dc`: DC 600 W load at 24 V on a gG fuse, C_a 0.91 (Confirmed; source: Analytic (synthetic test values invented for these tests, not taken from any table))
-- `ka-semi-enclosed`: Semi-enclosed fuse on a linked 18 A design current: C_c = 0.725 (Confirmed; source: Analytic (synthetic test values invented for these tests, not taken from any table))
+- `ka-semi-enclosed`: Semi-enclosed fuse on a linked 18 A design current: C_f = 0.725 (Confirmed; source: Analytic (synthetic test values invented for these tests, not taken from any table))
+- `ka-buried-cc`: Buried or ducted installation factor C_c = 0.9 on the three-phase 7.5 kW load, type C MCB, every other factor 1 (Confirmed; source: Analytic (synthetic test values invented for these tests, not taken from any table; the factor 0.9 is an illustrative input, not the licensed value))
 - `ka-derived-ca`: Derived ambient factor: PVC 70 °C, θ_ref 30 °C, θ_a 40 °C (Confirmed; source: Analytic (the derived-approximation formula))
 - `ka-awg-10`: AWG geometry: AWG 10 is 5.2612 mm² (Confirmed; source: Analytic (the AWG geometry formula))
 
 ## Changes
+
+**Changes in 1.5.0 (DC-05, DC-21: elec.conductor-sizing-R1).** The factor for a cable buried direct or in ducts is a free input `C_c` (default 1, usual range 0.5 to 1, hard range 0.1 to 1, group Factors): BS 7671 App. 4 names such a factor, its value is in the owner's licensed copy and is not shipped, and the owner chose a free input over a switch at the standard's value or a warning read from `method`. It divides the required tabulated capacity with the other factors, `I_t,req = I_n/(C_a·C_g·C_i·C_f·C_c)`, and is not part of `I_z`, exactly as the semi-enclosed fuse factor was applied; the two combine as a product. The semi-enclosed fuse factor keeps its value 0.725 and takes the symbol `C_f` (it was the output `C_c`, which the input now needs; it is not a port, so no link or binding names it): the known-answer case `ka-semi-enclosed` expects `C_f` 0.725 where it expected `C_c` 0.725, the golden and the example sheets show the step as `C_f`, and no value changes. The sheet discloses the factor on every run: the input row, its value in the substitution of the required-capacity step, and an assumption line that says whether it is applied. There is no buried-or-ducted installation choice to warn from (`method` is descriptive and is not interpreted), so a circuit with `C_c` left at 1 carries the note instead of a warning. New known-answer case `ka-buried-cc` (Track P manual test row 30): the 7.5 kW three-phase load on a type C MCB with every other factor 1 and `C_c` 0.9 needs I_t,req = 16/0.9 = 17.7778 A, so 4 mm² (24.1 A) where every factor at 1 gave 2.5 mm² (17.7 A), with I_z = 24.1 A and u_In 0.66390; the 0.9 is an illustrative input. A saved calculation without `C_c` reads 1 and gives the value it gave before (the sheet lists it under the defaults used). `C_c` is not a record kind: the superseded Track P template 09 stays not imported.
 
 **Changes in 1.4.0 (C-2 consistency, phase C).** Layout and wording; no result changes. Three inputs take the standard symbols and keep the old ones as aliases: `theta_a` is `T_amb`, `theta_p` is `T_user` and `theta_ref` is `T_ref`. The port `theta_op` is `T_op` (public name `conductor.temperature_operating`, alias `theta_op`), and the pack bindings to voltage-drop and fault-protection use `T_op`. The checks compare physical values: `I_b` with `I_n`, `I_n` with `I_z`, and `I2` with the new step `I2_lim`, 1.45 `I_z`. The rules `ratings`, `theta_p`, `derive-Ca`, `C_a-range`, `C_a`, `ampacity-ignored` and `I2-deemed` are declared, so every emitted id is declared and its severity is the declared one; the rule ids `theta_a`, `theta_p` and `theta_a-limit` keep their names. The inputs are grouped Setup, Geometry, Material, Loads, Conditions, Factors and Device, and every usual range is inside its hard limits. The record kind `cable.ampacity` is titled "Cable ampacity (current-carrying capacities)".
 

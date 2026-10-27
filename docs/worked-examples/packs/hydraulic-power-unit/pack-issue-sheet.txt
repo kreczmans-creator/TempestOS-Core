@@ -45,8 +45,8 @@ Calculation pack: the calculations listed in the index, issued together under on
   Template: pack
   Content hash: —
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 48/48
-  Test run: 2026-10-27 03:56 UTC
+  Known-answer cases passed: 49/49
+  Test run: 2026-10-27 06:48 UTC
   Application: TempestOS test
 
 9. References
@@ -419,7 +419,7 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
   Content hash: 900cefdc454489a1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 06:48 UTC
   Application: TempestOS test
 
 9. References
@@ -594,7 +594,7 @@ Absolute pressures: p_a = p_gauge + p_atm, or as entered in Absolute mode Gas vo
   Content hash: 7ea8865ce36556d1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 10/10
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 06:48 UTC
   Application: TempestOS test
 
 9. References
@@ -755,7 +755,7 @@ Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place
   Content hash: 2df24301b0231856
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 06:48 UTC
   Application: TempestOS test
 
 9. References
@@ -1013,7 +1013,7 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
   Content hash: 7ccfbf19d3cec269
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 06:48 UTC
   Application: TempestOS test
 
 9. References
@@ -1030,7 +1030,7 @@ Issued: 2026-10-27    Issue: HPU-001    Client: Client Co
 
 1. Scope and method
 Calculates the design current, the smallest preferred device rating and the smallest conductor whose tabulated capacity carries that rating. It checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z, using your own capacity and rating records.
-Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b Protective device rating: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b Fuse factor: C_c = 0.725 for a semi-enclosed fuse (1.45/2, derived), else 1 Required tabulated capacity: I_t,req = I_n/(C_a·C_g·C_i·C_c); optional derived C_a = √[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table) Conductor cross-section: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived) Carrying capacity: I_z = I_t·C_a·C_g·C_i Device and conductor coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; I₂ = 2·I_n by default for a semi-enclosed fuse; an entered I₂ (datasheet) is always checked; in the BS 7671 installation context a gG fuse to BS 88 (and an MCCB or MPCB entered without I₂, taken as I₂ ≤ 1.45·I_n) has the I₂ condition deemed satisfied when I_n ≤ I_z; in the machine-wiring context (IEC 60269-1 gG fuses have I₂ = 1.6·I_n, not 1.45·I_n) I₂ must be entered Device code: 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB (carried to fault-protection so the fault check uses the device chosen here)
+Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b Protective device rating: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b Device and installation factors: C_f = 0.725 for a semi-enclosed fuse (1.45/2, derived), else 1; C_c = the entered factor for a cable buried direct or in ducts, 1 when none applies Required tabulated capacity: I_t,req = I_n/(C_a·C_g·C_i·C_f·C_c); optional derived C_a = √[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table) Conductor cross-section: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived) Carrying capacity: I_z = I_t·C_a·C_g·C_i Device and conductor coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; I₂ = 2·I_n by default for a semi-enclosed fuse; an entered I₂ (datasheet) is always checked; in the BS 7671 installation context a gG fuse to BS 88 (and an MCCB or MPCB entered without I₂, taken as I₂ ≤ 1.45·I_n) has the I₂ condition deemed satisfied when I_n ≤ I_z; in the machine-wiring context (IEC 60269-1 gG fuses have I₂ = 1.6·I_n, not 1.45·I_n) I₂ must be entered Device code: 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB (carried to fault-protection so the fault check uses the device chosen here)
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
@@ -1067,6 +1067,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   C_a | Ambient correction factor (1 does not apply the ambient: enter the factor for T_amb from your licensed table) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1.3
   C_g | Grouping correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.3 … 1
   C_i | Thermal insulation correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.3 … 1
+  C_c | Buried or ducted installation factor, at most 1 (1 does not apply it: enter the factor for a cable buried direct or in ducts from your licensed table) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
   derive_Ca | Derive C_a from the temperatures instead of the entered factor | no |  | assumption: Sheet default value; no project figure given. | any
 
 3. Assumptions
@@ -1076,26 +1077,29 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   A4. The method key is descriptive and is not interpreted. (Records carry their source and edition.)
   A5. A gG fuse is deemed to meet I₂ ≤ 1.45·I_z when I_n ≤ I_z only under BS 7671. (BS 7671 reg. 433.1.201; IEC 60269-1.)
   A6. An IEC 60269-1 gG fuse has I₂ = 1.6·I_n, so in the machine-wiring context I₂ is entered from the datasheet. (BS 7671 reg. 433.1.201; IEC 60269-1.)
-  A7. The ambient, grouping and insulation factors are applied as a product. (The count is carried to the sheet and warns when C_g = 1 with more than one circuit.)
+  A7. The ambient, grouping, insulation, fuse and installation factors are applied as a product. (The count is carried to the sheet and warns when C_g = 1 with more than one circuit.)
   A8. C_g is not looked up from the number of grouped circuits. (The count is carried to the sheet and warns when C_g = 1 with more than one circuit.)
   A9. The optional derived C_a is an approximation for the temperature difference only. (Derived, not tabulated.)
   A10. The derived C_a is labelled as an approximation, so compare it with the licensed table. (Derived, not tabulated.)
-  A11. C_c = 0.725 applies to a semi-enclosed fuse only: 1.45 divided by an assumed fusing factor of 2. (Derived.)
-  A12. AWG areas follow the geometry d = 0.127·92^((36 − n)/39) mm. (Derived.)
-  A13. No AWG capacity is supplied. (Derived.)
-  A14. DC circuits use I_b = P/U. (Method.)
-  A15. The power factor and the efficiency are not applied to a DC circuit. (Method.)
-  A16. context (Design context (changes clause citations and the scope note only)) is taken as BS EN 60204-1 machine wiring. (Sheet default value; no project figure given.)
-  A17. supply (Supply) is taken as three-phase. (Sheet default value; no project figure given.)
-  A18. system (Conductor system (AWG: geometry only, no AWG capacities are supplied)) is taken as metric. (Sheet default value; no project figure given.)
-  A19. T_amb (Ambient temperature) is taken as 30 °C. (Sheet default value; no project figure given.)
-  A20. T_ref (Reference ambient temperature for the derived C_a) is taken as 30 °C. (Sheet default value; no project figure given.)
-  A21. N_g (Grouped circuits) is taken as 1. (Sheet default value; no project figure given.)
-  A22. C_a (Ambient correction factor (1 does not apply the ambient: enter the factor for T_amb from your licensed table)) is taken as 1. (Sheet default value; no project figure given.)
-  A23. C_g (Grouping correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
-  A24. C_i (Thermal insulation correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
-  A25. derive_Ca (Derive C_a from the temperatures instead of the entered factor) is taken as no. (Sheet default value; no project figure given.)
-  A26. Machine wiring context (BS EN 60204-1): the conductor is sized for the protective device rating; the capacities and factors are the user's records for the installation method stated. (The context changes citations, and whether a gG fuse, MCCB or MPCB without I₂ may be deemed to meet I₂ ≤ 1.45·I_z (installation) or must have I₂ entered (machine wiring); no other number differs.)
+  A11. C_f = 0.725 applies to a semi-enclosed fuse only: 1.45 divided by an assumed fusing factor of 2. (Derived.)
+  A12. C_c is the factor for a cable buried direct or in ducts, entered from the user's licensed table. (BS 7671 App. 4 names the factor; its value is licensed and is not shipped.)
+  A13. AWG areas follow the geometry d = 0.127·92^((36 − n)/39) mm. (Derived.)
+  A14. No AWG capacity is supplied. (Derived.)
+  A15. DC circuits use I_b = P/U. (Method.)
+  A16. The power factor and the efficiency are not applied to a DC circuit. (Method.)
+  A17. context (Design context (changes clause citations and the scope note only)) is taken as BS EN 60204-1 machine wiring. (Sheet default value; no project figure given.)
+  A18. supply (Supply) is taken as three-phase. (Sheet default value; no project figure given.)
+  A19. system (Conductor system (AWG: geometry only, no AWG capacities are supplied)) is taken as metric. (Sheet default value; no project figure given.)
+  A20. T_amb (Ambient temperature) is taken as 30 °C. (Sheet default value; no project figure given.)
+  A21. T_ref (Reference ambient temperature for the derived C_a) is taken as 30 °C. (Sheet default value; no project figure given.)
+  A22. N_g (Grouped circuits) is taken as 1. (Sheet default value; no project figure given.)
+  A23. C_a (Ambient correction factor (1 does not apply the ambient: enter the factor for T_amb from your licensed table)) is taken as 1. (Sheet default value; no project figure given.)
+  A24. C_g (Grouping correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
+  A25. C_i (Thermal insulation correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
+  A26. C_c (Buried or ducted installation factor, at most 1 (1 does not apply it: enter the factor for a cable buried direct or in ducts from your licensed table)) is taken as 1. (Sheet default value; no project figure given.)
+  A27. derive_Ca (Derive C_a from the temperatures instead of the entered factor) is taken as no. (Sheet default value; no project figure given.)
+  A28. Machine wiring context (BS EN 60204-1): the conductor is sized for the protective device rating; the capacities and factors are the user's records for the installation method stated. (The context changes citations, and whether a gG fuse, MCCB or MPCB without I₂ may be deemed to meet I₂ ≤ 1.45·I_z (installation) or must have I₂ entered (machine wiring); no other number differs.)
+  A29. No factor for a cable buried direct or in ducts is applied (C_c = 1). (Enter C_c from your licensed table for a cable buried direct or in ducts.)
 
 4. Working
   [14] I_b = P / (sqrt(3) * U * cos_phi * eta)
@@ -1110,46 +1114,46 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
       = MCB type C
       = 2
         Protective device type code (carried to E5 so the fault check uses this device)
-  [17] C_c = 1 (not a semi-enclosed fuse)    « BS EN 60204-1 cl. 12.4
+  [17] C_f = 1 (not a semi-enclosed fuse)    « BS EN 60204-1 cl. 12.4
       = MCB type C
       = 1
         Semi-enclosed fuse factor
-  [21] T_op = 70 degC
+  [22] T_op = 70 degC
       = 70 degC
         Conductor operating temperature for the insulation
-  [24] I_t_req = I_n / (C_a * C_g * C_i * C_c)    « BS EN 60204-1 cl. 12.4
-      = 40 A / (1 × 1 × 1 × 1)
+  [25] I_t_req = I_n / (C_a * C_g * C_i * C_f * C_c)    « BS EN 60204-1 cl. 12.4
+      = 40 A / (1 × 1 × 1 × 1 × 1)
       = 40 A
         Required tabulated capacity
-  [25] I_t = I_t of the selected row of the ampacity record    « BS EN 60204-1 cl. 12.4
+  [26] I_t = I_t of the selected row of the ampacity record    « BS EN 60204-1 cl. 12.4
       = I_t,req = 40 A
       = 44.6 A
         Tabulated current-carrying capacity of the selected conductor
-  [26] CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req    « BS EN 60204-1 cl. 12.4
+  [27] CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req    « BS EN 60204-1 cl. 12.4
       = I_t,req = 40 A
       = 10 mm²
         Selected conductor cross-section
-  [27] I_z = I_t * C_a * C_g * C_i    « BS EN 60204-1 cl. 12.4
+  [28] I_z = I_t * C_a * C_g * C_i    « BS EN 60204-1 cl. 12.4
       = 44.6 A × 1 × 1 × 1
       = 44.6 A
         Current-carrying capacity in the installed conditions
-  [28] u_Ib = I_b / I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [29] u_Ib = I_b / I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 33.47 A / 40 A
       = 0.83675
         Design current utilisation of the device
-  [29] u_In = I_n / I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [30] u_In = I_n / I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 40 A / 44.6 A
       = 0.89686
         Device rating utilisation of the conductor
-  [30] I2 = 1.45 * I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [31] I2 = 1.45 * I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 1.45 × 40 A
       = 58 A
         Conventional operating current (inherent 1.45 I_n)
-  [31] I2_lim = 1.45 * I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [32] I2_lim = 1.45 * I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 1.45 × 44.6 A
       = 64.67 A
         Largest conventional operating current the conductor allows, 1.45 I_z
-  [32] u_I2 = I2 / I2_lim    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  [33] u_I2 = I2 / I2_lim    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
       = 58 A / 64.67 A
       = 0.89686
         I₂ utilisation of 1.45 I_z
@@ -1162,7 +1166,8 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   L = 30 m    Circuit length
   T_op = 70 °C    Conductor operating temperature for the insulation
   device_code = 2    Protective device type code
-  C_c = 1    Semi-enclosed fuse factor
+  C_f = 1    Semi-enclosed fuse factor
+  C_c = 1    Buried or ducted installation factor
   C_a = 1    Ambient factor
   I_t_req = 40 A    Required tabulated capacity
   I2 = 58 A    Conventional operating current
@@ -1179,11 +1184,11 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   WARNING  records: tabulated values not taken from a reference record are C_a, C_g, C_i (Cable correction factors). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: elec.conductor-sizing@1.4.0
-  Content hash: f8273ca4d4809d96
+  Template: elec.conductor-sizing@1.5.0
+  Content hash: c0657fdab51c927d
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 6/6
-  Test run: 2026-10-27 03:56 UTC
+  Known-answer cases passed: 7/7
+  Test run: 2026-10-27 06:48 UTC
   Application: TempestOS test
 
 9. References
@@ -1193,6 +1198,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   4. BS EN 60204-1:2018 cl. 7.2 — Overcurrent protection
   5. BS EN 60898-1:2019 cl. (number to be checked) — Circuit-breakers for overcurrent protection: conventional tripping current
   6. BS 7671:2018 reg. 433.1.201, 433.1.202 — Overload protection by gG fuses and semi-enclosed fuses: deemed conditions
+  7. BS 7671:2018 App. 4 §5 (section number to be checked against the owner's copy) — Rating factors for the protective device type and for a cable buried in the ground or in ducts
 
 
 CALCULATION SHEET — ISSUED
@@ -1298,7 +1304,7 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   Content hash: 3a115f95fa99ee42
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 06:48 UTC
   Application: TempestOS test
 
 9. References
@@ -1474,7 +1480,7 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   Content hash: 9559cda3b9c899f8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 06:48 UTC
   Application: TempestOS test
 
 9. References
@@ -1769,7 +1775,7 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
   Content hash: da767ce16b10e18b
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 06:48 UTC
   Application: TempestOS test
 
 9. References

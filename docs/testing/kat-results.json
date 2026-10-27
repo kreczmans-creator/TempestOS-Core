@@ -104,9 +104,9 @@
     },
     {
       "id": "elec.conductor-sizing",
-      "version": "1.4.0",
-      "kats": 6,
-      "katsPassed": 6,
+      "version": "1.5.0",
+      "kats": 7,
+      "katsPassed": 7,
       "failedKats": [],
       "examples": 1,
       "examplesPassed": 1,

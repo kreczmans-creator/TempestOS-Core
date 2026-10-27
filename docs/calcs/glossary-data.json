@@ -1506,7 +1506,8 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Semi-enclosed fuse factor"
+            "Buried or ducted installation factor",
+            "Buried or ducted installation factor, at most 1 (1 does not apply it: enter the factor for a cable buried direct or in ducts from your licensed table)"
           ],
           "templates": [
             "elec.conductor-sizing"
@@ -1526,6 +1527,22 @@
           ],
           "templates": [
             "fp.cylinder"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "C_f",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Semi-enclosed fuse factor"
+          ],
+          "templates": [
+            "elec.conductor-sizing"
           ]
         }
       ]
