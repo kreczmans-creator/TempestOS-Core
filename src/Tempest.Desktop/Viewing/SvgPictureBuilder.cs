@@ -85,7 +85,7 @@ public static class SvgPictureBuilder
     /// <summary>The most path verbs one document draws, all its shapes together (F8): Skia's edge list at draw grows with them, and four million segments of an even-odd fill exhausted it.</summary>
     public const long MaxPathVerbs = 4_000_000;
 
-    /// <summary>The most style-sheet rules a document keeps (F9); further rules are ignored.</summary>
+    /// <summary>The most style-sheet rules of distinct selectors a document keeps (F9); a rule of a further selector is ignored (one that repeats a kept selector merges into it).</summary>
     public const int MaxStyleRules = 10_000;
 
     /// <summary>
@@ -125,8 +125,8 @@ public static class SvgPictureBuilder
     /// <param name="OpacityFolds">Elements whose group opacity was folded into their fill and stroke opacity instead, because a layer cap was reached (F7).</param>
     /// <param name="PathVerbs">Path verbs drawn, every shape together (F8).</param>
     /// <param name="ShapesSkipped">Shapes left out because their data was over <see cref="Limits.ShapeDataCharacters"/> or they would take the document past <see cref="Limits.PathVerbs"/> (F8).</param>
-    /// <param name="StyleRules">Style-sheet rules kept (F9).</param>
-    /// <param name="StyleRulesIgnored">Style-sheet rules past <see cref="Limits.StyleRules"/>, ignored (F9).</param>
+    /// <param name="StyleRules">Style-sheet rules kept, one per distinct selector (F9).</param>
+    /// <param name="StyleRulesIgnored">Style-sheet rules of a further selector past <see cref="Limits.StyleRules"/>, ignored (F9).</param>
     public sealed record Statistics(int Elements, int GradientStopParses, long DecodedPixels, int ImagesSkipped, int TypefaceLookups, int FamilyLookups, int OpacityLayers, int OpacityFolds, long PathVerbs, int ShapesSkipped, int StyleRules, int StyleRulesIgnored);
 
     private const float PixelsPerInch = 96f;
@@ -321,23 +321,45 @@ public static class SvgPictureBuilder
         private readonly Dictionary<string, List<StyleRule>> _rulesByTag = new(StringComparer.Ordinal);
         private readonly List<StyleRule> _universalRules = [];
 
-        /// <summary>Rules kept from every style sheet, in order.</summary>
+        /// <summary>Rules kept from every style sheet: one per distinct selector (a rule that repeats an earlier selector merges into it and is not counted).</summary>
         public int RuleCount { get; private set; }
 
-        /// <summary>Rules past <see cref="Limits.StyleRules"/>, ignored.</summary>
+        /// <summary>Rules of a new selector past <see cref="Limits.StyleRules"/>, ignored.</summary>
         public int RulesIgnored { get; private set; }
 
+        /// <summary>The position of the next declaration in the sheet, for the cascade.</summary>
+        private int _order;
+
         /// <summary>Files one parsed rule, or counts it as ignored past the cap.</summary>
+        /// <summary>The one rule kept per distinct (tag, class, id) selector, so a sheet of ten thousand <c>rect{…}</c> rules is one candidate, not ten thousand.</summary>
+        private readonly Dictionary<(string? Tag, string? Class, string? Id), StyleRule> _rulesBySelector = [];
+
         public void AddRule(string? tag, string? cls, string? id, IReadOnlyDictionary<string, string> declarations)
         {
+            var order = _order++;
+
+            // Rules with an identical selector match exactly the same elements, so the cascade among them is, per property, the latest
+            // declaration: they are merged into one rule that remembers each property's value and the order it was declared at. Rules of
+            // different selectors stay apart, and keep their order for the cascade among equal specificities (the re-review's F9 blocker:
+            // 10 000 rules under one tag key were still filtered and sorted for every element).
+            if (_rulesBySelector.TryGetValue((tag, cls, id), out var existing))
+            {
+                foreach (var (name, value) in declarations)
+                    existing.Declarations[name] = (value, order);
+
+                return;
+            }
+
             if (RuleCount >= Limits.StyleRules)
             {
                 RulesIgnored++;
                 return;
             }
 
+            RuleCount++;
             var specificity = (id is null ? 0 : 100) + (cls is null ? 0 : 10) + (tag is null ? 0 : 1);
-            var rule = new StyleRule(tag, cls, id, specificity, RuleCount++, declarations);
+            var rule = new StyleRule(tag, cls, id, specificity, declarations.ToDictionary(d => d.Key, d => (d.Value, order), StringComparer.OrdinalIgnoreCase));
+            _rulesBySelector[(tag, cls, id)] = rule;
             var list = id is not null ? ListFor(_rulesById, id) : cls is not null ? ListFor(_rulesByClass, cls) : tag is not null ? ListFor(_rulesByTag, tag) : _universalRules;
             list.Add(rule);
         }
@@ -350,7 +372,7 @@ public static class SvgPictureBuilder
             return list;
         }
 
-        /// <summary>The rules that apply to an element of <paramref name="tag"/> with <paramref name="classes"/> and <paramref name="id"/>, least specific and earliest first.</summary>
+        /// <summary>The rules that apply to an element of <paramref name="tag"/> with <paramref name="classes"/> and <paramref name="id"/>: one per distinct selector, any order (the caller cascades by specificity and declaration order).</summary>
         public IEnumerable<StyleRule> RulesFor(string tag, string[] classes, string? id)
         {
             if (RuleCount == 0)
@@ -373,8 +395,7 @@ public static class SvgPictureBuilder
             return candidates
                 .Where(r => (r.Tag is null || string.Equals(r.Tag, tag, StringComparison.Ordinal))
                     && (r.Class is null || classes.Contains(r.Class, StringComparer.Ordinal))
-                    && (r.Id is null || string.Equals(r.Id, id, StringComparison.Ordinal)))
-                .OrderBy(r => r.Specificity).ThenBy(r => r.Order);
+                    && (r.Id is null || string.Equals(r.Id, id, StringComparison.Ordinal)));
         }
         private float _viewportHeight;
 
@@ -413,7 +434,8 @@ public static class SvgPictureBuilder
         }
     }
 
-    private sealed record StyleRule(string? Tag, string? Class, string? Id, int Specificity, int Order, IReadOnlyDictionary<string, string> Declarations);
+    /// <summary>One selector's rule: each property with its value and the order of the declaration that set it (the latest, over every rule of this selector).</summary>
+    private sealed record StyleRule(string? Tag, string? Class, string? Id, int Specificity, Dictionary<string, (string Value, int Order)> Declarations);
 
     private static readonly Regex CssComment = new(@"/\*.*?\*/", RegexOptions.Singleline | RegexOptions.NonBacktracking, MatchTimeout);
 
@@ -555,11 +577,19 @@ public static class SvgPictureBuilder
             var classes = (element.Attribute("class")?.Value ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var id = element.Attribute("id")?.Value;
 
+            // The cascade: least specific first, and among equals the earliest declaration first, so the last applied wins.
+            var declarations = new List<(int Specificity, int Order, string Name, string Value)>();
+
             foreach (var rule in context.RulesFor(tag, classes, id))
             {
-                foreach (var (name, value) in rule.Declarations)
-                    properties[name] = value;
+                foreach (var (name, (value, order)) in rule.Declarations)
+                    declarations.Add((rule.Specificity, order, name, value));
             }
+
+            declarations.Sort((a, b) => a.Specificity != b.Specificity ? a.Specificity.CompareTo(b.Specificity) : a.Order.CompareTo(b.Order));
+
+            foreach (var (_, _, name, value) in declarations)
+                properties[name] = value;
         }
 
         if (element.Attribute("style")?.Value is { } inline)

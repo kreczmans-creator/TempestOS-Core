@@ -25,6 +25,8 @@ public sealed class SvgHostileInputTests
 
     private static string Svg(string body, string size = "width=\"100\" height=\"100\"") => $"<svg {Ns} {size}>{body}</svg>";
 
+    private static string Repeat(string text, int count) => string.Concat(Enumerable.Repeat(text, count));
+
     /// <summary>The colour at (<paramref name="x"/>, <paramref name="y"/>) of <paramref name="picture"/> drawn at scale 1 on a transparent bitmap of its own size.</summary>
     private static SKColor PixelAt(SvgPictureBuilder.SvgPicture picture, int x, int y)
     {
@@ -441,6 +443,36 @@ public sealed class SvgHostileInputTests
     }
 
     [AvaloniaFact]
+    public void Rules_With_One_Selector_Are_One_Rule_So_Twenty_Thousand_Of_Them_Over_Twenty_Thousand_Elements_Build_In_Linear_Time()
+    {
+        // The review's css-20k-rules-x-20k-elements: every rule under the one tag key (before the merge: 20 000 candidates filtered and sorted per element, 52 s).
+        var markup = Svg("<style>" + Repeat("rect{fill:#123456}", 19_999) + "rect{fill:#ff0000}</style>" + Repeat("<rect width=\"1\" height=\"1\"/>", 20_000));
+
+        using var picture = BuildWithin(markup, "20 000 identical-selector rules on 20 000 elements");
+
+        // One selector, one rule; the last declaration of fill is the one that paints.
+        Assert.Equal(1, picture.Statistics.StyleRules);
+        Assert.Equal(0, picture.Statistics.StyleRulesIgnored);
+        Assert.Equal(new SKColor(255, 0, 0), PixelAt(picture, 0, 0));
+    }
+
+    [AvaloniaFact]
+    public void Merged_Rules_Keep_The_Latest_Declaration_Per_Property_And_Cascade_By_Order_Across_Selectors()
+    {
+        // rect: fill set twice (the later wins), stroke-width set once (kept); .a, .b, .a interleaved on class="a b": the last .a declaration wins over .b.
+        var markup = Svg("<style>rect{fill:#010101;stroke:#020202;stroke-width:4} rect{fill:#030303} .a{fill:#040404} .b{fill:#050505} .a{fill:#060606} .c{fill:#070707} .d{fill:#080808}</style>" +
+            "<rect width=\"10\" height=\"10\"/><rect class=\"a b\" x=\"10\" width=\"10\" height=\"10\"/><rect class=\"c d\" x=\"20\" width=\"10\" height=\"10\"/>");
+
+        using var picture = SvgPictureBuilder.Build(markup);
+
+        Assert.Equal(new SKColor(3, 3, 3), PixelAt(picture, 5, 5));
+        Assert.Equal(new SKColor(2, 2, 2), PixelAt(picture, 0, 5));
+        Assert.Equal(new SKColor(6, 6, 6), PixelAt(picture, 15, 5));
+        Assert.Equal(new SKColor(8, 8, 8), PixelAt(picture, 25, 5));
+        Assert.Equal(5, picture.Statistics.StyleRules);
+    }
+
+    [AvaloniaFact]
     public void Indexed_Rules_Keep_Their_Specificity_And_Order()
     {
         // tag < class < tag.class < id; among equals the later wins; a rule for another class or id does not apply; * applies to everything.
@@ -463,13 +495,16 @@ public sealed class SvgHostileInputTests
     {
         Assert.Equal(10_000, SvgPictureBuilder.MaxStyleRules);
         var limits = SvgPictureBuilder.Limits.Default with { StyleRules = 2 };
-        var markup = Svg("<style>rect{fill:#010101} rect{fill:#020202} rect{fill:#030303}</style><rect width=\"10\" height=\"10\"/>");
+
+        // The cap counts distinct selectors: the third selector is ignored, while a repeat of a kept one merges and is not counted.
+        var markup = Svg("<style>rect{fill:#010101} .a{fill:#020202} .b{fill:#030303} rect{stroke:#040404;stroke-width:4}</style><rect class=\"a b\" width=\"10\" height=\"10\"/>");
 
         using var picture = SvgPictureBuilder.Build(markup, CancellationToken.None, limits);
 
         Assert.Equal(2, picture.Statistics.StyleRules);
         Assert.Equal(1, picture.Statistics.StyleRulesIgnored);
         Assert.Equal(new SKColor(2, 2, 2), PixelAt(picture, 5, 5));
+        Assert.Equal(new SKColor(4, 4, 4), PixelAt(picture, 1, 5));
     }
 
     // ------------------------------------------------------------------
