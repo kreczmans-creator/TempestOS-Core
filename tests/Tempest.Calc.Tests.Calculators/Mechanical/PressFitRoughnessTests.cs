@@ -26,7 +26,7 @@ public sealed class PressFitRoughnessTests
         Assert.Equal(33.6, smooth.OutputSi("delta_eff") * 1e6, 6);
         Assert.Equal(2194.8 * 0.84, smooth.OutputSi("T"), 0);
         Assert.Equal(plain.OutputSi("F_a") * 0.84, smooth.OutputSi("F_a"), 0);
-        Assert.Equal(plain.OutputSi("p") * 0.84, smooth.OutputSi("p_eff"), 0);
+        Assert.Equal(plain.OutputSi("p_int") * 0.84, smooth.OutputSi("p_eff"), 0);
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public sealed class PressFitRoughnessTests
         var plain = CalcRunner.Run(Fit, Case());
         var smooth = CalcRunner.Run(Fit, Case(Q("Rz_h", 4, "µm"), Q("Rz_s", 4, "µm")));
 
-        Assert.Equal(plain.OutputSi("p"), smooth.OutputSi("p"), 3);
+        Assert.Equal(plain.OutputSi("p_int"), smooth.OutputSi("p_int"), 3);
         Assert.Equal(plain.OutputSi("sigma_vm_hub"), smooth.OutputSi("sigma_vm_hub"), 3);
     }
 
@@ -44,7 +44,7 @@ public sealed class PressFitRoughnessTests
     {
         var plain = CalcRunner.Run(Fit, Case());
 
-        Assert.Equal(plain.OutputSi("p"), plain.OutputSi("p_eff"), 3);
+        Assert.Equal(plain.OutputSi("p_int"), plain.OutputSi("p_eff"), 3);
         var assumption = Assert.Single(plain.RunAssumptions, a => a.Statement.Contains("smoothing", StringComparison.Ordinal));
         Assert.Contains("minimum interference", assumption.Statement, StringComparison.Ordinal);
         Assert.Contains("maximum", assumption.Statement, StringComparison.Ordinal);

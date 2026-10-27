@@ -4,39 +4,39 @@ Calc ID: mech.bearing-life    Revision: A
 Title: Rolling bearing life (ISO 281)
 
 1. Scope and method
-The basic and modified rating life of a rolling bearing under a steady load or a duty cycle, at a chosen reliability, against a required life; and the static safety factor against a required value.
-Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 0 for a single-row radial ball bearing), else P = X·F_r + Y·F_a (Y = 0 is refused when an axial load acts above e_lim) Duty cycle: P_eq = (Σ P_i^p·U_i / Σ U_i)^(1/p) Basic rating life: L_10 = (C/P)^p million revolutions, p = 3 ball, 10/3 roller Life in hours: L_10h = 10⁶·L_10 / (60·n) Reliability factor (ISO 281:2007, derived): a_1 = 0.95·[ln(100/R)/ln(100/90)]^(2/3) + 0.05 Modified life: L_nm = a_1·a_ISO·L_10 Static safety: P_0 = max(X_0·F_r + Y_0·F_a, F_r), s_0 = C_0/P_0
+Calculates the basic and modified rating life of a rolling bearing under a steady load or a duty cycle, with the static safety factor, against required values. It takes ratings, load factors and a_ISO from reference records.
+Equivalent load: F_dyn = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 0 for a single-row radial ball bearing), else F_dyn = X·F_r + Y·F_a (Y = 0 is refused when an axial load acts above e_lim) Duty cycle: F_dyn = (Σ F_dyn,i^p·U_i / Σ U_i)^(1/p) Basic rating life: L_10 = (C/F_dyn)^p million revolutions, p = 3 ball, 10/3 roller Life in hours: L_10h = 10⁶·L_10 / (60·n) Reliability factor (ISO 281:2007, derived): a_1 = 0.95·[ln(100/R_rel)/ln(100/90)]^(2/3) + 0.05 Modified life: L_nm = a_1·a_ISO·L_10 Static safety: P_0 = max(X_0·F_r + Y_0·F_a, F_r), s_0 = C_0/P_0
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   type | Bearing type | ball (p = 3) |  | manual | any
-  F_r | Radial load | 2 | kN | manual | 0 … 2000 kN
-  F_a | Axial load | 0 | kN | manual | 0 … 2000 kN
-  n | Speed | 1000 | rpm | manual | 1 … 50000 rpm
+  F_r | Radial load | 2 | kN | manual | 0 … 1000 kN
+  F_a | Axial load | 0 | kN | manual | 0 … 1000 kN
+  n | Speed | 1000 | rpm | manual | 1 … 30000 rpm
   C | Basic dynamic load rating | 20 | kN | manual | 0.1 … 10000 kN
   C_0 | Basic static load rating | 11 | kN | manual | 0.1 … 10000 kN
   e_lim | Load ratio limit e | 0.3 |  | manual | 0 … 5
   X_1 | Radial factor X₁ for F_a/F_r ≤ e (1 for a single-row radial ball bearing) | 1 |  | manual | 0 … 5
   Y_1 | Axial factor Y₁ for F_a/F_r ≤ e (0 for a single-row radial ball bearing; above 0 for double-row and paired bearings) | 0 |  | manual | 0 … 10
-  X | Radial factor X for F_a/F_r > e | 1 |  | manual | 0 … 5
-  Y | Axial factor Y for F_a/F_r > e (from the manufacturer; Y = 0 makes the axial load count for nothing and is refused when one acts) | 0 |  | manual | 0 … 10
+  X | Radial factor for F_a/F_r above e | 1 |  | manual | 0 … 5
+  Y | Axial factor for F_a/F_r above e (from the manufacturer; zero makes the axial load count for nothing and is refused when one acts) | 0 |  | manual | 0 … 10
   X_0 | Static radial factor X₀ | 0.6 |  | manual | 0 … 5
   Y_0 | Static axial factor Y₀ | 0.5 |  | manual | 0 … 10
-  R | Reliability | 95 | % | manual | 90 … 99.95 %
-  a_iso | Life modification factor a_ISO (from the manufacturer's tool) | 1 |  | manual | 0.1 … 50
+  R_rel | Reliability | 95 | % | manual | 90 … 99.9 %
+  a_iso | Life modification factor a_ISO (from the manufacturer's tool) | 1 |  | manual | 0.1 … 20
   L_req | Required life | 10000 | h | manual | 1 … 1000000 h
-  s_0_req | Required static safety factor | 1 |  | manual | 0.5 … 4
+  s_0_req | Required static safety factor | 1 |  | manual | 0.5 … 3
 
 3. Assumptions
-  A1. Ratings C and C₀, factors X, Y, e, X₀, Y₀ and a_ISO are the manufacturer's values for the bearing, entered as reference records. (No catalogue table ships with TempestOS.)
-  A2. a₁ uses the ISO 281:2007 Weibull form (0.64 at 95 %, 0.25 at 99 %); ISO 281:1990 gave 0.62 and 0.21. (Edition stated on the sheet.)
-  A3. Loads are steady within each duty step; speed is constant. (Duty steps weighted by share of revolutions.)
+  A1. The ratings, load factors and a_ISO are the manufacturer's values, entered as reference records. (No catalogue table ships with TempestOS.)
+  A2. The reliability factor a₁ uses the ISO 281:2007 Weibull form, 0.64 at 95 % and 0.25 at 99 %. (ISO 281:1990 gave 0.62 and 0.21, and the sheet states the edition.)
+  A3. Loads are steady within each duty step, and the speed is constant. (Duty steps are weighted by their share of revolutions.)
 
 4. Working
   [18] p = 3    « ISO 281:2007 cl. 6–7
       = 3
         Life exponent, ball bearing
-  [19] P = X_1 * F_r + Y_1 * F_a    « ISO 281:2007 cl. 6–7
+  [19] F_dyn = X_1 * F_r + Y_1 * F_a    « ISO 281:2007 cl. 6–7
       = 1 × 2 kN + 0 × 0 kN
       = 2 kN
         Equivalent dynamic load (F_a/F_r ≤ e_lim)
@@ -44,7 +44,7 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
       = max(0.6 × 2 kN + 0.5 × 0 kN, 2 kN)
       = 2 kN
         Equivalent static load
-  [21] L_10 = (C / P)^p    « ISO 281:2007 cl. 6–7
+  [21] L_10 = (C / F_dyn)^p    « ISO 281:2007 cl. 6–7
       = (20 kN / 2 kN)^3
       = 1000
         Basic rating life, million revolutions
@@ -52,7 +52,7 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
       = 1000 × 1000000 × 2 × π / 1000 rpm
       = 16667 h
         Basic rating life in hours
-  [23] a_1 = 0.95 * (ln(1 / R) / ln(1 / 0.9))^(2 / 3) + 0.05    « ISO 281:2007 cl. 9
+  [23] a_1 = 0.95 * (ln(1 / R_rel) / ln(1 / 0.9))^(2 / 3) + 0.05    « ISO 281:2007 cl. 9
       = 0.95 × (ln(1 / 95 %) / ln(1 / 0.9))^(2 / 3) + 0.05
       = 0.63791
         Reliability factor (derived, ISO 281:2007 Weibull form)
@@ -80,28 +80,28 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
 5. Results
   L_nmh = 10632 h    Modified rating life
   L_10h = 16667 h    Basic rating life
-  P = 2 kN    Equivalent dynamic load
+  F_dyn = 2 kN    Equivalent dynamic load
   P_0 = 2 kN    Equivalent static load
   s_0 = 5.5    Static safety factor
-  L_10 = 1000    Basic rating life (Mrev)
+  L_10 = 1000    Basic rating life in millions of revolutions
   a_1 = 0.63791    Reliability factor
-  L_nm = 637.91    Modified rating life (Mrev)
+  L_nm = 637.91    Modified rating life in millions of revolutions
   u_life = 0.94    Life utilisation (governing)
   u_s0 = 0.18    Static utilisation
 
 6. Checks (governing first)
-  PASS  Modified rating life against required life: u_life = 0.94 vs u_life ≤ 1  utilisation 0.94  « ISO 281:2007 cl. 9
-  PASS  Static safety factor against required: u_s0 = 0.18 vs u_s0 ≤ 1  utilisation 0.18  « ISO 76:2006
+  PASS  Required life against modified life: 10000 h vs 10632 h  utilisation 0.94  « ISO 281:2007 cl. 9
+  PASS  Required static safety factor against the static safety factor: 1 vs 5.5  utilisation 0.18  « ISO 76:2006
 
 7. Applicability
-  WARNING  records: tabulated values not taken from a reference record are C, C_0 (Bearing load ratings); e_lim, X_1, Y_1, X, Y, X_0, Y_0 (Bearing X, Y, e factors); a_iso (Bearing a_ISO). Enter each as one so its source, edition and licence travel with it.  [record]
+  WARNING  records: tabulated values not taken from a reference record are C, C_0 (Bearing load ratings); e_lim, X_1, Y_1, X, Y, X_0, Y_0 (Bearing X, Y, e factors); a_iso (Bearing aISO life modification factor). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: mech.bearing-life@1.2.0
+  Template: mech.bearing-life@1.3.0
   Known-answer cases passed: 5/5
 
 9. References
   1. ISO 281:2007 cl. 6–7 — Dynamic equivalent load and basic rating life
   2. ISO 281:2007 cl. 9 — Modified rating life
   3. ISO 76:2006 cl. 6–7 — Static equivalent load and static safety factor
-  4. Shigley's Mechanical Engineering Design 11th ed., Ch. 11 — Rolling-contact bearings
+  4. Budynas and Nisbett, Shigley's Mechanical Engineering Design Ch. 11, 11th ed. — Rolling-contact bearings

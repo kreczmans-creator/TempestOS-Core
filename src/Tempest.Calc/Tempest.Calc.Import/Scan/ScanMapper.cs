@@ -192,7 +192,7 @@ public static class ScanMapper
             [("mech.iso286-fit", "D")] = new(new HashSet<ScanStat> { ScanStat.Nominal }, false, "is the basic size the ISO 286 deviations are applied round, not a measured value; a measured mean there would count the deviation twice."),
         };
 
-        foreach (var symbol in new[] { "ES_override", "EI_override", "es_override", "ei_override" })
+        foreach (var symbol in new[] { "ES_hole_override", "EI_hole_override", "es_shaft_override", "ei_shaft_override" })
             policies[("mech.iso286-fit", symbol)] = new(new HashSet<ScanStat> { ScanStat.Mean, ScanStat.Min, ScanStat.Max }, true, "takes a deviation from the basic size, so a spread is not one.");
 
         return policies;
@@ -216,8 +216,11 @@ public static class ScanMapper
         if (!ScanTarget.TryParse(entry.Target, out var target))
             return ($"the target '{Clip(entry.Target)}' is not valid.", null);
 
-        if (c.Template.FindInput(target.Symbol) is not { } spec)
+        // A profile saved before an input was renamed names its old symbol (CalcInputSpec.Aliases): it maps to the input it has become.
+        if (c.Template.ResolveInput(target.Symbol) is not { } spec)
             return ($"'{target.Symbol}' is not an input of {c.Template.Id}.", null);
+
+        target = target with { Symbol = spec.Symbol };
 
         var profile = c.Analysis.Profile;
         var settings = c.Analysis.Settings;

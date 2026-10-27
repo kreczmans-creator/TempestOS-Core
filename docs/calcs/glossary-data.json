@@ -1161,7 +1161,7 @@
             "mm²"
           ],
           "descriptions": [
-            "Tensile stress area, from a fastener record (blank = from d and P)"
+            "Tensile stress area, from a fastener record (optional; blank = from d and p_thread)"
           ],
           "templates": [
             "mech.bolted-joint"
@@ -1807,17 +1807,6 @@
           "templates": [
             "struct.plate-bending"
           ]
-        },
-        {
-          "meaning": "total-damage",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Total damage"
-          ],
-          "templates": [
-            "mech.fatigue-miner"
-          ]
         }
       ]
     },
@@ -2159,6 +2148,22 @@
       ]
     },
     {
+      "symbol": "D_tot",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Total damage"
+          ],
+          "templates": [
+            "mech.fatigue-miner"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "Delta",
       "meanings": [
         {
@@ -2282,7 +2287,7 @@
       ]
     },
     {
-      "symbol": "EI",
+      "symbol": "EI_hole",
       "meanings": [
         {
           "meaning": "",
@@ -2300,7 +2305,7 @@
       ]
     },
     {
-      "symbol": "EI_override",
+      "symbol": "EI_hole_override",
       "meanings": [
         {
           "meaning": "",
@@ -2309,7 +2314,7 @@
             "µm"
           ],
           "descriptions": [
-            "Hole lower deviation override"
+            "Hole lower deviation override (optional; blank = the formula value)"
           ],
           "templates": [
             "mech.iso286-fit"
@@ -2318,7 +2323,7 @@
       ]
     },
     {
-      "symbol": "ES",
+      "symbol": "ES_hole",
       "meanings": [
         {
           "meaning": "",
@@ -2336,7 +2341,7 @@
       ]
     },
     {
-      "symbol": "ES_override",
+      "symbol": "ES_hole_override",
       "meanings": [
         {
           "meaning": "",
@@ -2345,7 +2350,7 @@
             "µm"
           ],
           "descriptions": [
-            "Hole upper deviation override (from a reference record)"
+            "Hole upper deviation override (optional; blank = the formula value, or a reference record)"
           ],
           "templates": [
             "mech.iso286-fit"
@@ -2901,7 +2906,7 @@
             "kN"
           ],
           "descriptions": [
-            "Preload (given-preload method: measured, or from a tightening specification)"
+            "Preload (optional; blank = the preload comes from the tightening torque; the given-preload method needs it)"
           ],
           "templates": [
             "mech.bolted-joint"
@@ -3104,6 +3109,25 @@
       ]
     },
     {
+      "symbol": "F_dyn",
+      "meanings": [
+        {
+          "meaning": "equivalent-dynamic-load",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Equivalent dynamic load"
+          ],
+          "templates": [
+            "mech.bearing-life",
+            "mech.bearing-life-basic"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "F_ext",
       "meanings": [
         {
@@ -3241,6 +3265,24 @@
       ]
     },
     {
+      "symbol": "F_lug",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Load on the lug (along the lug)"
+          ],
+          "templates": [
+            "mech.lifting-lug"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "F_n",
       "meanings": [
         {
@@ -3322,7 +3364,7 @@
             "N"
           ],
           "descriptions": [
-            "Peak force in the coupler, which is also the force at the crank pin and the pin loads on the bearings (mech.F_pin_pk → M4, M5)"
+            "Peak force in the coupler, which is also the force at the crank pin and the pin loads on the bearings"
           ],
           "templates": [
             "mech.mechanism"
@@ -3340,7 +3382,7 @@
             "N"
           ],
           "descriptions": [
-            "Spring preload at the base circle (link an M7 force)"
+            "Spring preload at the base circle"
           ],
           "templates": [
             "mech.mechanism"
@@ -3532,6 +3574,24 @@
       ]
     },
     {
+      "symbol": "F_t_Ed_max",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Maximum tension on any bolt"
+          ],
+          "templates": [
+            "mech.bolt-group"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "F_t_Rd",
       "meanings": [
         {
@@ -3542,9 +3602,11 @@
           ],
           "descriptions": [
             "Tension resistance",
+            "Tension resistance per bolt",
             "Tension resistance per bolt (from S4)"
           ],
           "templates": [
+            "mech.bolt-group",
             "struct.base-plate",
             "struct.connection-ec3"
           ]
@@ -3588,7 +3650,7 @@
       ]
     },
     {
-      "symbol": "F_v_Rd",
+      "symbol": "F_v_Ed_max",
       "meanings": [
         {
           "meaning": "",
@@ -3597,9 +3659,29 @@
             "kN"
           ],
           "descriptions": [
-            "Shear resistance"
+            "Maximum shear on any bolt"
           ],
           "templates": [
+            "mech.bolt-group"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "F_v_Rd",
+      "meanings": [
+        {
+          "meaning": "bolt-shear-resistance",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Shear resistance",
+            "Shear resistance per bolt"
+          ],
+          "templates": [
+            "mech.bolt-group",
             "struct.connection-ec3"
           ]
         }
@@ -5203,7 +5285,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Basic rating life (Mrev)",
+            "Basic rating life in millions of revolutions",
             "L₁₀ (millions of revolutions)"
           ],
           "templates": [
@@ -5478,7 +5560,7 @@
           "units": [],
           "descriptions": [
             "Modified life (millions of revolutions)",
-            "Modified rating life (Mrev)"
+            "Modified rating life in millions of revolutions"
           ],
           "templates": [
             "mech.bearing-life",
@@ -5730,7 +5812,7 @@
           "meaning": "",
           "quantity": "Moment, torque",
           "units": [
-            "N·m"
+            "kN·m"
           ],
           "descriptions": [
             "Tightening torque"
@@ -5934,7 +6016,7 @@
           "meaning": "",
           "quantity": "Moment, torque",
           "units": [
-            "N·m"
+            "kN·m"
           ],
           "descriptions": [
             "Pin bending moment"
@@ -6134,15 +6216,17 @@
       "symbol": "M_z",
       "meanings": [
         {
-          "meaning": "",
+          "meaning": "in-plane-torque",
           "quantity": "Moment, torque",
           "units": [
             "kN·m"
           ],
           "descriptions": [
-            "Additional in-plane torque"
+            "Additional in-plane torque",
+            "Additional in-plane torque about the centroid"
           ],
           "templates": [
+            "mech.bolt-group",
             "mech.weld-group"
           ]
         }
@@ -7060,20 +7144,6 @@
       "symbol": "P",
       "meanings": [
         {
-          "meaning": "equivalent-dynamic-load",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Equivalent dynamic load"
-          ],
-          "templates": [
-            "mech.bearing-life",
-            "mech.bearing-life-basic"
-          ]
-        },
-        {
           "meaning": "motor-rated-output-power",
           "quantity": "Power, heat flow",
           "units": [
@@ -7167,19 +7237,6 @@
           ]
         },
         {
-          "meaning": "lug-load",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Load on the lug (along the lug)"
-          ],
-          "templates": [
-            "mech.lifting-lug"
-          ]
-        },
-        {
           "meaning": "point-load",
           "quantity": "Force",
           "units": [
@@ -7190,19 +7247,6 @@
           ],
           "templates": [
             "struct.beam-formulas"
-          ]
-        },
-        {
-          "meaning": "thread-pitch",
-          "quantity": "Length",
-          "units": [
-            "mm"
-          ],
-          "descriptions": [
-            "Thread pitch"
-          ],
-          "templates": [
-            "mech.bolted-joint"
           ]
         },
         {
@@ -7603,10 +7647,10 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
-            "Mean input power over the swept range (negative: the mechanism returns energy) (mech.P_mean)"
+            "Mean input power over the swept range (negative: the mechanism returns energy)"
           ],
           "templates": [
             "mech.mechanism"
@@ -7830,17 +7874,6 @@
             "bs.sealed-system",
             "elec.load-budget"
           ]
-        },
-        {
-          "meaning": "load-factor",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Load factor"
-          ],
-          "templates": [
-            "mech.bolted-joint"
-          ]
         }
       ]
     },
@@ -7912,6 +7945,22 @@
           ],
           "templates": [
             "bs.room-heat-loss"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "Phi_K",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Load factor"
+          ],
+          "templates": [
+            "mech.bolted-joint"
           ]
         }
       ]
@@ -8300,20 +8349,6 @@
           ]
         },
         {
-          "meaning": "reliability",
-          "quantity": "Percent quantity",
-          "units": [
-            "%"
-          ],
-          "descriptions": [
-            "Reliability"
-          ],
-          "templates": [
-            "mech.bearing-life",
-            "mech.shaft"
-          ]
-        },
-        {
           "meaning": "thermal-resistance",
           "quantity": "Thermal resistance",
           "units": [
@@ -8327,6 +8362,19 @@
           "templates": [
             "bs.insulation",
             "elec.thermal-chain"
+          ]
+        },
+        {
+          "meaning": "reliability",
+          "quantity": "Percent quantity",
+          "units": [
+            "%"
+          ],
+          "descriptions": [
+            "Reliability"
+          ],
+          "templates": [
+            "mech.shaft"
           ]
         },
         {
@@ -8942,10 +8990,28 @@
             "mm"
           ],
           "descriptions": [
-            "Roller radius R_r (roller follower)"
+            "Roller radius (roller follower)"
           ],
           "templates": [
             "mech.mechanism"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "R_rel",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Percent quantity",
+          "units": [
+            "%"
+          ],
+          "descriptions": [
+            "Reliability"
+          ],
+          "templates": [
+            "mech.bearing-life"
           ]
         }
       ]
@@ -8979,7 +9045,7 @@
             "mm"
           ],
           "descriptions": [
-            "Base-circle radius of the cam profile R_b"
+            "Base-circle radius of the cam profile"
           ],
           "templates": [
             "mech.mechanism"
@@ -9144,7 +9210,7 @@
             "µm"
           ],
           "descriptions": [
-            "Hub bore roughness Rz (blank: the smoothing is not applied)"
+            "Hub bore roughness Rz (optional; blank = the smoothing is not applied)"
           ],
           "templates": [
             "mech.press-fit"
@@ -9162,7 +9228,7 @@
             "µm"
           ],
           "descriptions": [
-            "Shaft surface roughness Rz (blank: the smoothing is not applied)"
+            "Shaft surface roughness Rz (optional; blank = the smoothing is not applied)"
           ],
           "templates": [
             "mech.press-fit"
@@ -9970,24 +10036,6 @@
       ]
     },
     {
-      "symbol": "T_R",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Tension resistance per bolt"
-          ],
-          "templates": [
-            "mech.bolt-group"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "T_Rd",
       "meanings": [
         {
@@ -10699,7 +10747,7 @@
             "N·m"
           ],
           "descriptions": [
-            "RMS input torque over the swept range (mech.T_rms_in → E1 thermal sizing)"
+            "RMS input torque over the swept range"
           ],
           "templates": [
             "mech.mechanism"
@@ -10793,24 +10841,6 @@
           ],
           "templates": [
             "mech.snap-fit"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "T_z",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Moment, torque",
-          "units": [
-            "kN·m"
-          ],
-          "descriptions": [
-            "Additional in-plane torque about the centroid"
-          ],
-          "templates": [
-            "mech.bolt-group"
           ]
         }
       ]
@@ -11245,24 +11275,6 @@
           ],
           "templates": [
             "struct.connection-ec3"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "V_R",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Shear resistance per bolt"
-          ],
-          "templates": [
-            "mech.bolt-group"
           ]
         }
       ]
@@ -11926,7 +11938,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Radial factor X for F_a/F_r > e",
+            "Radial factor for F_a/F_r above e",
             "Radial load factor (bearing catalogue)"
           ],
           "templates": [
@@ -12058,7 +12070,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Axial factor Y for F_a/F_r > e (from the manufacturer; Y = 0 makes the axial load count for nothing and is refused when one acts)",
+            "Axial factor for F_a/F_r above e (from the manufacturer; zero makes the axial load count for nothing and is refused when one acts)",
             "Axial load factor (bearing catalogue)"
           ],
           "templates": [
@@ -12351,7 +12363,7 @@
             "mm"
           ],
           "descriptions": [
-            "Prying lever: bolt to flange edge"
+            "Prying lever: bolt to flange edge (optional; blank = no prying)"
           ],
           "templates": [
             "mech.bolt-group"
@@ -13130,7 +13142,7 @@
             "mm"
           ],
           "descriptions": [
-            "Prying lever: bolt to the loaded line"
+            "Prying lever: bolt to the loaded line (optional; blank = no prying)"
           ],
           "templates": [
             "mech.bolt-group"
@@ -15772,7 +15784,7 @@
             "mm"
           ],
           "descriptions": [
-            "Offset e: slide line above the crank centre (slider-crank; blank: 0); cam follower axis offset, with the cam turning counter-clockwise and the follower axis at +x: positive e reduces the pressure angle where ds/dθ exceeds e (the rise), negative raises it"
+            "Offset e of the slide line above the crank centre, or of the cam follower axis at +x: positive e reduces the pressure angle where ds/dθ exceeds e (optional; blank = 0)"
           ],
           "templates": [
             "mech.mechanism"
@@ -15864,7 +15876,7 @@
       ]
     },
     {
-      "symbol": "ei",
+      "symbol": "ei_shaft",
       "meanings": [
         {
           "meaning": "",
@@ -15882,7 +15894,7 @@
       ]
     },
     {
-      "symbol": "ei_override",
+      "symbol": "ei_shaft_override",
       "meanings": [
         {
           "meaning": "",
@@ -15891,7 +15903,7 @@
             "µm"
           ],
           "descriptions": [
-            "Shaft lower deviation override"
+            "Shaft lower deviation override (optional; blank = the formula value)"
           ],
           "templates": [
             "mech.iso286-fit"
@@ -16016,7 +16028,7 @@
       ]
     },
     {
-      "symbol": "es",
+      "symbol": "es_shaft",
       "meanings": [
         {
           "meaning": "",
@@ -16034,7 +16046,7 @@
       ]
     },
     {
-      "symbol": "es_override",
+      "symbol": "es_shaft_override",
       "meanings": [
         {
           "meaning": "",
@@ -16043,7 +16055,7 @@
             "µm"
           ],
           "descriptions": [
-            "Shaft upper deviation override"
+            "Shaft upper deviation override (optional; blank = the formula value)"
           ],
           "templates": [
             "mech.iso286-fit"
@@ -16338,24 +16350,6 @@
       ]
     },
     {
-      "symbol": "f_Z",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Length",
-          "units": [
-            "µm"
-          ],
-          "descriptions": [
-            "Embedding (settling) loss"
-          ],
-          "templates": [
-            "mech.bolted-joint"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "f_acc",
       "meanings": [
         {
@@ -16528,6 +16522,24 @@
       ]
     },
     {
+      "symbol": "f_embed",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "µm"
+          ],
+          "descriptions": [
+            "Embedding (settling) loss"
+          ],
+          "templates": [
+            "mech.bolted-joint"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "f_front",
       "meanings": [
         {
@@ -16553,7 +16565,7 @@
             "Hz"
           ],
           "descriptions": [
-            "Input (crank) frequency, for the spring surge check of M7 (mech.f_in)"
+            "Input (crank) frequency, for a spring surge check"
           ],
           "templates": [
             "mech.mechanism"
@@ -17112,7 +17124,7 @@
             "N"
           ],
           "descriptions": [
-            "Peak force perpendicular to the rocker at the output pin, the drive force of the output (mech.follower_force)"
+            "Peak force perpendicular to the rocker at the output pin, the drive force of the output"
           ],
           "templates": [
             "mech.mechanism"
@@ -17881,7 +17893,7 @@
             "N·m"
           ],
           "descriptions": [
-            "Peak input (crank) torque by virtual work (mech.input_torque → E1 peak torque)"
+            "Peak input (crank) torque by virtual work"
           ],
           "templates": [
             "mech.mechanism"
@@ -18077,10 +18089,10 @@
           "meaning": "",
           "quantity": "Line force, distributed load, stiffness",
           "units": [
-            "kN/mm"
+            "kN/m"
           ],
           "descriptions": [
-            "Clamped members' stiffness, measured or from an FE model (blank = two frusta)"
+            "Clamped members' stiffness, measured or from an FE model (optional; blank = two frusta)"
           ],
           "templates": [
             "mech.bolted-joint"
@@ -18129,10 +18141,10 @@
           "meaning": "",
           "quantity": "Line force, distributed load, stiffness",
           "units": [
-            "kN/mm"
+            "kN/m"
           ],
           "descriptions": [
-            "Bolt stiffness, measured or from an FE model (blank = from the geometry)"
+            "Bolt stiffness, measured or from an FE model (optional; blank = from the geometry)"
           ],
           "templates": [
             "mech.bolted-joint"
@@ -18524,10 +18536,10 @@
           "meaning": "",
           "quantity": "Line force, distributed load, stiffness",
           "units": [
-            "N/mm"
+            "kN/m"
           ],
           "descriptions": [
-            "Return spring rate (link M7 rate k)"
+            "Return spring rate"
           ],
           "templates": [
             "mech.mechanism"
@@ -18743,7 +18755,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Viscosity ratio κ used for a_ISO (0.1 to 100; above 4 it is read at 4)"
+            "Viscosity ratio κ, 0.1 to 100, used for a_ISO (optional; blank = κ is not checked; above 4 it is read at 4)"
           ],
           "templates": [
             "mech.bearing-life"
@@ -19734,17 +19746,6 @@
           ]
         },
         {
-          "meaning": "load-introduction-factor",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Load introduction factor (0 = at the clamped faces, 1 = under the head)"
-          ],
-          "templates": [
-            "mech.bolted-joint"
-          ]
-        },
-        {
           "meaning": "thickness-design-factor",
           "quantity": "Plain number",
           "units": [],
@@ -20072,7 +20073,7 @@
             "rpm"
           ],
           "descriptions": [
-            "Input (crank) speed, passed through for E1's load speed (mech.n_in)",
+            "Input (crank) speed, passed through",
             "Input speed (constant)"
           ],
           "templates": [
@@ -20111,6 +20112,22 @@
           ],
           "templates": [
             "mech.snap-fit"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "n_load",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Load introduction factor (0 = at the clamped faces, 1 = under the head)"
+          ],
+          "templates": [
+            "mech.bolted-joint"
           ]
         }
       ]
@@ -20690,7 +20707,7 @@
             "m/s"
           ],
           "descriptions": [
-            "Peak speed of the output pin at the rocker length c (mech.output_motion; a kinematic proxy for F1 only if the cylinder acts perpendicular to the rocker at that radius; the angular velocity is omega_out_pk)"
+            "Peak speed of the output pin at the rocker length c (a kinematic proxy for a cylinder only if the cylinder acts perpendicular to the rocker at that radius; the angular velocity is omega_out_pk)"
           ],
           "templates": [
             "mech.mechanism"
@@ -20712,19 +20729,6 @@
           ],
           "templates": [
             "bs.psychrometrics"
-          ]
-        },
-        {
-          "meaning": "interface-pressure",
-          "quantity": "Stress, pressure",
-          "units": [
-            "MPa"
-          ],
-          "descriptions": [
-            "Interface pressure"
-          ],
-          "templates": [
-            "mech.press-fit"
           ]
         },
         {
@@ -21103,6 +21107,24 @@
       ]
     },
     {
+      "symbol": "p_int",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Stress, pressure",
+          "units": [
+            "MPa"
+          ],
+          "descriptions": [
+            "Interface pressure"
+          ],
+          "templates": [
+            "mech.press-fit"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "p_load",
       "meanings": [
         {
@@ -21319,6 +21341,24 @@
       ]
     },
     {
+      "symbol": "p_thread",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Thread pitch"
+          ],
+          "templates": [
+            "mech.bolted-joint"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "p_v_custom",
       "meanings": [
         {
@@ -21417,7 +21457,7 @@
             "m/s²"
           ],
           "descriptions": [
-            "Peak acceleration of the output pin (mech.peak_accel)"
+            "Peak acceleration of the output pin"
           ],
           "templates": [
             "mech.mechanism"
@@ -22704,24 +22744,6 @@
       ]
     },
     {
-      "symbol": "sigma_A",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Stress, pressure",
-          "units": [
-            "MPa"
-          ],
-          "descriptions": [
-            "Bolt endurance limit (stress amplitude)"
-          ],
-          "templates": [
-            "mech.bolted-joint"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "sigma_M",
       "meanings": [
         {
@@ -22750,6 +22772,24 @@
           ],
           "descriptions": [
             "Fatigue amplitude"
+          ],
+          "templates": [
+            "mech.bolted-joint"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "sigma_a_limit",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Stress, pressure",
+          "units": [
+            "MPa"
+          ],
+          "descriptions": [
+            "Bolt endurance limit (stress amplitude)"
           ],
           "templates": [
             "mech.bolted-joint"
@@ -23559,7 +23599,6 @@
           ],
           "descriptions": [
             "Lug plate thickness t",
-            "Lug thickness",
             "Plate thickness",
             "Thickness",
             "Wall / web / leg thickness t (t_w)",
@@ -23568,7 +23607,6 @@
           ],
           "templates": [
             "bs.plane-wall",
-            "mech.lifting-lug",
             "struct.base-plate",
             "struct.connection-ec3",
             "struct.lifting",
@@ -23952,6 +23990,24 @@
       ]
     },
     {
+      "symbol": "t_lug",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Lug thickness"
+          ],
+          "templates": [
+            "mech.lifting-lug"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "t_m",
       "meanings": [
         {
@@ -23973,20 +24029,7 @@
       "symbol": "t_max",
       "meanings": [
         {
-          "meaning": "maximum-bolt-tension",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Maximum tension on any bolt"
-          ],
-          "templates": [
-            "mech.bolt-group"
-          ]
-        },
-        {
-          "meaning": "maximum-system-temperature",
+          "meaning": "",
           "quantity": "Temperature",
           "units": [
             "°C"
@@ -26660,20 +26703,7 @@
       "symbol": "v_max",
       "meanings": [
         {
-          "meaning": "maximum-bolt-shear",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Maximum shear on any bolt"
-          ],
-          "templates": [
-            "mech.bolt-group"
-          ]
-        },
-        {
-          "meaning": "velocity-limit",
+          "meaning": "",
           "quantity": "Velocity",
           "units": [
             "m/s"

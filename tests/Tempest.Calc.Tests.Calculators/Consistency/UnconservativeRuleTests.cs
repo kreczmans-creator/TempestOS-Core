@@ -30,7 +30,7 @@ public sealed class UnconservativeRuleTests
         new("elec.motor-sizing", "speed-above-rated", "Motor speed against the rated speed", UnconservativePassTests.MotorAboveRated),
         new("struct.ltb-interaction", "table-b1", "Interaction, equation 6.62", ProbeInputs.LtbTableB1),
         new("mech.shaft", "critical-speed-skipped", "Critical speed", ProbeInputs.ShaftWithoutCriticalSpeed),
-        new("mech.mechanism", "contact", "Follower stays on the cam", ProbeInputs.WeakSpringCam),
+        new("mech.mechanism", "contact", "Smallest follower force", ProbeInputs.WeakSpringCam),
         new("bs.pipe-pump", "duty-unstable", "Duty point against a stable crossing", ProbeInputs.UnstablePump),
         new("fp.accumulator", "exponent", "Gas exponent against a fast discharge", ProbeInputs.SlowEmergencyAccumulator),
         new("fp.accumulator", "realgas", "Real-gas factor against", ProbeInputs.IdealGasAccumulator),

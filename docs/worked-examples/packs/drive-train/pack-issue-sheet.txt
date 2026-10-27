@@ -9,9 +9,9 @@ Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
 PACK INDEX
   1. Motor sizing — Motor and actuator sizing — rev A — ISSUED — Motor speed against the rated speed PASS
   2. Shaft — Shaft design — rev A — ISSUED — Slope at the bearings against limit PASS
-  3. Bearing A life — Rolling bearing life (ISO 281) — rev A — ISSUED — Modified rating life against required life PASS
-  4. Bearing A seat fit — Limits and fits (ISO 286) — rev A — ISSUED — Fit classified PASS
-  5. Coupling flange bolts — Bolt group (elastic method) — rev A — ISSUED — Circular shear–tension interaction (governing bolt) PASS
+  3. Bearing A life — Rolling bearing life (ISO 281) — rev A — ISSUED — Required life against modified life PASS
+  4. Bearing A seat fit — Limits and fits (ISO 286) — rev A — ISSUED — Fit classes against the fit kind PASS
+  5. Coupling flange bolts — Bolt group (elastic method) — rev A — ISSUED — Circular shear–tension interaction against its limit (governing bolt) PASS
 
 REVISIONS
   A  2026-10-26  test.engineer  First issue
@@ -43,7 +43,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 22/22
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:04 UTC
   Application: TempestOS test
 
 9. References
@@ -282,7 +282,7 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   Content hash: 3989917de380d03f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:04 UTC
   Application: TempestOS test
 
 9. References
@@ -479,7 +479,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   Content hash: 566fdcc0fad69d46
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:04 UTC
   Application: TempestOS test
 
 9. References
@@ -496,38 +496,38 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
 
 1. Scope and method
-The basic and modified rating life of a rolling bearing under a steady load or a duty cycle, at a chosen reliability, against a required life; and the static safety factor against a required value.
-Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 0 for a single-row radial ball bearing), else P = X·F_r + Y·F_a (Y = 0 is refused when an axial load acts above e_lim) Duty cycle: P_eq = (Σ P_i^p·U_i / Σ U_i)^(1/p) Basic rating life: L_10 = (C/P)^p million revolutions, p = 3 ball, 10/3 roller Life in hours: L_10h = 10⁶·L_10 / (60·n) Reliability factor (ISO 281:2007, derived): a_1 = 0.95·[ln(100/R)/ln(100/90)]^(2/3) + 0.05 Modified life: L_nm = a_1·a_ISO·L_10 Static safety: P_0 = max(X_0·F_r + Y_0·F_a, F_r), s_0 = C_0/P_0
+Calculates the basic and modified rating life of a rolling bearing under a steady load or a duty cycle, with the static safety factor, against required values. It takes ratings, load factors and a_ISO from reference records.
+Equivalent load: F_dyn = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 0 for a single-row radial ball bearing), else F_dyn = X·F_r + Y·F_a (Y = 0 is refused when an axial load acts above e_lim) Duty cycle: F_dyn = (Σ F_dyn,i^p·U_i / Σ U_i)^(1/p) Basic rating life: L_10 = (C/F_dyn)^p million revolutions, p = 3 ball, 10/3 roller Life in hours: L_10h = 10⁶·L_10 / (60·n) Reliability factor (ISO 281:2007, derived): a_1 = 0.95·[ln(100/R_rel)/ln(100/90)]^(2/3) + 0.05 Modified life: L_nm = a_1·a_ISO·L_10 Static safety: P_0 = max(X_0·F_r + Y_0·F_a, F_r), s_0 = C_0/P_0
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   type | Bearing type | ball (p = 3) |  | spec: SPEC-CNV-07 §6 (bearing schedule) | any
-  F_r | Radial load | 1.34604 | kN | link: Shaft rev A · R_A | 0 … 2000 kN
-  F_a | Axial load | 0 | kN | link: Motor sizing rev A · F_ax_pk | 0 … 2000 kN
-  n | Speed | 1475 | rpm | link: Motor sizing rev A · n_mean | 1 … 50000 rpm
+  F_r | Radial load | 1.34604 | kN | link: Shaft rev A · R_A | 0 … 1000 kN
+  F_a | Axial load | 0 | kN | link: Motor sizing rev A · F_ax_pk | 0 … 1000 kN
+  n | Speed | 1475 | rpm | link: Motor sizing rev A · n_mean | 1 … 30000 rpm
   C | Basic dynamic load rating | 25.5 | kN | spec: SPEC-CNV-07 §6 (bearing schedule) | 0.1 … 10000 kN
   C_0 | Basic static load rating | 15.3 | kN | spec: SPEC-CNV-07 §6 (bearing schedule) | 0.1 … 10000 kN
   e_lim | Load ratio limit e | 0.3 |  | assumption: Sheet default value; no project figure given. | 0 … 5
   X_1 | Radial factor X₁ for F_a/F_r ≤ e (1 for a single-row radial ball bearing) | 1 |  | assumption: Sheet default value; no project figure given. | 0 … 5
   Y_1 | Axial factor Y₁ for F_a/F_r ≤ e (0 for a single-row radial ball bearing; above 0 for double-row and paired bearings) | 0 |  | assumption: Sheet default value; no project figure given. | 0 … 10
-  X | Radial factor X for F_a/F_r > e | 1 |  | assumption: Sheet default value; no project figure given. | 0 … 5
-  Y | Axial factor Y for F_a/F_r > e (from the manufacturer; Y = 0 makes the axial load count for nothing and is refused when one acts) | 0 |  | assumption: Sheet default value; no project figure given. | 0 … 10
+  X | Radial factor for F_a/F_r above e | 1 |  | assumption: Sheet default value; no project figure given. | 0 … 5
+  Y | Axial factor for F_a/F_r above e (from the manufacturer; zero makes the axial load count for nothing and is refused when one acts) | 0 |  | assumption: Sheet default value; no project figure given. | 0 … 10
   X_0 | Static radial factor X₀ | 0.6 |  | assumption: Sheet default value; no project figure given. | 0 … 5
   Y_0 | Static axial factor Y₀ | 0.5 |  | assumption: Sheet default value; no project figure given. | 0 … 10
-  R | Reliability | 90 | % | spec: SPEC-CNV-07 §6 (bearing schedule) | 90 … 99.95 %
-  a_iso | Life modification factor a_ISO (from the manufacturer's tool) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 50
+  R_rel | Reliability | 90 | % | spec: SPEC-CNV-07 §6 (bearing schedule) | 90 … 99.9 %
+  a_iso | Life modification factor a_ISO (from the manufacturer's tool) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 20
   L_req | Required life | 20000 | h | spec: SPEC-CNV-07 §6 (bearing schedule) | 1 … 1000000 h
-  s_0_req | Required static safety factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 4
+  s_0_req | Required static safety factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 3
 
 3. Assumptions
-  A1. Ratings C and C₀, factors X, Y, e, X₀, Y₀ and a_ISO are the manufacturer's values for the bearing, entered as reference records. (No catalogue table ships with TempestOS.)
-  A2. a₁ uses the ISO 281:2007 Weibull form (0.64 at 95 %, 0.25 at 99 %); ISO 281:1990 gave 0.62 and 0.21. (Edition stated on the sheet.)
-  A3. Loads are steady within each duty step; speed is constant. (Duty steps weighted by share of revolutions.)
+  A1. The ratings, load factors and a_ISO are the manufacturer's values, entered as reference records. (No catalogue table ships with TempestOS.)
+  A2. The reliability factor a₁ uses the ISO 281:2007 Weibull form, 0.64 at 95 % and 0.25 at 99 %. (ISO 281:1990 gave 0.62 and 0.21, and the sheet states the edition.)
+  A3. Loads are steady within each duty step, and the speed is constant. (Duty steps are weighted by their share of revolutions.)
   A4. e_lim (Load ratio limit e) is taken as 0.3. (Sheet default value; no project figure given.)
   A5. X_1 (Radial factor X₁ for F_a/F_r ≤ e (1 for a single-row radial ball bearing)) is taken as 1. (Sheet default value; no project figure given.)
   A6. Y_1 (Axial factor Y₁ for F_a/F_r ≤ e (0 for a single-row radial ball bearing; above 0 for double-row and paired bearings)) is taken as 0. (Sheet default value; no project figure given.)
-  A7. X (Radial factor X for F_a/F_r > e) is taken as 1. (Sheet default value; no project figure given.)
-  A8. Y (Axial factor Y for F_a/F_r > e (from the manufacturer; Y = 0 makes the axial load count for nothing and is refused when one acts)) is taken as 0. (Sheet default value; no project figure given.)
+  A7. X (Radial factor for F_a/F_r above e) is taken as 1. (Sheet default value; no project figure given.)
+  A8. Y (Axial factor for F_a/F_r above e (from the manufacturer; zero makes the axial load count for nothing and is refused when one acts)) is taken as 0. (Sheet default value; no project figure given.)
   A9. X_0 (Static radial factor X₀) is taken as 0.6. (Sheet default value; no project figure given.)
   A10. Y_0 (Static axial factor Y₀) is taken as 0.5. (Sheet default value; no project figure given.)
   A11. a_iso (Life modification factor a_ISO (from the manufacturer's tool)) is taken as 1. (Sheet default value; no project figure given.)
@@ -537,7 +537,7 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
   [18] p = 3    « ISO 281:2007 cl. 6–7
       = 3
         Life exponent, ball bearing
-  [19] P = X_1 * F_r + Y_1 * F_a    « ISO 281:2007 cl. 6–7
+  [19] F_dyn = X_1 * F_r + Y_1 * F_a    « ISO 281:2007 cl. 6–7
       = 1 × 1.346 kN + 0 × 0 kN
       = 1.346 kN
         Equivalent dynamic load (F_a/F_r ≤ e_lim)
@@ -545,7 +545,7 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
       = max(0.6 × 1.346 kN + 0.5 × 0 kN, 1.346 kN)
       = 1.346 kN
         Equivalent static load
-  [21] L_10 = (C / P)^p    « ISO 281:2007 cl. 6–7
+  [21] L_10 = (C / F_dyn)^p    « ISO 281:2007 cl. 6–7
       = (25.5 kN / 1.346 kN)^3
       = 6799
         Basic rating life, million revolutions
@@ -553,7 +553,7 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
       = 6799 × 1000000 × 2 × π / 1475 rpm
       = 76825 h
         Basic rating life in hours
-  [23] a_1 = 0.95 * (ln(1 / R) / ln(1 / 0.9))^(2 / 3) + 0.05    « ISO 281:2007 cl. 9
+  [23] a_1 = 0.95 * (ln(1 / R_rel) / ln(1 / 0.9))^(2 / 3) + 0.05    « ISO 281:2007 cl. 9
       = 0.95 × (ln(1 / 90 %) / ln(1 / 0.9))^(2 / 3) + 0.05
       = 1
         Reliability factor (derived, ISO 281:2007 Weibull form)
@@ -581,35 +581,35 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
 5. Results
   L_nmh = 76825 h    Modified rating life
   L_10h = 76825 h    Basic rating life
-  P = 1.346 kN    Equivalent dynamic load
+  F_dyn = 1.346 kN    Equivalent dynamic load
   P_0 = 1.346 kN    Equivalent static load
   s_0 = 11.366    Static safety factor
-  L_10 = 6799    Basic rating life (Mrev)
+  L_10 = 6799    Basic rating life in millions of revolutions
   a_1 = 1    Reliability factor
-  L_nm = 6799    Modified rating life (Mrev)
+  L_nm = 6799    Modified rating life in millions of revolutions
   u_life = 0.26    Life utilisation (governing)
   u_s0 = 0.09    Static utilisation
 
 6. Checks (governing first)
-  PASS  Modified rating life against required life: u_life = 0.26 vs u_life ≤ 1  utilisation 0.26  « ISO 281:2007 cl. 9
-  PASS  Static safety factor against required: u_s0 = 0.09 vs u_s0 ≤ 1  utilisation 0.09  « ISO 76:2006
+  PASS  Required life against modified life: 20000 h vs 76825 h  utilisation 0.26  « ISO 281:2007 cl. 9
+  PASS  Required static safety factor against the static safety factor: 1 vs 11.367  utilisation 0.09  « ISO 76:2006
 
 7. Applicability
-  WARNING  records: tabulated values not taken from a reference record are C, C_0 (Bearing load ratings); e_lim, X_1, Y_1, X, Y, X_0, Y_0 (Bearing X, Y, e factors); a_iso (Bearing a_ISO). Enter each as one so its source, edition and licence travel with it.  [record]
+  WARNING  records: tabulated values not taken from a reference record are C, C_0 (Bearing load ratings); e_lim, X_1, Y_1, X, Y, X_0, Y_0 (Bearing X, Y, e factors); a_iso (Bearing aISO life modification factor). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: mech.bearing-life@1.2.0
-  Content hash: 53a676ddb446057a
+  Template: mech.bearing-life@1.3.0
+  Content hash: 91324fe50f42db2d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:04 UTC
   Application: TempestOS test
 
 9. References
   1. ISO 281:2007 cl. 6–7 — Dynamic equivalent load and basic rating life
   2. ISO 281:2007 cl. 9 — Modified rating life
   3. ISO 76:2006 cl. 6–7 — Static equivalent load and static safety factor
-  4. Shigley's Mechanical Engineering Design 11th ed., Ch. 11 — Rolling-contact bearings
+  4. Budynas and Nisbett, Shigley's Mechanical Engineering Design Ch. 11, 11th ed. — Rolling-contact bearings
 
 
 CALCULATION SHEET — ISSUED
@@ -621,25 +621,26 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
 
 1. Scope and method
-Hole and shaft limits for a nominal size and tolerance classes, the resulting fit (clearance, transition or interference) and its extreme values, from the ISO 286-1 formulae.
-Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^(1/3) + 0.001·D (µm). Width of the tolerance band for the grade: ITn = multiplier × i. Fundamental deviations by letter from the published formulae, and hole deviations by the general rule: EI = −es (A–H); ES = −ei + Δ (K–ZC). Limits of size of the hole and the shaft: limit = nominal + deviation. Fit extremes, the largest and smallest clearance (negative is interference): c_max = ES − ei; c_min = EI − es. Rolling-bearing bore mode: a bearing bore is not an ISO 286 hole; it has its own tolerance (ISO 492) lying below nominal, so ES and EI are entered from the bearing record instead of being computed.
+Calculates the limits of size of a hole and a shaft for a nominal size and ISO 286 tolerance classes, and the resulting fit with its extreme clearances and interferences. It uses the ISO 286-1 formulae, not the tables.
+Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^(1/3) + 0.001·D (µm). Width of the tolerance band for the grade: ITn = multiplier × i. Fundamental deviations by letter from the published formulae, and hole deviations by the general rule: EI_hole = −es_shaft (A–H); ES_hole = −ei_shaft + Δ (K–ZC). Limits of size of the hole and the shaft: limit = nominal + deviation. Fit extremes, the largest and smallest clearance (negative is interference): c_max = ES_hole − ei_shaft; c_min = EI_hole − es_shaft. Rolling-bearing bore mode: a bearing bore is not an ISO 286 hole; it has its own tolerance (ISO 492) lying below nominal, so ES_hole and EI_hole are entered from the bearing record instead of being computed.
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
-  D | Nominal size | 35 | mm | link: Shaft rev A · d_A | 1 … 500 mm
-  hole_kind | Hole: an ISO 286 class, or a rolling-bearing bore (ES and EI from the bearing record, ISO 492) | rolling-bearing bore (deviations from the bearing record) |  | drawing: DRG-CNV-411 rev B | any
+  hole_kind | Hole: an ISO 286 class, or a rolling-bearing bore (ES_hole and EI_hole from the bearing record, ISO 492) | rolling-bearing bore (deviations from the bearing record) |  | drawing: DRG-CNV-411 rev B | any
   hole_letter | Hole fundamental deviation letter | H |  | assumption: Sheet default value; no project figure given. | any
   hole_grade | Hole IT grade | 7 |  | assumption: Sheet default value; no project figure given. | 5 … 11
   shaft_letter | Shaft fundamental deviation letter | k |  | drawing: DRG-CNV-411 rev B | any
   shaft_grade | Shaft IT grade | 6 |  | drawing: DRG-CNV-411 rev B | 4 … 11
-  ES_override | Hole upper deviation override (from a reference record) | 0 | µm | drawing: DRG-CNV-411 rev B | -5000 … 5000 µm
-  EI_override | Hole lower deviation override | -9 | µm | drawing: DRG-CNV-411 rev B | -5000 … 5000 µm
+  D | Nominal size | 35 | mm | link: Shaft rev A · d_A | 1 … 500 mm
+  ES_hole_override | Hole upper deviation override (optional; blank = the formula value, or a reference record) | 0 | µm | drawing: DRG-CNV-411 rev B | -1000 … 1000 µm
+  EI_hole_override | Hole lower deviation override (optional; blank = the formula value) | -9 | µm | drawing: DRG-CNV-411 rev B | -1000 … 1000 µm
 
 3. Assumptions
-  A1. IT values and fundamental deviations are the unrounded results of the ISO 286-1 formulae at the geometric mean of the size step. (The tabulated values apply the standard's own rounding and may differ by about 1 µm for the clearance and transition letters (a to n). For the interference letters p to zc the tables also carry the standard's own increments and sub-steps, so the formula value can be several µm below the tabulated one (p6 at 450 mm: 62.2 against 68 µm), and the sheet warns; enter overrides from a released reference record where the tabulated value governs.)
-  A2. Hole deviations follow the general rule from the shaft deviations, with Δ = ITn − IT(n−1) where the standard applies it. (Table-specific departures in the standard are not reproduced; use the overrides where they govern.)
-  A3. hole_letter (Hole fundamental deviation letter) is taken as H. (Sheet default value; no project figure given.)
-  A4. hole_grade (Hole IT grade) is taken as 7. (Sheet default value; no project figure given.)
+  A1. IT values and deviations are the unrounded results of the ISO 286-1 formulae at the size step's geometric mean. (The tables apply the standard's own rounding, so tabulated values differ by about 1 µm for the letters a to n.)
+  A2. For the letters p to zc the formula value can lie several µm below the tabulated deviation. (The tables add their own increments and sub-steps, so p6 at 450 mm is 62.2 µm from the formula against 68 µm tabulated.)
+  A3. Hole deviations follow the general rule from the shaft deviations, with Δ where the standard applies it. (Δ is ITn − IT(n−1), and the standard's table-specific departures are not reproduced.)
+  A4. hole_letter (Hole fundamental deviation letter) is taken as H. (Sheet default value; no project figure given.)
+  A5. hole_grade (Hole IT grade) is taken as 7. (Sheet default value; no project figure given.)
 
 4. Working
   [7] D_step = size step (lower, upper]    « ISO 286-1 §4
@@ -658,51 +659,51 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
       = 10 × i
       = 15.612 µm
         Shaft tolerance
-  [11] es = ei + IT_shaft    « ISO 286-1 §5
+  [11] es_shaft = ei_shaft + IT_shaft    « ISO 286-1 §5
       = 2.03 + 15.612
       = 17.642 µm
         Shaft upper deviation
-  [12] ei = fundamental deviation 'k'    « ISO 286-1 §5
+  [12] ei_shaft = fundamental deviation 'k'    « ISO 286-1 §5
       = +0.6·D^(1/3)
       = 2.03 µm
         Shaft lower deviation
-  [15] ES = ES (bearing bore record, ISO 492)
+  [15] ES_hole = ES_hole (bearing bore record, ISO 492)
       = override
       = 0 µm
         Hole upper deviation
-  [16] EI = EI (bearing bore record, ISO 492)
+  [16] EI_hole = EI_hole (bearing bore record, ISO 492)
       = override
       = -9 µm
         Hole lower deviation
-  [17] D_hole_max = D + ES
+  [17] D_hole_max = D + ES_hole
       = 35 mm + 0 µm
       = 35 mm
         Hole maximum
-  [18] D_hole_min = D + EI
+  [18] D_hole_min = D + EI_hole
       = 35 mm + -9 µm
       = 34.991 mm
         Hole minimum
-  [19] d_shaft_max = D + es
+  [19] d_shaft_max = D + es_shaft
       = 35 mm + 17.642 µm
       = 35.018 mm
         Shaft maximum
-  [20] d_shaft_min = D + ei
+  [20] d_shaft_min = D + ei_shaft
       = 35 mm + 2.03 µm
       = 35.002 mm
         Shaft minimum
-  [21] c_max = ES - ei
+  [21] c_max = ES_hole - ei_shaft
       = 0 µm − 2.03 µm
       = -2.03 µm
         Maximum clearance (negative: minimum interference)
-  [22] c_min = EI - es
+  [22] c_min = EI_hole - es_shaft
       = (-9 µm) − 17.642 µm
       = -26.642 µm
         Minimum clearance (negative: maximum interference)
-  [23] i_max = es - EI
+  [23] i_max = es_shaft - EI_hole
       = 17.642 µm − (-9 µm)
       = 26.642 µm
         Maximum interference
-  [24] i_min = ei - ES
+  [24] i_min = ei_shaft - ES_hole
       = 2.03 µm − 0 µm
       = 2.03 µm
         Minimum interference (negative: maximum clearance)
@@ -716,40 +717,40 @@ Standard tolerance factor at the geometric mean D of the size step: i = 0.45·D^
         Mean clearance
 
 5. Results
+  c_max = -2.030 µm    Maximum clearance
+  c_min = -26.64 µm    Minimum clearance
+  i_max = 26.64 µm    Maximum interference
+  i_min = 2.030 µm    Minimum interference
+  ES_hole = 0 µm    Hole upper deviation
+  EI_hole = -9 µm    Hole lower deviation
+  es_shaft = 17.64 µm    Shaft upper deviation
+  ei_shaft = 2.030 µm    Shaft lower deviation
   IT_hole = 24.98 µm    Hole tolerance
   IT_shaft = 15.61 µm    Shaft tolerance
-  ES = 0 µm    Hole upper deviation
-  EI = -9 µm    Hole lower deviation
-  es = 17.64 µm    Shaft upper deviation
-  ei = 2.030 µm    Shaft lower deviation
   D_hole_max = 35 mm    Hole maximum
   D_hole_min = 34.99 mm    Hole minimum
   d_shaft_max = 35.02 mm    Shaft maximum
   d_shaft_min = 35.00 mm    Shaft minimum
   fit = "interference"    Fit kind
-  c_max = -2.030 µm    Maximum clearance
-  c_min = -26.64 µm    Minimum clearance
-  i_max = 26.64 µm    Maximum interference
-  i_min = 2.030 µm    Minimum interference
   c_mean = -14.34 µm    Mean clearance
 
 6. Checks (governing first)
-  PASS  Fit classified: bearing bore/k6 vs interference
+  PASS  Fit classes against the fit kind: bearing bore/k6 vs interference
 
 7. Applicability
   None.
 
 8. Verification
-  Template: mech.iso286-fit@1.5.1
-  Content hash: 47475d0d8e6693a1
+  Template: mech.iso286-fit@1.6.0
+  Content hash: 296fa0d64befb299
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:04 UTC
   Application: TempestOS test
 
 9. References
   1. ISO 286-1:2010 §4, §5 — Bases of tolerances, deviations and fits — tolerance grades and fundamental deviations
-  2. ISO 286-2:2010 — Tables of standard tolerance classes and limit deviations (not reproduced)
+  2. ISO 286-2:2010 — Tables of standard tolerance classes and limit deviations
 
 
 CALCULATION SHEET — ISSUED
@@ -761,8 +762,8 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: CNV-DRV-001    Client: Client Co
 
 1. Scope and method
-A pattern of bolts in a plane under in-plane forces (with eccentricity, so torsion), out-of-plane moments and axial load: the shear and tension in every bolt by the elastic (area-weighted) method, the governing bolt, and an optional lever-model prying addition.
-Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A (y_c likewise). Torsion about the centroid from the eccentric load: T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z. Polar moment of the bolt areas about the centroid: J = Σ A r². Shear on each bolt, its direct share plus the torsion (vector sum): v = A (F/ΣA) + T·A·r/J. Tension on each bolt, its direct share plus the moments, with the product of inertia so that an unsymmetric pattern is right: t = A N/ΣA + A·[(M_x I_y − M_y I_xy) y' + (M_y I_x − M_x I_xy) x']/(I_x I_y − I_xy²), where I_x = Σ A y'², I_y = Σ A x'², I_xy = Σ A x'y' (this reduces to M_x A y'/Σ A y'² + M_y A x'/Σ A x'² only for a pattern symmetric about a centroidal axis). Tension with prying, when the distances a and b are given: t_p = t (1 + b/a). Combined shear and tension, circular interaction (elastic method, Shigley-style): (v/V_R)² + (t_p/T_R)² ≤ 1. Combined shear and tension, EN 1993-1-8 linear form (each is also checked alone; the highest governs): v/V_R + t_p/(1.4 T_R) ≤ 1.
+Calculates the shear and tension in every bolt of a planar group under eccentric in-plane forces, torque, axial load and out-of-plane moments, by the elastic method. It also finds the governing bolt and an optional lever-model prying addition.
+Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A (y_c likewise). Torsion about the centroid from the eccentric load: T = F_y (e_x − x_c) − F_x (e_y − y_c) + M_z. Polar moment of the bolt areas about the centroid: J = Σ A r². Shear on each bolt, its direct share plus the torsion (vector sum): v = A (F/ΣA) + T·A·r/J. Tension on each bolt, its direct share plus the moments, with the product of inertia so that an unsymmetric pattern is right: t = A N/ΣA + A·[(M_x I_y − M_y I_xy) y' + (M_y I_x − M_x I_xy) x']/(I_x I_y − I_xy²), where I_x = Σ A y'², I_y = Σ A x'², I_xy = Σ A x'y' (this reduces to M_x A y'/Σ A y'² + M_y A x'/Σ A x'² only for a pattern symmetric about a centroidal axis). Tension with prying, when the distances a and b are given: t_p = t (1 + b/a). Combined shear and tension, circular interaction (elastic method, Shigley-style): (v/F_v_Rd)² + (t_p/F_t_Rd)² ≤ 1. Combined shear and tension, EN 1993-1-8 linear form (each is also checked alone; the highest governs): v/F_v_Rd + t_p/(1.4 F_t_Rd) ≤ 1.
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
@@ -771,19 +772,19 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   bolts[2] |  | x = 0 mm; y = 40 mm; A = 36.6 mm² |  |  | 
   bolts[3] |  | x = -40 mm; y = 0 mm; A = 36.6 mm² |  |  | 
   bolts[4] |  | x = 0 mm; y = -40 mm; A = 36.6 mm² |  |  | 
-  F_x | In-plane force, x | 0 | kN | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN
-  F_y | In-plane force, y | 0 | kN | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN
-  e_x | Point of application, x | 0 | mm | drawing: DRG-CNV-412 rev B | -100000 … 100000 mm
-  e_y | Point of application, y | 0 | mm | drawing: DRG-CNV-412 rev B | -100000 … 100000 mm
-  T_z | Additional in-plane torque about the centroid | 0.159248 | kN·m | link: Motor sizing rev A · T_design | -1000000 … 1000000 kN·m
-  N | Axial (out-of-plane) load, tension positive | 0 | kN | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN
-  M_x | Out-of-plane moment about x (tension on +y side) | 0 | kN·m | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN·m
-  M_y | Out-of-plane moment about y (tension on +x side) | 0 | kN·m | drawing: DRG-CNV-412 rev B | -1000000 … 1000000 kN·m
-  V_R | Shear resistance per bolt | 14 | kN | drawing: DRG-CNV-412 rev B | 0.1 … 10000 kN
-  T_R | Tension resistance per bolt | 21 | kN | drawing: DRG-CNV-412 rev B | 0.1 … 10000 kN
+  F_x | In-plane force, x | 0 | kN | drawing: DRG-CNV-412 rev B | -100000 … 100000 kN
+  F_y | In-plane force, y | 0 | kN | drawing: DRG-CNV-412 rev B | -100000 … 100000 kN
+  e_x | Point of application, x | 0 | mm | drawing: DRG-CNV-412 rev B | -10000 … 10000 mm
+  e_y | Point of application, y | 0 | mm | drawing: DRG-CNV-412 rev B | -10000 … 10000 mm
+  M_z | Additional in-plane torque about the centroid | 0.159248 | kN·m | link: Motor sizing rev A · T_design | -100000 … 100000 kN·m
+  N | Axial (out-of-plane) load, tension positive | 0 | kN | drawing: DRG-CNV-412 rev B | -100000 … 100000 kN
+  M_x | Out-of-plane moment about x (tension on +y side) | 0 | kN·m | drawing: DRG-CNV-412 rev B | -100000 … 100000 kN·m
+  M_y | Out-of-plane moment about y (tension on +x side) | 0 | kN·m | drawing: DRG-CNV-412 rev B | -100000 … 100000 kN·m
+  F_v_Rd | Shear resistance per bolt | 14 | kN | drawing: DRG-CNV-412 rev B | 0.1 … 10000 kN
+  F_t_Rd | Tension resistance per bolt | 21 | kN | drawing: DRG-CNV-412 rev B | 0.1 … 10000 kN
 
 3. Assumptions
-  A1. The connected parts are rigid; bolt forces vary linearly with distance from the centroid (elastic method). (Conservative compared with plastic / instantaneous-centre methods.)
+  A1. The connected parts are rigid, and bolt forces vary linearly with distance from the centroid. (The elastic method is conservative compared with plastic and instantaneous-centre methods.)
   A2. Resistances are per bolt as entered, with their source (a design-code capacity or a manufacturer value). (No code capacity is computed here.)
   A3. Prying uses a simple lever: the bolt tension rises by the factor (1 + b/a). (An optional, conservative first estimate.)
 
@@ -800,7 +801,7 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
       = 36.6×0 + 36.6×40 + 36.6×0 + 36.6×-40 / 146.4
       = 0 mm
         Centroid y
-  [14] T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z
+  [14] T = F_y (e_x − x_c) − F_x (e_y − y_c) + M_z
       = 0 × 0 − 0 × 0 + 0.15925
       = 0.15925 kN·m
         In-plane torque about the centroid
@@ -811,24 +812,24 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   [16] b1 = bolt 1 at (40, 0) mm
       = v = (0, 0.9953) kN, t = 0 kN
       = 0.071093
-        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.0711
+        Interaction utilisation √((v/F_v_Rd)² + (t/F_t_Rd)²) = 0.0711
   [17] b2 = bolt 2 at (0, 40) mm
       = v = (-0.9953, 0) kN, t = 0 kN
       = 0.071093
-        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.0711
+        Interaction utilisation √((v/F_v_Rd)² + (t/F_t_Rd)²) = 0.0711
   [18] b3 = bolt 3 at (-40, 0) mm
       = v = (0, -0.9953) kN, t = 0 kN
       = 0.071093
-        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.0711
+        Interaction utilisation √((v/F_v_Rd)² + (t/F_t_Rd)²) = 0.0711
   [19] b4 = bolt 4 at (0, -40) mm
       = v = (0.9953, 0) kN, t = 0 kN
       = 0.071093
-        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.0711
-  [20] v_max = max over the bolts of v
+        Interaction utilisation √((v/F_v_Rd)² + (t/F_t_Rd)²) = 0.0711
+  [20] F_v_Ed_max = max over the bolts of v
       = bolt 1
       = 0.9953 kN
         Maximum shear on any bolt
-  [21] t_max = max over the bolts of t (with prying)
+  [21] F_t_Ed_max = max over the bolts of t (with prying)
       = bolt 1
       = 0 kN
         Maximum tension on any bolt
@@ -840,7 +841,7 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
       = bolt 1
       = "bolt 1"
         The bolt carrying the largest tension
-  [24] u_max = √((v/V_R)² + (t/T_R)²)
+  [24] u_max = √((v/F_v_Rd)² + (t/F_t_Rd)²)
       = √((0.9953/14)² + (0/21)²)
       = 0.071093
         Governing interaction utilisation
@@ -848,52 +849,55 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
       = bolt 1
       = "bolt 1"
         The bolt with the highest utilisation
-  [26] u_v = v_max / V_R
+  [26] u_v = F_v_Ed_max / F_v_Rd
       = 0.9953 kN / 14 kN
       = 0.071093
         Shear utilisation of the most sheared bolt
-  [27] u_t = t_max / T_R
+  [27] u_lim = 1
+      = 1
+        Limit of an interaction utilisation
+  [28] u_t = F_t_Ed_max / F_t_Rd
       = 0 kN / 21 kN
       = 0
         Tension utilisation of the most tensioned bolt
-  [28] governing_lin = bolt with the highest linear utilisation
+  [29] governing_lin = bolt with the highest linear utilisation
       = bolt 1
       = "bolt 1"
         The bolt that governs the linear shear–tension check
-  [29] u_lin = max over the bolts of v/V_R + t/(1.4 T_R)
+  [30] u_lin = max over the bolts of v/F_v_Rd + t/(1.4 F_t_Rd)
       = bolt 1: 0.9953/14 + 0/(1.4 × 21)
       = 0.071093
         Linear shear–tension interaction, the highest over all bolts
 
 5. Results
+  F_v_Ed_max = 0.9953 kN    Maximum shear on any bolt
+  F_t_Ed_max = 0 kN    Maximum tension on any bolt
   T = 0.1592 kN·m    Torque about the centroid
+  u_max = 0.07    Governing interaction utilisation (governing)
   J = 234240 mm⁴    Polar second moment of bolt areas
-  v_max = 0.9953 kN    Maximum shear on any bolt
-  t_max = 0 kN    Maximum tension on any bolt
   bolt_v = "bolt 1"    Bolt with the largest shear
   bolt_t = "bolt 1"    Bolt with the largest tension
   governing = "bolt 1"    Governing bolt
   governing_lin = "bolt 1"    Bolt governing the linear interaction
-  u_max = 0.07    Governing interaction utilisation (governing)
   u_lin = 0.07    Linear interaction utilisation (highest over all bolts)
 
 6. Checks (governing first)
-  PASS  Circular shear–tension interaction (governing bolt): u_max = 0.07 vs u_max ≤ 1  utilisation 0.07
-  PASS  Linear shear–tension interaction v/V_R + t/(1.4 T_R), every bolt: u_lin = 0.07 vs u_lin ≤ 1  utilisation 0.07  « EN 1993-1-8 Table 3.4
-  PASS  Shear alone (largest bolt shear): u_v = 0.07 vs u_v ≤ 1  utilisation 0.07
-  PASS  Tension alone (largest bolt tension): u_t = 0.00 vs u_t ≤ 1  utilisation 0.00
+  PASS  Circular shear–tension interaction against its limit (governing bolt): 0.071093 vs 1  utilisation 0.07
+  PASS  Linear shear–tension interaction against its limit (every bolt): 0.071093 vs 1  utilisation 0.07  « EN 1993-1-8 Table 3.4
+  PASS  Largest bolt shear against shear resistance: 0.9953 kN vs 14 kN  utilisation 0.07
+  PASS  Largest bolt tension against tension resistance: 0 kN vs 21 kN  utilisation 0.00
 
 7. Applicability
   None.
 
 8. Verification
-  Template: mech.bolt-group@1.4.0
-  Content hash: 51d1bceeeb8e14ba
+  Template: mech.bolt-group@1.5.0
+  Content hash: 6612491a876c3ed5
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:04 UTC
   Application: TempestOS test
 
 9. References
-  1. EN 1993-1-8:2005 §3.6, §3.8 — Design resistance of individual fasteners; elastic distribution in a bolt group
-  2. AISC Steel Construction Manual Part 7 — Eccentrically loaded bolt groups — elastic method
+  1. BS EN 1993-1-8:2005 cl. 3.6, 3.8 — Design resistance of individual fasteners; elastic distribution in a bolt group
+  2. American Institute of Steel Construction, Steel Construction Manual §7, 15th ed. — Eccentrically loaded bolt groups — elastic method

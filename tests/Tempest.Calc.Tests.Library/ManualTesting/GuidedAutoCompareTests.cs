@@ -71,7 +71,7 @@ public sealed class GuidedAutoCompareTests
 
         var result = GuidedAutoCompare.Compare(step, run);
         Assert.Equal(ManualTestOutcome.Fail, result.Suggested);
-        Assert.Contains(result.Mismatches, r => r.Symbol == "P");
+        Assert.Contains(result.Mismatches, r => r.Symbol == "F_dyn");
         Assert.All(result.Mismatches, r => Assert.StartsWith(r.Symbol + ":", r.Comparison.Detail, StringComparison.Ordinal));
     }
 
@@ -94,7 +94,7 @@ public sealed class GuidedAutoCompareTests
         var empty = new CalcRunResult([], [], [], [], [], []);
         var result = GuidedAutoCompare.Compare(step, empty);
         Assert.Equal(ManualTestOutcome.Fail, result.Suggested);
-        Assert.Contains(result.Rows, r => r.Symbol == "P" && r.Comparison.Detail.Contains("no such output", StringComparison.Ordinal));
+        Assert.Contains(result.Rows, r => r.Symbol == "F_dyn" && r.Comparison.Detail.Contains("no such output", StringComparison.Ordinal));
         Assert.Contains(result.Rows, r => r.Symbol == "governing utilisation" && r.Comparison.Outcome == GuidedCompareOutcome.Mismatch);
     }
 
@@ -165,7 +165,7 @@ public sealed class GuidedAutoCompareTests
         var step = GuidedTestScript.Current.Find(BearingId)!;
         var result = GuidedAutoCompare.Compare(step, RunExample(step));
 
-        Assert.Equal("±0.005", result.Rows.Single(r => r.Symbol == "P").Comparison.Allowance);
+        Assert.Equal("±0.005", result.Rows.Single(r => r.Symbol == "F_dyn").Comparison.Allowance);
         Assert.Equal("±0.5", result.Rows.Single(r => r.Symbol == "L_10h").Comparison.Allowance); // the form prints 5 figures of 16667 h, so its last digit is the unit
         Assert.NotNull(result.Rows.Single(r => r.Symbol == "governing utilisation").Comparison.Allowance);
         Assert.Null(result.Rows.Single(r => r.Symbol == "governing check").Comparison.Allowance);

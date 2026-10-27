@@ -26,7 +26,7 @@ public sealed class FailingCheckRowsTests
         var delta = 40 * 350e6 * 1.0000012 / sigma;
         var run = CalcRunner.Run(calculator, inputs.With(CalcInputValue.Quantity("S_y_h", 350, "MPa")).With(CalcInputValue.Quantity("delta", delta, "µm")));
 
-        var check = Assert.Single(run.Checks, c => c.Name == "Hub yield");
+        var check = Assert.Single(run.Checks, c => c.Name == "Hub von Mises stress against yield strength");
         Assert.False(check.Passed);
         Assert.Equal(1.0000012, check.Utilisation, 7);
         Assert.Equal("350.1 MPa", check.DemandText);

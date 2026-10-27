@@ -14,7 +14,7 @@ The 50 MPa block lies below the 60 MPa endurance limit and does no damage, but t
 
 | Output | Expected | Computed | Result |
 |---|---|---|---|
-| `D` | 1.433  | 1.43296  | PASS |
+| `D_tot` | 1.433  | 1.43296  | PASS |
 | `R_f` | 0.69786  | 0.697856  | PASS |
 
-Governing check: Cumulative damage D ≤ 1 — FAIL (utilisation 1.44). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Total damage against the damage limit — FAIL (utilisation 1.44). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

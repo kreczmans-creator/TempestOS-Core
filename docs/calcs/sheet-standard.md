@@ -340,6 +340,8 @@ The nine calculators of the audit's port map, as named:
 | `bs.heat-exchanger` | `Q` → `exchanger.duty`, `T_h_out` → `exchanger.temperature_hot_out`, `T_c_out` → `exchanger.temperature_cold_out`, `A_req` → `exchanger.area_required`, `dT_c` → `exchanger.temperature_rise_cold`, `T_c_m` → `exchanger.temperature_cold_mean`, `cp_c` → `exchanger.specific_heat_cold` |
 | `bs.sealed-system` | `Phi_tot` → `heating.heat_required`, `V_s` → `heating.volume_system`, `V_e` → `heating.volume_expansion_min`, `dT` → `heating.temperature_difference_emitter`, `dT_fr` → `heating.temperature_difference_loop`, `t_m` → `heating.temperature_mean` |
 
+Phases B and C rename output symbols as section C says and keep the old symbol as an alias of the port. Example (phase B): `mech.bearing-life` names its equivalent dynamic load `F_dyn`, because a bare `P` is a power: `F_dyn` → `bearing.load_dynamic`, with `P` as an alias, so a link saved as `calc:<id>#P` still resolves.
+
 **Good example.** `{ Symbol: "L_nmh", Unit: "h", Name: "bearing.life_modified" }`; a pack binding `("shaft", "R_A", "bearing", "F_r")` and a link saved as `calc:<id>#R_A` still resolve.
 
 **Enforced by** `H43-port-names`, `H44-ports-declared`, `H45-no-legacy-codes`, `H46-record-kinds`; `AliasCompatibilityTests` (Library: a link by old symbol, alias or public name, a link saved

@@ -59,7 +59,7 @@ internal static class CalcPackExamples
 
     public static IReadOnlyList<CalcInputValue> DriveM5 { get; } =
     [
-        C("type", "ball (p = 3)"), Q("C", 25.5, "kN"), Q("C_0", 15.3, "kN"), Q("R", 90, "%"), Q("L_req", 20000, "h"),
+        C("type", "ball (p = 3)"), Q("C", 25.5, "kN"), Q("C_0", 15.3, "kN"), Q("R_rel", 90, "%"), Q("L_req", 20000, "h"),
     ];
 
     /// <summary>
@@ -68,7 +68,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> DriveM2 { get; } =
     [
-        C("hole_kind", "rolling-bearing bore (deviations from the bearing record)"), Q("ES_override", 0, "µm"), Q("EI_override", -9, "µm"), C("shaft_letter", "k"), N("shaft_grade", 6),
+        C("hole_kind", "rolling-bearing bore (deviations from the bearing record)"), Q("ES_hole_override", 0, "µm"), Q("EI_hole_override", -9, "µm"), C("shaft_letter", "k"), N("shaft_grade", 6),
     ];
 
     /// <summary>Four M8 8.8 bolts (stress area 36.6 mm², shear resistance 14.0 kN, tension 21.0 kN) on an 80 mm circle carry the torque by shear.</summary>
@@ -76,7 +76,7 @@ internal static class CalcPackExamples
     [
         Table("bolts", Bolt(40, 0, 36.6), Bolt(0, 40, 36.6), Bolt(-40, 0, 36.6), Bolt(0, -40, 36.6)),
         Q("F_x", 0, "kN"), Q("F_y", 0, "kN"), Q("e_x", 0, "mm"), Q("e_y", 0, "mm"), Q("N", 0, "kN"), Q("M_x", 0, "kN*m"), Q("M_y", 0, "kN*m"),
-        Q("V_R", 14.0, "kN"), Q("T_R", 21.0, "kN"),
+        Q("F_v_Rd", 14.0, "kN"), Q("F_t_Rd", 21.0, "kN"),
     ];
 
     private static CalcRow Bolt(double x, double y, double area) => CalcRow.Of(Mm("x", x), Mm("y", y), ("A", new CalcCell(area, "mm^2")));
@@ -290,8 +290,8 @@ internal static class CalcPackExamples
     public static IReadOnlyList<CalcInputValue> SteelM3 { get; } =
     [
         Table("bolts", Bolt(-60, 150, 245), Bolt(60, 150, 245), Bolt(-60, 0, 245), Bolt(60, 0, 245), Bolt(-60, -150, 245), Bolt(60, -150, 245)),
-        Q("F_x", 0, "kN"), Q("e_x", 0, "mm"), Q("e_y", 0, "mm"), Q("T_z", 0, "kN*m"), Q("N", 0, "kN"), Q("M_y", 0, "kN*m"),
-        Q("V_R", 94.0, "kN"), Q("T_R", 141.0, "kN"),
+        Q("F_x", 0, "kN"), Q("e_x", 0, "mm"), Q("e_y", 0, "mm"), Q("M_z", 0, "kN*m"), Q("N", 0, "kN"), Q("M_y", 0, "kN*m"),
+        Q("F_v_Rd", 94.0, "kN"), Q("F_t_Rd", 141.0, "kN"),
     ];
 
     /// <summary>The arm joint's bolt checks: M20 8.8 through a 20 mm S275 end plate against the 11 mm flange of the UC 203 × 203 × 46 column (bearing is on the thinner ply); the bolt forces arrive by link from the bolt group.</summary>
@@ -626,7 +626,7 @@ internal static class CalcPackExamples
     [
         C("mode", "Cam"), Q("n_in", 150, "rpm"), C("follower", "Roller"), Q("Rb", 60, "mm"), Q("R_r", 15, "mm"), Q("phi_max", 30, "deg"), Q("e_off", 0, "mm"),
         Table("segs", Seg("Rise", "Cycloidal", 120, 40), Seg("Dwell", null, 60, 0), Seg("Return", "Modified trapezoid", 120, 40), Seg("Dwell", null, 60, 0)),
-        N("steps", 72), Q("m_f", 4, "kg"), Q("k_sp", 9.874, "N/mm"), Q("F_pre", 50, "N"), Q("F_ext", 0, "N"),
+        N("steps", 72), Q("m_f", 4, "kg"), Q("k_sp", 9.874, "kN/m"), Q("F_pre", 50, "N"), Q("F_ext", 0, "N"),
     ];
 
     /// <summary>
@@ -660,7 +660,7 @@ internal static class CalcPackExamples
     /// <summary>Cam-shaft bearing A: a ball bearing with INVENTED ratings (C 3.5 kN, C₀ 1.8 kN), 90 % reliability and a 20 000 h life; its radial load and speed arrive by link.</summary>
     public static IReadOnlyList<CalcInputValue> CamM5 { get; } =
     [
-        C("type", "ball (p = 3)"), Q("C", 3.5, "kN"), Q("C_0", 1.8, "kN"), Q("R", 90, "%"), Q("L_req", 20000, "h"),
+        C("type", "ball (p = 3)"), Q("C", 3.5, "kN"), Q("C_0", 1.8, "kN"), Q("R_rel", 90, "%"), Q("L_req", 20000, "h"),
     ];
 
     /// <summary>

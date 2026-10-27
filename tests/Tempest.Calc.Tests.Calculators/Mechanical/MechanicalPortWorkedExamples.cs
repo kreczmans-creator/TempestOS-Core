@@ -26,7 +26,7 @@ public static class MechanicalPortWorkedExamples
 
     private static CalcInputValue[] Lug(double p, double t, double w, double dh, double dp, double a, double ts, double g) =>
     [
-        CalcInputValue.Quantity("P", p, "kN"), CalcInputValue.Quantity("t", t, "mm"), CalcInputValue.Quantity("W", w, "mm"), CalcInputValue.Quantity("d_h", dh, "mm"),
+        CalcInputValue.Quantity("F_lug", p, "kN"), CalcInputValue.Quantity("t_lug", t, "mm"), CalcInputValue.Quantity("W", w, "mm"), CalcInputValue.Quantity("d_h", dh, "mm"),
         CalcInputValue.Quantity("d_p", dp, "mm"), CalcInputValue.Quantity("a", a, "mm"), CalcInputValue.Quantity("t_s", ts, "mm"), CalcInputValue.Quantity("g", g, "mm"),
         CalcInputValue.Quantity("f_t", 150, "MPa"), CalcInputValue.Quantity("f_br", 200, "MPa"), CalcInputValue.Quantity("f_v", 90, "MPa"),
         CalcInputValue.Quantity("f_b_pin", 250, "MPa"), CalcInputValue.Quantity("f_v_pin", 150, "MPa"),
@@ -42,30 +42,30 @@ public static class MechanicalPortWorkedExamples
     public static IReadOnlyList<WorkedExample> All { get; } =
     [
         new(LiftingLugCalculator.Id, "lug-50kN-passes", "Lifting lug, 50 kN — passes, pin bending governs", Legacy("calc.lifting-lug-pin-joint", 1),
-            Sourced("DRG-LL-101", ["P"], LugCriteria, Lug(50, 20, 100, 32, 30, 40, 12, 2)),
+            Sourced("DRG-LL-101", ["F_lug"], LugCriteria, Lug(50, 20, 100, 32, 30, 40, 12, 2)),
             [new CalcExpectedValue("sigma_t", 36.765, "MPa", 5e-5), new CalcExpectedValue("sigma_br", 83.333, "MPa", 5e-5), new CalcExpectedValue("sigma_b", 122.61, "MPa", 5e-5), new CalcExpectedValue("u_b", 0.49043, "", 5e-5)],
             "A 20 mm lug on a 30 mm pin between 12 mm cheek plates. All five checks pass; the pin in bending governs at 0.49, as it often does — the lug plate itself is lightly stressed."),
         new(LiftingLugCalculator.Id, "lug-120kN-fails", "Lifting lug, 120 kN — fails in bearing, tear-out and pin bending", Legacy("calc.lifting-lug-pin-joint", 2),
-            Sourced("DRG-LL-102", ["P"], LugCriteria, Lug(120, 15, 90, 26, 25, 30, 10, 1)),
+            Sourced("DRG-LL-102", ["F_lug"], LugCriteria, Lug(120, 15, 90, 26, 25, 30, 10, 1)),
             [new CalcExpectedValue("sigma_br", 320.00, "MPa", 5e-5), new CalcExpectedValue("tau_to", 133.33, "MPa", 5e-5), new CalcExpectedValue("sigma_b", 381.36, "MPa", 5e-5), new CalcExpectedValue("u_br", 1.6000, "", 5e-5)],
             "The same detail scaled down and loaded to 120 kN. Bearing (1.60), tear-out (1.48) and pin bending (1.53) all fail; bearing governs. A thicker lug fixes the first two; the pin needs a larger diameter."),
 
         new(BearingLifeBasicCalculator.Id, "ball-bearing-radial", "Deep-groove ball bearing under radial load", Legacy("calc.bearing-rating-life", 1),
             Sourced("DRG-GB-210", ["F_r", "F_a", "n"], ["a_1", "L_req"], CalcInputValue.Choice("type", BearingLifeBasicCalculator.Ball), CalcInputValue.Quantity("C", 35.1, "kN"), CalcInputValue.Quantity("F_r", 4, "kN"), CalcInputValue.Quantity("F_a", 0, "kN"), CalcInputValue.Of("X", 1), CalcInputValue.Of("Y", 0), CalcInputValue.Quantity("n", 1500, "rpm"), CalcInputValue.Of("a_1", 1), CalcInputValue.Quantity("L_req", 5000, "h")),
-            [new CalcExpectedValue("P", 4.000, "kN", 5e-5), new CalcExpectedValue("L_10", 675.68, "", 5e-5), new CalcExpectedValue("L_10h", 7507.6, "h", 5e-5)],
+            [new CalcExpectedValue("F_dyn", 4.000, "kN", 5e-5), new CalcExpectedValue("L_10", 675.68, "", 5e-5), new CalcExpectedValue("L_10h", 7507.6, "h", 5e-5)],
             "A 35.1 kN-rated ball bearing at 4 kN and 1,500 rev/min. Its basic rating life is 7,500 h against 5,000 h required."),
         new(BearingLifeBasicCalculator.Id, "ball-bearing-combined-95", "Ball bearing, combined load, 95 % reliability", Legacy("calc.bearing-rating-life", 3),
             Sourced("DRG-GB-211", ["F_r", "F_a", "n"], ["a_1", "L_req"], CalcInputValue.Choice("type", BearingLifeBasicCalculator.Ball), CalcInputValue.Quantity("C", 25, "kN"), CalcInputValue.Quantity("F_r", 3, "kN"), CalcInputValue.Quantity("F_a", 1.5, "kN"), CalcInputValue.Of("X", 0.56), CalcInputValue.Of("Y", 1.5), CalcInputValue.Quantity("n", 1000, "rpm"), CalcInputValue.Of("a_1", 0.64), CalcInputValue.Quantity("L_req", 2000, "h")),
-            [new CalcExpectedValue("P", 3.930, "kN", 5e-5), new CalcExpectedValue("L_10h", 4290.3, "h", 5e-5), new CalcExpectedValue("L_nmh", 2745.8, "h", 5e-5)],
+            [new CalcExpectedValue("F_dyn", 3.930, "kN", 5e-5), new CalcExpectedValue("L_10h", 4290.3, "h", 5e-5), new CalcExpectedValue("L_nmh", 2745.8, "h", 5e-5)],
             "Radial and axial load combine through the catalogue X and Y factors into a 3.93 kN equivalent load. At 95 % reliability (a₁ = 0.64) the life is 2,746 h against 2,000 h required."),
 
         new(FatigueMinerCalculator.Id, "detail-71-spectrum", "Welded detail category 71 under a three-block spectrum", Legacy("calc.fatigue-miner", 1),
             Sourced("DRG-FT-301", ["blocks"], ["S_ref", "N_ref", "m"], CalcInputValue.Quantity("S_ref", 71, "MPa"), CalcInputValue.Of("N_ref", 2e6), CalcInputValue.Of("m", 3), FatigueMinerCalculator.Blocks((100, 1e5), (60, 5e5), (40, 2e6))),
-            [new CalcExpectedValue("D", 0.46939, "", 5e-5), new CalcExpectedValue("R_f", 2.1304, "", 5e-5)],
+            [new CalcExpectedValue("D_tot", 0.46939, "", 5e-5), new CalcExpectedValue("R_f", 2.1304, "", 5e-5)],
             "Three stress-range blocks on a category-71 detail. Each block's share of the damage is close to the others; the total 0.47 means the spectrum can be repeated about twice before failure."),
         new(FatigueMinerCalculator.Id, "slope-5-endurance-limit", "Slope-5 curve with an endurance limit — damage above one", Legacy("calc.fatigue-miner", 2),
             Sourced("DRG-FT-302", ["blocks"], ["S_ref", "N_ref", "m", "S_e"], CalcInputValue.Quantity("S_ref", 150, "MPa"), CalcInputValue.Of("N_ref", 1e6), CalcInputValue.Of("m", 5), CalcInputValue.Quantity("S_e", 60, "MPa"), FatigueMinerCalculator.Blocks((120, 2e6), (90, 1e7), (50, 1e7))),
-            [new CalcExpectedValue("D", 1.4330, "", 5e-5), new CalcExpectedValue("R_f", 0.69786, "", 5e-5)],
+            [new CalcExpectedValue("D_tot", 1.4330, "", 5e-5), new CalcExpectedValue("R_f", 0.69786, "", 5e-5)],
             "The 50 MPa block lies below the 60 MPa endurance limit and does no damage, but the other two sum to 1.43: the detail fails before one spectrum is complete."),
 
         new(ShaftStressCalculator.Id, "shaft-40mm", "40 mm shaft in bending and torsion", Legacy("calc.shaft-combined-stress", 1),

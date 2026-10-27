@@ -10,7 +10,7 @@ PACK INDEX
   1. Load combinations — Load combinations (EN 1990) — rev A — ISSUED
   2. Support frame — Beam and 2D frame analysis — rev A — ISSUED
   3. Column check — Member checks (EN 1993-1-1) — rev A — ISSUED — Member interaction (simplified) PASS
-  4. Arm joint bolt group — Bolt group (elastic method) — rev A — ISSUED — Circular shear–tension interaction (governing bolt) PASS
+  4. Arm joint bolt group — Bolt group (elastic method) — rev A — ISSUED — Circular shear–tension interaction against its limit (governing bolt) PASS
   5. Arm connection bolts — Bolts and fillet welds (EN 1993-1-8) — rev A — ISSUED — Bolt tension and punching PASS
   6. Holding-down bolts — Bolts and fillet welds (EN 1993-1-8) — rev A — ISSUED — Bolt shear PASS
   7. Column base plate — Column base plate (EN 1993-1-8) — rev A — ISSUED — Base plate tension T-stub (bending at the bolts) PASS
@@ -45,7 +45,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 47/47
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:04 UTC
   Application: TempestOS test
 
 9. References
@@ -179,7 +179,7 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   Content hash: 28f3ed111e112df1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:04 UTC
   Application: TempestOS test
 
 9. References
@@ -388,7 +388,7 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   Content hash: a6389d664ba5a5eb
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:04 UTC
   Application: TempestOS test
 
 9. References
@@ -642,7 +642,7 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   Content hash: 198fa1e7c5a65ea8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:04 UTC
   Application: TempestOS test
 
 9. References
@@ -666,8 +666,8 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: STR-SUP-001    Client: Client Co
 
 1. Scope and method
-A pattern of bolts in a plane under in-plane forces (with eccentricity, so torsion), out-of-plane moments and axial load: the shear and tension in every bolt by the elastic (area-weighted) method, the governing bolt, and an optional lever-model prying addition.
-Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A (y_c likewise). Torsion about the centroid from the eccentric load: T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z. Polar moment of the bolt areas about the centroid: J = Σ A r². Shear on each bolt, its direct share plus the torsion (vector sum): v = A (F/ΣA) + T·A·r/J. Tension on each bolt, its direct share plus the moments, with the product of inertia so that an unsymmetric pattern is right: t = A N/ΣA + A·[(M_x I_y − M_y I_xy) y' + (M_y I_x − M_x I_xy) x']/(I_x I_y − I_xy²), where I_x = Σ A y'², I_y = Σ A x'², I_xy = Σ A x'y' (this reduces to M_x A y'/Σ A y'² + M_y A x'/Σ A x'² only for a pattern symmetric about a centroidal axis). Tension with prying, when the distances a and b are given: t_p = t (1 + b/a). Combined shear and tension, circular interaction (elastic method, Shigley-style): (v/V_R)² + (t_p/T_R)² ≤ 1. Combined shear and tension, EN 1993-1-8 linear form (each is also checked alone; the highest governs): v/V_R + t_p/(1.4 T_R) ≤ 1.
+Calculates the shear and tension in every bolt of a planar group under eccentric in-plane forces, torque, axial load and out-of-plane moments, by the elastic method. It also finds the governing bolt and an optional lever-model prying addition.
+Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A (y_c likewise). Torsion about the centroid from the eccentric load: T = F_y (e_x − x_c) − F_x (e_y − y_c) + M_z. Polar moment of the bolt areas about the centroid: J = Σ A r². Shear on each bolt, its direct share plus the torsion (vector sum): v = A (F/ΣA) + T·A·r/J. Tension on each bolt, its direct share plus the moments, with the product of inertia so that an unsymmetric pattern is right: t = A N/ΣA + A·[(M_x I_y − M_y I_xy) y' + (M_y I_x − M_x I_xy) x']/(I_x I_y − I_xy²), where I_x = Σ A y'², I_y = Σ A x'², I_xy = Σ A x'y' (this reduces to M_x A y'/Σ A y'² + M_y A x'/Σ A x'² only for a pattern symmetric about a centroidal axis). Tension with prying, when the distances a and b are given: t_p = t (1 + b/a). Combined shear and tension, circular interaction (elastic method, Shigley-style): (v/F_v_Rd)² + (t_p/F_t_Rd)² ≤ 1. Combined shear and tension, EN 1993-1-8 linear form (each is also checked alone; the highest governs): v/F_v_Rd + t_p/(1.4 F_t_Rd) ≤ 1.
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
@@ -678,19 +678,19 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   bolts[4] |  | x = 60 mm; y = 0 mm; A = 245 mm² |  |  | 
   bolts[5] |  | x = -60 mm; y = -150 mm; A = 245 mm² |  |  | 
   bolts[6] |  | x = 60 mm; y = -150 mm; A = 245 mm² |  |  | 
-  F_x | In-plane force, x | 0 | kN | drawing: DRG-STR-312 rev B | -1000000 … 1000000 kN
-  F_y | In-plane force, y | 28.2 | kN | link: Support frame rev A · V_e2 | -1000000 … 1000000 kN
-  e_x | Point of application, x | 0 | mm | drawing: DRG-STR-312 rev B | -100000 … 100000 mm
-  e_y | Point of application, y | 0 | mm | drawing: DRG-STR-312 rev B | -100000 … 100000 mm
-  T_z | Additional in-plane torque about the centroid | 0 | kN·m | drawing: DRG-STR-312 rev B | -1000000 … 1000000 kN·m
-  N | Axial (out-of-plane) load, tension positive | 0 | kN | drawing: DRG-STR-312 rev B | -1000000 … 1000000 kN
-  M_x | Out-of-plane moment about x (tension on +y side) | 28.2 | kN·m | link: Support frame rev A · M_abs_e2 | -1000000 … 1000000 kN·m
-  M_y | Out-of-plane moment about y (tension on +x side) | 0 | kN·m | drawing: DRG-STR-312 rev B | -1000000 … 1000000 kN·m
-  V_R | Shear resistance per bolt | 94 | kN | drawing: DRG-STR-312 rev B | 0.1 … 10000 kN
-  T_R | Tension resistance per bolt | 141 | kN | drawing: DRG-STR-312 rev B | 0.1 … 10000 kN
+  F_x | In-plane force, x | 0 | kN | drawing: DRG-STR-312 rev B | -100000 … 100000 kN
+  F_y | In-plane force, y | 28.2 | kN | link: Support frame rev A · V_e2 | -100000 … 100000 kN
+  e_x | Point of application, x | 0 | mm | drawing: DRG-STR-312 rev B | -10000 … 10000 mm
+  e_y | Point of application, y | 0 | mm | drawing: DRG-STR-312 rev B | -10000 … 10000 mm
+  M_z | Additional in-plane torque about the centroid | 0 | kN·m | drawing: DRG-STR-312 rev B | -100000 … 100000 kN·m
+  N | Axial (out-of-plane) load, tension positive | 0 | kN | drawing: DRG-STR-312 rev B | -100000 … 100000 kN
+  M_x | Out-of-plane moment about x (tension on +y side) | 28.2 | kN·m | link: Support frame rev A · M_abs_e2 | -100000 … 100000 kN·m
+  M_y | Out-of-plane moment about y (tension on +x side) | 0 | kN·m | drawing: DRG-STR-312 rev B | -100000 … 100000 kN·m
+  F_v_Rd | Shear resistance per bolt | 94 | kN | drawing: DRG-STR-312 rev B | 0.1 … 10000 kN
+  F_t_Rd | Tension resistance per bolt | 141 | kN | drawing: DRG-STR-312 rev B | 0.1 … 10000 kN
 
 3. Assumptions
-  A1. The connected parts are rigid; bolt forces vary linearly with distance from the centroid (elastic method). (Conservative compared with plastic / instantaneous-centre methods.)
+  A1. The connected parts are rigid, and bolt forces vary linearly with distance from the centroid. (The elastic method is conservative compared with plastic and instantaneous-centre methods.)
   A2. Resistances are per bolt as entered, with their source (a design-code capacity or a manufacturer value). (No code capacity is computed here.)
   A3. Prying uses a simple lever: the bolt tension rises by the factor (1 + b/a). (An optional, conservative first estimate.)
 
@@ -707,7 +707,7 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
       = 245×150 + 245×150 + 245×0 + 245×0 + 245×-150 + 245×-150 / 1470
       = 0 mm
         Centroid y
-  [14] T = F_y (e_x − x_c) − F_x (e_y − y_c) + T_z
+  [14] T = F_y (e_x − x_c) − F_x (e_y − y_c) + M_z
       = 28.2 × 0 − 0 × 0 + 0
       = 0 kN·m
         In-plane torque about the centroid
@@ -718,32 +718,32 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   [16] b1 = bolt 1 at (-60, 150) mm
       = v = (0, 4.7) kN, t = 47 kN
       = 0.33706
-        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.337
+        Interaction utilisation √((v/F_v_Rd)² + (t/F_t_Rd)²) = 0.337
   [17] b2 = bolt 2 at (60, 150) mm
       = v = (0, 4.7) kN, t = 47 kN
       = 0.33706
-        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.337
+        Interaction utilisation √((v/F_v_Rd)² + (t/F_t_Rd)²) = 0.337
   [18] b3 = bolt 3 at (-60, 0) mm
       = v = (0, 4.7) kN, t = 0 kN
       = 0.05
-        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.05
+        Interaction utilisation √((v/F_v_Rd)² + (t/F_t_Rd)²) = 0.05
   [19] b4 = bolt 4 at (60, 0) mm
       = v = (0, 4.7) kN, t = 0 kN
       = 0.05
-        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.05
+        Interaction utilisation √((v/F_v_Rd)² + (t/F_t_Rd)²) = 0.05
   [20] b5 = bolt 5 at (-60, -150) mm
       = v = (0, 4.7) kN, t = 0 kN
       = 0.05
-        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.05
+        Interaction utilisation √((v/F_v_Rd)² + (t/F_t_Rd)²) = 0.05
   [21] b6 = bolt 6 at (60, -150) mm
       = v = (0, 4.7) kN, t = 0 kN
       = 0.05
-        Interaction utilisation √((v/V_R)² + (t/T_R)²) = 0.05
-  [22] v_max = max over the bolts of v
+        Interaction utilisation √((v/F_v_Rd)² + (t/F_t_Rd)²) = 0.05
+  [22] F_v_Ed_max = max over the bolts of v
       = bolt 1
       = 4.7 kN
         Maximum shear on any bolt
-  [23] t_max = max over the bolts of t (with prying)
+  [23] F_t_Ed_max = max over the bolts of t (with prying)
       = bolt 1
       = 47 kN
         Maximum tension on any bolt
@@ -755,7 +755,7 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
       = bolt 1
       = "bolt 1"
         The bolt carrying the largest tension
-  [26] u_max = √((v/V_R)² + (t/T_R)²)
+  [26] u_max = √((v/F_v_Rd)² + (t/F_t_Rd)²)
       = √((4.7/94)² + (47/141)²)
       = 0.33706
         Governing interaction utilisation
@@ -763,55 +763,58 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
       = bolt 1
       = "bolt 1"
         The bolt with the highest utilisation
-  [28] u_v = v_max / V_R
+  [28] u_v = F_v_Ed_max / F_v_Rd
       = 4.7 kN / 94 kN
       = 0.05
         Shear utilisation of the most sheared bolt
-  [29] u_t = t_max / T_R
+  [29] u_lim = 1
+      = 1
+        Limit of an interaction utilisation
+  [30] u_t = F_t_Ed_max / F_t_Rd
       = 47 kN / 141 kN
       = 0.33333
         Tension utilisation of the most tensioned bolt
-  [30] governing_lin = bolt with the highest linear utilisation
+  [31] governing_lin = bolt with the highest linear utilisation
       = bolt 1
       = "bolt 1"
         The bolt that governs the linear shear–tension check
-  [31] u_lin = max over the bolts of v/V_R + t/(1.4 T_R)
+  [32] u_lin = max over the bolts of v/F_v_Rd + t/(1.4 F_t_Rd)
       = bolt 1: 4.7/94 + 47/(1.4 × 141)
       = 0.2881
         Linear shear–tension interaction, the highest over all bolts
 
 5. Results
+  F_v_Ed_max = 4.700 kN    Maximum shear on any bolt
+  F_t_Ed_max = 47 kN    Maximum tension on any bolt
   T = 0 kN·m    Torque about the centroid
+  u_max = 0.34    Governing interaction utilisation (governing)
   J = 27342000 mm⁴    Polar second moment of bolt areas
-  v_max = 4.700 kN    Maximum shear on any bolt
-  t_max = 47 kN    Maximum tension on any bolt
   bolt_v = "bolt 1"    Bolt with the largest shear
   bolt_t = "bolt 1"    Bolt with the largest tension
   governing = "bolt 1"    Governing bolt
   governing_lin = "bolt 1"    Bolt governing the linear interaction
-  u_max = 0.34    Governing interaction utilisation (governing)
   u_lin = 0.29    Linear interaction utilisation (highest over all bolts)
 
 6. Checks (governing first)
-  PASS  Circular shear–tension interaction (governing bolt): u_max = 0.34 vs u_max ≤ 1  utilisation 0.34
-  PASS  Tension alone (largest bolt tension): u_t = 0.33 vs u_t ≤ 1  utilisation 0.33
-  PASS  Linear shear–tension interaction v/V_R + t/(1.4 T_R), every bolt: u_lin = 0.29 vs u_lin ≤ 1  utilisation 0.29  « EN 1993-1-8 Table 3.4
-  PASS  Shear alone (largest bolt shear): u_v = 0.05 vs u_v ≤ 1  utilisation 0.05
+  PASS  Circular shear–tension interaction against its limit (governing bolt): 0.33706 vs 1  utilisation 0.34
+  PASS  Largest bolt tension against tension resistance: 47 kN vs 141 kN  utilisation 0.33
+  PASS  Linear shear–tension interaction against its limit (every bolt): 0.2881 vs 1  utilisation 0.29  « EN 1993-1-8 Table 3.4
+  PASS  Largest bolt shear against shear resistance: 4.700 kN vs 94 kN  utilisation 0.05
 
 7. Applicability
   None.
 
 8. Verification
-  Template: mech.bolt-group@1.4.0
-  Content hash: 51d1bceeeb8e14ba
+  Template: mech.bolt-group@1.5.0
+  Content hash: 6612491a876c3ed5
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:04 UTC
   Application: TempestOS test
 
 9. References
-  1. EN 1993-1-8:2005 §3.6, §3.8 — Design resistance of individual fasteners; elastic distribution in a bolt group
-  2. AISC Steel Construction Manual Part 7 — Eccentrically loaded bolt groups — elastic method
+  1. BS EN 1993-1-8:2005 cl. 3.6, 3.8 — Design resistance of individual fasteners; elastic distribution in a bolt group
+  2. American Institute of Steel Construction, Steel Construction Manual §7, 15th ed. — Eccentrically loaded bolt groups — elastic method
 
 
 CALCULATION SHEET — ISSUED
@@ -849,8 +852,8 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   k_p2 | Minimum p₂/d₀ | 2.4 |  | assumption: Sheet default value; no project figure given. | 2 … 4
   gamma_M2 | γ_M2 | 1.25 |  | assumption: Sheet default value; no project figure given. | 1.1 … 1.5
   gamma_M0 | γ_M0 | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.2
-  F_v_Ed | Shear per bolt | 4.7 | kN | link: Arm joint bolt group rev A · v_max | 0 … 2000 kN
-  F_t_Ed | Tension per bolt | 47 | kN | link: Arm joint bolt group rev A · t_max | 0 … 2000 kN
+  F_v_Ed | Shear per bolt | 4.7 | kN | link: Arm joint bolt group rev A · F_v_Ed_max | 0 … 2000 kN
+  F_t_Ed | Tension per bolt | 47 | kN | link: Arm joint bolt group rev A · F_t_Ed_max | 0 … 2000 kN
   block_load | Block tearing loading: concentric (V_eff,1) or eccentric (V_eff,2, the tension term halved) | Concentric loading (V_eff,1) |  | assumption: Sheet default value; no project figure given. | any
   V_Ed | Group force for block tearing | 28.2 | kN | link: Support frame rev A · V_e2 | 0 … 10000 kN
   A_nt | Net area in tension | 1200 | mm² | drawing: DRG-STR-312 rev B | 1 … 100000 mm²
@@ -983,7 +986,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: e5ff72f057654ae1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:04 UTC
   Application: TempestOS test
 
 9. References
@@ -1146,7 +1149,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: e5ff72f057654ae1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:04 UTC
   Application: TempestOS test
 
 9. References
@@ -1204,7 +1207,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | link: Holding-down bolts rev A · f_yb | 235 … 640 MPa
   A_s | Anchor bolt tensile stress area (from S4) | 244.794 | mm² | link: Holding-down bolts rev A · A_s | 50 … 1500 mm²
   F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 248.485 | kN | link: Holding-down bolts rev A · F_b_Rd | 1 … 2000 kN
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 85844d70ba6940ab81e889c16afe687f/49f0358b53064501bb686b4150d92a5a | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 6ca56dace36f490383d70541396bfdff/da57cfcfaff648fcaed0503332ea750d | any
 
 3. Assumptions
   A1. N_Ed is positive in compression here, the opposite of S3 (tension positive): a link from S2 must take the reaction R1_y (up positive, compression into the base), never the member force N_e1. (Sign convention.)
@@ -1424,7 +1427,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   Content hash: 3ba3eee23aa8a758
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:04 UTC
   Application: TempestOS test
 
 9. References

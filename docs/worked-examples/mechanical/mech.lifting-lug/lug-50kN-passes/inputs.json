@@ -1,6 +1,6 @@
 [
   {
-    "Symbol": "P",
+    "Symbol": "F_lug",
     "Number": 50,
     "Unit": "kN",
     "Provenance": {
@@ -126,7 +126,7 @@
     "ValueText": "2"
   },
   {
-    "Symbol": "t",
+    "Symbol": "t_lug",
     "Number": 20,
     "Unit": "mm",
     "Provenance": {

@@ -13,8 +13,8 @@ public sealed class MaterialMarginCalculator : ICalcCalculator
     public const string Id = "mech.material-margin";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.1", CalcDiscipline.Mechanical, "Material strength margin",
-        "The factors of safety of a material against an applied (equivalent) stress on its yield and, when given, its ultimate strength, against a required factor; the strengths can be filled from a released material record so the margin cites its source.",
+        Id, "1.1.0", CalcDiscipline.Mechanical, "Material strength margin",
+        "Calculates the factors of safety of a material against an applied equivalent stress, on yield and, when given, on ultimate strength. It does not check fatigue or stability.",
         "Factor of safety against yield and against ultimate: n_y = f_y/σ; n_u = f_u/σ.\nGoverning factor, the ultimate margin scaled to the yield basis by k_u ≥ 1: n_gov = min(n_y, n_u/k_u).\nUtilisation against the required factor: u = n_req/n_gov.",
         [
             new CalcInputSpec("sigma", "Applied (equivalent) stress", CalcInputKind.Quantity, "MPa", Default: 120, Min: 0.01, Max: 5000, HardMin: 1e-6, HardMax: 1e5),
@@ -24,10 +24,10 @@ public sealed class MaterialMarginCalculator : ICalcCalculator
             new CalcInputSpec("n_req", "Required factor of safety on yield", CalcInputKind.Number, Default: 1.5, Min: 1, Max: 10, HardMin: 1, HardMax: 100),
         ],
         [
-            new CalcAssumption("Static loading; the applied stress is the equivalent stress at the critical point.", "Fatigue and stability are separate checks."),
+            new CalcAssumption("The load is static and the applied stress is the equivalent stress at the critical point.", "Fatigue and stability are separate checks."),
         ],
         [
-            new CalcClauseRef("Shigley's Mechanical Engineering Design", "§1-10", "Design factor and factor of safety"),
+            new CalcClauseRef("Budynas and Nisbett, Shigley's Mechanical Engineering Design", "§1-10, 11th ed.", "Design factor and factor of safety"),
         ],
         [],
         [
@@ -40,7 +40,13 @@ public sealed class MaterialMarginCalculator : ICalcCalculator
                 [CalcInputValue.Quantity("sigma", 250, "MPa"), CalcInputValue.Quantity("f_y", 355, "MPa"), CalcInputValue.Of("k_u", 1.5), CalcInputValue.Of("n_req", 1.5)],
                 [new CalcExpectedValue("n_y", 1.42, "", 1e-12), new CalcExpectedValue("n_gov", 1.42, "", 1e-12), new CalcExpectedValue("u", 1.0563, "", 5e-5)]),
         ],
-        Category: "Strength");
+        Category: "Strength",
+        OutputPorts:
+        [
+            new CalcOutputPort("n_gov", "", "Governing factor of safety", "material.safety_governing"),
+            new CalcOutputPort("n_y", "", "Factor of safety on yield", "material.safety_yield"),
+            new CalcOutputPort("n_u", "", "Factor of safety on ultimate tensile strength", "material.safety_ultimate"),
+        ]);
 
     public void Run(CalcRunContext c)
     {
@@ -67,6 +73,6 @@ public sealed class MaterialMarginCalculator : ICalcCalculator
         c.Output("n_y", "Factor on yield");
         c.Output("n_gov", "Governing factor");
         c.Output("u", "Utilisation");
-        c.CheckUtilisation("Factor of safety against the required factor", "u", "Shigley §1-10");
+        c.Check("Required factor of safety against the governing factor", "n_req", "n_gov", "Shigley §1-10", resultSymbol: "u");
     }
 }

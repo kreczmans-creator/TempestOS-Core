@@ -26,8 +26,8 @@ public sealed class MechanicalPortTests
     {
         Gen.Double[1, 500].Sample(p =>
         {
-            var a = CalcRunner.Run(Lug, Defaults(Lug).With(CalcInputValue.Quantity("P", p, "kN")));
-            var b = CalcRunner.Run(Lug, Defaults(Lug).With(CalcInputValue.Quantity("P", 2 * p, "kN")));
+            var a = CalcRunner.Run(Lug, Defaults(Lug).With(CalcInputValue.Quantity("F_lug", p, "kN")));
+            var b = CalcRunner.Run(Lug, Defaults(Lug).With(CalcInputValue.Quantity("F_lug", 2 * p, "kN")));
             return new[] { "u_t", "u_br", "u_to", "u_p", "u_b" }.All(u => Close(b.OutputSi(u), 2 * a.OutputSi(u)));
         }, iter: 40);
     }
@@ -224,8 +224,8 @@ public sealed class MechanicalPortTests
         var reversed = CalcRunner.Run(Miner, Defaults(Miner).With(FatigueMinerCalculator.Blocks((60, 5e5), (100, 1e5))));
         var first = CalcRunner.Run(Miner, Defaults(Miner).With(FatigueMinerCalculator.Blocks((100, 1e5))));
         var second = CalcRunner.Run(Miner, Defaults(Miner).With(FatigueMinerCalculator.Blocks((60, 5e5))));
-        Assert.Equal(both.OutputSi("D"), reversed.OutputSi("D"), 12);
-        Assert.Equal(first.OutputSi("D") + second.OutputSi("D"), both.OutputSi("D"), 12);
+        Assert.Equal(both.OutputSi("D_tot"), reversed.OutputSi("D_tot"), 12);
+        Assert.Equal(first.OutputSi("D_tot") + second.OutputSi("D_tot"), both.OutputSi("D_tot"), 12);
     }
 
     [Fact]
@@ -233,7 +233,7 @@ public sealed class MechanicalPortTests
     {
         var r = CalcRunner.Run(Miner, Defaults(Miner).With(FatigueMinerCalculator.Blocks((71, 1e6))));
         Assert.Equal(2e6, r.OutputSi("N_1"), 3);
-        Assert.Equal(0.5, r.OutputSi("D"), 12);
+        Assert.Equal(0.5, r.OutputSi("D_tot"), 12);
     }
 
     [Fact]

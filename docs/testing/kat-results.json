@@ -234,7 +234,7 @@
     },
     {
       "id": "mech.bearing-life",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "kats": 5,
       "katsPassed": 5,
       "failedKats": [],
@@ -244,7 +244,7 @@
     },
     {
       "id": "mech.bearing-life-basic",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "kats": 3,
       "katsPassed": 3,
       "failedKats": [],
@@ -254,7 +254,7 @@
     },
     {
       "id": "mech.bolt-group",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "kats": 8,
       "katsPassed": 8,
       "failedKats": [],
@@ -264,7 +264,7 @@
     },
     {
       "id": "mech.bolted-joint",
-      "version": "1.2.1",
+      "version": "1.3.0",
       "kats": 5,
       "katsPassed": 5,
       "failedKats": [],
@@ -274,26 +274,6 @@
     },
     {
       "id": "mech.fatigue-miner",
-      "version": "1.0.1",
-      "kats": 2,
-      "katsPassed": 2,
-      "failedKats": [],
-      "examples": 2,
-      "examplesPassed": 2,
-      "failedExamples": []
-    },
-    {
-      "id": "mech.iso286-fit",
-      "version": "1.5.1",
-      "kats": 3,
-      "katsPassed": 3,
-      "failedKats": [],
-      "examples": 2,
-      "examplesPassed": 2,
-      "failedExamples": []
-    },
-    {
-      "id": "mech.lifting-lug",
       "version": "1.1.0",
       "kats": 2,
       "katsPassed": 2,
@@ -303,8 +283,28 @@
       "failedExamples": []
     },
     {
+      "id": "mech.iso286-fit",
+      "version": "1.6.0",
+      "kats": 3,
+      "katsPassed": 3,
+      "failedKats": [],
+      "examples": 2,
+      "examplesPassed": 2,
+      "failedExamples": []
+    },
+    {
+      "id": "mech.lifting-lug",
+      "version": "1.2.0",
+      "kats": 2,
+      "katsPassed": 2,
+      "failedKats": [],
+      "examples": 2,
+      "examplesPassed": 2,
+      "failedExamples": []
+    },
+    {
       "id": "mech.material-margin",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "kats": 2,
       "katsPassed": 2,
       "failedKats": [],
@@ -314,7 +314,7 @@
     },
     {
       "id": "mech.mechanism",
-      "version": "1.2.2",
+      "version": "1.3.0",
       "kats": 16,
       "katsPassed": 16,
       "failedKats": [],
@@ -324,7 +324,7 @@
     },
     {
       "id": "mech.press-fit",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "kats": 2,
       "katsPassed": 2,
       "failedKats": [],

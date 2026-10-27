@@ -67,9 +67,9 @@ public sealed class BearingLifeTests
         // F_a/F_r = 0.2 ≤ e_lim 0.3: P = X_1 F_r + Y_1 F_a = 1 × 2 + 0.55 × 0.4 = 2.22 kN (a double-row bearing; 0.55 is illustrative).
         var r = CalcRunner.Run(Bearing, Defaults().With(CalcInputValue.Quantity("F_a", 0.4, "kN")).With(CalcInputValue.Of("Y_1", 0.55)));
         Assert.False(r.IsBlocked);
-        Assert.Equal(2.22, r.OutputSi("P") / 1e3, 9);
+        Assert.Equal(2.22, r.OutputSi("F_dyn") / 1e3, 9);
         var singleRow = CalcRunner.Run(Bearing, Defaults().With(CalcInputValue.Quantity("F_a", 0.4, "kN")));
-        Assert.Equal(2.0, singleRow.OutputSi("P") / 1e3, 9);
+        Assert.Equal(2.0, singleRow.OutputSi("F_dyn") / 1e3, 9);
     }
 
     [Fact]
@@ -99,7 +99,7 @@ public sealed class BearingLifeTests
     {
         var r = CalcRunner.Run(Bearing, Defaults().With(CalcInputValue.Quantity("F_r", 0, "kN")));
         Assert.True(r.IsBlocked);
-        Assert.StartsWith("F_r/F_a:", r.Blocks[0].Message, StringComparison.Ordinal);
+        Assert.StartsWith("F_r:", r.Blocks[0].Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -107,18 +107,18 @@ public sealed class BearingLifeTests
     {
         var steady = CalcRunner.Run(Bearing, Defaults().With(CalcInputValue.Quantity("F_r", 3, "kN")).With(CalcInputValue.Quantity("F_a", 1, "kN")).With(CalcInputValue.Of("Y", 1.5)));
         var duty = CalcRunner.Run(Bearing, Defaults().With(BearingLifeCalculator.Duty((3, 1, 1))).With(CalcInputValue.Of("Y", 1.5)));
-        Assert.Equal(steady.OutputSi("P"), duty.OutputSi("P"), 9);
+        Assert.Equal(steady.OutputSi("F_dyn"), duty.OutputSi("F_dyn"), 9);
         Assert.Equal(steady.OutputSi("L_nmh"), duty.OutputSi("L_nmh"), 6);
     }
 
     [Fact]
     public void Reliability_Factor_Is_One_At_90_And_Falls_With_Reliability()
     {
-        Assert.Equal(1.0, CalcRunner.Run(Bearing, Defaults().With(CalcInputValue.Quantity("R", 90, "%"))).OutputSi("a_1"), 9);
+        Assert.Equal(1.0, CalcRunner.Run(Bearing, Defaults().With(CalcInputValue.Quantity("R_rel", 90, "%"))).OutputSi("a_1"), 9);
         Gen.Double[90, 99.9].Sample(r =>
         {
-            var lower = CalcRunner.Run(Bearing, Defaults().With(CalcInputValue.Quantity("R", r, "%"))).OutputSi("a_1");
-            var higher = CalcRunner.Run(Bearing, Defaults().With(CalcInputValue.Quantity("R", r + 0.05, "%"))).OutputSi("a_1");
+            var lower = CalcRunner.Run(Bearing, Defaults().With(CalcInputValue.Quantity("R_rel", r, "%"))).OutputSi("a_1");
+            var higher = CalcRunner.Run(Bearing, Defaults().With(CalcInputValue.Quantity("R_rel", r + 0.05, "%"))).OutputSi("a_1");
             return higher < lower && lower <= 1 + 1e-12;
         }, iter: 40);
     }
@@ -142,6 +142,6 @@ public sealed class BearingLifeTests
     public void Declares_Output_Ports_For_Linking()
     {
         Assert.Contains(Bearing.Template.OutputPorts!, p => p.Symbol == "L_nmh" && p.Unit == "h");
-        Assert.Contains(Bearing.Template.OutputPorts!, p => p.Symbol == "P" && p.Unit == "kN");
+        Assert.Contains(Bearing.Template.OutputPorts!, p => p.Symbol == "F_dyn" && p.Unit == "kN");
     }
 }

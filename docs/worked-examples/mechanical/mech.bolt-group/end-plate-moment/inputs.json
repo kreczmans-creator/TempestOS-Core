@@ -1,5 +1,27 @@
 [
   {
+    "Symbol": "F_t_Rd",
+    "Number": 60,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "M12 8.8 tension resistance per project calc",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "F_v_Rd",
+    "Number": 40,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "M12 8.8 shear resistance, EN 1993-1-8 Table 3.4 per project calc",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
     "Symbol": "F_x",
     "Number": 0,
     "Unit": "kN",
@@ -44,29 +66,7 @@
     "ValueText": "0"
   },
   {
-    "Symbol": "N",
-    "Number": 0,
-    "Unit": "kN",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "LOAD-CASE-1",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "0"
-  },
-  {
-    "Symbol": "T_R",
-    "Number": 60,
-    "Unit": "kN",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "M12 8.8 tension resistance per project calc",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "60"
-  },
-  {
-    "Symbol": "T_z",
+    "Symbol": "M_z",
     "Number": 0,
     "Unit": "kN*m",
     "Provenance": {
@@ -77,15 +77,15 @@
     "ValueText": "0"
   },
   {
-    "Symbol": "V_R",
-    "Number": 40,
+    "Symbol": "N",
+    "Number": 0,
     "Unit": "kN",
     "Provenance": {
       "Kind": "Specification",
-      "Reference": "M12 8.8 shear resistance, EN 1993-1-8 Table 3.4 per project calc",
+      "Reference": "LOAD-CASE-1",
       "IsSufficientToIssue": true
     },
-    "ValueText": "40"
+    "ValueText": "0"
   },
   {
     "Symbol": "bolts",

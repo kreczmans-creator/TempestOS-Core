@@ -351,7 +351,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a5402e52c6994393bfe00946ab0f2906#T_load",
+        "Reference": "calc:2bcefa1b0aa24f94ae5d0111bab2eaf5#T_load",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -363,7 +363,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a5402e52c6994393bfe00946ab0f2906#T_alt",
+        "Reference": "calc:2bcefa1b0aa24f94ae5d0111bab2eaf5#T_alt",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -375,7 +375,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a5402e52c6994393bfe00946ab0f2906#T_pk",
+        "Reference": "calc:2bcefa1b0aa24f94ae5d0111bab2eaf5#T_pk",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -450,7 +450,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a5402e52c6994393bfe00946ab0f2906#n_pk",
+        "Reference": "calc:2bcefa1b0aa24f94ae5d0111bab2eaf5#n_pk",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -711,7 +711,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a5402e52c6994393bfe00946ab0f2906#F_ax_pk",
+        "Reference": "calc:2bcefa1b0aa24f94ae5d0111bab2eaf5#F_ax_pk",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -723,7 +723,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e33c7dab4f664419ae2af3eb6923f2d7#R_A",
+        "Reference": "calc:39320e5b6fb7411ab3a54dc6c7a6781a#R_A",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -741,7 +741,7 @@
       "ValueText": "20000"
     },
     {
-      "Symbol": "R",
+      "Symbol": "R_rel",
       "Number": 90,
       "Unit": "%",
       "Provenance": {
@@ -837,7 +837,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a5402e52c6994393bfe00946ab0f2906#n_mean",
+        "Reference": "calc:2bcefa1b0aa24f94ae5d0111bab2eaf5#n_mean",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -871,14 +871,14 @@
       "Unit": "mm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e33c7dab4f664419ae2af3eb6923f2d7#d_A",
+        "Reference": "calc:39320e5b6fb7411ab3a54dc6c7a6781a#d_A",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
       "ValueText": "35"
     },
     {
-      "Symbol": "EI_override",
+      "Symbol": "EI_hole_override",
       "Number": -9,
       "Unit": "\u00B5m",
       "Provenance": {
@@ -890,7 +890,7 @@
       "ValueText": "-9"
     },
     {
-      "Symbol": "ES_override",
+      "Symbol": "ES_hole_override",
       "Number": 0,
       "Unit": "\u00B5m",
       "Provenance": {
@@ -957,6 +957,30 @@
   ],
   "m3": [
     {
+      "Symbol": "F_t_Rd",
+      "Number": 21,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-412",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "21"
+    },
+    {
+      "Symbol": "F_v_Rd",
+      "Number": 14,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CNV-412",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "14"
+    },
+    {
       "Symbol": "F_x",
       "Number": 0,
       "Unit": "kN",
@@ -1005,6 +1029,18 @@
       "ValueText": "0"
     },
     {
+      "Symbol": "M_z",
+      "Number": 0.1592478322422498,
+      "Unit": "kN*m",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:2bcefa1b0aa24f94ae5d0111bab2eaf5#T_design",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.159248"
+    },
+    {
       "Symbol": "N",
       "Number": 0,
       "Unit": "kN",
@@ -1015,42 +1051,6 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "0"
-    },
-    {
-      "Symbol": "T_R",
-      "Number": 21,
-      "Unit": "kN",
-      "Provenance": {
-        "Kind": "Drawing",
-        "Reference": "DRG-CNV-412",
-        "Revision": "B",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "21"
-    },
-    {
-      "Symbol": "T_z",
-      "Number": 0.1592478322422498,
-      "Unit": "kN*m",
-      "Provenance": {
-        "Kind": "Link",
-        "Reference": "calc:a5402e52c6994393bfe00946ab0f2906#T_design",
-        "Revision": "A",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "0.159248"
-    },
-    {
-      "Symbol": "V_R",
-      "Number": 14,
-      "Unit": "kN",
-      "Provenance": {
-        "Kind": "Drawing",
-        "Reference": "DRG-CNV-412",
-        "Revision": "B",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "14"
     },
     {
       "Symbol": "bolts",

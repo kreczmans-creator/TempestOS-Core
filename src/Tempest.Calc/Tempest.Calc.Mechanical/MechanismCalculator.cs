@@ -31,52 +31,54 @@ public sealed partial class MechanismCalculator : ICalcCalculator
     private const string Source = "Vector-loop closed form (Freudenstein / law of cosines)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.2", CalcDiscipline.Mechanical, "Mechanism kinematics",
-        "A single-degree-of-freedom planar mechanism driven at constant speed: a four-bar linkage or an offset slider-crank (both circuits, position, velocity and acceleration over a sweep of the input angle, Grashof class, transmission angle against a minimum, toggle and dead-centre positions, loop-closure residual, input torque by virtual work), or a cam with a translating follower. Rigid links, no clearance, no friction.",
-        "Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|, cos γ = (c² + ℓ² − b²)/(2cℓ), θ₄ = φ ∓ γ (φ the direction O₄→A; open: −, crossed: +); θ₃ from B − A\n" +
+        Id, "1.3.0", CalcDiscipline.Mechanical, "Mechanism kinematics",
+        "Calculates the position, velocity, acceleration, input torque and forces of a one-degree-of-freedom planar four-bar, slider-crank or cam mechanism. The input turns at constant speed, and the links are rigid, with no clearance and no friction.",
+        "Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}, with ℓ = |A − O₄|, cos γ = (c² + ℓ² − b²)/(2cℓ) and θ₄ = φ ∓ γ (φ the direction O₄→A; open: −, crossed: +); θ₃ from B − A\n" +
         "Four-bar velocity and acceleration: differentiated loop, 2×2 system with det = b·c·sin(θ₃ − θ₄); ω₃ = ω₂·a·sin(θ₄ − θ₂)/(b·sin(θ₃ − θ₄)), ω₄ = ω₂·a·sin(θ₃ − θ₂)/(c·sin(θ₃ − θ₄)); α from the second derivative at constant ω₂\n" +
         "Grashof class and transmission angle: s + l < p + q (crank-rocker, double-crank or double-rocker by the shortest link), = at the change point, > non-Grashof; transmission angle cos μ = (b² + c² − ℓ²)/(2bc) folded to 0 … 90°; toggle where ℓ = b + c or |b − c|\n" +
         "Slider-crank position: x = r·cosθ + σ·√(l² − (r·sinθ − e)²) (σ = +1 open, −1 crossed); dx/dθ = −r·sinθ − r·cosθ·(r·sinθ − e)/(x − r·cosθ); dead centres where crank and rod are collinear; μ = 90° − |rod angle to the slide line|\n" +
-        "Input torque by virtual work: T_in·ω_in = Σ F·v; four-bar T_in = (T_L + J·α₄)·ω₄/ω₂; slider T_in = (m·a + F_L)·dx/dθ; RMS torque and mean power over the sweep by Simpson's rule\n" +
-        "Mechanism forces: four-bar tangential pin force P = (T_L + J·α₄)/c, coupler (and crank-pin) force P/sin μ; slider slide-direction force F_x = m·a + F_L, rod force F_x/cos θ₃, guide reaction F_x·tan θ₃; cam contact normal F/cos φ\n" +
-        "Assembly limits: four-bar toggles at cos θ₂ = (d² + a² − ℓ²)/(2ad), ℓ = b + c or |b − c|; slider sin θ = (e ± l)/r. The sweep is cut at them and, driven at constant speed into one, the unbounded peaks are not reported\n" +
-        "Loop closure: |a·e^{jθ₂} + b·e^{jθ₃} − c·e^{jθ₄} − d| (slider: |r·e^{jθ} + l·e^{jθ₃} − (x + j·e)|) asserted below 1e-9 mm at every step\n" +
-        "Cam, per segment with x = (θ − θ₀)/β: rise s = s₀ + h·f(x), return s = s₀ − h·f(x); cycloidal f = x − sin(2πx)/(2π); 3-4-5 f = 10x³ − 15x⁴ + 6x⁵; 4-5-6-7 f = 35x⁴ − 84x⁵ + 70x⁶ − 20x⁷; modified trapezoid from its acceleration pieces (C_v = 2, C_a = 8π/(π + 2), C_j = 32π²/(π + 2))\n" +
-        "Cam SVAJ at constant ω: v = ω·s′, a = ω²·s″, j = ω³·s‴ (′ = d/dθ); peak coefficients C_v = max f′, C_a = max |f″|, C_j = max |f‴|, so v_pk = C_v·h·ω/β\n" +
-        "Pressure angle (roller, offset e, R_p = R_b + R_r): φ = arctan[(s′ − e)/(√(R_p² − e²) + s)], which for e = 0 is arctan[s′/(R_p + s)]; the base circle that holds φ ≤ φ_max has R_p,req = √(s₀,req² + e²) with s₀,req = max(|s′ − e|/tan φ_max − s)\n" +
-        "Radius of curvature of the pitch curve P(θ) = Rot(−θ)·(e, √(R_p² − e²) + s): ρ = |P′|³/(P′ × P″), convex where positive; undercut where ρ_min ≤ R_r (FAIL), none where the curve is nowhere convex; flat-faced follower: signed profile radius ρ = R_b + s + s″, the minimum of which must stay above zero (FAIL at or below) and the face must reach |s′|; the cam turns counter-clockwise with the follower axis at +x offset e\n" +
-        "Cam follower force F = m·a + k·s + F_pre + F_ext (the follower leaves the cam where F < 0); input torque by virtual work T = F·s′ (T·ω = F·v)",
+        "Input torque and forces: T_in·ω_in = Σ F·v by virtual work; four-bar T_in = (T_L + J·α₄)·ω₄/ω₂, tangential pin force P = (T_L + J·α₄)/c and coupler force P/sin μ; slider T_in = (m·a + F_L)·dx/dθ, slide-direction force F_x = m·a + F_L, rod force F_x/cos θ₃ and guide reaction F_x·tan θ₃; RMS torque and mean power over the sweep by Simpson's rule\n" +
+        "Assembly limits and loop closure: four-bar toggles at cos θ₂ = (d² + a² − ℓ²)/(2ad), ℓ = b + c or |b − c|; slider sin θ = (e ± l)/r; the sweep is cut at them and the unbounded peaks are not reported; closure |a·e^{jθ₂} + b·e^{jθ₃} − c·e^{jθ₄} − d| (slider: |r·e^{jθ} + l·e^{jθ₃} − (x + j·e)|) below 1e-9 mm at every step\n" +
+        "Cam motion: per segment with x = (θ − θ₀)/β, rise s = s₀ + h·f(x), return s = s₀ − h·f(x); cycloidal f = x − sin(2πx)/(2π); 3-4-5 f = 10x³ − 15x⁴ + 6x⁵; 4-5-6-7 f = 35x⁴ − 84x⁵ + 70x⁶ − 20x⁷; modified trapezoid from its acceleration pieces (C_v = 2, C_a = 8π/(π + 2), C_j = 32π²/(π + 2)); SVAJ at constant ω: v = ω·s′, a = ω²·s″, j = ω³·s‴ (′ = d/dθ), so v_pk = C_v·h·ω/β\n" +
+        "Cam contact: roller pressure angle φ = arctan[(s′ − e)/(√(R_p² − e²) + s)] with R_p = R_b + R_r, base circle R_p,req = √(s₀,req² + e²) with s₀,req = max(|s′ − e|/tan φ_max − s); pitch-curve radius ρ = |P′|³/(P′ × P″), undercut where ρ_min ≤ R_r; flat-faced profile radius ρ = R_b + s + s″ above zero; follower force F = m·a + k·s + F_pre + F_ext (the follower leaves the cam where F < 0), input torque T = F·s′, roller normal force F/cos φ",
         BuildInputs(),
         [
-            new CalcAssumption("Rigid links, a planar mechanism with one degree of freedom, no joint clearance and no friction; the input turns at a constant speed.", "Scope limits of the model."),
-            new CalcAssumption("The position is the closed-form solution of the vector loop; the open and crossed circuits are the two branches (θ₄ = φ − γ and φ + γ for the four-bar, σ = +1 and −1 for the slider) and the sweep stays on the chosen branch; for a change-point linkage (parallelogram, deltoid) the circuit is named at a reference angle that does not depend on the sweep (the middle of the first interval between change points in 0 … 2π, π/2 when there are none), so the label at a crank angle means the same motion on every turn; only the true change points (all four links collinear, θ₂ = 0 or π) flip the branch, and it is followed by continuity through them inside the sweep. A linkage with one change point per turn (a kite) repeats every 720° and a sweep of more than one turn warns. Angles at which the linkage cannot be assembled, or at a toggle where the velocity system is singular, are left out of the table and counted.", "Norton, Design of Machinery, position analysis of the four-bar and the offset slider-crank."),
-            new CalcAssumption("Input torque is by virtual work from the output load and the inertia of the output element only (four-bar: the output link's moment of inertia about its pivot; slider: the slider mass); the crank and the coupler or connecting rod are massless.", "No link-inertia or gravity terms: add the link masses to the output element for a first allowance."),
-            new CalcAssumption("The peaks (speeds, accelerations, torque, transmission angle, swing) are those of the continuous motion over the swept range, found by a dense scan refined by golden section; the printed table (steps N, up to 3600) only samples it.", "Peaks do not depend on the table's step count."),
-            new CalcAssumption("Cam: a translating follower on a cam turning at constant speed; the follower mass, a linear return spring (rate and preload at the base circle, for example linked from M7) and a constant external load make the force the cam must apply, F = m·a + k·s + F_pre + F_ext; contact is lost where it falls below zero. The segment table must add to 360° and close; pressure angle and undercut are checked for the roller follower (R_p = R_b + R_r), the positive profile radius for the flat-faced one.", "Norton, Design of Machinery, cam design: the four classical laws, pressure angle and radius of curvature."),
-            new CalcAssumption("Follower force (four-bar: the tangential force at the output pin, (T_L + J·α₄)/c; slider: the slide-direction force m·a + F_L; cam: the axial force) is the force the mechanism must apply to the output element. The force in the coupler (F_pin_pk) is the tangential force over sin μ; in the connecting rod it is the slide-direction force over cos θ₃, and the guide reaction is that force times tan θ₃; the roller contact normal force is F/cos φ. Crank, coupler and rod are massless two-force members.", "Rigid body, frictionless."),
-            new CalcAssumption("When the sweep meets an assembly limit (a toggle of a four-bar, the rod perpendicular to the slide line of a slider-crank) the sweep is cut there and, because the speed, acceleration, torque and forces at constant input speed are unbounded at the limit, they are not reported; the limit angles are listed. A change-point four-bar (parallelogram, deltoid) is continued through its singular position on the same branch by continuity (γ changes sign there), but its speeds and torques next to the singular position are not reported.", "Closed-form limit angles: ℓ = b + c or |b − c| (four-bar), |r·sinθ − e| = l (slider)."),
-            new CalcAssumption("Into F1 and E1: output_motion is a kinematic proxy at constant crank speed, not the cylinder speed of an actuated linkage. For E1 use the peak input_torque for the peak check and T_rms_in with n_in for the thermal sizing; the mean power is P_mean.", "Used by the actuated-linkage and mechanism-review packs."),
+            new CalcAssumption("The mechanism is rigid and planar, has one degree of freedom, and has no joint clearance or friction.", "Scope limits of the model."),
+            new CalcAssumption("The input turns at a constant speed.", "Scope limits of the model."),
+            new CalcAssumption("The position is the closed-form solution of the vector loop, on the chosen circuit.", "Open and crossed are the two branches: θ₄ = φ − γ and φ + γ for the four-bar, σ = +1 and −1 for the slider."),
+            new CalcAssumption("The sweep stays on the chosen circuit and follows it by continuity through a change point.", "Only a change point, with all four links collinear (θ₂ = 0 or π), flips the branch."),
+            new CalcAssumption("A linkage with one change point per turn repeats every 720°, and a sweep of more than one turn warns.", "A kite, for example 40/40/100/100, is such a linkage."),
+            new CalcAssumption("The table leaves out angles where the linkage cannot be assembled or sits at a toggle.", "It counts them, and at a toggle the velocity system is singular."),
+            new CalcAssumption("The input torque comes from the output load and the inertia of the output element only.", "The crank and the coupler or connecting rod are massless: add their mass to the output element for a first allowance."),
+            new CalcAssumption("The crank, the coupler and the connecting rod are massless two-force members.", "Rigid body, frictionless."),
+            new CalcAssumption("The peaks are those of the continuous motion over the swept range, not of the printed table.", "A dense scan refined by golden section finds them, so they do not depend on the step count of the table (up to 3600)."),
+            new CalcAssumption("At an assembly limit the sweep is cut, and the unbounded peaks, torque and forces are not reported.", "The limit angles are listed: ℓ = b + c or |b − c| (four-bar), |r·sinθ − e| = l (slider)."),
+            new CalcAssumption("A change-point four-bar is continued through its singular position on the same branch.", "Its speeds and torques next to the singular position are not reported."),
+            new CalcAssumption("The cam drives a translating follower at constant speed.", "Norton, Design of Machinery, cam design: the four classical laws, pressure angle and radius of curvature."),
+            new CalcAssumption("The follower force is m·a + k·s + F_pre + F_ext, and contact is lost below zero.", "The spring rate and the preload are those at the base circle, and the segment table must add to 360° and close."),
+            new CalcAssumption("Pressure angle and undercut are checked for the roller follower, and the profile radius for the flat-faced one.", "The roller has the prime radius R_p = R_b + R_r."),
+            new CalcAssumption("The output speed is a kinematic proxy at constant input speed, not the speed of an actuated cylinder.", "For motor sizing, use the peak input_torque for the peak check and T_rms_in with n_in for the thermal sizing. The mean power is P_mean."),
         ],
         [
-            new CalcClauseRef("Norton, Design of Machinery", "Ch. 4, 6, 7", "Position, velocity and acceleration analysis; transmission angle; Grashof condition"),
-            new CalcClauseRef("Uicker, Pennock and Shigley, Theory of Machines and Mechanisms", "Ch. 4–6", "Loop-closure position analysis; velocity and acceleration of planar linkages"),
+            new CalcClauseRef("Norton, Design of Machinery", "Ch. 4, 6, 7, 6th ed.", "Position, velocity and acceleration analysis; transmission angle; Grashof condition"),
+            new CalcClauseRef("Uicker, Pennock and Shigley, Theory of Machines and Mechanisms", "Ch. 4–6, 5th ed.", "Loop-closure position analysis; velocity and acceleration of planar linkages"),
         ],
         BuildRules(),
         BuildCases(),
         Category: "Mechanisms",
         OutputPorts:
         [
-            new CalcOutputPort("input_torque", "N*m", "Peak input (crank or cam-shaft) torque by virtual work (mech.input_torque → E1 peak torque). For E1's thermal sizing use T_rms_in and n_in, not this peak as a constant load"),
-            new CalcOutputPort("output_motion", "m/s", "Peak output velocity: the slider or the cam follower; for a four-bar the speed of the output pin at the rocker length c (the angular velocity is omega_out_pk) (mech.output_motion). Into F1 this is a kinematic proxy only: a cylinder-actuated linkage runs at about constant cylinder speed, not at constant crank speed, and a four-bar pin speed is a cylinder speed only if the cylinder acts perpendicular to the rocker at that radius"),
-            new CalcOutputPort("peak_accel", "m/s^2", "Peak output acceleration: the slider or the follower; for a four-bar the magnitude of the acceleration of the output pin (mech.peak_accel)"),
-            new CalcOutputPort("follower_force", "N", "Peak drive force on the output element: the cam follower's axial force, the slider's force in the slide direction, or the tangential force at the rocker pin (mech.follower_force → F1 as a force estimate)"),
-            new CalcOutputPort("F_pin_pk", "N", "Peak force at the crank or cam-shaft pin: the force in the coupler (four-bar), in the connecting rod (slider), or the contact normal force F/cos φ (cam roller) (mech.F_pin_pk → M4 bearing load, M5)"),
-            new CalcOutputPort("T_rms_in", "N*m", "RMS input torque over the swept range or the cam revolution (mech.T_rms_in → E1 thermal sizing)"),
-            new CalcOutputPort("n_in", "rpm", "Input (crank or cam-shaft) speed passed through (mech.n_in → E1 load speed)"),
-            new CalcOutputPort("f_in", "Hz", "Input (crank or cam-shaft) frequency n_in/60 in Hz (mech.f_in → M7 f_op; rpm is an angular velocity, so n_in cannot be linked to a frequency)"),
-            new CalcOutputPort("P_mean", "W", "Mean input power over the swept range or the cam revolution (mech.P_mean)"),
-            new CalcOutputPort("lift", "mm", "Greatest follower displacement (cam) (mech.lift → M7 spring travel)"),
-            new CalcOutputPort("F_spring_max", "N", "Spring force at full lift, k·lift + F_pre (cam) (mech.F_spring_max → M7 working force; the follower force includes inertia and is not the spring force)"),
+            new CalcOutputPort("input_torque", "N*m", "Peak input torque (crank or cam shaft) by virtual work. For thermal sizing use T_rms_in and n_in, not this peak as a constant load", "mechanism.input_torque"),
+            new CalcOutputPort("output_motion", "m/s", "Peak output velocity: the slider or the cam follower, or for a four-bar the speed of the output pin at the rocker length c (omega_out_pk is the angular velocity). Into a cylinder sheet this is a kinematic proxy only: a cylinder-actuated linkage runs at about constant cylinder speed, not at constant crank speed", "mechanism.output_motion"),
+            new CalcOutputPort("peak_accel", "m/s^2", "Peak output acceleration: the slider or the follower, or for a four-bar the magnitude of the acceleration of the output pin", "mechanism.peak_accel"),
+            new CalcOutputPort("follower_force", "N", "Peak drive force on the output element: the cam follower's axial force, the slider's force in the slide direction, or the tangential force at the rocker pin. Use it as a force estimate", "mechanism.follower_force"),
+            new CalcOutputPort("F_pin_pk", "N", "Peak force at the crank or cam-shaft pin: the force in the coupler (four-bar), in the connecting rod (slider), or the contact normal force F/cos φ (cam roller). Use it as a bearing load", "mechanism.pin_force_peak"),
+            new CalcOutputPort("T_rms_in", "N*m", "RMS input torque over the swept range or the cam revolution. Use it for thermal sizing", "mechanism.torque_rms_input"),
+            new CalcOutputPort("n_in", "rpm", "Input speed (crank or cam shaft) passed through. Use it as the load speed", "mechanism.speed_input"),
+            new CalcOutputPort("f_in", "Hz", "Input frequency n_in/60 in Hz. Rpm is an angular velocity, so n_in cannot be linked to a frequency", "mechanism.frequency_input"),
+            new CalcOutputPort("P_mean", "kW", "Mean input power over the swept range or the cam revolution", "mechanism.power_mean"),
+            new CalcOutputPort("lift", "mm", "Greatest follower displacement (cam). Use it as the spring travel", "mechanism.lift"),
+            new CalcOutputPort("F_spring_max", "N", "Spring force at full lift, k·lift + F_pre (cam). The follower force includes inertia and is not the spring force", "mechanism.force_spring_max"),
         ],
         RecordKinds: null);
 
@@ -92,25 +94,24 @@ public sealed partial class MechanismCalculator : ICalcCalculator
     {
         var list = new List<CalcInputSpec>
         {
-            new("mode", "Kind of mechanism", CalcInputKind.Choice, Choices: ModeChoices, DefaultChoice: FourBar, Group: "Mechanism"),
-            new("circuit", "Assembly circuit (four-bar, slider-crank): open is θ₄ = φ − γ (slider on the +x side of the crank pin), crossed the mirror branch", CalcInputKind.Choice, Choices: [Open, Crossed], DefaultChoice: Open, IsOptional: true, Group: "Mechanism"),
-            new("L1", "Ground link d, O₂ to O₄ (four-bar)", CalcInputKind.Quantity, "mm", Default: 100, Min: 1, Max: 10000, HardMin: 0.01, HardMax: 1e5, IsOptional: true, Group: "Links"),
-            new("L2", "Crank length a (four-bar) or r (slider-crank)", CalcInputKind.Quantity, "mm", Default: 30, Min: 1, Max: 10000, HardMin: 0.01, HardMax: 1e5, IsOptional: true, Group: "Links"),
-            new("L3", "Coupler length b (four-bar) or connecting-rod length l (slider-crank)", CalcInputKind.Quantity, "mm", Default: 90, Min: 1, Max: 10000, HardMin: 0.01, HardMax: 1e5, IsOptional: true, Group: "Links"),
-            new("L4", "Rocker length c (four-bar)", CalcInputKind.Quantity, "mm", Default: 70, Min: 1, Max: 10000, HardMin: 0.01, HardMax: 1e5, IsOptional: true, Group: "Links"),
-            new("e_off", "Offset e: slide line above the crank centre (slider-crank; blank: 0); cam follower axis offset, with the cam turning counter-clockwise and the follower axis at +x: positive e reduces the pressure angle where ds/dθ exceeds e (the rise), negative raises it", CalcInputKind.Quantity, "mm", Default: 0, Min: -1000, Max: 1000, HardMin: -1e5, HardMax: 1e5, IsOptional: true, Group: "Links"),
-            new("theta_start", "Input angle at the first row of the table", CalcInputKind.Quantity, "deg", Default: 0, Min: -720, Max: 720, HardMin: -7200, HardMax: 7200, IsOptional: true, Group: "Sweep"),
-            new("theta_range", "Swept range of the input angle (360° for a full turn)", CalcInputKind.Quantity, "deg", Default: 360, Min: 1, Max: 720, HardMin: 0.1, HardMax: 3600, IsOptional: true, Group: "Sweep"),
+            new("mode", "Kind of mechanism", CalcInputKind.Choice, Choices: ModeChoices, DefaultChoice: FourBar, Group: "Setup"),
+            new("circuit", "Assembly circuit (four-bar, slider-crank): open is θ₄ = φ − γ (slider on the +x side of the crank pin), crossed the mirror branch", CalcInputKind.Choice, Choices: [Open, Crossed], DefaultChoice: Open, IsOptional: true, Group: "Setup"),
+            new("L1", "Ground link d, O₂ to O₄ (four-bar)", CalcInputKind.Quantity, "mm", Default: 100, Min: 1, Max: 10000, HardMin: 0.01, HardMax: 1e5, IsOptional: true, Group: "Geometry"),
+            new("L2", "Crank length a (four-bar) or r (slider-crank)", CalcInputKind.Quantity, "mm", Default: 30, Min: 1, Max: 10000, HardMin: 0.01, HardMax: 1e5, IsOptional: true, Group: "Geometry"),
+            new("L3", "Coupler length b (four-bar) or connecting-rod length l (slider-crank)", CalcInputKind.Quantity, "mm", Default: 90, Min: 1, Max: 10000, HardMin: 0.01, HardMax: 1e5, IsOptional: true, Group: "Geometry"),
+            new("L4", "Rocker length c (four-bar)", CalcInputKind.Quantity, "mm", Default: 70, Min: 1, Max: 10000, HardMin: 0.01, HardMax: 1e5, IsOptional: true, Group: "Geometry"),
+            new("e_off", "Offset e of the slide line above the crank centre, or of the cam follower axis at +x: positive e reduces the pressure angle where ds/dθ exceeds e (optional; blank = 0)", CalcInputKind.Quantity, "mm", Default: 0, Min: -1000, Max: 1000, HardMin: -1e5, HardMax: 1e5, IsOptional: true, Group: "Geometry"),
             new("steps", "Intervals N of the table (N + 1 rows, a whole number, at most 3600; the peaks do not depend on it)", CalcInputKind.Number, Default: 72, Min: 4, Max: 720, HardMin: 2, HardMax: 3600, Group: "Sweep"),
             new("n_in", "Input speed (constant)", CalcInputKind.Quantity, "rpm", Default: 120, Min: 0.1, Max: 30000, HardMin: 1e-3, HardMax: 1e6, Group: "Sweep"),
-            new("mu_req", "Minimum transmission angle required (linkages)", CalcInputKind.Quantity, "deg", Default: 40, Min: 0, Max: 90, HardMin: 0, HardMax: 90, IsOptional: true, Group: "Limits"),
+            new("theta_start", "Input angle at the first row of the table", CalcInputKind.Quantity, "deg", Default: 0, Min: -720, Max: 720, HardMin: -7200, HardMax: 7200, IsOptional: true, Group: "Sweep"),
+            new("theta_range", "Swept range of the input angle (360° for a full turn)", CalcInputKind.Quantity, "deg", Default: 360, Min: 1, Max: 720, HardMin: 0.1, HardMax: 3600, IsOptional: true, Group: "Sweep"),
             new("load_dir", "External load: constant direction, or always opposing the output motion", CalcInputKind.Choice, Choices: [Constant, Opposes], DefaultChoice: Opposes, IsOptional: true, Group: "Loads"),
             new("T_load", "External load torque on the output link (four-bar). Positive acts in the −θ₄ direction, resisting positive ω₄; with 'Opposes motion' its sign is applied against the actual direction of ω₄ (a negative value then assists)", CalcInputKind.Quantity, "N*m", Default: 1.5, Min: -10000, Max: 10000, HardMin: -1e9, HardMax: 1e9, IsOptional: true, Group: "Loads"),
             new("J_out", "Moment of inertia of the output link about its pivot (four-bar)", CalcInputKind.Quantity, "kg*m^2", Default: 0.002, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e9, IsOptional: true, Group: "Loads"),
             new("m_slider", "Slider mass (slider-crank)", CalcInputKind.Quantity, "kg", Default: 0.5, Min: 0, Max: 10000, HardMin: 0, HardMax: 1e9, IsOptional: true, Group: "Loads"),
             new("F_load", "External load on the slider (slider-crank). Positive acts in the −x direction, resisting +x motion; with 'Opposes motion' it is applied against the actual direction of motion", CalcInputKind.Quantity, "N", Default: 200, Min: -1e6, Max: 1e6, HardMin: -1e9, HardMax: 1e9, IsOptional: true, Group: "Loads"),
+            new("mu_req", "Minimum transmission angle required (linkages)", CalcInputKind.Quantity, "deg", Default: 40, Min: 10, Max: 80, HardMin: 0, HardMax: 90, IsOptional: true, Group: "Requirements"),
         };
-
         AddCamInputs(list);
         return list;
     }
@@ -155,13 +156,19 @@ public sealed partial class MechanismCalculator : ICalcCalculator
             return;
 
         var omega = c.InputSi("n_in");
-        c.Output("n_in", "Input (crank) speed, passed through for E1's load speed (mech.n_in)");
-        Scalar(c, "f_in", "n_in / 60", "rpm to Hz", omega / (2 * Math.PI), "Hz", "Input (crank) frequency, for the spring surge check of M7 (mech.f_in)");
+        c.Output("n_in", "Input (crank) speed, passed through");
+        Scalar(c, "f_in", "n_in / 60", "rpm to Hz", omega / (2 * Math.PI), "Hz", "Input (crank) frequency, for a spring surge check");
         var steps = (int)Math.Round(c.InputSi("steps"));
         var start = c.InputSi("theta_start");
         var range = c.InputSi("theta_range");
         var crossed = c.Has("circuit") && c.InputText("circuit") == Crossed;
         var muReq = c.Has("mu_req") ? c.InputSi("mu_req") : 40 * Math.PI / 180;
+
+        if (c.Has("mu_req"))
+            c.Input("mu_req");
+        else
+            c.Assign("mu_req", "40 deg", "deg", "Required transmission angle (the default, as none was entered)");
+
         var opposes = !c.Has("load_dir") || c.InputText("load_dir") == Opposes;
 
         if (mode == FourBar)
@@ -178,7 +185,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
             if (c.Has(symbol))
                 continue;
 
-            c.Block("missing", $"{symbol}: enter '{c.Template.FindInput(symbol)?.Description ?? symbol}'; the {c.InputText("mode").ToLowerInvariant()} calculation needs it.");
+            c.Block("missing", $"{symbol}: enter '{c.Template.FindInput(symbol)?.Description ?? symbol}'. The {c.InputText("mode").ToLowerInvariant()} calculation needs it.");
             return false;
         }
 
@@ -244,6 +251,8 @@ public sealed partial class MechanismCalculator : ICalcCalculator
 
     private static string SweepText(double start, double end) => $"{F(Deg(start))}° … {F(Deg(end))}°";
 
+    private const string MuCheck = "Required transmission angle against the smallest transmission angle";
+
     private static void UtilisationMu(CalcRunContext c, double muReq, double muMin)
     {
         // At a toggle (μ_min = 0) a positive requirement has no finite ratio: the ratio is withheld and the check fails on its own terms,
@@ -251,23 +260,32 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         if (muMin <= 1e-9 && muReq > 0)
         {
             c.Output("u_mu", "Required against smallest transmission angle", new TextValue($"— (μ_min = {F(Deg(muMin))}°: the sweep reaches a toggle, so there is no ratio)"));
-            c.CheckCondition("Transmission angle μ_min at or above the required minimum", false, $"μ_min = {F(Deg(muMin))}° (toggle in the sweep)", $"μ_req = {F(Deg(muReq))}°", null, "Transmission angle");
+            c.CheckCondition(MuCheck, false, $"μ_min = {F(Deg(muMin))}° (toggle in the sweep)", $"μ_req = {F(Deg(muReq))}°", null, "Transmission angle");
             return;
         }
 
         var u = muMin > 1e-9 ? muReq / muMin : 0;
         c.Record("u_mu", "μ_req / μ_min", $"{F(Deg(muReq))}° / {F(Deg(muMin))}°", new ScalarValue(u), "Transmission angle: required minimum against the smallest over the sweep", "Transmission angle");
-        c.Output("u_mu", "Required against smallest transmission angle");
-        c.CheckUtilisation("Transmission angle μ_min at or above the required minimum", "u_mu", "Transmission angle");
+
+        if (muMin > 1e-9)
+        {
+            c.Output("u_mu", "Required against smallest transmission angle");
+            c.Check(MuCheck, "mu_req", "mu_min", "Transmission angle", resultSymbol: "u_mu");
+        }
+        else
+        {
+            c.Output("u_mu", "Required against smallest transmission angle", kind: CalcOutputKind.Utilisation);
+            c.CheckCondition(MuCheck, true, $"μ_req = {F(Deg(muReq))}°", "no minimum required", null, "Transmission angle");
+        }
     }
 
-    /// <summary>The mean-power, RMS-torque and speed outputs E1 and the motor chain need (over the swept range).</summary>
+    /// <summary>The mean-power, RMS-torque and speed outputs the motor sizing needs (over the swept range).</summary>
     private static void DriveOutputs(CalcRunContext c, IReadOnlyList<double> torque, double omega, string span)
     {
         var mean = SimpsonMean(torque);
         var rms = Math.Sqrt(SimpsonMean([.. torque.Select(t => t * t)]));
-        Scalar(c, "T_rms_in", "√(mean T_in²)", span, rms, "N*m", "RMS input torque over the swept range (mech.T_rms_in → E1 thermal sizing)", "Virtual work");
-        Scalar(c, "P_mean", "ω·mean(T_in)", span, omega * mean, "W", "Mean input power over the swept range (negative: the mechanism returns energy) (mech.P_mean)", "Virtual work");
+        Scalar(c, "T_rms_in", "√(mean T_in²)", span, rms, "N*m", "RMS input torque over the swept range", "Virtual work");
+        Scalar(c, "P_mean", "ω·mean(T_in)", span, omega * mean / 1e3, "kW", "Mean input power over the swept range (negative: the mechanism returns energy)", "Virtual work");
     }
 
     // ------------------------------------------------------------------
@@ -297,7 +315,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         Scalar(c, "P_plus_Q", "p + q", "the other two links", Mm(pq), "mm", "Sum of the other two links", "Grashof criterion");
 
         if (!full && req.Range >= 2 * Math.PI - 1e-9)
-            c.Warn("grashof", $"L2: {cls}. A swept range of 360° or more cannot be completed; the sweep is cut where the linkage cannot be assembled.");
+            c.Warn("grashof", "L2: the linkage is not a Grashof crank, so the input link cannot turn through 360°. A sweep of 360° or more is cut where the linkage cannot be assembled.");
 
         var link = new FourBarLinkage(d, a, b, cc, crossed);
         var changePoint = FourBarLinkage.IsChangePoint(d, a, b, cc);
@@ -307,7 +325,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
 
         if (!arc.Found)
         {
-            c.Block("geometry", $"L1: the four links cannot be assembled at any crank angle of the swept range ({SweepText(req.Start, reqEnd)}); check the link lengths (|b − c| ≤ ℓ ≤ b + c must hold with ℓ = |A − O₄|). {cls}.");
+            c.Block("geometry", $"L1: the four links cannot be assembled at any crank angle from {SweepText(req.Start, reqEnd)}. Check that |b − c| ≤ ℓ ≤ b + c holds, with ℓ = |A − O₄|.");
             return;
         }
 
@@ -344,18 +362,18 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         }
 
         if (changePoints.Count % 2 == 1 && req.Range > 2 * Math.PI + 1e-9)
-            c.Warn("limit", "theta_range: this linkage has one change point per turn, so on the continued branch its motion repeats every 720°, not every 360°; a sweep of more than one turn passes the change point and does not return to the same configuration after 360°.");
+            c.Warn("limit", "theta_range: this linkage has one change point per turn, so its motion repeats every 720°, not 360°. A sweep of more than one turn does not return to the same configuration after 360°.");
 
         FourBarState? St(double t) => link.At(t, w2, Flips(t));
 
         if (arc.Clipped)
-            c.Warn("limit", $"theta_range: the requested sweep {SweepText(req.Start, reqEnd)} is cut to {SweepText(arc.Lo, arc.Hi)}: beyond it the linkage cannot be assembled. The toggle angles that bound the crank's range are θ₂ = {MarkedAngles(limits, req.Start, reqEnd)}.");
+            c.Warn("limit", $"theta_range: the sweep {SweepText(req.Start, reqEnd)} is cut to {SweepText(arc.Lo, arc.Hi)}, where the linkage can be assembled. The toggle angles are θ₂ = {AnglesText(limits)}.");
 
         if (unbounded)
         {
             c.Warn("limit", arc.LimitsInside.Any(x => changePoints.Any(y => Math.Abs(Math.IEEERemainder(x - y, 2 * Math.PI)) < 1e-9))
-                ? $"theta_range: the sweep passes the change point at θ₂ = {AnglesText(arc.LimitsInside)}. The table follows the same circuit through it by continuity, but the velocity system is singular there and the speeds, accelerations, torque and forces next to it are not reliable, so they are not reported. Sweep between the change-point angles (set theta_start and theta_range inside the stretch) to get them."
-                : $"theta_range: the sweep reaches the toggle at θ₂ = {AnglesText(arc.LimitsInside)}, where coupler and rocker are collinear: driven at constant speed the rocker's speed, acceleration, the input torque and the forces are unbounded there, so they and the ports are not reported. Set theta_start and theta_range inside the assemblable stretch (between the toggle angles) or reverse the crank before the toggle.");
+                ? $"theta_range: the sweep passes the change point at θ₂ = {AnglesText(arc.LimitsInside)}, where the velocity system is singular. The peaks, torque and forces are not reported, so set theta_start and theta_range between the change-point angles."
+                : $"theta_range: the sweep reaches the toggle at θ₂ = {AnglesText(arc.LimitsInside)}, where coupler and rocker are collinear. The peaks, torque and forces are not reported, so set theta_start and theta_range between the toggle angles.");
         }
 
         // The table.
@@ -377,12 +395,12 @@ public sealed partial class MechanismCalculator : ICalcCalculator
 
         if (rows.Count == 0)
         {
-            c.Block("geometry", $"L1: every row of the sweep {SweepText(arc.Lo, arc.Hi)} is a toggle or cannot be assembled; change theta_start and theta_range (toggle angles θ₂ = {AnglesText(limits)}). {cls}.");
+            c.Block("geometry", $"L1: every row of the sweep {SweepText(arc.Lo, arc.Hi)} is a toggle or cannot be assembled. Change theta_start and theta_range away from the toggle angles θ₂ = {AnglesText(limits)}.");
             return;
         }
 
         if ((unreachable > 0 || singular > 0) && !unbounded)
-            c.Warn("reach", $"L2: {unreachable} of {sw.Steps + 1} table rows cannot be assembled and {singular} sit at a toggle (coupler and rocker collinear, no defined velocity); they are left out of the table.");
+            c.Warn("reach", $"L2: {unreachable} of {sw.Steps + 1} table rows cannot be assembled and {singular} sit at a toggle. The table leaves them out.");
 
         // Dense scan (for peaks and integrals).
         var n = sw.Dense;
@@ -402,7 +420,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         if (!unbounded && states.Any(s => s is null || s.Value.Singular))
         {
             unbounded = true;
-            c.Warn("limit", "theta_range: a toggle lies inside the sweep, where the rocker's velocity at constant crank speed is unbounded; the peaks, torque, forces and ports are not reported. Set theta_start and theta_range away from it.");
+            c.Warn("limit", "theta_range: a toggle lies inside the sweep, so the peaks, torque, forces and ports are not reported. Move theta_start and theta_range away from it.");
         }
 
         (double Value, double At)? Peak(Func<FourBarState, double> select, bool max, bool allowSingular = false)
@@ -513,7 +531,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
 
             if (omega4Pk is null || tInPk is null || fPk is null || couplerPk is null || aPinPk is null || omega3Pk is null || alpha3Pk is null || alpha4Pk is null)
             {
-                c.Block("geometry", "L1: the sweep has no row with a defined velocity (every assembled row is a toggle); change the swept range or the link lengths.");
+                c.Block("geometry", "L1: every assembled row of the sweep is a toggle, so no row has a defined velocity. Change the swept range or the link lengths.");
                 return;
             }
 
@@ -523,11 +541,11 @@ public sealed partial class MechanismCalculator : ICalcCalculator
             Scalar(c, "alpha_out_pk", "max |α₄|", "dense scan, refined", alpha4Pk.Value.Value, "rad/s^2", "Peak output (rocker) angular acceleration", clause);
 
             // The ports.
-            Scalar(c, "input_torque", "max |T_in|", "dense scan, refined", tInPk.Value.Value, "N*m", "Peak input (crank) torque by virtual work (mech.input_torque → E1 peak torque)", "Virtual work");
-            Scalar(c, "output_motion", "c · max |ω₄|", "output pin at the rocker length", cc * omega4Pk.Value.Value, "m/s", "Peak speed of the output pin at the rocker length c (mech.output_motion; a kinematic proxy for F1 only if the cylinder acts perpendicular to the rocker at that radius; the angular velocity is omega_out_pk)", clause);
-            Scalar(c, "peak_accel", "max |a_pin|", "√(α₄² + ω₄⁴)·c", aPinPk.Value.Value, "m/s^2", "Peak acceleration of the output pin (mech.peak_accel)", clause);
-            Scalar(c, "follower_force", "max |(T_L + J·α₄)/c|", "tangential force at the output pin", fPk.Value.Value, "N", "Peak force perpendicular to the rocker at the output pin, the drive force of the output (mech.follower_force)", "Virtual work");
-            Scalar(c, "F_pin_pk", "max |(T_L + J·α₄)/(c·sin μ)|", "force in the coupler = the crank-pin force", couplerPk.Value.Value, "N", "Peak force in the coupler, which is also the force at the crank pin and the pin loads on the bearings (mech.F_pin_pk → M4, M5)", "Virtual work");
+            Scalar(c, "input_torque", "max |T_in|", "dense scan, refined", tInPk.Value.Value, "N*m", "Peak input (crank) torque by virtual work", "Virtual work");
+            Scalar(c, "output_motion", "c · max |ω₄|", "output pin at the rocker length", cc * omega4Pk.Value.Value, "m/s", "Peak speed of the output pin at the rocker length c (a kinematic proxy for a cylinder only if the cylinder acts perpendicular to the rocker at that radius; the angular velocity is omega_out_pk)", clause);
+            Scalar(c, "peak_accel", "max |a_pin|", "√(α₄² + ω₄⁴)·c", aPinPk.Value.Value, "m/s^2", "Peak acceleration of the output pin", clause);
+            Scalar(c, "follower_force", "max |(T_L + J·α₄)/c|", "tangential force at the output pin", fPk.Value.Value, "N", "Peak force perpendicular to the rocker at the output pin, the drive force of the output", "Virtual work");
+            Scalar(c, "F_pin_pk", "max |(T_L + J·α₄)/(c·sin μ)|", "force in the coupler = the crank-pin force", couplerPk.Value.Value, "N", "Peak force in the coupler, which is also the force at the crank pin and the pin loads on the bearings", "Virtual work");
 
             var dense = states.Select(s => TIn(s!.Value)).ToList();
             DriveOutputs(c, dense, w2, "Simpson over the scan");
@@ -535,7 +553,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
 
         UtilisationMu(c, muReq, muMin);
         ClosureCheck(c, resMax);
-        c.CheckCondition("Velocity-loop residual below 1e-8 of the size of its terms", velRes < 1e-8, $"max residual = {CalcValue.FormatNumber(velRes)}", "< 1e-8", "res_vel_max", "Self-consistency");
+        c.CheckCondition("Velocity-loop residual against its limit", velRes < 1e-8, $"max residual = {CalcValue.FormatNumber(velRes)}", "< 1e-8", "res_vel_max", "Self-consistency");
     }
 
     private static double WrapPi(double angle)
@@ -548,10 +566,10 @@ public sealed partial class MechanismCalculator : ICalcCalculator
     {
         var mm = Mm(residualMetres);
         var ok = mm < ClosureLimitMm;
-        c.CheckCondition("Loop-closure residual below 1e-9 mm at every step", ok, $"max residual = {CalcValue.FormatNumber(mm)} mm", $"< {CalcValue.FormatNumber(ClosureLimitMm)} mm", "res_max", "Self-consistency");
+        c.CheckCondition("Loop-closure residual against its limit", ok, $"max residual = {CalcValue.FormatNumber(mm)} mm", $"< {CalcValue.FormatNumber(ClosureLimitMm)} mm", "res_max", "Self-consistency");
 
         if (!ok)
-            c.Warn("closure", $"L3: the loop-closure residual {CalcValue.FormatNumber(mm)} mm reached 1e-9 mm; the geometry is near-degenerate and the position is no longer exact.");
+            c.Warn("closure", $"L3: the loop-closure residual {CalcValue.FormatNumber(mm)} mm reached 1e-9 mm. The geometry is near-degenerate, so the position is no longer exact.");
     }
 
     // ------------------------------------------------------------------
@@ -586,7 +604,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
 
         if (!arc.Found)
         {
-            c.Block("geometry", $"L3: the rod cannot reach the slide line at any crank angle of the swept range ({SweepText(req.Start, reqEnd)}) (|r·sinθ − e| ≤ l must hold); {cls}.");
+            c.Block("geometry", $"L3: the rod cannot reach the slide line at any crank angle from {SweepText(req.Start, reqEnd)}. Check that |r·sinθ − e| ≤ l holds.");
             return;
         }
 
@@ -594,10 +612,10 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         var unbounded = arc.LimitsInside.Count > 0;
 
         if (arc.Clipped)
-            c.Warn("limit", $"theta_range: the requested sweep {SweepText(req.Start, reqEnd)} is cut to {SweepText(arc.Lo, arc.Hi)}: beyond it the rod cannot reach the slide line. The limit angles (rod perpendicular to the slide line) are θ = {MarkedAngles(limits, req.Start, reqEnd)}.");
+            c.Warn("limit", $"theta_range: the sweep {SweepText(req.Start, reqEnd)} is cut to {SweepText(arc.Lo, arc.Hi)}, where the rod can reach the slide line. The limit angles are θ = {AnglesText(limits)}.");
 
         if (unbounded)
-            c.Warn("limit", $"theta_range: the sweep reaches the limit at θ = {AnglesText(arc.LimitsInside)}, where the rod is perpendicular to the slide line: driven at constant speed the slider's velocity, acceleration, the torque and the forces are unbounded there, so they and the ports are not reported. Set theta_start and theta_range inside the assemblable stretch (between the limit angles) or reverse the crank before the limit.");
+            c.Warn("limit", $"theta_range: the sweep reaches a limit at θ = {AnglesText(arc.LimitsInside)}, so the peaks, torque, forces and ports are not reported. Set theta_start and theta_range between the limit angles.");
 
         var rows = new List<SliderState>();
         var unreachable = 0;
@@ -612,12 +630,12 @@ public sealed partial class MechanismCalculator : ICalcCalculator
 
         if (rows.Count == 0)
         {
-            c.Block("geometry", $"L3: no row of the sweep {SweepText(arc.Lo, arc.Hi)} can be assembled; change theta_start and theta_range.");
+            c.Block("geometry", $"L3: no row of the sweep {SweepText(arc.Lo, arc.Hi)} can be assembled. Change theta_start and theta_range.");
             return;
         }
 
         if (unreachable > 0 && !unbounded)
-            c.Warn("reach", $"L3: {unreachable} of {sw.Steps + 1} table rows cannot be assembled (the rod cannot reach the slide line); they are left out of the table.");
+            c.Warn("reach", $"L3: {unreachable} of {sw.Steps + 1} table rows cannot be assembled, because the rod cannot reach the slide line. The table leaves them out.");
 
         var n = sw.Dense;
         var xs = new double[n + 1];
@@ -636,7 +654,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         if (!unbounded && states.Any(s => s is null))
         {
             unbounded = true;
-            c.Warn("limit", "theta_range: part of the sweep cannot be assembled; the peaks, torque, forces and ports are not reported. Set theta_start and theta_range inside the assemblable stretch.");
+            c.Warn("limit", "theta_range: part of the sweep cannot be assembled, so the peaks, torque, forces and ports are not reported. Set theta_start and theta_range inside the assemblable stretch.");
         }
 
         (double Value, double At)? Peak(Func<SliderState, double> select, bool max)
@@ -658,7 +676,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
 
         if (xMax is null || xMin is null || muFound is null)
         {
-            c.Block("geometry", "L3: the sweep has no assembled row; change the swept range or the link lengths.");
+            c.Block("geometry", "L3: the sweep has no assembled row. Change the swept range or the link lengths.");
             return;
         }
 
@@ -732,17 +750,17 @@ public sealed partial class MechanismCalculator : ICalcCalculator
 
             if (vPk is null || aPk is null || w3Pk is null || al3Pk is null || tPk is null || fPk is null || rodPk is null || guidePk is null)
             {
-                c.Block("geometry", "L3: the sweep has no assembled row; change the swept range or the link lengths.");
+                c.Block("geometry", "L3: the sweep has no assembled row. Change the swept range or the link lengths.");
                 return;
             }
 
             Scalar(c, "omega3_pk", "max |ω₃|", "dense scan, refined", w3Pk.Value.Value, "rad/s", "Peak connecting-rod angular velocity", clause);
             Scalar(c, "alpha3_pk", "max |α₃|", "dense scan, refined", al3Pk.Value.Value, "rad/s^2", "Peak connecting-rod angular acceleration", clause);
-            Scalar(c, "input_torque", "max |T_in|", "dense scan, refined", tPk.Value.Value, "N*m", "Peak input (crank) torque by virtual work (mech.input_torque → E1 peak torque)", "Virtual work");
-            Scalar(c, "output_motion", "max |v|", "dense scan, refined", vPk.Value.Value, "m/s", "Peak slider velocity (mech.output_motion; the cylinder speed of F1 for a slider driven at constant crank speed, a kinematic proxy)", clause);
-            Scalar(c, "peak_accel", "max |a|", "dense scan, refined", aPk.Value.Value, "m/s^2", "Peak slider acceleration (mech.peak_accel)", clause);
-            Scalar(c, "follower_force", "max |m·a + F_L|", "slide-direction force on the slider", fPk.Value.Value, "N", "Peak force on the slider in the slide direction, the rod's component along the slide line (mech.follower_force)", "Virtual work");
-            Scalar(c, "F_pin_pk", "max |m·a + F_L|/cosθ₃", "force along the connecting rod", rodPk.Value.Value, "N", "Peak force in the connecting rod, also the crank-pin load (mech.F_pin_pk → M4, M5)", "Virtual work");
+            Scalar(c, "input_torque", "max |T_in|", "dense scan, refined", tPk.Value.Value, "N*m", "Peak input (crank) torque by virtual work", "Virtual work");
+            Scalar(c, "output_motion", "max |v|", "dense scan, refined", vPk.Value.Value, "m/s", "Peak slider velocity (for a cylinder-driven slider at constant crank speed, a kinematic proxy)", clause);
+            Scalar(c, "peak_accel", "max |a|", "dense scan, refined", aPk.Value.Value, "m/s^2", "Peak slider acceleration", clause);
+            Scalar(c, "follower_force", "max |m·a + F_L|", "slide-direction force on the slider", fPk.Value.Value, "N", "Peak force on the slider in the slide direction, the rod's component along the slide line", "Virtual work");
+            Scalar(c, "F_pin_pk", "max |m·a + F_L|/cosθ₃", "force along the connecting rod", rodPk.Value.Value, "N", "Peak force in the connecting rod, also the crank-pin load", "Virtual work");
             Scalar(c, "F_guide_pk", "max |m·a + F_L|·tanθ₃", "reaction of the slide on the slider", guidePk.Value.Value, "N", "Peak side reaction of the guide on the slider (frictionless)", "Virtual work");
 
             var dense = states.Select(s => TIn(s!.Value)).ToList();
@@ -751,6 +769,6 @@ public sealed partial class MechanismCalculator : ICalcCalculator
 
         UtilisationMu(c, muReq, muMin);
         ClosureCheck(c, resMax);
-        c.CheckCondition("Velocity-loop residual below 1e-8 of the size of its terms", velRes < 1e-8, $"max residual = {CalcValue.FormatNumber(velRes)}", "< 1e-8", "res_vel_max", "Self-consistency");
+        c.CheckCondition("Velocity-loop residual against its limit", velRes < 1e-8, $"max residual = {CalcValue.FormatNumber(velRes)}", "< 1e-8", "res_vel_max", "Self-consistency");
     }
 }

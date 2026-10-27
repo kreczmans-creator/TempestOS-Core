@@ -4,8 +4,8 @@ Calc ID: mech.mechanism    Revision: A
 Title: Mechanism kinematics
 
 1. Scope and method
-A single-degree-of-freedom planar mechanism driven at constant speed: a four-bar linkage or an offset slider-crank (both circuits, position, velocity and acceleration over a sweep of the input angle, Grashof class, transmission angle against a minimum, toggle and dead-centre positions, loop-closure residual, input torque by virtual work), or a cam with a translating follower. Rigid links, no clearance, no friction.
-Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A − O₄|, cos γ = (c² + ℓ² − b²)/(2cℓ), θ₄ = φ ∓ γ (φ the direction O₄→A; open: −, crossed: +); θ₃ from B − A Four-bar velocity and acceleration: differentiated loop, 2×2 system with det = b·c·sin(θ₃ − θ₄); ω₃ = ω₂·a·sin(θ₄ − θ₂)/(b·sin(θ₃ − θ₄)), ω₄ = ω₂·a·sin(θ₃ − θ₂)/(c·sin(θ₃ − θ₄)); α from the second derivative at constant ω₂ Grashof class and transmission angle: s + l < p + q (crank-rocker, double-crank or double-rocker by the shortest link), = at the change point, > non-Grashof; transmission angle cos μ = (b² + c² − ℓ²)/(2bc) folded to 0 … 90°; toggle where ℓ = b + c or |b − c| Slider-crank position: x = r·cosθ + σ·√(l² − (r·sinθ − e)²) (σ = +1 open, −1 crossed); dx/dθ = −r·sinθ − r·cosθ·(r·sinθ − e)/(x − r·cosθ); dead centres where crank and rod are collinear; μ = 90° − |rod angle to the slide line| Input torque by virtual work: T_in·ω_in = Σ F·v; four-bar T_in = (T_L + J·α₄)·ω₄/ω₂; slider T_in = (m·a + F_L)·dx/dθ; RMS torque and mean power over the sweep by Simpson's rule Mechanism forces: four-bar tangential pin force P = (T_L + J·α₄)/c, coupler (and crank-pin) force P/sin μ; slider slide-direction force F_x = m·a + F_L, rod force F_x/cos θ₃, guide reaction F_x·tan θ₃; cam contact normal F/cos φ Assembly limits: four-bar toggles at cos θ₂ = (d² + a² − ℓ²)/(2ad), ℓ = b + c or |b − c|; slider sin θ = (e ± l)/r. The sweep is cut at them and, driven at constant speed into one, the unbounded peaks are not reported Loop closure: |a·e^{jθ₂} + b·e^{jθ₃} − c·e^{jθ₄} − d| (slider: |r·e^{jθ} + l·e^{jθ₃} − (x + j·e)|) asserted below 1e-9 mm at every step Cam, per segment with x = (θ − θ₀)/β: rise s = s₀ + h·f(x), return s = s₀ − h·f(x); cycloidal f = x − sin(2πx)/(2π); 3-4-5 f = 10x³ − 15x⁴ + 6x⁵; 4-5-6-7 f = 35x⁴ − 84x⁵ + 70x⁶ − 20x⁷; modified trapezoid from its acceleration pieces (C_v = 2, C_a = 8π/(π + 2), C_j = 32π²/(π + 2)) Cam SVAJ at constant ω: v = ω·s′, a = ω²·s″, j = ω³·s‴ (′ = d/dθ); peak coefficients C_v = max f′, C_a = max |f″|, C_j = max |f‴|, so v_pk = C_v·h·ω/β Pressure angle (roller, offset e, R_p = R_b + R_r): φ = arctan[(s′ − e)/(√(R_p² − e²) + s)], which for e = 0 is arctan[s′/(R_p + s)]; the base circle that holds φ ≤ φ_max has R_p,req = √(s₀,req² + e²) with s₀,req = max(|s′ − e|/tan φ_max − s) Radius of curvature of the pitch curve P(θ) = Rot(−θ)·(e, √(R_p² − e²) + s): ρ = |P′|³/(P′ × P″), convex where positive; undercut where ρ_min ≤ R_r (FAIL), none where the curve is nowhere convex; flat-faced follower: signed profile radius ρ = R_b + s + s″, the minimum of which must stay above zero (FAIL at or below) and the face must reach |s′|; the cam turns counter-clockwise with the follower axis at +x offset e Cam follower force F = m·a + k·s + F_pre + F_ext (the follower leaves the cam where F < 0); input torque by virtual work T = F·s′ (T·ω = F·v)
+Calculates the position, velocity, acceleration, input torque and forces of a one-degree-of-freedom planar four-bar, slider-crank or cam mechanism. The input turns at constant speed, and the links are rigid, with no clearance and no friction.
+Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}, with ℓ = |A − O₄|, cos γ = (c² + ℓ² − b²)/(2cℓ) and θ₄ = φ ∓ γ (φ the direction O₄→A; open: −, crossed: +); θ₃ from B − A Four-bar velocity and acceleration: differentiated loop, 2×2 system with det = b·c·sin(θ₃ − θ₄); ω₃ = ω₂·a·sin(θ₄ − θ₂)/(b·sin(θ₃ − θ₄)), ω₄ = ω₂·a·sin(θ₃ − θ₂)/(c·sin(θ₃ − θ₄)); α from the second derivative at constant ω₂ Grashof class and transmission angle: s + l < p + q (crank-rocker, double-crank or double-rocker by the shortest link), = at the change point, > non-Grashof; transmission angle cos μ = (b² + c² − ℓ²)/(2bc) folded to 0 … 90°; toggle where ℓ = b + c or |b − c| Slider-crank position: x = r·cosθ + σ·√(l² − (r·sinθ − e)²) (σ = +1 open, −1 crossed); dx/dθ = −r·sinθ − r·cosθ·(r·sinθ − e)/(x − r·cosθ); dead centres where crank and rod are collinear; μ = 90° − |rod angle to the slide line| Input torque and forces: T_in·ω_in = Σ F·v by virtual work; four-bar T_in = (T_L + J·α₄)·ω₄/ω₂, tangential pin force P = (T_L + J·α₄)/c and coupler force P/sin μ; slider T_in = (m·a + F_L)·dx/dθ, slide-direction force F_x = m·a + F_L, rod force F_x/cos θ₃ and guide reaction F_x·tan θ₃; RMS torque and mean power over the sweep by Simpson's rule Assembly limits and loop closure: four-bar toggles at cos θ₂ = (d² + a² − ℓ²)/(2ad), ℓ = b + c or |b − c|; slider sin θ = (e ± l)/r; the sweep is cut at them and the unbounded peaks are not reported; closure |a·e^{jθ₂} + b·e^{jθ₃} − c·e^{jθ₄} − d| (slider: |r·e^{jθ} + l·e^{jθ₃} − (x + j·e)|) below 1e-9 mm at every step Cam motion: per segment with x = (θ − θ₀)/β, rise s = s₀ + h·f(x), return s = s₀ − h·f(x); cycloidal f = x − sin(2πx)/(2π); 3-4-5 f = 10x³ − 15x⁴ + 6x⁵; 4-5-6-7 f = 35x⁴ − 84x⁵ + 70x⁶ − 20x⁷; modified trapezoid from its acceleration pieces (C_v = 2, C_a = 8π/(π + 2), C_j = 32π²/(π + 2)); SVAJ at constant ω: v = ω·s′, a = ω²·s″, j = ω³·s‴ (′ = d/dθ), so v_pk = C_v·h·ω/β Cam contact: roller pressure angle φ = arctan[(s′ − e)/(√(R_p² − e²) + s)] with R_p = R_b + R_r, base circle R_p,req = √(s₀,req² + e²) with s₀,req = max(|s′ − e|/tan φ_max − s); pitch-curve radius ρ = |P′|³/(P′ × P″), undercut where ρ_min ≤ R_r; flat-faced profile radius ρ = R_b + s + s″ above zero; follower force F = m·a + k·s + F_pre + F_ext (the follower leaves the cam where F < 0), input torque T = F·s′, roller normal force F/cos φ
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
@@ -15,204 +15,211 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   L2 | Crank length a (four-bar) or r (slider-crank) | 40 | mm | manual | 1 … 10000 mm
   L3 | Coupler length b (four-bar) or connecting-rod length l (slider-crank) | 110 | mm | manual | 1 … 10000 mm
   L4 | Rocker length c (four-bar) | 90 | mm | manual | 1 … 10000 mm
-  e_off | Offset e: slide line above the crank centre (slider-crank; blank: 0); cam follower axis offset, with the cam turning counter-clockwise and the follower axis at +x: positive e reduces the pressure angle where ds/dθ exceeds e (the rise), negative raises it | 0 | mm | manual | -1000 … 1000 mm
-  theta_start | Input angle at the first row of the table | 90 | ° | manual | -720 … 720 °
-  theta_range | Swept range of the input angle (360° for a full turn) | 360 | ° | manual | 1 … 720 °
+  e_off | Offset e of the slide line above the crank centre, or of the cam follower axis at +x: positive e reduces the pressure angle where ds/dθ exceeds e (optional; blank = 0) | 0 | mm | manual | -1000 … 1000 mm
   steps | Intervals N of the table (N + 1 rows, a whole number, at most 3600; the peaks do not depend on it) | 72 |  | manual | 4 … 720
   n_in | Input speed (constant) | 120 | rpm | manual | 0.1 … 30000 rpm
-  mu_req | Minimum transmission angle required (linkages) | 40 | ° | manual | 0 … 90 °
+  theta_start | Input angle at the first row of the table | 90 | ° | manual | -720 … 720 °
+  theta_range | Swept range of the input angle (360° for a full turn) | 360 | ° | manual | 1 … 720 °
   load_dir | External load: constant direction, or always opposing the output motion | Opposes motion |  | manual | any
   T_load | External load torque on the output link (four-bar). Positive acts in the −θ₄ direction, resisting positive ω₄; with 'Opposes motion' its sign is applied against the actual direction of ω₄ (a negative value then assists) | 2.5 | N·m | manual | -10000 … 10000 N·m
   J_out | Moment of inertia of the output link about its pivot (four-bar) | 0.004 | kg·m² | manual | 0 … 1000 kg·m²
   m_slider | Slider mass (slider-crank) | 0.5 | kg | manual | 0 … 10000 kg
   F_load | External load on the slider (slider-crank). Positive acts in the −x direction, resisting +x motion; with 'Opposes motion' it is applied against the actual direction of motion | 200 | N | manual | -1000000 … 1000000 N
+  mu_req | Minimum transmission angle required (linkages) | 40 | ° | manual | 10 … 80 °
   follower | Follower type: roller (translating, pressure angle and undercut checked) or flat-faced (in-line) | Roller |  | manual | any
-  Rb | Base-circle radius of the cam profile R_b | 40 | mm | manual | 1 … 1000 mm
-  R_r | Roller radius R_r (roller follower) | 8 | mm | manual | 1 … 200 mm
+  Rb | Base-circle radius of the cam profile | 40 | mm | manual | 1 … 1000 mm
+  R_r | Roller radius (roller follower) | 8 | mm | manual | 1 … 200 mm
   phi_max | Maximum pressure angle allowed (roller follower) | 30 | ° | manual | 5 … 45 °
   m_f | Follower mass (all moving parts that follow the cam) | 0.2 | kg | manual | 0 … 1000 kg
-  k_sp | Return spring rate (link M7 rate k) | 5 | N/mm | manual | 0 … 1000 N/mm
-  F_pre | Spring preload at the base circle (link an M7 force) | 20 | N | manual | 0 … 100000 N
+  k_sp | Return spring rate | 5 | kN/m | manual | 0 … 1000 kN/m
+  F_pre | Spring preload at the base circle | 20 | N | manual | 0 … 100000 N
   F_ext | External load on the follower, positive against the rise | 0 | N | manual | -100000 … 100000 N
 
 3. Assumptions
-  A1. Rigid links, a planar mechanism with one degree of freedom, no joint clearance and no friction; the input turns at a constant speed. (Scope limits of the model.)
-  A2. The position is the closed-form solution of the vector loop; the open and crossed circuits are the two branches (θ₄ = φ − γ and φ + γ for the four-bar, σ = +1 and −1 for the slider) and the sweep stays on the chosen branch; for a change-point linkage (parallelogram, deltoid) the circuit is named at a reference angle that does not depend on the sweep (the middle of the first interval between change points in 0 … 2π, π/2 when there are none), so the label at a crank angle means the same motion on every turn; only the true change points (all four links collinear, θ₂ = 0 or π) flip the branch, and it is followed by continuity through them inside the sweep. A linkage with one change point per turn (a kite) repeats every 720° and a sweep of more than one turn warns. Angles at which the linkage cannot be assembled, or at a toggle where the velocity system is singular, are left out of the table and counted. (Norton, Design of Machinery, position analysis of the four-bar and the offset slider-crank.)
-  A3. Input torque is by virtual work from the output load and the inertia of the output element only (four-bar: the output link's moment of inertia about its pivot; slider: the slider mass); the crank and the coupler or connecting rod are massless. (No link-inertia or gravity terms: add the link masses to the output element for a first allowance.)
-  A4. The peaks (speeds, accelerations, torque, transmission angle, swing) are those of the continuous motion over the swept range, found by a dense scan refined by golden section; the printed table (steps N, up to 3600) only samples it. (Peaks do not depend on the table's step count.)
-  A5. Cam: a translating follower on a cam turning at constant speed; the follower mass, a linear return spring (rate and preload at the base circle, for example linked from M7) and a constant external load make the force the cam must apply, F = m·a + k·s + F_pre + F_ext; contact is lost where it falls below zero. The segment table must add to 360° and close; pressure angle and undercut are checked for the roller follower (R_p = R_b + R_r), the positive profile radius for the flat-faced one. (Norton, Design of Machinery, cam design: the four classical laws, pressure angle and radius of curvature.)
-  A6. Follower force (four-bar: the tangential force at the output pin, (T_L + J·α₄)/c; slider: the slide-direction force m·a + F_L; cam: the axial force) is the force the mechanism must apply to the output element. The force in the coupler (F_pin_pk) is the tangential force over sin μ; in the connecting rod it is the slide-direction force over cos θ₃, and the guide reaction is that force times tan θ₃; the roller contact normal force is F/cos φ. Crank, coupler and rod are massless two-force members. (Rigid body, frictionless.)
-  A7. When the sweep meets an assembly limit (a toggle of a four-bar, the rod perpendicular to the slide line of a slider-crank) the sweep is cut there and, because the speed, acceleration, torque and forces at constant input speed are unbounded at the limit, they are not reported; the limit angles are listed. A change-point four-bar (parallelogram, deltoid) is continued through its singular position on the same branch by continuity (γ changes sign there), but its speeds and torques next to the singular position are not reported. (Closed-form limit angles: ℓ = b + c or |b − c| (four-bar), |r·sinθ − e| = l (slider).)
-  A8. Into F1 and E1: output_motion is a kinematic proxy at constant crank speed, not the cylinder speed of an actuated linkage. For E1 use the peak input_torque for the peak check and T_rms_in with n_in for the thermal sizing; the mean power is P_mean. (Used by the actuated-linkage and mechanism-review packs.)
+  A1. The mechanism is rigid and planar, has one degree of freedom, and has no joint clearance or friction. (Scope limits of the model.)
+  A2. The input turns at a constant speed. (Scope limits of the model.)
+  A3. The position is the closed-form solution of the vector loop, on the chosen circuit. (Open and crossed are the two branches: θ₄ = φ − γ and φ + γ for the four-bar, σ = +1 and −1 for the slider.)
+  A4. The sweep stays on the chosen circuit and follows it by continuity through a change point. (Only a change point, with all four links collinear (θ₂ = 0 or π), flips the branch.)
+  A5. A linkage with one change point per turn repeats every 720°, and a sweep of more than one turn warns. (A kite, for example 40/40/100/100, is such a linkage.)
+  A6. The table leaves out angles where the linkage cannot be assembled or sits at a toggle. (It counts them, and at a toggle the velocity system is singular.)
+  A7. The input torque comes from the output load and the inertia of the output element only. (The crank and the coupler or connecting rod are massless: add their mass to the output element for a first allowance.)
+  A8. The crank, the coupler and the connecting rod are massless two-force members. (Rigid body, frictionless.)
+  A9. The peaks are those of the continuous motion over the swept range, not of the printed table. (A dense scan refined by golden section finds them, so they do not depend on the step count of the table (up to 3600).)
+  A10. At an assembly limit the sweep is cut, and the unbounded peaks, torque and forces are not reported. (The limit angles are listed: ℓ = b + c or |b − c| (four-bar), |r·sinθ − e| = l (slider).)
+  A11. A change-point four-bar is continued through its singular position on the same branch. (Its speeds and torques next to the singular position are not reported.)
+  A12. The cam drives a translating follower at constant speed. (Norton, Design of Machinery, cam design: the four classical laws, pressure angle and radius of curvature.)
+  A13. The follower force is m·a + k·s + F_pre + F_ext, and contact is lost below zero. (The spring rate and the preload are those at the base circle, and the segment table must add to 360° and close.)
+  A14. Pressure angle and undercut are checked for the roller follower, and the profile radius for the flat-faced one. (The roller has the prime radius R_p = R_b + R_r.)
+  A15. The output speed is a kinematic proxy at constant input speed, not the speed of an actuated cylinder. (For motor sizing, use the peak input_torque for the peak check and T_rms_in with n_in for the thermal sizing. The mean power is P_mean.)
 
 4. Working
   [10] f_in = n_in / 60
       = rpm to Hz
       = 2 Hz
-        Input (crank) frequency, for the spring surge check of M7 (mech.f_in)
-  [16] S_plus_L = s + l    « Grashof criterion
+        Input (crank) frequency, for a spring surge check
+  [17] S_plus_L = s + l    « Grashof criterion
       = shortest + longest link
       = 160 mm
         Shortest plus longest link
-  [17] P_plus_Q = p + q    « Grashof criterion
+  [18] P_plus_Q = p + q    « Grashof criterion
       = the other two links
       = 200 mm
         Sum of the other two links
-  [18] theta2_sw = θ₂    « Vector-loop closed form (Freudenstein / law of cosines)
+  [19] theta2_sw = θ₂    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ₂ from 90° to 450°
       = [90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, … (73 items)] deg
         Table: crank angle
-  [19] theta3_sw = θ₃ = atan2(B − A)    « Vector-loop closed form (Freudenstein / law of cosines)
+  [20] theta3_sw = θ₃ = atan2(B − A)    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ₂ from 90° to 450°
       = [25.618, 25.236, 24.947, 24.75, 24.643, 24.624, 24.693, 24.85, 25.097, 25.434, 25.864, 26.387, … (73 items)] deg
         Table: coupler angle
-  [20] theta4_sw = θ₄ = φ ∓ γ    « Vector-loop closed form (Freudenstein / law of cosines)
+  [21] theta4_sw = θ₄ = φ ∓ γ    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ₂ from 90° to 450°
       = [103.37, 105.46, 107.6, 109.78, 111.99, 114.21, 116.43, 118.63, 120.81, 122.95, 125.03, 127.05, … (73 items)] deg
         Table: rocker angle
-  [21] omega3_sw = ω₃    « Vector-loop closed form (Freudenstein / law of cosines)
+  [22] omega3_sw = ω₃    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ₂ from 90° to 450°
       = [-1.0814, -0.84149, -0.60915, -0.38223, -0.15879, 0.062996, 0.28473, 0.50784, 0.73349, 0.96258, 1.1957, 1.433, … (73 items)] rad/s
         Table: coupler angular velocity
-  [22] omega4_sw = ω₄    « Vector-loop closed form (Freudenstein / law of cosines)
+  [23] omega4_sw = ω₄    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ₂ from 90° to 450°
       = [5.1533, 5.3176, 5.4408, 5.5252, 5.5727, 5.5851, 5.5637, 5.5097, 5.4241, 5.3081, 5.1627, 4.9891, … (73 items)] rad/s
         Table: rocker angular velocity
-  [23] alpha3_sw = α₃    « Vector-loop closed form (Freudenstein / law of cosines)
+  [24] alpha3_sw = α₃    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ₂ from 90° to 450°
       = [35.187, 33.948, 33.018, 32.381, 32.015, 31.897, 31.998, 32.285, 32.723, 33.268, 33.872, 34.478, … (73 items)] rad/s²
         Table: coupler angular acceleration
-  [24] alpha4_sw = α₄    « Vector-loop closed form (Freudenstein / law of cosines)
+  [25] alpha4_sw = α₄    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ₂ from 90° to 450°
       = [26.75, 20.637, 14.891, 9.4552, 4.2784, -0.68137, -5.4572, -10.072, -14.536, -18.85, -22.999, -26.961, … (73 items)] rad/s²
         Table: rocker angular acceleration
-  [25] mu_sw = μ    « Vector-loop closed form (Freudenstein / law of cosines)
+  [26] mu_sw = μ    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ₂ from 90° to 450°
       = [77.753, 80.22, 82.65, 85.03, 87.347, 89.587, 88.263, 86.217, 84.288, 82.489, 80.834, 79.336, … (73 items)] deg
         Table: transmission angle
-  [26] T_in_sw = (T_L + J·α₄)·ω₄/ω₂    « Virtual work
+  [27] T_in_sw = (T_L + J·α₄)·ω₄/ω₂    « Virtual work
       = 73 rows, θ₂ from 90° to 450°
       = [1.0691, 1.0928, 1.1082, 1.1158, 1.1162, 1.1099, 1.0972, 1.0784, 1.054, 1.0242, 0.98929, 0.94974, … (73 items)] N·m
         Table: input torque by virtual work
-  [27] theta3_0 = θ₃    « Vector-loop closed form (Freudenstein / law of cosines)
+  [28] theta3_0 = θ₃    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = 25.618 deg
         Coupler angle at the first input angle
-  [28] theta4_0 = θ₄    « Vector-loop closed form (Freudenstein / law of cosines)
+  [29] theta4_0 = θ₄    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = 103.37 deg
         Rocker angle at the first input angle
-  [29] omega3_0 = ω₃    « Vector-loop closed form (Freudenstein / law of cosines)
+  [30] omega3_0 = ω₃    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = -1.0814 rad/s
         Coupler angular velocity at the first input angle
-  [30] omega4_0 = ω₄    « Vector-loop closed form (Freudenstein / law of cosines)
+  [31] omega4_0 = ω₄    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = 5.1533 rad/s
         Rocker angular velocity at the first input angle
-  [31] alpha3_0 = α₃    « Vector-loop closed form (Freudenstein / law of cosines)
+  [32] alpha3_0 = α₃    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = 35.187 rad/s²
         Coupler angular acceleration at the first input angle
-  [32] alpha4_0 = α₄    « Vector-loop closed form (Freudenstein / law of cosines)
+  [33] alpha4_0 = α₄    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = 26.75 rad/s²
         Rocker angular acceleration at the first input angle
-  [33] mu_0 = μ    « Vector-loop closed form (Freudenstein / law of cosines)
+  [34] mu_0 = μ    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = 77.753 deg
         Transmission angle at the first input angle
-  [34] T_in_0 = (T_L + J·α₄)·ω₄/ω₂    « Virtual work
+  [35] T_in_0 = (T_L + J·α₄)·ω₄/ω₂    « Virtual work
       = at the first input angle
       = 1.0691 N·m
         Input torque at the first input angle
-  [35] theta4_alt = θ₄ on the other circuit    « Vector-loop closed form (Freudenstein / law of cosines)
+  [36] theta4_alt = θ₄ on the other circuit    « Vector-loop closed form (Freudenstein / law of cosines)
       = mirror branch, at the first input angle
       = 219.76 deg
         Rocker angle on the other circuit at the first input angle
-  [36] theta4_min = min θ₄    « Vector-loop closed form (Freudenstein / law of cosines)
+  [37] theta4_min = min θ₄    « Vector-loop closed form (Freudenstein / law of cosines)
       = unwrapped along the sweep
       = 90 deg
         Smallest rocker angle
-  [37] theta4_max = max θ₄    « Vector-loop closed form (Freudenstein / law of cosines)
+  [38] theta4_max = max θ₄    « Vector-loop closed form (Freudenstein / law of cosines)
       = unwrapped along the sweep
       = 144.57 deg
         Largest rocker angle
-  [38] swing = max θ₄ − min θ₄    « Vector-loop closed form (Freudenstein / law of cosines)
+  [39] swing = max θ₄ − min θ₄    « Vector-loop closed form (Freudenstein / law of cosines)
       = over the sweep
       = 54.569 deg
         Rocker swing over the sweep
-  [39] mu_min = min μ    « Vector-loop closed form (Freudenstein / law of cosines)
+  [40] mu_min = min μ    « Vector-loop closed form (Freudenstein / law of cosines)
       = dense scan, refined
       = 45.816 deg
         Smallest transmission angle over the sweep
-  [40] res_max = max |loop residual|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [41] res_max = max |loop residual|    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 table rows and 1441 scan angles
       = 8.7771e-14 mm
         Largest loop-closure residual
-  [41] res_vel_max = max |velocity loop| / its terms    « Vector-loop closed form (Freudenstein / law of cosines)
+  [42] res_vel_max = max |velocity loop| / its terms    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 table rows
       = 1.9375e-16
         Largest velocity-loop residual, relative to the size of its terms
-  [42] omega3_pk = max |ω₃|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [43] omega3_pk = max |ω₃|    « Vector-loop closed form (Freudenstein / law of cosines)
       = dense scan, refined
       = 6.3517 rad/s
         Peak coupler angular velocity
-  [43] omega_out_pk = max |ω₄|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [44] omega_out_pk = max |ω₄|    « Vector-loop closed form (Freudenstein / law of cosines)
       = dense scan, refined
       = 7.4436 rad/s
         Peak output (rocker) angular velocity
-  [44] alpha3_pk = max |α₃|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [45] alpha3_pk = max |α₃|    « Vector-loop closed form (Freudenstein / law of cosines)
       = dense scan, refined
       = 109.6 rad/s²
         Peak coupler angular acceleration
-  [45] alpha_out_pk = max |α₄|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [46] alpha_out_pk = max |α₄|    « Vector-loop closed form (Freudenstein / law of cosines)
       = dense scan, refined
       = 134.28 rad/s²
         Peak output (rocker) angular acceleration
-  [46] input_torque = max |T_in|    « Virtual work
+  [47] input_torque = max |T_in|    « Virtual work
       = dense scan, refined
       = 1.5134 N·m
-        Peak input (crank) torque by virtual work (mech.input_torque → E1 peak torque)
-  [47] output_motion = c · max |ω₄|    « Vector-loop closed form (Freudenstein / law of cosines)
+        Peak input (crank) torque by virtual work
+  [48] output_motion = c · max |ω₄|    « Vector-loop closed form (Freudenstein / law of cosines)
       = output pin at the rocker length
       = 0.66993 m/s
-        Peak speed of the output pin at the rocker length c (mech.output_motion; a kinematic proxy for F1 only if the cylinder acts perpendicular to the rocker at that radius; the angular velocity is omega_out_pk)
-  [48] peak_accel = max |a_pin|    « Vector-loop closed form (Freudenstein / law of cosines)
+        Peak speed of the output pin at the rocker length c (a kinematic proxy for a cylinder only if the cylinder acts perpendicular to the rocker at that radius; the angular velocity is omega_out_pk)
+  [49] peak_accel = max |a_pin|    « Vector-loop closed form (Freudenstein / law of cosines)
       = √(α₄² + ω₄⁴)·c
       = 12.102 m/s²
-        Peak acceleration of the output pin (mech.peak_accel)
-  [49] follower_force = max |(T_L + J·α₄)/c|    « Virtual work
+        Peak acceleration of the output pin
+  [50] follower_force = max |(T_L + J·α₄)/c|    « Virtual work
       = tangential force at the output pin
       = 33.095 N
-        Peak force perpendicular to the rocker at the output pin, the drive force of the output (mech.follower_force)
-  [50] F_pin_pk = max |(T_L + J·α₄)/(c·sin μ)|    « Virtual work
+        Peak force perpendicular to the rocker at the output pin, the drive force of the output
+  [51] F_pin_pk = max |(T_L + J·α₄)/(c·sin μ)|    « Virtual work
       = force in the coupler = the crank-pin force
       = 41.368 N
-        Peak force in the coupler, which is also the force at the crank pin and the pin loads on the bearings (mech.F_pin_pk → M4, M5)
-  [51] T_rms_in = √(mean T_in²)    « Virtual work
+        Peak force in the coupler, which is also the force at the crank pin and the pin loads on the bearings
+  [52] T_rms_in = √(mean T_in²)    « Virtual work
       = Simpson over the scan
       = 0.86503 N·m
-        RMS input torque over the swept range (mech.T_rms_in → E1 thermal sizing)
-  [52] P_mean = ω·mean(T_in)    « Virtual work
+        RMS input torque over the swept range
+  [53] P_mean = ω·mean(T_in)    « Virtual work
       = Simpson over the scan
-      = 9.5241 W
-        Mean input power over the swept range (negative: the mechanism returns energy) (mech.P_mean)
-  [53] u_mu = μ_req / μ_min    « Transmission angle
+      = 0.0095241 kW
+        Mean input power over the swept range (negative: the mechanism returns energy)
+  [54] u_mu = μ_req / μ_min    « Transmission angle
       = 40° / 45.816°
       = 0.87306
         Transmission angle: required minimum against the smallest over the sweep
 
 5. Results
-  input_torque = 1.513 N·m    Peak input (crank) torque by virtual work (mech.input_torque → E1 peak torque)
-  output_motion = 0.6699 m/s    Peak speed of the output pin at the rocker length c (mech.output_motion; a kinematic proxy for F1 only if the cylinder acts perpendicular to the rocker at that radius; the angular velocity is omega_out_pk)
-  peak_accel = 12.10 m/s²    Peak acceleration of the output pin (mech.peak_accel)
-  follower_force = 33.09 N    Peak force perpendicular to the rocker at the output pin, the drive force of the output (mech.follower_force)
-  F_pin_pk = 41.37 N    Peak force in the coupler, which is also the force at the crank pin and the pin loads on the bearings (mech.F_pin_pk → M4, M5)
-  T_rms_in = 0.8650 N·m    RMS input torque over the swept range (mech.T_rms_in → E1 thermal sizing)
-  n_in = 120 rpm    Input (crank) speed, passed through for E1's load speed (mech.n_in)
-  f_in = 2 Hz    Input (crank) frequency, for the spring surge check of M7 (mech.f_in)
-  P_mean = 9.524 W    Mean input power over the swept range (negative: the mechanism returns energy) (mech.P_mean)
+  input_torque = 1.513 N·m    Peak input (crank) torque by virtual work
+  output_motion = 0.6699 m/s    Peak speed of the output pin at the rocker length c (a kinematic proxy for a cylinder only if the cylinder acts perpendicular to the rocker at that radius; the angular velocity is omega_out_pk)
+  peak_accel = 12.10 m/s²    Peak acceleration of the output pin
+  follower_force = 33.09 N    Peak force perpendicular to the rocker at the output pin, the drive force of the output
+  F_pin_pk = 41.37 N    Peak force in the coupler, which is also the force at the crank pin and the pin loads on the bearings
+  T_rms_in = 0.8650 N·m    RMS input torque over the swept range
+  n_in = 120 rpm    Input (crank) speed, passed through
+  f_in = 2 Hz    Input (crank) frequency, for a spring surge check
+  P_mean = 0.009524 kW    Mean input power over the swept range (negative: the mechanism returns energy)
   grashof = "Grashof crank-rocker, input link shortest"    Grashof classification
   S_plus_L = 160 mm    Shortest plus longest link
   P_plus_Q = 200 mm    Sum of the other two links
@@ -249,17 +256,17 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   u_mu = 0.87    Required against smallest transmission angle (governing)
 
 6. Checks (governing first)
-  PASS  Transmission angle μ_min at or above the required minimum: u_mu = 0.87 vs u_mu ≤ 1  utilisation 0.87  « Transmission angle
-  PASS  Loop-closure residual below 1e-9 mm at every step: max residual = 8.7771e-14 mm vs < 1e-9 mm  « Self-consistency
-  PASS  Velocity-loop residual below 1e-8 of the size of its terms: max residual = 1.9375e-16 vs < 1e-8  « Self-consistency
+  PASS  Required transmission angle against the smallest transmission angle: 40° vs 45.82°  utilisation 0.87  « Transmission angle
+  PASS  Loop-closure residual against its limit: max residual = 8.7771e-14 mm vs < 1e-9 mm  « Self-consistency
+  PASS  Velocity-loop residual against its limit: max residual = 1.9375e-16 vs < 1e-8  « Self-consistency
 
 7. Applicability
   None.
 
 8. Verification
-  Template: mech.mechanism@1.2.2
+  Template: mech.mechanism@1.3.0
   Known-answer cases passed: 16/16
 
 9. References
-  1. Norton, Design of Machinery Ch. 4, 6, 7 — Position, velocity and acceleration analysis; transmission angle; Grashof condition
-  2. Uicker, Pennock and Shigley, Theory of Machines and Mechanisms Ch. 4–6 — Loop-closure position analysis; velocity and acceleration of planar linkages
+  1. Norton, Design of Machinery Ch. 4, 6, 7, 6th ed. — Position, velocity and acceleration analysis; transmission angle; Grashof condition
+  2. Uicker, Pennock and Shigley, Theory of Machines and Mechanisms Ch. 4–6, 5th ed. — Loop-closure position analysis; velocity and acceleration of planar linkages
