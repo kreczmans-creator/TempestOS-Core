@@ -89,7 +89,7 @@
 Track P (parallel verification on `v0.26.0/addC-parallel`) is a separate session; this session never starts or edits it.
 - [x] C4 start (on hold at the owner's request; Track P already merged into release/v0.26.0 by the integration, DI-01): Addendum B gates met; record the Track S start in DECISIONS; merge `v0.26.0/addC-parallel` (`--no-ff`); STATUS "Addendum C: n/8" — started 2026-10-26 (DC-02).
 - [x] C-1 fix every Track P Critical/High with regression tests (`v0.26.0/addC-1-fixes`)
-- [ ] C-2 consistency audit applied; `docs/calcs/glossary.md` (`v0.26.0/addC-2-consistency`)
+- [x] C-2 consistency audit applied; `docs/calcs/glossary.md` (phase A `v0.26.0/addC-2-consistency`; phases B and C `v0.26.0/addC-2b-*`, `addC-2c-*`, integrated on `c2-int`, merged 7dbbf5fc)
 - [x] C-3 record entry tooling: records screen, CSV import from Track P templates, missing-record prompts (`v0.26.0/addC-3-records`)
 - [x] C-4 verification dashboard (`v0.26.0/addC-4-dashboard`)
 - [x] C-5 guided test mode (`v0.26.0/addC-5-guided`)
