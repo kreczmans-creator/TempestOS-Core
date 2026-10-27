@@ -374,13 +374,16 @@ public static class CalcCsv
         if (reference.Column is not { } key)
             return;
 
-        var column = spec.Columns?.FirstOrDefault(c => string.Equals(c.Key, key, StringComparison.Ordinal));
+        var column = spec.ResolveColumn(key);
 
         if (column is null)
         {
             notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Warning, $"Row {line}: {reference.Table} has no column '{key}' and the cell was skipped."));
             return;
         }
+
+        // A cell under a column's old key (C-2 rename) is stored under the current key, so the sheet and the export see one column.
+        key = column.Key;
 
         if (raw.Length == 0 && IsWithheld(provenance))
         {

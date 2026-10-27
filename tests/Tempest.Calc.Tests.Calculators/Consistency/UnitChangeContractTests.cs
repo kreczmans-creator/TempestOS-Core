@@ -29,10 +29,15 @@ public sealed class UnitChangeContractTests
     /// <summary>The baseline unit of an input (or <c>table.column</c>), looked up by its symbol or by any of the input's former symbols.</summary>
     private static string? BaselineUnit(Baseline baseline, CalcInputSpec input, string? columnKey)
     {
+        IEnumerable<string?> columnKeys = columnKey is null ? new string?[] { null } : new[] { columnKey }.Concat(input.ResolveColumn(columnKey)?.Aliases ?? []).Select(k => (string?)k);
+
         foreach (var name in new[] { input.Symbol }.Concat(input.Aliases ?? []))
         {
-            if (baseline.units.TryGetValue(columnKey is null ? name : $"{name}.{columnKey}", out var unit))
-                return unit;
+            foreach (var column in columnKeys)
+            {
+                if (baseline.units.TryGetValue(column is null ? name : $"{name}.{column}", out var unit))
+                    return unit;
+            }
         }
 
         return null;
@@ -54,6 +59,30 @@ public sealed class UnitChangeContractTests
     public void The_Baseline_Covers_Every_Shipped_Template()
     {
         Assert.Equal(AllCalculators.All.Select(c => c.Template.Id).Order(StringComparer.Ordinal), Base.Value.Keys.Order(StringComparer.Ordinal));
+    }
+
+    [Theory]
+    [MemberData(nameof(AllCalculators.Ids), MemberType = typeof(AllCalculators))]
+    public void Every_Column_The_Base_Had_Is_Still_A_Column_Or_An_Alias_Of_One(string id)
+    {
+        // A renamed table column keeps its old key as an alias (CalcColumnSpec.Aliases), as a renamed input does, so a saved table still reads.
+        var template = AllCalculators.Get(id).Template;
+        var baseline = Base.Value[id];
+        var problems = new List<string>();
+
+        foreach (var key in baseline.units.Keys.Where(k => k.Contains('.', StringComparison.Ordinal)))
+        {
+            var table = key[..key.IndexOf('.', StringComparison.Ordinal)];
+            var column = key[(key.IndexOf('.', StringComparison.Ordinal) + 1)..];
+            var input = template.ResolveInput(table);
+
+            if (input is null)
+                problems.Add($"{key}: the base had the table {table}, which is now neither an input nor an alias of one");
+            else if (input.ResolveColumn(column) is null)
+                problems.Add($"{key}: the base had the column {column}, which is now neither a column of {input.Symbol} nor an alias of one (declare it in CalcColumnSpec.Aliases)");
+        }
+
+        Assert.True(problems.Count == 0, string.Join(Environment.NewLine, problems));
     }
 
     [Theory]

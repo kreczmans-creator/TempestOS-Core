@@ -44,7 +44,7 @@ public sealed class SectionPropertiesCalculator : ICalcCalculator
         new("shape", "Shape", CalcInputKind.Choice, Choices: Primitives),
         new("b", "Width or horizontal leg", CalcInputKind.Quantity, "mm", HardMin: 0, HardMax: 1e5, IsOptional: true),
         new("h", "Depth, vertical leg, or diameter of a circle or tube", CalcInputKind.Quantity, "mm", HardMin: 0, HardMax: 1e5, IsOptional: true),
-        new("t_w", "Wall, web or leg thickness", CalcInputKind.Quantity, "mm", HardMin: 0, HardMax: 1e4, IsOptional: true),
+        new("t_w", "Wall, web or leg thickness", CalcInputKind.Quantity, "mm", HardMin: 0, HardMax: 1e4, IsOptional: true, Aliases: ["t"]),
         new("t_f", "Flange thickness", CalcInputKind.Quantity, "mm", HardMin: 0, HardMax: 1e4, IsOptional: true),
         new("r", "Root or corner radius", CalcInputKind.Quantity, "mm", HardMin: 0, HardMax: 1e4, IsOptional: true),
         new("x0", "Centroid x", CalcInputKind.Quantity, "mm", HardMin: -1e5, HardMax: 1e5),
@@ -305,7 +305,7 @@ public sealed class SectionPropertiesCalculator : ICalcCalculator
 
         private static double Optional(CalcRunContext c, string symbol) => c.Has(symbol) ? c.InputSi(symbol) : double.NaN;
 
-        /// <summary>The wall, web or leg thickness of a part: column <c>t_w</c>, or <c>t</c> in a table saved before the column was renamed.</summary>
+        /// <summary>The wall, web or leg thickness of a part: column <c>t_w</c>, or <c>t</c> in a table saved before the column was renamed and read without canonicalising (the column alias covers every product path).</summary>
         private static double OptionalThickness(CalcRow row) => row.Get("t_w") is not null ? Optional(row, "t_w") : Optional(row, "t");
 
         private static double Optional(CalcRow row, string key) => row.Get(key)?.Number is { } n ? UnitCatalog.Parse(string.IsNullOrEmpty(row.Get(key)!.Unit) ? "mm" : row.Get(key)!.Unit!).ToSi(n) : double.NaN;

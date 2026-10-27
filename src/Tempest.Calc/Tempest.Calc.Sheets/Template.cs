@@ -84,6 +84,13 @@ public sealed record CalcInputSpec(
     /// <summary>Whether this input declares that its meaning changed at a version (<see cref="MeaningChangedAt"/>).</summary>
     public bool HasMeaningChange => MeaningChangedAt is { Length: > 0 };
 
+    /// <summary>The column of this table input named <paramref name="keyOrAlias"/>: by its key, else by a key it was called before (<see cref="CalcColumnSpec.Aliases"/>); <see langword="null"/> for no such column.</summary>
+    public CalcColumnSpec? ResolveColumn(string keyOrAlias) =>
+        Columns?.FirstOrDefault(c => string.Equals(c.Key, keyOrAlias, StringComparison.Ordinal)) ?? Columns?.FirstOrDefault(c => c.Matches(keyOrAlias));
+
+    /// <summary>Whether any column of this input has an alias.</summary>
+    public bool HasColumnAliases => Columns is { Count: > 0 } columns && columns.Any(c => c.Aliases is { Count: > 0 });
+
     /// <summary>Whether this input declares that its default unit changed at a version (<see cref="UnitChangedAt"/>, <see cref="UnitWas"/>).</summary>
     public bool HasUnitChange => UnitChangedAt is { Length: > 0 };
 
@@ -215,12 +222,18 @@ public static class CalcTemplateVersion
 
 /// <summary>
 /// One column of a <see cref="CalcInputKind.Table"/> input. <paramref name="UnitChangedAt"/> and <paramref name="UnitWas"/> are as on
-/// <see cref="CalcInputSpec"/>: a bare cell stored before that version is read in the old unit (<see cref="CalcInputUnits"/>).
+/// <see cref="CalcInputSpec"/>: a bare cell stored before that version is read in the old unit (<see cref="CalcInputUnits"/>). <paramref name="Aliases"/>
+/// are the keys this column was called before it was renamed (C-2), as <see cref="CalcInputSpec.Aliases"/> are for an input: a saved table, a CSV or an
+/// inputs file whose rows still use one is read as this column (<see cref="CalcInputAliases"/>, <see cref="CalcInputSpec.ResolveColumn"/>); nothing writes an alias.
 /// </summary>
-public sealed record CalcColumnSpec(string Key, string Label, CalcInputKind Kind, string DefaultUnit = "", IReadOnlyList<string>? Choices = null, double? Min = null, double? Max = null, double? HardMin = null, double? HardMax = null, bool IsOptional = false, string? UnitChangedAt = null, string? UnitWas = null)
+public sealed record CalcColumnSpec(string Key, string Label, CalcInputKind Kind, string DefaultUnit = "", IReadOnlyList<string>? Choices = null, double? Min = null, double? Max = null, double? HardMin = null, double? HardMax = null, bool IsOptional = false, string? UnitChangedAt = null, string? UnitWas = null, IReadOnlyList<string>? Aliases = null)
 {
     /// <summary>Whether this column declares that its default unit changed at a version.</summary>
     public bool HasUnitChange => UnitChangedAt is { Length: > 0 };
+
+    /// <summary>Whether <paramref name="keyOrAlias"/> is this column's key or one of the keys it was called before.</summary>
+    public bool Matches(string keyOrAlias) =>
+        string.Equals(Key, keyOrAlias, StringComparison.Ordinal) || Aliases is { Count: > 0 } aliases && aliases.Contains(keyOrAlias, StringComparer.Ordinal);
 }
 
 /// <summary>A standard cited by number and title only (never its text).</summary>

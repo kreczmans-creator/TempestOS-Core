@@ -143,7 +143,7 @@ public static class CalcTemplateHasher
                 sb.Append("  unit=").Append(i.UnitChangedAt).Append('|').Append(i.UnitWas).Append('\n');
 
             foreach (var c in i.Columns ?? [])
-                sb.Append("  column=").Append(c.Key).Append('|').Append(c.Label).Append('|').Append(c.Kind).Append('|').Append(c.DefaultUnit).Append('|').Append(string.Join(",", c.Choices ?? [])).Append(c.HasUnitChange ? $"|unit={c.UnitChangedAt}|{c.UnitWas}" : string.Empty).Append('\n');
+                sb.Append("  column=").Append(c.Key).Append('|').Append(c.Label).Append('|').Append(c.Kind).Append('|').Append(c.DefaultUnit).Append('|').Append(string.Join(",", c.Choices ?? [])).Append(c.HasUnitChange ? $"|unit={c.UnitChangedAt}|{c.UnitWas}" : string.Empty).Append(c.Aliases is { Count: > 0 } columnAliases ? "|aliases=" + string.Join(",", columnAliases) : string.Empty).Append('\n');
         }
 
         foreach (var a in t.Assumptions)

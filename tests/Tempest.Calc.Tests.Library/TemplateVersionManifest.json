@@ -68,6 +68,7 @@
   "elec.load-budget@1.6.1": "37b6289e618acdb20054db183fc9f755aa099c4c0c3f4e48934a63fe6e25e9cd",
   "elec.motor-sizing@1.10.0": "3989917de380d03f9970bf7d5c2f6d7907a263cda7814fbe8339e691ea6fe8dc",
   "elec.motor-sizing@1.11.0": "2ef4f6484897f9f6dac74030e2edc384d1955ca68bcc327f5c62f7574c028582",
+  "elec.motor-sizing@1.11.1": "7ccfbf19d3cec2696764322c869e6ecaf61ecf03faf2f8cce9a75a28d518b7b4",
   "elec.motor-sizing@1.5.0": "e27e82fd084979bad3104b91a6c00ef5e1f066468359c2b447fcd57d0859cbdb",
   "elec.motor-sizing@1.6.0": "4ea5e25d0b648caa6110a379cee787152089316cf62a93dfbaab7c5935b43f2e",
   "elec.motor-sizing@1.7.0": "fc37ad5186d37d4c564fc2ba5768f5d38e81dd8676cb09d8c379d3708e9751cc",
@@ -225,5 +226,5 @@
   "struct.section-properties@1.1.0": "985ed28ba222c801e40e19931dc01cbb1e97c9121d23f99121ce1de3a583a8ed",
   "struct.section-properties@1.1.1": "18d6536f1f7df3e196748171f6bc258a19674dbadeb0db132fd184d478016809",
   "struct.section-properties@1.2.0": "a95bd0059585bd3647268f1c394b05e4eab5c77f8325ffab7d9af415bf7b9c36",
-  "struct.section-properties@1.2.1": "8371b0d9f59f83769dee1a9d85a9985870bb88da65a4b4d2df93d87f68a60929"
+  "struct.section-properties@1.2.1": "4a7820882bb2be8bde72ec0e9c0182788d704a8de6900a561e19489cb513f2a6"
 }

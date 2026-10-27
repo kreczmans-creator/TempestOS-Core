@@ -280,7 +280,7 @@ public static class CalcInputValidator
 
             foreach (var col in columns)
             {
-                var cell = row.Get(col.Key);
+                var cell = row.Get(col.Key) ?? (col.Aliases is { Count: > 0 } aliases ? aliases.Select(row.Get).FirstOrDefault(c => c is not null) : null);
                 if (cell is null || (cell.Number is null && cell.Text is null && cell.Flag is null))
                 {
                     if (!col.IsOptional)
