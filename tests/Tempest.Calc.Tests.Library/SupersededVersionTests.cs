@@ -384,6 +384,27 @@ public sealed class SupersededVersionTests
     }
 
     [Fact]
+    public async Task A_Calculation_Whose_Template_Is_Gone_Or_Newer_Than_This_Build_Is_Not_Revised_And_The_Refusal_Says_So()
+    {
+        var host = new LibraryTestHost(calculators: [new Scaler("1.0.0", 2)]);
+        var issued = await IssuedOnV1Async(host, await host.ProjectAsync());
+
+        // Gone: no version of the template is installed, so there is nothing to revise onto; the refusal is the old sentence, not a thrown lookup.
+        var without = LaterBuild(host, new CalcCatalogue([new Scaler("1.1.0", 2, id: "test.other")], history: Recorded()));
+        var gone = await without.ReviseAsync(issued.Id);
+        Assert.False(gone.Succeeded);
+        Assert.Equal($"Template '{Id}@1.0.0' is no longer registered.", gone.Reason);
+        Assert.Equal(CalcInstanceStatus.Issued, (await host.Store.FindInstanceAsync(issued.Id))!.Status);
+
+        // Newer: this build's version is older than the calculation's; it is never revised down onto it.
+        var older = LaterBuild(host, new CalcCatalogue([new Scaler("0.9.0", 2)], history: Recorded($"{Id}@0.9.0")));
+        var newer = await older.ReviseAsync(issued.Id);
+        Assert.False(newer.Succeeded);
+        Assert.Contains($"which is newer than the {Id}@0.9.0 installed here", newer.Reason, StringComparison.Ordinal);
+        Assert.Equal(CalcInstanceStatus.Issued, (await host.Store.FindInstanceAsync(issued.Id))!.Status);
+    }
+
+    [Fact]
     public async Task A_Calculation_On_An_Installed_Version_Or_A_Switched_Off_Template_Or_A_Legacy_Archive_Has_Nothing_To_Explain()
     {
         var host = new LibraryTestHost(calculators: [new Scaler("1.0.0", 2)]);

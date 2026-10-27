@@ -57,8 +57,12 @@ public sealed class WorksheetSupersededVersionTests
 
         public CalcTemplate Template { get; }
 
+        /// <summary>Whether the last run of any version was made on the UI thread: the re-run a stored record's opening makes must not be.</summary>
+        public static bool? RanOnUiThread { get; set; }
+
         public void Run(CalcRunContext c)
         {
+            RanOnUiThread = Dispatcher.UIThread.CheckAccess();
             c.Input(_load);
             c.Input("A");
             c.Input("sigma_allow");
@@ -130,6 +134,22 @@ public sealed class WorksheetSupersededVersionTests
         Assert.Equal(CalcInstanceStatus.Superseded, old.Status);
         Assert.Equal(issued.Issue, old.Issue);
         Assert.Equal(issued.Outputs, old.Outputs);
+    }
+
+    [AvaloniaFact]
+    public async Task The_Re_Run_That_Opening_A_Stored_Record_On_A_Superseded_Version_Makes_Runs_Off_The_UI_Thread()
+    {
+        await using var fx = await StartAsync("P-VSN-THREAD");
+        var issued = await IssuedOn100Async(fx, "Threaded stress");
+        var (view, coordinator) = Open(fx, [VersionedStress.V110]);
+
+        // The re-run is a whole calculation under the engine's limits; the form must not run it on the UI thread (ADR-0177 review).
+        VersionedStress.RanOnUiThread = null;
+        await coordinator.OpenAsync(issued.Id);
+
+        Assert.True(view.IsReadOnly);
+        Assert.Contains($"re-ran on {Id}@1.1.0", view.StatusText, StringComparison.Ordinal);
+        Assert.False(VersionedStress.RanOnUiThread, "the re-run that opening a stored record makes ran on the UI thread");
     }
 
     [AvaloniaFact]
