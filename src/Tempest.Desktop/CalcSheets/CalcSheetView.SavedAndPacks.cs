@@ -515,6 +515,10 @@ public sealed partial class CalcSheetView
 
         var baseline = CurrentInstance is { } instance ? instance.InputSet() : CalcTemplateHasher.NewSheetInputs(entry.Template);
 
+        // A table or vector changed in its editor is an edit (an untouched one reads back exactly as it was given).
+        if (_tables.Values.Any(t => t.IsChanged))
+            return true;
+
         foreach (var value in ReadForm().Values)
         {
             if (value.Rows is not null || entry.Template.FindInput(value.Symbol) is not { } spec || spec.Kind is CalcInputKind.Table or CalcInputKind.Vector)

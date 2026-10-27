@@ -1,3 +1,5 @@
+using Tempest.Calc.Sheets;
+
 namespace Tempest.Calc.Library;
 
 /// <summary>
@@ -46,10 +48,71 @@ public static class RecordRequirements
         [("bs.room-heat-loss", "ground.u-values")] = (RecordNeed.Optional, "Only for a ground floor element without layers or a U override."),
     };
 
+    /// <summary>
+    /// A record kind the calculator can do without when the form picks its built-in set: the input and the choice that picks it. The text is the
+    /// calculator's own choice; a test holds it to the template.
+    /// </summary>
+    private static readonly Dictionary<(string Template, string Kind), (string Symbol, string Choice)> BuiltIn = new()
+    {
+        [("struct.load-combinations", "en1990.factors")] = ("factor_set", "EN recommended"),
+    };
+
+    /// <summary>Every built-in alternative: the template id, the record kind, and the input and choice that stand in for the record.</summary>
+    public static IEnumerable<(string Template, string Kind, string Symbol, string Choice)> BuiltInEntries => BuiltIn.Select(e => (e.Key.Template, e.Key.Kind, e.Value.Symbol, e.Value.Choice));
+
+    /// <summary>
+    /// How the form's own values stand on a record kind, apart from the records in the store: the built-in set is picked, every input of the kind
+    /// holds a value with a source, a value is typed without a source, or nothing is entered. A record is only "missing" when nothing is entered.
+    /// </summary>
+    public static RecordFormState FormState(CalcTemplate template, string kind, IReadOnlyList<string> symbols, CalcInputSet inputs)
+    {
+        ArgumentNullException.ThrowIfNull(template);
+        ArgumentNullException.ThrowIfNull(symbols);
+        ArgumentNullException.ThrowIfNull(inputs);
+
+        if (BuiltIn.TryGetValue((template.Id, kind), out var builtIn) && string.Equals(inputs.Find(builtIn.Symbol)?.Text, builtIn.Choice, StringComparison.Ordinal))
+            return RecordFormState.BuiltIn;
+
+        var specs = symbols.Select(template.FindInput).OfType<CalcInputSpec>().ToList();
+        var entered = specs.Select(s => inputs.Find(s.Symbol)).Where(HasValue).ToList();
+
+        // Nothing given, or a required input of the kind left empty: the record is still needed.
+        if (entered.Count == 0 || specs.Any(s => !s.IsOptional && !HasValue(inputs.Find(s.Symbol))))
+            return RecordFormState.NotEntered;
+
+        return entered.All(v => v!.Provenance is { IsSufficientToIssue: true }) ? RecordFormState.Sourced : RecordFormState.Typed;
+    }
+
+    private static bool HasValue(CalcInputValue? v) => v switch
+    {
+        null => false,
+        { Number: { } n } => double.IsFinite(n),
+        { Text: { Length: > 0 } } or { Flag: not null } => true,
+        { Vector: { Count: > 0 } } => true,
+        { Rows: { Count: > 0 } } => true,
+        _ => false,
+    };
+
     /// <summary>How the calculator <paramref name="templateId"/> stands on the record kind <paramref name="kind"/>, with the reason.</summary>
     public static (RecordNeed Need, string Reason) For(string templateId, string kind) =>
         Table.TryGetValue((templateId, kind), out var entry) ? entry : (RecordNeed.Recommended, "The calculator runs on a default and warns until a record of this kind is applied.");
 
     /// <summary>Every explicit entry: the template id, the kind, how much it is needed and why.</summary>
     public static IEnumerable<(string Template, string Kind, RecordNeed Need, string Reason)> Entries => Table.Select(e => (e.Key.Template, e.Key.Kind, e.Value.Need, e.Value.Reason));
+}
+
+/// <summary>How the values on a calculation's form stand on one record kind (see <see cref="RecordRequirements.FormState"/>).</summary>
+public enum RecordFormState
+{
+    /// <summary>No value of the kind is on the form: the record is needed.</summary>
+    NotEntered,
+
+    /// <summary>The form picks the calculator's built-in set, which stands in for the record.</summary>
+    BuiltIn,
+
+    /// <summary>Every input of the kind holds a value, and each has a source enough to issue with.</summary>
+    Sourced,
+
+    /// <summary>The values are on the form but at least one has no source yet (typed by hand).</summary>
+    Typed,
 }

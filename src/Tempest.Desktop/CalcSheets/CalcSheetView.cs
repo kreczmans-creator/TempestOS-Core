@@ -106,6 +106,14 @@ public sealed partial class CalcSheetView : UserControl
     private readonly TextBlock _stale = new() { Text = StaleMarker, FontSize = DesignTokens.FontSizeCaption, Foreground = Brushes.DarkOrange, IsVisible = false };
     private readonly TextBlock _governing = new() { FontFamily = DesignTokens.TitleFont, FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeBody + 2, TextWrapping = TextWrapping.Wrap };
     private readonly ProgressBar _utilisation = new() { Minimum = 0, Maximum = 1.5, Height = 10, IsVisible = false };
+
+    // A yes/no check has no utilisation to draw: its verdict is shown as a plain PASS or FAIL mark in place of the bar (an empty bar read as no result).
+    private readonly TextBlock _verdictText = new() { FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeBody, Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Center };
+    private readonly TextBlock _verdictNote = new() { Text = YesNoVerdictNote, FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
+    private readonly StackPanel _verdict = new() { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceSm, IsVisible = false };
+
+    /// <summary>The note beside the verdict mark of a governing yes/no check.</summary>
+    public const string YesNoVerdictNote = "A yes/no check: it passes or fails, with no utilisation.";
     private readonly Button _governingLink = new() { Content = "Go to step", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
     private readonly StackPanel _results = new() { Spacing = DesignTokens.SpaceXs };
     private readonly StackPanel _checks = new() { Spacing = DesignTokens.SpaceXs };
@@ -183,6 +191,9 @@ public sealed partial class CalcSheetView : UserControl
         AutomationProperties.SetName(_results, "Results");
 
         _catalogue.SelectionChanged += (_, _) => OnCatalogueSelectionChanged();
+
+        // The catalogue's rows take the column's width (no sideways scroll), so a long title wraps beside its version.
+        ScrollViewer.SetHorizontalScrollBarVisibility(_catalogue, ScrollBarVisibility.Disabled);
         _saveButton.Click += (_, _) => SaveRequested?.Invoke();
         _checkButton.Click += (_, _) => CheckRequested?.Invoke();
         _issueButton.Click += (_, _) => IssueRequested?.Invoke();
@@ -588,7 +599,7 @@ public sealed partial class CalcSheetView : UserControl
 
             foreach (var entry in group.OrderBy(e => e.Template.Title, StringComparer.Ordinal))
             {
-                var leaf = new TreeViewItem { Header = $"{entry.Template.Title}  ·  v{entry.Template.Version} {entry.ShortHash[..8]}", Tag = entry };
+                var leaf = new TreeViewItem { Header = $"{entry.Template.Title}{LeafVersionSeparator}v{entry.Template.Version} {entry.ShortHash[..8]}", Tag = entry, HeaderTemplate = CatalogueLeafTemplate };
                 AutomationProperties.SetName(leaf, entry.Template.Title);
                 ToolTip.SetTip(leaf, $"{entry.Reference} — hash {entry.ShortHash}\n{entry.Template.Scope}");
                 node.Items.Add(leaf);
@@ -619,6 +630,29 @@ public sealed partial class CalcSheetView : UserControl
         if (entries.Count == 0)
             _scope.Text = "No worksheets are registered in this build.";
     }
+
+    /// <summary>Between a catalogue leaf's title and its version.</summary>
+    private const string LeafVersionSeparator = "  ·  ";
+
+    /// <summary>The automation name of a catalogue leaf's version text.</summary>
+    public const string LeafVersionName = "Worksheet version";
+
+    /// <summary>
+    /// A catalogue leaf: the title wraps in the width left, and the version and hash keep their own column at the right, so a long title
+    /// (Glaser condensation, Plane wall heat transfer) no longer pushes the hash out of the 380 px column. The header stays the plain text.
+    /// </summary>
+    private static readonly Avalonia.Controls.Templates.FuncDataTemplate<string> CatalogueLeafTemplate = new((text, _) =>
+    {
+        var at = text?.LastIndexOf(LeafVersionSeparator, StringComparison.Ordinal) ?? -1;
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        var title = new TextBlock { Text = at < 0 ? text : text![..at], TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
+        var version = new TextBlock { Text = at < 0 ? string.Empty : text![(at + LeafVersionSeparator.Length)..], Opacity = 0.75, Margin = new Thickness(DesignTokens.SpaceSm, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+        AutomationProperties.SetName(version, LeafVersionName);
+        Grid.SetColumn(version, 1);
+        grid.Children.Add(title);
+        grid.Children.Add(version);
+        return grid;
+    }, supportsRecycling: false);
 
     public void SelectTemplate(string reference)
     {
@@ -667,6 +701,7 @@ public sealed partial class CalcSheetView : UserControl
         _watermark.Foreground = instance?.Status == CalcInstanceStatus.Issued ? Brushes.SeaGreen : instance?.Status == CalcInstanceStatus.Superseded ? Brushes.Gray : Brushes.DarkOrange;
         _form.Children.Clear();
         _fields.Clear();
+        _tables.Clear();
         _referencePickers.Clear();
 
         if (_referenceLabelsFor != entry.Reference)
@@ -687,7 +722,7 @@ public sealed partial class CalcSheetView : UserControl
         _updateLinksButton.IsVisible = false;
         _linkPanel.IsVisible = false;
         _carriedInputs.Clear();
-        _carriedInputs.AddRange(entry.Template.Inputs.Where(s => s.Kind is CalcInputKind.Table or CalcInputKind.Vector).Select(s => seed.Find(s.Symbol)).OfType<CalcInputValue>());
+        _carriedInputs.AddRange(entry.Template.Inputs.Where(s => s.Kind is CalcInputKind.Table or CalcInputKind.Vector && !HasEditor(s)).Select(s => seed.Find(s.Symbol)).OfType<CalcInputValue>());
         string? lastGroup = null;
 
         foreach (var library in CalcReferenceFill.LibrariesOf(entry.Template))
@@ -715,13 +750,20 @@ public sealed partial class CalcSheetView : UserControl
 
         foreach (var spec in entry.Template.Inputs)
         {
-            if (spec.Kind is CalcInputKind.Table or CalcInputKind.Vector)
+            if (spec.Kind is CalcInputKind.Table or CalcInputKind.Vector && !HasEditor(spec))
                 continue;
 
             if (spec.Group is { Length: > 0 } g && g != lastGroup)
             {
                 _form.Children.Add(new TextBlock { Text = g, FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeBody, Margin = DesignTokens.SectionMargin });
                 lastGroup = g;
+            }
+
+            // Item 12: a table or vector input has its own editor on the form, seeded with what the sheet was given.
+            if (spec.Kind is CalcInputKind.Table or CalcInputKind.Vector)
+            {
+                _form.Children.Add(BuildTableEditor(spec, seed.Find(spec.Symbol)));
+                continue;
             }
 
             // A saved instance or an import states its inputs in full: an optional input it leaves out stays blank rather than
@@ -734,6 +776,7 @@ public sealed partial class CalcSheetView : UserControl
         var template = entry.Template;
         _diagram.IsVisible = true;
         _diagram.ShowReading(template.Title, () => SelectedTemplate is { } t ? CalcDiagramReader.Read(t.Template, ReadForm()) : null, symbol => template.FindInput(symbol)?.Description);
+        RenderRequirements();
         UpdateActions();
         RaiseInputsChanged();
 
@@ -817,6 +860,10 @@ public sealed partial class CalcSheetView : UserControl
                 field.Problem.Foreground = notice.Severity == CalcNoticeSeverity.Block ? Brushes.IndianRed : Brushes.DarkOrange;
                 field.Problem.IsVisible = true;
             }
+            else
+            {
+                ShowTableProblem(key, notice);
+            }
         }
 
         if (result.Governing is { } governing)
@@ -825,7 +872,10 @@ public sealed partial class CalcSheetView : UserControl
             _governing.Foreground = governing.Passed ? Brushes.SeaGreen : Brushes.IndianRed;
             _utilisation.Value = double.IsFinite(governing.Utilisation) ? Math.Min(governing.Utilisation, 1.5) : 1.5;
             _utilisation.Foreground = governing.Passed ? Brushes.SeaGreen : Brushes.IndianRed;
-            _utilisation.IsVisible = true;
+            _utilisation.IsVisible = governing.HasUtilisation;
+            _verdictText.Text = governing.Passed ? "PASS" : "FAIL";
+            ((Border)_verdict.Children[0]).Background = governing.Passed ? Brushes.SeaGreen : Brushes.IndianRed;
+            _verdict.IsVisible = !governing.HasUtilisation;
             _governingStep = governing.StepSymbol;
             _governingLink.IsVisible = governing.StepSymbol is not null;
         }
@@ -834,6 +884,7 @@ public sealed partial class CalcSheetView : UserControl
             _governing.Text = "Blocked — " + result.Blocks[0].Message;
             _governing.Foreground = Brushes.IndianRed;
             _utilisation.IsVisible = false;
+            _verdict.IsVisible = false;
             _governingLink.IsVisible = false;
         }
         else
@@ -841,12 +892,13 @@ public sealed partial class CalcSheetView : UserControl
             _governing.Text = result.Outputs.Count == 0 ? string.Empty : "No pass/fail check in this calculation.";
             _governing.Foreground = Brushes.Gray;
             _utilisation.IsVisible = false;
+            _verdict.IsVisible = false;
             _governingLink.IsVisible = false;
         }
 
         foreach (var o in result.Outputs)
         {
-            _results.Children.Add(Readout(o.Symbol, o.ValueText, o.Description));
+            _results.Children.Add(ResultRow(o));
             _shownResults.Add((o.Symbol, o.ValueText));
         }
 
@@ -859,8 +911,22 @@ public sealed partial class CalcSheetView : UserControl
         foreach (var n in result.Blocks)
             _notices.Children.Add(Typeset(new TextBlock { Foreground = Brushes.IndianRed, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, $"Block — {n.Message}"));
 
-        foreach (var n in result.EngineeringWarnings)
-            _notices.Children.Add(Typeset(new TextBlock { Foreground = Brushes.DarkOrange, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, $"Warning — {n.Message}"));
+        // Warnings of one kind (fourteen "a tabulated value not taken from a reference record") are one collapsed notice with a count, so they do
+        // not push Show working and the sign-off below the fold; a warning that stands alone is shown as before.
+        foreach (var group in result.EngineeringWarnings.GroupBy(n => WarningKind(n.RuleId), StringComparer.Ordinal))
+        {
+            var warnings = group.ToList();
+
+            if (warnings.Count < GroupWarningsFrom)
+            {
+                foreach (var n in warnings)
+                    _notices.Children.Add(Typeset(new TextBlock { Foreground = Brushes.DarkOrange, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, $"Warning — {n.Message}"));
+
+                continue;
+            }
+
+            _notices.Children.Add(WarningGroup(group.Key, warnings));
+        }
 
         // C-2, row 4: the notes that an empty input took its default are listed apart from the warnings, in a quieter colour.
         foreach (var n in result.DefaultNotices)
@@ -888,6 +954,9 @@ public sealed partial class CalcSheetView : UserControl
         _exportButton.IsEnabled = SelectedTemplate is not null;
         _importButton.IsEnabled = SelectedTemplate is not null && !IsReadOnly;
         _attachButton.IsVisible = ExternalReportInput is not null && CurrentInstance is { Status: CalcInstanceStatus.Draft };
+
+        // The missing-records banner follows the form: a value typed or a built-in set picked is not a missing record.
+        RenderRequirements();
         UpdateActions();
         RunShown?.Invoke();
     }
@@ -906,8 +975,19 @@ public sealed partial class CalcSheetView : UserControl
         foreach (var f in _fields.Values)
             SetEnabled(f, !IsReadOnly);
 
+        foreach (var t in _tables.Values)
+            SetTableEnabled(t, !IsReadOnly);
+
+        // A reference picker fills fields, so it is read-only with them (an issued form showed it still enabled).
+        foreach (var picker in _referencePickers.Values)
+            picker.IsEnabled = !IsReadOnly && picker.ItemCount > 0;
+
+        RenderRequirements();
         UpdateActions();
     }
+
+    /// <summary>Whether the reference picker of <paramref name="library"/> can be used, as drawn.</summary>
+    public bool IsReferencePickerEnabled(string library) => _referencePickers.TryGetValue(library, out var picker) && picker.IsEnabled;
 
     public void ShowStatus(string message) => _status.Text = message;
 
@@ -916,7 +996,7 @@ public sealed partial class CalcSheetView : UserControl
 
     public void ShowProblems(IEnumerable<string> problems) => _problems.Text = string.Join(Environment.NewLine, problems);
 
-    /// <summary>Reads the form into an input set, every value as typed with its unit and provenance. Unparseable numbers become NaN so validation names them.</summary>
+    /// <summary>Reads the form into an input set, every value as typed with its unit and provenance. Unparseable numbers become NaN so validation names them; an empty required number has no number.</summary>
     public CalcInputSet ReadForm()
     {
         // The form's values carry the version the shown record was made on, so a bare number (a unit the picker could not choose) is read, or refused, by it.
@@ -941,8 +1021,10 @@ public sealed partial class CalcSheetView : UserControl
 
                     if (text.Length == 0)
                     {
+                        // An empty required number is held as empty (no number), not as NaN: validation then says what to enter (the input's next
+                        // step), and the form can be written as JSON (a NaN made CalcInputJson.Write throw on the UI thread).
                         if (!f.Spec.IsOptional && f.Spec.Default is null)
-                            set.Set(new CalcInputValue(symbol, Number: double.NaN, Unit: f.Unit?.SelectedItem as string, Provenance: provenance));
+                            set.Set(new CalcInputValue(symbol, Unit: f.Unit?.SelectedItem as string, Provenance: provenance));
 
                         break;
                     }
@@ -964,6 +1046,12 @@ public sealed partial class CalcSheetView : UserControl
                     set.Set(new CalcInputValue(symbol, Flag: f.Flag!.IsChecked == true, Provenance: provenance));
                     break;
             }
+        }
+
+        foreach (var table in _tables.Values)
+        {
+            if (ReadTable(table) is { } value)
+                set.Set(value);
         }
 
         foreach (var carried in _carriedInputs)
@@ -1026,6 +1114,15 @@ public sealed partial class CalcSheetView : UserControl
 
     public string GoverningText => _governing.Text ?? string.Empty;
 
+    /// <summary>Whether the governing check's utilisation bar is drawn (a ratio check governs).</summary>
+    public bool IsUtilisationBarShown => _utilisation.IsVisible;
+
+    /// <summary>The PASS or FAIL mark drawn for a governing yes/no check, or <see langword="null"/> when none is drawn.</summary>
+    public string? GoverningVerdictMark => _verdict.IsVisible ? _verdictText.Text : null;
+
+    /// <summary>The governing text block, for a layout check (it wraps within the Results panel).</summary>
+    internal TextBlock GoverningBlock => _governing;
+
     /// <summary>The results the form shows: each output's symbol and the text <see cref="CalcOutput.ValueText"/> gives it, the same text the sheet and the PDF print.</summary>
     public IReadOnlyList<(string Symbol, string Text)> ShownResults => _shownResults;
 
@@ -1059,6 +1156,9 @@ public sealed partial class CalcSheetView : UserControl
 
         foreach (var f in _fields.Values)
             f.Problem.IsVisible = false;
+
+        foreach (var t in _tables.Values)
+            t.Problem.IsVisible = false;
 
         _stale.IsVisible = true;
         _diagram.Refresh();
@@ -1130,6 +1230,7 @@ public sealed partial class CalcSheetView : UserControl
         _linkPanel.IsVisible = false;
         _form.Children.Clear();
         _fields.Clear();
+        _tables.Clear();
         _referencePickers.Clear();
         _carriedInputs.Clear();
         _problems.Text = string.Empty;
@@ -1228,7 +1329,8 @@ public sealed partial class CalcSheetView : UserControl
 
             case CalcInputKind.Choice:
             {
-                choice = new ComboBox { MinHeight = DesignTokens.MinControlSize, HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = spec.Choices ?? [] };
+                // A long choice ("External (ring ID seated on the groove ...)") wraps inside the picker and in its list, instead of being cut at the edge.
+                choice = new ComboBox { MinHeight = DesignTokens.MinControlSize, HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = spec.Choices ?? [], ItemTemplate = WrappingChoice };
                 choice.SelectedItem = seed?.Text ?? spec.DefaultChoice;
                 choice.SelectionChanged += (_, _) => RaiseInputsChanged();
                 AutomationProperties.SetName(choice, spec.Symbol);
@@ -1283,6 +1385,17 @@ public sealed partial class CalcSheetView : UserControl
         SetEnabled(controls, !IsReadOnly);
         return block;
     }
+
+    /// <summary>The automation name of the text a choice picker shows for a choice.</summary>
+    public const string ChoiceTextName = "Choice text";
+
+    /// <summary>A choice as a picker draws it: the whole text, wrapped to the picker's width.</summary>
+    private static readonly Avalonia.Controls.Templates.FuncDataTemplate<string> WrappingChoice = new((text, _) =>
+    {
+        var block = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
+        AutomationProperties.SetName(block, ChoiceTextName);
+        return block;
+    }, supportsRecycling: false);
 
     /// <summary>A unit change converts the value so the physical quantity is unchanged (§3.8a: values convert on change; the engine stores SI).</summary>
     private void OnUnitChanged(string symbol)
@@ -1455,12 +1568,22 @@ public sealed partial class CalcSheetView : UserControl
         right.Children.Add(_problems);
 
         var resultsHead = new StackPanel { Spacing = DesignTokens.SpaceXs };
-        var governingRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = DesignTokens.SpaceLg };
+        // A grid, not a horizontal stack: the governing text takes the width left beside its link and wraps (a long Blocked line was clipped).
+        var governingRow = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto,Auto") };
+        _governingLink.Margin = new Thickness(DesignTokens.SpaceLg, 0, 0, 0);
+        _governingLink.VerticalAlignment = VerticalAlignment.Top;
+        _stale.Margin = new Thickness(DesignTokens.SpaceLg, 0, 0, 0);
+        Grid.SetColumn(_governingLink, 1);
+        Grid.SetColumn(_stale, 2);
         governingRow.Children.Add(_governing);
         governingRow.Children.Add(_governingLink);
         governingRow.Children.Add(_stale);
         resultsHead.Children.Add(governingRow);
         resultsHead.Children.Add(_utilisation);
+        _verdict.Children.Add(new Border { Child = _verdictText, Padding = new Thickness(DesignTokens.SpaceSm, 2), CornerRadius = new CornerRadius(3) });
+        _verdict.Children.Add(_verdictNote);
+        AutomationProperties.SetName(_verdict, "Governing verdict");
+        resultsHead.Children.Add(_verdict);
         resultsHead.Children.Add(_results);
         resultsHead.Children.Add(_checks);
         resultsHead.Children.Add(_notices);
@@ -1527,6 +1650,104 @@ public sealed partial class CalcSheetView : UserControl
         row.Children.Add(text);
         row.Children.Add(control);
         return row;
+    }
+
+    /// <summary>This many warnings of one kind or more are shown as one collapsed notice with a count.</summary>
+    public const int GroupWarningsFrom = 3;
+
+    /// <summary>The kind a warning is grouped by: the rule, with a per-input rule ("record.mu") taken as its family ("record").</summary>
+    internal static string WarningKind(string ruleId) =>
+        ruleId.StartsWith("record.", StringComparison.Ordinal) ? "record" : ruleId;
+
+    /// <summary>The heading of a group of warnings of one kind.</summary>
+    internal static string WarningGroupHeading(string kind, IReadOnlyList<CalcNotice> warnings) => kind == "record"
+        ? $"Warning — {warnings.Count} inputs hold a tabulated value not taken from a reference record ({string.Join(", ", warnings.Select(w => w.RuleId["record.".Length..]).Take(8))}{(warnings.Count > 8 ? ", …" : string.Empty)})."
+        : $"Warning — {warnings.Count} warnings of one kind: {warnings[0].Message}";
+
+    /// <summary>The automation name of a group of warnings.</summary>
+    public const string WarningGroupName = "Grouped warnings";
+
+    private static Control WarningGroup(string kind, IReadOnlyList<CalcNotice> warnings)
+    {
+        var list = new StackPanel { Spacing = DesignTokens.SpaceXs };
+
+        foreach (var n in warnings)
+            list.Children.Add(Typeset(new TextBlock { Foreground = Brushes.DarkOrange, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, $"Warning — {n.Message}"));
+
+        var heading = Typeset(new TextBlock { Foreground = Brushes.DarkOrange, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, WarningGroupHeading(kind, warnings));
+        var expander = new Expander { Header = heading, IsExpanded = false, Content = list, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
+        AutomationProperties.SetName(expander, WarningGroupName);
+        return expander;
+    }
+
+    /// <summary>Text longer than this is not squeezed into the value column: it takes a row of its own across the panel.</summary>
+    public const int LongTextLength = 48;
+
+    /// <summary>A vector longer than this is shown as one summary line (count, least and greatest) with its values behind an expander.</summary>
+    public const int LongVectorLength = 6;
+
+    /// <summary>
+    /// One result. A short value sits in the value column; a long text (a notice, an advisory) takes a full-width row under its name; a swept vector
+    /// (73 angles) is summarised on one line, with every value behind an expander, so the checks stay near the top of the panel.
+    /// </summary>
+    private static Control ResultRow(CalcOutput output)
+    {
+        if (output.Value is Tempest.Calc.Engine.Values.VectorValue { Length: > LongVectorLength } vector && output.DisplayText is null)
+            return VectorReadout(output.Symbol, vector, output.Description);
+
+        var value = output.ValueText;
+        return value.Length > LongTextLength && value.Contains(' ', StringComparison.Ordinal) && !value.StartsWith('[') ? WideReadout(output.Symbol, value, output.Description) : Readout(output.Symbol, value, output.Description);
+    }
+
+    /// <summary>The one-line summary of a long vector: its count and its least and greatest values, in its display unit.</summary>
+    public static string VectorSummary(Tempest.Calc.Engine.Values.VectorValue vector)
+    {
+        ArgumentNullException.ThrowIfNull(vector);
+        var shown = vector.Displayed.Where(double.IsFinite).ToList();
+        var unit = vector.DisplayUnit.Symbol is { Length: > 0 } u && u != "1" ? " " + CalcUnitText.Pretty(u) : string.Empty;
+
+        if (shown.Count == 0)
+            return string.Create(CultureInfo.InvariantCulture, $"{vector.Length} values");
+
+        var least = Tempest.Calc.Engine.Values.CalcValue.FormatNumber(shown.Min(), 5);
+        var greatest = Tempest.Calc.Engine.Values.CalcValue.FormatNumber(shown.Max(), 5);
+        return string.Create(CultureInfo.InvariantCulture, $"{vector.Length} values, {least} to {greatest}{unit}");
+    }
+
+    private static Control VectorReadout(string label, Tempest.Calc.Engine.Values.VectorValue vector, string? note)
+    {
+        var block = new StackPanel { Spacing = 0 };
+        block.Children.Add(Readout(label, VectorSummary(vector), note));
+        var unit = vector.DisplayUnit.Symbol is { Length: > 0 } u && u != "1" ? $" ({CalcUnitText.Pretty(u)})" : string.Empty;
+        var all = new SelectableTextBlock
+        {
+            Text = string.Join(", ", vector.Displayed.Select(x => Tempest.Calc.Engine.Values.CalcValue.FormatNumber(x, 5))),
+            FontFamily = DesignTokens.MonoFont,
+            FontSize = DesignTokens.FontSizeCaption + 1,
+            TextWrapping = TextWrapping.Wrap,
+        };
+        AutomationProperties.SetName(all, $"Result {label} values");
+        var expander = new Expander { Header = $"All {vector.Length} values of {label}{unit}", IsExpanded = false, Content = all, Margin = new Thickness(120, 0, 0, DesignTokens.SpaceXs), HorizontalAlignment = HorizontalAlignment.Stretch };
+        AutomationProperties.SetName(expander, $"Result {label} all values");
+        block.Children.Add(expander);
+        return block;
+    }
+
+    /// <summary>A long text result: its name and description on one line, the text across the whole panel below.</summary>
+    private static Control WideReadout(string label, string value, string? note)
+    {
+        var block = new StackPanel { Spacing = 0, Margin = new Thickness(0, 0, 0, DesignTokens.SpaceXs) };
+        var head = new Grid { ColumnDefinitions = new ColumnDefinitions("120,*") };
+        var name = Typeset(new TextBlock { Opacity = 0.8, FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Top }, label);
+        var desc = Caption(note ?? string.Empty);
+        Grid.SetColumn(desc, 1);
+        head.Children.Add(name);
+        head.Children.Add(desc);
+        var read = Typeset(new TextBlock { FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(120, 2, 0, 0) }, value);
+        AutomationProperties.SetName(read, $"Result {label}");
+        block.Children.Add(head);
+        block.Children.Add(read);
+        return block;
     }
 
     private static Control Readout(string label, string value, string? note)

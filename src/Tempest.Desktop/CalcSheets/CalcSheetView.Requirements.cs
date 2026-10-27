@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Tempest.Calc.Library;
+using Tempest.Calc.Sheets;
 using Tempest.Desktop.Theming;
 
 namespace Tempest.Desktop.CalcSheets;
@@ -37,8 +38,17 @@ public sealed partial class CalcSheetView
     /// <summary>The record kinds the shown template draws on, with whether each is entered, as last given by the coordinator.</summary>
     public IReadOnlyList<RecordRequirement> Requirements => _requirements;
 
-    /// <summary>The required record kinds that no record satisfies.</summary>
-    public IReadOnlyList<string> MissingRequiredKinds => [.. _requirements.Where(r => r.Need == RecordNeed.Required && r.IsMissing).Select(r => r.Kind)];
+    /// <summary>The required record kinds that no record satisfies and the form does not give either (no value typed, no built-in set picked).</summary>
+    public IReadOnlyList<string> MissingRequiredKinds => [.. _requirements.Where(r => r.Need == RecordNeed.Required && IsMissingHere(r)).Select(r => r.Kind)];
+
+    /// <summary>
+    /// Whether a record kind is really missing for the calculation shown: no record of it is in the store, and the form neither holds its values
+    /// nor picks the built-in set. A typed value, sourced or not, is not "missing" (the issue check asks for its source).
+    /// </summary>
+    private bool IsMissingHere(RecordRequirement requirement) => requirement.IsMissing && FormState(requirement, ReadForm()) == RecordFormState.NotEntered;
+
+    private RecordFormState FormState(RecordRequirement requirement, CalcInputSet form) =>
+        SelectedTemplate is { } entry ? RecordRequirements.FormState(entry.Template, requirement.Kind, requirement.Symbols, form) : RecordFormState.NotEntered;
 
     /// <summary>Whether the missing-records panel is shown.</summary>
     public bool IsRequirementsShown => _requirementsPanel.IsVisible;
@@ -77,15 +87,28 @@ public sealed partial class CalcSheetView
             return;
 
         _requirements = requirements;
-        _requirementsRows.Children.Clear();
-        _requirementsPanel.IsVisible = requirements.Count > 0;
+        RenderRequirements();
+    }
 
-        if (requirements.Count == 0)
+    /// <summary>
+    /// Draws the panel from the store's answer and the form as it stands: run again after every change, so a value typed or a built-in set picked
+    /// takes its kind off the missing list. A checked, issued or superseded calculation ran and stands as recorded, so it shows no missing-records banner.
+    /// </summary>
+    private void RenderRequirements()
+    {
+        var requirements = _requirements;
+        _requirementsRows.Children.Clear();
+        _requirementsPanel.IsVisible = requirements.Count > 0 && !IsReadOnly;
+
+        if (!_requirementsPanel.IsVisible)
             return;
 
         var required = requirements.Where(r => r.Need == RecordNeed.Required).ToList();
-        var missingRequired = required.Where(r => r.IsMissing).ToList();
-        var others = requirements.Where(r => r.Need != RecordNeed.Required && r.IsMissing).OrderBy(r => r.Need).ToList();
+        var form = ReadForm();
+        var states = requirements.ToDictionary(r => r, r => FormState(r, form));
+        var missingRequired = required.Where(r => r.IsMissing && states[r] == RecordFormState.NotEntered).ToList();
+        var typedRequired = required.Where(r => r.IsMissing && states[r] == RecordFormState.Typed).ToList();
+        var others = requirements.Where(r => r.Need != RecordNeed.Required && r.IsMissing && states[r] == RecordFormState.NotEntered).OrderBy(r => r.Need).ToList();
 
         if (missingRequired.Count > 0)
         {
@@ -94,9 +117,18 @@ public sealed partial class CalcSheetView
                 : $"{missingRequired.Count} required records are missing: this calculation cannot be completed without them.";
             _requirementsSummary.Foreground = Brushes.DarkOrange;
         }
+        else if (typedRequired.Count > 0)
+        {
+            _requirementsSummary.Text = typedRequired.Count == 1
+                ? "1 required value is typed on the form without a source: give its source before the calculation is issued."
+                : $"{typedRequired.Count} required values are typed on the form without a source: give their sources before the calculation is issued.";
+            _requirementsSummary.Foreground = null;
+        }
         else if (required.Count > 0)
         {
-            _requirementsSummary.Text = $"All {required.Count} required record(s) are entered.";
+            _requirementsSummary.Text = required.All(r => !r.IsMissing)
+                ? $"All {required.Count} required record(s) are entered."
+                : $"All {required.Count} required record(s) are entered, or given on the form with a source or by the built-in set.";
             _requirementsSummary.Foreground = Brushes.SeaGreen;
         }
         else
