@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:i="http://ns.adobe.com/AdobeIllustrator/10.0/" width="100" height="100">
+  <rect width="100" height="100" fill="#ffffff"/>
+  <!-- Illustrator's export shape: a switch whose first child is a foreignObject for Illustrator itself, then the drawing. -->
+  <switch>
+    <foreignObject requiredExtensions="http://ns.adobe.com/AdobeIllustrator/10.0/" x="0" y="0" width="1" height="1"></foreignObject>
+    <g i:extraneous="self">
+      <rect x="10" y="10" width="80" height="80" fill="#1c2d97"/>
+    </g>
+  </switch>
+</svg>

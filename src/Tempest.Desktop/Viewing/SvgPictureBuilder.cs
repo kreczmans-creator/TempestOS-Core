@@ -644,8 +644,9 @@ public static class SvgPictureBuilder
         if (string.Equals(text.Trim(), "none", StringComparison.OrdinalIgnoreCase))
             return null;
 
+        // A percentage in a dash list refers to the viewport's normalised diagonal (SVG 1.1 §7.10), not its width.
         var values = text.Split([',', ' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries)
-            .Select(v => Length(v, context, 0, fontSize))
+            .Select(v => Length(v, context, 2, fontSize))
             .ToList();
 
         // F3: a list past the cap is no dash at all; the array is copied into a path effect for every stroke that uses it.
@@ -895,13 +896,32 @@ public static class SvgPictureBuilder
             var width = Length(element.Attribute("width")?.Value, context, 0, style.FontSize);
             var height = Length(element.Attribute("height")?.Value, context, 1, style.FontSize);
 
-            if (ViewBox(element) is { } viewBox && width is { } w && height is { } h && w > 0 && h > 0)
+            if (width is { } w && height is { } h && w > 0 && h > 0)
             {
-                var fit = Fit(viewBox, SKRect.Create(0, 0, w, h), element.Attribute("preserveAspectRatio")?.Value);
-                canvas.Concat(ref fit);
+                // A nested svg shows only what lies within its viewport (overflow is hidden unless said otherwise), which is what
+                // makes preserveAspectRatio="… slice" mean anything.
+                if (!Overflows(element))
+                    canvas.ClipRect(SKRect.Create(0, 0, w, h));
+
+                if (ViewBox(element) is { } viewBox)
+                {
+                    var fit = Fit(viewBox, SKRect.Create(0, 0, w, h), element.Attribute("preserveAspectRatio")?.Value);
+                    canvas.Concat(ref fit);
+                }
             }
 
             DrawChildren(canvas, element, style, depth);
+        }
+
+        /// <summary>Whether a nested <c>svg</c> or <c>symbol</c> states <c>overflow: visible</c> (or <c>auto</c>), showing content outside its viewport.</summary>
+        private static bool Overflows(XElement element)
+        {
+            var overflow = element.Attribute("overflow")?.Value;
+
+            if (overflow is null && element.Attribute("style")?.Value is { } inline && ParseDeclarations(inline).TryGetValue("overflow", out var declared))
+                overflow = declared;
+
+            return overflow?.Trim().ToLowerInvariant() is "visible" or "auto";
         }
 
         private void DrawUse(SKCanvas canvas, XElement use, Style style, int depth)
@@ -928,10 +948,17 @@ public static class SvgPictureBuilder
                     var width = Length(use.Attribute("width")?.Value, context, 0, style.FontSize);
                     var height = Length(use.Attribute("height")?.Value, context, 1, style.FontSize);
 
-                    if (ViewBox(target) is { } viewBox && width is { } w && height is { } h && w > 0 && h > 0)
+                    if (width is { } w && height is { } h && w > 0 && h > 0)
                     {
-                        var fit = Fit(viewBox, SKRect.Create(0, 0, w, h), target.Attribute("preserveAspectRatio")?.Value);
-                        canvas.Concat(ref fit);
+                        // A symbol used at a size is a viewport like a nested svg: clipped to it, its viewBox fitted into it.
+                        if (!Overflows(target))
+                            canvas.ClipRect(SKRect.Create(0, 0, w, h));
+
+                        if (ViewBox(target) is { } viewBox)
+                        {
+                            var fit = Fit(viewBox, SKRect.Create(0, 0, w, h), target.Attribute("preserveAspectRatio")?.Value);
+                            canvas.Concat(ref fit);
+                        }
                     }
 
                     DrawChildren(canvas, target, symbolStyle, depth);
