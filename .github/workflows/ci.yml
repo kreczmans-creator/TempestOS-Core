@@ -214,6 +214,23 @@ jobs:
       # A second, hand-typed SDK version here would be exactly the kind
       # of drift this pipeline exists to prevent.
       - name: Set up .NET SDK (from global.json)
+        id: setup-dotnet
+        continue-on-error: true
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      # The SDK download fails now and then on the download CDN (HTTP
+      # 409), which failed whole legs before a line of
+      # this repository ran. One retry after a pause; a second failure
+      # fails the job here.
+      - name: Wait before retrying the .NET SDK download
+        if: steps.setup-dotnet.outcome == 'failure'
+        shell: pwsh
+        run: Start-Sleep -Seconds 30
+
+      - name: Set up .NET SDK (from global.json, retry)
+        if: steps.setup-dotnet.outcome == 'failure'
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
@@ -930,6 +947,23 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up .NET SDK (from global.json)
+        id: setup-dotnet
+        continue-on-error: true
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      # The SDK download fails now and then on the download CDN (HTTP
+      # 409), which failed whole legs before a line of
+      # this repository ran. One retry after a pause; a second failure
+      # fails the job here.
+      - name: Wait before retrying the .NET SDK download
+        if: steps.setup-dotnet.outcome == 'failure'
+        shell: pwsh
+        run: Start-Sleep -Seconds 30
+
+      - name: Set up .NET SDK (from global.json, retry)
+        if: steps.setup-dotnet.outcome == 'failure'
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
@@ -1006,6 +1040,23 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up .NET SDK (from global.json)
+        id: setup-dotnet
+        continue-on-error: true
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      # The SDK download fails now and then on the download CDN (HTTP
+      # 409), which failed whole legs before a line of
+      # this repository ran. One retry after a pause; a second failure
+      # fails the job here.
+      - name: Wait before retrying the .NET SDK download
+        if: steps.setup-dotnet.outcome == 'failure'
+        shell: pwsh
+        run: Start-Sleep -Seconds 30
+
+      - name: Set up .NET SDK (from global.json, retry)
+        if: steps.setup-dotnet.outcome == 'failure'
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
@@ -1084,6 +1135,23 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up .NET SDK (from global.json)
+        id: setup-dotnet
+        continue-on-error: true
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      # The SDK download fails now and then on the download CDN (HTTP
+      # 409), which failed whole legs before a line of
+      # this repository ran. One retry after a pause; a second failure
+      # fails the job here.
+      - name: Wait before retrying the .NET SDK download
+        if: steps.setup-dotnet.outcome == 'failure'
+        shell: pwsh
+        run: Start-Sleep -Seconds 30
+
+      - name: Set up .NET SDK (from global.json, retry)
+        if: steps.setup-dotnet.outcome == 'failure'
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
@@ -1227,6 +1295,23 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up .NET SDK (from global.json)
+        id: setup-dotnet
+        continue-on-error: true
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      # The SDK download fails now and then on the download CDN (HTTP
+      # 409), which failed whole legs before a line of
+      # this repository ran. One retry after a pause; a second failure
+      # fails the job here.
+      - name: Wait before retrying the .NET SDK download
+        if: steps.setup-dotnet.outcome == 'failure'
+        shell: pwsh
+        run: Start-Sleep -Seconds 30
+
+      - name: Set up .NET SDK (from global.json, retry)
+        if: steps.setup-dotnet.outcome == 'failure'
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
