@@ -962,9 +962,12 @@ jobs:
   # DB-08 review: the full-size hostile-SVG probes (SvgBoundedProbeTests,
   # Category=BoundedProbe, opt-in through TEMPEST_BOUNDED_PROBES=1). Each
   # probe runs in a process of its own (Tempest.Desktop.dll --svg-probe)
-  # under a 512 MB managed heap cap and a 2 GiB ulimit -v, and the test
-  # asserts its exit code, wall time and peak working set against the
-  # review's bound. Linux, because ulimit is what keeps a class that still
+  # under a 512 MB managed heap cap and a ulimit -v of the review's 2 GiB
+  # plus the 1 GiB GC region range the harness reserves (3 GiB), with the
+  # runtime's other start-up reservations held down (SEC-C-12: under a
+  # bare 2 GiB they left nothing, and 34 of 54 probes aborted before
+  # reading their file), and the test asserts its exit code, wall time and
+  # peak working set against the review's bound. Linux, because ulimit is what keeps a class that still
   # allocates without bound from taking the runner with it; its own job,
   # because the files are up to 30 MB and took seconds to minutes, or
   # killed the process, before the fixes, and no test host should carry
