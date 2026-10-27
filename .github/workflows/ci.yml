@@ -110,8 +110,15 @@ on:
 # A pull request's intermediate heads are not release candidates, so a
 # superseded PR run is still cancelled and the runner minutes go to the
 # head that will be merged.
+#
+# The group is per commit for every event but a pull request. With one
+# group per ref and cancellation off, GitHub still keeps only one pending
+# run per group: a third push while a run was in progress cancelled the
+# second push's queued run, so that head was never gated after all. A
+# group per SHA queues nothing; a pull request keeps one group per ref so
+# its superseded run is cancelled as above.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -171,8 +178,13 @@ jobs:
         # `--filter` on the first letter of the class's own namespace
         # segment (its sub-folder name for a nested class — `Layout`,
         # `Dashboards`, `Evidence`, `Quotations` — or the class's own leaf
-        # name otherwise): `desktop-1` is A-D, `desktop-2` is E-P,
-        # `desktop-3` is Q-Z. Counts at v0.24.0 (test cases listed by
+        # name otherwise): `desktop-1` is A-C, `desktop-2` is D-P,
+        # `desktop-3` is Q-Z (D moved from desktop-1 to desktop-2 on
+        # 2026-10-27: on run 40475363452 desktop-1 ran 837 test cases to
+        # desktop-2's 360 and desktop-3's 623, and its Release test step
+        # took 20.3 min to desktop-2's 11.5; with D moved the counts are
+        # about 580 / 620 / 623 and the summed test times 790 / 865 / 627 s).
+        # Earlier counts at v0.24.0 (test cases listed by
         # `dotnet test --list-tests`, theory rows included): 379 / 284 /
         # 431 of 1094 (v0.23.0: 361 / 284 / 300 of 945; v0.24.0's Xero
         # tests live under `Xero`, so they all landed in desktop-3) —
@@ -185,7 +197,7 @@ jobs:
         # about 4 min of waits that could never succeed (fixed by v0.23.0
         # CI board G-01, so expect it to drop); each shard's summary now
         # lists its ten slowest tests, which is the data to rebalance on.
-        # `desktop-2` (E-P) carries `Category=LayoutWalk` entirely
+        # `desktop-2` (D-P) carries `Category=LayoutWalk` entirely
         # (`Layout.LayoutWalkTests`, `Layout.ShellCollapseLayoutWalkTests`
         # — both classes live under the `Layout` sub-namespace, so both
         # fall in the `L` letter regardless of their own leaf class name),
@@ -207,6 +219,23 @@ jobs:
       # A second, hand-typed SDK version here would be exactly the kind
       # of drift this pipeline exists to prevent.
       - name: Set up .NET SDK (from global.json)
+        id: setup-dotnet
+        continue-on-error: true
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      # The SDK download fails now and then on the download CDN (HTTP
+      # 409), which failed whole legs before a line of
+      # this repository ran. One retry after a pause; a second failure
+      # fails the job here.
+      - name: Wait before retrying the .NET SDK download
+        if: steps.setup-dotnet.outcome == 'failure'
+        shell: pwsh
+        run: Start-Sleep -Seconds 30
+
+      - name: Set up .NET SDK (from global.json, retry)
+        if: steps.setup-dotnet.outcome == 'failure'
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
@@ -300,12 +329,17 @@ jobs:
           }
 
       # `v0.26.0` (ADR-0165): the Tempest.Calc test assemblies run as their
-      # own shard, in series, the same shape as Core's leg.
+      # own shard, in series, the same shape as Core's leg. Every project
+      # runs even when an earlier one fails, and the step fails at the end
+      # naming each failed project: it used to stop at the first, so from
+      # run 652 a red Library run hid whether Calculators, FluidPower and
+      # Import passed at all.
       - name: Test Calc (Release)
         if: matrix.configuration == 'Release' && matrix.shard == 'calc'
         timeout-minutes: 25
         shell: pwsh
         run: |
+          $failed = @()
           foreach ($project in @("tests/Tempest.Calc.Tests.Engine", "tests/Tempest.Calc.Tests.Sheets", "tests/Tempest.Calc.Tests.Library", "tests/Tempest.Calc.Tests.Calculators", "tests/Tempest.Calc.Tests.FluidPower", "tests/Tempest.Calc.Tests.Import")) {
             if (-not (Test-Path $project)) { continue }
             dotnet test $project `
@@ -315,19 +349,44 @@ jobs:
               --logger "console;verbosity=normal" `
               --results-directory "TestResults/Release/calc" `
               --collect:"XPlat Code Coverage" `
+              --filter "Category!=Timing" `
               --blame-hang `
               --blame-hang-timeout 5m
             if ($LASTEXITCODE -ne 0) {
-              Write-Error "One or more Calc tests failed in '$project' for configuration 'Release' (exit code $LASTEXITCODE)."
-              exit $LASTEXITCODE
+              Write-Host "Calc tests failed in '$project' for configuration 'Release' (exit code $LASTEXITCODE)."
+              $failed += $project
             }
+            # The wall-clock tests (Category=Timing) run again here, without
+            # the coverage collector: its instrumentation slowed the code they
+            # time about four and a half fold, so the budget measured the
+            # collector (the tolerance stack at its hard limits: 2 s plain,
+            # 8.9 s instrumented, about 20 s against 15 s on this leg). A
+            # project with none prints that no test matched and passes.
+            dotnet test $project `
+              --configuration Release `
+              --no-build `
+              --logger trx `
+              --logger "console;verbosity=normal" `
+              --results-directory "TestResults/Release/calc" `
+              --filter "Category=Timing" `
+              --blame-hang `
+              --blame-hang-timeout 5m
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "Calc timing tests failed in '$project' for configuration 'Release' (exit code $LASTEXITCODE)."
+              $failed += "$project (timing)"
+            }
+          }
+          if ($failed.Count -gt 0) {
+            Write-Error "One or more Calc tests failed for configuration 'Release' in: $($failed -join ', ')."
+            exit 1
           }
 
       # Addendum C, C-4: the verification dashboard shows an embedded snapshot of the Track P reports, the known-defects document, the KAT and
       # chain results and the worked examples (and of the script that reads them). The stale-snapshot tests above fail on a stale one; this
       # step says the same from the script's own side, and runs the script's own tests (its two readers of the known-defects document).
+      # It runs whatever the tests above did (it reads files, not the build).
       - name: Check the verification snapshot is current (Release)
-        if: matrix.configuration == 'Release' && matrix.shard == 'calc'
+        if: ${{ !cancelled() && matrix.configuration == 'Release' && matrix.shard == 'calc' }}
         timeout-minutes: 5
         shell: pwsh
         run: |
@@ -348,6 +407,7 @@ jobs:
         timeout-minutes: 25
         shell: pwsh
         run: |
+          $failed = @()
           foreach ($project in @("tests/Tempest.Calc.Tests.Engine", "tests/Tempest.Calc.Tests.Sheets", "tests/Tempest.Calc.Tests.Library", "tests/Tempest.Calc.Tests.Calculators", "tests/Tempest.Calc.Tests.FluidPower", "tests/Tempest.Calc.Tests.Import")) {
             if (-not (Test-Path $project)) { continue }
             dotnet test $project `
@@ -359,9 +419,13 @@ jobs:
               --blame-hang `
               --blame-hang-timeout 5m
             if ($LASTEXITCODE -ne 0) {
-              Write-Error "One or more Calc tests failed in '$project' for configuration 'Debug' (exit code $LASTEXITCODE)."
-              exit $LASTEXITCODE
+              Write-Host "Calc tests failed in '$project' for configuration 'Debug' (exit code $LASTEXITCODE)."
+              $failed += $project
             }
+          }
+          if ($failed.Count -gt 0) {
+            Write-Error "One or more Calc tests failed for configuration 'Debug' in: $($failed -join ', ')."
+            exit 1
           }
 
       - name: Test Core (Debug)
@@ -382,10 +446,10 @@ jobs:
             exit $LASTEXITCODE
           }
 
-      # Desktop shard 1 (A-D): 379 of 1094 Desktop test cases at v0.24.0 —
+      # Desktop shard 1 (A-C): about 580 of 1820 Desktop test cases on 2026-10-27 —
       # see the matrix's own `shard` remark above for the split's full
       # rationale and each boundary letter.
-      - name: Test Desktop shard 1 (A-D) (Release)
+      - name: Test Desktop shard 1 (A-C) (Release)
         if: matrix.configuration == 'Release' && matrix.shard == 'desktop-1'
         timeout-minutes: 25
         shell: pwsh
@@ -397,15 +461,15 @@ jobs:
             --logger "console;verbosity=normal" `
             --results-directory "TestResults/Release/desktop-1" `
             --collect:"XPlat Code Coverage" `
-            --filter "FullyQualifiedName~Tempest.Desktop.Tests.A|FullyQualifiedName~Tempest.Desktop.Tests.B|FullyQualifiedName~Tempest.Desktop.Tests.C|FullyQualifiedName~Tempest.Desktop.Tests.D" `
+            --filter "FullyQualifiedName~Tempest.Desktop.Tests.A|FullyQualifiedName~Tempest.Desktop.Tests.B|FullyQualifiedName~Tempest.Desktop.Tests.C" `
             --blame-hang `
             --blame-hang-timeout 5m
           if ($LASTEXITCODE -ne 0) {
-            Write-Error "One or more Desktop tests failed for shard desktop-1 (A-D), configuration 'Release' (exit code $LASTEXITCODE)."
+            Write-Error "One or more Desktop tests failed for shard desktop-1 (A-C), configuration 'Release' (exit code $LASTEXITCODE)."
             exit $LASTEXITCODE
           }
 
-      - name: Test Desktop shard 1 (A-D) (Debug)
+      - name: Test Desktop shard 1 (A-C) (Debug)
         if: matrix.configuration == 'Debug' && matrix.shard == 'desktop-1' && github.event_name != 'pull_request'
         timeout-minutes: 25
         shell: pwsh
@@ -416,16 +480,16 @@ jobs:
             --logger trx `
             --logger "console;verbosity=normal" `
             --results-directory "TestResults/Debug/desktop-1" `
-            --filter "FullyQualifiedName~Tempest.Desktop.Tests.A|FullyQualifiedName~Tempest.Desktop.Tests.B|FullyQualifiedName~Tempest.Desktop.Tests.C|FullyQualifiedName~Tempest.Desktop.Tests.D" `
+            --filter "FullyQualifiedName~Tempest.Desktop.Tests.A|FullyQualifiedName~Tempest.Desktop.Tests.B|FullyQualifiedName~Tempest.Desktop.Tests.C" `
             --blame-hang `
             --blame-hang-timeout 5m
           if ($LASTEXITCODE -ne 0) {
-            Write-Error "One or more Desktop tests failed for shard desktop-1 (A-D), configuration 'Debug' (exit code $LASTEXITCODE)."
+            Write-Error "One or more Desktop tests failed for shard desktop-1 (A-C), configuration 'Debug' (exit code $LASTEXITCODE)."
             exit $LASTEXITCODE
           }
 
-      # Desktop shard 2 (E-P): 284 of 1094 Desktop test cases at
-      # v0.24.0, including
+      # Desktop shard 2 (D-P): about 620 of 1820 Desktop test cases on
+      # 2026-10-27, including
       # every `Category=LayoutWalk` test (`Layout.LayoutWalkTests`,
       # `Layout.ShellCollapseLayoutWalkTests` — both under the `Layout`
       # sub-namespace, so both fall in the `L` letter).
@@ -443,7 +507,8 @@ jobs:
       # same build and the same variable now produce the same screenshots
       # in one pass. The Debug step leaves it unset (screenshots stay under
       # the test output folder and are not uploaded).
-      - name: Test Desktop shard 2 (E-P) (Release)
+      - name: Test Desktop shard 2 (D-P) (Release)
+        id: test-desktop-2-release
         if: matrix.configuration == 'Release' && matrix.shard == 'desktop-2'
         timeout-minutes: 25
         shell: pwsh
@@ -460,15 +525,15 @@ jobs:
             --logger "console;verbosity=normal" `
             --results-directory "TestResults/Release/desktop-2" `
             --collect:"XPlat Code Coverage" `
-            --filter "FullyQualifiedName~Tempest.Desktop.Tests.E|FullyQualifiedName~Tempest.Desktop.Tests.F|FullyQualifiedName~Tempest.Desktop.Tests.G|FullyQualifiedName~Tempest.Desktop.Tests.H|FullyQualifiedName~Tempest.Desktop.Tests.I|FullyQualifiedName~Tempest.Desktop.Tests.J|FullyQualifiedName~Tempest.Desktop.Tests.K|FullyQualifiedName~Tempest.Desktop.Tests.L|FullyQualifiedName~Tempest.Desktop.Tests.M|FullyQualifiedName~Tempest.Desktop.Tests.N|FullyQualifiedName~Tempest.Desktop.Tests.O|FullyQualifiedName~Tempest.Desktop.Tests.P" `
+            --filter "FullyQualifiedName~Tempest.Desktop.Tests.D|FullyQualifiedName~Tempest.Desktop.Tests.E|FullyQualifiedName~Tempest.Desktop.Tests.F|FullyQualifiedName~Tempest.Desktop.Tests.G|FullyQualifiedName~Tempest.Desktop.Tests.H|FullyQualifiedName~Tempest.Desktop.Tests.I|FullyQualifiedName~Tempest.Desktop.Tests.J|FullyQualifiedName~Tempest.Desktop.Tests.K|FullyQualifiedName~Tempest.Desktop.Tests.L|FullyQualifiedName~Tempest.Desktop.Tests.M|FullyQualifiedName~Tempest.Desktop.Tests.N|FullyQualifiedName~Tempest.Desktop.Tests.O|FullyQualifiedName~Tempest.Desktop.Tests.P" `
             --blame-hang `
             --blame-hang-timeout 5m
           if ($LASTEXITCODE -ne 0) {
-            Write-Error "One or more Desktop tests failed for shard desktop-2 (E-P), configuration 'Release' (exit code $LASTEXITCODE)."
+            Write-Error "One or more Desktop tests failed for shard desktop-2 (D-P), configuration 'Release' (exit code $LASTEXITCODE)."
             exit $LASTEXITCODE
           }
 
-      - name: Test Desktop shard 2 (E-P) (Debug)
+      - name: Test Desktop shard 2 (D-P) (Debug)
         if: matrix.configuration == 'Debug' && matrix.shard == 'desktop-2' && github.event_name != 'pull_request'
         timeout-minutes: 25
         shell: pwsh
@@ -479,15 +544,15 @@ jobs:
             --logger trx `
             --logger "console;verbosity=normal" `
             --results-directory "TestResults/Debug/desktop-2" `
-            --filter "FullyQualifiedName~Tempest.Desktop.Tests.E|FullyQualifiedName~Tempest.Desktop.Tests.F|FullyQualifiedName~Tempest.Desktop.Tests.G|FullyQualifiedName~Tempest.Desktop.Tests.H|FullyQualifiedName~Tempest.Desktop.Tests.I|FullyQualifiedName~Tempest.Desktop.Tests.J|FullyQualifiedName~Tempest.Desktop.Tests.K|FullyQualifiedName~Tempest.Desktop.Tests.L|FullyQualifiedName~Tempest.Desktop.Tests.M|FullyQualifiedName~Tempest.Desktop.Tests.N|FullyQualifiedName~Tempest.Desktop.Tests.O|FullyQualifiedName~Tempest.Desktop.Tests.P" `
+            --filter "FullyQualifiedName~Tempest.Desktop.Tests.D|FullyQualifiedName~Tempest.Desktop.Tests.E|FullyQualifiedName~Tempest.Desktop.Tests.F|FullyQualifiedName~Tempest.Desktop.Tests.G|FullyQualifiedName~Tempest.Desktop.Tests.H|FullyQualifiedName~Tempest.Desktop.Tests.I|FullyQualifiedName~Tempest.Desktop.Tests.J|FullyQualifiedName~Tempest.Desktop.Tests.K|FullyQualifiedName~Tempest.Desktop.Tests.L|FullyQualifiedName~Tempest.Desktop.Tests.M|FullyQualifiedName~Tempest.Desktop.Tests.N|FullyQualifiedName~Tempest.Desktop.Tests.O|FullyQualifiedName~Tempest.Desktop.Tests.P" `
             --blame-hang `
             --blame-hang-timeout 5m
           if ($LASTEXITCODE -ne 0) {
-            Write-Error "One or more Desktop tests failed for shard desktop-2 (E-P), configuration 'Debug' (exit code $LASTEXITCODE)."
+            Write-Error "One or more Desktop tests failed for shard desktop-2 (D-P), configuration 'Debug' (exit code $LASTEXITCODE)."
             exit $LASTEXITCODE
           }
 
-      # Desktop shard 3 (Q-Z): 431 of 1094 Desktop test cases at v0.24.0.
+      # Desktop shard 3 (Q-Z): 623 of 1820 Desktop test cases on 2026-10-27.
       - name: Test Desktop shard 3 (Q-Z) (Release)
         if: matrix.configuration == 'Release' && matrix.shard == 'desktop-3'
         timeout-minutes: 25
@@ -541,11 +606,15 @@ jobs:
       - name: Upload layout verification screenshots (Release)
         if: always() && matrix.configuration == 'Release' && matrix.shard == 'desktop-2'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        # Not advisory: a walk that wrote no screenshots is a broken walk.
+        # Not advisory when the tests passed: a walk that passed and wrote
+        # no screenshots is a broken walk. When the build or the test step
+        # failed (or never ran), the walk may never have started; the job
+        # is already red for that, and a second "no files" failure here
+        # only hid the first in the summary, so it is a warning then.
         with:
           name: layout-screenshots
           path: TestResults/layout/**
-          if-no-files-found: error
+          if-no-files-found: ${{ steps.test-desktop-2-release.outcome == 'success' && 'error' || 'warn' }}
           retention-days: ${{ github.event_name == 'pull_request' && 3 || 14 }}
 
       # Runs even if Build or Test failed above (if: always()), so a
@@ -908,6 +977,23 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up .NET SDK (from global.json)
+        id: setup-dotnet
+        continue-on-error: true
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      # The SDK download fails now and then on the download CDN (HTTP
+      # 409), which failed whole legs before a line of
+      # this repository ran. One retry after a pause; a second failure
+      # fails the job here.
+      - name: Wait before retrying the .NET SDK download
+        if: steps.setup-dotnet.outcome == 'failure'
+        shell: pwsh
+        run: Start-Sleep -Seconds 30
+
+      - name: Set up .NET SDK (from global.json, retry)
+        if: steps.setup-dotnet.outcome == 'failure'
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
@@ -962,9 +1048,12 @@ jobs:
   # DB-08 review: the full-size hostile-SVG probes (SvgBoundedProbeTests,
   # Category=BoundedProbe, opt-in through TEMPEST_BOUNDED_PROBES=1). Each
   # probe runs in a process of its own (Tempest.Desktop.dll --svg-probe)
-  # under a 512 MB managed heap cap and a 2 GiB ulimit -v, and the test
-  # asserts its exit code, wall time and peak working set against the
-  # review's bound. Linux, because ulimit is what keeps a class that still
+  # under a 512 MB managed heap cap and a ulimit -v of the review's 2 GiB
+  # plus the 1 GiB GC region range the harness reserves (3 GiB), with the
+  # runtime's other start-up reservations held down (SEC-C-12: under a
+  # bare 2 GiB they left nothing, and 34 of 54 probes aborted before
+  # reading their file), and the test asserts its exit code, wall time and
+  # peak working set against the review's bound. Linux, because ulimit is what keeps a class that still
   # allocates without bound from taking the runner with it; its own job,
   # because the files are up to 30 MB and took seconds to minutes, or
   # killed the process, before the fixes, and no test host should carry
@@ -981,6 +1070,23 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up .NET SDK (from global.json)
+        id: setup-dotnet
+        continue-on-error: true
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      # The SDK download fails now and then on the download CDN (HTTP
+      # 409), which failed whole legs before a line of
+      # this repository ran. One retry after a pause; a second failure
+      # fails the job here.
+      - name: Wait before retrying the .NET SDK download
+        if: steps.setup-dotnet.outcome == 'failure'
+        shell: pwsh
+        run: Start-Sleep -Seconds 30
+
+      - name: Set up .NET SDK (from global.json, retry)
+        if: steps.setup-dotnet.outcome == 'failure'
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
@@ -1059,6 +1165,23 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up .NET SDK (from global.json)
+        id: setup-dotnet
+        continue-on-error: true
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      # The SDK download fails now and then on the download CDN (HTTP
+      # 409), which failed whole legs before a line of
+      # this repository ran. One retry after a pause; a second failure
+      # fails the job here.
+      - name: Wait before retrying the .NET SDK download
+        if: steps.setup-dotnet.outcome == 'failure'
+        shell: pwsh
+        run: Start-Sleep -Seconds 30
+
+      - name: Set up .NET SDK (from global.json, retry)
+        if: steps.setup-dotnet.outcome == 'failure'
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
@@ -1069,10 +1192,15 @@ jobs:
       - name: Build Tempest.Desktop (Release)
         run: dotnet build src/Tempest.Desktop/Tempest.Desktop.csproj --configuration Release --no-restore
 
+      # The package mirrors stall or drop a connection now and then: each
+      # fetch is retried, the packages' recommended extras (which the
+      # smoke does not use) are not fetched at all, and a step that still
+      # hangs is stopped after five minutes rather than holding the job.
       - name: Install Xvfb
+        timeout-minutes: 5
         run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y --no-install-recommends xvfb xauth
 
       - name: Launch under Xvfb (smoke)
         run: |
@@ -1157,7 +1285,8 @@ jobs:
       # support boundary is unchanged by it.
       - name: Install the journey's own tools (xdotool, ImageMagick)
         continue-on-error: true
-        run: sudo apt-get install -y xdotool imagemagick
+        timeout-minutes: 5
+        run: sudo apt-get -o Acquire::Retries=3 install -y --no-install-recommends xdotool imagemagick
 
       - name: Real-shell acceptance journey (advisory)
         continue-on-error: true
@@ -1202,6 +1331,23 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up .NET SDK (from global.json)
+        id: setup-dotnet
+        continue-on-error: true
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      # The SDK download fails now and then on the download CDN (HTTP
+      # 409), which failed whole legs before a line of
+      # this repository ran. One retry after a pause; a second failure
+      # fails the job here.
+      - name: Wait before retrying the .NET SDK download
+        if: steps.setup-dotnet.outcome == 'failure'
+        shell: pwsh
+        run: Start-Sleep -Seconds 30
+
+      - name: Set up .NET SDK (from global.json, retry)
+        if: steps.setup-dotnet.outcome == 'failure'
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           global-json-file: global.json
@@ -1216,7 +1362,12 @@ jobs:
       # default convention (looks for that exact filename in the current
       # working directory) - no -f flag needed. Its break threshold (70)
       # is what makes this step's own exit code meaningful; it is not
-      # wired into `gate` regardless.
+      # wired into `gate` regardless. The config names no solution: with
+      # one, Stryker 5 built the solution with Platform="Any CPU" and then
+      # looked for the test assembly under bin/Any CPU/Debug, where nothing
+      # is built, and every scheduled run ended there ("The test project
+      # binaries could not be found", run 40323110048). Without one it
+      # builds the test project and finds it where the build puts it.
       - name: Run Stryker.NET
         run: dotnet stryker
 

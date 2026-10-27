@@ -9,8 +9,8 @@ namespace Tempest.Desktop.Tests;
 /// <summary>
 /// DB-08 review: the full-size hostile-SVG probes (the review's <c>svg-probes/README.md</c>, 40 files of up to 30 MB), each run in a
 /// process of its own — <c>Tempest.Desktop.dll --svg-probe</c>, see <see cref="SvgProbeRunner"/> — under a 512 MB managed heap cap and, on
-/// Linux, a 2 GiB <c>ulimit -v</c>, with the exit code, the wall time and the peak working set asserted against the bound the review set
-/// for each once the fixes were in. Opt-in: every test returns at once unless <c>TEMPEST_BOUNDED_PROBES=1</c>, because these files took
+/// Linux, a <c>ulimit -v</c> of the review's 2 GiB plus the GC region range the harness reserves, with the exit code, the wall time and the
+/// peak working set asserted against the bound the review set for each once the fixes were in. Opt-in: every test returns at once unless <c>TEMPEST_BOUNDED_PROBES=1</c>, because these files took
 /// seconds to minutes, or killed the process, before the fixes, and a test host is no place to find out which still does. CI runs them in
 /// their own Linux job (<c>svg-bounded-probes</c> in <c>ci.yml</c>); a developer runs
 /// <c>TEMPEST_BOUNDED_PROBES=1 dotnet test tests/Tempest.Desktop.Tests --filter Category=BoundedProbe</c>. On a small machine
@@ -215,6 +215,16 @@ public sealed class SvgBoundedProbeTests(ITestOutputHelper output)
         Assert.True(Probes.Count >= 50, $"{Probes.Count} probes");
     }
 
+    [Fact]
+    public void A_Probe_Has_The_Reviews_2_GiB_Of_Address_Space_Beside_The_GC_Range_The_Harness_Reserves()
+    {
+        if (Environment.GetEnvironmentVariable("TEMPEST_BOUNDED_PROBES_ULIMIT_KB") is { Length: > 0 })
+            return;
+
+        Assert.Equal(3L * 1024 * 1024, ProbeAddressSpaceKb(regionRangeBytes: 0x40000000));
+        Assert.Equal(ProbeAllowanceKb, ProbeAddressSpaceKb(regionRangeBytes: 0));
+    }
+
     [Theory]
     [MemberData(nameof(Names))]
     public void Probe_Stays_Within_Its_Bound(string name)
@@ -253,6 +263,18 @@ public sealed class SvgBoundedProbeTests(ITestOutputHelper output)
         }
     }
 
+    /// <summary>The review's address-space allowance for one probe: 2 GiB.</summary>
+    public const long ProbeAllowanceKb = 2L * 1024 * 1024;
+
+    /// <summary>
+    /// The <c>ulimit -v</c> a probe process runs under, in KiB: <c>TEMPEST_BOUNDED_PROBES_ULIMIT_KB</c> when set (a small machine lowers it),
+    /// otherwise the probe's own <see cref="ProbeAllowanceKb"/> plus the GC region range the harness reserves for it.
+    /// </summary>
+    public static long ProbeAddressSpaceKb(long regionRangeBytes) =>
+        long.TryParse(Environment.GetEnvironmentVariable("TEMPEST_BOUNDED_PROBES_ULIMIT_KB"), NumberStyles.Integer, CultureInfo.InvariantCulture, out var kb) && kb > 0
+            ? kb
+            : ProbeAllowanceKb + regionRangeBytes / 1024;
+
     /// <summary>Runs the probe entry in a process of its own under the review's limits and returns its exit code, wall time, peak working set and output.</summary>
     private static (int Exit, double Seconds, long PeakMb, string Log) RunProbe(string path, Probe probe)
     {
@@ -275,14 +297,21 @@ public sealed class SvgBoundedProbeTests(ITestOutputHelper output)
             arguments.Add(probe.Raster.ToString(CultureInfo.InvariantCulture));
         }
 
+        // The review's harness: a 512 MB managed heap, workstation GC. The GC's region reservation is held to twice the heap, since by
+        // default it reserves far more address space than any ulimit -v allows and the runtime would not start at all.
+        var heapHex = Environment.GetEnvironmentVariable("TEMPEST_BOUNDED_PROBES_HEAP_HEX") ?? "0x20000000";
+        var heap = Convert.ToInt64(heapHex, 16);
+        var regionRange = heap * 2;
         var start = new ProcessStartInfo { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
 
         if (OperatingSystem.IsLinux())
         {
-            // A 2 GiB address-space limit, so a class that still allocates without bound dies here (exit 134 or 137), never in CI's test host.
+            // An address-space limit, so a class that still allocates without bound dies here (exit 134 or 137), never in CI's test host. The
+            // probe's own allowance is the review's 2 GiB; the limit adds the GC's region reservation, which the harness asks for itself and the
+            // probe can never use beyond the heap cap (3 GiB at the default heap). See ProbeAddressSpaceKb.
             start.FileName = "/bin/sh";
             start.ArgumentList.Add("-c");
-            start.ArgumentList.Add($"ulimit -v {Environment.GetEnvironmentVariable("TEMPEST_BOUNDED_PROBES_ULIMIT_KB") ?? "2097152"}; exec \"$0\" \"$@\"");
+            start.ArgumentList.Add($"ulimit -v {ProbeAddressSpaceKb(regionRange).ToString(CultureInfo.InvariantCulture)}; exec \"$0\" \"$@\"");
             start.ArgumentList.Add(dotnet);
         }
         else
@@ -293,14 +322,25 @@ public sealed class SvgBoundedProbeTests(ITestOutputHelper output)
         foreach (var argument in arguments)
             start.ArgumentList.Add(argument);
 
-        // The review's harness: a 512 MB managed heap, workstation GC. The GC's region reservation is held to twice the heap, since by
-        // default it reserves far more address space than any ulimit -v allows and the runtime would not start at all.
-        var heapHex = Environment.GetEnvironmentVariable("TEMPEST_BOUNDED_PROBES_HEAP_HEX") ?? "0x20000000";
-        var heap = Convert.ToInt64(heapHex, 16);
         start.Environment["DOTNET_GCHeapHardLimit"] = $"0x{heap:X}";
-        start.Environment["DOTNET_GCRegionRange"] = $"0x{heap * 2:X}";
+        start.Environment["DOTNET_GCRegionRange"] = $"0x{regionRange:X}";
         start.Environment["DOTNET_gcServer"] = "0";
         start.Environment["DOTNET_TieredPGO"] = "0";
+
+        // Review C2 (SEC-C-12): what else the runtime reserves at start-up, held down so the probe starts under the limit and the limit is
+        // left for what the probe itself allocates. Measured on the probe entry idling after start-up (four cores, no limit): 3.5 GB of address
+        // space, of which 2 GB was the JIT's reservation near the runtime library, 1 GB the GC's regions and 383 MB six malloc arenas of 64 MB.
+        // Under a limit the JIT's reservation is 20 % of it; glibc gives each thread that calls malloc an arena of its own, up to eight per core.
+        // Under the 2 GiB limit the GC range, the JIT's 410 MB and the arenas left nothing, and 34 of 54 probes aborted at start-up ("Cannot
+        // allocate memory" starting the console, "Failed to create RW mapping for RX memory" in the JIT) before reading a byte (CI runs
+        // 40461654662 and 40475352930). Two arenas serve a single-threaded reader; 4 % of the limit (the value is hexadecimal) holds this entry's
+        // JIT code, and the runtime reserves more elsewhere if it ever needs it. The runtime's write-xor-execute mode maps all generated code
+        // twice, a writable view beside the executable one: a defence against code injection, which a probe of the reader's resource bounds does
+        // not exercise, and the shipped application keeps it. None of this changes what a probe is held to: the peak working set is resident
+        // memory, and the heap cap and the probe's 2 GiB stay, so a probe that allocates past its bound still dies or fails its peak assertion.
+        start.Environment["MALLOC_ARENA_MAX"] = "2";
+        start.Environment["DOTNET_InitialExecMemoryPercent"] = "4";
+        start.Environment["DOTNET_EnableWriteXorExecute"] = "0";
 
         var watch = Stopwatch.StartNew();
         using var process = Process.Start(start)!;

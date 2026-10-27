@@ -5,8 +5,10 @@ namespace Tempest.Calc.Tests.Library;
 
 /// <summary>
 /// `ADR-0173`, review N2: the application installs per user, so a feature flag is read only from a source the machine's administrator controls: the
-/// HKLM policy key on Windows, a root-owned file elsewhere. Nothing the user can write, the install folder included, is a source.
+/// HKLM policy key on Windows, a root-owned file elsewhere. Nothing the user can write, the install folder included, is a source. One test
+/// moves the current directory and sets environment variables to prove they are ignored, so the class runs alone (<see cref="ProcessStateCollection"/>).
 /// </summary>
+[Collection(ProcessStateCollection.Name)]
 public sealed class FeatureSourceTests
 {
     private const string FilePath = "/etc/tempestos/features.json";

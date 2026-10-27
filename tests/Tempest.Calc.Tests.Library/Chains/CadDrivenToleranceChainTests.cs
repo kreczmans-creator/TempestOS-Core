@@ -146,12 +146,14 @@ public sealed class CadDrivenToleranceChainTests
         await FreshAsync(host, (await host.Store.FindInstanceAsync(fit.Id))!);
         bus.Published.Clear();
 
-        // The designer changes the plate to 31 mm, drops gap_max and adds a pin length expression: a different file.
+        // The designer changes the plate to 31 mm, drops gap_max and adds a pin length expression: a different file. The line endings are
+        // made \n first: the raw literal above carries whatever the checkout wrote (\r\n on a Windows runner), and the line removed below
+        // is matched with its \n.
         var changed = StackFile
+            .Replace("\r\n", "\n", StringComparison.Ordinal)
             .Replace("plate_len=30", "plate_len=31", StringComparison.Ordinal)
             .Replace("[mm]gap_max=25.5\n", string.Empty, StringComparison.Ordinal)
-            .Replace("// Revision: A", "// Revision: B", StringComparison.Ordinal);
-        changed = changed.Replace("\r\n", "\n", StringComparison.Ordinal) + "\n[mm]shim=0.5\n";
+            .Replace("// Revision: A", "// Revision: B", StringComparison.Ordinal) + "\n[mm]shim=0.5\n";
 
         var second = await host.Service.ApplyCadImportAsync(stack.Id, Request(changed));
         Assert.True(second.Action.Succeeded, second.Action.Reason);

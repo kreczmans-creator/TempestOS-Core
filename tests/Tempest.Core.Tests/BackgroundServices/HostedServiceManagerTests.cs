@@ -12,14 +12,17 @@ namespace Tempest.Core.Tests.BackgroundServices;
 // level-recording ILogger, used solely to observe log output, mirroring
 // this project's own established testing convention.
 //
-// Shares the "Console output capture" collection with TempestHostTests and
-// TempestHostHostedServiceTests: HostedServiceCallLog is a process-wide
-// static, and the hosted service fixtures it records into (AlphaHostedService
-// and its siblings) are constructed for real by TempestHostHostedServiceTests
-// too - without a shared collection, xUnit's default parallelisation across
-// test classes lets both classes' StartAsync/StopAsync calls interleave and
-// corrupt each other's recorded entries, the same hazard already found and
-// fixed once for SdkLifecycleLog and once for Console.Out redirection.
+// Shares the HostedServiceCallLogCollection with TempestHostHostedServiceTests:
+// HostedServiceCallLog is a process-wide static, and the hosted service
+// fixtures it records into (AlphaHostedService and its siblings) are
+// constructed for real by TempestHostHostedServiceTests too - without a
+// shared collection, xUnit's default parallelisation across test classes lets
+// both classes' StartAsync/StopAsync calls interleave and corrupt each other's
+// recorded entries, the same hazard already found and fixed once for
+// SdkLifecycleLog and once for Console.Out redirection. (This remark named a
+// "Console output capture" collection that no longer existed, so the two
+// classes did run in parallel.)
+[Collection(HostedServiceCallLogCollection.Name)]
 public class HostedServiceManagerTests
 {
     private static ITempestServiceProvider BuildProvider(ILogger? logger = null, params Type[] hostedServiceTypes)

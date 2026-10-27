@@ -48,7 +48,10 @@ public sealed partial class MaterialLibraryTests
         // Its draft sheet shows the value used, never the licensed table rows.
         var sheet = CalcSheetTextRenderer.Render(await host.Service.SheetAsync(stored));
         Assert.Contains("rows withheld (licensed record)", sheet, StringComparison.Ordinal);
-        Assert.DoesNotContain("180", sheet, StringComparison.Ordinal);
+
+        // 180 is the licensed secant row's Es (GPa). The sheet also prints ids, which are random GUIDs, and one GUID holds "180" about once
+        // in 140 (this test failed on one), so the GUIDs and hashes are taken out first; every other character of the sheet is still searched.
+        Assert.DoesNotContain("180", RandomTokens().Replace(sheet, "#"), StringComparison.Ordinal);
 
         // A later revision cannot unlock it again.
         var again = await host.Service.Materials.SaveAsync(rev2 with { LicensedSource = false });
@@ -56,6 +59,10 @@ public sealed partial class MaterialLibraryTests
         Assert.Null((await host.Service.Materials.ExportCsvAsync(rev1.Id, 1)).Csv);
         Assert.Null((await host.Service.Materials.ExportCsvAsync(rev1.Id, 3)).Csv);
     }
+
+    /// <summary>A GUID (with or without its hyphens) or a hexadecimal hash of 32 characters or more: the tokens on a sheet that change from run to run.</summary>
+    [System.Text.RegularExpressions.GeneratedRegex("[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-Fa-f]{32,}")]
+    private static partial System.Text.RegularExpressions.Regex RandomTokens();
 
     [Fact]
     public async Task SEC_B_02_A_Material_That_Was_Never_Licensed_Still_Exports_Every_Revision()

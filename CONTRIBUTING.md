@@ -48,6 +48,15 @@ Every Work Package still ships with:
   until it is drawn.
 - One Release Notes line.
 
+## Before you push
+
+`scripts/pre-push.sh` runs what CI's gate runs first: a locked restore,
+the build with warnings as errors, the governance health check (needs
+`pwsh`), the document checks, and the Core and Calc test projects one
+after another. Add `--desktop` for the three Desktop shards, and
+`--configuration Debug` for the other build. It is not a git hook; run
+it yourself before pushing.
+
 ## NuGet lock files
 
 Every project commits a `packages.lock.json` (`ADR-0160`), and CI and

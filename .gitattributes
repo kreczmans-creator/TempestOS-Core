@@ -1,0 +1,10 @@
+# Line endings. Every text file is checked out with \n line endings on every platform, as it is stored. Without this, a Windows checkout
+# (core.autocrlf=true on the hosted runners) wrote \r\n into test sources and fixtures, so a raw string literal in a test held \r\n on the
+# Windows CI legs and \n on Linux, and a test that matched a line by its "\n" passed on one and failed on the other (runs 652 to 680).
+* text=auto eol=lf
+
+# Files kept byte for byte as they were exported, \r\n included: two scanner exports the importer's \r\n handling is tested on, and the
+# archive of superseded material.
+tests/Tempest.Calc.Tests.Import/Samples/scan/gom-two-stage.csv -text
+tests/Tempest.Calc.Tests.Import/Samples/scan/zeiss-groove.csv -text
+archive/** -text

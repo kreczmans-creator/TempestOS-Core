@@ -5,6 +5,17 @@ using Tempest.Core.Logging;
 namespace Tempest.Core.Tests.BackgroundServices;
 
 /// <summary>
+/// The test classes that start the recording hosted services below for real. <see cref="HostedServiceCallLog"/> is one static log for the
+/// whole process, so two such classes running in parallel interleave their entries, and an assertion on the exact entries (a count, an
+/// order, "empty") fails on the other class's calls. One collection runs them one after the other.
+/// </summary>
+[CollectionDefinition(Name)]
+public sealed class HostedServiceCallLogCollection
+{
+    public const string Name = "Hosted service call log";
+}
+
+/// <summary>
 /// A shared, resettable call log every fixture in this file appends to,
 /// mirroring <c>LifecycleTestLog</c>'s own established pattern from the
 /// WP 2.3 module lifecycle tests — necessary because hosted service
