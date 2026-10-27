@@ -626,7 +626,7 @@ internal static class CalcPackExamples
     [
         C("mode", "Cam"), Q("n_in", 150, "rpm"), C("follower", "Roller"), Q("Rb", 60, "mm"), Q("R_r", 15, "mm"), Q("phi_max", 30, "deg"), Q("e_off", 0, "mm"),
         Table("segs", Seg("Rise", "Cycloidal", 120, 40), Seg("Dwell", null, 60, 0), Seg("Return", "Modified trapezoid", 120, 40), Seg("Dwell", null, 60, 0)),
-        N("steps", 72), Q("m_f", 4, "kg"), Q("k_sp", 9.874, "N/mm"), Q("F_pre", 50, "N"), Q("F_ext", 0, "N"),
+        N("steps", 72), Q("m_f", 4, "kg"), Q("k_sp", 9.874, "kN/m"), Q("F_pre", 50, "N"), Q("F_ext", 0, "N"),
     ];
 
     /// <summary>

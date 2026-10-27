@@ -180,14 +180,14 @@ public sealed class CamProfile
             maxLift = Math.Max(maxLift, seg.Lift);
 
             if (s < -1e-9 * Math.Max(maxLift, 1e-6))
-                return "a return takes the follower below the base circle (the returns before this point exceed the rises)";
+                return "a return takes the follower below the base circle";
         }
 
         if (Math.Abs(total - 2 * Math.PI) > 1e-9)
             return $"the segment angles add to {total * 180 / Math.PI:0.####}°, not 360°";
 
         if (Math.Abs(s) > 1e-9 * Math.Max(maxLift, 1e-6))
-            return "the rises and returns do not cancel, so the follower does not come back to the base circle after one revolution";
+            return "the rises and returns do not cancel";
 
         return null;
     }

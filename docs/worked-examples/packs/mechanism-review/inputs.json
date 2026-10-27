@@ -161,7 +161,7 @@
     {
       "Symbol": "k_sp",
       "Number": 9.874,
-      "Unit": "N/mm",
+      "Unit": "kN/m",
       "Provenance": {
         "Kind": "Drawing",
         "Reference": "DRG-TMP-410",
@@ -416,7 +416,7 @@
       "Unit": "N",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6f635ffdfbc649b8b2158b1d3943e443#F_spring_max",
+        "Reference": "calc:7d70d31a9480466bbaa064039dcd7b05#F_spring_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -540,7 +540,7 @@
       "Unit": "Hz",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6f635ffdfbc649b8b2158b1d3943e443#f_in",
+        "Reference": "calc:7d70d31a9480466bbaa064039dcd7b05#f_in",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -744,7 +744,7 @@
       "Unit": "mm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6f635ffdfbc649b8b2158b1d3943e443#lift",
+        "Reference": "calc:7d70d31a9480466bbaa064039dcd7b05#lift",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -847,7 +847,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6f635ffdfbc649b8b2158b1d3943e443#input_torque",
+        "Reference": "calc:7d70d31a9480466bbaa064039dcd7b05#input_torque",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -859,7 +859,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6f635ffdfbc649b8b2158b1d3943e443#input_torque",
+        "Reference": "calc:7d70d31a9480466bbaa064039dcd7b05#input_torque",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -910,7 +910,7 @@
               "Unit": "kN",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:6f635ffdfbc649b8b2158b1d3943e443#F_pin_pk",
+                "Reference": "calc:7d70d31a9480466bbaa064039dcd7b05#F_pin_pk",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -940,7 +940,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6f635ffdfbc649b8b2158b1d3943e443#n_in",
+        "Reference": "calc:7d70d31a9480466bbaa064039dcd7b05#n_in",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1211,7 +1211,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:66c0a9a596db48ea8cac671c17cb2787#R_A",
+        "Reference": "calc:a33961ac172a46859d0ec90f995adf11#R_A",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1325,7 +1325,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6f635ffdfbc649b8b2158b1d3943e443#n_in",
+        "Reference": "calc:7d70d31a9480466bbaa064039dcd7b05#n_in",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1423,7 +1423,7 @@
       "Unit": "N*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6f635ffdfbc649b8b2158b1d3943e443#T_rms_in",
+        "Reference": "calc:7d70d31a9480466bbaa064039dcd7b05#T_rms_in",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1548,7 +1548,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6f635ffdfbc649b8b2158b1d3943e443#n_in",
+        "Reference": "calc:7d70d31a9480466bbaa064039dcd7b05#n_in",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1710,7 +1710,7 @@
       "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:d1af4b0c0e7a450eaf675b988a086cc4#P_rated",
+        "Reference": "calc:6141ddff39cf4a37bec92e4d92dbcf05#P_rated",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1793,7 +1793,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:e5803c5b73554e78b6666e3b0092718a@1 \u00B7 invented values for the worked example",
+        "Reference": "record:1bcb6ecc5be64724be4639d30f4cca94@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },
@@ -1947,7 +1947,7 @@
       ],
       "Provenance": {
         "Kind": "Reference",
-        "Reference": "record:4f50d6a6484e45ec990abdc08e009be0@1 \u00B7 invented values for the worked example",
+        "Reference": "record:1c44c8ca5a12493ab3ec2d5eb169e9fc@1 \u00B7 invented values for the worked example",
         "Revision": "n/a",
         "IsSufficientToIssue": true
       },

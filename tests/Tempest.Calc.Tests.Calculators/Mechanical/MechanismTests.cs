@@ -128,12 +128,12 @@ public sealed class MechanismTests
     public void A_Transmission_Angle_Below_The_Requirement_Fails_And_The_Requirement_Is_Editable()
     {
         var fail = Run(Q("mu_req", 50, "deg"));
-        Assert.Contains(fail.Checks, c => c.Name.StartsWith("Transmission angle", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(fail.Checks, c => c.Name.StartsWith("Required transmission angle", StringComparison.Ordinal) && !c.Passed);
         Assert.False(fail.Passed);
         Assert.Equal(50 / 45.815614846695546, fail.OutputSi("u_mu"), 6);
 
         var pass = Run(Q("mu_req", 40, "deg"));
-        Assert.Contains(pass.Checks, c => c.Name.StartsWith("Transmission angle", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(pass.Checks, c => c.Name.StartsWith("Required transmission angle", StringComparison.Ordinal) && c.Passed);
     }
 
     [Fact]
@@ -362,7 +362,7 @@ public sealed class MechanismTests
         // r/l = 0.9 → rod angle up to 64°, μ_min = 25.8° < 40°.
         var r = Run(Slider(90, 100, 0, 0));
         Assert.Equal(Math.Acos(0.9) * 180 / Math.PI, r.OutputSi("mu_min") * 180 / Math.PI, 7);
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("Transmission angle", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Required transmission angle", StringComparison.Ordinal) && !c.Passed);
     }
 
     [Fact]
@@ -612,7 +612,7 @@ public sealed class MechanismTests
         Assert.DoesNotContain(toggle.Steps, step => step.Symbol == "u_mu");
 
         // The check fails as a condition, with no utilisation to print.
-        var check = Assert.Single(toggle.Checks, ch => ch.Name.StartsWith("Transmission angle", StringComparison.Ordinal));
+        var check = Assert.Single(toggle.Checks, ch => ch.Name.StartsWith("Required transmission angle", StringComparison.Ordinal));
         Assert.False(check.Passed);
         Assert.True(double.IsPositiveInfinity(check.Utilisation));
         Assert.Contains("toggle in the sweep", check.DemandText, StringComparison.Ordinal);
@@ -623,8 +623,8 @@ public sealed class MechanismTests
         var sheet = CalcSheetTextRenderer.Render(CalcSheetBuilder.Build(Mechanism.Template, inputs, toggle, GoldenFiles.FixedHeader(Mechanism.Template.Id, "M9"), GoldenFiles.FixedFooter(Mechanism.Template, 0, 0)));
         Assert.DoesNotContain("1000000000", sheet, StringComparison.Ordinal);
         Assert.DoesNotContain("1e+09", sheet, StringComparison.Ordinal);
-        Assert.Contains("FAIL  Transmission angle", sheet, StringComparison.Ordinal);
-        Assert.DoesNotContain("utilisation", sheet.Split('\n').Single(l => l.Contains("FAIL  Transmission angle", StringComparison.Ordinal)), StringComparison.Ordinal);
+        Assert.Contains("FAIL  Required transmission angle", sheet, StringComparison.Ordinal);
+        Assert.DoesNotContain("utilisation", sheet.Split('\n').Single(l => l.Contains("FAIL  Required transmission angle", StringComparison.Ordinal)), StringComparison.Ordinal);
 
         // A finite minimum angle still gives the ratio, and a zero requirement is met at any angle.
         Assert.Equal(50 / 45.815614846695546, Run(Q("mu_req", 50, "deg")).OutputSi("u_mu"), 6);
@@ -637,9 +637,9 @@ public sealed class MechanismTests
         var geometry = new[] { Q("L1", 60, "mm"), Q("L2", 40, "mm"), Q("L3", 50, "mm"), Q("L4", 35, "mm") };
         var zero = Run([.. geometry, Q("mu_req", 0, "deg")]);
         Assert.Equal(0, zero.OutputSi("u_mu"));
-        Assert.Contains(zero.Checks, c => c.Name.StartsWith("Transmission angle", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(zero.Checks, c => c.Name.StartsWith("Required transmission angle", StringComparison.Ordinal) && c.Passed);
         var forty = Run([.. geometry, Q("mu_req", 40, "deg")]);
-        Assert.Contains(forty.Checks, c => c.Name.StartsWith("Transmission angle", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(forty.Checks, c => c.Name.StartsWith("Required transmission angle", StringComparison.Ordinal) && !c.Passed);
     }
 
     [Fact]
@@ -805,11 +805,11 @@ public sealed class MechanismTests
     public void A_Roller_Larger_Than_The_Smallest_Radius_Of_Curvature_Undercuts_And_Fails()
     {
         var ok = Cam();
-        Assert.Contains(ok.Checks, c => c.Name.StartsWith("No undercut", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(ok.Checks, c => c.Name.StartsWith("Smallest radius of curvature", StringComparison.Ordinal) && c.Passed);
 
         var bad = Cam(RiseDwellReturnDwell(MechanismCalculator.Cycloidal, 45, 135, 25), Q("Rb", 8, "mm"), Q("R_r", 10, "mm"));
         Assert.False(bad.IsBlocked);
-        Assert.Contains(bad.Checks, c => c.Name.StartsWith("No undercut", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(bad.Checks, c => c.Name.StartsWith("Smallest radius of curvature", StringComparison.Ordinal) && !c.Passed);
         Assert.False(bad.Passed);
         Assert.True(bad.OutputSi("u_rho") > 1);
     }
@@ -840,12 +840,12 @@ public sealed class MechanismTests
     {
         var jump = Cam(RiseDwellReturnDwell(MechanismCalculator.Cycloidal, 60, 120, 20), Q("k_sp", 0.5, "N/mm"), Q("F_pre", 1, "N"), Q("F_ext", 0, "N"), Q("n_in", 1500, "rpm"));
         Assert.True(jump.OutputSi("F_min") < 0);
-        Assert.Contains(jump.Checks, c => c.Name.StartsWith("Follower stays on the cam", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(jump.Checks, c => c.Name.StartsWith("Smallest follower force", StringComparison.Ordinal) && !c.Passed);
         Assert.Contains(jump.Warnings, w => w.RuleId == "contact");
 
         var held = Cam();
         Assert.True(held.OutputSi("F_min") >= 0);
-        Assert.Contains(held.Checks, c => c.Name.StartsWith("Follower stays on the cam", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(held.Checks, c => c.Name.StartsWith("Smallest follower force", StringComparison.Ordinal) && c.Passed);
     }
 
     [Fact]
@@ -875,7 +875,7 @@ public sealed class MechanismTests
         Assert.Null(r.FindOutput("Rb_min_phi"));
         Assert.Null(r.FindOutput("u_rho"));
         Assert.Equal(2 * 0.02 / (Math.PI / 2), r.OutputSi("w_face"), 9);
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("No cusp", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Smallest profile radius", StringComparison.Ordinal) && c.Passed);
         Assert.NotNull(r.FindOutput("rho_sw"));
         Assert.Null(r.FindOutput("kappa_sw"));
     }
@@ -887,7 +887,7 @@ public sealed class MechanismTests
         var r = Cam(RiseDwellReturnDwell(MechanismCalculator.Cycloidal, 60, 120, 20), CalcInputValue.Choice("follower", MechanismCalculator.FlatFaced), Q("Rb", 5, "mm"));
         Assert.False(r.IsBlocked);
         Assert.True(r.OutputSi("rho_min") < -0.05);
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("No cusp", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Smallest profile radius", StringComparison.Ordinal) && !c.Passed);
         Assert.False(r.Passed);
         Assert.True(Vector(r, "rho_sw").Min() >= r.OutputSi("rho_min") - 1e-9);
     }

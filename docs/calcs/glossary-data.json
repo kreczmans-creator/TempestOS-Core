@@ -3364,7 +3364,7 @@
             "N"
           ],
           "descriptions": [
-            "Peak force in the coupler, which is also the force at the crank pin and the pin loads on the bearings (mech.F_pin_pk → M4, M5)"
+            "Peak force in the coupler, which is also the force at the crank pin and the pin loads on the bearings"
           ],
           "templates": [
             "mech.mechanism"
@@ -3382,7 +3382,7 @@
             "N"
           ],
           "descriptions": [
-            "Spring preload at the base circle (link an M7 force)"
+            "Spring preload at the base circle"
           ],
           "templates": [
             "mech.mechanism"
@@ -7647,10 +7647,10 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
-            "Mean input power over the swept range (negative: the mechanism returns energy) (mech.P_mean)"
+            "Mean input power over the swept range (negative: the mechanism returns energy)"
           ],
           "templates": [
             "mech.mechanism"
@@ -8990,7 +8990,7 @@
             "mm"
           ],
           "descriptions": [
-            "Roller radius R_r (roller follower)"
+            "Roller radius (roller follower)"
           ],
           "templates": [
             "mech.mechanism"
@@ -9045,7 +9045,7 @@
             "mm"
           ],
           "descriptions": [
-            "Base-circle radius of the cam profile R_b"
+            "Base-circle radius of the cam profile"
           ],
           "templates": [
             "mech.mechanism"
@@ -10747,7 +10747,7 @@
             "N·m"
           ],
           "descriptions": [
-            "RMS input torque over the swept range (mech.T_rms_in → E1 thermal sizing)"
+            "RMS input torque over the swept range"
           ],
           "templates": [
             "mech.mechanism"
@@ -15784,7 +15784,7 @@
             "mm"
           ],
           "descriptions": [
-            "Offset e: slide line above the crank centre (slider-crank; blank: 0); cam follower axis offset, with the cam turning counter-clockwise and the follower axis at +x: positive e reduces the pressure angle where ds/dθ exceeds e (the rise), negative raises it"
+            "Offset e of the slide line above the crank centre, or of the cam follower axis at +x: positive e reduces the pressure angle where ds/dθ exceeds e (optional; blank = 0)"
           ],
           "templates": [
             "mech.mechanism"
@@ -16565,7 +16565,7 @@
             "Hz"
           ],
           "descriptions": [
-            "Input (crank) frequency, for the spring surge check of M7 (mech.f_in)"
+            "Input (crank) frequency, for a spring surge check"
           ],
           "templates": [
             "mech.mechanism"
@@ -17124,7 +17124,7 @@
             "N"
           ],
           "descriptions": [
-            "Peak force perpendicular to the rocker at the output pin, the drive force of the output (mech.follower_force)"
+            "Peak force perpendicular to the rocker at the output pin, the drive force of the output"
           ],
           "templates": [
             "mech.mechanism"
@@ -17893,7 +17893,7 @@
             "N·m"
           ],
           "descriptions": [
-            "Peak input (crank) torque by virtual work (mech.input_torque → E1 peak torque)"
+            "Peak input (crank) torque by virtual work"
           ],
           "templates": [
             "mech.mechanism"
@@ -18536,10 +18536,10 @@
           "meaning": "",
           "quantity": "Line force, distributed load, stiffness",
           "units": [
-            "N/mm"
+            "kN/m"
           ],
           "descriptions": [
-            "Return spring rate (link M7 rate k)"
+            "Return spring rate"
           ],
           "templates": [
             "mech.mechanism"
@@ -20073,7 +20073,7 @@
             "rpm"
           ],
           "descriptions": [
-            "Input (crank) speed, passed through for E1's load speed (mech.n_in)",
+            "Input (crank) speed, passed through",
             "Input speed (constant)"
           ],
           "templates": [
@@ -20707,7 +20707,7 @@
             "m/s"
           ],
           "descriptions": [
-            "Peak speed of the output pin at the rocker length c (mech.output_motion; a kinematic proxy for F1 only if the cylinder acts perpendicular to the rocker at that radius; the angular velocity is omega_out_pk)"
+            "Peak speed of the output pin at the rocker length c (a kinematic proxy for a cylinder only if the cylinder acts perpendicular to the rocker at that radius; the angular velocity is omega_out_pk)"
           ],
           "templates": [
             "mech.mechanism"
@@ -21457,7 +21457,7 @@
             "m/s²"
           ],
           "descriptions": [
-            "Peak acceleration of the output pin (mech.peak_accel)"
+            "Peak acceleration of the output pin"
           ],
           "templates": [
             "mech.mechanism"
