@@ -1293,7 +1293,8 @@ public sealed partial class CalcSheetView : UserControl
             case CalcInputKind.Text:
             {
                 var initial = seed?.Number is { } n ? n.ToString("R", CultureInfo.InvariantCulture) : seed?.Text ?? (!blankWhenAbsent && spec.Default is { } d ? d.ToString("R", CultureInfo.InvariantCulture) : string.Empty);
-                text = Input(initial, spec.Kind == CalcInputKind.Text ? "text" : "number");
+                // A text input has no placeholder: "text" said nothing its label does not (bs.glaser element), as table cells now have none.
+                text = Input(initial, spec.Kind == CalcInputKind.Text ? null : "number");
                 text.TextChanged += (_, _) => RaiseInputsChanged();
                 AutomationProperties.SetName(text, spec.Symbol);
                 ToolTip.SetTip(text, tip);
