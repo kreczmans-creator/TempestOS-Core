@@ -71,6 +71,12 @@ public static class SvgPictureBuilder
     /// <summary>The most family names of a <c>font-family</c> list that are looked up (F6); each is a query to the platform's font configuration.</summary>
     public const int MaxFontFamilies = 8;
 
+    /// <summary>The deepest nesting of group-opacity layers (F7): every open layer is a bitmap the size of the page at the raster scale, live at draw.</summary>
+    public const int MaxOpacityLayerDepth = 8;
+
+    /// <summary>The most group-opacity layers in one document (F7); each is a page-sized clear and composite at draw.</summary>
+    public const int MaxOpacityLayers = 1_000;
+
     /// <summary>
     /// The caps a document is held to. The defaults are the constants above and are what the viewer uses; a test passes smaller
     /// ones so each cap is exercised on a small document, in the normal suite, instead of on the multi-megabyte file that found it.
@@ -89,6 +95,8 @@ public static class SvgPictureBuilder
         public long DecodedPixels { get; init; } = MaxDecodedPixels;
         public float FontSize { get; init; } = MaxFontSize;
         public int FontFamilies { get; init; } = MaxFontFamilies;
+        public int OpacityLayerDepth { get; init; } = MaxOpacityLayerDepth;
+        public int OpacityLayers { get; init; } = MaxOpacityLayers;
     }
 
     /// <summary>What the reader counted while recording a document: the figures the caps are tested on, and what was left out.</summary>
@@ -98,7 +106,9 @@ public static class SvgPictureBuilder
     /// <param name="ImagesSkipped">Embedded images not decoded because the document's pixel budget was spent (F4).</param>
     /// <param name="TypefaceLookups">Distinct (family list, weight, slant) combinations resolved to a typeface; every further run with the same takes the cached face (F6).</param>
     /// <param name="FamilyLookups">Family names asked of the platform's font manager, at most <see cref="Limits.FontFamilies"/> per typeface lookup (F6).</param>
-    public sealed record Statistics(int Elements, int GradientStopParses, long DecodedPixels, int ImagesSkipped, int TypefaceLookups, int FamilyLookups);
+    /// <param name="OpacityLayers">Group-opacity layers recorded (F7).</param>
+    /// <param name="OpacityFolds">Elements whose group opacity was folded into their fill and stroke opacity instead, because a layer cap was reached (F7).</param>
+    public sealed record Statistics(int Elements, int GradientStopParses, long DecodedPixels, int ImagesSkipped, int TypefaceLookups, int FamilyLookups, int OpacityLayers, int OpacityFolds);
 
     private const float PixelsPerInch = 96f;
     private const float DefaultFontSize = 16f;
@@ -597,6 +607,9 @@ public static class SvgPictureBuilder
         private int _imagesSkipped;
         private int _typefaceLookups;
         private int _familyLookups;
+        private int _opacityLayers;
+        private int _opacityLayerDepth;
+        private int _opacityFolds;
         private readonly Stack<XElement> _useStack = new();
 
         /// <summary>The typeface each (family list, bold, italic) resolved to (F6): one font-configuration query per combination, not per text run.</summary>
@@ -608,7 +621,7 @@ public static class SvgPictureBuilder
         /// <summary>The parsed stops of every gradient used so far, by the id it was asked for (F2): a document with two thousand shapes on one gradient parses its stops once.</summary>
         private readonly Dictionary<string, List<(float Offset, SKColor Colour)>> _stops = new(StringComparer.Ordinal);
 
-        public Statistics Statistics => new(_elements, _gradientStopParses, _decodedPixels, _imagesSkipped, _typefaceLookups, _familyLookups);
+        public Statistics Statistics => new(_elements, _gradientStopParses, _decodedPixels, _imagesSkipped, _typefaceLookups, _familyLookups, _opacityLayers, _opacityFolds);
 
         /// <summary>Releases the decoded images once the picture is recorded; the picture holds its own reference to each one it draws.</summary>
         public void ReleaseImages()
@@ -661,6 +674,7 @@ public static class SvgPictureBuilder
                 return;
 
             var save = canvas.Save();
+            var layered = false;
 
             try
             {
@@ -669,8 +683,22 @@ public static class SvgPictureBuilder
 
                 if (style.Opacity < 1f)
                 {
-                    using var layer = new SKPaint { Color = SKColors.Black.WithAlpha((byte)Math.Round(style.Opacity * 255)) };
-                    canvas.SaveLayer(layer);
+                    if (_opacityLayerDepth >= context.Limits.OpacityLayerDepth || _opacityLayers >= context.Limits.OpacityLayers)
+                    {
+                        // F7: past the caps the group's opacity is folded into its fill and stroke opacity, which its children inherit.
+                        // Overlapping children then blend with each other where a layer would have blended them as one — a fidelity
+                        // compromise only for a document with more layers than any drawing has, never a bitmap per layer at draw.
+                        style = style with { FillOpacity = style.FillOpacity * style.Opacity, StrokeOpacity = style.StrokeOpacity * style.Opacity, Opacity = 1f };
+                        _opacityFolds++;
+                    }
+                    else
+                    {
+                        using var layer = new SKPaint { Color = SKColors.Black.WithAlpha((byte)Math.Round(style.Opacity * 255)) };
+                        canvas.SaveLayer(layer);
+                        _opacityLayers++;
+                        _opacityLayerDepth++;
+                        layered = true;
+                    }
                 }
 
                 switch (name)
@@ -724,6 +752,9 @@ public static class SvgPictureBuilder
             }
             finally
             {
+                if (layered)
+                    _opacityLayerDepth--;
+
                 canvas.RestoreToCount(save);
             }
         }

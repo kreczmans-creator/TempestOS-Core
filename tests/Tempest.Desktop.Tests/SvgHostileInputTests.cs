@@ -316,6 +316,38 @@ public sealed class SvgHostileInputTests
     }
 
     // ------------------------------------------------------------------
+    // F7: opacity layers — at most 8 deep and 1 000 in all, folded into the paint beyond that
+    // ------------------------------------------------------------------
+
+    [AvaloniaFact]
+    public void Opacity_Layers_Are_Capped_In_Depth_And_Number_And_Folded_Into_The_Paint_Beyond_Them()
+    {
+        Assert.Equal(8, SvgPictureBuilder.MaxOpacityLayerDepth);
+        Assert.Equal(1_000, SvgPictureBuilder.MaxOpacityLayers);
+        var limits = SvgPictureBuilder.Limits.Default with { OpacityLayerDepth = 2, OpacityLayers = 3 };
+
+        // Four nested half-opacity groups: two layers, two folds, and the rect still reads as one sixteenth (before: a live page-sized bitmap per group at draw — 20 of them at the viewer's 8 000-pixel edge is 5 GB).
+        var nested = Svg(string.Concat(Enumerable.Repeat("<g opacity=\"0.5\">", 4)) + "<rect width=\"100\" height=\"100\" fill=\"#000\"/>" + string.Concat(Enumerable.Repeat("</g>", 4)));
+        using var deep = SvgPictureBuilder.Build(nested, CancellationToken.None, limits);
+        Assert.Equal(2, deep.Statistics.OpacityLayers);
+        Assert.Equal(2, deep.Statistics.OpacityFolds);
+        Assert.InRange(PixelAt(deep, 50, 50).Alpha, 14, 18);
+
+        // Six sibling groups: three layers, three folds, every rect half-opaque.
+        var siblings = Svg(string.Concat(Enumerable.Range(0, 6).Select(i => $"<g opacity=\"0.5\"><rect x=\"{i * 10}\" width=\"10\" height=\"100\" fill=\"#000\"/></g>")));
+        using var wide = SvgPictureBuilder.Build(siblings, CancellationToken.None, limits);
+        Assert.Equal(3, wide.Statistics.OpacityLayers);
+        Assert.Equal(3, wide.Statistics.OpacityFolds);
+        Assert.InRange(PixelAt(wide, 15, 50).Alpha, 126, 129);
+        Assert.InRange(PixelAt(wide, 55, 50).Alpha, 126, 129);
+
+        // Within the caps every group is a layer, as before.
+        using var plain = SvgPictureBuilder.Build(nested);
+        Assert.Equal(4, plain.Statistics.OpacityLayers);
+        Assert.Equal(0, plain.Statistics.OpacityFolds);
+    }
+
+    // ------------------------------------------------------------------
     // F10: a deadline, honoured by the reader and applied by the viewer
     // ------------------------------------------------------------------
 
