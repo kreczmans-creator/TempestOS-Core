@@ -96,7 +96,7 @@ Track P (parallel verification on `v0.26.0/addC-parallel`) is a separate session
 - [x] C-6 seeded demo project "Demo — Hydraulic Press Cell" (`v0.26.0/addC-6-demo`)
 - [x] C-7 performance and stability soak (`v0.26.0/addC-7-soak`)
 - [x] C-8 final owner test pack and handover (`v0.26.0/addC-8-pack`)
-- [ ] §C7 gates; Security + colour teams Addendum C section; STATUS final line
+- [x] §C7 gates; Security + colour teams Addendum C section; STATUS final line
 
 ## Legacy calculator replacement (written on `release/v0.27.0`; ships in v0.26.0 — nothing ships as 0.27.0)
 The phases below are as they stood on that branch (D-38; ADR-0167), kept unchanged except where the integration into v0.26.0 changed a fact (see the integration list at the end).
@@ -159,4 +159,5 @@ The phases below are as they stood on that branch (D-38; ADR-0167), kept unchang
 - [ ] Windows CI on the merged head; the RealShell journey on Windows (Y11-04)
 - [ ] Owner: confirm the book editions in D-44 (DI-03, DI-04 and DI-08 decided in DC-21)
 - [x] Track S: C-1 fixes for Track P's open Critical and High defects
-
+- [x] Refine the test suite: timing tests apart from the coverage collector, shared-state tests in their own collections, race and GUID flakes fixed at their cause, Desktop shards rebalanced (DC-28)
+- [x] Find and fix what kept failing the CI runs: CRLF checkout, the Calc loop that stopped at the first failing project, the SVG probe start-up, Windows handle counting, round-off digits and glossary line ends on Windows (DC-28, DC-29); first all-green push run 693, then 695
