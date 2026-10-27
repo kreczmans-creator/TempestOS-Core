@@ -69,7 +69,7 @@ public class DayOneReleaseAtSeedJourneyTests
                 .With(Tempest.Calc.Sheets.CalcInputValue.Choice("case", Tempest.Calc.Structural.BeamFormulasCalculator.SsPoint))
                 .With(Tempest.Calc.Sheets.CalcInputValue.Quantity("L", 2000, "mm"))
                 .With(Tempest.Calc.Sheets.CalcInputValue.Quantity("I", 2_000_000, "mm^4"))
-                .With(Tempest.Calc.Sheets.CalcInputValue.Quantity("P", 10, "kN"))
+                .With(Tempest.Calc.Sheets.CalcInputValue.Quantity("F", 10, "kN"))
                 .With(Tempest.Calc.Sheets.CalcInputValue.Quantity("a", 1000, "mm"));
 
             foreach (var value in fill.Values)

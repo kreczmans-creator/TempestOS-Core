@@ -22,4 +22,4 @@ A 5 mm throat, 200 mm long, on S355. The throat stress, 150 MPa, is 60 % of the 
 | `F_w_Rd` | 251.468 kN | 251.468 kN | PASS |
 | `u` | 0.5965  | 0.596497  | PASS |
 
-Governing check: Weld resistance — PASS (utilisation 0.60). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Weld force against weld resistance — PASS (utilisation 0.60). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

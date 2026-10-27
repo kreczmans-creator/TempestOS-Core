@@ -37,6 +37,13 @@ public sealed partial class CalcInstanceService
             foreach (var symbol in (step.Example ?? []).Select(v => v.Symbol).Concat(step.Omit ?? []))
                 if (entry.Template.ResolveInput(symbol) is null)
                     return $"Pack template '{template.Title}': step '{step.Key}' gives an example for '{symbol}', which '{step.TemplateId}' does not have.";
+
+            // An example written for a version on which the symbol meant something else is not an example of this input (ADR-0177 review).
+            foreach (var example in step.Example ?? [])
+            {
+                if (entry.Template.ResolveInput(example.Symbol) is { } spec && step.TemplateVersion is { } version && spec.MeaningChangedSince(example.Symbol, version))
+                    return $"Pack template '{template.Title}': step '{step.Key}' was saved from {step.TemplateId}@{version}, where {spec.MeaningChangeText(step.TemplateId, $"{step.TemplateId}@{version}")}, so its example for '{example.Symbol}' cannot be used; save the chain again from calculations on {entry.Reference}.";
+            }
         }
 
         foreach (var b in template.Bindings)
@@ -51,8 +58,15 @@ public sealed partial class CalcInstanceService
             var source = template.Steps[from];
             var target = template.Steps[to];
 
-            if (!OutputPorts(source.TemplateId).Any(p => p.Matches(b.Output)))
+            if (OutputPorts(source.TemplateId).FirstOrDefault(p => p.Matches(b.Output)) is not { } port)
                 return $"Pack template '{template.Title}': '{source.TemplateId}' offers no output '{b.Output}'.";
+
+            // A binding saved when the output's name meant something else is refused, not rebound to the new meaning (ADR-0177 review).
+            if (source.TemplateVersion is { } sourceVersion && port.MeaningChangedSince(b.Output, sourceVersion))
+                return $"Pack template '{template.Title}': step '{source.Key}' was saved from {source.TemplateId}@{sourceVersion}, where {port.MeaningChangeText(source.TemplateId, $"{source.TemplateId}@{sourceVersion}")}, so the link {b.FromStep}.{b.Output} → {b.ToStep}.{b.Input} cannot be made; save the chain again from calculations on {_catalogue.Get(source.TemplateId).Reference}.";
+
+            if (target.TemplateVersion is { } targetVersion && _catalogue.Get(target.TemplateId).Template.ResolveInput(b.Input) is { } fed && fed.MeaningChangedSince(b.Input, targetVersion))
+                return $"Pack template '{template.Title}': step '{target.Key}' was saved from {target.TemplateId}@{targetVersion}, where {fed.MeaningChangeText(target.TemplateId, $"{target.TemplateId}@{targetVersion}")}, so the link {b.FromStep}.{b.Output} → {b.ToStep}.{b.Input} cannot be made; save the chain again from calculations on {_catalogue.Get(target.TemplateId).Reference}.";
 
             if ((b.Row is null) != (b.Column is null))
                 return $"Pack template '{template.Title}': a link to a table cell needs both a row and a column ({b.FromStep} → {b.ToStep}.{b.Input}).";
@@ -348,7 +362,7 @@ public sealed partial class CalcInstanceService
         }
 
         var keys = ordered.Select((m, i) => (m.Id, Key: $"s{i + 1}")).ToDictionary(x => x.Id, x => x.Key);
-        var steps = ordered.Select(m => new CalcPackStep(keys[m.Id], m.TemplateId, m.Name)).ToList();
+        var steps = ordered.Select(m => new CalcPackStep(keys[m.Id], m.TemplateId, m.Name, TemplateVersion: m.TemplateVersion.Length > 0 ? m.TemplateVersion : null)).ToList();
         var bindings = ordered.SelectMany(m => m.Links
             .Where(l => keys.ContainsKey(l.Link.UpstreamId))
             .Select(l => new CalcPackBinding(keys[l.Link.UpstreamId], l.Link.OutputSymbol, keys[m.Id], l.Input.Symbol))

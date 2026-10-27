@@ -49,7 +49,7 @@ public sealed class ConnectionTests
     [Fact]
     public void Plate_Thinner_Than_3_Mm_Is_A_Hard_Fail()
     {
-        Assert.Contains(CalcInputValidator.Validate(Ec3.Template, Defaults().With(CalcInputValue.Quantity("t", 2, "mm"))), n => n.Severity == CalcNoticeSeverity.Block);
+        Assert.Contains(CalcInputValidator.Validate(Ec3.Template, Defaults().With(CalcInputValue.Quantity("t_p", 2, "mm"))), n => n.Severity == CalcNoticeSeverity.Block);
     }
 
     [Fact]
@@ -147,7 +147,7 @@ public sealed class ConnectionTests
     {
         // chain.steel-support-R1: M20 8.8, S275, e1 = e2 = 40, p1 150, p2 120: bearing on the 20 mm end plate F_b,Rd 198.79 kN; the bolts also bear on the 11 mm column flange: 109.33 kN (45 % lower).
         // python3: alpha_b = min(40/66, 150/66 - 0.25, 800/410, 1) = 0.60606, k_1 = min(2.8 x 40/22 - 1.7, 1.4 x 120/22 - 1.7, 2.5) = 2.5, F_b = 2.5 x 0.60606 x 410 x 20 x t/1.25/1e3 kN with t 20 and 11.
-        var set = Defaults().With(CalcInputValue.Quantity("t", 20, "mm")).With(CalcInputValue.Quantity("p_1", 150, "mm")).With(CalcInputValue.Quantity("p_2", 120, "mm"));
+        var set = Defaults().With(CalcInputValue.Quantity("t_p", 20, "mm")).With(CalcInputValue.Quantity("p_1", 150, "mm")).With(CalcInputValue.Quantity("p_2", 120, "mm"));
         Assert.Equal(198.788, CalcRunner.Run(Ec3, set).OutputSi("F_b_Rd") / 1e3, 2);
         var two = CalcRunner.Run(Ec3, set.With(CalcInputValue.Quantity("t_2", 11, "mm")));
         Assert.Equal(109.333, two.OutputSi("F_b_Rd") / 1e3, 2);
@@ -217,7 +217,7 @@ public sealed class ConnectionTests
     {
         var r = CalcRunner.Run(Ec3, Defaults().With(CalcInputValue.Quantity("e_2", 13.4, "mm")));
         Assert.False(r.IsBlocked);
-        Assert.Contains(r.Checks, c => c.Name == "Bolt bearing" && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name == "Shear force against bolt bearing resistance" && !c.Passed);
     }
 
     [Fact]

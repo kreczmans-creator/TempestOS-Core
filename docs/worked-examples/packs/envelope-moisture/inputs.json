@@ -12,6 +12,17 @@
       "ValueText": "16"
     },
     {
+      "Symbol": "T_int",
+      "Number": 21,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ENV-02 \u00A73 (wall build-up)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "21"
+    },
+    {
       "Symbol": "U_target",
       "Number": 0.45,
       "Unit": "W/(m^2*K)",
@@ -197,17 +208,6 @@
       "ValueText": "-3"
     },
     {
-      "Symbol": "theta_int",
-      "Number": 21,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Specification",
-        "Reference": "SPEC-ENV-02 \u00A73 (wall build-up)",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "21"
-    },
-    {
       "Symbol": "y_tb",
       "Number": 0,
       "Unit": "W/(m^2*K)",
@@ -229,6 +229,17 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "50"
+    },
+    {
+      "Symbol": "T_db",
+      "Number": 21,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-ENV-02 \u00A72 (room conditions)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "21"
     },
     {
       "Symbol": "altitude",
@@ -281,17 +292,6 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "none (state only)"
-    },
-    {
-      "Symbol": "t_db",
-      "Number": 21,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Specification",
-        "Reference": "SPEC-ENV-02 \u00A72 (room conditions)",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "21"
     }
   ],
   "b7": [
@@ -325,7 +325,7 @@
       "Unit": "%",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:4720e2f7fd19464285ccd04e77bcfac1#phi_1",
+        "Reference": "calc:b0e8fa41364e46a4bf46a3e7543d0512#phi_1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -368,12 +368,24 @@
       "ValueText": "0.25"
     },
     {
+      "Symbol": "T_int",
+      "Number": 21,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:b0e8fa41364e46a4bf46a3e7543d0512#T_1_out",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "21"
+    },
+    {
       "Symbol": "U_ref",
       "Number": 0.3991352070513887,
       "Unit": "W/(m^2*K)",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:2f214fb0b3394ecda4037245f091d548#U_1",
+        "Reference": "calc:92d99ffbc34c406885bb8d9b94f98e0d#U_1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -729,18 +741,6 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "5 row(s)"
-    },
-    {
-      "Symbol": "theta_int",
-      "Number": 21,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Link",
-        "Reference": "calc:4720e2f7fd19464285ccd04e77bcfac1#t_1_out",
-        "Revision": "A",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "21"
     }
   ]
 }

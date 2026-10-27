@@ -134,8 +134,16 @@ public static class CalcTemplateHasher
             if (i.Aliases is { Count: > 0 } aliases)
                 sb.Append("  aliases=").Append(string.Join(",", aliases)).Append('\n');
 
+            // ADR-0177 review: a declared change of meaning is part of the version's contract; an input that declares none keeps its hash.
+            if (i.HasMeaningChange)
+                sb.Append("  meaning=").Append(i.MeaningChangedAt).Append('|').Append(i.MeaningWas).Append('|').Append(i.MeaningNow).Append('\n');
+
+            // ADR-0177 review: a declared change of default unit is likewise part of the contract; an input or column that declares none keeps its hash.
+            if (i.HasUnitChange)
+                sb.Append("  unit=").Append(i.UnitChangedAt).Append('|').Append(i.UnitWas).Append('\n');
+
             foreach (var c in i.Columns ?? [])
-                sb.Append("  column=").Append(c.Key).Append('|').Append(c.Label).Append('|').Append(c.Kind).Append('|').Append(c.DefaultUnit).Append('|').Append(string.Join(",", c.Choices ?? [])).Append('\n');
+                sb.Append("  column=").Append(c.Key).Append('|').Append(c.Label).Append('|').Append(c.Kind).Append('|').Append(c.DefaultUnit).Append('|').Append(string.Join(",", c.Choices ?? [])).Append(c.HasUnitChange ? $"|unit={c.UnitChangedAt}|{c.UnitWas}" : string.Empty).Append(c.Aliases is { Count: > 0 } columnAliases ? "|aliases=" + string.Join(",", columnAliases) : string.Empty).Append('\n');
         }
 
         foreach (var a in t.Assumptions)
@@ -166,6 +174,9 @@ public static class CalcTemplateHasher
 
             if (o.Aliases is { Count: > 0 } portAliases)
                 sb.Append("|aliases=").Append(string.Join(",", portAliases));
+
+            if (o.HasMeaningChange)
+                sb.Append("|meaning=").Append(o.MeaningChangedAt).Append('|').Append(o.MeaningWas).Append('|').Append(o.MeaningNow);
 
             sb.Append('\n');
         }

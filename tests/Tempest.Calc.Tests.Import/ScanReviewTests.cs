@@ -360,10 +360,10 @@ public sealed class ScanReviewTests
         "mech.iso286-fit", "1.1.0", CalcDiscipline.Mechanical, "M2", "s", "m",
         [
             new CalcInputSpec("D", "Nominal size", CalcInputKind.Quantity, "mm", Default: 25),
-            new CalcInputSpec("ES_override", "ES", CalcInputKind.Quantity, "µm", IsOptional: true),
-            new CalcInputSpec("EI_override", "EI", CalcInputKind.Quantity, "µm", IsOptional: true),
-            new CalcInputSpec("es_override", "es", CalcInputKind.Quantity, "µm", IsOptional: true),
-            new CalcInputSpec("ei_override", "ei", CalcInputKind.Quantity, "µm", IsOptional: true),
+            new CalcInputSpec("ES_hole_override", "ES", CalcInputKind.Quantity, "µm", IsOptional: true, Aliases: ["ES_override"]),
+            new CalcInputSpec("EI_hole_override", "EI", CalcInputKind.Quantity, "µm", IsOptional: true, Aliases: ["EI_override"]),
+            new CalcInputSpec("es_shaft_override", "es", CalcInputKind.Quantity, "µm", IsOptional: true, Aliases: ["es_override"]),
+            new CalcInputSpec("ei_shaft_override", "ei", CalcInputKind.Quantity, "µm", IsOptional: true, Aliases: ["ei_override"]),
         ],
         [], [], [], []);
 
@@ -389,11 +389,28 @@ public sealed class ScanReviewTests
         Assert.Equal(25, nominal.Inputs.Single(i => i.Symbol == "D").Number!.Value, 12);
 
         // Deviation statistics from the basic size, in micrometres: max 25.014 - 25 = 14, min 10, mean 12.
-        Assert.Equal(14, MapIso("ES_override:max").Inputs.Single(i => i.Symbol == "ES_override").Number!.Value, 9);
-        Assert.Equal(10, MapIso("EI_override:min").Inputs.Single(i => i.Symbol == "EI_override").Number!.Value, 9);
-        var ei = MapIso("ei_override").Inputs.Single(i => i.Symbol == "ei_override");
+        Assert.Equal(14, MapIso("ES_hole_override:max").Inputs.Single(i => i.Symbol == "ES_hole_override").Number!.Value, 9);
+        Assert.Equal(10, MapIso("EI_hole_override:min").Inputs.Single(i => i.Symbol == "EI_hole_override").Number!.Value, 9);
+        var ei = MapIso("ei_shaft_override").Inputs.Single(i => i.Symbol == "ei_shaft_override");
         Assert.Equal(12, ei.Number!.Value, 9);
         Assert.Equal("µm", ei.Unit);
+
+        var sigma = MapIso("es_shaft_override:sigma");
+        Assert.False(sigma.CanApply);
+        Assert.Contains("takes a deviation from the basic size, so a spread is not one", sigma.Refusals[0], StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("ES_override:max", "ES_hole_override", 14)]
+    [InlineData("EI_override:min", "EI_hole_override", 10)]
+    [InlineData("ei_override", "ei_shaft_override", 12)]
+    public void A_Profile_Saved_Before_The_Rename_Maps_Its_Old_Symbol_To_The_Renamed_Input_And_Keeps_The_Deviation_Policy(string oldTarget, string current, double micrometres)
+    {
+        var mapped = MapIso(oldTarget);
+
+        Assert.True(mapped.CanApply, string.Join(" ", mapped.Refusals));
+        Assert.Equal(micrometres, mapped.Inputs.Single(i => i.Symbol == current).Number!.Value, 9);
+        Assert.DoesNotContain(mapped.Inputs, i => i.Symbol == oldTarget.Split(':')[0]);
 
         var sigma = MapIso("es_override:sigma");
         Assert.False(sigma.CanApply);
@@ -403,12 +420,12 @@ public sealed class ScanReviewTests
     [Fact]
     public void M2_Deviations_Also_Come_From_A_Deviation_Only_Table_And_Need_A_Nominal_Otherwise()
     {
-        var profile = new ScanProfile("iso", 1, "ISO", new ScanColumns("Feature", Deviation: "Dev"), [new ScanFeatureEntry("Seat", "ES_override:max")], Delimiter: ScanDelimiter.Comma);
+        var profile = new ScanProfile("iso", 1, "ISO", new ScanColumns("Feature", Deviation: "Dev"), [new ScanFeatureEntry("Seat", "ES_hole_override:max")], Delimiter: ScanDelimiter.Comma);
         var result = ScanMapper.Map(Read("Feature,Dev\nSeat,0.010\nSeat,0.014\nSeat,0.012\n", profile), IsoFit, [CalcInputValue.Quantity("D", 25, "mm")], At);
         Assert.True(result.CanApply, string.Join(" ", result.Refusals));
-        Assert.Equal(14, result.Inputs.Single(i => i.Symbol == "ES_override").Number!.Value, 9);
+        Assert.Equal(14, result.Inputs.Single(i => i.Symbol == "ES_hole_override").Number!.Value, 9);
 
-        var noNominal = new ScanProfile("iso", 1, "ISO", new ScanColumns("Feature", Actual: "Actual"), [new ScanFeatureEntry("Seat", "ES_override")], Delimiter: ScanDelimiter.Comma);
+        var noNominal = new ScanProfile("iso", 1, "ISO", new ScanColumns("Feature", Actual: "Actual"), [new ScanFeatureEntry("Seat", "ES_hole_override")], Delimiter: ScanDelimiter.Comma);
         var refused = ScanMapper.Map(Read("Feature,Actual\nSeat,25.010\nSeat,25.014\n", noNominal), IsoFit, [CalcInputValue.Quantity("D", 25, "mm")], At);
         Assert.False(refused.CanApply);
         Assert.Contains("states no nominal", refused.Refusals[0], StringComparison.Ordinal);

@@ -23,10 +23,10 @@ Equal-stiffness steel parts: the interface pressure is 62 MPa, the hub bore hoop
 
 | Output | Expected | Computed | Result |
 |---|---|---|---|
-| `p` | 62.1 MPa | 62.1 MPa | PASS |
+| `p_int` | 62.1 MPa | 62.1 MPa | PASS |
 | `sigma_t_hub` | 103.5 MPa | 103.5 MPa | PASS |
 | `F_a` | 87.8 kN | 87.7918 kN | PASS |
-| `T` | 2195 N*m | 2194.8 N*m | PASS |
+| `T` | 2.195 kN*m | 2.1948 kN*m | PASS |
 | `dT` | 100 K | 100 K | PASS |
 
-Governing check: Hub yield — PASS (utilisation 0.41). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Hub von Mises stress against yield strength — PASS (utilisation 0.41). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

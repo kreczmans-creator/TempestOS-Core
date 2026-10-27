@@ -1,20 +1,124 @@
-# S5 — Load combinations, EN 1990 Annex A1 (`struct.load-combinations@1.1.0`)
+# Load combinations (EN 1990) (`struct.load-combinations@1.2.0`)
 
 **In plain terms.** Real structures carry a permanent load (their own weight) and several variable loads (people, wind, snow), and the code asks for them to be combined with safety factors in several ways, each variable load taking its turn as the leading one. The worksheet takes each load's characteristic value and category, builds every combination Eurocode 0 asks for (strength, serviceability and accidental), and reports the largest and smallest design value and the combination that governs.
 
-**Scope.** Design values of one action effect for buildings under every EN 1990 combination: ULS 6.10 or 6.10a/6.10b, SLS 6.14b/6.15b/6.16b, accidental 6.11b. Each variable action is tried as leading; maximum and minimum envelopes with the governing combination are output.
+## Scope
 
-**Method.** Each combination is shown as formula → substitution → result (`C1…` for the maximum, `D1…` for the minimum). A permanent action takes γ_G,sup (×ξ in 6.10b) when it adds to the effect sought and γ_G,inf when it opposes it; a variable action enters only when it adds (EN 1990 cl. 6.4.3.2, 6.4.3.3, 6.5.3; Annex A1 Table A1.2(B)). K_FI multiplies the partial factors of unfavourable actions (γ_G,sup, ξ·γ_G,sup and γ_Q; EN 1990 Annex B, B3.3), never γ_G,inf.
+Calculates the design values of one action effect under every EN 1990 Annex A1 combination for buildings, from persistent to accidental. Each variable action leads in turn; the envelopes and governing combinations are reported.
 
-**Inputs.** `actions` table (name, category, signed F_k; ≤ 30 rows); `unit` of the effect (kN, kN/m, kN/m², kN·m, kN·m/m); `method`; `gamma_G_sup`, `gamma_G_inf`, `gamma_Q`, `xi`, `K_FI` 0.9–1.1; optional `psi` table (category, ψ₀, ψ₁, ψ₂). Factors and ψ come from an `en1990.factors` record (UK NA NA.A1.2(A)–(C), or the Annex A1 recommended set, labelled). Without a ψ table the recommended Table A1.1 set is used and stated on the sheet.
+## Method
 
-**Outputs.** `E_d_max/min/gov`, `E_k_*`, `E_fr_*`, `E_qp_*`, and `E_acc_*` when an accidental action is entered. **Ports.** `E_d_max`, `E_d_min`, `E_k_max`, `E_qp_max` (unit of the actions) → S3, S4, S6. **To S2.** `LoadCombinationsCalculator.FrameCombinations(inputs)` gives the ULS and SLS-characteristic combinations as S2 `combinations` rows (action row n = S2 load case n, names C1…/D1… as on this sheet, at most 50); S2 then envelopes them.
+- ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on γ_G,sup)
+- ULS 6.10a: Σ γ_G·G + Σ γ_Q·K_FI·ψ_0·Q_i; 6.10b: Σ ξ·γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i
+- Permanent factor: γ_G,sup when the action adds to the effect sought, γ_G,inf when it opposes it
+- Variable actions: included only when they add to the effect sought (otherwise zero)
+- SLS characteristic 6.14b: Σ G + Q_1 + Σ ψ_0·Q_i; frequent 6.15b: Σ G + ψ_1·Q_1 + Σ ψ_2·Q_i; quasi-permanent 6.16b: Σ G + Σ ψ_2·Q_i
+- Accidental 6.11b: Σ G + A_d + ψ_1·Q_1 + Σ ψ_2·Q_i
 
-**Port names (C-2).** Each port is listed under its public name, `<area>.<quantity>`; the output symbol stays as its symbol and as an alias, so a link, a pack binding or an inputs file written before the rename still resolves. `E_d_max` = `combination.effect_uls_max`; `E_d_min` = `combination.effect_uls_min`; `E_k_max` = `combination.effect_sls_characteristic_max`; `E_qp_max` = `combination.effect_sls_quasi_permanent_max`.
+Each combination is shown as formula → substitution → result (`C1…` for the maximum, `D1…` for the minimum). A permanent action takes γ_G,sup (×ξ in 6.10b) when it adds to the effect sought and γ_G,inf when it opposes it; a variable action enters only when it adds (EN 1990 cl. 6.4.3.2, 6.4.3.3, 6.5.3; Annex A1 Table A1.2(B)). K_FI multiplies the partial factors of unfavourable actions (γ_G,sup, ξ·γ_G,sup and γ_Q; EN 1990 Annex B, B3.3), never γ_G,inf.
 
-**Limitations.** One scalar effect by superposition; buildings only; no EQU set B/C split, bridges, fatigue or seismic.
+## Inputs
 
-**Test cases.** `ka-610-single` (21 kN), `ka-610ab-single` (18.975 kN), `ka-610-two-variables` (24.75 kN, wind leading), `ka-uplift` (−20 kN) — analytic, Confirmed; `ka-designers-guide` (37.65 kN/m) — pattern after Gulvanessian, Calgaro & Holický (2002), **Unconfirmed** until checked against the book. Worked example `office-floor-beam-uk-na` (37.48 kN/m) — UK NA factors, **Unconfirmed** until checked against the NA.
+| Symbol | Description | Unit | Default | Usual range | Group | Old symbols |
+|---|---|---|---|---|---|---|
+| `actions` | Actions (one effect, signed) | — | — | table | Setup | — |
+| `unit` | Unit of the effect | — | kN | kN, kN/m, kN/m^2, kN*m, kN*m/m | Setup | — |
+| `method` | ULS expression | — | 6.10 | 6.10, 6.10a and 6.10b | Setup | — |
+| `gamma_G_sup` | γ_G,sup (unfavourable permanent) | — | 1.35 | 1 to 2 | Factors | — |
+| `gamma_G_inf` | γ_G,inf (favourable permanent) | — | 1 | 0.8 to 1.2 | Factors | — |
+| `gamma_Q` | γ_Q (variable) | — | 1.5 | 1 to 2 | Factors | — |
+| `xi` | ξ reduction for 6.10b | — | 0.85 | 0.8 to 1 | Factors | — |
+| `K_FI` | Consequence-class factor | — | 1 | 0.9 to 1.1 | Factors | — |
+| `psi` | ψ factors by category (replaces the recommended set) | — | blank | table | Factors | — |
+
+Columns of `actions`:
+
+| Column | Description | Unit | Required |
+|---|---|---|---|
+| `name` | Action | — | yes |
+| `category` | Category (G permanent, A domestic, B office, C congregation, D shopping, E storage, F traffic ≤ 30 kN, G traffic 30–160 kN, H roofs, snow ≤ 1000 m, snow > 1000 m, wind, thermal, accidental) | — | yes |
+| `F_k` | Characteristic value (signed, in the effect unit) | — | yes |
+
+Columns of `psi`:
+
+| Column | Description | Unit | Required |
+|---|---|---|---|
+| `category` | Category (A domestic, B office, C congregation, D shopping, E storage, F traffic ≤ 30 kN, G traffic 30–160 kN, H roofs, snow ≤ 1000 m, snow > 1000 m, wind, thermal) | — | yes |
+| `psi_0` | ψ₀ | — | yes |
+| `psi_1` | ψ₁ | — | yes |
+| `psi_2` | ψ₂ | — | yes |
+
+## Assumptions
+
+1. Each action's characteristic value is its signed contribution to one scalar effect. Basis: Linear superposition (EN 1990 cl. 6.3.1 representative values).
+2. The combinations are those of EN 1990 Annex A1 for buildings. Basis: EN 1990 Annex A1 scope.
+3. Bridge, fatigue and seismic combinations are not included. Basis: EN 1990 Annex A1 scope.
+4. Without a ψ record the recommended values of EN 1990 Annex A1 are used and labelled on the sheet. Basis: No National Annex table is shipped.
+5. UK National Annex values of ψ and γ come from a user record. Basis: No National Annex table is shipped.
+6. Each permanent action takes γ_G,sup when it adds to the effect sought and γ_G,inf when it opposes it. Basis: EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions.
+7. For an equilibrium check with one source, the source's permanent actions are entered as one row. Basis: EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions.
+
+## Outputs
+
+| Symbol | Description | Unit |
+|---|---|---|
+| `E_d_max` | ULS design effect, maximum | kN |
+| `E_d_min` | ULS design effect, minimum | kN |
+| `E_d_gov` | ULS design effect, governing (max) | — |
+| `E_k_max` | SLS characteristic effect, maximum | kN |
+| `E_k_min` | SLS characteristic effect, minimum | kN |
+| `E_k_gov` | SLS characteristic effect, governing (max) | — |
+| `E_fr_max` | SLS frequent effect, maximum | kN |
+| `E_fr_min` | SLS frequent effect, minimum | kN |
+| `E_fr_gov` | SLS frequent effect, governing (max) | — |
+| `E_qp_max` | SLS quasi-permanent effect, maximum | kN |
+| `E_qp_min` | SLS quasi-permanent effect, minimum | kN |
+| `E_qp_gov` | SLS quasi-permanent effect, governing (max) | — |
+
+## Ports
+
+| Port | Output symbol | Description | Unit | Old symbols |
+|---|---|---|---|---|
+| `combination.effect_uls_max` | `E_d_max` | ULS design effect, maximum (unit of the actions) | — | — |
+| `combination.effect_uls_min` | `E_d_min` | ULS design effect, minimum | — | — |
+| `combination.effect_sls_characteristic_max` | `E_k_max` | SLS characteristic effect, maximum | — | — |
+| `combination.effect_sls_quasi_permanent_max` | `E_qp_max` | SLS quasi-permanent effect, maximum | — | — |
+
+## Checks
+
+Applicability rules:
+
+| Rule | Severity | Effect | Condition |
+|---|---|---|---|
+| `no-actions` | Block | Conservative | No actions: nothing to combine. |
+| `psi-missing` | Block | Conservative | A variable action's category has no ψ factors in the ψ record. |
+| `no-permanent` | Warning | Conservative | No permanent action: check the combinations are what you intend. |
+
+## Limitations
+
+One scalar effect by superposition; buildings only; no EQU set B/C split, bridges, fatigue or seismic.
+
+### Changes by version
+
+**1.2.0 (C-2 consistency).** The inputs are grouped: the actions table, the unit and the ULS expression in Setup, the factors and the ψ table in Factors. The hard range of `K_FI` is widened to 0.5 to 2 so that its usual range of 0.9 to 1.1 sits inside it (a value outside 0.9 to 1.1 now warns instead of being refused). The standard is written in full (BS EN 1990:2002+A1:2005) and the UK National Annex is cited by its tables. The scope, assumptions and one message follow the sheet standard. No calculated value changes.
+
+## References
+
+- BS EN 1990:2002+A1:2005, cl. 6.4.3.2: Combinations for persistent or transient design situations (6.10, 6.10a, 6.10b).
+- BS EN 1990:2002+A1:2005, cl. 6.4.3.3: Combinations for accidental design situations (6.11b).
+- BS EN 1990:2002+A1:2005, cl. 6.5.3: Serviceability combinations (6.14b, 6.15b, 6.16b).
+- BS EN 1990:2002+A1:2005, Annex A1, Tables A1.1, A1.2(B): Application for buildings: ψ and γ factors.
+- BS EN 1990:2002+A1:2005, Table NA.A1.2(A) to (C): UK National Annex: UK values of partial factors.
+
+## Test cases
+
+`ka-610-single` (21 kN), `ka-610ab-single` (18.975 kN), `ka-610-two-variables` (24.75 kN, wind leading), `ka-uplift` (−20 kN) — analytic, Confirmed; `ka-designers-guide` (37.65 kN/m) — pattern after Gulvanessian, Calgaro & Holický (2002), **Unconfirmed** until checked against the book. Worked example `office-floor-beam-uk-na` (37.48 kN/m) — UK NA factors, **Unconfirmed** until checked against the NA.
+
+- `ka-610-single`: Permanent plus office imposed, 6.10. Source: Analytic (EN 1990 6.10, recommended factors), EN 1990:2002+A1:2005.
+- `ka-610ab-single`: Permanent plus office imposed, 6.10a and 6.10b. Source: Analytic (EN 1990 6.10a/6.10b, recommended factors), EN 1990:2002+A1:2005.
+- `ka-610-two-variables`: Imposed and wind, each leading in turn. Source: Analytic (EN 1990 6.10, recommended factors), EN 1990:2002+A1:2005.
+- `ka-uplift`: Wind uplift against favourable permanent load. Source: Analytic (EN 1990 6.10, recommended factors), EN 1990:2002+A1:2005.
+- `ka-designers-guide`: Floor beam: permanent, imposed and snow (Designers' Guide pattern). Source: Gulvanessian, Calgaro & Holický, Designers' Guide to EN 1990, 2002.
 
 <!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
 **Worked example, by hand.** Office floor beam line load, UK National Annex 6.10a/6.10b ([sheet](../../worked-examples/structural/struct.load-combinations/office-floor-beam-uk-na/sheet.txt)).

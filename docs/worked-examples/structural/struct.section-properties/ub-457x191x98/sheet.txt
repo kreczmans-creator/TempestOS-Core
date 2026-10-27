@@ -7,22 +7,24 @@ Checker: —    Checked: —
 Issued: —
 
 1. Scope and method
-Area, centroid, second moments of area (Ixx, Iyy, Ixy), principal axes and values, elastic and plastic section moduli, radii of gyration, torsion constant and (I-sections) warping constant for a parametric shape, an arbitrary polygon with holes, or a composite of placed parts. The x axis is horizontal (major axis of an I-section), y vertical.
-Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − y dx); Ixx = ∫y² dA; Iyy = ∫x² dA; Ixy = ∫xy dA. Second moments moved to the centroid by the parallel-axis theorem: I_c = I − A d². Principal axes: tan 2θ = −2Ixy/(Ixx − Iyy). Elastic section modulus: W_el = Ixx/y_max. Plastic section modulus, about the equal-area axis found by bisection: W_pl = |Q_above| + |Q_below|. Torsion constant by shape, a Saint-Venant series for a solid rectangle, πd⁴/32 for a circle, Bredt for a closed thin-walled section, Σbt³/3 (plus a fillet term for rolled I) for an open section. Warping constant of an I-section: I_w = Iyy (h − t_f)²/4.
+Calculates area, centroid, second moments, moduli, radii of gyration, and torsion and warping constants of a parametric, polygon or composite section. The outline has x horizontal and y vertical; properties use EN 1993 axes, y-y horizontal and z-z vertical.
+Area and centroid: A = ½∮(x dy − y dx); x_c = ∫x dA / A; y_c = ∫y dA / A. Second moment about y-y: I_y = ∫y² dA − A y_c², by Green's theorem and the parallel-axis theorem. Second moment about z-z: I_z = ∫x² dA − A x_c²; product I_yz = ∫xy dA − A x_c y_c. Principal axes: tan 2θ = −2 I_yz / (I_y − I_z). Elastic section modulus: W_el_y = I_y / y_max. Plastic section modulus about the equal-area axis, found by bisection: W_pl_y = |Q_above| + |Q_below|. Torsion constant J: Saint-Venant series (solid rectangle), πd⁴/32 (circle), Bredt (closed thin-walled), Σbt³/3 (open). Warping constant of an I-section: I_w = I_z (h − t_f)²/4.
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   shape | Shape | I-section |  | spec: BS EN 10365 UB 457×191×98 | any
-  h | Depth h (or vertical leg) | 467.2 | mm | spec: BS EN 10365 UB 457×191×98 | 1 … 5000 mm
-  b | Width b (or horizontal leg) | 192.8 | mm | spec: BS EN 10365 UB 457×191×98 | 1 … 5000 mm
-  t | Wall / web / leg thickness t (t_w) | 11.4 | mm | spec: BS EN 10365 UB 457×191×98 | 0.1 … 500 mm
-  t_f | Flange thickness t_f | 19.6 | mm | spec: BS EN 10365 UB 457×191×98 | 0.1 … 500 mm
-  r | Root radius r (I, channel, tee, angle) or outer corner radius (hollow rectangle; blank = 1.5 t) | 10.2 | mm | spec: BS EN 10365 UB 457×191×98 | 0 … 500 mm
+  h | Depth or vertical leg | 467.2 | mm | spec: BS EN 10365 UB 457×191×98 | 1 … 5000 mm
+  b | Width or horizontal leg | 192.8 | mm | spec: BS EN 10365 UB 457×191×98 | 1 … 5000 mm
+  t_w | Wall, web or leg thickness | 11.4 | mm | spec: BS EN 10365 UB 457×191×98 | 0.1 … 500 mm
+  t_f | Flange thickness | 19.6 | mm | spec: BS EN 10365 UB 457×191×98 | 0.1 … 500 mm
+  r | Root radius of an I-section, channel, tee or angle, or outer corner radius of a hollow rectangle (optional; blank = 0 for the rolled shapes, 1.5 t_w for a hollow rectangle) | 10.2 | mm | spec: BS EN 10365 UB 457×191×98 | 0 … 500 mm
 
 3. Assumptions
-  A1. A polygon outline is simple (no self-intersection); holes lie inside the outline and do not overlap. (Green's theorem integrates the signed loops as given.)
-  A2. Rolled-section root fillets are quarter circles of radius r; flange tips are square; hollow-section corners are quarter circles of outer radius r_o (default 1.5 t) and inner radius r_i (default 1.0 t). (Published section tables use the same idealisation.)
-  A3. Thin-walled torsion constants neglect the junction and tip effects except the fillet term kept for rolled I-sections. (Open sections: Σbt³/3; closed: Bredt.)
+  A1. A polygon outline does not cross itself. (Green's theorem integrates the signed loops as given.)
+  A2. Holes lie inside the outline and do not overlap one another. (Green's theorem integrates the signed loops as given.)
+  A3. Rolled-section root fillets are quarter circles of radius r and flange tips are square. (Published section tables use the same idealisation.)
+  A4. Hollow-section corners are quarter circles of radius 1.5 t_w outside and 1.0 t_w inside by default. (BS EN 10210-2 hot-finished idealisation.)
+  A5. Thin-walled torsion constants neglect the junction and tip effects except the fillet term kept for rolled I-sections. (Open sections: Σbt³/3; closed: Bredt.)
 
 4. Working
   [7] A = ½ ∮ (x dy − y dx)    « Roark Table A.1
@@ -32,35 +34,35 @@ Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − 
   [8] x_c = ∫x dA / A
       = Green's theorem over 108 vertices in 1 loop(s)
       = 0 mm
-        Centroid x (from the shape origin)
+        Centroid x from the shape origin
   [9] y_c = ∫y dA / A
       = Green's theorem over 108 vertices in 1 loop(s)
       = 0 mm
-        Centroid y (from the shape origin)
-  [10] I_xx = ∫y² dA − A y_c²
+        Centroid y from the shape origin
+  [10] I_y = ∫y² dA − A y_c²
       = Green's theorem over 108 vertices in 1 loop(s)
       = 45728 cm⁴
-        Second moment of area about the centroidal x axis
-  [11] I_yy = ∫x² dA − A x_c²
+        Second moment of area about the centroidal y-y axis
+  [11] I_z = ∫x² dA − A x_c²
       = Green's theorem over 108 vertices in 1 loop(s)
       = 2347 cm⁴
-        Second moment of area about the centroidal y axis
-  [12] I_xy = ∫xy dA − A x_c y_c
+        Second moment of area about the centroidal z-z axis
+  [12] I_yz = ∫xy dA − A x_c y_c
       = Green's theorem over 108 vertices in 1 loop(s)
       = 0 cm⁴
-        Product of inertia about the centroid
-  [13] I_1 = (I_xx + I_yy)/2 + sqrt(((I_xx - I_yy)/2)^2 + I_xy^2)
+        Product of inertia about the centroidal y-y and z-z axes
+  [13] I_1 = (I_y + I_z)/2 + sqrt(((I_y - I_z)/2)^2 + I_yz^2)
       = (45728 cm⁴ + 2347 cm⁴) / 2 + sqrt(((45728 cm⁴ − 2347 cm⁴) / 2)^2 + (0 cm⁴)^2)
       = 45728 cm⁴
         Major principal second moment
-  [14] I_2 = (I_xx + I_yy)/2 - sqrt(((I_xx - I_yy)/2)^2 + I_xy^2)
+  [14] I_2 = (I_y + I_z)/2 - sqrt(((I_y - I_z)/2)^2 + I_yz^2)
       = (45728 cm⁴ + 2347 cm⁴) / 2 − sqrt(((45728 cm⁴ − 2347 cm⁴) / 2)^2 + (0 cm⁴)^2)
       = 2347 cm⁴
         Minor principal second moment
-  [15] theta = ½ atan2(−2 I_xy, I_xx − I_yy)
+  [15] theta = ½ atan2(−2 I_yz, I_y − I_z)
       = ½ atan2(0, 43381)
       = 0 deg
-        Angle from the x axis to the major principal axis (anticlockwise)
+        Angle from the y-y axis to the major principal axis, anticlockwise
   [16] y_top = y_max − y_c
       = Green's theorem over 108 vertices in 1 loop(s)
       = 233.6 mm
@@ -73,78 +75,78 @@ Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − 
       = Green's theorem over 108 vertices in 1 loop(s)
       = 96.4 mm
         Extreme fibre from the centroid, x
-  [19] W_el_x = I_xx / max(y_top, y_bot)
+  [19] W_el_y = I_y / max(y_top, y_bot)
       = 45728 cm⁴ / max(233.6 mm, 233.6 mm)
       = 1957.5 cm³
-        Elastic section modulus about x (governing fibre)
-  [20] W_el_y = I_yy / x_ext
+        Elastic section modulus about the y-y axis, governing fibre
+  [20] W_el_z = I_z / x_ext
       = 2347 cm⁴ / 96.4 mm
       = 243.47 cm³
-        Elastic section modulus about y
-  [21] W_pl_x = |Q_above| + |Q_below| about the equal-area axis
+        Elastic section modulus about the z-z axis
+  [21] W_pl_y = |Q_above| + |Q_below| about the equal-area axis
       = equal-area axis at y = 0 mm
       = 2232.5 cm³
-        Plastic section modulus about x
-  [22] W_pl_y = |Q_right| + |Q_left| about the equal-area axis
+        Plastic section modulus about the y-y axis
+  [22] W_pl_z = |Q_right| + |Q_left| about the equal-area axis
       = equal-area axis at x = 0 mm
       = 378.9 cm³
-        Plastic section modulus about y
-  [23] i_x = sqrt(I_xx / A)
+        Plastic section modulus about the z-z axis
+  [23] r_g_y = sqrt(I_y / A)
       = sqrt(45728 cm⁴ / 125.27 cm²)
-      = 19.106 cm
-        Radius of gyration about x
-  [24] i_y = sqrt(I_yy / A)
+      = 191.06 mm
+        Radius of gyration about the y-y axis
+  [24] r_g_z = sqrt(I_z / A)
       = sqrt(2347 cm⁴ / 125.27 cm²)
-      = 4.3286 cm
-        Radius of gyration about y
-  [25] alpha_pl_x = W_pl_x / W_el_x
+      = 43.286 mm
+        Radius of gyration about the z-z axis
+  [25] alpha_pl_y = W_pl_y / W_el_y
       = 2232.5 cm³ / 1957.5 cm³
       = 1.1404
-        Shape factor about x
+        Shape factor about the y-y axis
   [26] J = (2 b t_f³ + (h − 2 t_f) t_w³)/3 + 2 α D⁴ − 0.42 t_f⁴
       = b = 192.8, t_f = 19.6, h = 467.2, t_w = 11.4, r = 10.2 mm
       = 121.29 cm⁴
         Torsion constant
-  [27] I_w = I_yy (h − t_f)² / 4    « AISC DG9
+  [27] I_w = I_z (h − t_f)² / 4    « AISC DG9
       = 2347 cm⁴ × (467.2 − 19.6)² mm² / 4
-      = 1.1755 dm⁶
+      = 1175500 cm⁶
         Warping constant
 
 5. Results
   A = 125.27 cm²    Area
+  I_y = 45728 cm⁴    Second moment of area about the y-y axis
+  I_z = 2347.0 cm⁴    Second moment of area about the z-z axis
+  I_yz = 0 cm⁴    Product of inertia about the y-y and z-z axes
+  W_el_y = 1957.5 cm³    Elastic section modulus about the y-y axis
+  W_el_z = 243.5 cm³    Elastic section modulus about the z-z axis
+  W_pl_y = 2232.5 cm³    Plastic section modulus about the y-y axis
+  W_pl_z = 378.9 cm³    Plastic section modulus about the z-z axis
+  r_g_y = 191.1 mm    Radius of gyration about the y-y axis
+  r_g_z = 43.29 mm    Radius of gyration about the z-z axis
+  J = 121.3 cm⁴    Torsion constant
+  I_w = 1175539 cm⁶    Warping constant
   x_c = 0 mm    Centroid x
   y_c = 0 mm    Centroid y
-  I_xx = 45728 cm⁴    I_xx
-  I_yy = 2347.0 cm⁴    I_yy
-  I_xy = 0 cm⁴    I_xy
-  I_1 = 45728 cm⁴    I_1 (major principal)
-  I_2 = 2347.0 cm⁴    I_2 (minor principal)
+  I_1 = 45728 cm⁴    Major principal second moment
+  I_2 = 2347.0 cm⁴    Minor principal second moment
   theta = 0°    Principal axis angle
-  W_el_x = 1957.5 cm³    W_el,x
-  W_el_y = 243.5 cm³    W_el,y
-  W_pl_x = 2232.5 cm³    W_pl,x
-  W_pl_y = 378.9 cm³    W_pl,y
-  i_x = 19.11 cm    i_x
-  i_y = 4.329 cm    i_y
-  alpha_pl_x = 1.1404    Shape factor, x
-  J = 121.3 cm⁴    Torsion constant J
-  I_w = 1.176 dm⁶    Warping constant I_w
+  alpha_pl_y = 1.1404    Shape factor about the y-y axis
 
 6. Checks (governing first)
   None.
 
 7. Applicability
-  WARNING  J: open thin-walled sum with the rolled-section fillet term.  [thin-walled-torsion]
+  WARNING  J: the open thin-walled sum with the rolled-section fillet term is used.  [thin-walled-torsion]
 
 8. Verification
-  Template: struct.section-properties@1.1.1
+  Template: struct.section-properties@1.2.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5
   Test run: —
 
 9. References
-  1. Roark's Formulas for Stress and Strain Appendix A, Table A.1; Ch. 10, Table 10.1 — Properties of sections; torsion of solid and thin-walled sections
-  2. AISC Design Guide 9 (Seaburg & Carter) Appendix — Torsional properties of rolled I-shapes
-  3. BS EN 10365 — Hot rolled steel channels, I and H sections: dimensions and masses
-  4. BS EN 10210-2 — Hot finished structural hollow sections: tolerances, dimensions and sectional properties
+  1. Young and Budynas, Roark's Formulas for Stress and Strain Table A.1 and Table 10.1, 8th ed. — Properties of sections; torsion of solid and thin-walled sections
+  2. Seaburg and Carter, Torsional Analysis of Structural Steel Members (AISC Design Guide 9) App., 1st ed. — Torsional properties of rolled I-shapes
+  3. BS EN 10365:2017 — Hot rolled steel channels, I and H sections: dimensions and masses
+  4. BS EN 10210-2:2019 — Hot finished structural hollow sections: tolerances, dimensions and sectional properties

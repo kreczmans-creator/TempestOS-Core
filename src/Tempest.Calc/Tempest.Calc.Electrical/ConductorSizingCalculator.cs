@@ -53,8 +53,8 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.Electrical, "Conductor sizing and overload coordination",
-        "One circuit: the design current, the smallest preferred device rating that carries it, the smallest conductor whose tabulated current-carrying capacity (your own record) carries that rating once the ambient, grouping, installation and semi-enclosed-fuse factors are applied, and the overload coordination checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z. The context (machine wiring or installation) changes the clause citations and, for a gG fuse, MCCB or MPCB entered without I₂, whether the I₂ condition may be deemed satisfied (BS 7671 installation) or I₂ must be entered (machine wiring); every other number is the same in both contexts.",
+        Id, "1.4.0", CalcDiscipline.Electrical, "Conductor sizing and overload coordination",
+        "Calculates the design current, the smallest preferred device rating and the smallest conductor whose tabulated capacity carries that rating. It checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z, using your own capacity and rating records.",
         "Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b\n" +
         "Protective device rating: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b\n" +
         "Fuse factor: C_c = 0.725 for a semi-enclosed fuse (1.45/2, derived), else 1\n" +
@@ -62,52 +62,66 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         "Conductor cross-section: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived)\n" +
         "Carrying capacity: I_z = I_t·C_a·C_g·C_i\n" +
         "Device and conductor coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; I₂ = 2·I_n by default for a semi-enclosed fuse; an entered I₂ (datasheet) is always checked; in the BS 7671 installation context a gG fuse to BS 88 (and an MCCB or MPCB entered without I₂, taken as I₂ ≤ 1.45·I_n) has the I₂ condition deemed satisfied when I_n ≤ I_z; in the machine-wiring context (IEC 60269-1 gG fuses have I₂ = 1.6·I_n, not 1.45·I_n) I₂ must be entered\n" +
-        "Device code: 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB (carried to E5 so the fault check uses the device chosen here)",
+        "Device code: 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB (carried to fault-protection so the fault check uses the device chosen here)",
         [
-            new CalcInputSpec("context", "Design context (changes clause citations and the scope note only)", CalcInputKind.Choice, Choices: [ContextMachine, ContextInstallation], DefaultChoice: ContextMachine, Group: "Context"),
-            new CalcInputSpec("supply", "Supply", CalcInputKind.Choice, Choices: [ThreePhase, SinglePhase, Dc], DefaultChoice: ThreePhase, Group: "Load"),
-            new CalcInputSpec("P", "Rated output (shaft) power; η converts it to input (DC: electrical power drawn, η not applied)", CalcInputKind.Quantity, "kW", Default: 7.5, Min: 0.01, Max: 500, HardMin: 0.01, HardMax: 500, Group: "Load"),
-            new CalcInputSpec("U", "Supply voltage (line voltage for three-phase)", CalcInputKind.Quantity, "V", Default: 400, Min: 12, Max: 1000, HardMin: 12, HardMax: 1000, Group: "Load"),
-            new CalcInputSpec("cos_phi", "Power factor (not used for DC)", CalcInputKind.Number, Default: 0.85, Min: 0.5, Max: 1, HardMin: 0.5, HardMax: 1, Group: "Load"),
-            new CalcInputSpec("eta", "Efficiency (not used for DC)", CalcInputKind.Number, Default: 0.9, Min: 0.5, Max: 1, HardMin: 0.5, HardMax: 1, Group: "Load"),
-            new CalcInputSpec("I_b_in", "Design current from another calculation (replaces the computed I_b when given)", CalcInputKind.Quantity, "A", Min: 0.01, Max: 50000, HardMin: 0.01, HardMax: 50000, IsOptional: true, Group: "Load"),
-            new CalcInputSpec("L", "Circuit length (carried to the voltage-drop calculation)", CalcInputKind.Quantity, "m", Default: 20, Min: 0.1, Max: 500, HardMin: 0.1, HardMax: 500, Group: "Cable"),
-            new CalcInputSpec("theta_a", "Ambient temperature", CalcInputKind.Quantity, "degC", Default: 30, Min: -10, Max: 70, HardMin: -10, HardMax: 70, Group: "Cable"),
-            new CalcInputSpec("insulation", "Insulation", CalcInputKind.Choice, Choices: [Pvc, Xlpe, UserInsulation], DefaultChoice: Pvc, Group: "Cable"),
-            new CalcInputSpec("theta_p", "Conductor operating temperature for 'user' insulation", CalcInputKind.Quantity, "degC", Min: 50, Max: 250, HardMin: 50, HardMax: 250, IsOptional: true, Group: "Cable"),
-            new CalcInputSpec("method", "Installation method key (descriptive only, e.g. B2, C, E)", CalcInputKind.Text, IsOptional: true, Group: "Cable"),
-            new CalcInputSpec("N_g", "Grouped circuits", CalcInputKind.Number, Default: 1, Min: 1, Max: 20, HardMin: 1, HardMax: 20, Group: "Cable"),
-            new CalcInputSpec("system", "Conductor system (AWG: geometry only, no AWG capacities are supplied)", CalcInputKind.Choice, Choices: [Metric, Awg], DefaultChoice: Metric, Group: "Cable"),
-            new CalcInputSpec("device", "Protective device", CalcInputKind.Choice, Choices: [McbB, McbC, McbD, GgFuse, SemiEnclosed, Mccb, Mpcb], DefaultChoice: McbC, Group: "Device"),
-            new CalcInputSpec("I2", "Conventional operating current I₂ (gG fuse, MCCB, MPCB: required in the machine-wiring context; a semi-enclosed fuse defaults to 2 I_n)", CalcInputKind.Quantity, "A", Min: 0.1, Max: 100000, HardMin: 0.1, HardMax: 100000, IsOptional: true, Group: "Device"),
-            new CalcInputSpec("C_a", "Ambient correction factor (1 does not apply the ambient: enter the factor for θ_a from your licensed table)", CalcInputKind.Number, Default: 1, Min: 0.1, Max: 1.5, HardMin: 0.1, HardMax: 1.5, Group: "Correction factors"),
-            new CalcInputSpec("C_g", "Grouping correction factor (at most 1)", CalcInputKind.Number, Default: 1, Min: 0.1, Max: 1, HardMin: 0.1, HardMax: 1, Group: "Correction factors"),
-            new CalcInputSpec("C_i", "Thermal insulation correction factor (at most 1)", CalcInputKind.Number, Default: 1, Min: 0.1, Max: 1, HardMin: 0.1, HardMax: 1, Group: "Correction factors"),
-            new CalcInputSpec("derive_Ca", "Derive C_a from the temperatures instead of the entered factor", CalcInputKind.Boolean, Default: 0, Group: "Correction factors"),
-            new CalcInputSpec("theta_ref", "Reference ambient temperature for the derived C_a", CalcInputKind.Quantity, "degC", Default: 30, Min: 0, Max: 60, HardMin: 0, HardMax: 60, Group: "Correction factors"),
-            new CalcInputSpec("ratings", "Preferred device ratings", CalcInputKind.Table, Columns: RatingColumns, MaxRows: 60, IsOptional: true, Group: "Records"),
-            new CalcInputSpec("ampacity", "Current-carrying capacities for the installation method", CalcInputKind.Table, Columns: AmpacityColumns, MaxRows: 60, IsOptional: true, Group: "Records"),
+            new CalcInputSpec("context", "Design context (changes clause citations and the scope note only)", CalcInputKind.Choice, Choices: [ContextMachine, ContextInstallation], DefaultChoice: ContextMachine, Group: "Setup"),
+            new CalcInputSpec("supply", "Supply", CalcInputKind.Choice, Choices: [ThreePhase, SinglePhase, Dc], DefaultChoice: ThreePhase, Group: "Setup"),
+            new CalcInputSpec("device", "Protective device", CalcInputKind.Choice, Choices: [McbB, McbC, McbD, GgFuse, SemiEnclosed, Mccb, Mpcb], DefaultChoice: McbC, Group: "Setup"),
+            new CalcInputSpec("insulation", "Insulation", CalcInputKind.Choice, Choices: [Pvc, Xlpe, UserInsulation], DefaultChoice: Pvc, Group: "Setup"),
+            new CalcInputSpec("system", "Conductor system (AWG: geometry only, no AWG capacities are supplied)", CalcInputKind.Choice, Choices: [Metric, Awg], DefaultChoice: Metric, Group: "Setup"),
+            new CalcInputSpec("method", "Installation method key (descriptive only, e.g. B2, C, E)", CalcInputKind.Text, IsOptional: true, Group: "Setup"),
+            new CalcInputSpec("ratings", "Preferred device ratings", CalcInputKind.Table, Columns: RatingColumns, MaxRows: 60, IsOptional: true, Group: "Setup"),
+            new CalcInputSpec("ampacity", "Current-carrying capacities for the installation method", CalcInputKind.Table, Columns: AmpacityColumns, MaxRows: 60, IsOptional: true, Group: "Setup"),
+            new CalcInputSpec("L", "Circuit length (carried to the voltage-drop calculation)", CalcInputKind.Quantity, "m", Default: 20, Min: 1, Max: 300, HardMin: 0.1, HardMax: 500, Group: "Geometry"),
+            new CalcInputSpec("T_user", "Conductor operating temperature for 'user' insulation", CalcInputKind.Quantity, "degC", Min: 60, Max: 180, HardMin: 50, HardMax: 250, IsOptional: true, Group: "Material", Aliases: ["theta_p"]),
+            new CalcInputSpec("P", "Rated output (shaft) power; η converts it to input (DC: electrical power drawn, η not applied)", CalcInputKind.Quantity, "kW", Default: 7.5, Min: 0.1, Max: 200, HardMin: 0.01, HardMax: 500, Group: "Loads"),
+            new CalcInputSpec("U", "Supply voltage (line voltage for three-phase)", CalcInputKind.Quantity, "V", Default: 400, Min: 12, Max: 690, HardMin: 12, HardMax: 1000, Group: "Loads"),
+            new CalcInputSpec("cos_phi", "Power factor (not used for DC)", CalcInputKind.Number, Default: 0.85, Min: 0.6, Max: 1, HardMin: 0.5, HardMax: 1, Group: "Loads"),
+            new CalcInputSpec("eta", "Efficiency (not used for DC)", CalcInputKind.Number, Default: 0.9, Min: 0.6, Max: 1, HardMin: 0.5, HardMax: 1, Group: "Loads"),
+            new CalcInputSpec("I_b_in", "Design current from another calculation (replaces the computed I_b when given)", CalcInputKind.Quantity, "A", Min: 0.1, Max: 10000, HardMin: 0.01, HardMax: 50000, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("T_amb", "Ambient temperature", CalcInputKind.Quantity, "degC", Default: 30, Min: 0, Max: 60, HardMin: -10, HardMax: 70, Group: "Conditions", Aliases: ["theta_a"]),
+            new CalcInputSpec("T_ref", "Reference ambient temperature for the derived C_a", CalcInputKind.Quantity, "degC", Default: 30, Min: 20, Max: 40, HardMin: 0, HardMax: 60, Group: "Conditions", Aliases: ["theta_ref"]),
+            new CalcInputSpec("N_g", "Grouped circuits", CalcInputKind.Number, Default: 1, Min: 1, Max: 10, HardMin: 1, HardMax: 20, Group: "Factors"),
+            new CalcInputSpec("C_a", "Ambient correction factor (1 does not apply the ambient: enter the factor for T_amb from your licensed table)", CalcInputKind.Number, Default: 1, Min: 0.5, Max: 1.3, HardMin: 0.1, HardMax: 1.5, Group: "Factors"),
+            new CalcInputSpec("C_g", "Grouping correction factor (at most 1)", CalcInputKind.Number, Default: 1, Min: 0.3, Max: 1, HardMin: 0.1, HardMax: 1, Group: "Factors"),
+            new CalcInputSpec("C_i", "Thermal insulation correction factor (at most 1)", CalcInputKind.Number, Default: 1, Min: 0.3, Max: 1, HardMin: 0.1, HardMax: 1, Group: "Factors"),
+            new CalcInputSpec("derive_Ca", "Derive C_a from the temperatures instead of the entered factor", CalcInputKind.Boolean, Default: 0, Group: "Factors"),
+            new CalcInputSpec("I2", "Conventional operating current I₂ (gG fuse, MCCB, MPCB: required in the machine-wiring context; a semi-enclosed fuse defaults to 2 I_n)", CalcInputKind.Quantity, "A", Min: 1, Max: 10000, HardMin: 0.1, HardMax: 100000, IsOptional: true, Group: "Device"),
         ],
         [
-            new CalcAssumption("Every tabulated value (the capacities, the device ratings, the correction factors) is entered from the user's own licensed copy or a manufacturer datasheet; none ships with the calculator.", "No table from a standard or a manufacturer is shipped."),
-            new CalcAssumption("The capacities in the table are for the installation method stated; the method key is descriptive and is not interpreted.", "Records carry their source and edition."),
-            new CalcAssumption("A gG fuse to BS 88 is deemed to meet I₂ ≤ 1.45·I_z when I_n ≤ I_z only under BS 7671 (installation context); an IEC 60269-1 gG fuse has I₂ = 1.6·I_n, so in the machine-wiring context I₂ is entered from the datasheet.", "BS 7671 reg. 433.1.201; IEC 60269-1."),
-            new CalcAssumption("The ambient, grouping and insulation factors are applied as a product; C_g is not looked up from the number of grouped circuits.", "The count is carried to the sheet and warns when C_g = 1 with more than one circuit."),
-            new CalcAssumption("The optional derived C_a is an approximation for the temperature difference only and is labelled as such; compare it with the licensed table.", "Derived, not tabulated."),
+            new CalcAssumption("Every tabulated value is entered from the user's own licensed copy or a manufacturer datasheet.", "No table from a standard or a manufacturer is shipped."),
+            new CalcAssumption("No table from a standard or a manufacturer ships with the calculator.", "No table from a standard or a manufacturer is shipped."),
+            new CalcAssumption("The capacities in the table are for the installation method stated.", "Records carry their source and edition."),
+            new CalcAssumption("The method key is descriptive and is not interpreted.", "Records carry their source and edition."),
+            new CalcAssumption("A gG fuse is deemed to meet I₂ ≤ 1.45·I_z when I_n ≤ I_z only under BS 7671.", "BS 7671 reg. 433.1.201; IEC 60269-1."),
+            new CalcAssumption("An IEC 60269-1 gG fuse has I₂ = 1.6·I_n, so in the machine-wiring context I₂ is entered from the datasheet.", "BS 7671 reg. 433.1.201; IEC 60269-1."),
+            new CalcAssumption("The ambient, grouping and insulation factors are applied as a product.", "The count is carried to the sheet and warns when C_g = 1 with more than one circuit."),
+            new CalcAssumption("C_g is not looked up from the number of grouped circuits.", "The count is carried to the sheet and warns when C_g = 1 with more than one circuit."),
+            new CalcAssumption("The optional derived C_a is an approximation for the temperature difference only.", "Derived, not tabulated."),
+            new CalcAssumption("The derived C_a is labelled as an approximation, so compare it with the licensed table.", "Derived, not tabulated."),
             new CalcAssumption("C_c = 0.725 applies to a semi-enclosed fuse only: 1.45 divided by an assumed fusing factor of 2.", "Derived."),
-            new CalcAssumption("AWG areas follow the geometry d = 0.127·92^((36 − n)/39) mm; no AWG capacity is supplied.", "Derived."),
-            new CalcAssumption("DC circuits use I_b = P/U; the power factor and efficiency are not applied.", "Method."),
+            new CalcAssumption("AWG areas follow the geometry d = 0.127·92^((36 − n)/39) mm.", "Derived."),
+            new CalcAssumption("No AWG capacity is supplied.", "Derived."),
+            new CalcAssumption("DC circuits use I_b = P/U.", "Method."),
+            new CalcAssumption("The power factor and the efficiency are not applied to a DC circuit.", "Method."),
         ],
         [
-            new CalcClauseRef("BS 7671:2018 (as amended)", "reg. 433.1.1", "Co-ordination of conductors and overload protective devices"),
-            new CalcClauseRef("BS 7671:2018 (as amended)", "reg. 523.1", "Current-carrying capacity of a cable"),
+            new CalcClauseRef("BS 7671:2018", "reg. 433.1.1", "Co-ordination of conductors and overload protective devices"),
+            new CalcClauseRef("BS 7671:2018", "reg. 523.1", "Current-carrying capacity of a cable"),
             new CalcClauseRef("BS EN 60204-1:2018", "cl. 12.4", "Current-carrying capacity of conductors and cables in normal service"),
             new CalcClauseRef("BS EN 60204-1:2018", "cl. 7.2", "Overcurrent protection"),
-            new CalcClauseRef("BS EN 60898-1", "clause number to be checked", "Circuit-breakers for overcurrent protection: conventional tripping current"),
-            new CalcClauseRef("BS 7671:2018 (as amended)", "reg. 433.1.201, 433.1.202", "Overload protection by gG fuses and semi-enclosed fuses: deemed conditions"),
+            new CalcClauseRef("BS EN 60898-1:2019", "cl. (number to be checked)", "Circuit-breakers for overcurrent protection: conventional tripping current"),
+            new CalcClauseRef("BS 7671:2018", "reg. 433.1.201, 433.1.202", "Overload protection by gG fuses and semi-enclosed fuses: deemed conditions"),
         ],
         [
             new CalcApplicabilityRule("ampacity", "The ampacity record must hold at least one usable row.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("ampacity-ignored", "A row without the cross-section or gauge of the conductor system is ignored.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("ratings", "The ratings record must hold at least one rating.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("theta_p", "The conductor operating temperature must be entered for 'user' insulation to derive C_a.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("derive-Ca", "The ambient and the reference ambient must both be below the conductor temperature to derive C_a.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("C_a-range", "The derived C_a must lie between 0.1 and 1.5.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("C_a", "The ambient factor is derived from the temperatures: an approximation to compare with the licensed table.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("I2-deemed", "The conventional operating current of the device is not entered, and the condition is deemed satisfied when I_n ≤ I_z.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("I_n", "A preferred rating of at least I_b must be in the ratings record.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("CSA", "A conductor in the ampacity record must carry I_t,req.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("I2", "For a gG fuse, MCCB or MPCB in the machine-wiring context, I₂ must be entered (blocked without it); in the BS 7671 installation context a gG fuse to BS 88 is deemed to meet I₂ ≤ 1.45 I_z when I_n ≤ I_z, and an MCCB or MPCB without I₂ is treated the same with a warning.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
@@ -119,7 +133,7 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         [
             new CalcTestCase("ka-three-phase-mcb-c", "Three-phase 7.5 kW (output) load on a type C MCB, θ_a 35 °C with C_a 0.91, two circuits with C_g 0.77",
                 new CalcReferenceSource("Analytic (synthetic test values invented for these tests, not taken from any table)", null, "I_b = 7500/(√3·400·0.85·0.9) = 14.15074 A; I_n = 16 A; I_t,req = 16/(0.91·0.77) = 22.83431 A; the synthetic table (1.5→12.3, 2.5→17.7, 4→24.1, 6→31.9, 10→44.6 A) gives 4 mm² (24.1 A); I_z = 24.1·0.91·0.77 = 16.88687 A"),
-                [Choice("supply", ThreePhase), Q("P", 7.5, "kW"), Q("U", 400, "V"), N("cos_phi", 0.85), N("eta", 0.9), Q("theta_a", 35, "degC"), N("N_g", 2), Choice("device", McbC), N("C_a", 0.91), N("C_g", 0.77), N("C_i", 1), TypicalRatings(), SyntheticAmpacity()],
+                [Choice("supply", ThreePhase), Q("P", 7.5, "kW"), Q("U", 400, "V"), N("cos_phi", 0.85), N("eta", 0.9), Q("T_amb", 35, "degC"), N("N_g", 2), Choice("device", McbC), N("C_a", 0.91), N("C_g", 0.77), N("C_i", 1), TypicalRatings(), SyntheticAmpacity()],
                 [new CalcExpectedValue("I_b", 14.15074189, "A", 1e-6), new CalcExpectedValue("I_n", 16, "A", 1e-9), new CalcExpectedValue("I_t_req", 22.83430855, "A", 1e-6), new CalcExpectedValue("CSA", 4, "mm^2", 1e-9), new CalcExpectedValue("I_z", 16.88687, "A", 1e-6), new CalcExpectedValue("u_Ib", 0.8844213682, "", 1e-6), new CalcExpectedValue("u_In", 0.9474816825, "", 1e-6)]),
             new CalcTestCase("ka-single-phase", "Single-phase 3 kW (output) load on a type B MCB",
                 new CalcReferenceSource("Analytic (synthetic test values invented for these tests, not taken from any table)", null, "I_b = 3000/(230·0.95·0.9) = 15.25553 A; I_n = 16 A; factors 1 so I_t,req = 16 A; the synthetic table gives 2.5 mm² (17.7 A); I_z = 17.7 A"),
@@ -135,7 +149,7 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
                 [new CalcExpectedValue("I_b", 18, "A", 1e-9), new CalcExpectedValue("I_n", 20, "A", 1e-9), new CalcExpectedValue("C_c", 0.725, "", 1e-9), new CalcExpectedValue("I_t_req", 27.5862069, "A", 1e-6), new CalcExpectedValue("CSA", 6, "mm^2", 1e-9), new CalcExpectedValue("I_z", 31.9, "A", 1e-9), new CalcExpectedValue("I2", 40, "A", 1e-9), new CalcExpectedValue("u_I2", 0.8647713761, "", 1e-6)]),
             new CalcTestCase("ka-derived-ca", "Derived ambient factor: PVC 70 °C, θ_ref 30 °C, θ_a 40 °C",
                 new CalcReferenceSource("Analytic (the derived-approximation formula)", null, "C_a = √[(70 − 40)/(70 − 30)] = 0.866025; with C_g 0.77 and the 7.5 kW load: I_t,req = 16/(0.866025·0.77) = 23.99378 A, 4 mm² (24.1 A synthetic), I_z = 24.1·0.866025·0.77 = 16.07083 A"),
-                [Choice("supply", ThreePhase), Q("P", 7.5, "kW"), Q("U", 400, "V"), N("cos_phi", 0.85), N("eta", 0.9), Choice("device", McbC), Choice("insulation", Pvc), Q("theta_a", 40, "degC"), CalcInputValue.Switch("derive_Ca", true), Q("theta_ref", 30, "degC"), N("N_g", 2), N("C_g", 0.77), TypicalRatings(), SyntheticAmpacity()],
+                [Choice("supply", ThreePhase), Q("P", 7.5, "kW"), Q("U", 400, "V"), N("cos_phi", 0.85), N("eta", 0.9), Choice("device", McbC), Choice("insulation", Pvc), Q("T_amb", 40, "degC"), CalcInputValue.Switch("derive_Ca", true), Q("T_ref", 30, "degC"), N("N_g", 2), N("C_g", 0.77), TypicalRatings(), SyntheticAmpacity()],
                 [new CalcExpectedValue("C_a", 0.8660254038, "", 1e-9), new CalcExpectedValue("I_t_req", 23.99377742, "A", 1e-6), new CalcExpectedValue("CSA", 4, "mm^2", 1e-9), new CalcExpectedValue("I_z", 16.07083342, "A", 1e-6)]),
             new CalcTestCase("ka-awg-10", "AWG geometry: AWG 10 is 5.2612 mm²",
                 new CalcReferenceSource("Analytic (the AWG geometry formula)", null, "d = 0.127·92^((36 − 10)/39) = 2.588187 mm; area = π d²/4 = 5.261155 mm². Linked I_b 25 A, type C MCB, AWG rows 14, 12, 10, 8 with synthetic capacities 11.2, 16.9, 26.3, 37.4 A (invented for these tests, not taken from any table): I_n = 25 A, AWG 10 (26.3 A) is the smallest that carries it"),
@@ -145,17 +159,17 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         Category: "Power",
         OutputPorts:
         [
-            new CalcOutputPort("I_b", "A", "Design current"),
-            new CalcOutputPort("I_n", "A", "Rated current of the protective device"),
-            new CalcOutputPort("CSA", "mm^2", "Selected conductor cross-section"),
-            new CalcOutputPort("I_z", "A", "Current-carrying capacity of the selected conductor"),
-            new CalcOutputPort("L", "m", "Circuit length"),
-            new CalcOutputPort("theta_op", "degC", "Conductor operating temperature for the insulation (70 PVC, 90 XLPE, the entered θ_p for 'user'; → E5 θ, E3 T_c)"),
-            new CalcOutputPort("device_code", "", "Protective device type code: 1 MCB B, 2 MCB C, 3 MCB D, 4 fuse, MCCB or MPCB (→ E5 device_code)"),
+            new CalcOutputPort("I_b", "A", "Design current", "conductor.current_design"),
+            new CalcOutputPort("I_n", "A", "Rated current of the protective device", "conductor.rating_device"),
+            new CalcOutputPort("CSA", "mm^2", "Selected conductor cross-section", "conductor.area_selected"),
+            new CalcOutputPort("I_z", "A", "Current-carrying capacity of the selected conductor", "conductor.capacity_current"),
+            new CalcOutputPort("L", "m", "Circuit length", "conductor.length_circuit"),
+            new CalcOutputPort("T_op", "degC", "Conductor operating temperature for the insulation (70 PVC, 90 XLPE, the entered T_user for 'user'; → fault-protection T_op, voltage-drop T_c)", "conductor.temperature_operating", ["theta_op"]),
+            new CalcOutputPort("device_code", "", "Protective device type code: 1 MCB B, 2 MCB C, 3 MCB D, 4 fuse, MCCB or MPCB (→ fault-protection device_code)", "conductor.code_device"),
         ],
         RecordKinds:
         [
-            new CalcRecordKind("cable.ampacity", "Cable current-carrying capacities", ["ampacity"], "From your own licensed table for the installation method and insulation (cross-section against I_t); none ships with the calculator."),
+            new CalcRecordKind("cable.ampacity", "Cable ampacity (current-carrying capacities)", ["ampacity"], "From your own licensed table for the installation method and insulation (cross-section against I_t); none ships with the calculator."),
             new CalcRecordKind("cable.correction-factors", "Cable correction factors", ["C_a", "C_g", "C_i"], "Ambient, grouping and thermal-insulation factors from your own licensed table for the installation method."),
             new CalcRecordKind("device.ratings", "Preferred device ratings", ["ratings"], "The preferred ratings of the device range (manufacturer datasheet or product standard)."),
         ],
@@ -213,7 +227,7 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         var device = c.InputText("device");
         var awgMode = c.InputText("system") == Awg;
         c.Input("L");
-        c.Input("theta_a");
+        c.Input("T_amb");
         c.InputText("insulation");
         c.Input("N_g");
 
@@ -262,9 +276,9 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
             var hasGauge = given.Any(r => r.Get("AWG") is { Number: not null });
 
             if (awgMode && hasCsa && !hasGauge)
-                c.Block("ampacity", "ampacity: the rows give cross-sections (metric) but the conductor system is AWG; enter AWG gauge numbers or switch the system to metric.");
+                c.Block("ampacity", "ampacity: the rows hold cross-sections but the conductor system is AWG. Enter AWG gauge numbers, or switch the system to metric.");
             else if (!awgMode && hasGauge && !hasCsa)
-                c.Block("ampacity", "ampacity: the rows give AWG gauge numbers but the conductor system is metric; enter cross-sections or switch the system to AWG.");
+                c.Block("ampacity", "ampacity: the rows hold AWG gauge numbers but the conductor system is metric. Enter cross-sections, or switch the system to AWG.");
             else
                 c.Block("ampacity", "ampacity: enter the current-carrying capacities for the installation method from your own licensed table (record kind cable.ampacity).");
 
@@ -272,7 +286,7 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         }
 
         if (ignored > 0)
-            c.Warn("ampacity", $"ampacity: {ignored} row(s) without the {(awgMode ? "AWG gauge" : "cross-section")} for the {(awgMode ? "AWG" : "metric")} system were ignored.");
+            c.Warn("ampacity-ignored", $"ampacity: {ignored} row(s) without the {(awgMode ? "AWG gauge" : "cross-section")} for the {(awgMode ? "AWG" : "metric")} system were ignored.");
 
         table = CheckTable(c, table, awgMode);
 
@@ -302,31 +316,31 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         // Ambient factor: entered, or derived from the temperatures.
         if (c.InputFlag("derive_Ca"))
         {
-            c.Input("theta_ref");
+            c.Input("T_ref");
             var insulation = c.InputText("insulation");
             double thetaP;
 
             if (insulation == UserInsulation)
             {
-                if (!c.Has("theta_p"))
+                if (!c.Has("T_user"))
                 {
-                    c.Block("theta_p", "theta_p: enter the conductor operating temperature for 'user' insulation to derive C_a.");
+                    c.Block("theta_p", "T_user: enter the conductor operating temperature for 'user' insulation to derive C_a.");
                     return;
                 }
 
-                thetaP = c.InputSi("theta_p") - 273.15;
+                thetaP = c.InputSi("T_user") - 273.15;
             }
             else
             {
                 thetaP = insulation == Pvc ? 70 : 90;
             }
 
-            var ta = c.Si("theta_a") - 273.15;
-            var tref = c.Si("theta_ref") - 273.15;
+            var ta = c.Si("T_amb") - 273.15;
+            var tref = c.Si("T_ref") - 273.15;
 
             if (!(thetaP > ta) || !(thetaP > tref))
             {
-                c.Block("theta_a", $"theta_a: the ambient ({F(ta)} °C) and the reference ({F(tref)} °C) must both be below the conductor temperature ({F(thetaP)} °C) to derive C_a.");
+                c.Block("derive-Ca", $"T_amb: the ambient ({F(ta)} °C) and the reference ({F(tref)} °C) must be below the conductor temperature ({F(thetaP)} °C).");
                 return;
             }
 
@@ -334,12 +348,12 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
 
             if (ca is < 0.1 or > 1.5)
             {
-                c.Block("C_a", $"C_a: the derived factor {F(ca)} is outside 0.1 … 1.5; enter the factor from your licensed table instead.");
+                c.Block("C_a-range", $"C_a: the derived factor {F(ca)} is outside 0.1 to 1.5. Enter the factor from your licensed table instead.");
                 return;
             }
 
             c.Record("C_a", "√[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table)", $"√[({F(thetaP)} − {F(ta)})/({F(thetaP)} − {F(tref)})]", new ScalarValue(ca), "Ambient factor, derived approximation — compare with the licensed table", sizing);
-            c.Warn("C_a", $"C_a: derived approximation — compare with the licensed table. It is taken against a reference ambient θ_ref of {F(tref)} °C: that must be the reference ambient of the table your capacities come from (the machine-wiring and installation tables do not all use the same one), or C_a is wrong by the difference.");
+            c.Warn("C_a", $"C_a: derived approximation, so compare it with the licensed table. It uses the reference ambient T_ref of {F(tref)} °C, which must be the reference ambient of your capacity table.");
         }
         else
         {
@@ -352,19 +366,19 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
             {
                 Pvc => 70.0,
                 Xlpe => 90.0,
-                _ => c.Has("theta_p") ? c.InputSi("theta_p") - 273.15 : double.NaN,
+                _ => c.Has("T_user") ? c.InputSi("T_user") - 273.15 : double.NaN,
             };
-            var ambient = c.Si("theta_a") - 273.15;
-            var reference = c.InputSi("theta_ref") - 273.15;
+            var ambient = c.Si("T_amb") - 273.15;
+            var reference = c.InputSi("T_ref") - 273.15;
 
             if (!double.IsNaN(thetaPLimit) && ambient >= thetaPLimit)
             {
-                c.Block("theta_a-limit", $"theta_a: the ambient ({F(ambient)} °C) is at or above the conductor operating temperature ({F(thetaPLimit)} °C), so the cable has no capacity left to carry current; the sizing is refused.");
+                c.Block("theta_a-limit", $"T_amb: the ambient ({F(ambient)} °C) is at or above the conductor operating temperature ({F(thetaPLimit)} °C). The cable has no capacity left, so the sizing is refused.");
                 return;
             }
 
             if (Math.Abs(c.Si("C_a") - 1) < 1e-12 && ambient > reference + 0.5)
-                c.Warn("theta_a", $"theta_a: the ambient {F(ambient)} °C is above the reference {F(reference)} °C but C_a is 1, so the ambient has not been applied to the conductor and it is sized as if the ambient were the reference; enter C_a from your licensed table for this ambient, or tick derive_Ca (the approximation) and compare it with the table.");
+                c.Warn("theta_a", $"T_amb: the ambient {F(ambient)} °C is above the reference {F(reference)} °C, but C_a is 1. The conductor is sized as if the ambient were the reference, so enter C_a or tick derive_Ca.");
         }
 
         // The conductor's operating temperature for its insulation (chain.motor-circuit-R1): the loop-impedance and voltage-drop steps take their resistance at it.
@@ -372,17 +386,17 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         {
             Pvc => 70.0,
             Xlpe => 90.0,
-            _ => c.Has("theta_p") ? c.InputSi("theta_p") - 273.15 : double.NaN,
+            _ => c.Has("T_user") ? c.InputSi("T_user") - 273.15 : double.NaN,
         };
 
         if (!double.IsNaN(operating))
-            c.Assign("theta_op", c.InputText("insulation") switch { Pvc => "70 degC", Xlpe => "90 degC", _ => "theta_p" }, "degC", "Conductor operating temperature for the insulation (→ E5 θ, E3 T_c)");
+            c.Assign("T_op", c.InputText("insulation") switch { Pvc => "70 degC", Xlpe => "90 degC", _ => "T_user" }, "degC", "Conductor operating temperature for the insulation");
 
         c.Input("C_g");
         c.Input("C_i");
 
         if (c.Si("N_g") > 1 && c.Si("C_g") == 1)
-            c.Warn("C_g", $"C_g: {F(c.Si("N_g"))} circuits are grouped but C_g = 1; enter the grouping factor from your licensed table.");
+            c.Warn("C_g", $"C_g: {F(c.Si("N_g"))} circuits are grouped but C_g = 1. Enter the grouping factor from your licensed table.");
 
         c.Assign("I_t_req", "I_n / (C_a * C_g * C_i * C_c)", "A", "Required tabulated capacity", sizing);
 
@@ -406,7 +420,7 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         var outputs = new List<(string, string)> { ("I_b", "Design current"), ("I_n", "Rated current of the device"), ("C_c", "Semi-enclosed fuse factor"), ("C_a", "Ambient factor"), ("I_t_req", "Required tabulated capacity"), ("CSA", "Selected cross-section"), ("I_z", "Current-carrying capacity"), ("L", "Circuit length"), ("u_Ib", "I_b / I_n"), ("u_In", "I_n / I_z") };
 
         if (!double.IsNaN(operating))
-            outputs.Add(("theta_op", "Conductor operating temperature for the insulation"));
+            outputs.Add(("T_op", "Conductor operating temperature for the insulation"));
 
         // I₂: inherent 1.45·I_n for MCBs; 2·I_n by default for a semi-enclosed fuse; an entered I₂ is always checked. A gG fuse (to BS 88),
         // an MCCB or an MPCB without I₂ is deemed to meet I₂ ≤ 1.45·I_z when I_n ≤ I_z only in the BS 7671 installation context: an
@@ -433,7 +447,7 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         }
         else if (machine)
         {
-            c.Block("I2", $"I2: enter the conventional operating current of the {device} from its datasheet; outside the BS 7671 installation context the I₂ ≤ 1.45·I_z condition cannot be deemed satisfied (an IEC 60269-1 gG fuse has I₂ = 1.6·I_n).");
+            c.Block("I2", $"I2: enter the conventional operating current of the {device} from its datasheet. In the machine-wiring context the I₂ ≤ 1.45·I_z condition cannot be deemed satisfied.");
             return;
         }
         else
@@ -441,12 +455,13 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
             deemed = true;
 
             if (!gg)
-                c.Warn("I2", $"I2: the conventional operating current of the {device} is not entered; I₂ ≤ 1.45·I_z is deemed satisfied when I_n ≤ I_z only if the device's I₂ is not above 1.45·I_n. Enter I₂ from the datasheet to check it.");
+                c.Warn("I2-deemed", $"I2: the conventional operating current of the {device} is not entered. The I₂ ≤ 1.45·I_z condition holds only if the device's I₂ is at most 1.45·I_n, so enter it.");
         }
 
         if (haveI2)
         {
-            c.Assign("u_I2", "I2 / (1.45 * I_z)", null, "I₂ utilisation of 1.45 I_z", coordination);
+            c.Assign("I2_lim", "1.45 * I_z", "A", "Largest conventional operating current the conductor allows, 1.45 I_z", coordination);
+            c.Assign("u_I2", "I2 / I2_lim", null, "I₂ utilisation of 1.45 I_z", coordination);
             outputs.AddRange([("I2", "Conventional operating current"), ("u_I2", "I₂ / (1.45 I_z)")]);
         }
 
@@ -458,13 +473,13 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         if (awgMode)
             c.Output("gauge", "Selected AWG gauge", new TextValue("AWG " + AwgName(pick.Gauge)));
 
-        c.CheckUtilisation("Design current within device rating (I_b ≤ I_n)", "u_Ib", coordination);
-        c.CheckUtilisation("Device rating within conductor capacity (I_n ≤ I_z)", "u_In", coordination);
+        c.Check("Design current against the device rating", "I_b", "I_n", coordination);
+        c.Check("Device rating against the conductor capacity", "I_n", "I_z", coordination);
 
         if (haveI2)
-            c.CheckUtilisation("Conventional operating current within 1.45·I_z (I₂ ≤ 1.45·I_z)", "u_I2", device == SemiEnclosed ? "BS 7671 reg. 433.1.202" : coordination);
+            c.Check("Conventional operating current against 1.45 times the conductor capacity", "I2", "I2_lim", device == SemiEnclosed ? "BS 7671 reg. 433.1.202" : coordination);
         else if (deemed)
-            c.Check(gg ? "I₂ ≤ 1.45·I_z deemed satisfied for a gG fuse to BS 88 when I_n ≤ I_z" : "I₂ ≤ 1.45·I_z deemed satisfied when I_n ≤ I_z (I₂ taken as not above 1.45·I_n)", "I_n", "I_z", gg ? "BS 7671 reg. 433.1.201" : coordination);
+            c.Check(gg ? "Device rating against the conductor capacity, I₂ deemed satisfied for a gG fuse to BS 88" : "Device rating against the conductor capacity, I₂ deemed satisfied (taken as at most 1.45·I_n)", "I_n", "I_z", gg ? "BS 7671 reg. 433.1.201" : coordination);
     }
 
     /// <summary>The device type code carried to E5: 1 = MCB type B, 2 = type C, 3 = type D, 4 = any other device (fuse, MCCB, MPCB: time–current points).</summary>
@@ -515,7 +530,7 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         var duplicates = table.Count - merged.Count;
 
         if (duplicates > 0)
-            c.Warn("ampacity-sense", $"ampacity: {duplicates} {(awgMode ? "gauge" : "cross-section")}(s) appear more than once in the record; the lower capacity of each is used. Remove the wrong row.");
+            c.Warn("ampacity-sense", $"ampacity: {duplicates} {(awgMode ? "gauge" : "cross-section")}(s) appear more than once in the record. The lower capacity of each is used, so remove the wrong row.");
 
         var bySize = merged.OrderBy(t => t.Area).ToList();
 
@@ -523,7 +538,7 @@ public sealed class ConductorSizingCalculator : ICalcCalculator
         {
             if (bySize[i].It < bySize[i - 1].It * (1 - 1e-9))
             {
-                c.Warn("ampacity-sense", $"ampacity: the capacity falls from {F(bySize[i - 1].It)} A ({F(bySize[i - 1].Area)} mm²) to {F(bySize[i].It)} A ({F(bySize[i].Area)} mm²) as the cross-section grows; the record probably mixes installation methods or has a typing slip.");
+                c.Warn("ampacity-sense", $"ampacity: the capacity falls from {F(bySize[i - 1].It)} A ({F(bySize[i - 1].Area)} mm²) to {F(bySize[i].It)} A ({F(bySize[i].Area)} mm²) as the cross-section grows. The record probably mixes installation methods or has a typing slip.");
                 break;
             }
         }

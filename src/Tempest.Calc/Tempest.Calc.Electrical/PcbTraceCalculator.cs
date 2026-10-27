@@ -33,43 +33,51 @@ public sealed class PcbTraceCalculator : ICalcCalculator
     public const double FitMinRiseK = 10.0;
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.Electrical, "PCB trace width (IPC-2221)",
-        "The minimum width of a printed-circuit trace for a current and an allowed temperature rise, from the legacy IPC-2221 curve-fit, and the resistance, voltage drop and I²R loss of the trace as drawn: " + SheetLabel + ". External or internal layer; copper weight in oz/ft²; resistance at the trace's operating temperature (ambient plus rise). The IPC-2152 method (charts, plane and board-thickness factors) is not implemented.",
+        Id, "1.3.0", CalcDiscipline.Electrical, "PCB trace width (IPC-2221)",
+        "Calculates the minimum width of a printed-circuit trace for a current and an allowed temperature rise by the " + SheetLabel + ". It also gives the resistance, voltage drop and I²R loss of the trace as drawn.",
         "Trace cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725) with A in mil², k = 0.048 external, 0.024 internal\n" +
         "Copper thickness: t = w_Cu·t_oz, t_oz = 1.378 mil per oz/ft² (35 µm, derived)\n" +
         "Minimum width: w_min = A/t; utilisation u_w = w_min/w_act\n" +
         "Resistivity at the operating temperature: ρ_T = ρ_20·[1 + α·(T_amb + ΔT − 20)]\n" +
         "Trace resistance: R = ρ_T·L/(w_act·t); voltage drop ΔV = I·R; loss P = I²·R",
         [
-            new CalcInputSpec("I", "Trace current (the curve-fit was drawn for up to 35 A: above it the sheet is refused)", CalcInputKind.Quantity, "A", Default: 3, Min: 0.01, Max: 35, HardMin: 1e-3, HardMax: 35, Group: "Load"),
-            new CalcInputSpec("dT", "Allowed temperature rise above ambient", CalcInputKind.Quantity, "K", Default: 10, Min: 1, Max: 100, HardMin: 0.1, HardMax: 300, Group: "Load"),
-            new CalcInputSpec("T_amb", "Ambient temperature at the board", CalcInputKind.Quantity, "degC", Default: 25, Min: -40, Max: 125, HardMin: -100, HardMax: 500, Group: "Load"),
-            new CalcInputSpec("layer", "Layer", CalcInputKind.Choice, Choices: [External, Internal], DefaultChoice: External, Group: "Trace"),
-            new CalcInputSpec("Cu_oz", "Finished copper weight in oz/ft² (0.5 to 6), not a thickness in µm: 17.5 µm is ½ oz, 35 µm is 1 oz, 70 µm is 2 oz, 105 µm is 3 oz", CalcInputKind.Number, Default: 1, Min: 0.5, Max: 6, HardMin: 0.1, HardMax: 6, Group: "Trace"),
-            new CalcInputSpec("w_act", "Trace width as drawn", CalcInputKind.Quantity, "mm", Default: 2, Min: 0.05, Max: 10, HardMin: 0.01, HardMax: 1000, Group: "Trace"),
-            new CalcInputSpec("L", "Trace length", CalcInputKind.Quantity, "mm", Default: 50, Min: 1, Max: 1000, HardMin: 1e-3, HardMax: 1e5, Group: "Trace"),
-            new CalcInputSpec("k_ext", "Curve-fit constant k, external layer", CalcInputKind.Number, Default: 0.048, Min: 0.01, Max: 0.1, HardMin: 0.001, HardMax: 1, Group: "Method (IPC-2221 legacy)"),
-            new CalcInputSpec("k_int", "Curve-fit constant k, internal layer", CalcInputKind.Number, Default: 0.024, Min: 0.005, Max: 0.05, HardMin: 0.001, HardMax: 1, Group: "Method (IPC-2221 legacy)"),
-            new CalcInputSpec("n_dT", "Exponent of the temperature rise", CalcInputKind.Number, Default: 0.44, Min: 0.3, Max: 0.6, HardMin: 0.1, HardMax: 1, Group: "Method (IPC-2221 legacy)"),
-            new CalcInputSpec("n_A", "Exponent of the cross-section", CalcInputKind.Number, Default: 0.725, Min: 0.5, Max: 1, HardMin: 0.3, HardMax: 1.5, Group: "Method (IPC-2221 legacy)"),
-            new CalcInputSpec("t_oz", "Copper thickness per oz/ft² (35 µm = 1.378 mil, derived)", CalcInputKind.Quantity, "mil", Default: 1.378, Min: 1.2, Max: 1.5, HardMin: 0.5, HardMax: 3, Group: "Method (IPC-2221 legacy)"),
-            new CalcInputSpec("rho_20", "Copper resistivity at 20 °C (annealed copper, 1.724e-8 Ω·m)", CalcInputKind.Quantity, "ohm*mm^2/m", Default: 0.01724, Min: 0.0165, Max: 0.0185, HardMin: 0.01, HardMax: 0.05, Group: "Copper"),
-            new CalcInputSpec("alpha", "Temperature coefficient of resistance of copper", CalcInputKind.Quantity, "1/K", Default: 0.00393, Min: 0.0035, Max: 0.0042, HardMin: 0.001, HardMax: 0.01, Group: "Copper"),
+            new CalcInputSpec("layer", "Layer", CalcInputKind.Choice, Choices: [External, Internal], DefaultChoice: External, Group: "Setup"),
+            new CalcInputSpec("w_act", "Trace width as drawn", CalcInputKind.Quantity, "mm", Default: 2, Min: 0.05, Max: 10, HardMin: 0.01, HardMax: 1000, Group: "Geometry"),
+            new CalcInputSpec("L", "Trace length", CalcInputKind.Quantity, "mm", Default: 50, Min: 1, Max: 1000, HardMin: 1e-3, HardMax: 1e5, Group: "Geometry"),
+            new CalcInputSpec("Cu_oz", "Finished copper weight in oz/ft² (0.5 to 6), not a thickness in µm: 17.5 µm is ½ oz, 35 µm is 1 oz, 70 µm is 2 oz, 105 µm is 3 oz", CalcInputKind.Number, Default: 1, Min: 0.5, Max: 6, HardMin: 0.1, HardMax: 6, Group: "Material"),
+            new CalcInputSpec("rho_20", "Copper resistivity at 20 °C (annealed copper, 1.724e-8 Ω·m)", CalcInputKind.Quantity, "ohm*mm^2/m", Default: 0.01724, Min: 0.0165, Max: 0.0185, HardMin: 0.01, HardMax: 0.05, Group: "Material"),
+            new CalcInputSpec("alpha", "Temperature coefficient of resistance of copper", CalcInputKind.Quantity, "1/K", Default: 0.00393, Min: 0.0035, Max: 0.0042, HardMin: 0.001, HardMax: 0.01, Group: "Material"),
+            new CalcInputSpec("I", "Trace current (the curve-fit was drawn for up to 35 A: above it the sheet is refused)", CalcInputKind.Quantity, "A", Default: 3, Min: 0.01, Max: 35, HardMin: 1e-3, HardMax: 35, Group: "Loads"),
+            new CalcInputSpec("T_amb", "Ambient temperature at the board", CalcInputKind.Quantity, "degC", Default: 25, Min: -40, Max: 125, HardMin: -100, HardMax: 500, Group: "Conditions"),
+            new CalcInputSpec("dT", "Allowed temperature rise above ambient", CalcInputKind.Quantity, "K", Default: 10, Min: 1, Max: 100, HardMin: 0.1, HardMax: 300, Group: "Requirements"),
+            new CalcInputSpec("k_ext", "Curve-fit constant k, external layer", CalcInputKind.Number, Default: 0.048, Min: 0.01, Max: 0.1, HardMin: 0.001, HardMax: 1, Group: "Method"),
+            new CalcInputSpec("k_int", "Curve-fit constant k, internal layer", CalcInputKind.Number, Default: 0.024, Min: 0.005, Max: 0.05, HardMin: 0.001, HardMax: 1, Group: "Method"),
+            new CalcInputSpec("n_dT", "Exponent of the temperature rise", CalcInputKind.Number, Default: 0.44, Min: 0.3, Max: 0.6, HardMin: 0.1, HardMax: 1, Group: "Method"),
+            new CalcInputSpec("n_A", "Exponent of the cross-section", CalcInputKind.Number, Default: 0.725, Min: 0.5, Max: 1, HardMin: 0.3, HardMax: 1.5, Group: "Method"),
+            new CalcInputSpec("t_oz", "Copper thickness per oz/ft² (35 µm = 1.378 mil, derived)", CalcInputKind.Quantity, "mil", Default: 1.378, Min: 1.2, Max: 1.5, HardMin: 0.5, HardMax: 3, Group: "Method"),
         ],
         [
-            new CalcAssumption("The curve-fit is the legacy IPC-2221 relation, drawn for a trace on an outer or inner layer with no plane or convective help, 1 to 3 oz copper, up to 35 A, rises of 10 to 100 K and widths to 10 mm; it is conservative for multilayer boards and is a screening of width, not a thermal analysis of the board.", "IPC-2221 curve-fit (legacy); IPC-2152 is not implemented."),
-            new CalcAssumption("Copper thickness is the nominal 1.378 mil (35 µm) per oz/ft² of finished copper; plating build-up on outer layers and etch-back are not modelled.", "Derived: 35 µm / 25.4 µm per mil."),
-            new CalcAssumption("Resistance uses the trace as drawn at the temperature ambient + rise, from the resistivity at 20 °C and a linear temperature coefficient; vias, pads, bends and skin effect are ignored.", "Derived constants for annealed copper."),
-            new CalcAssumption("Steady direct current (or RMS current at low frequency); the rise is the allowed rise in the worst case.", "Scope of the curve-fit."),
+            new CalcAssumption("The curve-fit is the legacy IPC-2221 relation for a trace with no plane or convective help.", "IPC-2221 curve-fit (legacy); IPC-2152 is not implemented."),
+            new CalcAssumption("The curve-fit was drawn for 1 to 3 oz copper and currents up to 35 A.", "IPC-2221 curve-fit (legacy)."),
+            new CalcAssumption("The curve-fit was drawn for rises of 10 to 100 K and widths up to 10 mm.", "IPC-2221 curve-fit (legacy)."),
+            new CalcAssumption("The result screens the trace width and is not a thermal analysis of the board.", "Scope of the curve-fit."),
+            new CalcAssumption("The curve-fit is conservative for multilayer boards.", "IPC-2221 curve-fit (legacy)."),
+            new CalcAssumption("Copper thickness is the nominal 1.378 mil (35 µm) per oz/ft² of finished copper.", "Derived: 35 µm / 25.4 µm per mil."),
+            new CalcAssumption("Plating build-up on outer layers and etch-back are not modelled.", "Scope of the sheet."),
+            new CalcAssumption("The resistance uses the trace as drawn at the temperature ambient plus rise.", "Derived constants for annealed copper."),
+            new CalcAssumption("The resistivity at 20 °C is corrected with a linear temperature coefficient.", "Derived constants for annealed copper."),
+            new CalcAssumption("Vias, pads, bends and skin effect are ignored.", "Scope of the sheet."),
+            new CalcAssumption("The current is steady direct current, or RMS current at low frequency.", "Scope of the curve-fit."),
+            new CalcAssumption("The rise is the allowed rise in the worst case.", "Scope of the curve-fit."),
         ],
         [
-            new CalcClauseRef("IPC-2221", "6", "Electrical properties: current-carrying capacity of printed-board conductors (legacy curve-fit)"),
-            new CalcClauseRef("Hughes, Electrical and Electronic Technology", "Ch. on DC circuits", "Resistivity and temperature coefficient of resistance"),
+            new CalcClauseRef("IPC-2221B:2012", "cl. 6", "Electrical properties: current-carrying capacity of printed-board conductors (legacy curve-fit; edition to be checked)"),
+            new CalcClauseRef("Hughes, Electrical and Electronic Technology", "Ch. on DC circuits, 12th ed. (edition to be checked)", "Resistivity and temperature coefficient of resistance"),
         ],
         [
             new CalcApplicabilityRule("narrow", "The trace as drawn is narrower than the minimum for the allowed rise (u_w above 1): it runs hotter, and the resistance, drop and loss are taken at the rise the curve-fit gives for the drawn width.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("width", "The minimum width exceeds 10 mm, beyond the range of the source curve-fit, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
-            new CalcApplicabilityRule("input.I", "The current exceeds 35 A, beyond the range of the source curve-fit, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("I", "The current exceeds 35 A, beyond the range of the source curve-fit, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("copper", "The copper weight is outside 1 to 3 oz/ft², the range the source curve-fit was drawn for: the copper-range check fails (a block would refuse the half-ounce known-answer case).", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("rise", "The allowed temperature rise is below 10 K, the smallest rise the source curve-fit was drawn for, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
         ],
@@ -104,14 +112,14 @@ public sealed class PcbTraceCalculator : ICalcCalculator
         Category: "Electronics",
         OutputPorts:
         [
-            new CalcOutputPort("trace_R", "ohm", "Resistance of the trace as drawn at its operating temperature"),
-            new CalcOutputPort("trace_Ploss", "W", "I²R power loss in the trace"),
-            new CalcOutputPort("vdrop", "V", "Voltage drop along the trace"),
+            new CalcOutputPort("trace_R", "ohm", "Resistance of the trace as drawn at its operating temperature", "trace.resistance"),
+            new CalcOutputPort("trace_Ploss", "W", "I²R power loss in the trace", "trace.power_loss"),
+            new CalcOutputPort("vdrop", "V", "Voltage drop along the trace", "trace.voltage_drop"),
         ],
         RecordKinds:
         [
-            new CalcRecordKind("pcb.method", "IPC-2221 legacy curve-fit constants", ["k_ext", "k_int", "n_dT", "n_A", "t_oz"], "The legacy IPC-2221 constants: k = 0.048 (external) and 0.024 (internal), exponents 0.44 (temperature rise) and 0.725 (cross-section), and 1.378 mil of copper per oz/ft². Published closed-form constants; cite the edition of IPC-2221 you take them from."),
-            new CalcRecordKind("conductor.material", "Copper resistivity constants", ["rho_20", "alpha"], "Annealed copper at 20 °C: 1.724e-8 Ω·m (0.01724 Ω·mm²/m) and 0.00393 per K; derived physical constants, or your own values for a plated or alloyed trace."),
+            new CalcRecordKind("pcb.method", "IPC-2221 legacy curve-fit method constants", ["k_ext", "k_int", "n_dT", "n_A", "t_oz"], "The legacy IPC-2221 constants: k = 0.048 (external) and 0.024 (internal), exponents 0.44 (temperature rise) and 0.725 (cross-section), and 1.378 mil of copper per oz/ft². Published closed-form constants; cite the edition of IPC-2221 you take them from."),
+            new CalcRecordKind("conductor.material", "Copper material constants", ["rho_20", "alpha"], "Annealed copper at 20 °C: 1.724e-8 Ω·m (0.01724 Ω·mm²/m) and 0.00393 per K; derived physical constants, or your own values for a plated or alloyed trace."),
         ]);
 
     public void Run(CalcRunContext c)
@@ -131,10 +139,10 @@ public sealed class PcbTraceCalculator : ICalcCalculator
         c.Input(internalLayer ? "k_int" : "k_ext");
 
         // The curve-fit takes the current in amperes, the rise in kelvin and the area in mil² as plain numbers.
-        c.Assign("k", internalLayer ? "k_int" : "k_ext", null, internalLayer ? "Curve-fit constant k (internal layer)" : "Curve-fit constant k (external layer)", "IPC-2221 §6 (legacy)");
+        c.Assign("k", internalLayer ? "k_int" : "k_ext", null, internalLayer ? "Curve-fit constant k (internal layer)" : "Curve-fit constant k (external layer)", "IPC-2221 cl. 6 (legacy)");
         c.Assign("I_n", "I / (1 A)", null, "Current as a number of amperes");
         c.Assign("dT_n", "dT / (1 K)", null, "Temperature rise as a number of kelvin");
-        c.Assign("A_req", "(I_n / (k * dT_n^n_dT))^(1 / n_A) * (1 mil^2)", "mil^2", "Minimum conductor cross-section", "IPC-2221 §6 (legacy)");
+        c.Assign("A_req", "(I_n / (k * dT_n^n_dT))^(1 / n_A) * (1 mil^2)", "mil^2", "Minimum conductor cross-section", "IPC-2221 cl. 6 (legacy)");
         c.Assign("t_Cu", "Cu_oz * t_oz", "um", "Copper thickness");
         c.Assign("w_min", "A_req / t_Cu", "mm", "Minimum trace width");
 
@@ -155,7 +163,7 @@ public sealed class PcbTraceCalculator : ICalcCalculator
 
         if (narrow)
         {
-            c.Assign("dT_act", "(I_n / (k * (A_act / (1 mil^2))^n_A))^(1 / n_dT) * (1 K)", "K", "Temperature rise of the trace as drawn (the curve-fit solved for the rise)", "IPC-2221 §6 (legacy)");
+            c.Assign("dT_act", "(I_n / (k * (A_act / (1 mil^2))^n_A))^(1 / n_dT) * (1 K)", "K", "Temperature rise of the trace as drawn (the curve-fit solved for the rise)", "IPC-2221 cl. 6 (legacy)");
             c.Assign("T_trace", "T_amb + dT_act", "degC", "Trace operating temperature (at the rise of the trace as drawn)");
         }
         else
@@ -174,10 +182,10 @@ public sealed class PcbTraceCalculator : ICalcCalculator
         if (narrow)
         {
             c.Output("dT_act", "Temperature rise of the trace as drawn");
-            c.Warn("narrow", $"w_act: the trace as drawn is narrower than the minimum for {CalcValue.FormatNumber(c.Si("dT"))} K, so it runs hotter, about {CalcValue.FormatNumber(c.Si("dT_act"), 3)} K above ambient by the curve-fit; the resistance, drop and loss are taken at that rise. Widen the trace.");
+            c.Warn("narrow", $"w_act: the trace is narrower than the minimum for {CalcValue.FormatNumber(c.Si("dT"))} K, so it runs about {CalcValue.FormatNumber(c.Si("dT_act"), 3)} K above ambient. The resistance, drop and loss use that rise, so widen the trace.");
         }
 
-        c.CheckUtilisation("Trace width as drawn against the minimum for the rise", "u_w", "IPC-2221 §6 (legacy)");
+        c.Check("Minimum trace width against the width as drawn", "w_min", "w_act", "IPC-2221 cl. 6 (legacy)");
 
         var oz = c.Si("Cu_oz");
 
@@ -185,7 +193,7 @@ public sealed class PcbTraceCalculator : ICalcCalculator
         if (oz < FitMinOz || oz > FitMaxOz)
         {
             c.Warn("copper", $"Cu_oz: {CalcValue.FormatNumber(oz)} oz/ft² is outside the 1 to 3 oz/ft² the curve-fit was drawn for, so the copper-range check fails.");
-            c.CheckCondition("Copper weight against the range of the curve-fit", false, $"{CalcValue.FormatNumber(oz)} oz/ft²", "1 to 3 oz/ft²", "w_min", "IPC-2221 §6 (legacy)");
+            c.CheckCondition("Copper weight against the range of the curve-fit", false, $"{CalcValue.FormatNumber(oz)} oz/ft²", "1 to 3 oz/ft²", "w_min", "IPC-2221 cl. 6 (legacy)");
         }
     }
 }

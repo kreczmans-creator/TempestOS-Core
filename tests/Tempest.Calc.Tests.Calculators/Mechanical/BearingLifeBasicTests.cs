@@ -22,18 +22,18 @@ public sealed class BearingLifeBasicTests
         CalcRunner.Run(Full, Defaults(Full).With(CalcInputValue.Choice("type", type))
             .With(CalcInputValue.Quantity("C", c, "kN")).With(CalcInputValue.Quantity("F_r", fr, "kN")).With(CalcInputValue.Quantity("F_a", fa, "kN"))
             .With(CalcInputValue.Of("e_lim", 0)).With(CalcInputValue.Of("X", x)).With(CalcInputValue.Of("Y", y))
-            .With(CalcInputValue.Quantity("n", n, "rpm")).With(CalcInputValue.Quantity("R", reliability, "%")));
+            .With(CalcInputValue.Quantity("n", n, "rpm")).With(CalcInputValue.Quantity("R_rel", reliability, "%")));
 
     [Fact]
     public void M5_Reproduces_Legacy_Examples_One_And_Two_For_The_Unmodified_Life()
     {
         var ball = RunFull(BearingLifeCalculator.Ball, 35.1, 4, 0, 1, 0, 1500, 90);
-        Assert.Equal(4.000, ball.OutputSi("P") / 1e3, 3);
+        Assert.Equal(4.000, ball.OutputSi("F_dyn") / 1e3, 3);
         Assert.Equal(675.68, ball.OutputSi("L_10"), 2);
         Assert.Equal(7507.6, ball.OutputSi("L_10h") / 3600, 1);
 
         var roller = RunFull(BearingLifeCalculator.Roller, 78, 12, 0, 1, 0, 3000, 90);
-        Assert.Equal(12.000, roller.OutputSi("P") / 1e3, 3);
+        Assert.Equal(12.000, roller.OutputSi("F_dyn") / 1e3, 3);
         Assert.Equal(512.52, roller.OutputSi("L_10"), 2);
         Assert.Equal(2847.3, roller.OutputSi("L_10h") / 3600, 1);
     }

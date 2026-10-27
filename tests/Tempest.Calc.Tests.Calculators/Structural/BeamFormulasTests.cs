@@ -22,3 +22,48 @@ public sealed class BeamFormulasTests
         Assert.Equal(4.6277, r.OutputSi("x_delta"), 3);
     }
 }
+
+public sealed class BeamFormulasDeepBeamTests
+{
+    private static readonly BeamFormulasCalculator Beam = new();
+
+    private static CalcRunResult RunCase(string id)
+    {
+        var testCase = Beam.Template.TestCases.Single(t => t.Id == id);
+        var set = CalcTemplateHasher.NewSheetInputs(Beam.Template);
+
+        foreach (var v in testCase.Inputs)
+            set.Set(v);
+
+        return CalcRunner.Run(Beam, set);
+    }
+
+    [Fact]
+    public void The_Deep_Beam_Geometry_Check_Has_No_Ratio_So_The_Deflection_Check_Governs_The_Legacy_Udl_Case()
+    {
+        // C-2 integration: the geometry check (a span against twenty times the extreme-fibre distance) is a yes/no check; as a ratio it governed the
+        // simply supported UDL case at u = 0.5 over the deflection check at 0.255, and the sheet's governing line then named no output row.
+        var r = RunCase("ka-legacy-ss-udl");
+        Assert.False(r.IsBlocked);
+        var geometry = Assert.Single(r.Checks, c => c.Name == "Shortest span of a beam that is not deep against the span");
+        Assert.True(geometry.Passed);
+        Assert.False(geometry.HasUtilisation);
+        Assert.Equal(0.0, geometry.Utilisation);
+        Assert.Equal("Deflection against the deflection limit", r.Governing!.Name);
+        Assert.Equal("u_deflection", r.Governing.StepSymbol);
+        Assert.NotNull(r.FindOutput("u_deflection"));
+        Assert.Equal(r.Governing.Utilisation, r.OutputSi("u_deflection"), 9);
+    }
+
+    [Fact]
+    public void A_Deep_Beam_Still_Fails_The_Geometry_Check_And_Warns()
+    {
+        var r = CalcRunner.Run(Beam, Consistency.ProbeInputs.DeepBeam());
+        Assert.False(r.IsBlocked);
+        var geometry = Assert.Single(r.Checks, c => c.Name == "Shortest span of a beam that is not deep against the span");
+        Assert.False(geometry.Passed);
+        Assert.False(geometry.HasUtilisation);
+        Assert.Contains(r.Notices, n => n.RuleId == "deep-beam" && n.Severity == CalcNoticeSeverity.Warning);
+        Assert.False(r.Passed);
+    }
+}

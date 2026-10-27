@@ -44,8 +44,8 @@ public sealed class FrameCalculator : ICalcCalculator
         new("i", "Node i", CalcInputKind.Number, HardMin: 1, HardMax: 1e6),
         new("j", "Node j", CalcInputKind.Number, HardMin: 1, HardMax: 1e6),
         new("A", "Area A", CalcInputKind.Quantity, "cm^2", HardMin: 1e-6, HardMax: 1e6),
-        new("I", "Second moment I", CalcInputKind.Quantity, "cm^4", HardMin: 1e-9, HardMax: 1e12),
-        new("E", "E (blank = sheet default)", CalcInputKind.Quantity, "GPa", HardMin: 1e-6, HardMax: 1e4, IsOptional: true),
+        new("I", "Second moment of area about the section y-y axis", CalcInputKind.Quantity, "cm^4", HardMin: 1e-9, HardMax: 1e12),
+        new("E", "Young's modulus (blank = sheet default)", CalcInputKind.Quantity, "GPa", HardMin: 1e-6, HardMax: 1e4, IsOptional: true),
         new("rel_i", "Moment release at i", CalcInputKind.Boolean, IsOptional: true),
         new("rel_j", "Moment release at j", CalcInputKind.Boolean, IsOptional: true),
     ];
@@ -73,30 +73,34 @@ public sealed class FrameCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.4.0", CalcDiscipline.Structural, "Beam and 2D frame analysis",
-        "Linear elastic analysis of a plane frame or continuous beam by the direct stiffness method: reactions, member end forces, axial force, shear, bending moment and deflection along every member with their extremes and positions, for each load combination and as an envelope. Global x to the right, y up; moments and couples anticlockwise positive; sagging moments positive along a member from node i to node j.",
-        "Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L and bending EI/L³ terms.\nEnd releases (pins) are taken out by static condensation; supports remove freedoms or add spring stiffness.\nSpan loads become equivalent nodal loads, the exact fixed-end forces.\nDisplacements, by banded LDLᵀ after a reverse Cuthill–McKee ordering (a non-positive pivot is reported as a mechanism): K u = F.\nInternal forces and deflections follow from the member end actions and Macaulay functions of the span loads.\nExtremes are found at stations along each member, plus the zero-shear and zero-slope points found by bisection.",
+        Id, "1.5.0", CalcDiscipline.Structural, "Beam and 2D frame analysis",
+        "Calculates reactions, member forces and deflections of a linear elastic plane frame or continuous beam by the direct stiffness method. Global x is right and y up; bending is about the section y-y axis, anticlockwise positive.",
+        "Member stiffness: three freedoms per node, Euler–Bernoulli members with axial EA/L and bending EI/L³ terms.\nEnd releases: pins are taken out by static condensation; supports remove freedoms or add spring stiffness.\nSpan loads: they become equivalent nodal loads, the exact fixed-end forces.\nNodal displacements: K u = F, solved by banded LDLᵀ after a reverse Cuthill–McKee ordering; a non-positive pivot is reported as a mechanism.\nInternal forces: they follow from the member end actions and the Macaulay functions of the span loads.\nMember extremes: found at stations along each member, plus the zero-shear and zero-slope points found by bisection.",
         [
-            new CalcInputSpec("E", "Default modulus of elasticity", CalcInputKind.Quantity, "GPa", ReferenceLibrary: "Materials", ReferenceProperty: "YoungsModulus", ReferenceDimension: "Pressure", Default: 210, Min: 1, Max: 500, HardMin: 1e-3, HardMax: 1e4),
-            new CalcInputSpec("nodes", "Nodes", CalcInputKind.Table, Columns: NodeColumns, MaxRows: FrameLimits.MaxNodes),
-            new CalcInputSpec("elements", "Elements", CalcInputKind.Table, Columns: ElementColumns, MaxRows: FrameLimits.MaxElements),
-            new CalcInputSpec("loads", "Loads", CalcInputKind.Table, Columns: LoadColumns, MaxRows: FrameLimits.MaxLoads),
-            new CalcInputSpec("combinations", "Combinations (blank = each case alone)", CalcInputKind.Table, Columns: CombinationColumns, IsOptional: true, MaxRows: 1000),
-            new CalcInputSpec("report", "Combination to report in detail (blank = first)", CalcInputKind.Text, IsOptional: true),
-            new CalcInputSpec("n_div", "Stations per member", CalcInputKind.Number, Default: 20, Min: 4, Max: FrameLimits.MaxStations, HardMin: 2, HardMax: FrameLimits.MaxStations),
+            new CalcInputSpec("nodes", "Nodes", CalcInputKind.Table, Columns: NodeColumns, MaxRows: FrameLimits.MaxNodes, Group: "Setup"),
+            new CalcInputSpec("elements", "Elements", CalcInputKind.Table, Columns: ElementColumns, MaxRows: FrameLimits.MaxElements, Group: "Setup"),
+            new CalcInputSpec("loads", "Loads", CalcInputKind.Table, Columns: LoadColumns, MaxRows: FrameLimits.MaxLoads, Group: "Setup"),
+            new CalcInputSpec("n_div", "Stations per member", CalcInputKind.Number, Default: 20, Min: 4, Max: FrameLimits.MaxStations, HardMin: 2, HardMax: FrameLimits.MaxStations, Group: "Setup"),
+            new CalcInputSpec("combinations", "Load combinations (optional; blank = each case alone)", CalcInputKind.Table, Columns: CombinationColumns, IsOptional: true, MaxRows: 1000, Group: "Setup"),
+            new CalcInputSpec("report", "Combination to report in detail (optional; blank = the first)", CalcInputKind.Text, IsOptional: true, Group: "Setup"),
+            new CalcInputSpec("E", "Default Young's modulus", CalcInputKind.Quantity, "GPa", ReferenceLibrary: "Materials", ReferenceProperty: "YoungsModulus", ReferenceDimension: "Pressure", Default: 210, Min: 1, Max: 500, HardMin: 1e-3, HardMax: 1e4, Group: "Material"),
         ],
         [
-            new CalcAssumption("Linear elastic, small displacements, first order; no shear deformation, no P–Δ, no buckling.", "Euler–Bernoulli direct stiffness."),
-            new CalcAssumption("Members are prismatic between nodes and connect rigidly unless a release is stated; a release transmits no moment at that end.", "Static condensation of the released rotation."),
-            new CalcAssumption("Distributed loads act perpendicular to the member unless marked as gravity loads, which act in global −y per metre of member length.", "Load table convention."),
+            new CalcAssumption("The analysis is linear elastic and first order, with small displacements.", "Euler–Bernoulli direct stiffness."),
+            new CalcAssumption("Members have no shear deformation, and there are no P–Δ effects or buckling.", "Euler–Bernoulli direct stiffness."),
+            new CalcAssumption("Members are prismatic between nodes and connect rigidly unless a release is stated.", "Static condensation of the released rotation."),
+            new CalcAssumption("A released member end transmits no moment.", "Static condensation of the released rotation."),
+            new CalcAssumption("Distributed loads act perpendicular to the member unless marked as gravity loads.", "Load table convention."),
+            new CalcAssumption("Gravity loads act in global −y per metre of member length.", "Load table convention."),
         ],
         [
-            new CalcClauseRef("Hibbeler, Structural Analysis", "Ch. 16", "Plane frame analysis using the stiffness method"),
-            new CalcClauseRef("Roark's Formulas for Stress and Strain", "Ch. 8, Table 8.1", "Shear, moment, slope and deflection formulas for elastic straight beams"),
-            new CalcClauseRef("BS EN 1990", "6.4.3", "Combinations of actions (user-entered factors)"),
+            new CalcClauseRef("Hibbeler, Structural Analysis", "Ch. 16, 9th ed.", "Plane frame analysis using the stiffness method"),
+            new CalcClauseRef("Young and Budynas, Roark's Formulas for Stress and Strain", "Table 8.1, 8th ed.", "Shear, moment, slope and deflection formulas for elastic straight beams"),
+            new CalcClauseRef("BS EN 1990:2002+A1:2005", "cl. 6.4.3", "Combinations of actions (user-entered factors)"),
         ],
         [
             new CalcApplicabilityRule("model", "The model is incomplete or inconsistent (a missing node, a zero-length member, a load off the member).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("report-name", "The combination named in report does not exist: the first combination is reported instead.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("mechanism", "The structure is a mechanism: a non-positive stiffness pivot.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("size", "The model exceeds a cap (2,000 nodes, 4,000 elements, 50 cases, 200 load rows per member, factorisation work).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("summary-only", "More than 50 members or supports: per-member and per-support lines are omitted from the sheet; the extremes and envelope remain.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
@@ -132,26 +136,26 @@ public sealed class FrameCalculator : ICalcCalculator
         Category: "Analysis",
         OutputPorts:
         [
-            new CalcOutputPort("R1_x", "kN", "Horizontal reaction at node 1 (signed; node n follows the same pattern, R<n>_x)"),
-            new CalcOutputPort("R1_y", "kN", "Vertical reaction at node 1, up positive (compression into a column base; → S6 N_Ed)"),
-            new CalcOutputPort("R1_m", "kN*m", "Moment reaction at node 1 (signed)"),
-            new CalcOutputPort("R1_x_abs", "kN", "Magnitude of the horizontal reaction at node 1 (→ S6 V_Ed)"),
-            new CalcOutputPort("R1_m_abs", "kN*m", "Magnitude of the moment reaction at node 1 (→ S6 M_Ed)"),
-            new CalcOutputPort("N_e1", "kN", "Axial force of greatest magnitude in member 1, tension positive (→ S3 N_Ed; member e follows the same pattern, N_e<e>)"),
-            new CalcOutputPort("V_e1", "kN", "Greatest shear magnitude in member 1 (→ S3 V_Ed, S4 V_Ed)"),
-            new CalcOutputPort("M_abs_e1", "kN*m", "Greatest bending-moment magnitude in member 1, sagging or hogging (→ S3 M_y_Ed)"),
-            new CalcOutputPort("M_max_e1", "kN*m", "Maximum sagging moment in member 1"),
-            new CalcOutputPort("M_min_e1", "kN*m", "Minimum (hogging) moment in member 1"),
-            new CalcOutputPort("V_e2", "kN", "Greatest shear magnitude in member 2 (V_e<e> for any member)"),
-            new CalcOutputPort("M_abs_e2", "kN*m", "Greatest bending-moment magnitude in member 2 (M_abs_e<e> for any member)"),
-            new CalcOutputPort("sum_R_y", "kN", "Total vertical reaction"),
-            new CalcOutputPort("sum_R_x", "kN", "Total horizontal reaction"),
-            new CalcOutputPort("M_max", "kN*m", "Maximum sagging moment, reported combination"),
-            new CalcOutputPort("M_min", "kN*m", "Minimum (hogging) moment, reported combination"),
-            new CalcOutputPort("V_max", "kN", "Greatest shear magnitude, reported combination"),
-            new CalcOutputPort("N_max", "kN", "Maximum axial tension, reported combination"),
-            new CalcOutputPort("N_min", "kN", "Maximum axial compression (negative), reported combination"),
-            new CalcOutputPort("d_max", "mm", "Maximum transverse deflection, reported combination"),
+            new CalcOutputPort("R1_x", "kN", "Horizontal reaction at node 1, signed (node n follows the same pattern, R<n>_x)", "frame.reaction_x_node1"),
+            new CalcOutputPort("R1_y", "kN", "Vertical reaction at node 1, up positive: compression into a column base (→ base-plate N_Ed)", "frame.reaction_y_node1"),
+            new CalcOutputPort("R1_m", "kN*m", "Moment reaction at node 1, signed", "frame.reaction_moment_node1"),
+            new CalcOutputPort("R1_x_abs", "kN", "Magnitude of the horizontal reaction at node 1 (→ base-plate V_Ed)", "frame.reaction_x_magnitude_node1"),
+            new CalcOutputPort("R1_m_abs", "kN*m", "Magnitude of the moment reaction at node 1 (→ base-plate M_Ed)", "frame.reaction_moment_magnitude_node1"),
+            new CalcOutputPort("N_e1", "kN", "Axial force of greatest magnitude in member 1, tension positive (→ en1993-member N_Ed; member e follows the same pattern, N_e<e>)", "frame.axial_force_member1"),
+            new CalcOutputPort("V_e1", "kN", "Greatest shear magnitude in member 1 (→ en1993-member V_Ed, connection-ec3 V_Ed)", "frame.shear_member1"),
+            new CalcOutputPort("M_abs_e1", "kN*m", "Greatest bending-moment magnitude in member 1, sagging or hogging (→ en1993-member M_y_Ed)", "frame.moment_magnitude_member1"),
+            new CalcOutputPort("M_max_e1", "kN*m", "Maximum sagging moment in member 1", "frame.moment_max_member1"),
+            new CalcOutputPort("M_min_e1", "kN*m", "Minimum (hogging) moment in member 1", "frame.moment_min_member1"),
+            new CalcOutputPort("V_e2", "kN", "Greatest shear magnitude in member 2 (V_e<e> for any member)", "frame.shear_member2"),
+            new CalcOutputPort("M_abs_e2", "kN*m", "Greatest bending-moment magnitude in member 2 (M_abs_e<e> for any member)", "frame.moment_magnitude_member2"),
+            new CalcOutputPort("sum_R_y", "kN", "Total vertical reaction", "frame.reaction_y_total"),
+            new CalcOutputPort("sum_R_x", "kN", "Total horizontal reaction", "frame.reaction_x_total"),
+            new CalcOutputPort("M_max", "kN*m", "Maximum sagging moment, reported combination", "frame.moment_max"),
+            new CalcOutputPort("M_min", "kN*m", "Minimum (hogging) moment, reported combination", "frame.moment_min"),
+            new CalcOutputPort("V_max", "kN", "Greatest shear magnitude, reported combination", "frame.shear_max"),
+            new CalcOutputPort("N_max", "kN", "Maximum axial tension, reported combination", "frame.axial_force_max"),
+            new CalcOutputPort("N_min", "kN", "Maximum axial compression (negative), reported combination", "frame.axial_force_min"),
+            new CalcOutputPort("d_max", "mm", "Maximum transverse deflection, reported combination", "frame.deflection_max"),
         ]);
 
     public static CalcInputValue Nodes(params (int Id, double X, double Y, string Support)[] nodes) =>
@@ -202,12 +206,12 @@ public sealed class FrameCalculator : ICalcCalculator
         var report = results.FirstOrDefault(r => string.Equals(r.Combination.Name, reportName, StringComparison.OrdinalIgnoreCase)) ?? results[0];
 
         if (reportName.Length > 0 && !string.Equals(report.Combination.Name, reportName, StringComparison.OrdinalIgnoreCase))
-            c.Warn("model", $"report: no combination is named '{reportName}'; '{report.Combination.Name}' is reported.");
+            c.Warn("report-name", $"report: no combination is named '{reportName}'. '{report.Combination.Name}' is reported instead.");
 
         var detailed = model.Elements.Count <= MaxDetailedMembers && model.Nodes.Count(n => n.IsSupported) <= MaxDetailedSupports;
 
         if (!detailed)
-            c.Warn("summary-only", "nodes/elements: more than 50 members or supports; per-member and per-support lines are omitted.");
+            c.Warn("summary-only", "elements: more than 50 members or supports. Per-member and per-support lines are omitted.");
 
         c.Record("comb", "reported combination", report.Combination.Name, new TextValue(report.Combination.Name), "The combination detailed below");
 

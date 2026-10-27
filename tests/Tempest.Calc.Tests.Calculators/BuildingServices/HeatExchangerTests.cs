@@ -52,7 +52,7 @@ public sealed class HeatExchangerTests
         foreach (var arrangement in new[] { HeatExchangerCalculator.Counterflow, HeatExchangerCalculator.Parallel, HeatExchangerCalculator.ShellTube })
         {
             var r = CalcRunner.Run(Hx, Defaults().With(CalcInputValue.Choice("arrangement", arrangement)).With(CalcInputValue.Quantity("m_c", 1.7, "kg/s")));
-            Assert.Equal(r.OutputSi("Q"), r.Steps.Single(s => s.Symbol == "Q_lmtd").Result is Tempest.Calc.Engine.Values.ScalarValue v ? v.Si : double.NaN, 6);
+            Assert.Equal(r.OutputSi("Phi"), r.Steps.Single(s => s.Symbol == "Q_lmtd").Result is Tempest.Calc.Engine.Values.ScalarValue v ? v.Si : double.NaN, 6);
         }
     }
 
@@ -62,7 +62,7 @@ public sealed class HeatExchangerTests
         var sized = CalcRunner.Run(Hx, Defaults().With(CalcInputValue.Choice("mode", HeatExchangerCalculator.Sizing)).With(CalcInputValue.Quantity("Q_req", 100, "kW")));
         var area = sized.OutputSi("A_req");
         var rated = CalcRunner.Run(Hx, Defaults().With(CalcInputValue.Quantity("A", area, "m^2")));
-        Assert.Equal(100e3, rated.OutputSi("Q"), 3);
+        Assert.Equal(100e3, rated.OutputSi("Phi"), 3);
     }
 
     [Fact]
@@ -84,8 +84,8 @@ public sealed class HeatExchangerTests
     [Fact]
     public void Fouling_Reduces_Duty()
     {
-        var clean = CalcRunner.Run(Hx, Defaults()).OutputSi("Q");
-        var fouled = CalcRunner.Run(Hx, Defaults().With(CalcInputValue.Quantity("R_f", 0.0005, "m^2*K/W"))).OutputSi("Q");
+        var clean = CalcRunner.Run(Hx, Defaults()).OutputSi("Phi");
+        var fouled = CalcRunner.Run(Hx, Defaults().With(CalcInputValue.Quantity("R_f", 0.0005, "m^2*K/W"))).OutputSi("Phi");
         Assert.True(fouled < clean);
     }
 
@@ -129,7 +129,7 @@ public sealed class HeatExchangerTests
         Assert.Contains(Hx.Template.OutputPorts!, p => p is { Symbol: "cp_c", Unit: "J/(kg*K)" });
 
         // Air on the hot side (c_p 1006 J/kg·K): the duty needs no table, only the stream's capacity rate.
-        var air = CalcRunner.Run(Hx, Defaults().With(CalcInputValue.Quantity("cp_h", 1006, "J/(kg*K)")).With(CalcInputValue.Quantity("m_h", 0.4, "kg/s")).With(CalcInputValue.Quantity("U", 60, "W/(m^2*K)")));
+        var air = CalcRunner.Run(Hx, Defaults().With(CalcInputValue.Quantity("cp_h", 1006, "J/(kg*K)")).With(CalcInputValue.Quantity("m_h", 0.4, "kg/s")).With(CalcInputValue.Quantity("U_clean", 60, "W/(m^2*K)")));
         Assert.False(air.IsBlocked);
         Assert.Equal(0.4 * 1006, air.Steps.Single(s => s.Symbol == "C_min").Result is Tempest.Calc.Engine.Values.ScalarValue c ? c.Si : double.NaN, 9);
     }
@@ -143,11 +143,11 @@ public sealed class HeatExchangerTests
         // stream's own m·c_p. The old code took min(C_h, C_c) and changed the constant stream's temperature too.
         var small = CalcRunner.Run(Hx, Isothermal(HeatExchangerCalculator.HotConstant).With(CalcInputValue.Quantity("m_h", 0.5, "kg/s")).With(CalcInputValue.Quantity("m_c", 2, "kg/s")));
         var large = CalcRunner.Run(Hx, Isothermal(HeatExchangerCalculator.HotConstant).With(CalcInputValue.Quantity("m_h", 50, "kg/s")).With(CalcInputValue.Quantity("m_c", 2, "kg/s")));
-        Assert.Equal(small.OutputSi("Q"), large.OutputSi("Q"), 9);
+        Assert.Equal(small.OutputSi("Phi"), large.OutputSi("Phi"), 9);
         Assert.Equal(0.5, small.OutputSi("NTU"), 9);                                   // UA 4180 W/K over C_c 8360 W/K
-        Assert.Equal(197.36422, small.OutputSi("Q") / 1e3, 4);                          // (1 − e^−0.5) × 8360 × 60 K (python3)
+        Assert.Equal(197.36422, small.OutputSi("Phi") / 1e3, 4);                          // (1 − e^−0.5) × 8360 × 60 K (python3)
         Assert.Equal(80, small.OutputSi("T_h_out") - 273.15, 9);
-        Assert.Equal(small.OutputSi("Q"), small.OutputSi("Q_lmtd"), 3);
+        Assert.Equal(small.OutputSi("Phi"), small.OutputSi("Q_lmtd"), 3);
         Assert.DoesNotContain(small.Warnings, w => w.RuleId == "lmtd-mismatch");
     }
 
@@ -158,7 +158,7 @@ public sealed class HeatExchangerTests
         Assert.Equal(20, r.OutputSi("T_c_out") - 273.15, 9);
         Assert.Equal(0, r.OutputSi("dT_c"), 12);
         Assert.Equal(80 - 0.6321205588 * 60, r.OutputSi("T_h_out") - 273.15, 6);
-        Assert.Equal(r.OutputSi("Q"), r.OutputSi("Q_lmtd"), 3);
+        Assert.Equal(r.OutputSi("Phi"), r.OutputSi("Q_lmtd"), 3);
     }
 
     [Fact]
@@ -178,7 +178,7 @@ public sealed class HeatExchangerTests
             };
 
             var r = CalcRunner.Run(Hx, set);
-            return r.IsBlocked || r.FindOutput("Q_lmtd") is null || Math.Abs(r.OutputSi("Q_lmtd") - r.OutputSi("Q")) < 1e-6 * r.OutputSi("Q");
+            return r.IsBlocked || r.FindOutput("Q_lmtd") is null || Math.Abs(r.OutputSi("Q_lmtd") - r.OutputSi("Phi")) < 1e-6 * r.OutputSi("Phi");
         }, iter: 150);
     }
 }

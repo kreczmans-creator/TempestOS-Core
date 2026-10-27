@@ -160,13 +160,13 @@ public sealed class CalcSheetViewTests
         [
             CalcInputValue.Choice("case", Tempest.Calc.Structural.BeamFormulasCalculator.SsPoint, CalcProvenance.Drawing("D1")),
             CalcInputValue.Quantity("L", 6, "m", CalcProvenance.Drawing("D1")),
-            CalcInputValue.Quantity("P", 50, "kN", CalcProvenance.Specification("S1")),
+            CalcInputValue.Quantity("F", 50, "kN", CalcProvenance.Specification("S1")),
         ]));
 
         Assert.Equal(string.Empty, ((TextBox)view.FieldControl("w")!).Text);
         var read = view.ReadForm();
         Assert.Null(read.Find("w"));
-        Assert.Equal(CalcProvenanceKind.Specification, read.Find("P")!.Provenance?.Kind);
+        Assert.Equal(CalcProvenanceKind.Specification, read.Find("F")!.Provenance?.Kind);
     }
 
     [AvaloniaFact]

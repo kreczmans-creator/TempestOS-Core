@@ -173,7 +173,7 @@ public sealed class ShaftTests
 
     private static CalcInputSet AlternatingBasis() => Defaults()
         .With(ShaftCalculator.Segments((400, 27.94, 0))).With(ShaftCalculator.Loads((200, -0.2848, 0, 0))).With(ShaftCalculator.Sections((200, 1.68, 1.42, 0.85, 0.92)))
-        .With(CalcInputValue.Quantity("S_ut", 723.949485, "MPa")).With(CalcInputValue.Quantity("S_y", 565.370074, "MPa")).With(CalcInputValue.Choice("finish", ShaftCalculator.Machined)).With(CalcInputValue.Quantity("R", 99, "%"))
+        .With(CalcInputValue.Quantity("S_ut", 723.949485, "MPa")).With(CalcInputValue.Quantity("S_y", 565.370074, "MPa")).With(CalcInputValue.Choice("finish", ShaftCalculator.Machined)).With(CalcInputValue.Quantity("R_rel", 99, "%"))
         .With(CalcInputValue.Quantity("x_T1", 0, "mm")).With(CalcInputValue.Quantity("x_T2", 400, "mm"));
 
     [Fact]
@@ -197,7 +197,7 @@ public sealed class ShaftTests
         // T_m = 0, T_a = 124.2833 N·m on the Shigley 7-1 shaft: 1/n_f = √(σ_a² + 3τ_a²)/S_e with σ_a 104.910 MPa, τ_a 40.234 MPa, S_e 201.500 MPa gives 1.599885 (python3);
         // the same torque as a steady one gave 1.620988.
         var basis = Defaults().With(ShaftCalculator.Segments((400, 27.94, 0))).With(ShaftCalculator.Loads((200, -1.4236088, 0, 0))).With(ShaftCalculator.Sections((200, 1.68, 1.42, 0.85, 0.92)))
-            .With(CalcInputValue.Quantity("S_ut", 723.949485, "MPa")).With(CalcInputValue.Quantity("S_y", 565.370074, "MPa")).With(CalcInputValue.Choice("finish", ShaftCalculator.Machined)).With(CalcInputValue.Quantity("R", 99, "%"))
+            .With(CalcInputValue.Quantity("S_ut", 723.949485, "MPa")).With(CalcInputValue.Quantity("S_y", 565.370074, "MPa")).With(CalcInputValue.Choice("finish", ShaftCalculator.Machined)).With(CalcInputValue.Quantity("R_rel", 99, "%"))
             .With(CalcInputValue.Quantity("x_T1", 0, "mm")).With(CalcInputValue.Quantity("x_T2", 400, "mm"));
         var r = CalcRunner.Run(Shaft, basis.With(CalcInputValue.Quantity("T_a", 0.1242833119, "kN*m")));
         Assert.Equal(1.599884694, r.OutputSi("n_f_min"), 5);

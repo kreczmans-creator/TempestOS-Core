@@ -14,7 +14,7 @@ public static class CalcPackTemplates
     /// <c>T_out_pk</c> and <c>n_out</c>, T·i·η and n/i, for a shaft after the ratio: bind those instead). The torque on the shaft is split as the fatigue check needs it: E1's load torque <c>T_load</c>
     /// is the steady (mean) torque <c>T</c> and E1's <c>T_alt</c>, (T_pk − T_dec)/2 on a point-to-point cycle and 0 in continuous duty, is the alternating amplitude <c>T_a</c>; the RMS torque is a thermal
     /// quantity and is not a shaft torque. E1's peak torque <c>T_pk</c> is the peak torque the load demands at the motor shaft, run-up included (the motor's own limit <c>T_peak</c> is a check on E1); it is the torque the shaft's yield check and key
-    /// see (<c>T_pk</c>, M4). The coupling flange bolt group (M3, <c>mech.bolt-group</c>) carries E1's design torque <c>T_design</c> about its centroid (<c>T_z</c>), on the basis the owner chooses in E1's <c>T_basis</c>:
+    /// see (<c>T_pk</c>, M4). The coupling flange bolt group (M3, <c>mech.bolt-group</c>) carries E1's design torque <c>T_design</c> about its centroid (<c>M_z</c>, the old <c>T_z</c>), on the basis the owner chooses in E1's <c>T_basis</c>:
     /// the load peak <c>T_pk</c> (the default, as before), the motor's typed peak torque <c>T_peak</c>, a service factor on the rated torque (<c>SF_c</c>·<c>T_rated</c>) or a protective torque limit (<c>T_lim</c>); the basis is a design decision, not a calculation. E1's peak axial
     /// thrust <c>F_ax_pk</c> (a ball screw's; 0 for a rotary mechanism) is the bearing's axial load <c>F_a</c>, peak rather than the cube-mean equivalent, so conservative for life. The bearing's speed is E1's mean motor speed over the cycle <c>n_mean</c> (the turns per cycle time, dwell included; the
     /// steady speed in continuous duty), the speed its life in hours is counted at: the peak speed <c>n_pk</c> (still the shaft's, for its critical speed) would understate the life of a cycle with a dwell by the ratio of the two.
@@ -39,7 +39,7 @@ public static class CalcPackTemplates
             new CalcPackBinding("e1", "F_ax_pk", "m5", "F_a"),
             new CalcPackBinding("m4", "d_A", "m2", "D"),
             new CalcPackBinding("e1", "T_pk", "m4", "T_pk"),
-            new CalcPackBinding("e1", "T_design", "m3", "T_z"),
+            new CalcPackBinding("e1", "T_design", "m3", "M_z"),
         ]);
 
     /// <summary>
@@ -72,13 +72,13 @@ public static class CalcPackTemplates
             new CalcPackBinding("e4", "CSA", "e3", "A_c"),
             new CalcPackBinding("e6", "U_L", "e3", "V_n"),
             new CalcPackBinding("e6", "pf_link", "e3", "cos_phi"),
-            new CalcPackBinding("e4", "theta_op", "e3", "T_c"),
+            new CalcPackBinding("e4", "T_op", "e3", "T_c"),
             new CalcPackBinding("e4", "CSA", "e5", "S_line"),
             new CalcPackBinding("e4", "CSA", "e5", "S_cpc"),
             new CalcPackBinding("e4", "L", "e5", "L"),
             new CalcPackBinding("e4", "I_n", "e5", "I_n"),
             new CalcPackBinding("e4", "device_code", "e5", "device_code"),
-            new CalcPackBinding("e4", "theta_op", "e5", "theta"),
+            new CalcPackBinding("e4", "T_op", "e5", "T_op"),
             new CalcPackBinding("e6", "Phi", "e2", "P_add"),
         ]);
 
@@ -103,11 +103,11 @@ public static class CalcPackTemplates
         [
             new CalcPackBinding("b4a", "Phi_HL", "b6", "rooms", Row: 0, Column: "Phi"),
             new CalcPackBinding("b4b", "Phi_HL", "b6", "rooms", Row: 1, Column: "Phi"),
-            new CalcPackBinding("b4a", "theta_int", "b6", "rooms", Row: 0, Column: "t_i"),
-            new CalcPackBinding("b4b", "theta_int", "b6", "rooms", Row: 1, Column: "t_i"),
+            new CalcPackBinding("b4a", "T_int", "b6", "rooms", Row: 0, Column: "t_i"),
+            new CalcPackBinding("b4b", "T_int", "b6", "rooms", Row: 1, Column: "t_i"),
             new CalcPackBinding("b6", "Phi_tot", "b1", "Phi_load"),
             new CalcPackBinding("b6", "dT_fr", "b1", "dT_load"),
-            new CalcPackBinding("b6", "t_m", "b1", "T"),
+            new CalcPackBinding("b6", "T_m", "b1", "T_fluid"),
             new CalcPackBinding("b1", "T_shaft", "e1", "T_L"),
             new CalcPackBinding("b1", "n_shaft", "e1", "n_L"),
         ]);
@@ -134,9 +134,9 @@ public static class CalcPackTemplates
             new CalcPackBinding("e6", "Phi", "e2", "P_add"),
             new CalcPackBinding("e2", "P_cool", "b5", "Q_req"),
             new CalcPackBinding("e2", "T_max", "b5", "T_h_in"),
-            new CalcPackBinding("b5", "Q", "b1", "Phi_load"),
+            new CalcPackBinding("b5", "Phi", "b1", "Phi_load"),
             new CalcPackBinding("b5", "dT_c", "b1", "dT_load"),
-            new CalcPackBinding("b5", "T_c_m", "b1", "T"),
+            new CalcPackBinding("b5", "T_c_m", "b1", "T_fluid"),
             new CalcPackBinding("b5", "cp_c", "b1", "cp_load"),
         ]);
 
@@ -180,8 +180,8 @@ public static class CalcPackTemplates
             new CalcPackBinding("s2", "V_e1", "s3", "V_Ed"),
             new CalcPackBinding("s2", "V_e2", "m3", "F_y"),
             new CalcPackBinding("s2", "M_abs_e2", "m3", "M_x"),
-            new CalcPackBinding("m3", "v_max", "s4a", "F_v_Ed"),
-            new CalcPackBinding("m3", "t_max", "s4a", "F_t_Ed"),
+            new CalcPackBinding("m3", "F_v_Ed_max", "s4a", "F_v_Ed"),
+            new CalcPackBinding("m3", "F_t_Ed_max", "s4a", "F_t_Ed"),
             new CalcPackBinding("s2", "V_e2", "s4a", "V_Ed"),
             new CalcPackBinding("s2", "R1_y", "s6", "N_Ed"),
             new CalcPackBinding("s2", "R1_m_abs", "s6", "M_Ed"),
@@ -240,7 +240,7 @@ public static class CalcPackTemplates
         ],
         [
             new CalcPackBinding("f1", "dV", "f2", "dV"),
-            new CalcPackBinding("f1", "p", "f2", "p_2"),
+            new CalcPackBinding("f1", "p_sys", "f2", "p_2"),
             new CalcPackBinding("f1", "p_push", "f2", "p_load"),
             new CalcPackBinding("f1", "Q_prs", "b1", "Q"),
             new CalcPackBinding("f1", "rho", "b1", "rho_custom"),
@@ -251,13 +251,13 @@ public static class CalcPackTemplates
             new CalcPackBinding("e4", "I_b", "e3", "I"),
             new CalcPackBinding("e4", "L", "e3", "L"),
             new CalcPackBinding("e4", "CSA", "e3", "A_c"),
-            new CalcPackBinding("e4", "theta_op", "e3", "T_c"),
+            new CalcPackBinding("e4", "T_op", "e3", "T_c"),
             new CalcPackBinding("e4", "CSA", "e5", "S_line"),
             new CalcPackBinding("e4", "CSA", "e5", "S_cpc"),
             new CalcPackBinding("e4", "L", "e5", "L"),
             new CalcPackBinding("e4", "I_n", "e5", "I_n"),
             new CalcPackBinding("e4", "device_code", "e5", "device_code"),
-            new CalcPackBinding("e4", "theta_op", "e5", "theta"),
+            new CalcPackBinding("e4", "T_op", "e5", "T_op"),
             new CalcPackBinding("e1", "P_rated", "e9", "P"),
             new CalcPackBinding("e4", "CSA", "e9", "A_c"),
             new CalcPackBinding("e4", "L", "e9", "L_cab"),
@@ -332,7 +332,7 @@ public static class CalcPackTemplates
             new CalcPackBinding("m9", "follower_force", "f1", "F_push"),
             new CalcPackBinding("m9", "follower_force", "f1", "F_pull"),
             new CalcPackBinding("f1", "dV", "f2", "dV"),
-            new CalcPackBinding("f1", "p", "f2", "p_2"),
+            new CalcPackBinding("f1", "p_sys", "f2", "p_2"),
             new CalcPackBinding("f1", "p_push", "f2", "p_load"),
         ]);
 
@@ -360,7 +360,7 @@ public static class CalcPackTemplates
         ],
         [
             new CalcPackBinding("b4", "U_1", "b7", "U_ref"),
-            new CalcPackBinding("b2", "t_1_out", "b7", "theta_int"),
+            new CalcPackBinding("b2", "T_1_out", "b7", "T_int"),
             new CalcPackBinding("b2", "phi_1", "b7", "RH_int"),
         ]);
 
@@ -386,9 +386,9 @@ public static class CalcPackTemplates
         ],
         [
             new CalcPackBinding("b1", "OD_1", "b9", "D_i"),
-            new CalcPackBinding("b1", "T_line", "b9", "theta_i"),
-            new CalcPackBinding("b2", "t_1_out", "b9", "theta_a"),
-            new CalcPackBinding("b2", "t_dp_1", "b9", "theta_dew"),
+            new CalcPackBinding("b1", "T_line", "b9", "T_proc"),
+            new CalcPackBinding("b2", "T_1_out", "b9", "T_amb"),
+            new CalcPackBinding("b2", "T_dp_1", "b9", "T_dew"),
             new CalcPackBinding("b2", "phi_1", "b9", "RH_a"),
         ]);
 

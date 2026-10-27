@@ -36,7 +36,7 @@ public sealed class InsulationTests
         var r = Run(Sheet(Q("theta_se_max", 45, "degC")));
         Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
         Assert.Equal(37.30359728106675, r.OutputSi("thickness") * 1000, 6);
-        Assert.Equal(5.325913504887262, r.OutputSi("t_se") * 1000, 6);
+        Assert.Equal(5.325913504887262, r.OutputSi("t_req_se") * 1000, 6);
         Assert.True(r.Passed);
         Assert.Equal("heat-loss limit", ((Tempest.Calc.Engine.Values.TextValue)r.FindOutput("governing")!.Value).Value);
     }
@@ -112,7 +112,7 @@ public sealed class InsulationTests
     [Fact]
     public void Anti_Condensation_Passes_At_The_Required_Thickness_And_Fails_Below_It()
     {
-        var cold = Sheet(Q("theta_i", 5, "degC"), Q("theta_a", 25, "degC"), Q("RH_a", 70, "%"), Q("dew_margin", 1, "K"), Clear("q_max_m"), Clear("theta_se_max"), Clear("t_chosen"));
+        var cold = Sheet(Q("T_proc", 5, "degC"), Q("T_amb", 25, "degC"), Q("RH_a", 70, "%"), Q("dew_margin", 1, "K"), Clear("q_max_m"), Clear("theta_se_max"), Clear("t_chosen"));
         var required = Run(cold).OutputSi("thickness") * 1000;
         Assert.Equal(11.290660460665531, required, 6);
 
@@ -124,7 +124,7 @@ public sealed class InsulationTests
 
         // The dew point is the Magnus relation B7 uses.
         var dew = GlaserModel.DewPoint(0.7 * GlaserModel.SaturationPressure(25));
-        Assert.Equal(dew, Run(cold).OutputSi("theta_dew") - 273.15, 9);
+        Assert.Equal(dew, Run(cold).OutputSi("T_dew") - 273.15, 9);
     }
 
     [Fact]
@@ -132,7 +132,7 @@ public sealed class InsulationTests
     {
         // The chilled-water slip: the generic 10 W/(m²K) holds the surface nearest the air temperature, the most favourable
         // case for condensation, so a layer that passes at h_se 10 can fail with the real (low-emissivity) surface.
-        CalcInputSet Cold(params CalcInputValue[] more) => Sheet([Q("theta_i", 5, "degC"), Q("theta_a", 25, "degC"), Q("RH_a", 70, "%"), Q("dew_margin", 1, "K"), Clear("q_max_m"), Clear("t_chosen"), .. more]);
+        CalcInputSet Cold(params CalcInputValue[] more) => Sheet([Q("T_proc", 5, "degC"), Q("T_amb", 25, "degC"), Q("RH_a", 70, "%"), Q("dew_margin", 1, "K"), Clear("q_max_m"), Clear("t_chosen"), .. more]);
 
         var given = Run(Cold());
         Assert.False(given.IsBlocked, string.Join("; ", given.Blocks.Select(b => b.Message)));
@@ -153,14 +153,14 @@ public sealed class InsulationTests
         Assert.Contains($"{Tempest.Calc.Engine.Values.CalcValue.FormatNumber(bright, 5)} mm", warning.Message, StringComparison.Ordinal);
 
         // With a chosen thickness (the 13 mm layer of the finding) the warning still shows, next to the PASS it qualifies.
-        var chosen = Run(Sheet(Q("theta_i", 5, "degC"), Q("theta_a", 25, "degC"), Q("RH_a", 70, "%"), Q("dew_margin", 1, "K"), Clear("q_max_m"), Q("t_chosen", 13, "mm")));
+        var chosen = Run(Sheet(Q("T_proc", 5, "degC"), Q("T_amb", 25, "degC"), Q("RH_a", 70, "%"), Q("dew_margin", 1, "K"), Clear("q_max_m"), Q("t_chosen", 13, "mm")));
         Assert.True(chosen.Passed);
         Assert.True(Warned(chosen, "h-se-condensation"));
 
         // The correlation, a hot pipe, no dew margin and a fixed h_se that is already low raise no such warning.
         Assert.False(Warned(Run(Cold(CalcInputValue.Choice("h_mode", InsulationCalculator.HCorrelation))), "h-se-condensation"));
         Assert.False(Warned(Run(Sheet()), "h-se-condensation"));
-        Assert.False(Warned(Run(Sheet(Q("theta_i", 5, "degC"), Q("theta_a", 25, "degC"), Clear("q_max_m"), Q("t_chosen", 20, "mm"))), "h-se-condensation"));
+        Assert.False(Warned(Run(Sheet(Q("T_proc", 5, "degC"), Q("T_amb", 25, "degC"), Clear("q_max_m"), Q("t_chosen", 20, "mm"))), "h-se-condensation"));
         Assert.False(Warned(Run(Cold(Q("h_se", 3, "W/(m^2*K)"))), "h-se-condensation"));
         Assert.Contains(Insulation.Template.ApplicabilityRules, r => r.Id == "h-se-condensation" && r.Severity == CalcNoticeSeverity.Warning);
         Assert.Contains("condensation", Insulation.Template.FindInput("h_se")!.Description, StringComparison.Ordinal);
@@ -171,15 +171,15 @@ public sealed class InsulationTests
     {
         // bs.insulation-01: -30 C surface in -10 C air, 90 % RH, margin 0. RH read over ice gives -11.179 C (63.9 mm); a weather-station 90 % over water is a frost point of -10.100 C
         // (independent python: 610.5 exp(17.269 t/(237.3 + t)), inverse over ice), 1 K away, and needs far more.
-        var flat = Sheet(CalcInputValue.Choice("geometry", InsulationCalculator.Flat), Q("theta_i", -30, "degC"), Q("theta_a", -10, "degC"), Q("RH_a", 90, "%"), Q("dew_margin", 0, "K"), Clear("q_max_m"), Clear("t_chosen"));
+        var flat = Sheet(CalcInputValue.Choice("geometry", InsulationCalculator.Flat), Q("T_proc", -30, "degC"), Q("T_amb", -10, "degC"), Q("RH_a", 90, "%"), Q("dew_margin", 0, "K"), Clear("q_max_m"), Clear("t_chosen"));
         var cold = Run(flat);
         var warning = Assert.Single(cold.Warnings, w => w.RuleId == "rh-over-ice");
         Assert.Contains("-10.1", warning.Message, StringComparison.Ordinal);
-        Assert.Equal(-11.178796330412547 + 273.15, cold.OutputSi("theta_dew"), 9);
+        Assert.Equal(-11.178796330412547 + 273.15, cold.OutputSi("T_dew"), 9);
 
         // Above 0 C, with the dew point entered (as the cold-pipe pack links it from B2), or without a dew-point margin, no such warning.
-        Assert.False(Warned(Run(flat.With(Q("theta_i", 5, "degC")).With(Q("theta_a", 25, "degC"))), "rh-over-ice"));
-        Assert.False(Warned(Run(flat.With(Q("theta_dew", -11.2, "degC"))), "rh-over-ice"));
+        Assert.False(Warned(Run(flat.With(Q("T_proc", 5, "degC")).With(Q("T_amb", 25, "degC"))), "rh-over-ice"));
+        Assert.False(Warned(Run(flat.With(Q("T_dew", -11.2, "degC"))), "rh-over-ice"));
         Assert.False(Warned(Run(flat.With(Clear("dew_margin")).With(Q("q_max_A", 20, "W/m^2"))), "rh-over-ice"));
         Assert.Contains(Insulation.Template.ApplicabilityRules, r => r.Id == "rh-over-ice" && r.Severity == CalcNoticeSeverity.Warning);
     }
@@ -192,16 +192,16 @@ public sealed class InsulationTests
         var chilled = WorkedExamples.Get(InsulationCalculator.Id + "/chilled-water-pipe-condensation").Inputs;
         var run = Run(chilled);
         Assert.False(run.IsBlocked);
-        Assert.Equal(13.161558769442829, run.OutputSi("t_dew") * 1000, 6);
+        Assert.Equal(13.161558769442829, run.OutputSi("t_req_dew") * 1000, 6);
         Assert.False(Warned(run, "h-se-condensation"));
 
-        double Correlation(double eps) => Run(chilled.With(CalcInputValue.Choice("h_mode", InsulationCalculator.HCorrelation)).With(CalcInputValue.Of("eps", eps))).OutputSi("t_dew") * 1000;
+        double Correlation(double eps) => Run(chilled.With(CalcInputValue.Choice("h_mode", InsulationCalculator.HCorrelation)).With(CalcInputValue.Of("eps", eps))).OutputSi("t_req_dew") * 1000;
         Assert.True(Correlation(0.9) < 13.1615 && Correlation(0.1) > 25, $"{Correlation(0.9)} {Correlation(0.1)}");
 
         // The same h_se on a bright surface (ε 0.1 entered) is not conservative: it warns, and says which emissivity it judged against.
         var bright = Run(chilled.With(CalcInputValue.Of("eps", 0.1)));
         var warning = Assert.Single(bright.Warnings, w => w.RuleId == "h-se-condensation");
-        Assert.Contains("ε = 0.1,", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("ε = 0.1.", warning.Message, StringComparison.Ordinal);
         Assert.Contains($"{Tempest.Calc.Engine.Values.CalcValue.FormatNumber(Correlation(0.1), 5)} mm", warning.Message, StringComparison.Ordinal);
         Assert.DoesNotContain("bright cladding", warning.Message, StringComparison.Ordinal);
 
@@ -211,7 +211,7 @@ public sealed class InsulationTests
         // A higher h_se than the surface gives holds the surface too near the air: it warns at ε 0.9 too, and then adds the bright-cladding thickness as a note.
         var high = Run(chilled.With(Q("h_se", 15, "W/(m^2*K)")));
         var highWarning = Assert.Single(high.Warnings, w => w.RuleId == "h-se-condensation");
-        Assert.Contains("ε = 0.9 (bright cladding, ε = 0.1, would need", highWarning.Message, StringComparison.Ordinal);
+        Assert.Contains("bright cladding (ε = 0.1) would need", highWarning.Message, StringComparison.Ordinal);
         Assert.Contains($"{Tempest.Calc.Engine.Values.CalcValue.FormatNumber(Correlation(0.9), 5)} mm", highWarning.Message, StringComparison.Ordinal);
 
         // The emissivity input says it is read for this judgement.
@@ -222,18 +222,18 @@ public sealed class InsulationTests
     public void A_Criterion_For_The_Wrong_Sign_Is_Ignored_With_A_Warning_And_No_Criterion_At_All_Blocks()
     {
         // A hot-surface limit on a cold pipe is ignored; the heat-flow limit still applies.
-        var cold = Run(Sheet(Q("theta_i", 5, "degC"), Q("q_max_m", 30, "W/m"), Q("theta_se_max", 45, "degC")));
+        var cold = Run(Sheet(Q("T_proc", 5, "degC"), Q("q_max_m", 30, "W/m"), Q("theta_se_max", 45, "degC")));
         Assert.False(cold.IsBlocked);
         Assert.True(Warned(cold, "criterion-na"));
 
         // A cold sheet with no dew-point margin says that condensation is not checked.
         Assert.True(Warned(cold, "no-condensation-check"));
         Assert.StartsWith("dew_margin:", cold.Warnings.Single(w => w.RuleId == "no-condensation-check").Message, StringComparison.Ordinal);
-        Assert.False(Warned(Run(Sheet(Q("theta_i", 5, "degC"), Q("dew_margin", 1, "K"))), "no-condensation-check"));
+        Assert.False(Warned(Run(Sheet(Q("T_proc", 5, "degC"), Q("dew_margin", 1, "K"))), "no-condensation-check"));
         Assert.False(Warned(Run(Sheet()), "no-condensation-check"));
         Assert.False(Warned(Run(Sheet()), "criterion-na"));
 
-        var none = Run(Sheet(Q("theta_i", 5, "degC"), Clear("q_max_m"), Clear("t_chosen")));
+        var none = Run(Sheet(Q("T_proc", 5, "degC"), Clear("q_max_m"), Clear("t_chosen")));
         Assert.True(none.IsBlocked);
         Assert.Equal("criteria", none.Blocks[0].RuleId);
         Assert.StartsWith("q_max_m:", none.Blocks[0].Message, StringComparison.Ordinal);
@@ -251,11 +251,11 @@ public sealed class InsulationTests
         var below = Run(Sheet(Q("theta_se_max", 15, "degC")));
         Assert.Equal("surface-limit", below.Blocks[0].RuleId);
 
-        var humid = Run(Sheet(Q("theta_i", 5, "degC"), Q("theta_a", 25, "degC"), Q("RH_a", 100, "%"), Q("dew_margin", 1, "K"), Clear("q_max_m"), Clear("theta_se_max")));
+        var humid = Run(Sheet(Q("T_proc", 5, "degC"), Q("T_amb", 25, "degC"), Q("RH_a", 100, "%"), Q("dew_margin", 1, "K"), Clear("q_max_m"), Clear("theta_se_max")));
         Assert.Equal("dew", humid.Blocks[0].RuleId);
         Assert.StartsWith("dew_margin:", humid.Blocks[0].Message, StringComparison.Ordinal);
 
-        var same = Run(Sheet(Q("theta_i", 20, "degC")));
+        var same = Run(Sheet(Q("T_proc", 20, "degC")));
         Assert.Equal("temperatures", same.Blocks[0].RuleId);
     }
 
@@ -269,13 +269,13 @@ public sealed class InsulationTests
         var h = still.OutputSi("h_se");
         var de = 0.1 + 0.08;
         var q = still.OutputSi("q_per_m");
-        var ts = still.OutputSi("theta_se") - 273.15;
+        var ts = still.OutputSi("T_se") - 273.15;
         Assert.Equal(q, h * Math.PI * de * (ts - 20), 6);
         Assert.Equal(h, still.OutputSi("h_c") + still.OutputSi("h_r"), 9);
 
         var windy = Run(Sheet(CalcInputValue.Choice("h_mode", InsulationCalculator.HCorrelation), Q("t_chosen", 40, "mm"), Q("v_wind", 5, "m/s")));
         Assert.True(windy.OutputSi("h_se") > h);
-        Assert.True(windy.OutputSi("theta_se") < still.OutputSi("theta_se"));
+        Assert.True(windy.OutputSi("T_se") < still.OutputSi("T_se"));
 
         var shiny = Run(Sheet(CalcInputValue.Choice("h_mode", InsulationCalculator.HCorrelation), Q("t_chosen", 40, "mm"), CalcInputValue.Of("eps", 0.1)));
         Assert.True(shiny.OutputSi("h_r") < still.OutputSi("h_r") / 5);
@@ -314,10 +314,10 @@ public sealed class InsulationTests
     [Fact]
     public void The_Mean_Temperature_Is_Noted_And_A_Far_Conductivity_Temperature_Warns()
     {
-        var r = Run(Sheet(Q("theta_lambda", 10, "degC")));
-        Assert.Equal((80 + r.OutputSi("theta_se") - 273.15) / 2, r.OutputSi("theta_m") - 273.15, 6);
+        var r = Run(Sheet(Q("T_lambda", 10, "degC")));
+        Assert.Equal((80 + r.OutputSi("T_se") - 273.15) / 2, r.OutputSi("T_m") - 273.15, 6);
         Assert.True(Warned(r, "lambda-temperature"));
-        Assert.False(Warned(Run(Sheet(Q("theta_lambda", 52, "degC"))), "lambda-temperature"));
+        Assert.False(Warned(Run(Sheet(Q("T_lambda", 52, "degC"))), "lambda-temperature"));
     }
 
     // ------------------------------------------------------------------ review fixes (1.1.0)
@@ -328,10 +328,10 @@ public sealed class InsulationTests
         // A 3 m pipe: 1 m of insulation still loses 29 W/m, over a 20 W/m limit; the 45 °C surface limit is easy.
         var big = Run(Sheet(Q("D_i", 3000, "mm"), Q("q_max_m", 20, "W/m"), Q("theta_se_max", 45, "degC"), Q("t_chosen", 100, "mm")));
         Assert.False(big.IsBlocked, string.Join("; ", big.Blocks.Select(b => b.Message)));
-        Assert.True(Warned(big, "unattainable"));
-        Assert.Equal("> 1000 mm", ((Tempest.Calc.Engine.Values.TextValue)big.FindOutput("t_q")!.Value).Value);
+        Assert.True(Warned(big, "unattainable-chosen"));
+        Assert.Equal("> 1000 mm", ((Tempest.Calc.Engine.Values.TextValue)big.FindOutput("t_req_q")!.Value).Value);
         Assert.Equal("> 1000 mm", ((Tempest.Calc.Engine.Values.TextValue)big.FindOutput("thickness")!.Value).Value);
-        Assert.True(big.OutputSi("t_se") > 0);
+        Assert.True(big.OutputSi("t_req_se") > 0);
         Assert.Contains(big.Checks, c => c.Name.Contains("heat-loss limit", StringComparison.Ordinal) && !c.Passed);
         Assert.Contains(big.Checks, c => c.Name.Contains("surface-temperature limit", StringComparison.Ordinal) && c.Passed);
         Assert.False(big.Passed);
@@ -339,13 +339,13 @@ public sealed class InsulationTests
         // The surface-temperature and dew-point criteria behave the same way.
         var surface = Run(Sheet(Q("theta_se_max", 20.0001, "degC"), Clear("q_max_m")));
         Assert.False(surface.IsBlocked);
-        Assert.True(Warned(surface, "unattainable"));
-        Assert.StartsWith("theta_se_max:", surface.Warnings.Single(w => w.RuleId == "unattainable").Message, StringComparison.Ordinal);
+        Assert.True(Warned(surface, "unattainable-chosen"));
+        Assert.StartsWith("theta_se_max:", surface.Warnings.Single(w => w.RuleId == "unattainable-chosen").Message, StringComparison.Ordinal);
 
-        var dew = Run(Sheet(Q("theta_i", 5, "degC"), Q("theta_a", 25, "degC"), Q("RH_a", 99.99, "%"), Q("dew_margin", 0, "K"), Clear("q_max_m")));
+        var dew = Run(Sheet(Q("T_proc", 5, "degC"), Q("T_amb", 25, "degC"), Q("RH_a", 99.99, "%"), Q("dew_margin", 0, "K"), Clear("q_max_m")));
         Assert.False(dew.IsBlocked);
-        Assert.StartsWith("dew_margin:", dew.Warnings.Single(w => w.RuleId == "unattainable").Message, StringComparison.Ordinal);
-        Assert.Contains(dew.Checks, c => c.Name.Contains("anti-condensation margin", StringComparison.Ordinal) && !c.Passed);
+        Assert.StartsWith("dew_margin:", dew.Warnings.Single(w => w.RuleId == "unattainable-chosen").Message, StringComparison.Ordinal);
+        Assert.Contains(dew.Checks, c => c.Name.Contains("anti-condensation allowance", StringComparison.Ordinal) && !c.Passed);
 
         // With no thickness chosen there is nothing to evaluate, so the sheet blocks.
         Assert.Equal("unattainable", Run(Sheet(Q("theta_se_max", 20.0001, "degC"), Clear("q_max_m"), Clear("t_chosen"))).Blocks[0].RuleId);
@@ -362,8 +362,8 @@ public sealed class InsulationTests
 
         var expected = InsulationModel.Evaluate(new InsulationModel.Setup(true, 0.1, 0.04, 80, 20, 0, new InsulationModel.Surface(10, 0, 0, 1)), 0.04);
         Assert.Equal(expected.Q, r.OutputSi("q_per_m"), 9);
-        Assert.Equal(expected.Ts, r.OutputSi("theta_se") - 273.15, 9);
-        Assert.NotNull(r.FindOutput("theta_m"));
+        Assert.Equal(expected.Ts, r.OutputSi("T_se") - 273.15, 9);
+        Assert.NotNull(r.FindOutput("T_m"));
         Assert.NotNull(r.FindOutput("D_crit"));
         Assert.Contains("chosen thickness only", ((Tempest.Calc.Engine.Values.TextValue)r.FindOutput("governing")!.Value).Value, StringComparison.Ordinal);
 
@@ -380,7 +380,7 @@ public sealed class InsulationTests
         Assert.Equal(74.29172044012402, r.OutputSi("thickness") * 1000, 6);
         var note = r.Warnings.Single(w => w.RuleId == "bare-complies").Message;
         Assert.StartsWith("q_max_m:", note, StringComparison.Ordinal);
-        Assert.Contains("bare surface also meets", note, StringComparison.Ordinal);
+        Assert.Contains("bare surface meets", note, StringComparison.Ordinal);
         Assert.Contains("2.7646", note, StringComparison.Ordinal);
         Assert.Contains("74.292", note, StringComparison.Ordinal);
 
@@ -398,18 +398,18 @@ public sealed class InsulationTests
     [Fact]
     public void A_Dew_Point_Entered_Replaces_The_Magnus_Value_And_Ignores_The_Humidity()
     {
-        var cold = Sheet(CalcInputValue.Choice("geometry", InsulationCalculator.Flat), Q("theta_i", 5, "degC"), Q("theta_a", 25, "degC"), Q("dew_margin", 1, "K"), Clear("q_max_m"), Clear("theta_se_max"), Clear("t_chosen"));
-        var entered = Run(cold.With(Q("theta_dew", 20, "degC")).With(Q("RH_a", 30, "%")));
+        var cold = Sheet(CalcInputValue.Choice("geometry", InsulationCalculator.Flat), Q("T_proc", 5, "degC"), Q("T_amb", 25, "degC"), Q("dew_margin", 1, "K"), Clear("q_max_m"), Clear("theta_se_max"), Clear("t_chosen"));
+        var entered = Run(cold.With(Q("T_dew", 20, "degC")).With(Q("RH_a", 30, "%")));
         Assert.False(entered.IsBlocked, string.Join("; ", entered.Blocks.Select(b => b.Message)));
-        Assert.Equal(20, entered.OutputSi("theta_dew") - 273.15, 9);
+        Assert.Equal(20, entered.OutputSi("T_dew") - 273.15, 9);
         Assert.Equal(16, entered.OutputSi("thickness") * 1000, 6);
 
         var magnus = Run(cold.With(Q("RH_a", 30, "%")));
         Assert.True(magnus.OutputSi("thickness") < entered.OutputSi("thickness"));
 
-        var impossible = Run(cold.With(Q("theta_dew", 24.5, "degC")));
+        var impossible = Run(cold.With(Q("T_dew", 24.5, "degC")));
         Assert.Equal("dew", impossible.Blocks[0].RuleId);
-        Assert.StartsWith("theta_dew:", impossible.Blocks[0].Message, StringComparison.Ordinal);
+        Assert.StartsWith("T_dew:", impossible.Blocks[0].Message, StringComparison.Ordinal);
         Assert.Contains("entered", impossible.Blocks[0].Message, StringComparison.Ordinal);
 
         // Computed from the humidity, the block still points to the margin and humidity.
@@ -417,9 +417,9 @@ public sealed class InsulationTests
         Assert.StartsWith("dew_margin:", humid.Blocks[0].Message, StringComparison.Ordinal);
 
         // An entered dew point on a hot sheet is ignored, with a warning.
-        var hot = Run(Sheet(Q("theta_dew", 12, "degC")));
+        var hot = Run(Sheet(Q("T_dew", 12, "degC")));
         Assert.False(hot.IsBlocked);
-        Assert.StartsWith("theta_dew:", hot.Warnings.Single(w => w.RuleId == "criterion-na").Message, StringComparison.Ordinal);
+        Assert.StartsWith("T_dew:", hot.Warnings.Single(w => w.RuleId == "criterion-na").Message, StringComparison.Ordinal);
         Assert.False(Warned(Run(Sheet()), "criterion-na"));
     }
 
@@ -429,14 +429,14 @@ public sealed class InsulationTests
         var t = Insulation.Template;
         Assert.Contains(t.OutputPorts!, p => p is { Symbol: "q_area", Unit: "W/m^2" });
 
-        var cold = Run(Sheet(CalcInputValue.Choice("geometry", InsulationCalculator.Flat), Q("theta_i", 5, "degC"), Q("theta_a", 25, "degC"), Q("q_max_A", 15, "W/m^2"), Clear("q_max_m"), Clear("theta_se_max"), Clear("t_chosen")));
+        var cold = Run(Sheet(CalcInputValue.Choice("geometry", InsulationCalculator.Flat), Q("T_proc", 5, "degC"), Q("T_amb", 25, "degC"), Q("q_max_A", 15, "W/m^2"), Clear("q_max_m"), Clear("theta_se_max"), Clear("t_chosen")));
         Assert.False(cold.IsBlocked, string.Join("; ", cold.Blocks.Select(b => b.Message)));
         Assert.Contains("heat gain", cold.FindOutput("q_area")!.Description, StringComparison.Ordinal);
         Assert.Equal(15, cold.OutputSi("q_area"), 6);
         Assert.Null(cold.FindOutput("q_per_m"));
 
         // A cold pipe's heat-flow criterion is a heat-gain limit; a hot one's is a heat-loss limit.
-        Assert.Contains(Run(Sheet(Q("theta_i", 5, "degC"), Q("q_max_m", 30, "W/m"))).Checks, c => c.Name.Contains("heat-gain limit", StringComparison.Ordinal));
+        Assert.Contains(Run(Sheet(Q("T_proc", 5, "degC"), Q("q_max_m", 30, "W/m"))).Checks, c => c.Name.Contains("heat-gain limit", StringComparison.Ordinal));
         Assert.Contains(Run(Sheet()).Checks, c => c.Name.Contains("heat-loss limit", StringComparison.Ordinal));
     }
 
@@ -450,7 +450,7 @@ public sealed class InsulationTests
 
         var wall = Run(Sheet(Q("h_i", 500, "W/(m^2*K)"), Q("t_w", 3, "mm"), Q("lambda_w", 50, "W/(m*K)")));
         var face = 80 - wall.OutputSi("q_per_m") * wall.OutputSi("R_oth");
-        Assert.Equal((face + wall.OutputSi("theta_se") - 273.15) / 2, wall.OutputSi("theta_m") - 273.15, 9);
+        Assert.Equal((face + wall.OutputSi("T_se") - 273.15) / 2, wall.OutputSi("T_m") - 273.15, 9);
         Assert.Contains("bare-surface", wall.FindOutput("D_crit")!.Description, StringComparison.Ordinal);
     }
 
@@ -476,7 +476,7 @@ public sealed class InsulationTests
         var t = Insulation.Template;
         Assert.Equal("lambda", t.Inputs.Single(i => i.MaterialProperty is not null).MaterialProperty);
         Assert.Equal(["lambda"], t.RecordKinds!.Single(k => k.Kind == InsulationCalculator.MaterialKind).Symbols);
-        Assert.Equal(["thickness", "q_per_m", "q_area", "theta_se"], t.OutputPorts!.Select(p => p.Symbol));
+        Assert.Equal(["thickness", "q_per_m", "q_area", "T_se"], t.OutputPorts!.Select(p => p.Symbol));
 
         // A pipe sheet gives every port except the flat one.
         var r = Run(Sheet());

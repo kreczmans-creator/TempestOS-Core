@@ -92,7 +92,12 @@ public static class CalcInputJson
                 if (!CalcInputAliases.TryCanonicalise(template, values.Select(v => v!).ToList(), out var canonical, out var aliasConflict))
                     return (new CalcInputSet(), [new CalcNotice("json", CalcNoticeSeverity.Block, aliasConflict!)]);
 
-                values = [.. canonical];
+                // An inputs file carries no template version: a bare number of an input whose default unit changed is refused, never read in
+                // whichever unit the installed version uses (ADR-0177 review, CalcInputUnits).
+                if (!CalcInputUnits.TryPin(template, canonical, CalcInputUnits.NoVersion, out var pinned, out var ambiguous))
+                    return (new CalcInputSet(), [new CalcNotice("json", CalcNoticeSeverity.Block, ambiguous!)]);
+
+                values = [.. pinned];
             }
 
             var duplicate = values.GroupBy(v => v!.Symbol, StringComparer.Ordinal).FirstOrDefault(g => g.Count() > 1);

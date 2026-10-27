@@ -34,51 +34,63 @@ public sealed class MotorSizingCalculator : ICalcCalculator
     public const string ProfileSCurve = "S-curve (sine acceleration)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.10.0", CalcDiscipline.Electrical, "Motor and actuator sizing",
-        "Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.",
-        "Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack).\nLoad inertia reflected to the motor through a linear mechanism: J_refl = m k²/η.\nLoad torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p.\nReflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η).\nMove profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc.\nMove profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap.\nTorque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load; deceleration T_dec = −T_acc + T_load; the peak check is on the larger magnitude, SF·max(|T_pk|, |T_dec|) ≤ T_peak, and the braking power is P_brake = max(0, −T_dec·ω_pk).\nDesign torque for a coupling or any part downstream that must carry what the drive can deliver, on the basis the owner chooses (T_basis): the load peak T_design = max(|T_pk|, |T_dec|) (default; T_pk alone in continuous duty, where there is no deceleration), the motor peak T_design = T_peak, a service factor on the rated torque T_design = SF_c·T_rated, or a protective limit T_design = T_lim (a torque limiter or a drive setting).\nHolding torque in the dwell of a linear mechanism that is not held by a brake: T_hold = m g sin θ·k (efficiency not credited: it is a torque to stand still); it is part of the RMS torque for the whole dwell.\nAlternating torque amplitude of a point-to-point cycle about T_load, for a shaft's fatigue: T_alt = (T_pk − T_dec)/2 (0 in continuous duty). Torque behind the ratio on the output shaft of a rotary mechanism: T_out = T·i·η (mean, alternating and peak), n_out = n_pk/i. Peak axial thrust of a ball screw on its support bearings: F_ax_pk = F_load + m a_pk (0 for other mechanisms).\nRMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle), the dwell at T_hold.\nRMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²].\nContinuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i.\nContinuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load.\nPeak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load.\nContinuous power: P_cont = T_load ω; P_rms = P_cont; continuous duty needs the steady load torque T_L (blank or zero is refused: it would size the motor for no load).\nRated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60; check P_cont ≤ P_rated, u_power = P_cont/P_rated.",
+        Id, "1.11.1", CalcDiscipline.Electrical, "Motor and actuator sizing",
+        "Calculates the torque, speed and power a motor needs to move a load through a mechanism, and checks a candidate motor against them. A continuously running rotary load is sized from its steady torque, speed and run-up time.",
+        "Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in metres per motor radian; J_refl = m k²/η; T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p\n" +
+        "Rotary mechanism through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η)\n" +
+        "Move profile: trapezoidal v_pk = s/(t_move − t_acc), a = v_pk/t_acc; S-curve (sine acceleration, same peak speed) a_pk = (π/2) a_trap\n" +
+        "Peak torque: T_acc = J_total α; T_pk = T_acc + T_load; T_dec = −T_acc + T_load; the check is SF·max(|T_pk|, |T_dec|) ≤ T_peak; braking power P_brake = max(0, −T_dec·ω_pk)\n" +
+        "Thermal duty: T_rms = √(Σ T_i² t_i / t_cycle) over the whole cycle, the dwell at T_hold = m g sin θ·k for a linear mechanism not held by a brake; P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}, and for the S-curve the acceleration term is t_acc·[(3/4) T_load² + (5/16) T_acc²]\n" +
+        "Output side and design torque: T_alt = (T_pk − T_dec)/2 (0 in continuous duty); T_out = T·i·η and n_out = n_pk/i for a rotary mechanism; F_ax_pk = F_load + m a_pk for a ball screw; T_design on the basis T_basis (load peak max(|T_pk|, |T_dec|), T_peak, SF_c·T_rated or T_lim)\n" +
+        "Continuous rotary duty: ω = 2π n_L i/60, n_pk = n_L i; T_load = T_L/(i η), T_rms = T_load; T_pk = J_total ω/t_start + T_load; P_cont = T_load ω, P_rms = P_cont\n" +
+        "Rated power of the candidate motor: P_rated = T_rated·2π n_rated/60 (without n_rated there is no P_rated); the check is P_cont ≤ P_rated, u_power = P_cont/P_rated",
         [
-            new CalcInputSpec("mechanism", "Mechanism", CalcInputKind.Choice, Choices: [MechScrew, MechBelt, MechRack, MechGearedRotary, MechDirectRotary], DefaultChoice: MechScrew, Group: "Mechanism"),
-            new CalcInputSpec("i", "Gear ratio i (motor : output, 1 = none)", CalcInputKind.Number, Default: 1, Min: 1, Max: 1000, HardMin: 0.01, HardMax: 1e5, Group: "Mechanism"),
-            new CalcInputSpec("eta", "Mechanism efficiency (overall)", CalcInputKind.Number, Default: 0.9, Min: 0.3, Max: 1, HardMin: 0.01, HardMax: 1, Group: "Mechanism"),
-            new CalcInputSpec("p_screw", "Screw lead (per revolution of the screw)", CalcInputKind.Quantity, "mm", Default: 10, Min: 1, Max: 100, HardMin: 1e-3, HardMax: 1e4, IsOptional: true, Group: "Mechanism"),
-            new CalcInputSpec("D_pulley", "Pulley or pinion pitch diameter", CalcInputKind.Quantity, "mm", Min: 5, Max: 2000, HardMin: 1e-3, HardMax: 1e5, IsOptional: true, Group: "Mechanism"),
-            new CalcInputSpec("J_mech", "Transmission inertia referred to the motor shaft (screw, pulleys, gearbox, coupling)", CalcInputKind.Quantity, "kg*m^2", Default: 1e-4, Min: 0, Max: 10, HardMin: 0, HardMax: 1e4, Group: "Mechanism"),
-            new CalcInputSpec("m", "Moved mass (linear mechanisms)", CalcInputKind.Quantity, "kg", Default: 50, Min: 0, Max: 1e5, HardMin: 0, HardMax: 1e7, IsOptional: true, Group: "Load"),
-            new CalcInputSpec("mu", "Friction coefficient (guide / bearing)", CalcInputKind.Number, Default: 0.1, Min: 0, Max: 1, HardMin: 0, HardMax: 5, Group: "Load"),
-            new CalcInputSpec("theta", "Incline from horizontal (+ moving uphill)", CalcInputKind.Quantity, "deg", Default: 0, Min: -90, Max: 90, HardMin: -90, HardMax: 90, Group: "Load"),
-            new CalcInputSpec("F_p", "Process force opposing the move (linear)", CalcInputKind.Quantity, "N", Default: 0, Min: 0, Max: 1e6, HardMin: -1e8, HardMax: 1e8, Group: "Load"),
-            new CalcInputSpec("J_L", "Load inertia at the output (rotary mechanisms)", CalcInputKind.Quantity, "kg*m^2", Min: 0, Max: 1e4, HardMin: 0, HardMax: 1e7, IsOptional: true, Group: "Load"),
-            new CalcInputSpec("brake", "A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor", CalcInputKind.Boolean, Default: 0, Group: "Load"),
-            new CalcInputSpec("T_L", "Constant load torque at the output (rotary; continuous duty needs it: blank or zero is refused)", CalcInputKind.Quantity, "N*m", Default: 0, Min: 0, Max: 1e5, HardMin: -1e7, HardMax: 1e7, Group: "Load"),
-            new CalcInputSpec("duty_mode", "Duty (point-to-point move cycle, or continuous rotary running with a run-up)", CalcInputKind.Choice, Choices: [DutyPointToPoint, DutyContinuous], DefaultChoice: DutyPointToPoint, Group: "Motion"),
-            new CalcInputSpec("n_L", "Load speed at the output (continuous duty)", CalcInputKind.Quantity, "rpm", Min: 1, Max: 1e5, HardMin: 1e-3, HardMax: 1e6, IsOptional: true, Group: "Motion"),
-            new CalcInputSpec("t_start", "Run-up time to full speed (continuous duty)", CalcInputKind.Quantity, "s", Min: 0.1, Max: 600, HardMin: 1e-3, HardMax: 1e6, IsOptional: true, Group: "Motion"),
-            new CalcInputSpec("profile", "Motion profile", CalcInputKind.Choice, Choices: [ProfileTrapezoidal, ProfileSCurve], DefaultChoice: ProfileTrapezoidal, Group: "Motion"),
+            new CalcInputSpec("mechanism", "Mechanism", CalcInputKind.Choice, Choices: [MechScrew, MechBelt, MechRack, MechGearedRotary, MechDirectRotary], DefaultChoice: MechScrew, Group: "Setup"),
+            new CalcInputSpec("duty_mode", "Duty (point-to-point move cycle, or continuous rotary running with a run-up)", CalcInputKind.Choice, Choices: [DutyPointToPoint, DutyContinuous], DefaultChoice: DutyPointToPoint, Group: "Setup"),
+            new CalcInputSpec("profile", "Motion profile", CalcInputKind.Choice, Choices: [ProfileTrapezoidal, ProfileSCurve], DefaultChoice: ProfileTrapezoidal, Group: "Setup"),
+            new CalcInputSpec("T_basis", "Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter", CalcInputKind.Choice, Choices: [BasisLoadPeak, BasisMotorPeak, BasisServiceFactor, BasisProtectiveLimit], DefaultChoice: BasisLoadPeak, Group: "Setup"),
+            new CalcInputSpec("brake", "A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor", CalcInputKind.Boolean, Default: 0, Group: "Setup"),
+            new CalcInputSpec("J_mech", "Transmission inertia referred to the motor shaft (screw, pulleys, gearbox, coupling)", CalcInputKind.Quantity, "kg*m^2", Default: 1e-4, Min: 0, Max: 10, HardMin: 0, HardMax: 1e4, Group: "Geometry"),
+            new CalcInputSpec("p_screw", "Screw lead (per revolution of the screw)", CalcInputKind.Quantity, "mm", Default: 10, Min: 1, Max: 100, HardMin: 1e-3, HardMax: 1e4, IsOptional: true, Group: "Geometry"),
+            new CalcInputSpec("D_pulley", "Pulley or pinion pitch diameter", CalcInputKind.Quantity, "mm", Min: 5, Max: 2000, HardMin: 1e-3, HardMax: 1e5, IsOptional: true, Group: "Geometry"),
+            new CalcInputSpec("theta", "Incline from horizontal (+ moving uphill)", CalcInputKind.Quantity, "deg", Default: 0, Min: -60, Max: 90, HardMin: -90, HardMax: 90, Group: "Loads"),
+            new CalcInputSpec("F_p", "Process force opposing the move (linear)", CalcInputKind.Quantity, "N", Default: 0, Min: 0, Max: 1e6, HardMin: -1e8, HardMax: 1e8, Group: "Loads"),
+            new CalcInputSpec("T_L", "Constant load torque at the output (rotary; continuous duty needs it, and a zero value is refused)", CalcInputKind.Quantity, "N*m", Default: 0, Min: 0, Max: 1e5, HardMin: -1e7, HardMax: 1e7, Group: "Loads"),
+            new CalcInputSpec("m", "Moved mass (linear mechanisms)", CalcInputKind.Quantity, "kg", Default: 50, Min: 0, Max: 1e5, HardMin: 0, HardMax: 1e7, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("J_L", "Load inertia at the output (rotary mechanisms)", CalcInputKind.Quantity, "kg*m^2", Min: 0, Max: 1e4, HardMin: 0, HardMax: 1e7, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("i", "Gear ratio (motor : output, 1 = none)", CalcInputKind.Number, Default: 1, Min: 1, Max: 1000, HardMin: 0.01, HardMax: 1e5, Group: "Factors"),
+            new CalcInputSpec("eta", "Mechanism efficiency (overall)", CalcInputKind.Number, Default: 0.9, Min: 0.3, Max: 1, HardMin: 0.01, HardMax: 1, Group: "Factors"),
+            new CalcInputSpec("mu", "Friction coefficient (guide / bearing)", CalcInputKind.Number, Default: 0.1, Min: 0, Max: 1, HardMin: 0, HardMax: 5, Group: "Factors"),
+            new CalcInputSpec("SF", "Safety factor on torque", CalcInputKind.Number, Default: 1.25, Min: 1, Max: 3, HardMin: 1, HardMax: 10, Group: "Requirements"),
+            new CalcInputSpec("J_ratio_max", "Inertia ratio limit (load : motor), warning", CalcInputKind.Number, Default: 10, Min: 1, Max: 100, HardMin: 0.1, HardMax: 1e4, Group: "Requirements"),
             new CalcInputSpec("s", "Move distance (linear: m; rotary: output revolutions)", CalcInputKind.Number, Default: 0.5, Min: 1e-4, Max: 1e4, HardMin: 1e-9, HardMax: 1e7, Group: "Motion"),
             new CalcInputSpec("t_move", "Move time", CalcInputKind.Quantity, "s", Default: 0.5, Min: 0.01, Max: 3600, HardMin: 1e-4, HardMax: 1e6, Group: "Motion"),
             new CalcInputSpec("f_acc", "Acceleration (and deceleration) fraction of the move time", CalcInputKind.Number, Default: 1.0 / 3, Min: 0.05, Max: 0.5, HardMin: 0.01, HardMax: 0.5, Group: "Motion"),
             new CalcInputSpec("t_dwell", "Dwell between moves", CalcInputKind.Quantity, "s", Default: 0.5, Min: 0, Max: 3600, HardMin: 0, HardMax: 1e6, Group: "Motion"),
+            new CalcInputSpec("n_L", "Load speed at the output (continuous duty)", CalcInputKind.Quantity, "rpm", Min: 1, Max: 1e5, HardMin: 1e-3, HardMax: 1e6, IsOptional: true, Group: "Motion"),
+            new CalcInputSpec("t_start", "Run-up time to full speed (continuous duty)", CalcInputKind.Quantity, "s", Min: 0.1, Max: 600, HardMin: 1e-3, HardMax: 1e6, IsOptional: true, Group: "Motion"),
             new CalcInputSpec("J_motor", "Candidate motor rotor inertia", CalcInputKind.Quantity, "kg*m^2", Default: 2e-4, Min: 1e-7, Max: 10, HardMin: 1e-9, HardMax: 1e4, Group: "Motor"),
             new CalcInputSpec("T_rated", "Candidate motor continuous (rated) torque", CalcInputKind.Quantity, "N*m", Default: 2.0, Min: 0.01, Max: 1e5, HardMin: 1e-4, HardMax: 1e7, Group: "Motor"),
             new CalcInputSpec("T_peak", "Candidate motor peak torque", CalcInputKind.Quantity, "N*m", Default: 6.0, Min: 0.01, Max: 1e5, HardMin: 1e-4, HardMax: 1e7, Group: "Motor"),
-            new CalcInputSpec("n_rated", "Candidate motor rated (nameplate) speed, with the rated torque the rated power P_rated = T_rated·ω_rated (leave blank if not known: there is then no P_rated)", CalcInputKind.Quantity, "rpm", Min: 10, Max: 1e5, HardMin: 1, HardMax: 1e6, IsOptional: true, Group: "Motor"),
-            new CalcInputSpec("T_basis", "Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter", CalcInputKind.Choice, Choices: [BasisLoadPeak, BasisMotorPeak, BasisServiceFactor, BasisProtectiveLimit], DefaultChoice: BasisLoadPeak, Group: "Motor"),
-            new CalcInputSpec("SF_c", "Service factor on the rated torque for the design torque (needed for the service-factor basis)", CalcInputKind.Number, Min: 1, Max: 10, HardMin: 1, HardMax: 10, IsOptional: true, Group: "Motor"),
-            new CalcInputSpec("T_lim", "Protective torque limit at the motor shaft, e.g. a torque limiter or a drive torque setting (needed for the protective-limit basis)", CalcInputKind.Quantity, "N*m", Min: 0.01, Max: 1e5, HardMin: 1e-4, HardMax: 1e7, IsOptional: true, Group: "Motor"),
             new CalcInputSpec("n_max", "Candidate motor maximum speed", CalcInputKind.Quantity, "rpm", Default: 6000, Min: 10, Max: 1e5, HardMin: 1, HardMax: 1e6, Group: "Motor"),
-            new CalcInputSpec("SF", "Safety margin on torque", CalcInputKind.Number, Default: 1.25, Min: 1, Max: 3, HardMin: 1, HardMax: 10, Group: "Motor"),
-            new CalcInputSpec("J_ratio_max", "Inertia ratio limit (load : motor), warning", CalcInputKind.Number, Default: 10, Min: 1, Max: 100, HardMin: 0.1, HardMax: 1e4, Group: "Motor"),
+            new CalcInputSpec("n_rated", "Candidate motor rated (nameplate) speed, which with the rated torque gives the rated power P_rated = T_rated·ω_rated (optional; blank = not known, so there is no P_rated)", CalcInputKind.Quantity, "rpm", Min: 10, Max: 1e5, HardMin: 1, HardMax: 1e6, IsOptional: true, Group: "Motor"),
+            new CalcInputSpec("SF_c", "Service factor on the rated torque for the design torque (needed for the service-factor basis)", CalcInputKind.Number, Min: 1, Max: 3, HardMin: 1, HardMax: 10, IsOptional: true, Group: "Motor"),
+            new CalcInputSpec("T_lim", "Protective torque limit at the motor shaft, e.g. a torque limiter or a drive torque setting (needed for the protective-limit basis)", CalcInputKind.Quantity, "N*m", Min: 0.01, Max: 1e5, HardMin: 1e-4, HardMax: 1e7, IsOptional: true, Group: "Motor"),
         ],
         [
-            new CalcAssumption("Rigid transmission; the mechanism efficiency applies to the driving direction and is also used in the deceleration phase (conservative for peak, slightly pessimistic for RMS).", "Servo-sizing practice."),
-            new CalcAssumption("The friction force is Coulomb friction on the moved mass; viscous and breakaway friction are not modelled unless included in F_p.", "Load model."),
-            new CalcAssumption("Continuous duty: the load torque is constant at the stated speed and the motor accelerates the whole inertia linearly to speed in t_start while carrying the full load torque (conservative); the move distance, move time, acceleration fraction, dwell and profile are ignored.", "Run-up idealisation for pumps and fans."),
-            new CalcAssumption("The S-curve profile has sine-shaped acceleration over the same acceleration time, so its peak acceleration is π/2 times the trapezoidal value.", "Jerk-limited profile idealisation."),
+            new CalcAssumption("The transmission is rigid.", "Servo-sizing practice."),
+            new CalcAssumption("The mechanism efficiency applies to the driving direction and is also used in the deceleration phase.", "Servo-sizing practice."),
+            new CalcAssumption("This is conservative for the peak and slightly pessimistic for the RMS torque.", "Servo-sizing practice."),
+            new CalcAssumption("The friction force is Coulomb friction on the moved mass.", "Load model."),
+            new CalcAssumption("Viscous and breakaway friction are not modelled unless included in F_p.", "Load model."),
+            new CalcAssumption("In continuous duty the load torque is constant at the stated speed.", "Run-up idealisation for pumps and fans."),
+            new CalcAssumption("The motor accelerates the whole inertia linearly to speed in t_start while carrying the full load torque, which is conservative.", "Run-up idealisation for pumps and fans."),
+            new CalcAssumption("Continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.", "Run-up idealisation for pumps and fans."),
+            new CalcAssumption("The S-curve profile has sine-shaped acceleration over the same acceleration time.", "Jerk-limited profile idealisation."),
+            new CalcAssumption("The peak acceleration of the S-curve profile is π/2 times the trapezoidal value.", "Jerk-limited profile idealisation."),
         ],
         [
-            new CalcClauseRef("Hughes & Drury, Electric Motors and Drives", "Ch. on motor and drive selection", "Load torque, inertia referred to the motor, duty cycles"),
-            new CalcClauseRef("Manufacturer servo-sizing guides (Kollmorgen, Parker)", "—", "Reflected inertia, RMS torque, inertia ratio practice"),
+            new CalcClauseRef("Hughes & Drury, Electric Motors and Drives", "Ch. on motor and drive selection, 5th ed. (edition to be checked)", "Load torque, inertia referred to the motor, duty cycles"),
         ],
         [
             new CalcApplicabilityRule("mechanism-input", "The mechanism needs a dimension (screw lead or pulley diameter) or a load value that was not given.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
@@ -114,35 +126,35 @@ public sealed class MotorSizingCalculator : ICalcCalculator
         Category: "Drives",
         OutputPorts:
         [
-            new CalcOutputPort("T_load", "N*m", "Load torque at the motor shaft"),
-            new CalcOutputPort("J_refl", "kg*m^2", "Load inertia reflected to the motor shaft"),
-            new CalcOutputPort("J_total", "kg*m^2", "Total inertia at the motor shaft"),
-            new CalcOutputPort("alpha_pk", "rad/s^2", "Peak motor angular acceleration"),
-            new CalcOutputPort("T_acc", "N*m", "Acceleration (or run-up) torque"),
-            new CalcOutputPort("T_pk", "N*m", "Peak torque"),
-            new CalcOutputPort("T_dec", "N*m", "Torque during deceleration (point-to-point)"),
-            new CalcOutputPort("T_rms", "N*m", "RMS torque (continuous duty: the load torque)"),
-            new CalcOutputPort("T_design", "N*m", "Design torque at the motor shaft for a coupling or any part downstream that must carry what the drive can deliver, on the basis chosen in T_basis: the load peak max(|T_pk|, |T_dec|) (default; T_pk in continuous duty), the motor peak T_peak, SF_c·T_rated or the protective limit T_lim (→ M3 T_z)"),
-            new CalcOutputPort("T_hold", "N*m", "Holding torque the motor must give during the dwell of a linear axis not held by a brake, m g sin θ·k (0 for a rotary mechanism, a horizontal axis or a held axis)"),
-            new CalcOutputPort("T_alt", "N*m", "Alternating torque amplitude of the cycle about the load torque T_load: (T_pk − T_dec)/2 on a point-to-point cycle, 0 in continuous duty (→ M4 T_a, with T_load → M4 T as the mean). At the motor shaft"),
-            new CalcOutputPort("F_ax_pk", "N", "Peak axial thrust a lead / ball screw puts on its support bearings, F_load + m·a_pk (→ M5 F_a); 0 for every other mechanism (a belt or rack load reaches its bearings as a radial force)"),
-            new CalcOutputPort("T_out_m", "N*m", "Mean torque on the output shaft behind the gearbox, T_load·i·η (rotary mechanisms; the torque on a shaft after the ratio, → M4 T)"),
-            new CalcOutputPort("T_out_a", "N*m", "Alternating torque amplitude on the output shaft, T_alt·i·η (rotary mechanisms; → M4 T_a)"),
-            new CalcOutputPort("T_out_pk", "N*m", "Peak torque on the output shaft, T_pk·i·η (rotary mechanisms; → M4 T_pk). Conservative: the motor rotor's own inertia torque does not reach the output"),
-            new CalcOutputPort("n_out", "rpm", "Output shaft speed, n_pk/i (rotary mechanisms)"),
-            new CalcOutputPort("n_pk", "rpm", "Peak motor speed"),
-            new CalcOutputPort("n_mean", "rpm", "Mean motor speed over the cycle, dwell included (the steady speed in continuous duty; → M5 n, the speed a bearing's life in hours is counted at)"),
-            new CalcOutputPort("P_pk", "kW", "Peak mechanical power"),
-            new CalcOutputPort("P_brake", "kW", "Peak braking power at the start of the deceleration, max(0, −T_dec·ω_pk): what the drive must absorb or dissipate (point-to-point; 0 in continuous duty)"),
-            new CalcOutputPort("P_cont", "W", "Continuous shaft power at the motor (continuous duty)"),
-            new CalcOutputPort("P_rated", "W", "Rated (nameplate) shaft power of the candidate motor, T_rated·ω_rated (needs n_rated; → E4 P or E6 P_rated_add to size the supply for the motor, not the load)"),
-            new CalcOutputPort("P_rms", "kW", "RMS mechanical power over the cycle: the thermal-equivalent continuous power (→ E6 P_add)"),
-            new CalcOutputPort("J_ratio", "", "Inertia ratio (load : motor)"),
-            new CalcOutputPort("duty", "", "Thermal duty T_rms / T_rated"),
-            new CalcOutputPort("u_peak", "", "Peak torque utilisation: SF·max(|T_pk|, |T_dec|)/T_peak"),
-            new CalcOutputPort("u_power", "", "Rated power utilisation P_cont/P_rated (continuous duty with n_rated)"),
-            new CalcOutputPort("u_rms", "", "Continuous torque utilisation"),
-            new CalcOutputPort("u_speed", "", "Speed utilisation"),
+            new CalcOutputPort("T_load", "N*m", "Load torque at the motor shaft", "motor.torque_load"),
+            new CalcOutputPort("J_refl", "kg*m^2", "Load inertia reflected to the motor shaft", "motor.inertia_reflected"),
+            new CalcOutputPort("J_total", "kg*m^2", "Total inertia at the motor shaft", "motor.inertia_total"),
+            new CalcOutputPort("alpha_pk", "rad/s^2", "Peak motor angular acceleration", "motor.acceleration_angular_peak"),
+            new CalcOutputPort("T_acc", "N*m", "Acceleration (or run-up) torque", "motor.torque_acceleration"),
+            new CalcOutputPort("T_pk", "N*m", "Peak torque", "motor.torque_peak"),
+            new CalcOutputPort("T_dec", "N*m", "Torque during deceleration (point-to-point)", "motor.torque_deceleration"),
+            new CalcOutputPort("T_rms", "N*m", "RMS torque (continuous duty: the load torque)", "motor.torque_rms"),
+            new CalcOutputPort("T_design", "N*m", "Design torque at the motor shaft for a coupling or any part downstream that must carry what the drive can deliver, on the basis chosen in T_basis: the load peak max(|T_pk|, |T_dec|) (default; T_pk in continuous duty), the motor peak T_peak, SF_c·T_rated or the protective limit T_lim (→ bolt-group M_z)", "motor.torque_design"),
+            new CalcOutputPort("T_hold", "N*m", "Holding torque the motor must give during the dwell of a linear axis not held by a brake, m g sin θ·k (0 for a rotary mechanism, a horizontal axis or a held axis)", "motor.torque_hold"),
+            new CalcOutputPort("T_alt", "N*m", "Alternating torque amplitude of the cycle about the load torque T_load: (T_pk − T_dec)/2 on a point-to-point cycle, 0 in continuous duty (→ shaft T_a, with T_load → shaft T as the mean). At the motor shaft", "motor.torque_alternating"),
+            new CalcOutputPort("F_ax_pk", "N", "Peak axial thrust a lead / ball screw puts on its support bearings, F_load + m·a_pk (→ bearing-life F_a); 0 for every other mechanism (a belt or rack load reaches its bearings as a radial force)", "motor.force_axial_peak"),
+            new CalcOutputPort("T_out_m", "N*m", "Mean torque on the output shaft behind the gearbox, T_load·i·η (rotary mechanisms; the torque on a shaft after the ratio, → shaft T)", "motor.torque_output_mean"),
+            new CalcOutputPort("T_out_a", "N*m", "Alternating torque amplitude on the output shaft, T_alt·i·η (rotary mechanisms; → shaft T_a)", "motor.torque_output_alternating"),
+            new CalcOutputPort("T_out_pk", "N*m", "Peak torque on the output shaft, T_pk·i·η (rotary mechanisms; → shaft T_pk). Conservative: the motor rotor's own inertia torque does not reach the output", "motor.torque_output_peak"),
+            new CalcOutputPort("n_out", "rpm", "Output shaft speed, n_pk/i (rotary mechanisms)", "motor.speed_output"),
+            new CalcOutputPort("n_pk", "rpm", "Peak motor speed", "motor.speed_peak"),
+            new CalcOutputPort("n_mean", "rpm", "Mean motor speed over the cycle, dwell included (the steady speed in continuous duty; → bearing-life n, the speed a bearing's life in hours is counted at)", "motor.speed_mean"),
+            new CalcOutputPort("P_pk", "kW", "Peak mechanical power", "motor.power_peak"),
+            new CalcOutputPort("P_brake", "kW", "Peak braking power at the start of the deceleration, max(0, −T_dec·ω_pk): what the drive must absorb or dissipate (point-to-point; 0 in continuous duty)", "motor.power_brake"),
+            new CalcOutputPort("P_cont", "kW", "Continuous shaft power at the motor (continuous duty)", "motor.power_continuous"),
+            new CalcOutputPort("P_rated", "kW", "Rated (nameplate) shaft power of the candidate motor, T_rated·ω_rated (needs n_rated; → conductor-sizing P or load-budget P_rated_add to size the supply for the motor, not the load)", "motor.power_rated"),
+            new CalcOutputPort("P_rms", "kW", "RMS mechanical power over the cycle: the thermal-equivalent continuous power (→ load-budget P_add)", "motor.power_rms"),
+            new CalcOutputPort("J_ratio", "", "Inertia ratio (load : motor)", "motor.inertia_ratio"),
+            new CalcOutputPort("duty", "", "Thermal duty T_rms / T_rated", "motor.duty_thermal"),
+            new CalcOutputPort("u_peak", "", "Peak torque utilisation: SF·max(|T_pk|, |T_dec|)/T_peak", "motor.utilisation_peak"),
+            new CalcOutputPort("u_power", "", "Rated power utilisation P_cont/P_rated (continuous duty with n_rated)", "motor.utilisation_power"),
+            new CalcOutputPort("u_rms", "", "Continuous torque utilisation", "motor.utilisation_rms"),
+            new CalcOutputPort("u_speed", "", "Speed utilisation", "motor.utilisation_speed"),
         ],
         RecordKinds:
         [
@@ -164,7 +176,7 @@ public sealed class MotorSizingCalculator : ICalcCalculator
         }
 
         if (mech == MechDirectRotary && c.Si("eta") < 0.95)
-            c.Warn("eta", $"eta: a direct-coupled rotary load has no transmission, but the overall efficiency is {CalcValue.FormatNumber(c.Si("eta"), 3)}; use 1 (or the coupling's efficiency) unless the loss is intended.");
+            c.Warn("eta", $"eta: a direct-coupled rotary load has no transmission, but the overall efficiency is {CalcValue.FormatNumber(c.Si("eta"), 3)}. Use 1, or the coupling's efficiency, unless the loss is intended.");
 
         if (continuous)
         {
@@ -176,23 +188,23 @@ public sealed class MotorSizingCalculator : ICalcCalculator
 
         if (linear)
         {
-            if (!c.Has("m")) { c.Block("mechanism-input", "m: a linear mechanism needs the moved mass."); return; }
+            if (!c.Has("m")) { c.Block("mechanism-input", "m: enter the moved mass of the linear mechanism."); return; }
             c.Input("m");
 
             switch (mech)
             {
                 case MechScrew:
-                    if (!c.Has("p_screw") && c.Template.FindInput("p_screw")!.Default is null) { c.Block("mechanism-input", "p_screw: the screw lead is needed."); return; }
+                    if (!c.Has("p_screw") && c.Template.FindInput("p_screw")!.Default is null) { c.Block("mechanism-input", "p_screw: enter the screw lead."); return; }
                     c.Input("p_screw");
 
                     // elec.motor-sizing-04: a blank lead is replaced by the 10 mm default; say so.
                     if (!c.Has("p_screw"))
-                        c.Warn("p_screw", "p_screw: the screw lead is blank, so the default 10 mm is used; enter the lead of the screw.");
+                        c.Warn("p_screw", "p_screw: the screw lead is blank, so the default of 10 mm is used. Enter the lead of the screw.");
 
                     c.Assign("k", "p_screw / (2 * pi * i)", "mm", "Travel per motor radian");
                     break;
                 default:
-                    if (!c.Has("D_pulley")) { c.Block("mechanism-input", "D_pulley: the pulley or pinion pitch diameter is needed."); return; }
+                    if (!c.Has("D_pulley")) { c.Block("mechanism-input", "D_pulley: enter the pulley or pinion pitch diameter."); return; }
                     c.Input("D_pulley");
                     c.Assign("k", "D_pulley / (2 * i)", "mm", "Travel per motor radian");
                     break;
@@ -200,7 +212,7 @@ public sealed class MotorSizingCalculator : ICalcCalculator
 
             // elec.motor-sizing-R1: the cycle holds one move and one dwell. With gravity along the axis or a one-way process force the return stroke has other torques.
             if (Math.Abs(Math.Sin(c.Si("theta"))) > 1e-9 || Math.Abs(c.Si("F_p")) > 1e-9)
-                c.Warn("return-move", "theta: the cycle holds one move and one dwell, and the return stroke is not modelled; with an inclined axis or a one-way process force the return move carries other torques (a vertical axis up is about the reverse of down), so check the return stroke and the thermal cycle with it.");
+                c.Warn("return-move", "theta: the cycle holds one move and one dwell, and the return stroke is not modelled. A one-way force or an incline makes the return move carry other torques, so check the return stroke.");
 
             c.Assign("F_load", "m * 9.80665 m/s^2 * (sin(theta) + mu * cos(theta)) + F_p", "N", "Load force along the motion (gravity, friction, process)");
             c.Assign("T_hold", c.InputFlag("brake") ? "0 N*m" : "m * 9.80665 m/s^2 * sin(theta) * k", "N*m", c.InputFlag("brake") ? "Holding torque in the dwell: none, a brake or a self-locking drive holds the axis" : "Holding torque in the dwell: the motor holds the weight of the axis (efficiency not credited)");
@@ -212,7 +224,7 @@ public sealed class MotorSizingCalculator : ICalcCalculator
         }
         else
         {
-            if (!c.Has("J_L")) { c.Block("mechanism-input", "J_L: a rotary mechanism needs the load inertia."); return; }
+            if (!c.Has("J_L")) { c.Block("mechanism-input", "J_L: enter the load inertia of the rotary mechanism."); return; }
             c.Input("J_L");
             c.Assign("k", "1 / i", null, "Output radians per motor radian");
             c.Assign("T_hold", "0 N*m", "N*m", "Holding torque in the dwell: none for a rotary mechanism (a constant load torque that holds against gravity is not distinguished from friction)");
@@ -224,7 +236,7 @@ public sealed class MotorSizingCalculator : ICalcCalculator
         }
 
         if (c.Si("f_acc") >= 0.5 - 1e-9)
-            c.Warn("profile", "f_acc: no constant-velocity phase; the profile is triangular.");
+            c.Warn("profile", "f_acc: there is no constant-velocity phase, so the profile is triangular.");
 
         var sCurve = c.InputText("profile") == ProfileSCurve;
         c.Assign("a_pk", sCurve ? "pi / 2 * a_trap" : "a_trap", linear ? "m/s^2" : "rad/s^2", sCurve ? "Peak acceleration (sine profile)" : "Peak acceleration");
@@ -273,10 +285,10 @@ public sealed class MotorSizingCalculator : ICalcCalculator
         if (hasRatedPointToPoint)
         {
             c.Input("n_rated");
-            c.Assign("P_rated", "T_rated * n_rated", "W", "Rated (nameplate) shaft power of the candidate motor: its rated torque times its rated speed");
+            c.Assign("P_rated", "T_rated * n_rated", "kW", "Rated (nameplate) shaft power of the candidate motor: its rated torque times its rated speed");
 
             if (c.Si("n_rated") > c.Si("n_max") * (1 + 1e-6))
-                c.Warn("rated-speed-range", $"n_rated: the rated speed {CalcValue.FormatNumber(c.Si("n_rated") * 60 / (2 * Math.PI), 4)} rpm is above the candidate motor's maximum speed {CalcValue.FormatNumber(c.Si("n_max") * 60 / (2 * Math.PI), 4)} rpm, a nameplate point the motor cannot reach, so P_rated is not a power it can give.");
+                c.Warn("rated-speed-range", $"n_rated: the rated speed {CalcValue.FormatNumber(c.Si("n_rated") * 60 / (2 * Math.PI), 4)} rpm is above the candidate motor's maximum speed {CalcValue.FormatNumber(c.Si("n_max") * 60 / (2 * Math.PI), 4)} rpm. The motor cannot reach that nameplate point, so check the nameplate speed.");
         }
 
         // RMS power: P = T·ω with ω rising linearly (trapezoid) or as (1 − cos)/2 (sine acceleration) through the acceleration phase and
@@ -290,20 +302,22 @@ public sealed class MotorSizingCalculator : ICalcCalculator
             ? "sqrt(((T_acc^2 / 2 + T_load^2) * 2 * t_acc + T_load^2 * t_const + T_hold^2 * t_dwell) / t_cycle)"
             : "sqrt((T_pk^2 * t_acc + T_load^2 * t_const + T_dec^2 * t_acc + T_hold^2 * t_dwell) / t_cycle)", "N*m", "RMS torque over the cycle (thermal), the dwell at the holding torque");
         c.Assign("J_ratio", "(J_refl + J_mech) / J_motor", null, "Inertia ratio (load : motor)");
-        c.Assign("u_peak", "SF * max(abs(T_pk), abs(T_dec)) / T_peak", null, "Peak torque utilisation with safety margin, on the larger of the accelerating and the braking torque");
-        c.Assign("u_rms", "SF * T_rms / T_rated", null, "Continuous torque utilisation with safety margin");
+        c.Assign("T_pk_sf", "SF * max(abs(T_pk), abs(T_dec))", "N*m", "Peak torque with the safety factor, on the larger of the accelerating and the braking torque");
+        c.Assign("T_rms_sf", "SF * T_rms", "N*m", "RMS torque with the safety factor");
+        c.Assign("u_peak", "SF * max(abs(T_pk), abs(T_dec)) / T_peak", null, "Peak torque utilisation with safety factor, on the larger of the accelerating and the braking torque");
+        c.Assign("u_rms", "SF * T_rms / T_rated", null, "Continuous torque utilisation with safety factor");
         c.Assign("u_speed", "n_pk / n_max", null, "Speed utilisation");
         c.Assign("duty", "T_rms / T_rated", null, "Thermal duty (without margin)");
 
         // elec.motor-sizing-R2: the peak torque of a motor falls toward its top speed, but T_peak is one number (the stall peak); near the speed limit the comparison is optimistic.
         if (c.Si("u_speed") > 0.7)
-            c.Warn("peak-at-speed", $"n_pk: the peak speed is {CalcValue.FormatNumber(c.Si("u_speed") * 100, 3)} % of n_max and T_peak is compared as the stall peak torque; a servo's peak torque falls toward its top speed, so check the motor's torque-speed curve at n_pk for T_pk.");
+            c.Warn("peak-at-speed", $"n_pk: the peak speed is {CalcValue.FormatNumber(c.Si("u_speed") * 100, 3)} % of n_max, and T_peak is compared as the stall peak torque. A servo's peak torque falls toward its top speed, so check its torque-speed curve at n_pk.");
 
         if (c.Si("J_ratio") > c.Si("J_ratio_max"))
             c.Warn("inertia-ratio", $"J_motor: the inertia ratio {CalcValue.FormatNumber(c.Si("J_ratio"), 3)} exceeds {CalcValue.FormatNumber(c.Si("J_ratio_max"), 3)}.");
 
         if (c.Si("T_load") < 0 || c.Si("T_dec") < 0)
-            c.Warn("overhauling", "T_dec: the motor brakes during deceleration (negative torque); the drive must absorb the regenerated energy.");
+            c.Warn("overhauling", "T_dec: the motor brakes during deceleration (negative torque). The drive must absorb the regenerated energy.");
 
         foreach (var (symbol, text) in new[] { ("k", "Transmission constant"), ("T_load", "Load torque at motor"), ("J_refl", "Reflected load inertia"), ("J_total", "Total inertia"), (linear ? "v_pk" : "theta_m", linear ? "Peak velocity" : "Motor angle"), ("a_pk", "Peak acceleration"), ("alpha_pk", "Motor angular acceleration"), ("T_acc", "Acceleration torque"), ("T_pk", "Peak torque"), ("T_dec", "Deceleration torque"), ("T_design", "Design torque for downstream couplings"), ("T_hold", "Holding torque in the dwell"), ("T_alt", "Alternating torque amplitude"), ("F_ax_pk", "Peak axial thrust on a screw's bearings"), ("T_rms", "RMS torque"), ("n_pk", "Peak speed"), ("P_pk", "Peak power"), ("P_brake", "Peak braking power"), ("P_rms", "RMS power (continuous equivalent)"), ("J_ratio", "Inertia ratio"), ("duty", "Thermal duty"), ("u_peak", "Peak utilisation"), ("u_rms", "Continuous utilisation"), ("u_speed", "Speed utilisation") })
             c.Output(symbol, text);
@@ -316,9 +330,9 @@ public sealed class MotorSizingCalculator : ICalcCalculator
         if (hasRatedPointToPoint)
             c.Output("P_rated", "Rated (nameplate) power of the candidate motor, T_rated·ω_rated");
 
-        c.CheckUtilisation("Peak torque SF·max(|T_pk|, |T_dec|) ≤ T_peak", "u_peak");
-        c.CheckUtilisation("RMS torque SF·T_rms ≤ T_rated", "u_rms");
-        c.CheckUtilisation("Speed n_pk ≤ n_max", "u_speed");
+        c.Check("Peak torque with the safety factor against the motor peak torque", "T_pk_sf", "T_peak", resultSymbol: "u_peak");
+        c.Check("RMS torque with the safety factor against the rated torque", "T_rms_sf", "T_rated", resultSymbol: "u_rms");
+        c.Check("Peak speed against the maximum speed", "n_pk", "n_max", resultSymbol: "u_speed");
     }
 
     /// <summary>
@@ -385,13 +399,13 @@ public sealed class MotorSizingCalculator : ICalcCalculator
                 break;
 
             case BasisServiceFactor:
-                if (!c.Has("SF_c")) { c.Block("design-basis", "SF_c: the service-factor basis needs the service factor on the rated torque; enter it or choose another basis."); return false; }
+                if (!c.Has("SF_c")) { c.Block("design-basis", "SF_c: enter the service factor on the rated torque, or choose another basis."); return false; }
                 c.Input("SF_c");
                 c.Assign("T_design", "SF_c * T_rated", "N*m", "Design torque: the service factor times the rated torque");
                 break;
 
             case BasisProtectiveLimit:
-                if (!c.Has("T_lim")) { c.Block("design-basis", "T_lim: the protective-limit basis needs the torque limit (a torque limiter or a drive setting); enter it or choose another basis."); return false; }
+                if (!c.Has("T_lim")) { c.Block("design-basis", "T_lim: enter the protective torque limit (a torque limiter or a drive setting), or choose another basis."); return false; }
                 c.Input("T_lim");
                 c.Assign("T_design", "T_lim", "N*m", "Design torque: the protective torque limit");
                 break;
@@ -430,18 +444,18 @@ public sealed class MotorSizingCalculator : ICalcCalculator
     {
         if (mech is MechScrew or MechBelt or MechRack)
         {
-            c.Block("continuous-input", "duty_mode: continuous duty is for a rotary mechanism (direct or gearbox rotary); a linear mechanism has no steady speed.");
+            c.Block("continuous-input", "duty_mode: continuous duty is for a rotary mechanism, direct or gearbox. A linear mechanism has no steady speed.");
             return;
         }
 
-        if (!c.Has("n_L")) { c.Block("continuous-input", "n_L: continuous duty needs the load speed."); return; }
-        if (!c.Has("t_start")) { c.Block("continuous-input", "t_start: continuous duty needs the run-up time."); return; }
-        if (!c.Has("J_L")) { c.Block("continuous-input", "J_L: a rotary mechanism needs the load inertia."); return; }
+        if (!c.Has("n_L")) { c.Block("continuous-input", "n_L: enter the load speed for continuous duty."); return; }
+        if (!c.Has("t_start")) { c.Block("continuous-input", "t_start: enter the run-up time for continuous duty."); return; }
+        if (!c.Has("J_L")) { c.Block("continuous-input", "J_L: enter the load inertia of the rotary mechanism."); return; }
 
         // A continuous load is sized from its steady torque: a blank T_L, or a zero one, would size the motor for no load and pass (elec.motor-sizing-C1).
         if (!c.Has("T_L") || c.InputSi("T_L") == 0)
         {
-            c.Block("continuous-input", "T_L: continuous duty needs the steady load torque at the output (a pump or fan torque at its speed); blank or zero sizes the motor for no load.");
+            c.Block("continuous-input", "T_L: enter the steady load torque at the output, a pump or fan torque at its speed. A blank or zero value would size the motor for no load.");
             return;
         }
 
@@ -469,7 +483,7 @@ public sealed class MotorSizingCalculator : ICalcCalculator
         c.Assign("P_brake", "0 kW", "kW", "Peak braking power: none in continuous duty");
         c.Assign("n_pk", "omega_pk", "rpm", "Motor speed");
         AssignOutputSide(c, false);
-        c.Assign("P_cont", "T_load * omega_pk", "W", "Continuous shaft power at the motor");
+        c.Assign("P_cont", "T_load * omega_pk", "kW", "Continuous shaft power at the motor");
 
         // The nameplate rated power needs the rated speed; the running speed is not a substitute (a 4-pole motor runs near, not at, its rated speed).
         var hasRated = c.Has("n_rated");
@@ -477,27 +491,29 @@ public sealed class MotorSizingCalculator : ICalcCalculator
         if (hasRated)
         {
             c.Input("n_rated");
-            c.Assign("P_rated", "T_rated * n_rated", "W", "Rated (nameplate) shaft power of the candidate motor: its rated torque times its rated speed");
+            c.Assign("P_rated", "T_rated * n_rated", "kW", "Rated (nameplate) shaft power of the candidate motor: its rated torque times its rated speed");
             c.Assign("u_power", "P_cont / P_rated", null, "Continuous shaft power against the rated power of the candidate motor");
 
             if (c.Si("n_rated") > c.Si("n_max") * (1 + 1e-6))
-                c.Warn("rated-speed-range", $"n_rated: the rated speed {CalcValue.FormatNumber(c.Si("n_rated") * 60 / (2 * Math.PI), 4)} rpm is above the candidate motor's maximum speed {CalcValue.FormatNumber(c.Si("n_max") * 60 / (2 * Math.PI), 4)} rpm, a nameplate point the motor cannot reach; P_rated = T_rated·ω_rated is then not a power it can give. Check the nameplate speed.");
+                c.Warn("rated-speed-range", $"n_rated: the rated speed {CalcValue.FormatNumber(c.Si("n_rated") * 60 / (2 * Math.PI), 4)} rpm is above the candidate motor's maximum speed {CalcValue.FormatNumber(c.Si("n_max") * 60 / (2 * Math.PI), 4)} rpm. The motor cannot reach that nameplate point, so check the nameplate speed.");
 
             // A relative tolerance of 1e-6 keeps a speed that only rounds above the nameplate (n_L * i against n_rated) from warning.
             if (c.Si("n_pk") > c.Si("n_rated") * (1 + 1e-6))
-                c.Warn("speed-above-rated", $"n_L: the motor speed n_pk = {CalcValue.FormatNumber(c.Si("n_pk") * 60 / (2 * Math.PI), 4)} rpm is above the candidate motor's rated speed {CalcValue.FormatNumber(c.Si("n_rated") * 60 / (2 * Math.PI), 4)} rpm; its rated torque and power hold at the nameplate speed, so check the motor's torque and power at this speed (field weakening or a different ratio i).");
+                c.Warn("speed-above-rated", $"n_L: the motor speed of {CalcValue.FormatNumber(c.Si("n_pk") * 60 / (2 * Math.PI), 4)} rpm is above the candidate motor's rated speed of {CalcValue.FormatNumber(c.Si("n_rated") * 60 / (2 * Math.PI), 4)} rpm. Rated torque and power hold only at the nameplate speed, so check them at this speed.");
         }
         else
         {
-            c.Warn("rated-speed", "n_rated: the candidate motor's rated speed is not entered, so its rated power P_rated (T_rated·ω_rated, which a supply or cable for the motor is sized on) is not given; enter the nameplate speed.");
+            c.Warn("rated-speed", "n_rated: the candidate motor's rated speed is not entered, so its rated power P_rated is not given. Enter the nameplate speed.");
         }
 
         c.Assign("P_pk", "T_pk * omega_pk", "kW", "Peak mechanical power (end of the run-up)");
         c.Assign("n_mean", "omega_pk", "rpm", "Mean motor speed: the steady running speed");
         c.Assign("P_rms", "P_cont", "kW", "RMS mechanical power: the steady running power (thermal-equivalent continuous power)");
         c.Assign("J_ratio", "(J_refl + J_mech) / J_motor", null, "Inertia ratio (load : motor)");
-        c.Assign("u_peak", "SF * T_pk / T_peak", null, "Peak torque utilisation with safety margin");
-        c.Assign("u_rms", "SF * T_rms / T_rated", null, "Continuous torque utilisation with safety margin");
+        c.Assign("T_pk_sf", "SF * T_pk", "N*m", "Peak torque with the safety factor");
+        c.Assign("T_rms_sf", "SF * T_rms", "N*m", "RMS torque with the safety factor");
+        c.Assign("u_peak", "SF * T_pk / T_peak", null, "Peak torque utilisation with safety factor");
+        c.Assign("u_rms", "SF * T_rms / T_rated", null, "Continuous torque utilisation with safety factor");
         c.Assign("u_speed", "n_pk / n_max", null, "Speed utilisation");
 
         // The motor speed above the nameplate (rated) speed is a fail, not only a warning: the rated torque and power hold at the nameplate speed.
@@ -509,21 +525,21 @@ public sealed class MotorSizingCalculator : ICalcCalculator
             c.Warn("inertia-ratio", $"J_motor: the inertia ratio {CalcValue.FormatNumber(c.Si("J_ratio"), 3)} exceeds {CalcValue.FormatNumber(c.Si("J_ratio_max"), 3)}.");
 
         if (c.Si("T_load") < 0)
-            c.Warn("overhauling", "T_L: the load drives the motor (negative load torque); check the drive can regenerate or brake.");
+            c.Warn("overhauling", "T_L: the load drives the motor (negative load torque). Check the drive can regenerate or brake.");
 
         foreach (var (symbol, text) in new[] { ("k", "Transmission constant"), ("T_load", "Load torque at motor"), ("J_refl", "Reflected load inertia"), ("J_total", "Total inertia"), ("alpha_pk", "Run-up angular acceleration"), ("T_acc", "Run-up torque"), ("T_pk", "Peak torque"), ("T_design", "Design torque for downstream couplings"), ("T_hold", "Holding torque in the dwell"), ("T_alt", "Alternating torque amplitude"), ("F_ax_pk", "Peak axial thrust on a screw's bearings"), ("T_rms", "RMS torque"), ("n_pk", "Motor speed"), ("P_cont", "Continuous power"), ("P_brake", "Peak braking power"), ("P_pk", "Peak power"), ("P_rms", "RMS power (continuous equivalent)"), ("J_ratio", "Inertia ratio"), ("duty", "Thermal duty"), ("u_peak", "Peak utilisation"), ("u_rms", "Continuous utilisation"), ("u_speed", "Speed utilisation") })
             c.Output(symbol, text);
 
-        c.CheckUtilisation("Peak torque SF·T_pk ≤ T_peak", "u_peak");
-        c.CheckUtilisation("RMS torque SF·T_rms ≤ T_rated", "u_rms");
-        c.CheckUtilisation("Speed n_pk ≤ n_max", "u_speed");
+        c.Check("Peak torque with the safety factor against the motor peak torque", "T_pk_sf", "T_peak", resultSymbol: "u_peak");
+        c.Check("RMS torque with the safety factor against the rated torque", "T_rms_sf", "T_rated", resultSymbol: "u_rms");
+        c.Check("Peak speed against the maximum speed", "n_pk", "n_max", resultSymbol: "u_speed");
 
         if (hasRated)
         {
-            c.CheckUtilisation("Rated power P_cont ≤ P_rated", "u_power");
+            c.Check("Continuous power against the rated power", "P_cont", "P_rated", resultSymbol: "u_power");
 
             // A relative tolerance of 1e-6 keeps a speed that only rounds above the nameplate (n_L * i against n_rated) from failing.
-            c.Check("Motor speed against the rated speed", "n_pk", "n_rated", tolerance: 1e-6);
+            c.Check("Motor speed against the rated speed", "n_pk", "n_rated", tolerance: 1e-6, resultSymbol: "u_rated_speed");
         }
 
         OutputOutputSide(c);

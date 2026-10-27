@@ -25,8 +25,8 @@ public sealed class CalcInputAliasConflictException(string firstGiven, string se
 /// </summary>
 public static class CalcInputAliases
 {
-    /// <summary>Whether any input of <paramref name="template"/> has an alias.</summary>
-    public static bool Any(CalcTemplate template) => template.Inputs.Any(i => i.Aliases is { Count: > 0 });
+    /// <summary>Whether any input of <paramref name="template"/> has an alias, or any column of a table input has one.</summary>
+    public static bool Any(CalcTemplate template) => template.Inputs.Any(i => i.Aliases is { Count: > 0 } || i.HasColumnAliases);
 
     /// <summary>
     /// The current symbol for <paramref name="symbolOrAlias"/>: the symbol itself when it is one of the template's inputs, the input
@@ -49,8 +49,11 @@ public static class CalcInputAliases
         ArgumentNullException.ThrowIfNull(template);
         ArgumentNullException.ThrowIfNull(values);
 
-        if (!Any(template) || values.All(v => template.FindInput(v.Symbol) is not null || template.ResolveInput(v.Symbol) is null))
+        if (!Any(template))
             return values;
+
+        if (values.All(v => template.FindInput(v.Symbol) is not null || template.ResolveInput(v.Symbol) is null))
+            return values.Any(v => NeedsColumnCanonicalising(template.FindInput(v.Symbol), v)) ? [.. values.Select(v => CanonicaliseColumns(template.FindInput(v.Symbol), v))] : values;
 
         var kept = new Dictionary<string, CalcInputValue>(StringComparer.Ordinal);
         var givenAs = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -87,7 +90,62 @@ public static class CalcInputAliases
                 result.Add(kept[spec.Symbol]);
         }
 
-        return result;
+        return [.. result.Select(v => CanonicaliseColumns(template.FindInput(v.Symbol), v))];
+    }
+
+    private static bool NeedsColumnCanonicalising(CalcInputSpec? spec, CalcInputValue value) =>
+        spec is { Kind: CalcInputKind.Table, HasColumnAliases: true } && value.Rows is { Count: > 0 } rows && rows.Any(r => r?.Cells.Keys.Any(k => spec.ResolveColumn(k) is { } c && !string.Equals(c.Key, k, StringComparison.Ordinal)) == true);
+
+    /// <summary>
+    /// The table with every cell stored under a column's old key moved to the column's current key (<see cref="CalcColumnSpec.Aliases"/>). A row holding a
+    /// column under two of its keys with the same value keeps one; with different values the table is refused, as an input given twice is.
+    /// </summary>
+    /// <exception cref="CalcInputAliasConflictException">A cell is given under two keys of one column with different values.</exception>
+    private static CalcInputValue CanonicaliseColumns(CalcInputSpec? spec, CalcInputValue value)
+    {
+        if (!NeedsColumnCanonicalising(spec, value))
+            return value;
+
+        var rows = new List<CalcRow>(value.Rows!.Count);
+
+        for (var r = 0; r < value.Rows.Count; r++)
+        {
+            var row = value.Rows[r];
+
+            if (row is null)
+            {
+                rows.Add(row!);
+                continue;
+            }
+
+            var cells = new Dictionary<string, CalcCell>(StringComparer.Ordinal);
+            var givenAs = new Dictionary<string, string>(StringComparer.Ordinal);
+
+            foreach (var (key, cell) in row.Cells)
+            {
+                var column = spec!.ResolveColumn(key);
+                var canonical = column?.Key ?? key;
+
+                if (cells.TryGetValue(canonical, out var existing))
+                {
+                    if (!SameQuantity(existing.Number, existing.Unit, cell.Number, cell.Unit, column?.DefaultUnit) || !string.Equals(existing.Text, cell.Text, StringComparison.Ordinal) || existing.Flag != cell.Flag)
+                        throw new CalcInputAliasConflictException($"{spec.Symbol}[{r + 1}].{givenAs[canonical]}", $"{spec.Symbol}[{r + 1}].{key}", $"{spec.Symbol}[{r + 1}].{canonical}");
+
+                    // The cell under the current key wins the tie; the same value either way.
+                    if (string.Equals(key, canonical, StringComparison.Ordinal))
+                        cells[canonical] = cell;
+
+                    continue;
+                }
+
+                cells[canonical] = cell;
+                givenAs[canonical] = key;
+            }
+
+            rows.Add(new CalcRow(cells));
+        }
+
+        return value with { Rows = rows };
     }
 
     /// <summary>
@@ -169,7 +227,7 @@ public static class CalcInputAliases
 
         var values = inputs.Values.ToList();
         var canonical = Canonicalise(template, values);
-        return ReferenceEquals(canonical, values) ? inputs : new CalcInputSet(canonical);
+        return ReferenceEquals(canonical, values) ? inputs : new CalcInputSet(canonical, inputs.MadeOn);
     }
 
     /// <summary>As <see cref="Canonicalise(CalcTemplate, CalcInputSet)"/>, returning <see langword="false"/> and the message on a conflict instead of throwing.</summary>

@@ -669,14 +669,14 @@ public sealed class RecordImportTests
     public async Task A_Unit_Written_The_Track_P_Way_Is_Read_As_The_Engine_Writes_It()
     {
         var host = Host();
-        var preview = await host.Service.RecordImport.PreviewAsync(Request("01", Csv("material[text],rho_20[ohm*mm],alpha[1/K],Q_c[J/(K*mm3)],beta[K],theta_i[degC],theta_f[degC]", "Test copper,1.7241e-5,0.00393,0.00345,234.5,70,160")));
+        var preview = await host.Service.RecordImport.PreviewAsync(Request("01", Csv("material[text],rho_20[ohm*mm^2/m],alpha[1/K],Q_c[J/(K*mm3)],beta[K],theta_i[degC],theta_f[degC]", "Test copper,0.017241,0.00393,0.00345,234.5,70,160")));
 
         Assert.True(preview.CanCommit, Describe(preview));
         Assert.Equal("J/(K*mm^3)", preview.Columns.Single(c => c.Symbol == "Q_c").ExpectedUnit);
         Assert.All(preview.Columns, c => Assert.True(c.Unit is RecordUnitCheck.Match or RecordUnitCheck.NotApplicable, c.UnitMessage));
 
-        // The same constant in ohm*mm2/m is the same dimension: it is accepted, not refused, and judged in the unit the calculator takes.
-        var other = await host.Service.RecordImport.PreviewAsync(Request("01", Csv("material[text],rho_20[ohm*mm2/m],alpha[1/K],Q_c[J/(K*mm3)],beta[K],theta_i[degC],theta_f[degC]", "Test copper,0.01724,0.00393,0.00345,234.5,70,160")));
+        // The same constant in ohm*mm is the same dimension: it is accepted, not refused, and judged in the unit the calculator takes.
+        var other = await host.Service.RecordImport.PreviewAsync(Request("01", Csv("material[text],rho_20[ohm*mm],alpha[1/K],Q_c[J/(K*mm3)],beta[K],theta_i[degC],theta_f[degC]", "Test copper,1.7241e-5,0.00393,0.00345,234.5,70,160")));
         Assert.Equal(RecordUnitCheck.Convertible, other.Columns.Single(c => c.Symbol == "rho_20").Unit);
         Assert.DoesNotContain(other.Errors, e => e.Column == "rho_20");
     }

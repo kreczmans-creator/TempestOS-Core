@@ -32,7 +32,7 @@ public static class CalcBibliography
         (["ASHRAE Handbook"], "American Society of Heating, Refrigerating and Air-Conditioning Engineers. ASHRAE Handbook—Fundamentals. ASHRAE."),
         (["CIBSE Guide C"], "Chartered Institution of Building Services Engineers. CIBSE Guide C: Reference Data. CIBSE; 2007."),
         (["Crane"], "Crane Co. Flow of Fluids Through Valves, Fittings and Pipe. Technical Paper No. 410. Crane Co."),
-        (["AISC Steel Construction Manual"], "American Institute of Steel Construction. Steel Construction Manual. 15th ed. AISC; 2017."),
+        (["AISC Steel Construction Manual", "American Institute of Steel Construction, Steel Construction Manual"], "American Institute of Steel Construction. Steel Construction Manual. 15th ed. AISC; 2017."),
         (["AISC Design Guide 9", "Seaburg"], "Seaburg PA, Carter CJ. Torsional Analysis of Structural Steel Members. Steel Design Guide 9. American Institute of Steel Construction; 1997."),
         (["ASME BPVC", "ASME VIII"], "American Society of Mechanical Engineers. Boiler and Pressure Vessel Code, Section VIII, Division 1: Rules for Construction of Pressure Vessels. ASME."),
         (["ASME BTH-1"], "American Society of Mechanical Engineers. Design of Below-the-Hook Lifting Devices. ASME BTH-1. ASME."),

@@ -7,7 +7,7 @@ Checker: —    Checked: —
 Issued: —
 
 1. Scope and method
-Steady-state source (junction) temperature from a series chain of thermal resistances to ambient (junction to case, case to heat sink, heat sink to ambient), with each stage's temperature rise, the margin against the permitted maximum and the largest total resistance the limit allows: the heat sink budget.
+Calculates the steady-state source temperature from a series chain of thermal resistances to ambient, with the rise across each stage. It gives the margin against the permitted maximum, negative over the limit, and the largest total resistance allowed.
 Temperature rise across each stage: ΔT_i = P·R_i. Total resistance of the chain and the total rise: R_tot = Σ R_i; ΔT_tot = P·R_tot. Source (hottest node) temperature, each node below it being the one above less that stage's rise: T_1 = T_a + ΔT_tot. Margin against the permitted maximum: margin = T_max − T_1. Largest total resistance the limit allows, the heat sink budget: R_max = (T_max − T_a)/P. Utilisation of the permitted rise: u = ΔT_tot/(T_max − T_a).
 
 2. Inputs
@@ -61,11 +61,15 @@ Temperature rise across each stage: ΔT_i = P·R_i. Total resistance of the chai
       = 125 degC − 140 degC
       = -15 K
         Thermal margin (negative when over the limit)
-  [13] u = dT_tot / (T_max - T_a)
-      = 100 K / (125 degC − 40 degC)
+  [13] dT_allow = T_max - T_a
+      = 125 degC − 40 degC
+      = 85 K
+        Permitted rise from ambient to the source
+  [14] u = dT_tot / dT_allow
+      = 100 K / 85 K
       = 1.1765
         Utilisation: rise over permitted rise
-  [14] R_max = (T_max - T_a) / P
+  [15] R_max = (T_max - T_a) / P
       = (125 degC − 40 degC) / 40 W
       = 2.125 K/W
         Largest total resistance the limit allows (heat sink budget)
@@ -73,30 +77,30 @@ Temperature rise across each stage: ΔT_i = P·R_i. Total resistance of the chai
 5. Results
   T_1 = 140 °C    Source temperature
   dT_m = -15 K    Thermal margin
+  u = 1.18    Utilisation
   R_max = 2.125 K/W    Heat sink budget
   R_tot = 2.500 K/W    Total thermal resistance
-  dT_tot = 100 K    Total rise
+  dT_tot = 100 K    Total rise (governing)
   dT_1 = 20 K    Rise across stage 1
   dT_2 = 8 K    Rise across stage 2
   T_2 = 120 °C    Hot side of stage 2
   dT_3 = 72 K    Rise across stage 3
   T_3 = 112 °C    Hot side of stage 3
-  u = 1.18    Utilisation (governing)
 
 6. Checks (governing first)
-  FAIL  Source temperature T_1 ≤ T_max: u = 1.18 vs u ≤ 1  utilisation 1.18  « Çengel §15-2
+  FAIL  Rise from ambient against the permitted rise: 100 K vs 85 K  utilisation 1.18  « Çengel §15-2
 
 7. Applicability
   None.
 
 8. Verification
-  Template: elec.thermal-chain@1.0.1
+  Template: elec.thermal-chain@1.1.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 4/4
   Test run: —
 
 9. References
-  1. JEDEC JESD51-1 — Integrated circuit thermal measurement method: electrical test method (junction-to-reference resistances)
-  2. Çengel & Ghajar, Heat and Mass Transfer §15-2 — Thermal resistance networks in the cooling of electronic equipment
-  3. Incropera & DeWitt, Fundamentals of Heat and Mass Transfer §3.1 — Thermal resistance in series
+  1. JEDEC JESD51-1:1995 — Integrated circuit thermal measurement method: electrical test method (junction-to-reference resistances)
+  2. Çengel & Ghajar, Heat and Mass Transfer §15-2, 5th ed. (edition to be checked) — Thermal resistance networks in the cooling of electronic equipment
+  3. Incropera & DeWitt, Fundamentals of Heat and Mass Transfer §3.1, 7th ed. (edition to be checked) — Thermal resistance in series

@@ -50,7 +50,7 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|
 | Cylinder and pump circuit | `dV` | Emergency stroke accumulator | `dV` | 3.92699 L |
-| Cylinder and pump circuit | `p` | Emergency stroke accumulator | `p_2` | 160 bar |
+| Cylinder and pump circuit | `p_sys` | Emergency stroke accumulator | `p_2` | 160 bar |
 | Cylinder and pump circuit | `p_push` | Emergency stroke accumulator | `p_load` | 107.22 bar |
 | Cylinder and pump circuit | `Q_prs` | Pressure line | `Q` | 4.53765 m^3/h |
 | Cylinder and pump circuit | `rho` | Pressure line | `rho_custom` | 870 kg/m^3 |
@@ -61,13 +61,13 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 | Motor supply cable | `I_b` | Motor supply voltage drop | `I` | 33.47 A |
 | Motor supply cable | `L` | Motor supply voltage drop | `L` | 30 m |
 | Motor supply cable | `CSA` | Motor supply voltage drop | `A_c` | 10 mm^2 |
-| Motor supply cable | `theta_op` | Motor supply voltage drop | `T_c` | 70 degC |
+| Motor supply cable | `T_op` | Motor supply voltage drop | `T_c` | 70 degC |
 | Motor supply cable | `CSA` | Motor supply fault protection | `S_line` | 10 mm^2 |
 | Motor supply cable | `CSA` | Motor supply fault protection | `S_cpc` | 10 mm^2 |
 | Motor supply cable | `L` | Motor supply fault protection | `L` | 30 m |
 | Motor supply cable | `I_n` | Motor supply fault protection | `I_n` | 40 A |
 | Motor supply cable | `device_code` | Motor supply fault protection | `device_code` | 2 |
-| Motor supply cable | `theta_op` | Motor supply fault protection | `theta` | 70 degC |
+| Motor supply cable | `T_op` | Motor supply fault protection | `T_op` | 70 degC |
 | Pump drive motor | `P_rated` | Pump motor start | `P` | 18.3469 kW |
 | Motor supply cable | `CSA` | Pump motor start | `A_c` | 10 mm^2 |
 | Motor supply cable | `L` | Pump motor start | `L_cab` | 30 m |

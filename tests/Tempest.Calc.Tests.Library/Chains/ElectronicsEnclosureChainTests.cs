@@ -63,8 +63,8 @@ public sealed class ElectronicsEnclosureChainTests
 
         // E6 → E2, kW into W: the board's heat is the enclosure's additional load.
         Assert.Equal(Si(e6, "Phi"), InputSi(e2, "P_add"), 9);
-        Assert.Equal(73.0081501205673, e2.Inputs.Single(i => i.Symbol == "P_add").Number!.Value, 9);
-        Assert.Equal("W", e2.Inputs.Single(i => i.Symbol == "P_add").Unit);
+        Assert.Equal(0.0730081501205673, e2.Inputs.Single(i => i.Symbol == "P_add").Number!.Value, 12);
+        Assert.Equal("kW", e2.Inputs.Single(i => i.Symbol == "P_add").Unit);
 
         // E2: 500 × 600 × 200 against a wall: A_eff = top 0.1 + front 0.3 + two sides 0.24 = 0.64 m²; P = 4 + 73.008150 = 77.008150 W; ΔT = P/(5.5 × 0.64) = 21.8773 K; 56.8773 °C inside, 60 °C limit.
         Assert.Equal(0.64, Si(e2, "A_eff"), 12);
@@ -90,8 +90,8 @@ public sealed class ElectronicsEnclosureChainTests
 
         // M8: ε = y·h/((2/3)·l²) = 1.6667 %, P = b·h²·Es·ε/(6·l) = 4.1481 N, u = 0.5556; W = 4.4018 N; W′ = 71.925 N (α′ 70°, below the 73.3° that would lock).
         // Six latches hold 6 × 71.925 = 431.55 N against the 300 N on the cover (E2 F_seal → M8 F_req, N into N): utilisation 0.6952.
-        Assert.Equal(0.016666666666666666, Si(m8, "eps"), 12);
-        Assert.Equal(4.148148148148149, Si(m8, "P"), 9);
+        Assert.Equal(0.016666666666666666, Si(m8, "eps_max"), 12);
+        Assert.Equal(4.148148148148149, Si(m8, "F_defl"), 9);
         Assert.Equal(0.5555555555555556, Si(m8, "strain_util"), 12);
         Assert.Equal(4.401791556421135, Si(m8, "assembly_force"), 9);
         Assert.Equal(71.92546559978396, Si(m8, "retention_force"), 9);
@@ -104,7 +104,7 @@ public sealed class ElectronicsEnclosureChainTests
         Assert.Equal(431.5527935987038, Si(m8, "F_hold"), 8);
         Assert.Equal(300 / 431.5527935987038, Si(m8, "u_hold"), 12);
         Assert.True(6 * Si(m8, "retention_force") >= Si(e2, "dp_seal") * InputSi(e2, "A_cover"));
-        Assert.Contains(m8.Checks, c => c.Name.StartsWith("Latches hold the load", StringComparison.Ordinal));
+        Assert.Contains(m8.Checks, c => c.Name.StartsWith("Required holding force", StringComparison.Ordinal));
         Assert.All(m8.Checks, c => Assert.True(c.Passed, c.Name));
 
         // E2 → S9, kPa into kPa: the sealed enclosure's pressure difference, limited by the breather, is the uniform pressure on the cover.
@@ -113,7 +113,7 @@ public sealed class ElectronicsEnclosureChainTests
         Assert.Equal("kPa", s9.Inputs.Single(i => i.Symbol == "q").Unit);
 
         // S9: the 600 × 500 × 4 mm aluminium front cover, E 69 GPa, ν 0.33: D = 412.973 N·m; w_max = 0.855161 mm (w/t 0.214; limit span/250 = 2 mm, u 0.428); σ_vM 5.8992 MPa (u 0.049 of 120); f₁₁ = 65.835 Hz (Navier series, python3).
-        Assert.Equal(412.9727303332959, Si(s9, "D"), 8);
+        Assert.Equal(412.9727303332959, Si(s9, "D_flex"), 8);
         Assert.Equal(8.551608852897289e-4, Si(s9, "w_max"), 1e-9);
         // The corner twisting stress converges slowly: python3 sums 5899242.0 Pa to 401 odd terms, 5899263.5 to 2401; the sheet sums further.
         Assert.Equal(5899264.0, Si(s9, "sigma_max"), 5.0);
@@ -179,7 +179,7 @@ public sealed class ElectronicsEnclosureChainTests
         Assert.Equal(limit, e7.Inputs.Single(i => i.Symbol == "T_amb").Number!.Value, 9);
 
         // The run-time guard: the enclosure step checks that natural dissipation holds T_max, so the typed values are good while it passes.
-        var holds = Assert.Single(e2.Checks, c => c.Name.StartsWith("Natural dissipation holds T_max", StringComparison.Ordinal));
+        var holds = Assert.Single(e2.Checks, c => c.Name.StartsWith("Natural temperature rise against the allowed rise", StringComparison.Ordinal));
         Assert.True(holds.Passed);
         Assert.True(Si(e2, "T_int") - 273.15 <= limit);
     }
@@ -218,7 +218,7 @@ public sealed class ElectronicsEnclosureChainTests
         Assert.Equal(Si(e2, "F_seal"), InputSi(m8, "F_req"), 9);
         Assert.Equal(8.551608852897289e-4 * 1.5, Si(s9, "w_max"), 1e-9);
         Assert.Equal(450 / 431.5527935987038, Si(m8, "u_hold"), 12);
-        Assert.Contains(m8.Checks, c => !c.Passed && c.Name.StartsWith("Latches hold the load", StringComparison.Ordinal));
+        Assert.Contains(m8.Checks, c => !c.Passed && c.Name.StartsWith("Required holding force", StringComparison.Ordinal));
         Assert.All(s9.Checks, c => Assert.True(c.Passed, c.Name));
     }
 
@@ -238,7 +238,7 @@ public sealed class ElectronicsEnclosureChainTests
 
         var e2 = await Fresh(host, made, "e2");
         Assert.Equal(62.82677691940542 + 273.15, Si(e2, "T_int"), 6);
-        Assert.Contains(e2.Checks, c => !c.Passed && c.Name.StartsWith("Natural dissipation holds T_max", StringComparison.Ordinal));
+        Assert.Contains(e2.Checks, c => !c.Passed && c.Name.StartsWith("Natural temperature rise against the allowed rise", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -310,7 +310,7 @@ public sealed class ElectronicsEnclosureChainTests
         var s9 = made.Instances["s9"];
 
         // A thinner cover: nothing is downstream of it, so nothing goes stale.
-        var thinner = await host.Service.UpdateInputsAsync(s9.Id, Scale("t", 0.75)(s9.Inputs));
+        var thinner = await host.Service.UpdateInputsAsync(s9.Id, Scale("t_p", 0.75)(s9.Inputs));
         Assert.True(thinner.Succeeded, thinner.Reason);
         foreach (var key in new[] { "e7", "e6", "e2", "m8", "s9" })
             Assert.False((await host.Service.StalenessAsync(await Fresh(host, made, key))).IsStale, key);

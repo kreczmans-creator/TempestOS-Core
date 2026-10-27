@@ -1,5 +1,60 @@
 [
   {
+    "Symbol": "T_fill",
+    "Number": 10,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Mains water at fill.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10"
+  },
+  {
+    "Symbol": "T_flow",
+    "Number": 55,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Heat pump design flow temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "55"
+  },
+  {
+    "Symbol": "T_max",
+    "Number": 60,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Heat pump maximum flow temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "T_return",
+    "Number": 45,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Heat pump design return temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "45"
+  },
+  {
+    "Symbol": "T_room",
+    "Number": 21,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Living-room design temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "21"
+  },
+  {
     "Symbol": "V_pipe",
     "Number": 40,
     "Unit": "L",
@@ -66,36 +121,36 @@
   },
   {
     "Symbol": "p_f",
-    "Number": 2.5,
-    "Unit": "bar",
+    "Number": 250,
+    "Unit": "kPa",
     "Provenance": {
       "Kind": "Assumption",
-      "Reference": "0.5 bar below the safety valve.",
+      "Reference": "50 kPa below the safety valve.",
       "IsSufficientToIssue": true
     },
-    "ValueText": "2.5"
+    "ValueText": "250"
   },
   {
     "Symbol": "p_margin",
-    "Number": 0.3,
-    "Unit": "bar",
+    "Number": 30,
+    "Unit": "kPa",
     "Provenance": {
       "Kind": "Assumption",
-      "Reference": "Usual margin over static head.",
+      "Reference": "Usual allowance over static head.",
       "IsSufficientToIssue": true
     },
-    "ValueText": "0.3"
+    "ValueText": "30"
   },
   {
     "Symbol": "p_prv",
-    "Number": 3,
-    "Unit": "bar",
+    "Number": 300,
+    "Unit": "kPa",
     "Provenance": {
       "Kind": "Specification",
       "Reference": "Heat pump safety valve",
       "IsSufficientToIssue": true
     },
-    "ValueText": "3"
+    "ValueText": "300"
   },
   {
     "Symbol": "rooms",
@@ -202,60 +257,5 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "5 row(s)"
-  },
-  {
-    "Symbol": "t_f",
-    "Number": 55,
-    "Unit": "degC",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "Heat pump design flow temperature",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "55"
-  },
-  {
-    "Symbol": "t_fill",
-    "Number": 10,
-    "Unit": "degC",
-    "Provenance": {
-      "Kind": "Assumption",
-      "Reference": "Mains water at fill.",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "10"
-  },
-  {
-    "Symbol": "t_i",
-    "Number": 21,
-    "Unit": "degC",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "Living-room design temperature",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "21"
-  },
-  {
-    "Symbol": "t_max",
-    "Number": 60,
-    "Unit": "degC",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "Heat pump maximum flow temperature",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "60"
-  },
-  {
-    "Symbol": "t_r",
-    "Number": 45,
-    "Unit": "degC",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "Heat pump design return temperature",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "45"
   }
 ]

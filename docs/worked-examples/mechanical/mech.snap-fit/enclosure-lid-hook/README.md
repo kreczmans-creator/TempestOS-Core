@@ -24,8 +24,8 @@ The 2.2 mm thick lug is 18 mm long (l/h = 8.2) and tapers to half its thickness 
 | Output | Expected | Computed | Result |
 |---|---|---|---|
 | `K_y` | 1.09035  | 1.09035  | PASS |
-| `eps` | 0.747293 % | 0.747293 % | PASS |
-| `P` | 4.68857 N | 4.68857 N | PASS |
+| `eps_max` | 0.747293 % | 0.747293 % | PASS |
+| `F_defl` | 4.68857 N | 4.68857 N | PASS |
 | `strain_util` | 0.186823  | 0.186823  | PASS |
 | `y_perm` | 6.42318 mm | 6.42318 mm | PASS |
 | `assembly_force` | 5.44905 N | 5.44905 N | PASS |

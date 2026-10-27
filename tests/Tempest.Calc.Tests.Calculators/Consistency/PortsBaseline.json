@@ -1,0 +1,952 @@
+{
+ "mech.bearing-life": [
+  {
+   "symbol": "L_nmh",
+   "name": "bearing.life_modified"
+  },
+  {
+   "symbol": "L_10h",
+   "name": "bearing.life_basic"
+  },
+  {
+   "symbol": "P",
+   "name": "bearing.load_dynamic"
+  },
+  {
+   "symbol": "P_0",
+   "name": "bearing.load_static"
+  },
+  {
+   "symbol": "s_0",
+   "name": "bearing.safety_static"
+  }
+ ],
+ "mech.weld-group": [
+  {
+   "symbol": "f_r_max",
+   "name": "weld.force_per_length_max"
+  },
+  {
+   "symbol": "tau",
+   "name": "weld.stress_throat"
+  },
+  {
+   "symbol": "s_req",
+   "name": "weld.leg_required"
+  }
+ ],
+ "mech.shaft": [
+  {
+   "symbol": "R_A",
+   "name": "shaft.reaction_a"
+  },
+  {
+   "symbol": "R_B",
+   "name": "shaft.reaction_b"
+  },
+  {
+   "symbol": "d_A",
+   "name": "shaft.seat_diameter_a"
+  },
+  {
+   "symbol": "d_B",
+   "name": "shaft.seat_diameter_b"
+  },
+  {
+   "symbol": "n_f_min",
+   "name": "shaft.safety_fatigue_min"
+  },
+  {
+   "symbol": "n_c",
+   "name": "shaft.speed_critical"
+  }
+ ],
+ "mech.spring": [
+  {
+   "symbol": "k",
+   "name": null
+  },
+  {
+   "symbol": "F_1",
+   "name": null
+  },
+  {
+   "symbol": "F_2",
+   "name": null
+  },
+  {
+   "symbol": "L_s",
+   "name": null
+  },
+  {
+   "symbol": "f_n",
+   "name": null
+  }
+ ],
+ "mech.snap-fit": [
+  {
+   "symbol": "assembly_force",
+   "name": null
+  },
+  {
+   "symbol": "retention_force",
+   "name": null
+  },
+  {
+   "symbol": "strain_util",
+   "name": null
+  },
+  {
+   "symbol": "F_hold",
+   "name": null
+  }
+ ],
+ "mech.mechanism": [
+  {
+   "symbol": "input_torque",
+   "name": null
+  },
+  {
+   "symbol": "output_motion",
+   "name": null
+  },
+  {
+   "symbol": "peak_accel",
+   "name": null
+  },
+  {
+   "symbol": "follower_force",
+   "name": null
+  },
+  {
+   "symbol": "F_pin_pk",
+   "name": null
+  },
+  {
+   "symbol": "T_rms_in",
+   "name": null
+  },
+  {
+   "symbol": "n_in",
+   "name": null
+  },
+  {
+   "symbol": "f_in",
+   "name": null
+  },
+  {
+   "symbol": "P_mean",
+   "name": null
+  },
+  {
+   "symbol": "lift",
+   "name": null
+  },
+  {
+   "symbol": "F_spring_max",
+   "name": null
+  }
+ ],
+ "struct.frame-2d": [
+  {
+   "symbol": "R1_x",
+   "name": null
+  },
+  {
+   "symbol": "R1_y",
+   "name": null
+  },
+  {
+   "symbol": "R1_m",
+   "name": null
+  },
+  {
+   "symbol": "R1_x_abs",
+   "name": null
+  },
+  {
+   "symbol": "R1_m_abs",
+   "name": null
+  },
+  {
+   "symbol": "N_e1",
+   "name": null
+  },
+  {
+   "symbol": "V_e1",
+   "name": null
+  },
+  {
+   "symbol": "M_abs_e1",
+   "name": null
+  },
+  {
+   "symbol": "M_max_e1",
+   "name": null
+  },
+  {
+   "symbol": "M_min_e1",
+   "name": null
+  },
+  {
+   "symbol": "V_e2",
+   "name": null
+  },
+  {
+   "symbol": "M_abs_e2",
+   "name": null
+  },
+  {
+   "symbol": "sum_R_y",
+   "name": null
+  },
+  {
+   "symbol": "sum_R_x",
+   "name": null
+  },
+  {
+   "symbol": "M_max",
+   "name": null
+  },
+  {
+   "symbol": "M_min",
+   "name": null
+  },
+  {
+   "symbol": "V_max",
+   "name": null
+  },
+  {
+   "symbol": "N_max",
+   "name": null
+  },
+  {
+   "symbol": "N_min",
+   "name": null
+  },
+  {
+   "symbol": "d_max",
+   "name": null
+  }
+ ],
+ "struct.load-combinations": [
+  {
+   "symbol": "E_d_max",
+   "name": "combination.effect_uls_max"
+  },
+  {
+   "symbol": "E_d_min",
+   "name": "combination.effect_uls_min"
+  },
+  {
+   "symbol": "E_k_max",
+   "name": "combination.effect_sls_characteristic_max"
+  },
+  {
+   "symbol": "E_qp_max",
+   "name": "combination.effect_sls_quasi_permanent_max"
+  }
+ ],
+ "struct.connection-ec3": [
+  {
+   "symbol": "F_v_Rd",
+   "name": "bolt.resistance_shear"
+  },
+  {
+   "symbol": "F_b_Rd",
+   "name": "bolt.resistance_bearing"
+  },
+  {
+   "symbol": "F_t_Rd",
+   "name": "bolt.resistance_tension"
+  },
+  {
+   "symbol": "A_s",
+   "name": "bolt.area_stress"
+  },
+  {
+   "symbol": "f_ub",
+   "name": "bolt.strength_ultimate"
+  },
+  {
+   "symbol": "f_yb",
+   "name": "bolt.strength_yield"
+  },
+  {
+   "symbol": "f_vw_d",
+   "name": "weld.strength_shear_design"
+  }
+ ],
+ "struct.base-plate": [
+  {
+   "symbol": "F_t_Ed",
+   "name": null
+  },
+  {
+   "symbol": "V_b_Ed",
+   "name": null
+  },
+  {
+   "symbol": "N_j_Rd",
+   "name": null
+  },
+  {
+   "symbol": "u_max",
+   "name": null
+  }
+ ],
+ "struct.ltb-interaction": [
+  {
+   "symbol": "Mb_Rd",
+   "name": null
+  },
+  {
+   "symbol": "Mcr",
+   "name": null
+  },
+  {
+   "symbol": "chi_LT",
+   "name": null
+  },
+  {
+   "symbol": "lambda_LT",
+   "name": null
+  },
+  {
+   "symbol": "N_b_Rd",
+   "name": null
+  },
+  {
+   "symbol": "u_LTB",
+   "name": null
+  },
+  {
+   "symbol": "u_interaction",
+   "name": null
+  },
+  {
+   "symbol": "u_member",
+   "name": null
+  }
+ ],
+ "struct.plate-bending": [
+  {
+   "symbol": "w_max",
+   "name": null
+  },
+  {
+   "symbol": "sigma_max",
+   "name": null
+  },
+  {
+   "symbol": "f1",
+   "name": null
+  }
+ ],
+ "struct.lifting": [
+  {
+   "symbol": "capacity",
+   "name": null
+  },
+  {
+   "symbol": "governing_mode",
+   "name": null
+  },
+  {
+   "symbol": "util",
+   "name": null
+  },
+  {
+   "symbol": "F_s",
+   "name": null
+  },
+  {
+   "symbol": "F_ip",
+   "name": null
+  },
+  {
+   "symbol": "F_op",
+   "name": null
+  },
+  {
+   "symbol": "N_beam",
+   "name": null
+  }
+ ],
+ "bs.pipe-pump": [
+  {
+   "symbol": "Q_design",
+   "name": null
+  },
+  {
+   "symbol": "H_static",
+   "name": null
+  },
+  {
+   "symbol": "V_pipe",
+   "name": null
+  },
+  {
+   "symbol": "H_sys",
+   "name": null
+  },
+  {
+   "symbol": "h_f_total",
+   "name": null
+  },
+  {
+   "symbol": "dp_total",
+   "name": null
+  },
+  {
+   "symbol": "dp_sys",
+   "name": null
+  },
+  {
+   "symbol": "P_hyd",
+   "name": null
+  },
+  {
+   "symbol": "P_shaft_design",
+   "name": null
+  },
+  {
+   "symbol": "T_shaft",
+   "name": null
+  },
+  {
+   "symbol": "n_shaft",
+   "name": null
+  },
+  {
+   "symbol": "v_peak",
+   "name": null
+  },
+  {
+   "symbol": "T_line",
+   "name": null
+  },
+  {
+   "symbol": "OD_1",
+   "name": null
+  },
+  {
+   "symbol": "NPSH_a",
+   "name": null
+  },
+  {
+   "symbol": "Q_duty",
+   "name": null
+  },
+  {
+   "symbol": "H_duty",
+   "name": null
+  },
+  {
+   "symbol": "P_shaft",
+   "name": null
+  }
+ ],
+ "bs.heat-exchanger": [
+  {
+   "symbol": "Q",
+   "name": "exchanger.duty"
+  },
+  {
+   "symbol": "T_h_out",
+   "name": "exchanger.temperature_hot_out"
+  },
+  {
+   "symbol": "T_c_out",
+   "name": "exchanger.temperature_cold_out"
+  },
+  {
+   "symbol": "dT_c",
+   "name": "exchanger.temperature_rise_cold"
+  },
+  {
+   "symbol": "T_c_m",
+   "name": "exchanger.temperature_cold_mean"
+  },
+  {
+   "symbol": "cp_c",
+   "name": "exchanger.specific_heat_cold"
+  },
+  {
+   "symbol": "A_req",
+   "name": "exchanger.area_required"
+  }
+ ],
+ "bs.sealed-system": [
+  {
+   "symbol": "Phi_tot",
+   "name": "heating.heat_required"
+  },
+  {
+   "symbol": "V_s",
+   "name": "heating.volume_system"
+  },
+  {
+   "symbol": "V_e",
+   "name": "heating.volume_expansion_min"
+  },
+  {
+   "symbol": "dT",
+   "name": "heating.temperature_difference_emitter"
+  },
+  {
+   "symbol": "dT_fr",
+   "name": "heating.temperature_difference_loop"
+  },
+  {
+   "symbol": "t_m",
+   "name": "heating.temperature_mean"
+  }
+ ],
+ "bs.room-heat-loss": [
+  {
+   "symbol": "Phi_HL",
+   "name": null
+  },
+  {
+   "symbol": "theta_int",
+   "name": null
+  },
+  {
+   "symbol": "HLC",
+   "name": null
+  },
+  {
+   "symbol": "Phi_T",
+   "name": null
+  },
+  {
+   "symbol": "Phi_V",
+   "name": null
+  },
+  {
+   "symbol": "U_1",
+   "name": null
+  }
+ ],
+ "bs.glaser": [
+  {
+   "symbol": "Mc_max",
+   "name": null
+  },
+  {
+   "symbol": "fRsi",
+   "name": null
+  },
+  {
+   "symbol": "pass",
+   "name": null
+  }
+ ],
+ "bs.pipe-expansion": [
+  {
+   "symbol": "anchor_force",
+   "name": null
+  },
+  {
+   "symbol": "anchor_moment",
+   "name": null
+  },
+  {
+   "symbol": "dL",
+   "name": null
+  }
+ ],
+ "bs.insulation": [
+  {
+   "symbol": "thickness",
+   "name": null
+  },
+  {
+   "symbol": "q_per_m",
+   "name": null
+  },
+  {
+   "symbol": "q_area",
+   "name": null
+  },
+  {
+   "symbol": "theta_se",
+   "name": null
+  }
+ ],
+ "elec.motor-sizing": [
+  {
+   "symbol": "T_load",
+   "name": null
+  },
+  {
+   "symbol": "J_refl",
+   "name": null
+  },
+  {
+   "symbol": "J_total",
+   "name": null
+  },
+  {
+   "symbol": "alpha_pk",
+   "name": null
+  },
+  {
+   "symbol": "T_acc",
+   "name": null
+  },
+  {
+   "symbol": "T_pk",
+   "name": null
+  },
+  {
+   "symbol": "T_dec",
+   "name": null
+  },
+  {
+   "symbol": "T_rms",
+   "name": null
+  },
+  {
+   "symbol": "T_design",
+   "name": null
+  },
+  {
+   "symbol": "T_hold",
+   "name": null
+  },
+  {
+   "symbol": "T_alt",
+   "name": null
+  },
+  {
+   "symbol": "F_ax_pk",
+   "name": null
+  },
+  {
+   "symbol": "T_out_m",
+   "name": null
+  },
+  {
+   "symbol": "T_out_a",
+   "name": null
+  },
+  {
+   "symbol": "T_out_pk",
+   "name": null
+  },
+  {
+   "symbol": "n_out",
+   "name": null
+  },
+  {
+   "symbol": "n_pk",
+   "name": null
+  },
+  {
+   "symbol": "n_mean",
+   "name": null
+  },
+  {
+   "symbol": "P_pk",
+   "name": null
+  },
+  {
+   "symbol": "P_brake",
+   "name": null
+  },
+  {
+   "symbol": "P_cont",
+   "name": null
+  },
+  {
+   "symbol": "P_rated",
+   "name": null
+  },
+  {
+   "symbol": "P_rms",
+   "name": null
+  },
+  {
+   "symbol": "J_ratio",
+   "name": null
+  },
+  {
+   "symbol": "duty",
+   "name": null
+  },
+  {
+   "symbol": "u_peak",
+   "name": null
+  },
+  {
+   "symbol": "u_power",
+   "name": null
+  },
+  {
+   "symbol": "u_rms",
+   "name": null
+  },
+  {
+   "symbol": "u_speed",
+   "name": null
+  }
+ ],
+ "elec.enclosure-heat": [
+  {
+   "symbol": "P_total",
+   "name": null
+  },
+  {
+   "symbol": "P_cool",
+   "name": null
+  },
+  {
+   "symbol": "P_nat_max",
+   "name": null
+  },
+  {
+   "symbol": "T_max",
+   "name": null
+  },
+  {
+   "symbol": "dT_nat",
+   "name": null
+  },
+  {
+   "symbol": "T_int",
+   "name": null
+  },
+  {
+   "symbol": "V_req",
+   "name": null
+  },
+  {
+   "symbol": "V_duty",
+   "name": null
+  },
+  {
+   "symbol": "dp_seal",
+   "name": null
+  },
+  {
+   "symbol": "F_seal",
+   "name": null
+  }
+ ],
+ "elec.load-budget": [
+  {
+   "symbol": "P_dem",
+   "name": "load.power_demand"
+  },
+  {
+   "symbol": "S_dem",
+   "name": "load.apparent_demand"
+  },
+  {
+   "symbol": "I_3ph",
+   "name": "load.current_three_phase"
+  },
+  {
+   "symbol": "I_1ph",
+   "name": "load.current_single_phase"
+  },
+  {
+   "symbol": "I_DC",
+   "name": "load.current_dc"
+  },
+  {
+   "symbol": "Phi",
+   "name": "load.heat_dissipated"
+  },
+  {
+   "symbol": "U_L",
+   "name": "load.voltage_line"
+  },
+  {
+   "symbol": "pf_link",
+   "name": "load.power_factor_linked"
+  },
+  {
+   "symbol": "C_req",
+   "name": "battery.capacity_required"
+  }
+ ],
+ "elec.fault-protection": [
+  {
+   "symbol": "Z_s",
+   "name": "fault.impedance_loop"
+  },
+  {
+   "symbol": "I_f",
+   "name": "fault.current_earth"
+  },
+  {
+   "symbol": "S_min",
+   "name": "conductor.area_adiabatic_min"
+  },
+  {
+   "symbol": "I_k3",
+   "name": "fault.current_three_phase"
+  },
+  {
+   "symbol": "c_k3",
+   "name": "fault.factor_voltage"
+  }
+ ],
+ "elec.conductor-sizing": [
+  {
+   "symbol": "I_b",
+   "name": null
+  },
+  {
+   "symbol": "I_n",
+   "name": null
+  },
+  {
+   "symbol": "CSA",
+   "name": null
+  },
+  {
+   "symbol": "I_z",
+   "name": null
+  },
+  {
+   "symbol": "L",
+   "name": null
+  },
+  {
+   "symbol": "theta_op",
+   "name": null
+  },
+  {
+   "symbol": "device_code",
+   "name": null
+  }
+ ],
+ "elec.pcb-trace": [
+  {
+   "symbol": "trace_R",
+   "name": null
+  },
+  {
+   "symbol": "trace_Ploss",
+   "name": null
+  },
+  {
+   "symbol": "vdrop",
+   "name": null
+  }
+ ],
+ "elec.containment": [
+  {
+   "symbol": "fill",
+   "name": null
+  },
+  {
+   "symbol": "max_tension",
+   "name": null
+  }
+ ],
+ "elec.motor-start": [
+  {
+   "symbol": "start_dip",
+   "name": null
+  },
+  {
+   "symbol": "kvar",
+   "name": null
+  },
+  {
+   "symbol": "I_start",
+   "name": null
+  },
+  {
+   "symbol": "I_rated",
+   "name": null
+  }
+ ],
+ "fp.cylinder": [
+  {
+   "symbol": "Q",
+   "name": null
+  },
+  {
+   "symbol": "p",
+   "name": null
+  },
+  {
+   "symbol": "P_pump",
+   "name": null
+  },
+  {
+   "symbol": "u_buck",
+   "name": null
+  },
+  {
+   "symbol": "F_ext",
+   "name": null
+  },
+  {
+   "symbol": "dV",
+   "name": null
+  },
+  {
+   "symbol": "p_push",
+   "name": null
+  },
+  {
+   "symbol": "T_shaft",
+   "name": null
+  },
+  {
+   "symbol": "n_shaft",
+   "name": null
+  },
+  {
+   "symbol": "Q_prs",
+   "name": null
+  },
+  {
+   "symbol": "rho",
+   "name": null
+  },
+  {
+   "symbol": "d_prs",
+   "name": null
+  }
+ ],
+ "fp.accumulator": [
+  {
+   "symbol": "V0",
+   "name": null
+  },
+  {
+   "symbol": "p0",
+   "name": null
+  },
+  {
+   "symbol": "bar_litres",
+   "name": null
+  }
+ ],
+ "fp.oring-gland": [
+  {
+   "symbol": "squeeze_min",
+   "name": null
+  },
+  {
+   "symbol": "squeeze_max",
+   "name": null
+  },
+  {
+   "symbol": "fill_max",
+   "name": null
+  },
+  {
+   "symbol": "stretch",
+   "name": null
+  }
+ ]
+}

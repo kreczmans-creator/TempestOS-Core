@@ -10,7 +10,6 @@ Two lugs on a horizontal lifting beam carry 150 kN at a sling angle of 30° from
 | `Dh` | 55 mm | drawing: LB-150-02 rev A |
 | `Dp` | 50 mm | drawing: LB-150-02 rev A |
 | `Nd` | 1.8 | assumption: Illustrative user-record value for this worked example, not a value from any standard: replace with the design factor of your Design Category from your own copy of the code. |
-| `R` | 75 mm | drawing: LB-150-02 rev A |
 | `WLL` | 150 kN | spec: Lifting beam specification LB-150, rated load 150 kN |
 | `be` | 40 mm | drawing: LB-150-02 rev A |
 | `beam` | yes | drawing: LB-150-01 rev A |
@@ -26,7 +25,8 @@ Two lugs on a horizontal lifting beam carry 150 kN at a sling angle of 30° from
 | `n_lugs` | 2 | drawing: LB-150-01 rev A |
 | `n_u` | 2.2 | assumption: Illustrative user-record value, not from a standard: replace with your own record. |
 | `n_y` | 1.6 | assumption: Illustrative user-record value, not from a standard: replace with your own record. |
-| `t` | 25 mm | drawing: LB-150-02 rev A |
+| `r_lug` | 75 mm | drawing: LB-150-02 rev A |
+| `t_p` | 25 mm | drawing: LB-150-02 rev A |
 | `theta` | 30 deg | drawing: LB-150-01 rev A |
 
 | Output | Expected | Computed | Result |
@@ -71,4 +71,4 @@ Two lugs on a horizontal lifting beam carry 150 kN at a sling angle of 30° from
 | `util` | 0.572203  | 0.572203  | PASS |
 | `proof_load` | 225 kN | 225 kN | PASS |
 
-Governing check: BTH-1: bearing — PASS (utilisation 0.57). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Design load against the bearing resistance (BTH-1) — PASS (utilisation 0.57). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

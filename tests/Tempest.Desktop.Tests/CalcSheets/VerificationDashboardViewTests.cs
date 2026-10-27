@@ -151,7 +151,7 @@ public sealed class VerificationDashboardViewTests
             Assert.Contains(window.GetLogicalDescendants().OfType<TreeViewItem>(), n => AutomationProperties.GetName(n) == "Verification dashboard");
 
             // The records lookup finds the kinds with no record entered; opening the screen entered none, seeded none, changed none.
-            Assert.Contains(view.Model.Rows, r => r.Id == "elec.conductor-sizing" && r.MissingRecordKinds.Contains("Cable current-carrying capacities"));
+            Assert.Contains(view.Model.Rows, r => r.Id == "elec.conductor-sizing" && r.MissingRecordKinds.Contains("Cable ampacity (current-carrying capacities)"));
             Assert.Equal(recordsBefore, (await host.CalcInstances.Store.ListRecordsAsync()).Count);
 
             // The rest of Calculations still opens beside it.

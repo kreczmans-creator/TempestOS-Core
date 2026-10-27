@@ -137,6 +137,13 @@ public sealed record CalcInstance(
     [JsonIgnore]
     public string TemplateVersion => TemplateReference.Contains('@', StringComparison.Ordinal) ? TemplateReference.Split('@')[1] : string.Empty;
 
+    /// <summary>
+    /// The stored inputs as an input set that knows the template version they were made on (<see cref="CalcInputSet.MadeOn"/>), so a bare number
+    /// is read in that version's default unit (ADR-0177 review, <see cref="CalcInputUnits"/>). A record with no version in its reference reads as one
+    /// that carries none.
+    /// </summary>
+    public CalcInputSet InputSet() => new(Inputs, TemplateVersion);
+
     /// <summary>The input provenance reference prefix that names another instance as the source of a value.</summary>
     public const string UpstreamPrefix = "calc:";
 

@@ -172,6 +172,27 @@
       "ValueText": "0"
     },
     {
+      "Symbol": "SF",
+      "Number": 1.25,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.25"
+    },
+    {
+      "Symbol": "T_amb",
+      "Number": 40,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
       "Symbol": "U_1ph",
       "Number": 230,
       "Unit": "V",
@@ -341,7 +362,7 @@
               "Unit": "kW",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:1b7b4ade6c99456b8e6c4315781eb0a5#trace_Ploss",
+                "Reference": "calc:94a89c9b1cff4440a6238bfc855502c2#trace_Ploss",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -480,16 +501,6 @@
       "ValueText": "4 row(s)"
     },
     {
-      "Symbol": "margin",
-      "Number": 1.25,
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "1.25"
-    },
-    {
       "Symbol": "psu_bus",
       "Text": "AC single-phase",
       "Provenance": {
@@ -509,17 +520,6 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "0"
-    },
-    {
-      "Symbol": "theta",
-      "Number": 40,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "40"
     }
   ],
   "e2": [
@@ -583,15 +583,15 @@
     },
     {
       "Symbol": "P_add",
-      "Number": 73.00815012056731,
-      "Unit": "W",
+      "Number": 0.07300815012056731,
+      "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:cb8c046a036647d9af02811097f40b83#Phi",
+        "Reference": "calc:d0fcefe3e0994f33b098c9e3c8fd8dde#Phi",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "73.0082"
+      "ValueText": "0.0730082"
     },
     {
       "Symbol": "T_amb",
@@ -752,7 +752,7 @@
       "ValueText": "1"
     },
     {
-      "Symbol": "h",
+      "Symbol": "h_conv",
       "Number": 5.5,
       "Unit": "W/(m^2*K)",
       "Provenance": {
@@ -842,7 +842,7 @@
       "Unit": "N",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6fc572ee56e347ea93cdb488c45b5cb0#F_seal",
+        "Reference": "calc:e0bdb27cfb9742be9781b0242911d26c#F_seal",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -854,7 +854,7 @@
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6fc572ee56e347ea93cdb488c45b5cb0#T_int",
+        "Reference": "calc:e0bdb27cfb9742be9781b0242911d26c#T_int",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1053,7 +1053,7 @@
       "ValueText": "69"
     },
     {
-      "Symbol": "P",
+      "Symbol": "F",
       "Number": 5,
       "Unit": "kN",
       "Provenance": {
@@ -1152,7 +1152,7 @@
       "Unit": "kPa",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:6fc572ee56e347ea93cdb488c45b5cb0#dp_seal",
+        "Reference": "calc:e0bdb27cfb9742be9781b0242911d26c#dp_seal",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1212,7 +1212,7 @@
       "ValueText": "simply supported"
     },
     {
-      "Symbol": "t",
+      "Symbol": "t_p",
       "Number": 4,
       "Unit": "mm",
       "Provenance": {

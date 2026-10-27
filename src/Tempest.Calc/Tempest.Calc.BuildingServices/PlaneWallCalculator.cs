@@ -38,61 +38,68 @@ public sealed class PlaneWallCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.0.1", CalcDiscipline.BuildingServices, "Plane wall heat transfer (layers and films)",
-        "Steady heat flow through a composite plane wall between two fluids, or between two known surface temperatures: each layer's conduction resistance, each film's convection resistance, the overall U-value, the heat flow and flux, and every surface and interface temperature.",
-        "Resistance of each surface film: R = 1/(h·A).\nResistance of each conducting layer: R_i = t_i/(k_i·A).\nTotal resistance, hot side first: R_tot = Σ R.\nHeat flow through the wall: Q = (T_1 − T_2)/R_tot.\nHeat flux and overall U-value: q = Q/A; U = 1/(R_tot·A).\nSurface and interface temperatures, stepping down from T_1 across each resistance in turn: T_next = T_previous − Q·R.",
+        Id, "1.1.0", CalcDiscipline.BuildingServices, "Plane wall heat transfer (layers and films)",
+        "Calculates the steady heat flow through a composite plane wall, between two fluids or between two known surface temperatures. It gives the overall U-value, the heat flux and every surface and interface temperature.",
+        "Resistance of each surface film: R = 1/(h·A).\nResistance of each conducting layer: R_i = t_i/(k_i·A).\nTotal resistance, hot side first: R_tot = Σ R.\nHeat flow through the wall: Phi = (T_1 − T_2)/R_tot.\nHeat flux and overall U-value: q = Phi/A; U_wall = 1/(R_tot·A).\nSurface and interface temperatures, stepping down from T_1 across each resistance in turn: T_next = T_previous − Phi·R.",
         [
-            new CalcInputSpec("T_1", "Side 1 temperature (the fluid's, or the surface's when no film is given)", CalcInputKind.Quantity, "degC", Default: 20, Min: -60, Max: 400, HardMin: -273.15, HardMax: 5000, Group: "Side 1"),
-            new CalcInputSpec("h_1", "Side 1 film coefficient (omit when T_1 is the surface temperature)", CalcInputKind.Quantity, "W/(m^2*K)", Default: 7.7, Min: 2, Max: 1e4, HardMin: 1e-6, HardMax: 1e6, IsOptional: true, Group: "Side 1"),
-            new CalcInputSpec("layers", "Conducting layers, side 1 first", CalcInputKind.Table, Columns: Columns, MaxRows: MaxLayers, Group: "Wall"),
-            new CalcInputSpec("h_2", "Side 2 film coefficient (omit when T_2 is the surface temperature)", CalcInputKind.Quantity, "W/(m^2*K)", Default: 25, Min: 2, Max: 1e4, HardMin: 1e-6, HardMax: 1e6, IsOptional: true, Group: "Side 2"),
-            new CalcInputSpec("T_2", "Side 2 temperature (the fluid's, or the surface's when no film is given)", CalcInputKind.Quantity, "degC", Default: 0, Min: -60, Max: 400, HardMin: -273.15, HardMax: 5000, Group: "Side 2"),
-            new CalcInputSpec("A", "Wall area normal to the heat flow", CalcInputKind.Quantity, "m^2", Default: 1, Min: 1e-3, Max: 1e4, HardMin: 1e-9, HardMax: 1e7, Group: "Wall"),
+            new CalcInputSpec("layers", "Conducting layers, side 1 first", CalcInputKind.Table, Columns: Columns, MaxRows: MaxLayers, Group: "Setup"),
+            new CalcInputSpec("A", "Wall area normal to the heat flow", CalcInputKind.Quantity, "m^2", Default: 1, Min: 1e-3, Max: 1e4, HardMin: 1e-9, HardMax: 1e7, Group: "Geometry"),
+            new CalcInputSpec("T_1", "Side 1 temperature (the fluid's, or the surface's when no film is given)", CalcInputKind.Quantity, "degC", Default: 20, Min: -60, Max: 400, HardMin: -273.15, HardMax: 5000, Group: "Conditions"),
+            new CalcInputSpec("T_2", "Side 2 temperature (the fluid's, or the surface's when no film is given)", CalcInputKind.Quantity, "degC", Default: 0, Min: -60, Max: 400, HardMin: -273.15, HardMax: 5000, Group: "Conditions"),
+            new CalcInputSpec("h_1", "Side 1 film coefficient (optional; blank = no film, so T_1 is the surface temperature)", CalcInputKind.Quantity, "W/(m^2*K)", Default: 7.7, Min: 2, Max: 1e4, HardMin: 1e-6, HardMax: 1e6, IsOptional: true, Group: "Conditions"),
+            new CalcInputSpec("h_2", "Side 2 film coefficient (optional; blank = no film, so T_2 is the surface temperature)", CalcInputKind.Quantity, "W/(m^2*K)", Default: 25, Min: 2, Max: 1e4, HardMin: 1e-6, HardMax: 1e6, IsOptional: true, Group: "Conditions"),
         ],
         [
             new CalcAssumption("Steady, one-dimensional conduction through plane layers of constant conductivity, with no internal heat generation.", "Thermal-circuit idealisation: equal layer areas, no edge losses."),
-            new CalcAssumption("Layers are in perfect thermal contact; each film coefficient is constant over its surface.", "A contact resistance can be entered as a thin layer of equivalent thickness and conductivity."),
+            new CalcAssumption("Layers are in perfect thermal contact.", "A contact resistance can be entered as a thin layer of equivalent thickness and conductivity."),
+            new CalcAssumption("Each film coefficient is constant over its surface.", "Thermal-circuit idealisation."),
         ],
         [
-            new CalcClauseRef("Incropera & DeWitt, Fundamentals of Heat and Mass Transfer", "§3.1", "The plane wall: thermal resistance and the composite wall"),
-            new CalcClauseRef("Çengel & Ghajar, Heat and Mass Transfer", "§3-3", "Generalized thermal resistance networks (multilayer plane walls)"),
-            new CalcClauseRef("BS EN ISO 6946", "§6", "Thermal resistance of building components (method)"),
+            new CalcClauseRef("Incropera & DeWitt, Fundamentals of Heat and Mass Transfer", "§3.1, 7th ed.", "The plane wall: thermal resistance and the composite wall"),
+            new CalcClauseRef("Çengel & Ghajar, Heat and Mass Transfer", "§3-3, 5th ed.", "Generalized thermal resistance networks (multilayer plane walls)"),
+            new CalcClauseRef("BS EN ISO 6946:2017", "cl. 6", "Thermal resistance of building components (method)"),
         ],
         [
-            new CalcApplicabilityRule("no-layers", "At least one conducting layer is needed.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("reversed", "Side 2 is warmer than side 1: the heat flows from side 2 to side 1 and Q is negative.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("no-layers", "At least one conducting layer is required.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("reversed", "Side 2 is warmer than side 1, so the heat flows from side 2 to side 1 and the heat flow Phi is negative.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-legacy-single-pane", "Legacy example 1: single-pane window", Legacy(1, ", after Çengel & Ghajar"), Window(Layers(("glass", 8, 0.78))),
-                [new CalcExpectedValue("R_h1", 0.083333, "K/W", 5e-5), new CalcExpectedValue("R_1", 0.0085470, "K/W", 5e-5), new CalcExpectedValue("R_h2", 0.020833, "K/W", 5e-5), new CalcExpectedValue("R_tot", 0.11271, "K/W", 5e-5), new CalcExpectedValue("Q", 266.16, "W", 5e-5), new CalcExpectedValue("q", 221.80, "W/m^2", 5e-5), new CalcExpectedValue("U", 7.3934, "W/(m^2*K)", 5e-5), new CalcExpectedValue("T_s0", -2.1801, "degC", 5e-5), new CalcExpectedValue("T_s1", -4.4550, "degC", 5e-5)]),
+                [new CalcExpectedValue("R_h1", 0.083333, "K/W", 5e-5), new CalcExpectedValue("R_1", 0.0085470, "K/W", 5e-5), new CalcExpectedValue("R_h2", 0.020833, "K/W", 5e-5), new CalcExpectedValue("R_tot", 0.11271, "K/W", 5e-5), new CalcExpectedValue("Phi", 266.16, "W", 5e-5), new CalcExpectedValue("q", 221.80, "W/m^2", 5e-5), new CalcExpectedValue("U_wall", 7.3934, "W/(m^2*K)", 5e-5), new CalcExpectedValue("T_s0", -2.1801, "degC", 5e-5), new CalcExpectedValue("T_s1", -4.4550, "degC", 5e-5)]),
             new CalcTestCase("ka-legacy-double-pane", "Legacy example 2: double-pane window with a 10 mm air gap", Legacy(2, ", after Çengel & Ghajar"), Window(Layers(("glass", 4, 0.78), ("air gap", 10, 0.026), ("glass", 4, 0.78))),
-                [new CalcExpectedValue("R_2", 0.32051, "K/W", 5e-5), new CalcExpectedValue("R_tot", 0.43323, "K/W", 5e-5), new CalcExpectedValue("Q", 69.248, "W", 5e-5), new CalcExpectedValue("q", 57.707, "W/m^2", 5e-5), new CalcExpectedValue("U", 1.9236, "W/(m^2*K)", 5e-5), new CalcExpectedValue("T_s0", 14.229, "degC", 5e-5), new CalcExpectedValue("T_s1", 13.933, "degC", 5e-5), new CalcExpectedValue("T_s2", -8.2614, "degC", 5e-5), new CalcExpectedValue("T_s3", -8.5573, "degC", 5e-5)]),
+                [new CalcExpectedValue("R_2", 0.32051, "K/W", 5e-5), new CalcExpectedValue("R_tot", 0.43323, "K/W", 5e-5), new CalcExpectedValue("Phi", 69.248, "W", 5e-5), new CalcExpectedValue("q", 57.707, "W/m^2", 5e-5), new CalcExpectedValue("U_wall", 1.9236, "W/(m^2*K)", 5e-5), new CalcExpectedValue("T_s0", 14.229, "degC", 5e-5), new CalcExpectedValue("T_s1", 13.933, "degC", 5e-5), new CalcExpectedValue("T_s2", -8.2614, "degC", 5e-5), new CalcExpectedValue("T_s3", -8.5573, "degC", 5e-5)]),
             new CalcTestCase("ka-legacy-surfaces", "Legacy example 3: surface temperatures given, no films", Legacy(3),
                 [CalcInputValue.Quantity("T_1", 25, "degC"), Layers(("brick", 200, 0.72), ("insulation", 50, 0.04)), CalcInputValue.Quantity("T_2", 5, "degC"), CalcInputValue.Quantity("A", 3, "m^2")],
-                [new CalcExpectedValue("R_1", 0.092593, "K/W", 5e-5), new CalcExpectedValue("R_2", 0.41667, "K/W", 5e-5), new CalcExpectedValue("R_tot", 0.50926, "K/W", 5e-5), new CalcExpectedValue("Q", 39.273, "W", 5e-5), new CalcExpectedValue("q", 13.091, "W/m^2", 5e-5), new CalcExpectedValue("U", 0.65455, "W/(m^2*K)", 5e-5), new CalcExpectedValue("T_s0", 25, "degC", 5e-5), new CalcExpectedValue("T_s1", 21.364, "degC", 5e-5), new CalcExpectedValue("T_s2", 5, "degC", 5e-5)]),
+                [new CalcExpectedValue("R_1", 0.092593, "K/W", 5e-5), new CalcExpectedValue("R_2", 0.41667, "K/W", 5e-5), new CalcExpectedValue("R_tot", 0.50926, "K/W", 5e-5), new CalcExpectedValue("Phi", 39.273, "W", 5e-5), new CalcExpectedValue("q", 13.091, "W/m^2", 5e-5), new CalcExpectedValue("U_wall", 0.65455, "W/(m^2*K)", 5e-5), new CalcExpectedValue("T_s0", 25, "degC", 5e-5), new CalcExpectedValue("T_s1", 21.364, "degC", 5e-5), new CalcExpectedValue("T_s2", 5, "degC", 5e-5)]),
         ],
-        Category: "Thermal");
+        Category: "Thermal",
+        OutputPorts:
+        [
+            new CalcOutputPort("Phi", "kW", "Heat flow from side 1 to side 2", "wall.heat_flow", ["Q"]),
+            new CalcOutputPort("q", "W/m^2", "Heat flux", "wall.heat_flux"),
+            new CalcOutputPort("U_wall", "W/(m^2*K)", "Overall heat transfer coefficient, the U-value of the wall", "wall.u_value", ["U"]),
+            new CalcOutputPort("R_tot", "K/W", "Total thermal resistance", "wall.resistance_total"),
+        ]);
 
     public void Run(CalcRunContext c)
     {
+        var rows = c.Rows("layers");
+        c.Input("A");
         c.Input("T_1");
+        c.Input("T_2");
         var film1 = c.Has("h_1");
 
         if (film1)
             c.Input("h_1");
 
-        var rows = c.Rows("layers");
         var film2 = c.Has("h_2");
 
         if (film2)
             c.Input("h_2");
 
-        c.Input("T_2");
-        c.Input("A");
-
         if (rows.Count == 0)
         {
-            c.Block("no-layers", "layers: at least one conducting layer is needed.");
+            c.Block("no-layers", "layers: enter at least one conducting layer.");
             return;
         }
 
@@ -134,14 +141,14 @@ public sealed class PlaneWallCalculator : ICalcCalculator
 
         var total = circuit.Sum(x => x.R);
         c.Record("R_tot", "Σ R", string.Join(" + ", circuit.Select(x => F(x.R))) + " K/W", ScalarValue.Of(total, kpw), "Total thermal resistance", "Çengel §3-3");
-        c.Assign("Q", "(T_1 - T_2) / R_tot", "W", "Heat flow from side 1 to side 2");
-        c.Assign("q", "Q / A", "W/m^2", "Heat flux");
-        c.Assign("U", "1 / (R_tot * A)", "W/(m^2*K)", "Overall heat transfer coefficient");
+        c.Assign("Phi", "(T_1 - T_2) / R_tot", "kW", "Heat flow from side 1 to side 2");
+        c.Assign("q", "Phi / A", "W/m^2", "Heat flux");
+        c.Assign("U_wall", "1 / (R_tot * A)", "W/(m^2*K)", "Overall heat transfer coefficient");
 
-        var q = c.Si("Q");
+        var q = c.Si("Phi");
 
         if (q < 0)
-            c.Warn("reversed", "T_2: side 2 is warmer than side 1, so the heat flows from side 2 to side 1 and Q is negative.");
+            c.Warn("reversed", "T_2: side 2 is warmer than side 1. The heat flow Phi is negative.");
 
         // Walk the circuit from side 1: a film's far side is a surface, a layer's an interface
         // (or the side 2 surface after the last layer). The side 2 fluid is not a surface.
@@ -161,16 +168,16 @@ public sealed class PlaneWallCalculator : ICalcCalculator
 
             var previous = surface == 0 ? "T_1" : $"T_s{surface - 1}";
             var what = surface == 0 ? "Side 1 surface" : surface == rows.Count ? "Side 2 surface" : $"Interface {surface}";
-            c.Record($"T_s{surface}", $"{previous} − Q · {symbol}", $"{F(degC.FromSi(node + q * r))} °C − {F(q)} W × {F(r)} K/W", new ScalarValue(node, degC.Dimension, degC), what);
+            c.Record($"T_s{surface}", $"{previous} − Phi · {symbol}", $"{F(degC.FromSi(node + q * r))} °C − {F(q)} W × {F(r)} K/W", new ScalarValue(node, degC.Dimension, degC), what);
             surface++;
         }
 
         void RecordSurface(int index, string from, string what) =>
             c.Record($"T_s{index}", from, $"{F(degC.FromSi(node))} °C", new ScalarValue(node, degC.Dimension, degC), what);
 
-        c.Output("Q", "Heat flow");
+        c.Output("Phi", "Heat flow");
         c.Output("q", "Heat flux");
-        c.Output("U", "Overall heat transfer coefficient");
+        c.Output("U_wall", "Overall heat transfer coefficient");
         c.Output("R_tot", "Total thermal resistance");
 
         foreach (var (symbol, _) in circuit)

@@ -9,6 +9,8 @@ namespace Tempest.Calc.Tests.Library;
 /// development each bumped 1.0.0 to 1.0.1 and the merge of the two matched neither. A reference <c>id@version</c> must name one
 /// content for ever. <c>TemplateVersionManifest.json</c>, committed beside this file, records the content hash (the full
 /// <see cref="CalcTemplateHasher"/> hash, the one whose first 16 characters a sheet prints) of every shipped template at its version.
+/// The Library embeds the same file (<c>Tempest.Calc.Library.csproj</c> links it): the catalogue reads it as <see cref="TemplateVersionHistory"/>, so
+/// every version recorded here stays resolvable by <c>id@version</c> after it is superseded (ADR-0177, DC-14).
 /// A template whose content changed under an unchanged version fails here; a new template or a new version fails until its hash is
 /// recorded, which is a reviewed diff.
 ///
@@ -23,7 +25,8 @@ public sealed class TemplateVersionManifestTests
 {
     public const string UpdateVariable = "TEMPEST_UPDATE_TEMPLATE_MANIFEST";
 
-    private static string ManifestPath([CallerFilePath] string callerFilePath = "") =>
+    /// <summary>The manifest beside this file; the Library embeds it from here (ADR-0177).</summary>
+    internal static string ManifestPath([CallerFilePath] string callerFilePath = "") =>
         Path.Combine(Path.GetDirectoryName(callerFilePath) ?? AppContext.BaseDirectory, "TemplateVersionManifest.json");
 
     private static SortedDictionary<string, string> Current() =>

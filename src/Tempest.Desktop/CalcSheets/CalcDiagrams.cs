@@ -152,14 +152,14 @@ public static class CalcDiagrams
                 new DiagramCircle("bolt-4", new(170, 106), 8, Filled: true, "bolts", "bolts", new(135, 26), Solid: true),
                 new DiagramCircle("bolt-5", new(100, 150), 8, Filled: true, "bolts", Solid: true),
                 new DiagramCircle("bolt-6", new(170, 150), 8, Filled: true, "bolts", Solid: true),
-                new DiagramMoment("torque", new(135, 106), 14, Clockwise: false, "T_z", "T_z", new(135, 186)),
+                new DiagramMoment("torque", new(135, 106), 14, Clockwise: false, "M_z", "M_z", new(135, 186)),
                 new DiagramDimension("load-point-y", new(290, 200), new(290, 80), 0, "e_y", "e_y", new(340, 150)),
                 new DiagramDimension("load-point-x", new(40, 200), new(290, 200), 18, "e_x", "e_x"),
                 new DiagramCircle("load-point", new(290, 80), 4, Filled: true, "e_x", Solid: true),
                 new DiagramPointLoad("load-y", new(290, 36), DiagramDirection.Up, 44, "F_y", "F_y", new(290, 24)),
                 new DiagramPointLoad("load-x", new(342, 80), DiagramDirection.Right, 52, "F_x", "F_x", new(344, 96)),
-                new DiagramLabel("shear-resistance", new(60, 230), "V_R", "V_R"),
-                new DiagramLabel("tension-resistance", new(300, 230), "T_R", "T_R"),
+                new DiagramLabel("shear-resistance", new(60, 230), "F_v_Rd", "F_v_Rd"),
+                new DiagramLabel("tension-resistance", new(300, 230), "F_t_Rd", "F_t_Rd"),
             ]),
         ]);
 
@@ -209,15 +209,15 @@ public static class CalcDiagrams
                 new DiagramPlate("lug", 40, 44, 90, 120, "W"),
                 new DiagramCircle("hole", new(85, 86), 20, Filled: false, "d_h"),
                 new DiagramCircle("pin", new(85, 86), 16, Filled: true, "d_p", Solid: true),
-                new DiagramPointLoad("load", new(85, 12), DiagramDirection.Up, 30, "P", "P", new(130, 22)),
+                new DiagramPointLoad("load", new(85, 12), DiagramDirection.Up, 30, "F_lug", "F_lug", new(130, 22)),
                 new DiagramDimension("edge-distance", new(85, 44), new(85, 66), 60, "a", "a"),
                 new DiagramDimension("hole-diameter", new(65, 86), new(105, 86), 30, "d_h", "d_h"),
                 new DiagramDimension("width", new(40, 164), new(130, 164), 12, "W", "W"),
                 new DiagramPlate("cheek-left", 240, 30, 10, 80, "t_s"),
                 new DiagramPlate("cheek-right", 296, 30, 10, 80, "t_s"),
-                new DiagramPlate("lug-section", 260, 64, 26, 100, "t"),
+                new DiagramPlate("lug-section", 260, 64, 26, 100, "t_lug"),
                 new DiagramMember("pin-section", new(230, 86), new(316, 86), 16, "d_p"),
-                new DiagramDimension("thickness", new(260, 164), new(286, 164), 12, "t", "t"),
+                new DiagramDimension("thickness", new(260, 164), new(286, 164), 12, "t_lug", "t_lug"),
                 new DiagramDimension("cheek-thickness", new(296, 30), new(306, 30), -10, "t_s", "t_s", new(330, 8)),
                 new DiagramDimension("clearance", new(250, 110), new(260, 110), 14, "g", "g", new(204, 124)),
                 new DiagramDimension("pin-diameter", new(316, 78), new(316, 94), 14, "d_p", "d_p", new(346, 124)),
@@ -353,20 +353,20 @@ public static class CalcDiagrams
     private static CalculationDiagramSpec ThinVessel() =>
         new(ThinVesselCalculator.Id,
         [
-            new DiagramVariant("A thin-walled cylinder in section under internal pressure: inside radius R, shell thickness t_p including the corrosion allowance c", Always,
+            new DiagramVariant("A thin-walled cylinder in section under internal pressure: inside radius R_in, shell thickness t_p including the corrosion allowance c", Always,
             [
                 new DiagramLabel("section-note", new(120, 22), Symbol: "Shell section"),
                 new DiagramCircle("shell", new(120, 124), 86, Filled: true, "t_p"),
-                new DiagramCircle("bore", new(120, 124), 76, Filled: false, "R"),
-                new DiagramPointLoad("pressure-up", new(120, 54), DiagramDirection.Up, 30, "P", "P", new(120, 100)),
-                new DiagramPointLoad("pressure-left", new(50, 124), DiagramDirection.Left, 30, "P"),
-                new DiagramPointLoad("pressure-right", new(190, 124), DiagramDirection.Right, 30, "P"),
-                new DiagramDimension("radius", new(120, 124), new(66.3, 177.7), 0, "R", "R", new(146, 162)),
+                new DiagramCircle("bore", new(120, 124), 76, Filled: false, "R_in"),
+                new DiagramPointLoad("pressure-up", new(120, 54), DiagramDirection.Up, 30, "p_design", "p_design", new(120, 100)),
+                new DiagramPointLoad("pressure-left", new(50, 124), DiagramDirection.Left, 30, "p_design"),
+                new DiagramPointLoad("pressure-right", new(190, 124), DiagramDirection.Right, 30, "p_design"),
+                new DiagramDimension("radius", new(120, 124), new(66.3, 177.7), 0, "R_in", "R_in", new(146, 162)),
                 new DiagramDimension("thickness", new(196, 124), new(206, 124), -24, "t_p", "t_p", new(252, 96)),
                 new DiagramLabel("allowable", new(320, 86), "S", "S"),
                 new DiagramLabel("joint-efficiency", new(320, 112), "E_j", "E"),
                 new DiagramLabel("corrosion", new(320, 138), "c", "c"),
-                new DiagramLabel("design-factor", new(320, 164), "n", "n"),
+                new DiagramLabel("design-factor", new(320, 164), "n_design", "n_design"),
             ]),
         ]);
 
@@ -411,34 +411,34 @@ public static class CalcDiagrams
             Shape("A circular tube, outside diameter d, wall t", SectionPropertiesCalculator.ShapeTube,
             [
                 new DiagramCircle("outer", new(190, 120), 70, Filled: true, "d"),
-                new DiagramCircle("inner", new(190, 120), 56, Filled: false, "t"),
+                new DiagramCircle("inner", new(190, 120), 56, Filled: false, "t_w"),
                 new DiagramDimension("diameter", new(120, 120), new(260, 120), 84, "d", "d"),
-                new DiagramDimension("wall", new(246, 120), new(260, 120), -16, "t", "t", new(286, 96)),
+                new DiagramDimension("wall", new(246, 120), new(260, 120), -16, "t_w", "t_w", new(286, 96)),
             ]),
             Shape("A hollow rectangle b by h, wall t, corner radii r and r_i", SectionPropertiesCalculator.ShapeHollowRectangle,
             [
                 new DiagramPlate("outer", 130, 46, 120, 150, "h"),
-                new DiagramPlate("inner", 144, 60, 92, 122, "t"),
+                new DiagramPlate("inner", 144, 60, 92, 122, "t_w"),
                 new DiagramDimension("width", new(130, 196), new(250, 196), 14, "b", "b"),
                 new DiagramDimension("depth", new(250, 46), new(250, 196), 16, "h", "h", new(286, 120)),
-                new DiagramDimension("wall", new(130, 120), new(144, 120), -20, "t", "t", new(80, 100)),
+                new DiagramDimension("wall", new(130, 120), new(144, 120), -20, "t_w", "t_w", new(80, 100)),
                 new DiagramLabel("radii", new(70, 40), "r", "r"),
             ]),
             Shape("A doubly symmetric I-section b by h, web t, flanges t_f, root radius r", SectionPropertiesCalculator.ShapeI,
             [
                 new DiagramPlate("top-flange", 120, 40, 140, 16, "t_f"),
-                new DiagramPlate("web", 182, 56, 16, 128, "t"),
+                new DiagramPlate("web", 182, 56, 16, 128, "t_w"),
                 new DiagramPlate("bottom-flange", 120, 184, 140, 16, "t_f"),
                 new DiagramDimension("width", new(120, 200), new(260, 200), 14, "b", "b"),
                 new DiagramDimension("depth", new(260, 40), new(260, 200), 18, "h", "h", new(298, 120)),
-                new DiagramDimension("web-t", new(182, 120), new(198, 120), 0, "t", "t", new(244, 156)),
+                new DiagramDimension("web-t", new(182, 120), new(198, 120), 0, "t_w", "t_w", new(244, 156)),
                 new DiagramDimension("flange-t", new(120, 40), new(120, 56), -14, "t_f", "t_f", new(62, 48)),
                 new DiagramLabel("root", new(70, 120), "r", "r"),
             ]),
             Shape("A channel b by h, web t, flanges t_f, root radius r", SectionPropertiesCalculator.ShapeChannel,
             [
                 new DiagramPlate("top-flange", 150, 40, 90, 16, "t_f"),
-                new DiagramPlate("web", 150, 56, 16, 128, "t"),
+                new DiagramPlate("web", 150, 56, 16, 128, "t_w"),
                 new DiagramPlate("bottom-flange", 150, 184, 90, 16, "t_f"),
                 new DiagramDimension("width", new(150, 200), new(240, 200), 14, "b", "b"),
                 new DiagramDimension("depth", new(240, 40), new(240, 200), 18, "h", "h", new(278, 120)),
@@ -447,7 +447,7 @@ public static class CalcDiagrams
             Shape("A tee b by h, stem t, flange t_f, root radius r", SectionPropertiesCalculator.ShapeTee,
             [
                 new DiagramPlate("flange", 120, 40, 140, 16, "t_f"),
-                new DiagramPlate("stem", 182, 56, 16, 144, "t"),
+                new DiagramPlate("stem", 182, 56, 16, 144, "t_w"),
                 new DiagramDimension("width", new(120, 40), new(260, 40), -14, "b", "b", new(190, 18)),
                 new DiagramDimension("depth", new(260, 40), new(260, 200), 18, "h", "h", new(298, 120)),
                 new DiagramLabel("root", new(90, 120), "r", "r"),
@@ -458,7 +458,7 @@ public static class CalcDiagrams
                 new DiagramPlate("horizontal-leg", 150, 184, 110, 16, "b"),
                 new DiagramDimension("vertical", new(150, 40), new(150, 200), -18, "h", "h", new(90, 80)),
                 new DiagramDimension("horizontal", new(150, 200), new(260, 200), 14, "b", "b"),
-                new DiagramDimension("thickness", new(150, 120), new(166, 120), 0, "t", "t", new(218, 120)),
+                new DiagramDimension("thickness", new(150, 120), new(166, 120), 0, "t_w", "t_w", new(218, 120)),
                 new DiagramLabel("root", new(320, 80), "r", "r"),
             ]),
             Shape("A polygon through the vertices as listed (drawn representatively)", SectionPropertiesCalculator.ShapePolygon,
@@ -525,11 +525,11 @@ public static class CalcDiagrams
                     elements.Add(new DiagramDistributedLoad("load", Left, Right, Y - 6, 30, "w", "w"));
                     break;
                 case "point-at-a":
-                    elements.Add(new DiagramPointLoad("load", new(230, Y - 6), DiagramDirection.Down, 44, "P", "P"));
+                    elements.Add(new DiagramPointLoad("load", new(230, Y - 6), DiagramDirection.Down, 44, "F", "F"));
                     elements.Add(new DiagramDimension("position", new(Left, Y), new(230, Y), -64, "a", "a", new(140, 26)));
                     break;
                 case "point-centre":
-                    elements.Add(new DiagramPointLoad("load", new((Left + Right) / 2, Y - 6), DiagramDirection.Down, 44, "P", "P"));
+                    elements.Add(new DiagramPointLoad("load", new((Left + Right) / 2, Y - 6), DiagramDirection.Down, 44, "F", "F"));
                     break;
                 default:
                     elements.Add(new DiagramMoment("couple", new(Left + 22, Y), 18, Clockwise: true, "M_0", "M_0", new(Left + 22, Y - 38)));
@@ -551,12 +551,12 @@ public static class CalcDiagrams
         return new(BeamFormulasCalculator.Id,
         [
             Variant(BeamFormulasCalculator.SsUdl, "Simply supported, uniformly distributed load w", "pin", "roller", "udl"),
-            Variant(BeamFormulasCalculator.SsPoint, "Simply supported, point load P at a from the left end", "pin", "roller", "point-at-a"),
+            Variant(BeamFormulasCalculator.SsPoint, "Simply supported, point load F at a from the left end", "pin", "roller", "point-at-a"),
             Variant(BeamFormulasCalculator.SsMomentEnd, "Simply supported, couple M_0 at the left end", "pin", "roller", "couple"),
             Variant(BeamFormulasCalculator.CantUdl, "Cantilever fixed at the left, uniformly distributed load w", "fixed", null, "udl"),
-            Variant(BeamFormulasCalculator.CantPoint, "Cantilever fixed at the left, point load P at a from the fixed end", "fixed", null, "point-at-a"),
+            Variant(BeamFormulasCalculator.CantPoint, "Cantilever fixed at the left, point load F at a from the fixed end", "fixed", null, "point-at-a"),
             Variant(BeamFormulasCalculator.FixedUdl, "Fixed at both ends, uniformly distributed load w", "fixed", "fixed", "udl"),
-            Variant(BeamFormulasCalculator.FixedPointCentre, "Fixed at both ends, point load P at midspan", "fixed", "fixed", "point-centre"),
+            Variant(BeamFormulasCalculator.FixedPointCentre, "Fixed at both ends, point load F at midspan", "fixed", "fixed", "point-centre"),
             Variant(BeamFormulasCalculator.ProppedUdl, "Propped cantilever, fixed left and pinned right, uniformly distributed load w", "fixed", "roller", "udl"),
         ]);
     }
@@ -592,7 +592,7 @@ public static class CalcDiagrams
                 new DiagramMember("column", new(200, 62), new(200, 196), 10, "A"),
                 new DiagramSupport("base", new(200, 202), DiagramSupportKind.Pinned, DiagramDirection.Down),
                 new DiagramSupport("head", new(206, 62), DiagramSupportKind.Roller, DiagramDirection.Right),
-                new DiagramPointLoad("load", new(200, 56), DiagramDirection.Down, 34, "P", "P"),
+                new DiagramPointLoad("load", new(200, 56), DiagramDirection.Down, 34, "F", "F"),
                 new DiagramDimension("effective-length", new(200, 62), new(200, 196), -60, "L_E", "L_E", new(90, 129)),
                 new DiagramLabel("area", new(320, 80), "A", "A"),
                 new DiagramLabel("second-moment", new(320, 104), "I", "I"),
@@ -647,7 +647,7 @@ public static class CalcDiagrams
                 new DiagramPointLoad("flow", new(270, 128), DiagramDirection.Right, 44, "Q", "Q", new(236, 140)),
                 new DiagramLabel("outlet-head", new(335, 22), "h_out", "h_out"),
                 new DiagramLabel("fluid", new(236, 176), "fluid", "fluid"),
-                new DiagramLabel("temperature", new(196, 200), "T", "T"),
+                new DiagramLabel("temperature", new(196, 200), "T_fluid", "T_fluid"),
                 new DiagramLabel("npsh", new(316, 200), "NPSH_r", "NPSH_r"),
             ]),
         ]);
@@ -662,8 +662,8 @@ public static class CalcDiagrams
                 new DiagramLabel("x-title", new(360, 226), Symbol: "dry bulb"),
                 new DiagramLabel("y-title", new(384, 36), Symbol: "W"),
                 new DiagramPolyline("saturation", [new(40, 200), new(120, 180), new(190, 140), new(240, 90), new(270, 40)], Thickness: 1.5, Symbol: "100 %", LabelAt: new(236, 50)),
-                new DiagramCircle("state-1", new(170, 170), 5, Filled: true, "t_db", "1", new(160, 186), Solid: true),
-                new DiagramLabel("dry-bulb", new(135, 30), "t_db", "t_db"),
+                new DiagramCircle("state-1", new(170, 170), 5, Filled: true, "T_db", "1", new(160, 186), Solid: true),
+                new DiagramLabel("dry-bulb", new(135, 30), "T_db", "T_db"),
                 new DiagramLabel("known", new(135, 54), "known", "known"),
                 new DiagramLabel("pressure", new(135, 78), "altitude", "altitude"),
             ];
@@ -671,22 +671,22 @@ public static class CalcDiagrams
             return new DiagramVariant(caption, When("process", process), elements);
         }
 
-        DiagramElement Leaving(double x, double y) => new DiagramCircle("state-2", new(x, y), 5, Filled: true, "t_2", "2", new(x + 12, y - 12), Solid: true);
+        DiagramElement Leaving(double x, double y) => new DiagramCircle("state-2", new(x, y), 5, Filled: true, "T_2", "2", new(x + 12, y - 12), Solid: true);
 
         return new(PsychrometricsCalculator.Id,
         [
             Variant("A moist-air state on the psychrometric chart: dry bulb and one more property", PsychrometricsCalculator.ProcessNone, []),
-            Variant("Sensible heating or cooling: the state moves along a line of constant humidity ratio to t_2", PsychrometricsCalculator.ProcessSensible,
-                [new DiagramPolyline("process", [new(170, 170), new(310, 170)], InputName: "t_2"), Leaving(310, 170)]),
-            Variant("Cooling with dehumidification: the state cools to t_2 at RH_2, losing moisture", PsychrometricsCalculator.ProcessCoolingDehum,
-                [new DiagramPolyline("process", [new(170, 170), new(126, 182)], InputName: "t_2"), new DiagramCircle("state-2", new(126, 182), 5, Filled: true, "t_2", "2", new(100, 140), Solid: true), new DiagramLabel("leaving-rh", new(330, 110), "RH_2", "RH_2")]),
+            Variant("Sensible heating or cooling: the state moves along a line of constant humidity ratio to T_2", PsychrometricsCalculator.ProcessSensible,
+                [new DiagramPolyline("process", [new(170, 170), new(310, 170)], InputName: "T_2"), Leaving(310, 170)]),
+            Variant("Cooling with dehumidification: the state cools to T_2 at RH_2, losing moisture", PsychrometricsCalculator.ProcessCoolingDehum,
+                [new DiagramPolyline("process", [new(170, 170), new(126, 182)], InputName: "T_2"), new DiagramCircle("state-2", new(126, 182), 5, Filled: true, "T_2", "2", new(100, 140), Solid: true), new DiagramLabel("leaving-rh", new(330, 110), "RH_2", "RH_2")]),
             Variant("Steam humidification: moisture added at almost constant dry bulb to W_2", PsychrometricsCalculator.ProcessSteam,
                 [new DiagramPolyline("process", [new(170, 170), new(176, 120)], InputName: "W_2"), new DiagramCircle("state-2", new(176, 120), 5, Filled: true, "W_2", "2", new(130, 116), Solid: true)]),
             Variant("Adiabatic (evaporative) humidification: along a line of constant wet bulb towards saturation", PsychrometricsCalculator.ProcessEvaporative,
                 [new DiagramPolyline("process", [new(170, 170), new(200, 146)], InputName: "RH_2"), new DiagramCircle("state-2", new(200, 146), 5, Filled: true, "RH_2", "2", new(250, 140), Solid: true), new DiagramLabel("efficiency", new(330, 110), "eff", "ε")]),
             Variant("Adiabatic mixing of two streams: the mixed state lies on the line between them, by mass flow", PsychrometricsCalculator.ProcessMixing,
                 [
-                    new DiagramCircle("state-b", new(300, 186), 5, Filled: true, "t_db_b", "b", new(312, 174), Solid: true),
+                    new DiagramCircle("state-b", new(300, 186), 5, Filled: true, "T_db_b", "b", new(312, 174), Solid: true),
                     new DiagramPolyline("mixing-line", [new(170, 170), new(300, 186)], Dashed: true, Thickness: 1),
                     new DiagramCircle("mixed", new(222, 176), 4, Filled: true, "m_da_b"),
                     new DiagramLabel("flow-a", new(330, 110), "m_da", "ṁ_a"),
@@ -709,7 +709,7 @@ public static class CalcDiagrams
                 new DiagramLabel("friction", new(90, 214), "dp_target", "Δp/L"),
                 new DiagramLabel("velocity", new(250, 190), "v_target", "v"),
                 new DiagramLabel("limit", new(250, 214), "v_limit", "v_limit"),
-                new DiagramLabel("temperature", new(330, 60), "T", "T"),
+                new DiagramLabel("temperature", new(330, 60), "T_air", "T_air"),
             ]),
         ]);
 
@@ -825,7 +825,7 @@ public static class CalcDiagrams
                 new DiagramLabel("outside", new(55, 130), "T_amb", "T_amb"),
                 new DiagramPointLoad("sun", new(150, 44), DiagramDirection.Down, 30, "I_sun", "I_sun", new(64, 20)),
                 new DiagramCircle("fan", new(300, 38), 14, Filled: false, "V_pts", "fan", new(345, 14)),
-                new DiagramPointLoad("loss", new(340, 116), DiagramDirection.Right, 40, "h", "h", new(330, 98)),
+                new DiagramPointLoad("loss", new(340, 116), DiagramDirection.Right, 40, "h_conv", "h_conv", new(330, 98)),
             ]),
         ]);
 

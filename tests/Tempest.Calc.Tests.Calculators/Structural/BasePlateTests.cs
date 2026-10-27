@@ -18,8 +18,8 @@ public sealed class BasePlateTests
 
     private static CalcInputSet Column(CalcInputSet set, string column) => column switch
     {
-        BasePlateCalculator.ColumnRhs => set.With(CalcInputValue.Choice("column", column)).With(CalcInputValue.Quantity("h", 200, "mm")).With(CalcInputValue.Quantity("b", 200, "mm")).With(CalcInputValue.Quantity("t", 10, "mm")),
-        BasePlateCalculator.ColumnChs => set.With(CalcInputValue.Choice("column", column)).With(CalcInputValue.Quantity("D", 220, "mm")).With(CalcInputValue.Quantity("t", 10, "mm")),
+        BasePlateCalculator.ColumnRhs => set.With(CalcInputValue.Choice("column", column)).With(CalcInputValue.Quantity("h", 200, "mm")).With(CalcInputValue.Quantity("b", 200, "mm")).With(CalcInputValue.Quantity("t_wall", 10, "mm")),
+        BasePlateCalculator.ColumnChs => set.With(CalcInputValue.Choice("column", column)).With(CalcInputValue.Quantity("D", 220, "mm")).With(CalcInputValue.Quantity("t_wall", 10, "mm")),
         _ => set,
     };
 
@@ -70,11 +70,11 @@ public sealed class BasePlateTests
     }
 
     [Fact]
-    public void Every_Numeric_Input_Has_A_Hard_Limit_Equal_To_Its_Stated_Range() =>
+    public void Every_Numeric_Input_Has_A_Usual_Range_Inside_Its_Hard_Range() =>
         Assert.All(Plate.Template.Inputs.Where(i => i.Kind is CalcInputKind.Number or CalcInputKind.Quantity), i =>
         {
-            Assert.Equal(i.Min, i.HardMin);
-            Assert.Equal(i.Max, i.HardMax);
+            Assert.True(i.HardMin <= i.Min, i.Symbol);
+            Assert.True(i.HardMax >= i.Max, i.Symbol);
         });
 
     [Theory]
@@ -133,7 +133,7 @@ public sealed class BasePlateTests
         // M = 150 kN·m puts 396 kN on the row, above 2 × 141 kN.
         var r = CalcRunner.Run(Plate, Loads(300, 150));
         Assert.StartsWith("bolts govern", Text(r, "t_req"), StringComparison.Ordinal);
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("Base plate tension", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Tension at the bolt row", StringComparison.Ordinal) && !c.Passed);
     }
 
     [Fact]
@@ -142,7 +142,7 @@ public sealed class BasePlateTests
         var r = CalcRunner.Run(Plate, Axial(3000));
         Assert.Equal("> 100 mm", Text(r, "t_req_N"));
         Assert.Equal("> 100 mm", Text(r, "t_req"));
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("Concrete bearing", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Axial force against concrete", StringComparison.Ordinal) && !c.Passed);
     }
 
     [Fact]
@@ -183,7 +183,7 @@ public sealed class BasePlateTests
         Assert.Equal(600.0 / 2 - 40.0 / (2 * 0.1215), Kn(r, "C_Ed_2"), 6);
         Assert.Equal(600.0, Kn(r, "C_Ed") + Kn(r, "C_Ed_2"), 9);
         Assert.Equal(0, Kn(r, "F_t_Ed"), 12);
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("Compression flange", StringComparison.Ordinal));
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Compression force against compression flange", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -200,7 +200,7 @@ public sealed class BasePlateTests
         Assert.Equal(150 - 20.0 / (2 * 0.165), Kn(r, "T_Ed_2"), 6);
         Assert.Equal(300, Kn(r, "T_Ed") + Kn(r, "T_Ed_2"), 9);
         Assert.Equal(0, Kn(r, "C_Ed"), 12);
-        Assert.DoesNotContain(r.Checks, c => c.Name.StartsWith("Compression flange", StringComparison.Ordinal));
+        Assert.DoesNotContain(r.Checks, c => c.Name.StartsWith("Compression force against compression flange", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -223,12 +223,12 @@ public sealed class BasePlateTests
         var inner = 100 - r.OutputSi("c") * 1e3;
         Assert.Equal(4 * (Math.Pow(outer, 3) - Math.Pow(inner, 3)) / (3 * Math.PI * (outer * outer - inner * inner)), r.OutputSi("z_C") * 1e3, 6);
         Assert.DoesNotContain(r.Checks, c => c.Name.Contains("flange", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("Compression-side half annulus", StringComparison.Ordinal));
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Compression force against compression-side half annulus", StringComparison.Ordinal));
     }
 
     private static CalcInputSet ChsMoment(double tp, double alpha) =>
         Column(Loads(100, 150), BasePlateCalculator.ColumnChs)
-            .With(CalcInputValue.Quantity("D", 219.1, "mm")).With(CalcInputValue.Quantity("t", 8, "mm"))
+            .With(CalcInputValue.Quantity("D", 219.1, "mm")).With(CalcInputValue.Quantity("t_wall", 8, "mm"))
             .With(CalcInputValue.Quantity("B", 500, "mm")).With(CalcInputValue.Quantity("L", 500, "mm"))
             .With(CalcInputValue.Quantity("x_b", 200, "mm")).With(CalcInputValue.Quantity("m", 25, "mm"))
             .With(CalcInputValue.Quantity("l_eff", 400, "mm")).With(CalcInputValue.Quantity("F_t_Rd", 250, "kN"))
@@ -350,9 +350,9 @@ public sealed class BasePlateTests
         // Black B-A-22: S3 takes N_Ed tension positive, S6 compression positive; the same symbol must say so on both sheets.
         var s6 = Plate.Template.Inputs.Single(i => i.Symbol == "N_Ed").Description;
         var s3 = new MemberChecksCalculator().Template.Inputs.Single(i => i.Symbol == "N_Ed").Description;
-        Assert.Contains("COMPRESSION positive", s6, StringComparison.Ordinal);
+        Assert.Contains("compression positive", s6, StringComparison.Ordinal);
         Assert.Contains("opposite", s6, StringComparison.Ordinal);
-        Assert.Contains("TENSION positive", s3, StringComparison.Ordinal);
+        Assert.Contains("tension positive", s3, StringComparison.Ordinal);
         Assert.Contains("opposite", s3, StringComparison.Ordinal);
         Assert.Contains(Plate.Template.Assumptions, a => a.Statement.Contains("R1_y", StringComparison.Ordinal) && a.Statement.Contains("N_e1", StringComparison.Ordinal));
     }
@@ -493,15 +493,15 @@ public sealed class BasePlateTests
     [Fact]
     public void Only_The_Dimensions_Of_The_Chosen_Section_Are_Needed()
     {
-        var ih = new CalcInputSet(Defaults().Values.Where(v => v.Symbol is not ("t" or "D")));
+        var ih = new CalcInputSet(Defaults().Values.Where(v => v.Symbol is not ("t_wall" or "D")));
         var r = CalcRunner.Run(Plate, ih);
         Assert.False(r.IsBlocked);
         Assert.DoesNotContain(r.Warnings, w => w.Message.StartsWith("t ", StringComparison.Ordinal) || w.Message.StartsWith("D ", StringComparison.Ordinal));
 
-        var rhs = new CalcInputSet(Defaults().Values.Where(v => v.Symbol != "t")).With(CalcInputValue.Choice("column", BasePlateCalculator.ColumnRhs));
+        var rhs = new CalcInputSet(Defaults().Values.Where(v => v.Symbol != "t_wall")).With(CalcInputValue.Choice("column", BasePlateCalculator.ColumnRhs));
         var blocked = CalcRunner.Run(Plate, rhs);
         Assert.True(blocked.IsBlocked);
-        Assert.StartsWith("t:", blocked.Blocks[0].Message, StringComparison.Ordinal);
+        Assert.StartsWith("t_wall:", blocked.Blocks[0].Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -523,14 +523,14 @@ public sealed class BasePlateTests
         var none = CalcRunner.Run(Plate, Defaults());
         var warning = Assert.Single(none.Warnings, w => w.RuleId == "anchorage-result");
         Assert.Contains("u_max", warning.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain(none.Checks, c => c.Name.StartsWith("Anchorage (PROFIS", StringComparison.Ordinal));
+        Assert.DoesNotContain(none.Checks, c => c.Name.StartsWith("Anchorage utilisation from the PROFIS", StringComparison.Ordinal));
 
         var pass = CalcRunner.Run(Plate, Defaults().With(CalcInputValue.Of("u_profis", 0.8)));
         Assert.DoesNotContain(pass.Warnings, w => w.RuleId == "anchorage-result");
-        Assert.Contains(pass.Checks, c => c.Name.StartsWith("Anchorage (PROFIS", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(pass.Checks, c => c.Name.StartsWith("Anchorage utilisation from the PROFIS", StringComparison.Ordinal) && c.Passed);
 
         var fail = CalcRunner.Run(Plate, Defaults().With(CalcInputValue.Of("u_profis", 1.25)));
-        Assert.Contains(fail.Checks, c => c.Name.StartsWith("Anchorage (PROFIS", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(fail.Checks, c => c.Name.StartsWith("Anchorage utilisation from the PROFIS", StringComparison.Ordinal) && !c.Passed);
         Assert.Equal(1.25, fail.OutputSi("u_max"), 9);
         Assert.False(fail.Passed);
     }
@@ -574,7 +574,7 @@ public sealed class BasePlateTests
         var r = CalcRunner.Run(Plate, set);
         Assert.True(r.IsBlocked);
         var block = Assert.Single(r.Blocks, b => b.RuleId == "alpha_bc");
-        Assert.Contains("not defined above 800 MPa", block.Message, StringComparison.Ordinal);
+        Assert.Contains("640 MPa limit of α_bc", block.Message, StringComparison.Ordinal);
         Assert.Contains("u_profis", block.Message, StringComparison.Ordinal);
 
         var withReport = CalcRunner.Run(Plate, set.With(CalcInputValue.Of("u_profis", 0.9)));
@@ -595,7 +595,7 @@ public sealed class BasePlateTests
         var thick = CalcRunner.Run(Plate, Q2(Q2(Defaults(), "t_p", 50, "mm"), "l_eff", 40, "mm"));
         Assert.Equal(6.875, thick.OutputSi("M_pl_Rd") / 1e3, 6);
         var warning = Assert.Single(thick.Warnings, w => w.RuleId == "f_y_thickness");
-        Assert.Contains("50", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("t_p", warning.Message, StringComparison.Ordinal);
 
         var thin = CalcRunner.Run(Plate, Q2(Loads(100, 0), "t_p", 12, "mm"));
         Assert.DoesNotContain(thin.Warnings, w => w.RuleId == "f_y_thickness");
@@ -610,7 +610,7 @@ public sealed class BasePlateTests
         Assert.InRange(tReq, 10, 16);
 
         var warning = Assert.Single(r.Warnings, w => w.RuleId == "f_y_thickness");
-        Assert.Contains("t_p = 25 mm", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("t_p exceeds", warning.Message, StringComparison.Ordinal);
         Assert.DoesNotContain("t_req", warning.Message, StringComparison.Ordinal);
     }
 
@@ -619,9 +619,9 @@ public sealed class BasePlateTests
     {
         // chain.steel-support-04 (verification): the anchorage is designed to EN 1992-4 or taken from the PROFIS report, not to EN 1993-1-8 cl. 6.2.6.12 (steel anchor bolts in tension).
         var r = CalcRunner.Run(Plate, Defaults().With(CalcInputValue.Of("u_profis", 0.8)));
-        var check = Assert.Single(r.Checks, c => c.Name.StartsWith("Anchorage (PROFIS", StringComparison.Ordinal));
+        var check = Assert.Single(r.Checks, c => c.Name.StartsWith("Anchorage utilisation from the PROFIS", StringComparison.Ordinal));
         Assert.Equal("PROFIS report (EN 1992-4)", check.Clause);
-        Assert.Equal("EN 1993-1-8 cl. 6.2.6.12", r.Checks.Single(c => c.Name == "Holding-down bolt tension").Clause);
+        Assert.Equal("EN 1993-1-8 cl. 6.2.6.12", r.Checks.Single(c => c.Name == "Bolt tension against the bolt tension resistance").Clause);
     }
 
     private static CalcInputSet E1(string column, double tp) => column == "ih"

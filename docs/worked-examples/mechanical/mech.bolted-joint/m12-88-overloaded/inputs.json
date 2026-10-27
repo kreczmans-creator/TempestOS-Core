@@ -65,17 +65,6 @@
     "ValueText": "80"
   },
   {
-    "Symbol": "P",
-    "Number": 1.75,
-    "Unit": "mm",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "ISO 261 coarse pitch",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "1.75"
-  },
-  {
     "Symbol": "R_p02",
     "Number": 640,
     "Unit": "MPa",
@@ -142,7 +131,7 @@
     "ValueText": "18"
   },
   {
-    "Symbol": "f_Z",
+    "Symbol": "f_embed",
     "Number": 11,
     "Unit": "\u00B5m",
     "Provenance": {
@@ -207,7 +196,7 @@
     "ValueText": "0.12"
   },
   {
-    "Symbol": "n",
+    "Symbol": "n_load",
     "Number": 0.5,
     "Provenance": {
       "Kind": "Assumption",
@@ -217,7 +206,18 @@
     "ValueText": "0.5"
   },
   {
-    "Symbol": "sigma_A",
+    "Symbol": "p_thread",
+    "Number": 1.75,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "ISO 261 coarse pitch",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.75"
+  },
+  {
+    "Symbol": "sigma_a_limit",
     "Number": 50,
     "Unit": "MPa",
     "Provenance": {

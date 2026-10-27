@@ -138,7 +138,7 @@ public sealed partial class CalcInstanceService
         var entry = _catalogue.Find(instance.TemplateReference);
 
         if (entry is null)
-            return new CadImportPreview(null, null, null, [], [], $"Template '{instance.TemplateReference}' is no longer registered.");
+            return new CadImportPreview(null, null, null, [], [], OlderVersionRefusal(instance));
 
         var settings = request.Settings ?? new CadParseSettings();
 

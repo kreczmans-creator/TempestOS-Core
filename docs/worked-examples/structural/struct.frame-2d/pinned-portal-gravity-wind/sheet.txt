@@ -7,12 +7,11 @@ Checker: —    Checked: —
 Issued: —
 
 1. Scope and method
-Linear elastic analysis of a plane frame or continuous beam by the direct stiffness method: reactions, member end forces, axial force, shear, bending moment and deflection along every member with their extremes and positions, for each load combination and as an envelope. Global x to the right, y up; moments and couples anticlockwise positive; sagging moments positive along a member from node i to node j.
-Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L and bending EI/L³ terms. End releases (pins) are taken out by static condensation; supports remove freedoms or add spring stiffness. Span loads become equivalent nodal loads, the exact fixed-end forces. Displacements, by banded LDLᵀ after a reverse Cuthill–McKee ordering (a non-positive pivot is reported as a mechanism): K u = F. Internal forces and deflections follow from the member end actions and Macaulay functions of the span loads. Extremes are found at stations along each member, plus the zero-shear and zero-slope points found by bisection.
+Calculates reactions, member forces and deflections of a linear elastic plane frame or continuous beam by the direct stiffness method. Global x is right and y up; bending is about the section y-y axis, anticlockwise positive.
+Member stiffness: three freedoms per node, Euler–Bernoulli members with axial EA/L and bending EI/L³ terms. End releases: pins are taken out by static condensation; supports remove freedoms or add spring stiffness. Span loads: they become equivalent nodal loads, the exact fixed-end forces. Nodal displacements: K u = F, solved by banded LDLᵀ after a reverse Cuthill–McKee ordering; a non-positive pivot is reported as a mechanism. Internal forces: they follow from the member end actions and the Macaulay functions of the span loads. Member extremes: found at stations along each member, plus the zero-shear and zero-slope points found by bisection.
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
-  E | Default modulus of elasticity | 210 | GPa | spec: BS EN 1993-1-1 3.2.6 | 1 … 500 GPa
   nodes | Nodes | 4 row(s) |  | drawing: DRG-PF-010 rev B | any
   nodes[1] |  | id = 1; x = 0 m; y = 0 m; support = pin |  |  | 
   nodes[2] |  | id = 2; x = 0 m; y = 5 m; support = free |  |  | 
@@ -25,20 +24,24 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   loads | Loads | 2 row(s) |  | spec: Load schedule LS-02: roof 15 kN/m; wind 24 kN at eaves | any
   loads[1] |  | case = 1; kind = udl; target = 2; a = 0 m; b = 8 m; w1 = -15 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = 0 kN; M = 0 kN·m |  |  | 
   loads[2] |  | case = 2; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 24 kN; F_y = 0 kN; M = 0 kN·m |  |  | 
-  combinations | Combinations (blank = each case alone) | 3 row(s) |  | assumption: Characteristic combinations for the worked example. | any
+  n_div | Stations per member | 16 |  | assumption: 16 stations per member. | 4 … 100
+  combinations | Load combinations (optional; blank = each case alone) | 3 row(s) |  | assumption: Characteristic combinations for the worked example. | any
   combinations[1] |  | name = G+W; case = 1; factor = 1 |  |  | 
   combinations[2] |  | name = G+W; case = 2; factor = 1 |  |  | 
   combinations[3] |  | name = G; case = 1; factor = 1 |  |  | 
-  report | Combination to report in detail (blank = first) | G+W |  | assumption: Gravity plus wind reported. | any
-  n_div | Stations per member | 16 |  | assumption: 16 stations per member. | 4 … 100
+  report | Combination to report in detail (optional; blank = the first) | G+W |  | assumption: Gravity plus wind reported. | any
+  E | Default Young's modulus | 210 | GPa | spec: BS EN 1993-1-1 3.2.6 | 1 … 500 GPa
 
 3. Assumptions
-  A1. Linear elastic, small displacements, first order; no shear deformation, no P–Δ, no buckling. (Euler–Bernoulli direct stiffness.)
-  A2. Members are prismatic between nodes and connect rigidly unless a release is stated; a release transmits no moment at that end. (Static condensation of the released rotation.)
-  A3. Distributed loads act perpendicular to the member unless marked as gravity loads, which act in global −y per metre of member length. (Load table convention.)
-  A4. combinations (Combinations (blank = each case alone)) is taken as 3 row(s). (Characteristic combinations for the worked example.)
-  A5. report (Combination to report in detail (blank = first)) is taken as G+W. (Gravity plus wind reported.)
-  A6. n_div (Stations per member) is taken as 16. (16 stations per member.)
+  A1. The analysis is linear elastic and first order, with small displacements. (Euler–Bernoulli direct stiffness.)
+  A2. Members have no shear deformation, and there are no P–Δ effects or buckling. (Euler–Bernoulli direct stiffness.)
+  A3. Members are prismatic between nodes and connect rigidly unless a release is stated. (Static condensation of the released rotation.)
+  A4. A released member end transmits no moment. (Static condensation of the released rotation.)
+  A5. Distributed loads act perpendicular to the member unless marked as gravity loads. (Load table convention.)
+  A6. Gravity loads act in global −y per metre of member length. (Load table convention.)
+  A7. n_div (Stations per member) is taken as 16. (16 stations per member.)
+  A8. combinations (Load combinations (optional; blank = each case alone)) is taken as 3 row(s). (Characteristic combinations for the worked example.)
+  A9. report (Combination to report in detail (optional; blank = the first)) is taken as G+W. (Gravity plus wind reported.)
 
 4. Working
   [4] n_nodes = nodes
@@ -272,13 +275,13 @@ Member stiffness, three freedoms per node, Euler–Bernoulli members: axial EA/L
   None.
 
 8. Verification
-  Template: struct.frame-2d@1.4.0
+  Template: struct.frame-2d@1.5.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 6/6
   Test run: —
 
 9. References
-  1. Hibbeler, Structural Analysis Ch. 16 — Plane frame analysis using the stiffness method
-  2. Roark's Formulas for Stress and Strain Ch. 8, Table 8.1 — Shear, moment, slope and deflection formulas for elastic straight beams
-  3. BS EN 1990 6.4.3 — Combinations of actions (user-entered factors)
+  1. Hibbeler, Structural Analysis Ch. 16, 9th ed. — Plane frame analysis using the stiffness method
+  2. Young and Budynas, Roark's Formulas for Stress and Strain Table 8.1, 8th ed. — Shear, moment, slope and deflection formulas for elastic straight beams
+  3. BS EN 1990:2002+A1:2005 cl. 6.4.3 — Combinations of actions (user-entered factors)

@@ -28,10 +28,9 @@ public sealed class LoadBudgetBatteryAndPsuHeatTests
     {
         // elec.load-budget-05 (verification): assumption A1 still said the PSU's own loss is "a load row if its heat is wanted", but Phi adds P_DC (1/eta_PSU - 1) itself, so a row counts it twice.
         // python3: 120 W of DC electronics, h 0.1, supply eta 0.9: Phi = 12 + 120 (1/0.9 - 1) = 25.3333 W; the same plus a 13.3333 W row of h 1 gives 38.6667 W.
-        var assumption = Assert.Single(Budget.Template.Assumptions, a => a.Statement.StartsWith("Each load's P is its electrical input", StringComparison.Ordinal));
-        Assert.DoesNotContain("load row if its heat is wanted", assumption.Statement, StringComparison.Ordinal);
-        Assert.Contains("adds that loss to Φ itself", assumption.Statement, StringComparison.Ordinal);
-        Assert.Contains("do not add", assumption.Statement, StringComparison.Ordinal);
+        Assert.DoesNotContain(Budget.Template.Assumptions, a => a.Statement.Contains("load row if its heat is wanted", StringComparison.Ordinal));
+        Assert.Contains(Budget.Template.Assumptions, a => a.Statement.Contains("adds that loss to Φ itself", StringComparison.Ordinal));
+        Assert.Contains(Budget.Template.Assumptions, a => a.Statement.StartsWith("Do not add the power supply as a load row", StringComparison.Ordinal));
 
         var once = Run(LoadBudgetCalculator.Loads(("Controls", LoadBudgetCalculator.Dc, 0.12, 1, 0.9, 1, 1, 1, false)), CalcInputValue.Choice("psu_bus", LoadBudgetCalculator.Ac3), CalcInputValue.Of("eta_psu", 0.9));
         Assert.Equal(25.333333, once.OutputSi("Phi"), 5);

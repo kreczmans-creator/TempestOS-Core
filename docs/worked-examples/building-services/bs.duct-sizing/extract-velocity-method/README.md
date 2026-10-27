@@ -6,9 +6,9 @@ Sizing at 10 m/s transport velocity rounds the hood branch to 250 mm and the mai
 
 | Input | Value | Source |
 |---|---|---|
-| `T` | 25 degC | assumption: Workshop air 25 °C. |
+| `T_air` | 25 degC | assumption: Workshop air 25 °C. |
 | `dp_limit` | 600 Pa | spec: Extract fan external static 600 Pa |
-| `eps` | 0.15 mm | assumption: Spiral-wound galvanised duct with joints. |
+| `eps_rough` | 0.15 mm | assumption: Spiral-wound galvanised duct with joints. |
 | `method` | velocity | assumption: Velocity method for an extract system. |
 | `p_atm` | 100.5 kPa | assumption: Site 70 m AOD, ≈ 100.5 kPa. |
 | `round_to` | 50 mm | spec: BS EN 1506 preferred sizes |
@@ -21,4 +21,4 @@ Sizing at 10 m/s transport velocity rounds the hood branch to 250 mm and the mai
 | `D_s1` | 250 mm | 250 mm | PASS |
 | `D_s2` | 400 mm | 400 mm | PASS |
 
-Governing check: Velocity ≤ limit — PASS (utilisation 0.56). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Highest velocity against limit — PASS (utilisation 0.56). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

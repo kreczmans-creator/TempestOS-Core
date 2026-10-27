@@ -6,7 +6,7 @@ The same detail scaled down and loaded to 120 kN. Bearing (1.60), tear-out (1.48
 
 | Input | Value | Source |
 |---|---|---|
-| `P` | 120 kN | spec: LOAD-SCHEDULE-01 |
+| `F_lug` | 120 kN | spec: LOAD-SCHEDULE-01 |
 | `W` | 90 mm | drawing: DRG-LL-102 rev A |
 | `a` | 30 mm | drawing: DRG-LL-102 rev A |
 | `d_h` | 26 mm | drawing: DRG-LL-102 rev A |
@@ -17,7 +17,7 @@ The same detail scaled down and loaded to 120 kN. Bearing (1.60), tear-out (1.48
 | `f_v` | 90 MPa | spec: SPEC-MECH-03 design criteria |
 | `f_v_pin` | 150 MPa | spec: SPEC-MECH-03 design criteria |
 | `g` | 1 mm | drawing: DRG-LL-102 rev A |
-| `t` | 15 mm | drawing: DRG-LL-102 rev A |
+| `t_lug` | 15 mm | drawing: DRG-LL-102 rev A |
 | `t_s` | 10 mm | drawing: DRG-LL-102 rev A |
 
 | Output | Expected | Computed | Result |
@@ -27,4 +27,4 @@ The same detail scaled down and loaded to 120 kN. Bearing (1.60), tear-out (1.48
 | `sigma_b` | 381.36 MPa | 381.361 MPa | PASS |
 | `u_br` | 1.6  | 1.6  | PASS |
 
-Governing check: Bearing — FAIL (utilisation 1.60). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Pin bearing against the allowable bearing stress — FAIL (utilisation 1.60). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

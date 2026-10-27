@@ -17,7 +17,7 @@ A 100 kN/mm restraint in series with the bar's own 50 kN/mm takes a third of the
 
 | Output | Expected | Computed | Result |
 |---|---|---|---|
-| `F` | 48000 N | 48000 N | PASS |
+| `F` | 48 kN | 48 kN | PASS |
 | `sigma` | -96 MPa | -96 MPa | PASS |
 | `delta` | 0.48 mm | 0.48 mm | PASS |
 

@@ -298,17 +298,6 @@
     "ValueText": "1450"
   },
   {
-    "Symbol": "p",
-    "Number": 180,
-    "Unit": "bar",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "Hydraulic specification HS-31: relief valve set 180 bar at the ram",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "180"
-  },
-  {
     "Symbol": "p_back",
     "Number": 0,
     "Unit": "bar",
@@ -318,6 +307,17 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "0"
+  },
+  {
+    "Symbol": "p_sys",
+    "Number": 180,
+    "Unit": "bar",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Hydraulic specification HS-31: relief valve set 180 bar at the ram",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "180"
   },
   {
     "Symbol": "rho",

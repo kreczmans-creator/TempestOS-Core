@@ -34,4 +34,4 @@ A 50 kg carriage on a 10 mm-lead ball screw moving 0.5 m in 0.5 s. The candidate
 | `n_pk` | 9000 rpm | 9000 rpm | PASS |
 | `P_rms` | 0.784142 kW | 0.784142 kW | PASS |
 
-Governing check: RMS torque SF·T_rms ≤ T_rated — PASS (utilisation 0.90). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: RMS torque with the safety factor against the rated torque — PASS (utilisation 0.90). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

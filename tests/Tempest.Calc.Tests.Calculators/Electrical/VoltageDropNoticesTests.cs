@@ -46,7 +46,7 @@ public sealed class VoltageDropNoticesTests
         var r = CalcRunner.Run(Drop, Case(2, CalcInputValue.Quantity("I", 60, "A"), CalcInputValue.Quantity("I_z", 50, "A")));
 
         Assert.Equal(7.2, r.OutputSi("dV"), 9);
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("I ≤ I_z", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Design current against", StringComparison.Ordinal) && !c.Passed);
         Assert.Contains(r.Warnings, w => w.RuleId == "overload");
         Assert.Equal(273.15 + 87.6, r.OutputSi("T_c_est"), 6);
     }
@@ -56,6 +56,6 @@ public sealed class VoltageDropNoticesTests
     {
         var r = CalcRunner.Run(Drop, Case(2));
 
-        Assert.DoesNotContain(r.Checks, c => c.Name.StartsWith("I ≤ I_z", StringComparison.Ordinal));
+        Assert.DoesNotContain(r.Checks, c => c.Name.StartsWith("Design current against", StringComparison.Ordinal));
     }
 }

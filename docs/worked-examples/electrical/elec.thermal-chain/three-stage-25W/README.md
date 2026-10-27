@@ -18,4 +18,4 @@ Junction to case, interface pad and heat sink in series, 2.5 K/W in all. The jun
 | `u` | 0.73529  | 0.735294  | PASS |
 | `R_max` | 3.4 K/W | 3.4 K/W | PASS |
 
-Governing check: Source temperature T_1 ≤ T_max — PASS (utilisation 0.74). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Rise from ambient against the permitted rise — PASS (utilisation 0.74). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

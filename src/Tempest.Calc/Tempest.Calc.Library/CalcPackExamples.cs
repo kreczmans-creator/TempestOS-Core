@@ -59,7 +59,7 @@ internal static class CalcPackExamples
 
     public static IReadOnlyList<CalcInputValue> DriveM5 { get; } =
     [
-        C("type", "ball (p = 3)"), Q("C", 25.5, "kN"), Q("C_0", 15.3, "kN"), Q("R", 90, "%"), Q("L_req", 20000, "h"),
+        C("type", "ball (p = 3)"), Q("C", 25.5, "kN"), Q("C_0", 15.3, "kN"), Q("R_rel", 90, "%"), Q("L_req", 20000, "h"),
     ];
 
     /// <summary>
@@ -68,7 +68,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> DriveM2 { get; } =
     [
-        C("hole_kind", "rolling-bearing bore (deviations from the bearing record)"), Q("ES_override", 0, "µm"), Q("EI_override", -9, "µm"), C("shaft_letter", "k"), N("shaft_grade", 6),
+        C("hole_kind", "rolling-bearing bore (deviations from the bearing record)"), Q("ES_hole_override", 0, "µm"), Q("EI_hole_override", -9, "µm"), C("shaft_letter", "k"), N("shaft_grade", 6),
     ];
 
     /// <summary>Four M8 8.8 bolts (stress area 36.6 mm², shear resistance 14.0 kN, tension 21.0 kN) on an 80 mm circle carry the torque by shear.</summary>
@@ -76,7 +76,7 @@ internal static class CalcPackExamples
     [
         Table("bolts", Bolt(40, 0, 36.6), Bolt(0, 40, 36.6), Bolt(-40, 0, 36.6), Bolt(0, -40, 36.6)),
         Q("F_x", 0, "kN"), Q("F_y", 0, "kN"), Q("e_x", 0, "mm"), Q("e_y", 0, "mm"), Q("N", 0, "kN"), Q("M_x", 0, "kN*m"), Q("M_y", 0, "kN*m"),
-        Q("V_R", 14.0, "kN"), Q("T_R", 21.0, "kN"),
+        Q("F_v_Rd", 14.0, "kN"), Q("F_t_Rd", 21.0, "kN"),
     ];
 
     private static CalcRow Bolt(double x, double y, double area) => CalcRow.Of(Mm("x", x), Mm("y", y), ("A", new CalcCell(area, "mm^2")));
@@ -143,7 +143,7 @@ internal static class CalcPackExamples
     /// <summary>A room with an insulated cavity wall and a window, naturally ventilated (Φ about 379 W). The layer conductivities are invented, illustrative values.</summary>
     public static IReadOnlyList<CalcInputValue> WetRoomA { get; } =
     [
-        Q("theta_int", 21, "degC"), Q("theta_e", -3, "degC"), Layers(CavityLayers),
+        Q("T_int", 21, "degC"), Q("theta_e", -3, "degC"), Layers(CavityLayers),
         Table("elements",
             CalcRow.Of(Txt("name", "Cavity wall"), ("area", new CalcCell(20, "m^2"))),
             CalcRow.Of(Txt("name", "Window"), ("area", new CalcCell(3, "m^2")), ("U_user", new CalcCell(1.4, "W/(m^2*K)")))),
@@ -153,13 +153,13 @@ internal static class CalcPackExamples
     /// <summary>A room with MVHR, a partition to an 18 °C space and a ground floor with a user U (Φ about 305 W). The partition is not held to the outside target U. The envelope leaks 0.1 h⁻¹ at the outside temperature besides the MVHR rate (an invented, illustrative value; blank would drop the infiltration loss, bs.room-heat-loss-R1).</summary>
     public static IReadOnlyList<CalcInputValue> WetRoomB { get; } =
     [
-        Q("theta_int", 21, "degC"), Q("theta_e", -3, "degC"),
+        Q("T_int", 21, "degC"), Q("theta_e", -3, "degC"),
         Layers([.. CavityLayers, ("Partition", "Plasterboard", 12.5, 0.22), ("Partition", "Plasterboard", 12.5, 0.22)]),
         Table("elements",
             CalcRow.Of(Txt("name", "Cavity wall"), ("area", new CalcCell(15, "m^2"))),
             CalcRow.Of(Txt("name", "Partition"), ("area", new CalcCell(12, "m^2")), ("theta_adj", new CalcCell(18, "degC")), ("Rg", new CalcCell(0.18, "m^2*K/W"))),
             CalcRow.Of(Txt("name", "Ground floor"), ("area", new CalcCell(10, "m^2")), Num("f", 0.6), ("U_user", new CalcCell(0.25, "W/(m^2*K)")))),
-        Q("y_tb", 0.05, "W/(m^2*K)"), Q("n", 0.6, "1/h"), Q("V", 50, "m^3"), Q("theta_supply", 16, "degC"), Q("n_inf", 0.1, "1/h"),
+        Q("y_tb", 0.05, "W/(m^2*K)"), Q("n", 0.6, "1/h"), Q("V", 50, "m^3"), Q("T_supply", 16, "degC"), Q("n_inf", 0.1, "1/h"),
     ];
 
     /// <summary>
@@ -222,7 +222,7 @@ internal static class CalcPackExamples
         C("arrangement", "counterflow"), C("mode", "sizing (given duty)"),
         Q("m_h", 0.4, "kg/s"), Q("cp_h", 1006, "J/(kg*K)"),
         Q("m_c", 0.25, "kg/s"), Q("cp_c", 4180, "J/(kg*K)"), Q("T_c_in", 22, "degC"),
-        Q("U", 60, "W/(m^2*K)"), Q("R_f", 0.0001, "m^2*K/W"),
+        Q("U_clean", 60, "W/(m^2*K)"), Q("R_f", 0.0001, "m^2*K/W"),
     ];
 
     /// <summary>A closed supply-and-return loop: no static lift.</summary>
@@ -290,14 +290,14 @@ internal static class CalcPackExamples
     public static IReadOnlyList<CalcInputValue> SteelM3 { get; } =
     [
         Table("bolts", Bolt(-60, 150, 245), Bolt(60, 150, 245), Bolt(-60, 0, 245), Bolt(60, 0, 245), Bolt(-60, -150, 245), Bolt(60, -150, 245)),
-        Q("F_x", 0, "kN"), Q("e_x", 0, "mm"), Q("e_y", 0, "mm"), Q("T_z", 0, "kN*m"), Q("N", 0, "kN"), Q("M_y", 0, "kN*m"),
-        Q("V_R", 94.0, "kN"), Q("T_R", 141.0, "kN"),
+        Q("F_x", 0, "kN"), Q("e_x", 0, "mm"), Q("e_y", 0, "mm"), Q("M_z", 0, "kN*m"), Q("N", 0, "kN"), Q("M_y", 0, "kN*m"),
+        Q("F_v_Rd", 94.0, "kN"), Q("F_t_Rd", 141.0, "kN"),
     ];
 
     /// <summary>The arm joint's bolt checks: M20 8.8 through a 20 mm S275 end plate against the 11 mm flange of the UC 203 × 203 × 46 column (bearing is on the thinner ply); the bolt forces arrive by link from the bolt group.</summary>
     public static IReadOnlyList<CalcInputValue> SteelS4A { get; } =
     [
-        C("grade", "8.8"), C("size", "M20"), C("steel", "S275"), Q("t", 20, "mm"), Q("t_2", 11, "mm"),
+        C("grade", "8.8"), C("size", "M20"), C("steel", "S275"), Q("t_p", 20, "mm"), Q("t_2", 11, "mm"),
         Q("e_1", 40, "mm"), Q("e_2", 40, "mm"), Q("p_1", 150, "mm"), Q("p_2", 120, "mm"),
         Q("A_nt", 1200, "mm^2"), Q("A_nv", 2400, "mm^2"),
     ];
@@ -309,7 +309,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> SteelS4B { get; } =
     [
-        C("grade", "8.8"), C("size", "M20"), C("steel", "S275"), Q("t", 25, "mm"),
+        C("grade", "8.8"), C("size", "M20"), C("steel", "S275"), Q("t_p", 25, "mm"),
         Q("e_1", 40, "mm"), Q("e_2", 75, "mm"), Q("p_2", 150, "mm"),
         Q("F_v_Ed", 0, "kN"), Q("F_t_Ed", 0, "kN"),
     ];
@@ -335,7 +335,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuF1 { get; } =
     [
-        C("mode", "Standard"), Q("p", 160, "bar"), Q("Q", 36, "L/min"), Q("rho", 870, "kg/m^3"), Q("F_push", 80, "kN"), Q("F_pull", 40, "kN"),
+        C("mode", "Standard"), Q("p_sys", 160, "bar"), Q("Q", 36, "L/min"), Q("rho", 870, "kg/m^3"), Q("F_push", 80, "kN"), Q("F_pull", 40, "kN"),
         Q("D", 100, "mm"), Q("d_r", 70, "mm"), Q("stroke", 500, "mm"), Q("V_g", 28, "cm^3/rev"), Q("n_p", 1450, "rpm"), Q("d_prs", 20, "mm"),
     ];
 
@@ -347,7 +347,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuF2 { get; } =
     [
-        C("mode", "Emergency stroke"), Q("p_0", 105, "bar"), Q("p_1", 120, "bar"), N("n", 1.4), N("f_rg", 1.311), Q("T_max", 50, "degC"), Q("T_min", 10, "degC"),
+        C("mode", "Emergency stroke"), Q("p_0", 105, "bar"), Q("p_1", 120, "bar"), N("n_gas", 1.4), N("f_rg", 1.311), Q("T_max", 50, "degC"), Q("T_min", 10, "degC"),
     ];
 
     /// <summary>
@@ -362,7 +362,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuB1 { get; } =
     [
-        C("fluid", "custom (ρ and μ given)"), Q("T", 50, "degC"), Q("mu_custom", 30, "mPa*s"), Q("v_max", 5, "m/s"),
+        C("fluid", "custom (ρ and μ given)"), Q("T_fluid", 50, "degC"), Q("mu_custom", 30, "mPa*s"), Q("v_limit", 5, "m/s"),
         Table("segments", CalcRow.Of(Txt("name", "pressure line to cylinder"), ("L", new CalcCell(12, "m")), Mm("D", 20), Mm("eps", 0.045), Num("K", 6), ("L_eq", new CalcCell(0, "m")), ("dz", new CalcCell(0, "m")), Txt("side", "discharge"))),
     ];
 
@@ -392,7 +392,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> EnvB4 { get; } =
     [
-        Q("theta_int", 21, "degC"), Q("theta_e", -3, "degC"),
+        Q("T_int", 21, "degC"), Q("theta_e", -3, "degC"),
         Table("layers",
             CalcRow.Of(Txt("element", "External wall"), Txt("name", "Plasterboard"), Mm("d", 12.5), ("lambda", new CalcCell(0.25, "W/(m*K)"))),
             CalcRow.Of(Txt("element", "External wall"), Txt("name", "Mineral wool"), Mm("d", 80), ("lambda", new CalcCell(0.04, "W/(m*K)"))),
@@ -407,7 +407,7 @@ internal static class CalcPackExamples
     /// <summary>The room air: 21 °C dry-bulb at 50 % relative humidity, sea level, state only. Its dry-bulb and relative humidity are the Glaser step's internal conditions.</summary>
     public static IReadOnlyList<CalcInputValue> EnvB2 { get; } =
     [
-        Q("altitude", 0, "m"), Q("t_db", 21, "degC"), C("known", "relative humidity"), N("RH", 50), C("process", "none (state only)"),
+        Q("altitude", 0, "m"), Q("T_db", 21, "degC"), C("known", "relative humidity"), N("RH", 50), C("process", "none (state only)"),
     ];
 
     /// <summary>
@@ -443,14 +443,14 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> ColdB1 { get; } =
     [
-        C("fluid", "water"), Q("T", 9, "degC"), Q("T_line", 6, "degC"), Q("Q", 12, "m^3/h"), C("circuit", "closed (flow and return: the rises cancel, no static lift)"),
+        C("fluid", "water"), Q("T_fluid", 9, "degC"), Q("T_line", 6, "degC"), Q("Q", 12, "m^3/h"), C("circuit", "closed (flow and return: the rises cancel, no static lift)"),
         Table("segments", CalcRow.Of(Txt("name", "chilled water flow and return"), ("L", new CalcCell(60, "m")), Mm("D", 51.6), Mm("OD", 54), Mm("eps", 0.0015), Num("K", 10), ("L_eq", new CalcCell(0, "m")), ("dz", new CalcCell(0, "m")), Txt("side", "discharge"))),
     ];
 
     /// <summary>The plant room air around the pipe: 28 °C dry-bulb at 60 % relative humidity, sea level. Its dry-bulb is the insulation step's ambient temperature and its dew point the temperature the surface must stay above.</summary>
     public static IReadOnlyList<CalcInputValue> ColdB2 { get; } =
     [
-        Q("altitude", 0, "m"), Q("t_db", 28, "degC"), C("known", "relative humidity"), N("RH", 60), C("process", "none (state only)"),
+        Q("altitude", 0, "m"), Q("T_db", 28, "degC"), C("known", "relative humidity"), N("RH", 60), C("process", "none (state only)"),
     ];
 
     /// <summary>
@@ -570,7 +570,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> ElxS9 { get; } =
     [
-        C("shape", "rectangular"), C("support", "simply supported"), Q("a", 600, "mm"), Q("b", 500, "mm"), Q("t", 4, "mm"),
+        C("shape", "rectangular"), C("support", "simply supported"), Q("a", 600, "mm"), Q("b", 500, "mm"), Q("t_p", 4, "mm"),
         C("load_type", "uniform"), C("load_basis", "pressure q"), Q("q", 1, "kPa"),
         Q("E", 69, "GPa"), N("nu", 0.33), Q("rho", 2700, "kg/m^3"), Q("f_y", 120, "MPa"), N("gamma_M0", 1),
     ];
@@ -626,7 +626,7 @@ internal static class CalcPackExamples
     [
         C("mode", "Cam"), Q("n_in", 150, "rpm"), C("follower", "Roller"), Q("Rb", 60, "mm"), Q("R_r", 15, "mm"), Q("phi_max", 30, "deg"), Q("e_off", 0, "mm"),
         Table("segs", Seg("Rise", "Cycloidal", 120, 40), Seg("Dwell", null, 60, 0), Seg("Return", "Modified trapezoid", 120, 40), Seg("Dwell", null, 60, 0)),
-        N("steps", 72), Q("m_f", 4, "kg"), Q("k_sp", 9.874, "N/mm"), Q("F_pre", 50, "N"), Q("F_ext", 0, "N"),
+        N("steps", 72), Q("m_f", 4, "kg"), Q("k_sp", 9.874, "kN/m"), Q("F_pre", 50, "N"), Q("F_ext", 0, "N"),
     ];
 
     /// <summary>
@@ -637,7 +637,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> CamM7 { get; } =
     [
-        C("mode", "Compression"), Q("d", 6, "mm"), Q("D", 50, "mm"), N("n", 10.5), C("ends", "Squared and ground"), Q("L0", 145, "mm"), C("work", "Loads"), Q("F_1", 50, "N"),
+        C("mode", "Compression"), Q("d", 6, "mm"), Q("D", 50, "mm"), N("n_active", 10.5), C("ends", "Squared and ground"), Q("L0", 145, "mm"), C("work", "Loads"), Q("F_1", 50, "N"),
         C("rm_source", "Typed R_m(d)"), Q("Rm", 1500, "MPa"), Q("S_e", 400, "MPa"),
     ];
 
@@ -660,7 +660,7 @@ internal static class CalcPackExamples
     /// <summary>Cam-shaft bearing A: a ball bearing with INVENTED ratings (C 3.5 kN, C₀ 1.8 kN), 90 % reliability and a 20 000 h life; its radial load and speed arrive by link.</summary>
     public static IReadOnlyList<CalcInputValue> CamM5 { get; } =
     [
-        C("type", "ball (p = 3)"), Q("C", 3.5, "kN"), Q("C_0", 1.8, "kN"), Q("R", 90, "%"), Q("L_req", 20000, "h"),
+        C("type", "ball (p = 3)"), Q("C", 3.5, "kN"), Q("C_0", 1.8, "kN"), Q("R_rel", 90, "%"), Q("L_req", 20000, "h"),
     ];
 
     /// <summary>
@@ -698,7 +698,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> LinkF1 { get; } =
     [
-        C("mode", "Standard"), Q("p", 100, "bar"), Q("rho", 870, "kg/m^3"), Q("D", 40, "mm"), Q("d_r", 22, "mm"), Q("stroke", 200, "mm"),
+        C("mode", "Standard"), Q("p_sys", 100, "bar"), Q("rho", 870, "kg/m^3"), Q("D", 40, "mm"), Q("d_r", 22, "mm"), Q("stroke", 200, "mm"),
     ];
 
     /// <summary>
@@ -707,6 +707,6 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> LinkF2 { get; } =
     [
-        C("mode", "Emergency stroke"), Q("p_0", 50, "bar"), Q("p_1", 60, "bar"), N("n", 1.4), Q("T_max", 50, "degC"), Q("T_min", 10, "degC"),
+        C("mode", "Emergency stroke"), Q("p_0", 50, "bar"), Q("p_1", 60, "bar"), N("n_gas", 1.4), Q("T_max", 50, "degC"), Q("T_min", 10, "degC"),
     ];
 }

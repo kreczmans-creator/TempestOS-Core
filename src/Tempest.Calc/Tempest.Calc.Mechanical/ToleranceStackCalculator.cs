@@ -45,31 +45,32 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "2.2.1", CalcDiscipline.Mechanical, "Tolerance stack-up (1D)",
-        "A linear tolerance loop: worst-case limits, root-sum-square and modified RSS limits, predicted spread and capability against a stated requirement, contribution Pareto and a Monte Carlo prediction.",
+        Id, "2.3.0", CalcDiscipline.Mechanical, "Tolerance stack-up (1D)",
+        "Calculates the worst-case, root-sum-square and modified RSS limits of a linear tolerance loop, with the predicted spread and capability. It adds a contribution Pareto and a Monte Carlo prediction against a stated requirement.",
         "Worst case, every contributor at its limit: T_wc = Σ|half-bands|.\nRoot sum of squares, the statistical stack: T_rss = √Σ half².\nModified RSS, a factor on the RSS (Bender-style): T_mrss = factor × RSS.\nPredicted standard deviation of the stack, from each contributor's distribution: σ = √Σ σ_i².\nProcess capability, taken from the nearer limit: C_pk = min(USL − μ, μ − LSL)/(3σ).\nMonte Carlo check, every contributor sampled from a fixed seed and summed with its sign: stack = Σ s_i x_i.",
         [
-            new CalcInputSpec("contributors", "Contributors in the loop", CalcInputKind.Table, Columns: Columns, MaxRows: 200),
-            new CalcInputSpec("minimum", "Minimum acceptable result", CalcInputKind.Quantity, "mm", IsOptional: true, HardMin: -1e6, HardMax: 1e6),
-            new CalcInputSpec("maximum", "Maximum acceptable result", CalcInputKind.Quantity, "mm", IsOptional: true, HardMin: -1e6, HardMax: 1e6),
-            new CalcInputSpec("k", "Standard deviations per half-band (normal contributors)", CalcInputKind.Number, Default: 3, Min: 1, Max: 6, HardMin: 0.1, HardMax: 100),
-            new CalcInputSpec("f_rss", "Modified-RSS factor (Bender-style)", CalcInputKind.Number, Default: 1.5, Min: 1, Max: 2, HardMin: 0.1, HardMax: 10),
-            new CalcInputSpec("cpk_target", "Required C_pk", CalcInputKind.Number, Default: 1.33, Min: 1, Max: 2, HardMin: 0.01, HardMax: 10),
-            new CalcInputSpec("n_mc", "Monte Carlo samples", CalcInputKind.Number, Default: 10_000, Min: 1_000, Max: 100_000, HardMin: 1, HardMax: CalcRunner.MaxCalculatorSamples),
-            new CalcInputSpec("seed", "Monte Carlo seed", CalcInputKind.Number, Default: 1, HardMin: 0, HardMax: 4_294_967_295),
-            new CalcInputSpec("notation", "Drawing notation", CalcInputKind.Choice, Choices: ["BS 8888", "ASME Y14.5"], DefaultChoice: "BS 8888"),
+            new CalcInputSpec("contributors", "Contributors in the loop", CalcInputKind.Table, Columns: Columns, MaxRows: 200, Group: "Setup"),
+            new CalcInputSpec("notation", "Drawing notation", CalcInputKind.Choice, Choices: ["BS 8888", "ASME Y14.5"], DefaultChoice: "BS 8888", Group: "Setup"),
+            new CalcInputSpec("k", "Standard deviations per half-band (normal contributors)", CalcInputKind.Number, Default: 3, Min: 1, Max: 6, HardMin: 0.1, HardMax: 100, Group: "Factors"),
+            new CalcInputSpec("f_rss", "Modified-RSS factor (Bender-style)", CalcInputKind.Number, Default: 1.5, Min: 1, Max: 2, HardMin: 0.1, HardMax: 10, Group: "Factors"),
+            new CalcInputSpec("cpk_req", "Required C_pk", CalcInputKind.Number, Default: 1.33, Min: 1, Max: 2, HardMin: 0.01, HardMax: 10, Group: "Requirements", Aliases: ["cpk_target"]),
+            new CalcInputSpec("minimum", "Minimum acceptable result (optional; blank = no minimum)", CalcInputKind.Quantity, "mm", Min: -1e4, Max: 1e4, IsOptional: true, HardMin: -1e6, HardMax: 1e6, Group: "Requirements"),
+            new CalcInputSpec("maximum", "Maximum acceptable result (optional; blank = no maximum)", CalcInputKind.Quantity, "mm", Min: -1e4, Max: 1e4, IsOptional: true, HardMin: -1e6, HardMax: 1e6, Group: "Requirements"),
+            new CalcInputSpec("n_mc", "Monte Carlo samples", CalcInputKind.Number, Default: 10_000, Min: 1_000, Max: 100_000, HardMin: 1, HardMax: CalcRunner.MaxCalculatorSamples, Group: "Monte Carlo"),
+            new CalcInputSpec("seed", "Monte Carlo seed", CalcInputKind.Number, Default: 1, Min: 0, Max: 1e9, HardMin: 0, HardMax: 4_294_967_295, Group: "Monte Carlo"),
         ],
         [
             new CalcAssumption("Every contributor acts along the one axis of the stack.", "A linear stack: no angular or datum-shift effects beyond what the user enters as a contributor."),
-            new CalcAssumption("Statistical figures assume contributors vary independently about their mid-limit (plus any stated mean shift), each with the distribution stated for it.", "The worst case is a guarantee; every statistical figure is a prediction about a population."),
+            new CalcAssumption("Contributors vary independently about their mid-limit and any stated mean shift, each with its stated distribution.", "The worst case is a guarantee; every statistical figure is a prediction about a population."),
             new CalcAssumption("A position or profile contributor contributes ± half its tolerance zone, plus half the stated MMC bonus.", "Diametral zones are bilateral about the true position."),
         ],
         [
             new CalcClauseRef("BS 8888", "—", "Technical product documentation and specification"),
             new CalcClauseRef("ASME Y14.5", "—", "Dimensioning and tolerancing"),
-            new CalcClauseRef("ISO 2768-1", "—", "General tolerances (where a contributor's band is a general tolerance)"),
+            new CalcClauseRef("ISO 2768-1:1989", "—", "General tolerances (where a contributor's band is a general tolerance)"),
         ],
         [
+            new CalcApplicabilityRule("contributors", "The loop needs at least one contributor, each with a valid band.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("few-contributors", "Fewer than four contributors: RSS and modified RSS are optimistic.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("no-requirement", "No requirement stated: capability and yield are not computed.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("sigma-ignored", "A standard deviation is stated for a uniform or triangular contributor: it applies to normal contributors only and is ignored.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
@@ -148,7 +149,15 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
                 [new CalcExpectedValue("x_nom", 0.5, "mm", 5e-5), new CalcExpectedValue("x_mean", 0.61, "mm", 5e-5), new CalcExpectedValue("t_wc", 0.13, "mm", 5e-5), new CalcExpectedValue("x_wc_min", 0.48, "mm", 5e-5), new CalcExpectedValue("x_wc_max", 0.74, "mm", 5e-5), new CalcExpectedValue("t_rss", 0.080622577, "mm", 5e-5), new CalcExpectedValue("sigma", 0.026874192, "mm", 5e-5)]),
         ],
         DiagramKey: "tolerance-stack",
-        Category: "Tolerancing");
+        Category: "Tolerancing",
+        OutputPorts:
+        [
+            new CalcOutputPort("x_nom", "mm", "Nominal result of the stack", "tolerance.result_nominal"),
+            new CalcOutputPort("x_mean", "mm", "Mean result of the stack", "tolerance.result_mean"),
+            new CalcOutputPort("t_wc", "mm", "Worst-case tolerance of the result (±)", "tolerance.band_worst_case"),
+            new CalcOutputPort("t_rss", "mm", "Root-sum-square tolerance of the result (±)", "tolerance.band_rss"),
+            new CalcOutputPort("sigma", "mm", "Predicted standard deviation of the result", "tolerance.deviation_standard"),
+        ]);
 
     private static CalcReferenceSource Legacy(string n) =>
         new("TempestOS calc.tolerance-stack (v0.16.0, recovered v0.21.0) hand calculation and test vector", null, $"docs/engineering/calculations/calc.tolerance-stack.md, Example {n}");
@@ -198,9 +207,11 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
         var rows = c.Rows("contributors");
         var k = c.InputSi("k");
         var fRss = c.InputSi("f_rss");
-        var cpkTarget = c.InputSi("cpk_target");
+        var cpkTarget = c.InputSi("cpk_req");
         var notation = c.InputText("notation");
-        var unitSymbol = rows.Count > 0 && rows[0].Get("nominal")?.Unit is { } u ? u : "mm";
+
+        // The result is shown in millimetres whatever unit the contributors are entered in (C2-12): one unit per quantity type.
+        const string unitSymbol = "mm";
         var unit = UnitCatalog.Parse(unitSymbol);
         var hasMin = c.Has("minimum");
         var hasMax = c.Has("maximum");
@@ -209,7 +220,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
 
         if (rows.Count == 0)
         {
-            c.Block("input.contributors", c.EnterRows("contributors"));
+            c.Block("contributors", c.EnterRows("contributors"));
             return;
         }
 
@@ -246,7 +257,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
             {
                 if (lower > upper)
                 {
-                    c.Block("input.contributors", $"contributors row {i + 1} ({name}): the lower deviation is above the upper deviation.");
+                    c.Block("contributors", $"contributors[{i + 1}].lower: the lower deviation of '{name}' is above its upper deviation.");
                     return;
                 }
 
@@ -259,7 +270,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
             {
                 if (upper < 0)
                 {
-                    c.Block("input.contributors", $"contributors row {i + 1} ({name}): a {kind} tolerance zone cannot be negative.");
+                    c.Block("contributors", $"contributors[{i + 1}].upper: the {kind} tolerance zone of '{name}' cannot be negative.");
                     return;
                 }
 
@@ -276,7 +287,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
                 if (distribution == ContributorDistribution.Normal)
                     source = source with { Sigma = stated };
                 else
-                    c.Warn("sigma-ignored", $"contributors row {i + 1} ({name}): a standard deviation is stated, but the distribution is {distributionName}; a stated σ applies to normal contributors only and is ignored.");
+                    c.Warn("sigma-ignored", $"contributors[{i + 1}].sigma: a standard deviation is stated for the {distributionName} contributor '{name}'. It applies to normal contributors only, so it is ignored.");
             }
 
             var mid = source.Mid;
@@ -289,7 +300,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
         }
 
         if (contributors.Count < 4)
-            c.Warn("few-contributors", "contributors: fewer than four contributors; RSS and modified RSS are optimistic for so few.");
+            c.Warn("few-contributors", "contributors: there are fewer than four contributors. RSS and modified RSS are optimistic for so few.");
 
         var stack = ToleranceStackEngine.Analyse(
             [.. contributors.Select(x => x.Source)],
@@ -339,7 +350,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
                 c.Output("m_max", "Worst-case margin to the maximum");
             }
 
-            c.CheckCondition("Worst case within requirement", stack.WorstCaseWithinRequirement,
+            c.CheckCondition("Worst-case range against the requirement", stack.WorstCaseWithinRequirement,
                 $"{F(meanSi - wcSi, unit)} … {F(meanSi + wcSi, unit)} {unitSymbol}",
                 $"{(minSi is { } a ? F(a, unit) : "open")} … {(maxSi is { } b ? F(b, unit) : "open")} {unitSymbol}", "x_wc_min");
 
@@ -363,17 +374,17 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
                 if (cpk > 0)
                 {
                     c.Record("u_cpk", "cpk_target / cpk", $"{CalcValue.FormatNumber(cpkTarget)} / {CalcValue.FormatNumber(cpk)}", new ScalarValue(cpkTarget / cpk), "Capability utilisation");
-                    c.CheckUtilisation("C_pk against target", "u_cpk");
+                    c.Check("C_pk against the requirement", "cpk_req", "cpk", resultSymbol: "u_cpk");
                 }
                 else
                 {
-                    c.CheckCondition("C_pk against target", false, $"C_pk {CalcValue.FormatNumber(cpk)}", $"≥ {CalcValue.FormatNumber(cpkTarget)}", "cpk");
+                    c.CheckCondition("C_pk against the requirement", false, $"C_pk {CalcValue.FormatNumber(cpk)}", $"≥ {CalcValue.FormatNumber(cpkTarget)}", "cpk");
                 }
             }
         }
         else
         {
-            c.Warn("no-requirement", "minimum/maximum: no requirement stated, so capability and yield are not computed.");
+            c.Warn("no-requirement", "minimum: no requirement is stated, so capability and yield are not computed.");
         }
 
         // Contribution Pareto.
@@ -409,12 +420,12 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
 
         c.Record("mc_mean", $"mean of {n} samples (seed {seed})", "Monte Carlo", ScalarValue.Of(unit.FromSi(mc.Mean), unit), "Monte Carlo mean");
         c.Record("mc_sigma", "sample standard deviation", "Monte Carlo", ScalarValue.Of(unit.FromSi(mc.StandardDeviation), unit), "Monte Carlo σ");
-        c.Record("mc_p05", "5th percentile", "Monte Carlo", ScalarValue.Of(unit.FromSi(mc.Percentile05), unit), "Monte Carlo 5 %");
-        c.Record("mc_p95", "95th percentile", "Monte Carlo", ScalarValue.Of(unit.FromSi(mc.Percentile95), unit), "Monte Carlo 95 %");
+        c.Record("mc_p05", "5 % quantile", "Monte Carlo", ScalarValue.Of(unit.FromSi(mc.Percentile05), unit), "Monte Carlo 5 %");
+        c.Record("mc_p95", "95 % quantile", "Monte Carlo", ScalarValue.Of(unit.FromSi(mc.Percentile95), unit), "Monte Carlo 95 %");
         c.Output("mc_mean", "Monte Carlo mean");
         c.Output("mc_sigma", "Monte Carlo σ");
-        c.Output("mc_p05", "Monte Carlo 5th percentile");
-        c.Output("mc_p95", "Monte Carlo 95th percentile");
+        c.Output("mc_p05", "Monte Carlo 5 % quantile");
+        c.Output("mc_p95", "Monte Carlo 95 % quantile");
 
         if (mc.Yield is { } y)
         {

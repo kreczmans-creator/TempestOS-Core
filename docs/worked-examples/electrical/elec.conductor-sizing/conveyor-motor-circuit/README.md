@@ -12,6 +12,8 @@ A 4 kW (rated output) conveyor motor, design current 8.28 A, behind a 10 A type 
 | `L` | 35 m | drawing: E-LAY-021 rev B |
 | `N_g` | 3 | drawing: E-LAY-021 rev B |
 | `P` | 4 kW | spec: Motor schedule MS-04: conveyor drive 4 kW rated output |
+| `T_amb` | 40 degC | spec: Machine design basis MDB-2: 40 °C inside the panel and trunking |
+| `T_ref` | 30 degC | assumption: Reference ambient of the licensed table; only used when C_a is derived. |
 | `U` | 400 V | spec: Site supply: 400 V three-phase |
 | `ampacity` | 5 row(s) | reference: record: owner's licensed table (not shipped); capacities are synthetic values invented for this example |
 | `context` | BS EN 60204-1 machine wiring | spec: Machine design basis MDB-2: BS EN 60204-1 wiring |
@@ -24,8 +26,6 @@ A 4 kW (rated output) conveyor motor, design current 8.28 A, behind a 10 A type 
 | `ratings` | 9 row(s) | reference: record: owner's licensed table (not shipped); ratings are the typical preferred series |
 | `supply` | three-phase | drawing: E-SCH-021 rev A |
 | `system` | metric | spec: Cable schedule CS-21: metric cross-sections |
-| `theta_a` | 40 degC | spec: Machine design basis MDB-2: 40 °C inside the panel and trunking |
-| `theta_ref` | 30 degC | assumption: Reference ambient of the licensed table; only used when C_a is derived. |
 
 | Output | Expected | Computed | Result |
 |---|---|---|---|
@@ -36,4 +36,4 @@ A 4 kW (rated output) conveyor motor, design current 8.28 A, behind a 10 A type 
 | `I_z` | 12.4024 A | 12.4024 A | PASS |
 | `u_In` | 0.806296  | 0.806296  | PASS |
 
-Governing check: Design current within device rating (I_b ≤ I_n) — PASS (utilisation 0.83). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Design current against the device rating — PASS (utilisation 0.83). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

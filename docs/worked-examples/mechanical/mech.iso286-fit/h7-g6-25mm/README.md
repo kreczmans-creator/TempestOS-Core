@@ -15,8 +15,8 @@ A close-running fit from the formulae: IT7 = 20.9 µm, IT6 = 13.1 µm, g = −7.
 | Output | Expected | Computed | Result |
 |---|---|---|---|
 | `IT_hole` | 21 µm | 20.918 µm | PASS |
-| `es` | -7 µm | -7.28529 µm | PASS |
+| `es_shaft` | -7 µm | -7.28529 µm | PASS |
 | `c_min` | 7 µm | 7.28529 µm | PASS |
 | `c_max` | 41 µm | 41.277 µm | PASS |
 
-Governing check: Fit classified — PASS. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Fit classes against the fit kind — PASS. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

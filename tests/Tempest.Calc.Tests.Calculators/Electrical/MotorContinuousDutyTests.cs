@@ -46,8 +46,8 @@ public sealed class MotorContinuousDutyTests
         Assert.Equal(596.9026042, r.OutputSi("P_rated"), 1e-6);
         Assert.True(r.OutputSi("P_rated") > r.OutputSi("P_cont"));
         Assert.DoesNotContain(r.Notices, n => n.RuleId == "rated-speed");
-        Assert.Equal("W", Motor.Template.OutputPorts!.Single(p => p.Symbol == "P_rated").Unit);
-        Assert.Equal("1.10.0", Motor.Template.Version);
+        Assert.Equal("kW", Motor.Template.OutputPorts!.Single(p => p.Symbol == "P_rated").Unit);
+        Assert.Equal("1.11.1", Motor.Template.Version);
         Assert.Contains(Motor.Template.RecordKinds!, k => k.Kind == "motor.rating" && k.Symbols.Contains("n_rated") && k.Symbols.Contains("T_rated"));
 
         // The running speed (2800 rpm) is not the rated speed: changing the load speed leaves the rated power alone.
@@ -132,7 +132,7 @@ public sealed class MotorContinuousDutyTests
         foreach (var symbol in new[] { "T_rms", "n_pk", "P_pk", "P_cont", "T_pk", "T_load" })
             Assert.Contains(symbol, ports);
 
-        Assert.Equal("W", Motor.Template.OutputPorts!.Single(p => p.Symbol == "P_cont").Unit);
+        Assert.Equal("kW", Motor.Template.OutputPorts!.Single(p => p.Symbol == "P_cont").Unit);
     }
 
     [Fact]

@@ -16,8 +16,8 @@ The same window with two 4 mm panes and still air between. The 10 mm gap is thre
 | Output | Expected | Computed | Result |
 |---|---|---|---|
 | `R_2` | 0.32051 K/W | 0.320513 K/W | PASS |
-| `Q` | 69.248 W | 69.2478 W | PASS |
-| `U` | 1.9236 W/(m^2*K) | 1.92355 W/(m^2*K) | PASS |
+| `Phi` | 0.069248 kW | 0.0692478 kW | PASS |
+| `U_wall` | 1.9236 W/(m^2*K) | 1.92355 W/(m^2*K) | PASS |
 | `T_s0` | 14.229 degC | 14.2293 degC | PASS |
 
 Governing check: none. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

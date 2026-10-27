@@ -73,20 +73,6 @@
   ],
   "enclosure-depth": [
    "elec.enclosure-heat"
-  ],
-  "flexural-rigidity": [
-   "struct.plate-bending"
-  ],
-  "total-damage": [
-   "mech.fatigue-miner"
-  ]
- },
- "D_c": {
-  "conduit-internal-diameter": [
-   "elec.containment"
-  ],
-  "extrusion-gap-mating-diameter": [
-   "fp.oring-gland"
   ]
  },
  "D_i": {
@@ -112,12 +98,18 @@
   ]
  },
  "F": {
+  "applied-axial-load": [
+   "struct.column-buckling"
+  ],
   "force": [
    "mech.thermal-expansion",
    "struct.fillet-weld"
   ],
-  "lmtd-correction-factor": [
-   "bs.heat-exchanger"
+  "plate-load-total": [
+   "struct.plate-bending"
+  ],
+  "point-load": [
+   "struct.beam-formulas"
   ]
  },
  "F_a": {
@@ -125,6 +117,12 @@
    "mech.press-fit"
   ],
   "axial-load": [
+   "mech.bearing-life",
+   "mech.bearing-life-basic"
+  ]
+ },
+ "F_dyn": {
+  "equivalent-dynamic-load": [
    "mech.bearing-life",
    "mech.bearing-life-basic"
   ]
@@ -151,7 +149,14 @@
  },
  "F_t_Rd": {
   "bolt-tension-resistance": [
+   "mech.bolt-group",
    "struct.base-plate",
+   "struct.connection-ec3"
+  ]
+ },
+ "F_v_Rd": {
+  "bolt-shear-resistance": [
+   "mech.bolt-group",
    "struct.connection-ec3"
   ]
  },
@@ -237,7 +242,8 @@
  "I_y": {
   "second-moment-major-axis": [
    "struct.en1993-member",
-   "struct.ltb-interaction"
+   "struct.ltb-interaction",
+   "struct.section-properties"
   ]
  },
  "I_z": {
@@ -247,7 +253,8 @@
   ],
   "second-moment-minor-axis": [
    "struct.en1993-member",
-   "struct.ltb-interaction"
+   "struct.ltb-interaction",
+   "struct.section-properties"
   ]
  },
  "J": {
@@ -386,6 +393,12 @@
    "struct.ltb-interaction"
   ]
  },
+ "M_z": {
+  "in-plane-torque": [
+   "mech.bolt-group",
+   "mech.weld-group"
+  ]
+ },
  "M_z_Ed": {
   "design-moment-minor-axis": [
    "struct.en1993-member",
@@ -438,43 +451,18 @@
   ]
  },
  "P": {
-  "applied-axial-load": [
-   "struct.column-buckling"
-  ],
-  "deflection-force": [
-   "mech.snap-fit"
-  ],
   "dissipated-power": [
    "elec.thermal-chain"
   ],
   "electrical-input-power": [
    "elec.load-budget"
   ],
-  "equivalent-dynamic-load": [
-   "mech.bearing-life",
-   "mech.bearing-life-basic"
-  ],
   "heat-loss-per-item": [
    "elec.enclosure-heat"
-  ],
-  "internal-design-pressure": [
-   "mech.thin-vessel"
-  ],
-  "lug-load": [
-   "mech.lifting-lug"
   ],
   "motor-rated-output-power": [
    "elec.conductor-sizing",
    "elec.motor-start"
-  ],
-  "point-load": [
-   "struct.beam-formulas"
-  ],
-  "thread-pitch": [
-   "mech.bolted-joint"
-  ],
-  "total-force": [
-   "struct.plate-bending"
   ]
  },
  "P_add": {
@@ -493,18 +481,13 @@
  },
  "Phi": {
   "heat-flow": [
+   "bs.heat-exchanger",
+   "bs.plane-wall",
    "bs.sealed-system",
    "elec.load-budget"
-  ],
-  "load-factor": [
-   "mech.bolted-joint"
   ]
  },
  "Q": {
-  "heat-flow": [
-   "bs.heat-exchanger",
-   "bs.plane-wall"
-  ],
   "volumetric-flow": [
    "bs.duct-sizing",
    "bs.pipe-pump",
@@ -513,19 +496,12 @@
  },
  "R": {
   "radius": [
-   "elec.containment",
-   "mech.thin-vessel",
-   "struct.lifting"
-  ],
-  "reliability": [
-   "mech.bearing-life",
-   "mech.shaft"
+   "elec.containment"
   ],
   "resistance": [
    "elec.voltage-drop"
   ],
   "thermal-resistance": [
-   "bs.insulation",
    "elec.thermal-chain"
   ]
  },
@@ -561,8 +537,15 @@
    "elec.voltage-drop"
   ]
  },
+ "R_rel": {
+  "reliability": [
+   "mech.bearing-life",
+   "mech.shaft"
+  ]
+ },
  "R_tot": {
   "total-thermal-resistance": [
+   "bs.insulation",
    "bs.plane-wall",
    "elec.thermal-chain"
   ]
@@ -593,6 +576,14 @@
    "mech.fatigue-miner"
   ]
  },
+ "SF": {
+  "sizing-safety-factor": [
+   "elec.load-budget"
+  ],
+  "torque-safety-factor": [
+   "elec.motor-sizing"
+  ]
+ },
  "S_e": {
   "bending-endurance-limit": [
    "mech.fatigue-miner",
@@ -609,10 +600,6 @@
   ]
  },
  "T": {
-  "temperature": [
-   "bs.duct-sizing",
-   "bs.pipe-pump"
-  ],
   "torque": [
    "mech.bolt-group",
    "mech.press-fit",
@@ -631,6 +618,9 @@
   ]
  },
  "T_2": {
+  "leaving-dry-bulb-temperature": [
+   "bs.psychrometrics"
+  ],
   "side-2-temperature": [
    "bs.plane-wall",
    "elec.thermal-chain"
@@ -646,7 +636,10 @@
  },
  "T_amb": {
   "ambient-temperature": [
+   "bs.insulation",
+   "elec.conductor-sizing",
    "elec.enclosure-heat",
+   "elec.load-budget",
    "elec.pcb-trace",
    "elec.voltage-drop"
   ]
@@ -660,15 +653,41 @@
    "elec.voltage-drop"
   ]
  },
+ "T_dew": {
+  "dew-point-temperature": [
+   "bs.heat-exchanger",
+   "bs.insulation"
+  ]
+ },
+ "T_int": {
+  "enclosure-internal-temperature": [
+   "elec.enclosure-heat"
+  ],
+  "internal-design-temperature": [
+   "bs.glaser",
+   "bs.room-heat-loss"
+  ]
+ },
  "T_load": {
   "load-torque": [
    "elec.motor-sizing",
    "mech.mechanism"
   ]
  },
+ "T_m": {
+  "mean-insulation-temperature": [
+   "bs.insulation"
+  ],
+  "mean-water-temperature": [
+   "bs.sealed-system"
+  ]
+ },
  "T_max": {
   "maximum-pulling-tension": [
    "elec.containment"
+  ],
+  "maximum-system-temperature": [
+   "bs.sealed-system"
   ],
   "maximum-temperature": [
    "elec.enclosure-heat",
@@ -681,6 +700,12 @@
   "minimum-temperature": [
    "fp.accumulator",
    "fp.oring-gland"
+  ]
+ },
+ "T_op": {
+  "conductor-operating-temperature": [
+   "elec.conductor-sizing",
+   "elec.fault-protection"
   ]
  },
  "T_pk": {
@@ -698,16 +723,18 @@
   ]
  },
  "U": {
-  "overall-heat-transfer-coefficient": [
-   "bs.heat-exchanger",
-   "bs.plane-wall"
-  ],
   "share-of-revolutions": [
    "mech.bearing-life"
   ],
   "supply-voltage": [
    "elec.conductor-sizing",
    "elec.motor-start"
+  ]
+ },
+ "U_wall": {
+  "wall-u-value": [
+   "bs.glaser",
+   "bs.plane-wall"
   ]
  },
  "V": {
@@ -767,7 +794,8 @@
  "W_el_z": {
   "elastic-modulus-minor-axis": [
    "struct.en1993-member",
-   "struct.ltb-interaction"
+   "struct.ltb-interaction",
+   "struct.section-properties"
   ]
  },
  "W_pl_y": {
@@ -780,7 +808,8 @@
  "W_pl_z": {
   "plastic-modulus-minor-axis": [
    "struct.en1993-member",
-   "struct.ltb-interaction"
+   "struct.ltb-interaction",
+   "struct.section-properties"
   ]
  },
  "X": {
@@ -1066,11 +1095,7 @@
   "emissivity": [
    "bs.insulation"
   ],
-  "maximum-strain": [
-   "mech.snap-fit#output"
-  ],
   "roughness": [
-   "bs.duct-sizing",
    "bs.pipe-pump"
   ],
   "strain": [
@@ -1167,9 +1192,6 @@
    "struct.ltb-interaction",
    "struct.section-properties"
   ],
-  "film-coefficient": [
-   "elec.enclosure-heat"
-  ],
   "hole-to-weld-distance": [
    "struct.lifting"
   ],
@@ -1181,9 +1203,6 @@
   ],
   "root-thickness": [
    "mech.snap-fit"
-  ],
-  "specific-enthalpy": [
-   "bs.psychrometrics"
   ]
  },
  "h_1": {
@@ -1324,9 +1343,6 @@
   ]
  },
  "n": {
-  "active-coils": [
-   "mech.spring"
-  ],
   "air-change-rate": [
    "bs.room-heat-loss"
   ],
@@ -1336,19 +1352,10 @@
   "emitter-exponent": [
    "bs.sealed-system"
   ],
-  "gas-exponent": [
-   "fp.accumulator"
-  ],
-  "load-introduction-factor": [
-   "mech.bolted-joint"
-  ],
   "operating-speed": [
    "mech.bearing-life",
    "mech.bearing-life-basic",
    "mech.shaft"
-  ],
-  "thickness-design-factor": [
-   "mech.thin-vessel"
   ]
  },
  "n_L": {
@@ -1405,23 +1412,6 @@
    "struct.plate-bending"
   ]
  },
- "p": {
-  "barometric-pressure": [
-   "bs.psychrometrics"
-  ],
-  "interface-pressure": [
-   "mech.press-fit"
-  ],
-  "pitch": [
-   "mech.spring"
-  ],
-  "pressure": [
-   "fp.oring-gland"
-  ],
-  "supply-pressure": [
-   "fp.cylinder"
-  ]
- },
  "p_1": {
   "lowest-working-pressure": [
    "fp.accumulator"
@@ -1442,6 +1432,7 @@
   "atmospheric-pressure": [
    "bs.duct-sizing",
    "bs.pipe-pump",
+   "bs.psychrometrics",
    "fp.accumulator"
   ]
  },
@@ -1451,6 +1442,14 @@
   ],
   "pre-charge-pressure": [
    "bs.sealed-system"
+  ]
+ },
+ "p_sys": {
+  "supply-pressure": [
+   "fp.cylinder"
+  ],
+  "system-resistance": [
+   "elec.enclosure-heat"
   ]
  },
  "pass": {
@@ -1511,9 +1510,6 @@
    "mech.shaft",
    "mech.spring",
    "struct.plate-bending"
-  ],
-  "shear-reduction-factor": [
-   "struct.en1993-member"
   ]
  },
  "rho_20": {
@@ -1558,24 +1554,10 @@
  },
  "t": {
   "thickness": [
-   "bs.plane-wall",
-   "mech.lifting-lug",
-   "struct.base-plate",
-   "struct.connection-ec3",
-   "struct.lifting",
-   "struct.plate-bending",
-   "struct.section-properties"
+   "bs.plane-wall"
   ],
   "time": [
    "elec.fault-protection"
-  ]
- },
- "t_2": {
-  "leaving-dry-bulb-temperature": [
-   "bs.psychrometrics"
-  ],
-  "other-ply-thickness": [
-   "struct.connection-ec3"
   ]
  },
  "t_dwell": {
@@ -1590,23 +1572,15 @@
    "struct.en1993-member",
    "struct.ltb-interaction",
    "struct.section-properties"
-  ],
-  "flow-temperature": [
-   "bs.sealed-system"
-  ]
- },
- "t_max": {
-  "maximum-bolt-tension": [
-   "mech.bolt-group"
-  ],
-  "maximum-system-temperature": [
-   "bs.sealed-system"
   ]
  },
  "t_p": {
   "plate-thickness": [
    "mech.thin-vessel",
-   "struct.base-plate"
+   "struct.base-plate",
+   "struct.connection-ec3",
+   "struct.lifting",
+   "struct.plate-bending"
   ]
  },
  "t_req": {
@@ -1624,7 +1598,14 @@
   ],
   "web-thickness": [
    "struct.base-plate",
-   "struct.en1993-member"
+   "struct.en1993-member",
+   "struct.section-properties"
+  ]
+ },
+ "t_wall": {
+  "wall-thickness": [
+   "bs.pipe-expansion",
+   "struct.base-plate"
   ]
  },
  "tau": {
@@ -1636,14 +1617,8 @@
   ]
  },
  "theta": {
-  "ambient-temperature": [
-   "elec.load-budget"
-  ],
   "bend-angle": [
    "elec.containment"
-  ],
-  "conductor-temperature": [
-   "elec.fault-protection"
   ],
   "incline-angle": [
    "elec.motor-sizing"
@@ -1655,31 +1630,8 @@
    "struct.lifting"
   ]
  },
- "theta_a": {
-  "ambient-temperature": [
-   "bs.insulation",
-   "elec.conductor-sizing"
-  ],
-  "cold-point-outside-temperature": [
-   "bs.glaser"
-  ]
- },
  "theta_e": {
   "external-design-temperature": [
-   "bs.glaser",
-   "bs.room-heat-loss"
-  ]
- },
- "theta_i": {
-  "adiabatic-initial-temperature": [
-   "elec.fault-protection"
-  ],
-  "process-temperature": [
-   "bs.insulation"
-  ]
- },
- "theta_int": {
-  "internal-design-temperature": [
    "bs.glaser",
    "bs.room-heat-loss"
   ]
@@ -1751,8 +1703,15 @@
    "struct.ltb-interaction"
   ]
  },
+ "u_defl": {
+  "deflection-utilisation": [
+   "mech.shaft",
+   "struct.plate-bending"
+  ]
+ },
  "u_f": {
   "goodman-utilisation": [
+   "mech.shaft",
    "mech.spring"
   ],
   "surface-factor-utilisation": [
@@ -1763,6 +1722,12 @@
   "transformer-impedance-voltage": [
    "elec.fault-protection",
    "elec.motor-start"
+  ]
+ },
+ "u_life": {
+  "life-utilisation": [
+   "mech.bearing-life",
+   "mech.bearing-life-basic"
   ]
  },
  "u_max": {
@@ -1777,8 +1742,17 @@
    "struct.ltb-interaction"
   ]
  },
+ "u_n": {
+  "minimum-length-travel-utilisation": [
+   "mech.spring"
+  ],
+  "safety-factor-utilisation": [
+   "mech.shaft-stress"
+  ]
+ },
  "u_t": {
   "tension-utilisation": [
+   "mech.bolt-group",
    "mech.lifting-lug",
    "struct.connection-ec3",
    "struct.lifting"
@@ -1786,15 +1760,14 @@
  },
  "u_v": {
   "shear-utilisation": [
+   "mech.bolt-group",
    "struct.connection-ec3",
    "struct.lifting"
   ]
  },
- "v_max": {
-  "maximum-bolt-shear": [
-   "mech.bolt-group"
-  ],
+ "v_limit": {
   "velocity-limit": [
+   "bs.duct-sizing",
    "bs.pipe-pump"
   ]
  },

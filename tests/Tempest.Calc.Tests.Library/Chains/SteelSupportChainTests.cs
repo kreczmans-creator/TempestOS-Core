@@ -62,20 +62,20 @@ public sealed class SteelSupportChainTests
         // S2 → M3: the arm's end shear and moment load the six-bolt pattern (two columns, rows at y = +150, 0, −150 mm).
         Assert.Equal(Si(s2, "V_e2"), InputSi(m3, "F_y"), 9);
         Assert.Equal(Si(s2, "M_abs_e2"), InputSi(m3, "M_x"), 9);
-        Assert.Equal(Si(s2, "V_e2") / 6, Si(m3, "v_max"), 6);
-        Assert.Equal(Si(s2, "M_abs_e2") * 0.150 / (4 * 0.150 * 0.150), Si(m3, "t_max"), 6);
+        Assert.Equal(Si(s2, "V_e2") / 6, Si(m3, "F_v_Ed_max"), 6);
+        Assert.Equal(Si(s2, "M_abs_e2") * 0.150 / (4 * 0.150 * 0.150), Si(m3, "F_t_Ed_max"), 6);
 
         // M3 → S4 (arm joint): the bolt group's governing-bolt shear and tension are the connection's design forces per bolt.
-        Assert.Equal(Si(m3, "v_max"), InputSi(s4a, "F_v_Ed"), 9);
-        Assert.Equal(Si(m3, "t_max"), InputSi(s4a, "F_t_Ed"), 9);
+        Assert.Equal(Si(m3, "F_v_Ed_max"), InputSi(s4a, "F_v_Ed"), 9);
+        Assert.Equal(Si(m3, "F_t_Ed_max"), InputSi(s4a, "F_t_Ed"), 9);
         Assert.True(InputSi(s4a, "F_t_Ed") > 0, "the joint carries a moment, so its bolts are in tension");
 
         // S2 → S4 (arm joint): the arm's shear is the group force for block tearing.
         Assert.Equal(Si(s2, "V_e2"), InputSi(s4a, "V_Ed"), 9);
 
         // The bolt group's resistances are those M20 8.8 gives S4 (typed into the bolt group, so guarded here).
-        Assert.Equal(Si(s4a, "F_v_Rd"), InputSi(m3, "V_R"), 1e-3 * Si(s4a, "F_v_Rd"));
-        Assert.Equal(Si(s4a, "F_t_Rd"), InputSi(m3, "T_R"), 1e-3 * Si(s4a, "F_t_Rd"));
+        Assert.Equal(Si(s4a, "F_v_Rd"), InputSi(m3, "F_v_Rd"), 1e-3 * Si(s4a, "F_v_Rd"));
+        Assert.Equal(Si(s4a, "F_t_Rd"), InputSi(m3, "F_t_Rd"), 1e-3 * Si(s4a, "F_t_Rd"));
 
         // S2 → S6: the base reactions are the base plate's actions (compression positive, moment and shear unsigned).
         Assert.Equal(Si(s2, "R1_y"), InputSi(s6, "N_Ed"), 9);
@@ -143,7 +143,7 @@ public sealed class SteelSupportChainTests
         Assert.Equal(Si(s5, "E_d_min"), CellSi(s2, "loads", 0, "F_y"), 9);
         Assert.Equal(Si(s2, "N_e1"), InputSi(s3, "N_Ed"), 9);
         Assert.Equal(Si(s2, "M_abs_e2"), InputSi(m3, "M_x"), 9);
-        Assert.Equal(Si(m3, "t_max"), InputSi(s4a, "F_t_Ed"), 9);
+        Assert.Equal(Si(m3, "F_t_Ed_max"), InputSi(s4a, "F_t_Ed"), 9);
         Assert.True(InputSi(s4a, "F_t_Ed") > jointBefore);
         Assert.Equal(Si(s2, "R1_y"), InputSi(s6, "N_Ed"), 9);
         Assert.True(InputSi(s6, "N_Ed") > before);
@@ -158,7 +158,7 @@ public sealed class SteelSupportChainTests
         var bearingBefore = InputSi(made.Instances["s6"], "F_1_vb_Rd");
 
         // A thicker base plate for the bolts' bearing: the bearing value rises, the tension resistance does not.
-        await ReviseAndUpdateAsync(host, made, "s4b", "t", 1.2, ["s6"]);
+        await ReviseAndUpdateAsync(host, made, "s4b", "t_p", 1.2, ["s6"]);
 
         var (s4b, s6) = (await Fresh(host, made, "s4b"), await Fresh(host, made, "s6"));
         Assert.Equal(Si(s4b, "F_b_Rd"), InputSi(s6, "F_1_vb_Rd"), 9);
@@ -193,7 +193,7 @@ public sealed class SteelSupportChainTests
         // The cell link is named under its row, the top-level ones by input, and the placeholder is cited by the base-plate sheet.
         Assert.Contains("F_y: link: Load combinations rev A · E_d_min", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Support frame rev A · R1_m_abs", sheet, StringComparison.Ordinal);
-        Assert.Contains("link: Arm joint bolt group rev A · t_max", sheet, StringComparison.Ordinal);
+        Assert.Contains("link: Arm joint bolt group rev A · F_t_Ed_max", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Holding-down bolts rev A · F_t_Rd", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Holding-down bolts rev A · f_ub", sheet, StringComparison.Ordinal);
         Assert.Contains("PROFIS-BP1-PLACEHOLDER.txt", sheet, StringComparison.Ordinal);

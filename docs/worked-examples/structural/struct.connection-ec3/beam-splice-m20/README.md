@@ -23,7 +23,7 @@ Each M20 8.8 bolt carries 55 kN in double shear (188 kN resistance), so bearing 
 | `p_1` | 70 mm | drawing: SPL-001 rev B |
 | `size` | M20 | drawing: SPL-001 rev B |
 | `steel` | S275 | drawing: SPL-001 rev B |
-| `t` | 10 mm | drawing: SPL-001 rev B |
+| `t_p` | 10 mm | drawing: SPL-001 rev B |
 | `threads` | yes | assumption: Threads may lie in the shear planes (short bolts). |
 
 | Output | Expected | Computed | Result |
@@ -32,4 +32,4 @@ Each M20 8.8 bolt carries 55 kN in double shear (188 kN resistance), so bearing 
 | `F_b_Rd` | 99.3939 kN | 99.3939 kN | PASS |
 | `u_b` | 0.553354  | 0.553354  | PASS |
 
-Governing check: Bolt bearing — PASS (utilisation 0.55). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Shear force against bolt bearing resistance — PASS (utilisation 0.55). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -49,90 +49,99 @@ public sealed class SpringCalculator : ICalcCalculator
     /// <summary>The record kind of a W3 material (<c>MaterialLibrary.Kind</c>; written out here because the mechanical assembly does not reference the library, and a test keeps the two equal).</summary>
     public const string MaterialKind = "material.properties";
 
-    private const string Part1 = "EN 13906-1";
-    private const string Part2 = "EN 13906-2";
-    private const string Part3 = "EN 13906-3";
+    private const string Part1 = "BS EN 13906-1:2013";
+    private const string Part2 = "BS EN 13906-2:2013";
+    private const string Part3 = "BS EN 13906-3:2014";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.5.0", CalcDiscipline.Mechanical, "Helical springs",
-        "A cylindrical helical spring of round wire, cold-coiled, with a linear characteristic: compression (rate, working points, solid length by end type, stress at the working points and at solid, buckling, Goodman fatigue, surge frequency), extension (the same with the initial tension and the hook stresses) or torsion (rate with the legs, curvature-corrected bending stress, wound diameter and body length).",
-        "Index and rate: C = D/d; k = G·d⁴/(8·D³·n) (compression, extension); k_φ = E·d⁴/(64·D·n_a), n_a = n + (l₁ + l₂)/(3π·D) (torsion)\n" +
+        Id, "1.6.0", CalcDiscipline.Mechanical, "Helical springs",
+        "Calculates the rate, working points, stresses, buckling, fatigue and surge of a cold-coiled round-wire helical spring: compression, extension or torsion. The characteristic is linear, with hook stresses for extension and legs for torsion springs.",
+        "Index and rate: C = D/d; k = G·d⁴/(8·D³·n_active) (compression, extension); k_φ = E·d⁴/(64·D·n_a), n_a = n_active + (l_leg_1 + l_leg_2)/(3π·D) (torsion)\n" +
         "Spring stress: τ_k = k_c·8·F·D/(π·d³), k_c = (C + 0.5)/(C − 0.75) (Bergsträsser) or (4C − 1)/(4C − 4) + 0.615/C (Wahl); torsion σ = q·32·M/(π·d³) with q = (C + 0.07)/(C − 0.75) (EN 13906-3, the default) or K_i = (4C² − C − 1)/(4C·(C − 1)) (Shigley)\n" +
-        "Solid length (compression): n_t = n + e_n; EN 13906-1 form L_s = d_max·(n_t + e_s) with (e_n, e_s) = (0, 1) plain, (1, 0) plain and ground, (2, 1.5) squared (closed, unground), (2, 0) squared and ground, and the minimum coil clearance S_a = (0.0015·D²/d + 0.1·d)·n checked at the working length (L₂ ≥ L_s + S_a); Shigley form L_s = d·(n_t + e_s) with e_s = 1 for squared; pitch p = (L₀ − a·d)/(n + b)\n" +
+        "Solid length (compression): n_t = n_active + e_n; EN 13906-1 form L_s = d_max·(n_t + e_s) with (e_n, e_s) = (0, 1) plain, (1, 0) plain and ground, (2, 1.5) squared (closed, unground), (2, 0) squared and ground, and the minimum coil clearance S_a = (0.0015·D²/d + 0.1·d)·n_active checked at the working length (L₂ ≥ L_s + S_a); Shigley form L_s = d·(n_t + e_s) with e_s = 1 for squared; pitch p = (L₀ − a·d)/(n_active + b)\n" +
         "Extension spring hook stresses: F = F₀ + k·s; hook bending σ_A = F·[K_A·16·D/(π·d³) + 4/(π·d²)], K_A = (4C₁² − C₁ − 1)/(4C₁·(C₁ − 1)), C₁ = 2r₁/d; hook torsion τ_B = K_B·8·F·D/(π·d³), K_B = (4C₂ − 1)/(4C₂ − 4), C₂ = 2r₂/d\n" +
         "Buckling (compression): λ_eff = ν·L₀/D; y_cr = L₀·C₁′·[1 − √(1 − C₂′/λ_eff²)], C₁′ = E/(2(E − G)), C₂′ = 2π²(E − G)/(2G + E); stable at any deflection when λ_eff² < C₂′\n" +
-        "Fatigue (Goodman, as M4): 1/n_f = a/S_e + m/S_u with a = (x₂ − x₁)/2, m = (x₂ + x₁)/2 of the stresses at the two working points; S_u = f_su·R_m in shear, R_m in bending; the extension hook has its own rows, bending σ_A with S_e_b and R_m, side bend τ_B with S_e and f_su·R_m; R_m typed or R_m = A/d^m from a W3 material (A in MPa, d in mm)\n" +
-        "Surge frequency: f_n = (d/(2π·n·D²))·√(G/(2ρ)); warning when f_n/f_op < 13\n" +
-        "Torsion body: D_w = D·n/(n + φ/2π); L_w = d·(n + 1 + φ/2π)",
+        "Fatigue (Goodman, as M4): 1/n_f = a/S_e + m/S_u with a = (x₂ − x₁)/2, m = (x₂ + x₁)/2 of the stresses at the two working points; S_u = f_su·R_m in shear, R_m in bending; the extension hook has its own rows, bending σ_A with S_e_b and R_m, side bend τ_B with S_e and f_su·R_m; R_m typed or R_m = A/d^m from a material record (A in MPa, d in mm)\n" +
+        "Surge frequency: f_n = (d/(2π·n_active·D²))·√(G/(2ρ)); warning when f_n/f_op < 13\n" +
+        "Torsion body: D_w = D·n_active/(n_active + φ/2π); L_w = d·(n_active + 1 + φ/2π)",
         [
-            new CalcInputSpec("mode", "Kind of spring", CalcInputKind.Choice, Choices: [Compression, Extension, Torsion], DefaultChoice: Compression, Group: "Spring"),
-            new CalcInputSpec("corr", "Stress correction factor k_c for the shear stress", CalcInputKind.Choice, Choices: [Bergstraesser, Wahl, Uncorrected], DefaultChoice: Bergstraesser, Group: "Spring"),
-            new CalcInputSpec("d", "Wire diameter", CalcInputKind.Quantity, "mm", Default: 2, Min: 0.1, Max: 20, HardMin: 0.05, HardMax: 50, Group: "Spring"),
-            new CalcInputSpec("D", "Mean coil diameter", CalcInputKind.Quantity, "mm", Default: 16, Min: 0.5, Max: 400, HardMin: 0.1, HardMax: 1000, Group: "Spring"),
-            new CalcInputSpec("n", "Active coils (torsion: coils of the body)", CalcInputKind.Number, Default: 8, Min: 2, Max: 200, HardMin: 0.25, HardMax: 1000, Group: "Spring"),
-            new CalcInputSpec("ends", "End type (compression)", CalcInputKind.Choice, Choices: [Plain, PlainGround, Squared, SquaredGround], DefaultChoice: SquaredGround, Group: "Spring"),
-            new CalcInputSpec("solid_method", "Solid length and clearance (compression): EN 13906-1 uses d_max, 1.5 d more for squared unground ends, and checks the minimum coil clearance at L₂; Shigley uses the nominal d", CalcInputKind.Choice, Choices: [SolidEn, SolidShigley], DefaultChoice: SolidEn, IsOptional: true, Group: "Spring"),
-            new CalcInputSpec("d_max", "Maximum wire diameter d_max (EN 13906-1 solid length; blank: the nominal d, no tolerance added)", CalcInputKind.Quantity, "mm", Min: 0.1, Max: 22, HardMin: 0.05, HardMax: 55, IsOptional: true, Group: "Spring"),
-            new CalcInputSpec("L0", "Free length (compression)", CalcInputKind.Quantity, "mm", Default: 45, Min: 1, Max: 1000, HardMin: 0.1, HardMax: 10000, IsOptional: true, Group: "Spring"),
-            new CalcInputSpec("r_h1", "Hook mean radius, bending (extension)", CalcInputKind.Quantity, "mm", Default: 8, Min: 0.5, Max: 200, HardMin: 0.05, HardMax: 1000, IsOptional: true, Group: "Spring"),
-            new CalcInputSpec("r_h2", "Hook side-bend mean radius, torsion (extension)", CalcInputKind.Quantity, "mm", Default: 4, Min: 0.5, Max: 200, HardMin: 0.05, HardMax: 1000, IsOptional: true, Group: "Spring"),
-            new CalcInputSpec("l_1", "Leg length 1 (torsion)", CalcInputKind.Quantity, "mm", Default: 0, Min: 0, Max: 500, HardMin: 0, HardMax: 10000, IsOptional: true, Group: "Spring"),
-            new CalcInputSpec("l_2", "Leg length 2 (torsion)", CalcInputKind.Quantity, "mm", Default: 0, Min: 0, Max: 500, HardMin: 0, HardMax: 10000, IsOptional: true, Group: "Spring"),
-            new CalcInputSpec("tors_factor", "Curvature factor of the bending stress (torsion): EN 13906-3 q or Shigley K_i", CalcInputKind.Choice, Choices: [TorsionEn, TorsionShigley], DefaultChoice: TorsionEn, IsOptional: true, Group: "Spring"),
-            new CalcInputSpec("work", "Working points given as", CalcInputKind.Choice, Choices: [Loads, Deflections], DefaultChoice: Loads, Group: "Working points"),
-            new CalcInputSpec("F_1", "Force at working point 1 (loads)", CalcInputKind.Quantity, "N", Default: 10, Min: 0, Max: 20000, HardMin: 0, HardMax: 1e6, IsOptional: true, Group: "Working points"),
-            new CalcInputSpec("F_2", "Force at working point 2 (loads)", CalcInputKind.Quantity, "N", Default: 40, Min: 0, Max: 20000, HardMin: 0, HardMax: 1e6, IsOptional: true, Group: "Working points"),
-            new CalcInputSpec("s_1", "Deflection at working point 1 (deflections)", CalcInputKind.Quantity, "mm", Default: 2, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Working points"),
-            new CalcInputSpec("s_2", "Deflection at working point 2 (deflections)", CalcInputKind.Quantity, "mm", Default: 8, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Working points"),
-            new CalcInputSpec("F_0", "Initial tension (extension)", CalcInputKind.Quantity, "N", Default: 10, Min: 0, Max: 5000, HardMin: 0, HardMax: 1e6, IsOptional: true, Group: "Working points"),
-            new CalcInputSpec("M_1", "Torque at working point 1 (torsion, loads)", CalcInputKind.Quantity, "N*m", Default: 0.05, Min: 0, Max: 100, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Working points"),
-            new CalcInputSpec("M_2", "Torque at working point 2 (torsion, loads)", CalcInputKind.Quantity, "N*m", Default: 0.15, Min: 0, Max: 100, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Working points"),
-            new CalcInputSpec("phi_1", "Angle at working point 1 (torsion, deflections)", CalcInputKind.Quantity, "deg", Default: 5, Min: 0, Max: 1080, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Working points"),
-            new CalcInputSpec("phi_2", "Angle at working point 2 (torsion, deflections)", CalcInputKind.Quantity, "deg", Default: 15, Min: 0, Max: 1080, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Working points"),
-            new CalcInputSpec("s_work", "Expected working travel s₂ − s₁ (optional, compression and extension; M9 lift links here): the sheet warns when the spring's own travel differs by more than 1 %; in torsion mode it is not used and the sheet says so", CalcInputKind.Quantity, "mm", Min: 0.1, Max: 1000, HardMin: 0.001, HardMax: 1e5, IsOptional: true, Group: "Working points"),
+            new CalcInputSpec("mode", "Kind of spring", CalcInputKind.Choice, Choices: [Compression, Extension, Torsion], DefaultChoice: Compression, Group: "Setup"),
+            new CalcInputSpec("corr", "Stress correction factor k_c for the shear stress", CalcInputKind.Choice, Choices: [Bergstraesser, Wahl, Uncorrected], DefaultChoice: Bergstraesser, Group: "Setup"),
+            new CalcInputSpec("ends", "End type (compression)", CalcInputKind.Choice, Choices: [Plain, PlainGround, Squared, SquaredGround], DefaultChoice: SquaredGround, Group: "Setup"),
+            new CalcInputSpec("work", "Working points given as", CalcInputKind.Choice, Choices: [Loads, Deflections], DefaultChoice: Loads, Group: "Setup"),
+            new CalcInputSpec("rm_source", "Where R_m(d) comes from: typed (no default: the wire certificate or your wire standard) or the curve R_m = A/d^m of a material record", CalcInputKind.Choice, Choices: [RmTyped, RmCurve], DefaultChoice: RmTyped, Group: "Setup"),
+            new CalcInputSpec("solid_method", "Solid length and clearance (compression): EN 13906-1 uses the maximum wire diameter, 1.5 d more for squared unground ends, and checks the minimum coil clearance at L₂; Shigley uses the nominal d", CalcInputKind.Choice, Choices: [SolidEn, SolidShigley], DefaultChoice: SolidEn, IsOptional: true, Group: "Setup"),
+            new CalcInputSpec("tors_factor", "Curvature factor of the bending stress (torsion): EN 13906-3 q or Shigley K_i", CalcInputKind.Choice, Choices: [TorsionEn, TorsionShigley], DefaultChoice: TorsionEn, IsOptional: true, Group: "Setup"),
+            new CalcInputSpec("d", "Wire diameter", CalcInputKind.Quantity, "mm", Default: 2, Min: 0.1, Max: 20, HardMin: 0.05, HardMax: 50, Group: "Geometry"),
+            new CalcInputSpec("D", "Mean coil diameter", CalcInputKind.Quantity, "mm", Default: 16, Min: 0.5, Max: 400, HardMin: 0.1, HardMax: 1000, Group: "Geometry"),
+            new CalcInputSpec("n_active", "Active coils (torsion: coils of the body)", CalcInputKind.Number, Default: 8, Min: 2, Max: 200, HardMin: 0.25, HardMax: 1000, Group: "Geometry", Aliases: ["n"]),
+            new CalcInputSpec("d_max", "Maximum wire diameter, for the EN 13906-1 solid length (optional; blank = the nominal d, no tolerance added)", CalcInputKind.Quantity, "mm", Min: 0.1, Max: 22, HardMin: 0.05, HardMax: 55, IsOptional: true, Group: "Geometry"),
+            new CalcInputSpec("L0", "Free length (compression)", CalcInputKind.Quantity, "mm", Default: 45, Min: 1, Max: 1000, HardMin: 0.1, HardMax: 10000, IsOptional: true, Group: "Geometry"),
+            new CalcInputSpec("r_h1", "Hook mean radius, bending (extension)", CalcInputKind.Quantity, "mm", Default: 8, Min: 0.5, Max: 200, HardMin: 0.05, HardMax: 1000, IsOptional: true, Group: "Geometry"),
+            new CalcInputSpec("r_h2", "Hook side-bend mean radius, torsion (extension)", CalcInputKind.Quantity, "mm", Default: 4, Min: 0.5, Max: 200, HardMin: 0.05, HardMax: 1000, IsOptional: true, Group: "Geometry"),
+            new CalcInputSpec("l_leg_1", "Leg length 1 (torsion)", CalcInputKind.Quantity, "mm", Default: 0, Min: 0, Max: 500, HardMin: 0, HardMax: 10000, IsOptional: true, Group: "Geometry", Aliases: ["l_1"]),
+            new CalcInputSpec("l_leg_2", "Leg length 2 (torsion)", CalcInputKind.Quantity, "mm", Default: 0, Min: 0, Max: 500, HardMin: 0, HardMax: 10000, IsOptional: true, Group: "Geometry", Aliases: ["l_2"]),
             new CalcInputSpec("G", "Shear modulus", CalcInputKind.Quantity, "GPa", Default: 80, Min: 20, Max: 100, HardMin: 1, HardMax: 200, Group: "Material", MaterialProperty: "G"),
             new CalcInputSpec("E", "Young's modulus", CalcInputKind.Quantity, "GPa", Default: 206, Min: 50, Max: 250, HardMin: 5, HardMax: 500, Group: "Material", MaterialProperty: "E"),
             new CalcInputSpec("rho", "Density", CalcInputKind.Quantity, "kg/m^3", Default: 7850, Min: 1000, Max: 20000, HardMin: 100, HardMax: 25000, Group: "Material", MaterialProperty: "rho"),
-            new CalcInputSpec("rm_source", "Where R_m(d) comes from: typed (no default: the wire certificate or your wire standard) or the curve R_m = A/d^m of a W3 material", CalcInputKind.Choice, Choices: [RmTyped, RmCurve], DefaultChoice: RmTyped, Group: "Strength"),
-            new CalcInputSpec("Rm", "Tensile strength of the wire at this diameter R_m(d), typed (no default)", CalcInputKind.Quantity, "MPa", Min: 300, Max: 3500, HardMin: 50, HardMax: 5000, IsOptional: true, Group: "Strength"),
-            new CalcInputSpec("Rm_A", "R_m(d) curve coefficient A of the W3 material (R_m = A/d^m, A in MPa for d in mm)", CalcInputKind.Quantity, "MPa", Min: 100, Max: 20000, HardMin: 1, HardMax: 1e5, IsOptional: true, Group: "Strength", MaterialProperty: "Rm_A"),
-            new CalcInputSpec("Rm_m", "R_m(d) curve exponent m of the W3 material", CalcInputKind.Number, Min: 0, Max: 0.5, HardMin: 0, HardMax: 5, IsOptional: true, Group: "Strength", MaterialProperty: "Rm_m"),
-            new CalcInputSpec("f_tau", "Permissible shear stress as a fraction of R_m (generic textbook default; replace with the licensed EN 13906 value)", CalcInputKind.Number, Default: 0.45, Min: 0.2, Max: 0.8, HardMin: 0.01, HardMax: 1, Group: "Strength"),
-            new CalcInputSpec("f_sigma", "Permissible bending stress as a fraction of R_m (torsion, hooks; generic textbook default, replace with the licensed EN 13906 value)", CalcInputKind.Number, Default: 0.75, Min: 0.3, Max: 1, HardMin: 0.01, HardMax: 1.5, IsOptional: true, Group: "Strength"),
-            new CalcInputSpec("f_su", "Ultimate shear strength as a fraction of R_m (Goodman, shear; generic textbook default, replace with the licensed EN 13906 value)", CalcInputKind.Number, Default: 0.67, Min: 0.4, Max: 0.9, HardMin: 0.05, HardMax: 1, Group: "Strength"),
-            new CalcInputSpec("nu_seat", "End-support coefficient ν (0.5 both ends fixed, 0.7 one fixed one pinned, 1 both pinned, 2 one free)", CalcInputKind.Number, Default: 0.5, Min: 0.5, Max: 2, HardMin: 0.25, HardMax: 5, Group: "Buckling"),
-            new CalcInputSpec("guided", "Spring guided by a mandrel or in a bore (compression): the guide restrains it against buckling, so the free-buckling check is not made", CalcInputKind.Boolean, Default: 0, Group: "Buckling"),
-            new CalcInputSpec("S_e", "Endurance strength for the stress kind (shear; bending in torsion) at N_c cycles, alternating (no default: from the wire maker or your fatigue reference)", CalcInputKind.Quantity, "MPa", Min: 50, Max: 2000, HardMin: 1, HardMax: 1e4, Group: "Fatigue and surge"),
-            new CalcInputSpec("N_c", "Required life the endurance strength belongs to", CalcInputKind.Number, Default: 1e7, Min: 1e4, Max: 1e10, HardMin: 1, HardMax: 1e12, Group: "Fatigue and surge"),
-            new CalcInputSpec("n_f_req", "Required Goodman safety factor", CalcInputKind.Number, Default: 1.2, Min: 1, Max: 5, HardMin: 0.5, HardMax: 20, Group: "Fatigue and surge"),
-            new CalcInputSpec("S_e_b", "Bending endurance strength of the hook (extension) at N_c cycles, alternating (optional; blank = hook bending fatigue is not assessed)", CalcInputKind.Quantity, "MPa", Min: 50, Max: 3000, HardMin: 1, HardMax: 1e4, IsOptional: true, Group: "Fatigue and surge"),
-            new CalcInputSpec("f_op", "Operating (excitation) frequency", CalcInputKind.Quantity, "Hz", Default: 10, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e6, IsOptional: true, Group: "Fatigue and surge"),
+            new CalcInputSpec("S_e", "Endurance strength for the stress kind (shear; bending in torsion) at N_c cycles, alternating (no default: from the wire maker or your fatigue reference)", CalcInputKind.Quantity, "MPa", Min: 50, Max: 2000, HardMin: 1, HardMax: 1e4, Group: "Material"),
+            new CalcInputSpec("Rm", "Tensile strength of the wire at this diameter, typed (no default)", CalcInputKind.Quantity, "MPa", Min: 300, Max: 3500, HardMin: 50, HardMax: 5000, IsOptional: true, Group: "Material"),
+            new CalcInputSpec("Rm_A", "Curve coefficient A of the material record (R_m = A/d^m, A in MPa for d in mm)", CalcInputKind.Quantity, "MPa", Min: 100, Max: 20000, HardMin: 1, HardMax: 1e5, IsOptional: true, Group: "Material", MaterialProperty: "Rm_A"),
+            new CalcInputSpec("Rm_m", "Curve exponent m of the material record", CalcInputKind.Number, Min: 0, Max: 0.5, HardMin: 0, HardMax: 5, IsOptional: true, Group: "Material", MaterialProperty: "Rm_m"),
+            new CalcInputSpec("S_e_b", "Bending endurance strength of the hook (extension) at N_c cycles, alternating (optional; blank = hook bending fatigue is not assessed)", CalcInputKind.Quantity, "MPa", Min: 50, Max: 3000, HardMin: 1, HardMax: 1e4, IsOptional: true, Group: "Material"),
+            new CalcInputSpec("F_1", "Force at working point 1 (loads)", CalcInputKind.Quantity, "N", Default: 10, Min: 0, Max: 20000, HardMin: 0, HardMax: 1e6, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("F_2", "Force at working point 2 (loads)", CalcInputKind.Quantity, "N", Default: 40, Min: 0, Max: 20000, HardMin: 0, HardMax: 1e6, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("s_1", "Deflection at working point 1 (deflections)", CalcInputKind.Quantity, "mm", Default: 2, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("s_2", "Deflection at working point 2 (deflections)", CalcInputKind.Quantity, "mm", Default: 8, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("F_0", "Initial tension (extension)", CalcInputKind.Quantity, "N", Default: 10, Min: 0, Max: 5000, HardMin: 0, HardMax: 1e6, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("M_1", "Torque at working point 1 (torsion, loads)", CalcInputKind.Quantity, "N*m", Default: 0.05, Min: 0, Max: 100, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("M_2", "Torque at working point 2 (torsion, loads)", CalcInputKind.Quantity, "N*m", Default: 0.15, Min: 0, Max: 100, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("phi_1", "Angle at working point 1 (torsion, deflections)", CalcInputKind.Quantity, "deg", Default: 5, Min: 0, Max: 1080, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("phi_2", "Angle at working point 2 (torsion, deflections)", CalcInputKind.Quantity, "deg", Default: 15, Min: 0, Max: 1080, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("s_work", "Expected working travel s₂ − s₁ (optional; blank = no check). The sheet warns when the spring's own travel differs by more than 1 %. Torsion mode does not use it, and the sheet says so", CalcInputKind.Quantity, "mm", Min: 0.1, Max: 1000, HardMin: 0.001, HardMax: 1e5, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("guided", "Spring guided by a mandrel or in a bore (compression): the guide restrains it against buckling, so the free-buckling check is not made", CalcInputKind.Boolean, Default: 0, Group: "Conditions"),
+            new CalcInputSpec("nu_seat", "End-support coefficient ν (0.5 both ends fixed, 0.7 one fixed one pinned, 1 both pinned, 2 one free)", CalcInputKind.Number, Default: 0.5, Min: 0.5, Max: 2, HardMin: 0.25, HardMax: 5, Group: "Conditions"),
+            new CalcInputSpec("f_op", "Operating (excitation) frequency", CalcInputKind.Quantity, "Hz", Default: 10, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e6, IsOptional: true, Group: "Conditions"),
+            new CalcInputSpec("f_tau", "Permissible shear stress as a fraction of R_m (generic textbook default; replace with the licensed EN 13906 value)", CalcInputKind.Number, Default: 0.45, Min: 0.2, Max: 0.8, HardMin: 0.01, HardMax: 1, Group: "Factors"),
+            new CalcInputSpec("f_su", "Ultimate shear strength as a fraction of R_m (Goodman, shear; generic textbook default, replace with the licensed EN 13906 value)", CalcInputKind.Number, Default: 0.67, Min: 0.4, Max: 0.9, HardMin: 0.05, HardMax: 1, Group: "Factors"),
+            new CalcInputSpec("f_sigma", "Permissible bending stress as a fraction of R_m (torsion, hooks; generic textbook default, replace with the licensed EN 13906 value)", CalcInputKind.Number, Default: 0.75, Min: 0.3, Max: 1, HardMin: 0.01, HardMax: 1.5, IsOptional: true, Group: "Factors"),
+            new CalcInputSpec("n_f_req", "Required Goodman safety factor", CalcInputKind.Number, Default: 1.2, Min: 1, Max: 5, HardMin: 0.5, HardMax: 20, Group: "Requirements"),
+            new CalcInputSpec("N_c", "Number of cycles the endurance strength belongs to", CalcInputKind.Number, Default: 1e7, Min: 1e4, Max: 1e10, HardMin: 1, HardMax: 1e12, Group: "Requirements"),
         ],
         [
-            new CalcAssumption("Linear characteristic: the rate is constant between the working points; no progressive or conical spring, no variable pitch.", "Cold-coiled round wire up to 20 mm."),
-            new CalcAssumption("Active coils n are as entered; end coils are accounted for only in the solid length (and the pitch) by the end type; the hook and leg flexibility is in the rate only for the torsion legs.", "Shigley 10th ed. Ch. 10, geometry of the ends."),
-            new CalcAssumption("Solid length: the EN 13906-1 form (default) uses the maximum wire diameter d_max, adds the 1.5 d of an unground squared end and checks the minimum coil clearance S_a at the working length L₂; plain ends have no EN row and keep the geometric form. The Shigley form (nominal d, no clearance) is selectable.", "EN 13906-1 relations written in own notation, to be checked against the owner's copy; Shigley 10th ed. Table 10-1."),
-            new CalcAssumption("Torsion bending stress: the EN 13906-3 factor q = (C + 0.07)/(C − 0.75) is the default; Shigley's K_i = (4C² − C − 1)/(4C(C − 1)) is selectable and about 1 % lower at C = 8.", "EN 13906-3 relation written in own notation, to be checked against the owner's copy."),
-            new CalcAssumption("R_m(d) and the endurance strength are the user's inputs from the user's own copy of the wire standard and design reference, with no default. The permissible stress fractions f_τ, f_σ and f_su do default (0.45, 0.75, 0.67), to generic textbook fractions that the user replaces with the licensed EN 13906 value. R_m(d) can instead be taken from the curve R_m = A/d^m of a W3 material (revision-pinned; A in MPa for d in mm, the diameter range of the fit is the user's to respect). No wire-strength table and no permissible-stress diagram is shipped.", "No wire-strength table or permissible-stress diagram is shipped."),
-            new CalcAssumption("The stress correction factor k_c is applied to the working and the solid stress alike (conservative for the static check).", "Choose 'None (uncorrected)' for the uncorrected static stress; the fatigue stresses (Goodman) always carry the curvature factor, the Bergsträsser one when 'None' is chosen."),
-            new CalcAssumption("Extension: the hook shape beyond its two radii is not assessed; hook fatigue is Goodman on the bending stress (with the bending endurance S_e_b, which has no default) and on the side-bend torsion (with the shear endurance S_e), each between its values at the two working points; the initial tension is a force the user enters.", "Shigley 10th ed. Ch. 10, extension springs."),
-            new CalcAssumption("Surge is the first natural frequency of a spring with both ends fixed; a spring with one end free has half of it.", "Shigley 10th ed. Ch. 10, critical frequency."),
+            new CalcAssumption("The rate is constant between the working points, with no progressive or conical spring and no variable pitch.", "Cold-coiled round wire up to 20 mm."),
+            new CalcAssumption("The active coils are as entered, and end coils count only in the solid length and the pitch.", "Shigley 10th ed. Ch. 10, geometry of the ends."),
+            new CalcAssumption("Hook flexibility is not in the rate, and leg flexibility is in the rate only for torsion springs.", "Shigley 10th ed. Ch. 10, geometry of the ends."),
+            new CalcAssumption("The EN 13906-1 solid length uses the maximum wire diameter d_max and adds 1.5 d for an unground squared end.", "EN 13906-1 relations written in own notation, to be checked against the owner's copy, and Shigley 10th ed. Table 10-1."),
+            new CalcAssumption("The EN 13906-1 form checks the minimum coil clearance S_a at the working length L₂.", "EN 13906-1 relation written in own notation, to be checked against the owner's copy."),
+            new CalcAssumption("Plain ends have no EN row and keep the geometric form, and the Shigley form (nominal d) is selectable.", "Shigley 10th ed. Table 10-1."),
+            new CalcAssumption("The default bending stress factor of a torsion spring is the EN 13906-3 q = (C + 0.07)/(C − 0.75).", "EN 13906-3 relation written in own notation, to be checked against the owner's copy."),
+            new CalcAssumption("Shigley's K_i = (4C² − C − 1)/(4C(C − 1)) is selectable and 1 % lower at C = 8.", "Shigley 10th ed. Ch. 10, torsion springs."),
+            new CalcAssumption("R_m(d) and the endurance strength are user inputs from the wire standard or certificate, with no default.", "No wire-strength table or permissible-stress diagram is shipped."),
+            new CalcAssumption("The permissible stress fractions default to generic textbook fractions, which the user replaces with the licensed EN 13906 value.", "The defaults are 0.45 for f_tau, 0.75 for f_sigma and 0.67 for f_su."),
+            new CalcAssumption("R_m(d) can come from the curve R_m = A/d^m of a material record, A in MPa and d in mm.", "The material is revision-pinned, and the user respects the diameter range of the fit."),
+            new CalcAssumption("The stress correction factor k_c is applied to the working and the solid stress alike.", "Conservative for the static check. Choose 'None (uncorrected)' for the uncorrected static stress, and the fatigue stresses still carry the curvature factor, the Bergsträsser one when 'None' is chosen."),
+            new CalcAssumption("The hook shape beyond its two radii is not assessed in an extension spring.", "Shigley 10th ed. Ch. 10, extension springs."),
+            new CalcAssumption("Hook fatigue is Goodman, on the bending stress and on the side-bend torsion between the two working points.", "The bending uses the endurance S_e_b, which has no default, and the side bend uses the shear endurance S_e."),
+            new CalcAssumption("The initial tension of an extension spring is a force the user enters.", "Shigley 10th ed. Ch. 10, extension springs."),
+            new CalcAssumption("Surge is the first natural frequency of a spring with both ends fixed.", "Shigley 10th ed. Ch. 10, critical frequency."),
+            new CalcAssumption("A spring with one end free has half the surge frequency.", "Shigley 10th ed. Ch. 10, critical frequency."),
         ],
         [
-            new CalcClauseRef(Part1, "Calculation of compression springs", "Rate, stress correction, solid length, buckling, fatigue, surge"),
-            new CalcClauseRef(Part2, "Calculation of extension springs", "Rate, initial tension, hook stress"),
-            new CalcClauseRef(Part3, "Calculation of torsion springs", "Rate, bending stress with curvature correction"),
-            new CalcClauseRef("Shigley's Mechanical Engineering Design", "10th ed., Ch. 10", "Helical springs: end geometry, buckling, critical frequency, extension and torsion springs"),
+            new CalcClauseRef(Part1, "—", "Calculation of compression springs: rate, stress correction, solid length, buckling, fatigue, surge"),
+            new CalcClauseRef(Part2, "—", "Calculation of extension springs: rate, initial tension, hook stress"),
+            new CalcClauseRef(Part3, "—", "Calculation of torsion springs: rate, bending stress with curvature correction"),
+            new CalcClauseRef("Budynas, Shigley's Mechanical Engineering Design", "Ch. 10, 10th ed.", "Helical springs: end geometry, buckling, critical frequency, extension and torsion springs"),
         ],
         [
             new CalcApplicabilityRule("geometry", "The mean coil diameter must exceed the wire diameter; the elastic constants must satisfy E > G.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("solid", "The free length must exceed the solid length of the end type (EN 13906-1: the solid length plus the minimum coil clearance).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("missing", "An input the chosen mode needs is blank.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("wire-strength", "R_m(d) must be typed or its W3 curve (A, m) given, and must lie in 50 … 5000 MPa.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("wire-strength", "R_m(d) must be typed or its material curve (A, m) given, and must lie in 50 to 5000 MPa.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("d-max", "The maximum wire diameter cannot be below the nominal diameter.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("sequence", "Working point 2 must not be below working point 1; an extension spring's first force must reach the initial tension.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("hook", "The hook radii must exceed half the wire diameter.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("index", "The spring index C = D/d is outside 4 … 20.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("index", "The spring index C = D/d is outside 4 to 20.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("buckling", "The deflection at working point 2 reaches the buckling deflection of the spring: the buckling check fails.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("surge", "The surge frequency is less than 13 times the operating frequency.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("travel-mismatch", "The spring's working travel s₂ − s₁ differs from the expected working travel by more than 1 %.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
@@ -143,59 +152,59 @@ public sealed class SpringCalculator : ICalcCalculator
         [
             new CalcTestCase("ka-compression", "Compression spring, squared and ground ends: rate, stress, solid length, surge, Goodman",
                 new CalcReferenceSource("Analytic (closed-form; recomputed in python3)", null, "d 2 mm, D 16 mm, n 8, G 80 GPa: k = G d⁴/(8 D³ n) = 4.8828125 N/mm exactly; C = 8, k_c = 8.5/7.25 = 1.1724138; n_t = 10, L_s = 20 mm; F_2 = 40 N: s_2 = 8.192 mm, τ_2 = k_c·8·F·D/(π d³) = 238.84218 MPa; F_c = k·(45 − 20) = 122.07031 N, τ_c = 728.88848 MPa; f_n = (d/(2π n D²))√(G/2ρ) = 350.84504 Hz; Goodman 1/n_f = τ_a/S_e + τ_m/(0.67·R_m) = 0.3476926"),
-                [Q("d", 2, "mm"), Q("D", 16, "mm"), CalcInputValue.Of("n", 8), CalcInputValue.Choice("mode", Compression), CalcInputValue.Choice("corr", Bergstraesser), CalcInputValue.Choice("ends", SquaredGround), Q("L0", 45, "mm"), CalcInputValue.Choice("work", Loads), Q("F_1", 10, "N"), Q("F_2", 40, "N"), Q("G", 80, "GPa"), Q("E", 206, "GPa"), Q("rho", 7850, "kg/m^3"), Q("Rm", 1800, "MPa"), CalcInputValue.Of("f_tau", 0.45), CalcInputValue.Of("f_su", 0.67), CalcInputValue.Of("nu_seat", 0.5), Q("S_e", 400, "MPa"), CalcInputValue.Of("N_c", 1e7), CalcInputValue.Of("n_f_req", 1.2), Q("f_op", 10, "Hz")],
+                [Q("d", 2, "mm"), Q("D", 16, "mm"), CalcInputValue.Of("n_active", 8), CalcInputValue.Choice("mode", Compression), CalcInputValue.Choice("corr", Bergstraesser), CalcInputValue.Choice("ends", SquaredGround), Q("L0", 45, "mm"), CalcInputValue.Choice("work", Loads), Q("F_1", 10, "N"), Q("F_2", 40, "N"), Q("G", 80, "GPa"), Q("E", 206, "GPa"), Q("rho", 7850, "kg/m^3"), Q("Rm", 1800, "MPa"), CalcInputValue.Of("f_tau", 0.45), CalcInputValue.Of("f_su", 0.67), CalcInputValue.Of("nu_seat", 0.5), Q("S_e", 400, "MPa"), CalcInputValue.Of("N_c", 1e7), CalcInputValue.Of("n_f_req", 1.2), Q("f_op", 10, "Hz")],
                 [new CalcExpectedValue("C", 8, "", 1e-9), new CalcExpectedValue("k", 4.8828125, "N/mm", 1e-9), new CalcExpectedValue("k_c", 1.17241379, "", 1e-7), new CalcExpectedValue("L_s", 20, "mm", 1e-9), new CalcExpectedValue("s_2", 8.192, "mm", 1e-9), new CalcExpectedValue("tau_2", 238.842177, "MPa", 1e-7), new CalcExpectedValue("F_c", 122.070312, "N", 1e-7), new CalcExpectedValue("tau_c", 728.888479, "MPa", 1e-7), new CalcExpectedValue("u_c", 0.899862319, "", 1e-7), new CalcExpectedValue("f_n", 350.845041, "Hz", 1e-7), new CalcExpectedValue("r_f", 35.0845041, "", 1e-7), new CalcExpectedValue("u_f", 0.347692617, "", 1e-7)]),
             new CalcTestCase("ka-wahl-slender", "Slender compression spring from deflections, Wahl factor, pinned ends: buckling deflection",
                 new CalcReferenceSource("Analytic (closed-form; recomputed in python3)", null, "d 2 mm, D 20 mm, n 10, G 80 GPa, E 206 GPa, plain and ground ends, L₀ 80 mm, ν 1: k = 2 N/mm, s₁ 4 and s₂ 12 mm give F₁ 8 and F₂ 24 N; Wahl k_c = 39/36 + 0.0615 = 1.1448333; L_s = 22 mm; C₁′ = 206/252 = 0.8174603, C₂′ = 2π²·126/366 = 6.7954653, λ_eff = 4, y_cr = 80·C₁′·(1 − √(1 − C₂′/16)) = 15.795007 mm, s₂/y_cr = 0.7597337; f_n = 179.63266 Hz, f_n/25 Hz = 7.185306"),
-                [Q("d", 2, "mm"), Q("D", 20, "mm"), CalcInputValue.Of("n", 10), CalcInputValue.Choice("mode", Compression), CalcInputValue.Choice("corr", Wahl), CalcInputValue.Choice("ends", PlainGround), Q("L0", 80, "mm"), CalcInputValue.Choice("work", Deflections), Q("s_1", 4, "mm"), Q("s_2", 12, "mm"), Q("G", 80, "GPa"), Q("E", 206, "GPa"), Q("rho", 7850, "kg/m^3"), Q("Rm", 1800, "MPa"), CalcInputValue.Of("f_tau", 0.45), CalcInputValue.Of("f_su", 0.67), CalcInputValue.Of("nu_seat", 1), Q("S_e", 350, "MPa"), CalcInputValue.Of("N_c", 1e7), CalcInputValue.Of("n_f_req", 1.2), Q("f_op", 25, "Hz")],
+                [Q("d", 2, "mm"), Q("D", 20, "mm"), CalcInputValue.Of("n_active", 10), CalcInputValue.Choice("mode", Compression), CalcInputValue.Choice("corr", Wahl), CalcInputValue.Choice("ends", PlainGround), Q("L0", 80, "mm"), CalcInputValue.Choice("work", Deflections), Q("s_1", 4, "mm"), Q("s_2", 12, "mm"), Q("G", 80, "GPa"), Q("E", 206, "GPa"), Q("rho", 7850, "kg/m^3"), Q("Rm", 1800, "MPa"), CalcInputValue.Of("f_tau", 0.45), CalcInputValue.Of("f_su", 0.67), CalcInputValue.Of("nu_seat", 1), Q("S_e", 350, "MPa"), CalcInputValue.Of("N_c", 1e7), CalcInputValue.Of("n_f_req", 1.2), Q("f_op", 25, "Hz")],
                 [new CalcExpectedValue("k", 2, "N/mm", 1e-9), new CalcExpectedValue("F_1", 8, "N", 1e-9), new CalcExpectedValue("F_2", 24, "N", 1e-9), new CalcExpectedValue("k_c", 1.14483333, "", 1e-7), new CalcExpectedValue("L_s", 22, "mm", 1e-9), new CalcExpectedValue("y_cr", 15.7950074, "mm", 1e-7), new CalcExpectedValue("u_b", 0.759733736, "", 1e-7), new CalcExpectedValue("f_n", 179.632661, "Hz", 1e-7), new CalcExpectedValue("r_f", 7.18530644, "", 1e-7), new CalcExpectedValue("n_f", 3.79821968, "", 1e-7)]),
             new CalcTestCase("ka-extension", "Extension spring with initial tension and hooks: rate, stresses, hook stresses",
                 new CalcReferenceSource("Analytic (closed-form; recomputed in python3)", null, "d 2 mm, D 16 mm, n 20, G 80 GPa: k = 1.953125 N/mm exactly; F₀ 10 N, F₁ 30 N, F₂ 60 N: s₁ 10.24 mm, s₂ 25.6 mm; k_c = 1.1724138, τ₀ = 59.710544, τ₂ = 358.26327 MPa; hooks r₁ 8 mm (C₁ = 8, K_A = 247/224 = 1.1026786), r₂ 4 mm (C₂ = 4, K_B = 15/12 = 1.25): σ_A = F[K_A·16D/(πd³) + 4/(πd²)] = 693.00610 MPa, τ_B = 381.97186 MPa; body length d(n + 1) = 42 mm; f_n = 140.33802 Hz"),
-                [Q("d", 2, "mm"), Q("D", 16, "mm"), CalcInputValue.Of("n", 20), CalcInputValue.Choice("mode", Extension), CalcInputValue.Choice("corr", Bergstraesser), CalcInputValue.Choice("work", Loads), Q("F_0", 10, "N"), Q("F_1", 30, "N"), Q("F_2", 60, "N"), Q("r_h1", 8, "mm"), Q("r_h2", 4, "mm"), Q("G", 80, "GPa"), Q("rho", 7850, "kg/m^3"), Q("Rm", 1800, "MPa"), CalcInputValue.Of("f_tau", 0.45), CalcInputValue.Of("f_sigma", 0.75), CalcInputValue.Of("f_su", 0.67), Q("S_e", 400, "MPa"), CalcInputValue.Of("N_c", 1e7), CalcInputValue.Of("n_f_req", 1.2), Q("f_op", 10, "Hz")],
+                [Q("d", 2, "mm"), Q("D", 16, "mm"), CalcInputValue.Of("n_active", 20), CalcInputValue.Choice("mode", Extension), CalcInputValue.Choice("corr", Bergstraesser), CalcInputValue.Choice("work", Loads), Q("F_0", 10, "N"), Q("F_1", 30, "N"), Q("F_2", 60, "N"), Q("r_h1", 8, "mm"), Q("r_h2", 4, "mm"), Q("G", 80, "GPa"), Q("rho", 7850, "kg/m^3"), Q("Rm", 1800, "MPa"), CalcInputValue.Of("f_tau", 0.45), CalcInputValue.Of("f_sigma", 0.75), CalcInputValue.Of("f_su", 0.67), Q("S_e", 400, "MPa"), CalcInputValue.Of("N_c", 1e7), CalcInputValue.Of("n_f_req", 1.2), Q("f_op", 10, "Hz")],
                 [new CalcExpectedValue("k", 1.953125, "N/mm", 1e-9), new CalcExpectedValue("s_1", 10.24, "mm", 1e-9), new CalcExpectedValue("s_2", 25.6, "mm", 1e-9), new CalcExpectedValue("L_s", 42, "mm", 1e-9), new CalcExpectedValue("tau_0", 59.7105442, "MPa", 1e-7), new CalcExpectedValue("tau_2", 358.263265, "MPa", 1e-7), new CalcExpectedValue("sigma_A", 693.006095, "MPa", 1e-7), new CalcExpectedValue("tau_B", 381.971863, "MPa", 1e-7), new CalcExpectedValue("u_A", 0.513337848, "", 1e-7), new CalcExpectedValue("f_n", 140.338016, "Hz", 1e-7), new CalcExpectedValue("u_f", 0.446715079, "", 1e-7)]),
             new CalcTestCase("ka-torsion", "Torsion spring with 30 mm legs: rate, bending stress, wound diameter",
                 new CalcReferenceSource("Analytic (closed-form; recomputed in python3)", null, "d 2 mm, D 16 mm, body n = 6, legs 30 + 30 mm, E 206 GPa: n_a = 6 + 60/(3π·16) = 6.3978874; k_φ = E d⁴/(64 D n_a) = 0.50309576 N·m/rad; C = 8, K_i = 247/224 = 1.1026786; M₁ 0.05 and M₂ 0.15 N·m: φ₁ 5.694321°, φ₂ 17.082964°; σ₂ = K_i·32·M/(π d³) = 210.59609 MPa; D_w = D·n/(n + φ/2π) = 15.874452 mm; body length d(n + 1) = 14 mm, wound 14.094905 mm; Goodman (S_e 500 MPa, bending, S_u = R_m): 1/n_f = 0.2183960; the curvature factor is Shigley's K_i, chosen explicitly (the sheet's default is the EN 13906-3 q)"),
-                [Q("d", 2, "mm"), Q("D", 16, "mm"), CalcInputValue.Of("n", 6), CalcInputValue.Choice("mode", Torsion), CalcInputValue.Choice("tors_factor", TorsionShigley), CalcInputValue.Choice("work", Loads), Q("l_1", 30, "mm"), Q("l_2", 30, "mm"), Q("M_1", 0.05, "N*m"), Q("M_2", 0.15, "N*m"), Q("E", 206, "GPa"), Q("Rm", 1800, "MPa"), CalcInputValue.Of("f_sigma", 0.75), Q("S_e", 500, "MPa"), CalcInputValue.Of("N_c", 1e7), CalcInputValue.Of("n_f_req", 1.2)],
+                [Q("d", 2, "mm"), Q("D", 16, "mm"), CalcInputValue.Of("n_active", 6), CalcInputValue.Choice("mode", Torsion), CalcInputValue.Choice("tors_factor", TorsionShigley), CalcInputValue.Choice("work", Loads), Q("l_leg_1", 30, "mm"), Q("l_leg_2", 30, "mm"), Q("M_1", 0.05, "N*m"), Q("M_2", 0.15, "N*m"), Q("E", 206, "GPa"), Q("Rm", 1800, "MPa"), CalcInputValue.Of("f_sigma", 0.75), Q("S_e", 500, "MPa"), CalcInputValue.Of("N_c", 1e7), CalcInputValue.Of("n_f_req", 1.2)],
                 [new CalcExpectedValue("n_a", 6.39788736, "", 1e-7), new CalcExpectedValue("k_phi", 0.50309576, "N*m/rad", 1e-7), new CalcExpectedValue("K_i", 1.10267857, "", 1e-7), new CalcExpectedValue("phi_1", 5.69432145, "deg", 1e-7), new CalcExpectedValue("phi_2", 17.0829644, "deg", 1e-7), new CalcExpectedValue("sigma_2", 210.596094, "MPa", 1e-7), new CalcExpectedValue("D_w", 15.8744525, "mm", 1e-7), new CalcExpectedValue("L_w", 14.0949054, "mm", 1e-7), new CalcExpectedValue("u_2", 0.155997107, "", 1e-7), new CalcExpectedValue("u_f", 0.21839595, "", 1e-7)]),
             new CalcTestCase("ka-torsion-en", "Torsion spring of the previous case with the EN 13906-3 curvature factor q (the default)",
                 new CalcReferenceSource("Analytic from the EN 13906-3 relation q = (C + 0.07)/(C − 0.75) as implemented (recomputed in python); the relation is typed from the published expression and is to be checked against the owner's copy of the standard", "EN 13906-3",
                     "d 2 mm, D 16 mm, n = 6, legs 30 + 30 mm, E 206 GPa as before (n_a, k_φ, φ, D_w, L_w unchanged): C = 8, q = 8.07/7.25 = 1.1131034 (Shigley K_i = 1.1026786, 0.94 % lower); M₁ 0.05 and M₂ 0.15 N·m: σ₂ = q·32·M/(π d³) = 212.58710 MPa, u₂ = σ₂/(0.75·1800) = 0.1574719; Goodman (S_e 500 MPa, S_u = R_m): 1/n_f = 0.2204607"),
-                [Q("d", 2, "mm"), Q("D", 16, "mm"), CalcInputValue.Of("n", 6), CalcInputValue.Choice("mode", Torsion), CalcInputValue.Choice("tors_factor", TorsionEn), CalcInputValue.Choice("work", Loads), Q("l_1", 30, "mm"), Q("l_2", 30, "mm"), Q("M_1", 0.05, "N*m"), Q("M_2", 0.15, "N*m"), Q("E", 206, "GPa"), Q("Rm", 1800, "MPa"), CalcInputValue.Of("f_sigma", 0.75), Q("S_e", 500, "MPa"), CalcInputValue.Of("N_c", 1e7), CalcInputValue.Of("n_f_req", 1.2)],
+                [Q("d", 2, "mm"), Q("D", 16, "mm"), CalcInputValue.Of("n_active", 6), CalcInputValue.Choice("mode", Torsion), CalcInputValue.Choice("tors_factor", TorsionEn), CalcInputValue.Choice("work", Loads), Q("l_leg_1", 30, "mm"), Q("l_leg_2", 30, "mm"), Q("M_1", 0.05, "N*m"), Q("M_2", 0.15, "N*m"), Q("E", 206, "GPa"), Q("Rm", 1800, "MPa"), CalcInputValue.Of("f_sigma", 0.75), Q("S_e", 500, "MPa"), CalcInputValue.Of("N_c", 1e7), CalcInputValue.Of("n_f_req", 1.2)],
                 [new CalcExpectedValue("n_a", 6.39788736, "", 1e-7), new CalcExpectedValue("q", 1.11310344828, "", 1e-9), new CalcExpectedValue("sigma_2", 212.587099159, "MPa", 1e-7), new CalcExpectedValue("u_2", 0.157471925303, "", 1e-7), new CalcExpectedValue("u_f", 0.220460695424, "", 1e-7)],
                 CalcReferenceStatus.Unconfirmed),
             new CalcTestCase("ka-squared-en", "Squared (unground) ends by EN 13906-1: solid length with d_max and 1.5 d, minimum coil clearance at L₂",
                 new CalcReferenceSource("Analytic from the EN 13906-1 relations as implemented (recomputed in python): L_c = (n_t + 1.5)·d_max for closed unground ends, S_a = (0.0015·D²/d + 0.1·d)·n; typed from the published expressions, to be checked against the owner's copy of the standard", "EN 13906-1",
                     "d 2 mm (d_max 2.04 mm), D 16 mm, n 8, G 80 GPa, squared ends, L₀ 45 mm, F₁ 10 N, F₂ 40 N: k = 4.8828125 N/mm, n_t = 10, L_s = 2.04·11.5 = 23.46 mm (Shigley d(n_t + 1) = 22 mm), S_a = (0.0015·256/2 + 0.2)·8 = 3.136 mm, L_n = 26.596 mm; s₂ = 8.192 mm, L₂ = 36.808 mm ≥ L_n; s_c = 21.54 mm, s_n = 18.404 mm, s₂/s_c = 0.3803157, s₂/s_n = 0.4451206; F_c = 105.17578 N, u_c = 0.7753214"),
-                [Q("d", 2, "mm"), Q("d_max", 2.04, "mm"), Q("D", 16, "mm"), CalcInputValue.Of("n", 8), CalcInputValue.Choice("mode", Compression), CalcInputValue.Choice("corr", Bergstraesser), CalcInputValue.Choice("ends", Squared), CalcInputValue.Choice("solid_method", SolidEn), Q("L0", 45, "mm"), CalcInputValue.Choice("work", Loads), Q("F_1", 10, "N"), Q("F_2", 40, "N"), Q("G", 80, "GPa"), Q("E", 206, "GPa"), Q("rho", 7850, "kg/m^3"), Q("Rm", 1800, "MPa"), CalcInputValue.Of("f_tau", 0.45), CalcInputValue.Of("f_su", 0.67), CalcInputValue.Of("nu_seat", 0.5), Q("S_e", 400, "MPa"), CalcInputValue.Of("N_c", 1e7), CalcInputValue.Of("n_f_req", 1.2)],
+                [Q("d", 2, "mm"), Q("d_max", 2.04, "mm"), Q("D", 16, "mm"), CalcInputValue.Of("n_active", 8), CalcInputValue.Choice("mode", Compression), CalcInputValue.Choice("corr", Bergstraesser), CalcInputValue.Choice("ends", Squared), CalcInputValue.Choice("solid_method", SolidEn), Q("L0", 45, "mm"), CalcInputValue.Choice("work", Loads), Q("F_1", 10, "N"), Q("F_2", 40, "N"), Q("G", 80, "GPa"), Q("E", 206, "GPa"), Q("rho", 7850, "kg/m^3"), Q("Rm", 1800, "MPa"), CalcInputValue.Of("f_tau", 0.45), CalcInputValue.Of("f_su", 0.67), CalcInputValue.Of("nu_seat", 0.5), Q("S_e", 400, "MPa"), CalcInputValue.Of("N_c", 1e7), CalcInputValue.Of("n_f_req", 1.2)],
                 [new CalcExpectedValue("k", 4.8828125, "N/mm", 1e-9), new CalcExpectedValue("n_t", 10, "", 1e-9), new CalcExpectedValue("L_s", 23.46, "mm", 1e-9), new CalcExpectedValue("S_a", 3.136, "mm", 1e-9), new CalcExpectedValue("L_n", 26.596, "mm", 1e-9), new CalcExpectedValue("L_2", 36.808, "mm", 1e-9), new CalcExpectedValue("s_c", 21.54, "mm", 1e-9), new CalcExpectedValue("s_n", 18.404, "mm", 1e-9), new CalcExpectedValue("u_s", 0.380315691736, "", 1e-7), new CalcExpectedValue("u_n", 0.445120625951, "", 1e-7), new CalcExpectedValue("F_c", 105.17578125, "N", 1e-7), new CalcExpectedValue("u_c", 0.775321374273, "", 1e-7)],
                 CalcReferenceStatus.Unconfirmed),
             new CalcTestCase("ka-rm-curve", "Compression spring with R_m(d) taken from a W3 material curve R_m = A/d^m",
                 new CalcReferenceSource("Analytic (closed-form; recomputed in python3)", null,
                     "The geometry and loads of ka-compression; R_m = A/d^m with A = 1800 MPa (d in mm) and m = 0.1 at d = 2 mm: R_m = 1800/2^0.1 = 1679.4594 MPa (the typed R_m is not entered); τ_perm = 0.45·R_m = 755.7567 MPa, u₂ = 238.84218/755.7567 = 0.3160305, u_c = 728.88848/755.7567 = 0.9644486; Goodman (S_e 400 MPa, S_su = 0.67·R_m): 1/n_f = 0.3565766"),
-                [Q("d", 2, "mm"), Q("D", 16, "mm"), CalcInputValue.Of("n", 8), CalcInputValue.Choice("mode", Compression), CalcInputValue.Choice("corr", Bergstraesser), CalcInputValue.Choice("ends", SquaredGround), Q("L0", 45, "mm"), CalcInputValue.Choice("work", Loads), Q("F_1", 10, "N"), Q("F_2", 40, "N"), Q("G", 80, "GPa"), Q("E", 206, "GPa"), Q("rho", 7850, "kg/m^3"), CalcInputValue.Choice("rm_source", RmCurve), Q("Rm_A", 1800, "MPa"), CalcInputValue.Of("Rm_m", 0.1), CalcInputValue.Of("f_tau", 0.45), CalcInputValue.Of("f_su", 0.67), CalcInputValue.Of("nu_seat", 0.5), Q("S_e", 400, "MPa"), CalcInputValue.Of("N_c", 1e7), CalcInputValue.Of("n_f_req", 1.2)],
+                [Q("d", 2, "mm"), Q("D", 16, "mm"), CalcInputValue.Of("n_active", 8), CalcInputValue.Choice("mode", Compression), CalcInputValue.Choice("corr", Bergstraesser), CalcInputValue.Choice("ends", SquaredGround), Q("L0", 45, "mm"), CalcInputValue.Choice("work", Loads), Q("F_1", 10, "N"), Q("F_2", 40, "N"), Q("G", 80, "GPa"), Q("E", 206, "GPa"), Q("rho", 7850, "kg/m^3"), CalcInputValue.Choice("rm_source", RmCurve), Q("Rm_A", 1800, "MPa"), CalcInputValue.Of("Rm_m", 0.1), CalcInputValue.Of("f_tau", 0.45), CalcInputValue.Of("f_su", 0.67), CalcInputValue.Of("nu_seat", 0.5), Q("S_e", 400, "MPa"), CalcInputValue.Of("N_c", 1e7), CalcInputValue.Of("n_f_req", 1.2)],
                 [new CalcExpectedValue("Rm", 1679.45938477, "MPa", 1e-9), new CalcExpectedValue("u_2", 0.316030502082, "", 1e-7), new CalcExpectedValue("u_c", 0.964448553718, "", 1e-7), new CalcExpectedValue("u_f", 0.356576598403, "", 1e-7)]),
             new CalcTestCase("ka-shigley-10-3", "Shigley 10th ed., problem 10-3 (solutions manual): music-wire compression spring, plain and ground ends",
                 new CalcReferenceSource("Shigley's Mechanical Engineering Design, problem 10-3, solutions manual (secondary source)", "10th ed.",
                     "Inputs as stated for the problem: d 2.5 mm, D 28.5 mm, n 13 active coils, plain and ground ends (n_t 14), G 81 GPa, R_m 1935.9 MPa, permissible static shear 0.45·R_m. The manual's results k = 1.3142 N/mm, K_B = 1.1174, F_s = 167.86 N and L₀ = 162.72 mm are reproduced by the sheet's method (k = 1.3142474, K_B = 1.1173709, L_s = 35 mm, F_s = π d³·0.45 R_m/(8 K_B D) = 167.8546 N, L₀ = L_s + F_s/k = 162.7191 mm); the published L₀ is entered here, which gives F_c = 167.856 N and u_c = 1.0000 at solid length. The working points, E, ρ and S_e are not part of the problem. To be checked against the owner's copy of the book and its solutions manual.", Secondary: true),
-                [Q("d", 2.5, "mm"), Q("D", 28.5, "mm"), CalcInputValue.Of("n", 13), CalcInputValue.Choice("mode", Compression), CalcInputValue.Choice("corr", Bergstraesser), CalcInputValue.Choice("ends", PlainGround), CalcInputValue.Choice("solid_method", SolidShigley), Q("L0", 162.72, "mm"), CalcInputValue.Choice("work", Loads), Q("F_1", 40, "N"), Q("F_2", 120, "N"), Q("G", 81, "GPa"), Q("E", 206, "GPa"), Q("rho", 7850, "kg/m^3"), Q("Rm", 1935.9, "MPa"), CalcInputValue.Of("f_tau", 0.45), CalcInputValue.Of("f_su", 0.67), CalcInputValue.Of("nu_seat", 0.5), Q("S_e", 400, "MPa"), CalcInputValue.Of("N_c", 1e7), CalcInputValue.Of("n_f_req", 1.2)],
+                [Q("d", 2.5, "mm"), Q("D", 28.5, "mm"), CalcInputValue.Of("n_active", 13), CalcInputValue.Choice("mode", Compression), CalcInputValue.Choice("corr", Bergstraesser), CalcInputValue.Choice("ends", PlainGround), CalcInputValue.Choice("solid_method", SolidShigley), Q("L0", 162.72, "mm"), CalcInputValue.Choice("work", Loads), Q("F_1", 40, "N"), Q("F_2", 120, "N"), Q("G", 81, "GPa"), Q("E", 206, "GPa"), Q("rho", 7850, "kg/m^3"), Q("Rm", 1935.9, "MPa"), CalcInputValue.Of("f_tau", 0.45), CalcInputValue.Of("f_su", 0.67), CalcInputValue.Of("nu_seat", 0.5), Q("S_e", 400, "MPa"), CalcInputValue.Of("N_c", 1e7), CalcInputValue.Of("n_f_req", 1.2)],
                 [new CalcExpectedValue("C", 11.4, "", 1e-9), new CalcExpectedValue("k", 1.3142, "N/mm", 1e-4), new CalcExpectedValue("k_c", 1.1174, "", 1e-4), new CalcExpectedValue("L_s", 35, "mm", 1e-9), new CalcExpectedValue("F_c", 167.86, "N", 2e-4), new CalcExpectedValue("u_c", 1.0, "", 1e-4)],
                 CalcReferenceStatus.Unconfirmed),
         ],
         Category: "Springs",
         OutputPorts:
         [
-            new CalcOutputPort("k", "N/mm", "Spring rate, compression and extension (spring.rate → M9)"),
-            new CalcOutputPort("F_1", "N", "Force at working point 1, at the deflection s₁ of the sheet (spring.force_at → M9: a fixed working point, not a force at an arbitrary deflection)"),
-            new CalcOutputPort("F_2", "N", "Force at working point 2, at the deflection s₂ of the sheet (spring.force_at → M9: a fixed working point, not a force at an arbitrary deflection)"),
-            new CalcOutputPort("L_s", "mm", "Solid length (compression), closed body length (extension, torsion) (spring.solid_length)"),
-            new CalcOutputPort("f_n", "Hz", "Surge (natural) frequency (spring.surge_freq)"),
+            new CalcOutputPort("k", "N/mm", "Spring rate, compression and extension", "spring.rate"),
+            new CalcOutputPort("F_1", "N", "Force at working point 1, at the deflection s₁ of the sheet (a fixed working point, not a force at an arbitrary deflection)", "spring.force_working_1"),
+            new CalcOutputPort("F_2", "N", "Force at working point 2, at the deflection s₂ of the sheet (a fixed working point, not a force at an arbitrary deflection)", "spring.force_working_2"),
+            new CalcOutputPort("L_s", "mm", "Solid length (compression), closed body length (extension, torsion)", "spring.length_solid"),
+            new CalcOutputPort("f_n", "Hz", "Surge (natural) frequency", "spring.frequency_surge"),
         ],
         RecordKinds:
         [
-            new CalcRecordKind(MaterialKind, "Material properties", ["G", "E", "rho", "Rm_A", "Rm_m"], "A material from the library: its properties fill these inputs, each citing the material, its revision and the page or table of the value. A = Rm_A and m = Rm_m give R_m(d) = A/d^m when 'Where R_m(d) comes from' is the W3 curve."),
+            new CalcRecordKind(MaterialKind, "Material properties", ["G", "E", "rho", "Rm_A", "Rm_m"], "A material from the library: its properties fill these inputs, each citing the material, its revision and the page or table of the value. A = Rm_A and m = Rm_m give R_m(d) = A/d^m when 'Where R_m(d) comes from' is the material curve."),
             new CalcRecordKind("spring.wire-strength", "Wire tensile strength R_m(d)", ["Rm"], "R_m at this wire diameter, from your own copy of the wire standard (for example the EN 10270 table) or the wire certificate. The table is not shipped; there is no default."),
             new CalcRecordKind("spring.permissible", "Permissible and ultimate stress fractions", ["f_tau", "f_sigma", "f_su"], "Fractions of R_m from your design reference or the spring standard's permissible-stress diagrams (not shipped), with their source and edition. The sheet opens on generic textbook fractions (0.45, 0.75, 0.67), not on a standard's value: replace them with the licensed EN 13906 value."),
-            new CalcRecordKind("spring.seating", "End-support coefficient", ["nu_seat"], "ν for the way the ends are held (0.5 both ends fixed and parallel, 0.7 one fixed and one pinned, 1 both pinned, 2 one end free), from your reference."),
+            new CalcRecordKind("spring.seating", "Seating (end-support coefficient)", ["nu_seat"], "ν for the way the ends are held (0.5 both ends fixed and parallel, 0.7 one fixed and one pinned, 1 both pinned, 2 one end free), from your reference."),
             new CalcRecordKind("spring.endurance", "Endurance strength", ["S_e"], "Alternating endurance strength of this wire at the required life, from the wire maker or your fatigue reference (shear for compression and extension, bending for torsion)."),
         ]);
 
@@ -207,7 +216,7 @@ public sealed class SpringCalculator : ICalcCalculator
         c.MarkAtLeast("n_f", "r_f");
         var mode = c.InputText("mode");
 
-        foreach (var s in new[] { "d", "D", "n" })
+        foreach (var s in new[] { "d", "D", "n_active" })
             c.Input(s);
 
         if (!(c.Si("D") > c.Si("d")))
@@ -223,7 +232,7 @@ public sealed class SpringCalculator : ICalcCalculator
         var index = c.Si("C");
 
         if (index < 4 || index > 20)
-            c.Warn("index", $"D: the spring index C = {F(index)} is outside 4 … 20.");
+            c.Warn("index", $"D: the spring index C = {F(index)} is outside 4 to 20.");
 
         switch (mode)
         {
@@ -261,17 +270,17 @@ public sealed class SpringCalculator : ICalcCalculator
 
             if (!(rm >= 50 && rm <= 5000))
             {
-                c.Block("wire-strength", $"Rm_A: the material curve gives R_m = {F(rm)} MPa at d = {F(dMm)} mm, outside 50 … 5000 MPa; check A and m (R_m = A/d^m with A in MPa and d in mm).");
+                c.Block("wire-strength", $"Rm_A: the material curve gives R_m = {F(rm)} MPa at d = {F(dMm)} mm, outside 50 to 5000 MPa. Check A and m (R_m = A/d^m, with A in MPa and d in mm).");
                 return false;
             }
 
-            c.Record("Rm", "A/d^m", $"{F(a)} MPa / {F(dMm)}^{F(m)}", ScalarValue.Of(rm, "MPa"), "Tensile strength R_m(d) from the W3 material curve (R_m = A/d^m)", "W3 material, Rm_A and Rm_m");
+            c.Record("Rm", "A/d^m", $"{F(a)} MPa / {F(dMm)}^{F(m)}", ScalarValue.Of(rm, "MPa"), "Tensile strength from the material curve (R_m = A/d^m)", "Material record, Rm_A and Rm_m");
             return true;
         }
 
         if (!c.Has("Rm"))
         {
-            c.Block("wire-strength", $"Rm: enter '{c.Template.FindInput("Rm")!.Description}' in MPa, from the wire certificate or your wire standard; it has no default value. Or set 'Where R_m(d) comes from' to the W3 material curve and give A and m.");
+            c.Block("wire-strength", "Rm: enter the wire tensile strength in MPa, from the certificate or your wire standard. It has no default, so choose the material curve and give A and m if you have no strength value.");
             return false;
         }
 
@@ -307,7 +316,7 @@ public sealed class SpringCalculator : ICalcCalculator
             if (c.Has(symbol))
                 continue;
 
-            c.Block("missing", $"{symbol}: enter '{c.Template.FindInput(symbol)?.Description ?? symbol}'; the {c.InputText("mode").ToLowerInvariant()} calculation needs it.");
+            c.Block("missing", $"{symbol}: enter a value, because the {c.InputText("mode").ToLowerInvariant()} calculation uses it{(c.Template.FindInput(symbol)?.Default is null ? " and the input has no default" : string.Empty)}.");
             return false;
         }
 
@@ -332,8 +341,8 @@ public sealed class SpringCalculator : ICalcCalculator
 
         var enSolid = c.InputText("solid_method") == SolidEn;
         var (en, es, pa, pb) = EndFactors(c.InputText("ends"), enSolid);
-        c.Assign("k", "G * d^4 / (8 * D^3 * n)", "N/mm", "Spring rate", $"{Part1}");
-        c.Assign("n_t", $"n + {en}", null, "Total coils (derived: end coils added to the active coils)");
+        c.Assign("k", "G * d^4 / (8 * D^3 * n_active)", "N/mm", "Spring rate", $"{Part1}");
+        c.Assign("n_t", $"n_active + {en}", null, "Total coils (derived: end coils added to the active coils)");
 
         if (enSolid)
         {
@@ -353,12 +362,12 @@ public sealed class SpringCalculator : ICalcCalculator
             }
 
             c.Assign("L_s", $"d_max * (n_t + {es.ToString("0.0###", CultureInfo.InvariantCulture)})", "mm", "Solid length L_c (EN 13906-1 form: maximum wire diameter)", Part1);
-            c.Assign("S_a", "(0.0015 * D^2 / d + 0.1 * d) * n", "mm", "Minimum sum of the coil clearances S_a", Part1);
+            c.Assign("S_a", "(0.0015 * D^2 / d + 0.1 * d) * n_active", "mm", "Minimum sum of the coil clearances S_a", Part1);
             c.Assign("L_n", "L_s + S_a", "mm", "Minimum spring length L_n = L_c + S_a", Part1);
 
             if (!(c.Si("L0") > c.Si("L_n")))
             {
-                c.Block("solid", $"L0: the free length must exceed the minimum length L_n = L_s + S_a = {F(c.Si("L_n") * 1e3)} mm (solid length plus the minimum coil clearance).");
+                c.Block("solid", $"L0: the free length must exceed the minimum length L_n = {F(c.Si("L_n") * 1e3)} mm. L_n is the solid length plus the minimum coil clearance.");
                 return;
             }
         }
@@ -373,7 +382,7 @@ public sealed class SpringCalculator : ICalcCalculator
             }
         }
 
-        c.Assign("p", $"(L0 - {pa} * d) / (n + {pb})", "mm", "Pitch of the free spring (derived)");
+        c.Assign("p_coil", $"(L0 - {pa} * d) / (n_active + {pb})", "mm", "Pitch of the free spring (derived)");
         c.Assign("s_c", "L0 - L_s", "mm", "Travel to solid");
         c.Assign("F_c", "k * s_c", "N", "Force at solid length");
 
@@ -398,16 +407,16 @@ public sealed class SpringCalculator : ICalcCalculator
         var guided = c.InputFlag("guided");
 
         if (guided)
-            c.Assume("The spring is guided by a mandrel or in a bore, which restrains it against buckling, so the free-buckling check is not made; the guide must keep it from bowing at the working deflection.", "Input guided: the guide and its clearance are the user's, not checked here.");
+            c.Assume("The spring is guided by a mandrel or in a bore, so the free-buckling check is not made. The guide must keep it from bowing at the working deflection.", "Input guided: the guide and its clearance are the user's, not checked here.");
 
         Buckling(c, guided);
 
-        foreach (var (symbol, text) in new[] { ("C", "Spring index"), ("Rm", "Wire tensile strength R_m(d)"), ("k", "Rate"), ("k_c", "Stress correction factor"), ("n_t", "Total coils"), ("L_s", "Solid length"), ("p", "Pitch"), ("F_1", "Force at point 1"), ("F_2", "Force at point 2"), ("s_1", "Deflection at point 1"), ("s_2", "Deflection at point 2"), ("L_1", "Length at point 1"), ("L_2", "Length at point 2"), ("s_c", "Travel to solid"), ("F_c", "Force at solid"), ("tau_1", "Stress at point 1"), ("tau_2", "Stress at point 2"), ("tau_c", "Stress at solid"), ("u_2", "Utilisation at point 2"), ("u_c", "Utilisation at solid"), ("u_s", "Working deflection / travel to solid") })
+        foreach (var (symbol, text) in new[] { ("C", "Spring index"), ("Rm", "Wire tensile strength"), ("k", "Rate"), ("k_c", "Stress correction factor"), ("n_t", "Total coils"), ("L_s", "Solid length"), ("p_coil", "Pitch"), ("F_1", "Force at point 1"), ("F_2", "Force at point 2"), ("s_1", "Deflection at point 1"), ("s_2", "Deflection at point 2"), ("L_1", "Length at point 1"), ("L_2", "Length at point 2"), ("s_c", "Travel to solid"), ("F_c", "Force at solid"), ("tau_1", "Stress at point 1"), ("tau_2", "Stress at point 2"), ("tau_c", "Stress at solid"), ("u_2", "Utilisation at point 2"), ("u_c", "Utilisation at solid"), ("u_s", "Working deflection / travel to solid") })
             c.Output(symbol, text);
 
         if (enSolid)
         {
-            foreach (var (symbol, text) in new[] { ("d_max", "Maximum wire diameter"), ("S_a", "Minimum sum of coil clearances"), ("L_n", "Minimum length L_n"), ("s_n", "Travel to L_n"), ("u_n", "Working deflection / travel to L_n") })
+            foreach (var (symbol, text) in new[] { ("d_max", "Maximum wire diameter"), ("S_a", "Minimum sum of coil clearances"), ("L_n", "Minimum spring length"), ("s_n", "Travel to L_n"), ("u_n", "Working deflection / travel to L_n") })
                 c.Output(symbol, text);
         }
 
@@ -415,23 +424,23 @@ public sealed class SpringCalculator : ICalcCalculator
         Surge(c);
         Fatigue(c, "tau_1", "tau_2", "S_su", shear: true);
 
-        c.CheckUtilisation("Static shear stress at solid length", "u_c", Part1);
+        c.Check("Shear stress at solid length against the permissible stress", "tau_c", "tau_perm", Part1, resultSymbol: "u_c");
 
         // A compression spring whose deflection at point 2 reaches the buckling deflection fails; one that is stable at any deflection has no buckling deflection to reach; a guided one is
         // not checked here (its assumption says so), so no pass is claimed for it.
         if (!guided && c.Session.Find("y_cr") is not null)
-            c.Check("Working deflection against the buckling deflection", "s_2", "y_cr", "Shigley 10th ed. Ch. 10, buckling");
+            c.Check("Working deflection against the buckling deflection", "s_2", "y_cr", "Shigley 10th ed. Ch. 10, buckling", resultSymbol: "u_b");
         else if (!guided)
             c.CheckCondition("Working deflection against the buckling deflection", true, "stable at any deflection", "λ_eff² < C₂′", "u_b", "Shigley 10th ed. Ch. 10, buckling");
 
-        c.CheckUtilisation("Working deflection within the travel to solid", "u_s", Part1);
+        c.Check("Working deflection against the travel to solid", "s_2", "s_c", Part1, resultSymbol: "u_s");
 
         if (enSolid)
-            c.CheckUtilisation("Minimum coil clearance at L₂: working deflection within the travel to L_n = L_s + S_a", "u_n", Part1);
+            c.Check("Working deflection against the travel to the minimum length, keeping the coil clearance at L₂", "s_2", "s_n", Part1, resultSymbol: "u_n");
     }
 
     /// <summary>
-    /// The end-type factors: coils added to n, the solid-length term (EN 13906-1: the closed unground end adds 1.5 d, plain ends have no EN
+    /// The end-type factors: coils added to n_active, the solid-length term (EN 13906-1: the closed unground end adds 1.5 d, plain ends have no EN
     /// row and keep the geometric form; Shigley Table 10-1: 1 d), and the free-length terms of the pitch (derived from the geometry of the end).
     /// </summary>
     public static (int En, double Es, int Pa, int Pb) EndFactors(string ends, bool en13906) => ends switch
@@ -498,7 +507,7 @@ public sealed class SpringCalculator : ICalcCalculator
 
         // The buckling check (a utilisation check on u_b, in the verdict) fails here; the warning says what to change.
         c.Output("buckling", "Buckling", new TextValue("FAIL"));
-        c.Warn("buckling", $"nu_seat: the deflection at working point 2 ({F(c.Si("s_2") * 1e3)} mm) reaches the buckling deflection ({F(c.Si("y_cr") * 1e3)} mm); guide the spring or change the end support.");
+        c.Warn("buckling", $"nu_seat: the deflection at working point 2, {F(c.Si("s_2") * 1e3)} mm, reaches the buckling deflection, {F(c.Si("y_cr") * 1e3)} mm. Guide the spring or change the end support.");
     }
 
     // ------------------------------------------------------------------
@@ -515,8 +524,8 @@ public sealed class SpringCalculator : ICalcCalculator
 
         ShearFactors(c);
 
-        c.Assign("k", "G * d^4 / (8 * D^3 * n)", "N/mm", "Spring rate", Part2);
-        c.Assign("L_s", "d * (n + 1)", "mm", "Body length, coils closed (derived)", Part2);
+        c.Assign("k", "G * d^4 / (8 * D^3 * n_active)", "N/mm", "Spring rate", Part2);
+        c.Assign("L_s", "d * (n_active + 1)", "mm", "Body length, coils closed (derived)", Part2);
 
         if (c.Si("r_h1") <= c.Si("d") / 2 || c.Si("r_h2") <= c.Si("d") / 2)
         {
@@ -543,7 +552,7 @@ public sealed class SpringCalculator : ICalcCalculator
         c.Assign("u_A", "sigma_A / sigma_perm", null, "Hook bending utilisation");
         c.Assign("u_B", "tau_B / tau_perm", null, "Side-bend torsion utilisation");
 
-        foreach (var (symbol, text) in new[] { ("C", "Spring index"), ("Rm", "Wire tensile strength R_m(d)"), ("k", "Rate"), ("k_c", "Stress correction factor"), ("L_s", "Body length, coils closed"), ("F_1", "Force at point 1"), ("F_2", "Force at point 2"), ("s_1", "Extension at point 1"), ("s_2", "Extension at point 2"), ("L_1", "Body length at point 1"), ("L_2", "Body length at point 2"), ("tau_0", "Stress from initial tension"), ("tau_1", "Stress at point 1"), ("tau_2", "Stress at point 2"), ("u_2", "Body utilisation at point 2"), ("K_A", "Hook bending factor"), ("K_B", "Side-bend factor"), ("sigma_A", "Hook bending stress"), ("tau_B", "Side-bend torsion stress"), ("u_A", "Hook bending utilisation"), ("u_B", "Side-bend utilisation") })
+        foreach (var (symbol, text) in new[] { ("C", "Spring index"), ("Rm", "Wire tensile strength"), ("k", "Rate"), ("k_c", "Stress correction factor"), ("L_s", "Body length, coils closed"), ("F_1", "Force at point 1"), ("F_2", "Force at point 2"), ("s_1", "Extension at point 1"), ("s_2", "Extension at point 2"), ("L_1", "Body length at point 1"), ("L_2", "Body length at point 2"), ("tau_0", "Stress from initial tension"), ("tau_1", "Stress at point 1"), ("tau_2", "Stress at point 2"), ("u_2", "Body utilisation at point 2"), ("K_A", "Hook bending factor"), ("K_B", "Side-bend factor"), ("sigma_A", "Hook bending stress"), ("tau_B", "Side-bend torsion stress"), ("u_A", "Hook bending utilisation"), ("u_B", "Side-bend utilisation") })
             c.Output(symbol, text);
 
         Surge(c);
@@ -551,9 +560,9 @@ public sealed class SpringCalculator : ICalcCalculator
 
         HookFatigue(c);
 
-        c.CheckUtilisation("Static shear stress at working point 2", "u_2", Part2);
-        c.CheckUtilisation("Hook bending stress", "u_A", Part2);
-        c.CheckUtilisation("Hook side-bend torsion stress", "u_B", Part2);
+        c.Check("Shear stress at working point 2 against the permissible stress", "tau_2", "tau_perm", Part2, resultSymbol: "u_2");
+        c.Check("Hook bending stress against the permissible stress", "sigma_A", "sigma_perm", Part2, resultSymbol: "u_A");
+        c.Check("Hook side-bend torsion stress against the permissible stress", "tau_B", "tau_perm", Part2, resultSymbol: "u_B");
     }
 
     // ------------------------------------------------------------------
@@ -564,22 +573,22 @@ public sealed class SpringCalculator : ICalcCalculator
     {
         var angles = c.InputText("work") == Deflections;
 
-        if (!Require(c, "f_sigma", "l_1", "l_2", angles ? "phi_1" : "M_1", angles ? "phi_2" : "M_2"))
+        if (!Require(c, "f_sigma", "l_leg_1", "l_leg_2", angles ? "phi_1" : "M_1", angles ? "phi_2" : "M_2"))
             return;
 
-        foreach (var s in new[] { "E", "l_1", "l_2", "f_sigma" })
+        foreach (var s in new[] { "E", "l_leg_1", "l_leg_2", "f_sigma" })
             c.Input(s);
 
         // The travel check (TravelCheck) compares a deflection in mm; a torsion spring works through an angle, so a linked or typed s_work has nothing to be compared with. Say so rather than ignore it silently.
         if (c.Has("s_work"))
         {
             c.Input("s_work");
-            c.Warn("s-work-unused", "s_work: the expected working travel is not used in torsion mode; the travel check applies to compression and extension springs only (a torsion spring works through an angle).");
+            c.Warn("s-work-unused", "s_work: the expected working travel is not used in torsion mode. The travel check applies to compression and extension springs only.");
         }
 
-        c.Assign("n_a", "n + (l_1 + l_2) / (3 * pi * D)", null, "Active coils including the legs", Part3);
+        c.Assign("n_a", "n_active + (l_leg_1 + l_leg_2) / (3 * pi * D)", null, "Active coils including the legs", Part3);
         c.Assign("k_phi", "E * d^4 / (64 * D * n_a)", "N*m/rad", "Torsional rate", Part3);
-        c.Assign("L_s", "d * (n + 1)", "mm", "Body length, unloaded, coils closed (derived)", Part3);
+        c.Assign("L_s", "d * (n_active + 1)", "mm", "Body length, unloaded, coils closed (derived)", Part3);
         var enTorsion = c.InputText("tors_factor") == TorsionEn;
         var kFactor = enTorsion ? "q" : "K_i";
 
@@ -624,14 +633,14 @@ public sealed class SpringCalculator : ICalcCalculator
         c.Assign("sigma_1", $"{kFactor} * 32 * M_1 / (pi * d^3)", "MPa", "Bending stress at working point 1", Part3);
         c.Assign("sigma_2", $"{kFactor} * 32 * M_2 / (pi * d^3)", "MPa", "Bending stress at working point 2", Part3);
         c.Assign("u_2", "sigma_2 / sigma_perm", null, "Utilisation at working point 2");
-        c.Assign("D_w", "D * n / (n + phi_2 / (2 * pi))", "mm", "Mean coil diameter wound to point 2 (wire length constant)");
-        c.Assign("L_w", "d * (n + 1 + phi_2 / (2 * pi))", "mm", "Body length wound to point 2 (coils closed)");
+        c.Assign("D_w", "D * n_active / (n_active + phi_2 / (2 * pi))", "mm", "Mean coil diameter wound to point 2 (wire length constant)");
+        c.Assign("L_w", "d * (n_active + 1 + phi_2 / (2 * pi))", "mm", "Body length wound to point 2 (coils closed)");
 
-        foreach (var (symbol, text) in new[] { ("C", "Spring index"), ("Rm", "Wire tensile strength R_m(d)"), ("n_a", "Active coils with legs"), ("k_phi", "Torsional rate"), (kFactor, "Curvature factor"), ("L_s", "Body length, unloaded"), ("phi_1", "Angle at point 1"), ("phi_2", "Angle at point 2"), ("M_1", "Torque at point 1"), ("M_2", "Torque at point 2"), ("sigma_1", "Stress at point 1"), ("sigma_2", "Stress at point 2"), ("u_2", "Utilisation at point 2"), ("D_w", "Wound coil diameter"), ("L_w", "Wound body length") })
+        foreach (var (symbol, text) in new[] { ("C", "Spring index"), ("Rm", "Wire tensile strength"), ("n_a", "Active coils with legs"), ("k_phi", "Torsional rate"), (kFactor, "Curvature factor"), ("L_s", "Body length, unloaded"), ("phi_1", "Angle at point 1"), ("phi_2", "Angle at point 2"), ("M_1", "Torque at point 1"), ("M_2", "Torque at point 2"), ("sigma_1", "Stress at point 1"), ("sigma_2", "Stress at point 2"), ("u_2", "Utilisation at point 2"), ("D_w", "Wound coil diameter"), ("L_w", "Wound body length") })
             c.Output(symbol, text);
 
         Fatigue(c, "sigma_1", "sigma_2", "Rm", shear: false);
-        c.CheckUtilisation("Static bending stress at working point 2", "u_2", Part3);
+        c.Check("Bending stress at working point 2 against the permissible stress", "sigma_2", "sigma_perm", Part3, resultSymbol: "u_2");
     }
 
     // ------------------------------------------------------------------
@@ -675,7 +684,7 @@ public sealed class SpringCalculator : ICalcCalculator
 
         if (initialTension && c.Si("F_1") < c.Si("F_0"))
         {
-            c.Block("sequence", "F_1: the first force must reach the initial tension F_0; below it the spring does not extend.");
+            c.Block("sequence", "F_1: the first force must reach the initial tension F_0, or the spring does not extend.");
             return false;
         }
 
@@ -698,12 +707,12 @@ public sealed class SpringCalculator : ICalcCalculator
         var deviation = expected > 0 ? Math.Abs(c.Si("s_trav") - expected) / expected : 0;
 
         if (deviation > 0.01)
-            c.Warn("travel-mismatch", $"s_work: the spring's working travel s₂ − s₁ is {F(c.Si("s_trav") * 1e3)} mm, {F(deviation * 100)} % away from the expected {F(expected * 1e3)} mm; the rate the mechanism assumed is not this spring's rate, so re-type it there.");
+            c.Warn("travel-mismatch", $"s_work: the spring's working travel s₂ − s₁ is {F(c.Si("s_trav") * 1e3)} mm, {F(deviation * 100)} % away from the expected {F(expected * 1e3)} mm. The rate the mechanism assumed is not this spring's rate, so re-type it there.");
     }
 
     private static void Surge(CalcRunContext c)
     {
-        c.Assign("f_n", "d / (2 * pi * n * D^2) * sqrt(G / (2 * rho))", "Hz", "Surge (natural) frequency, both ends fixed", $"{Part1} / {Part2}");
+        c.Assign("f_n", "d / (2 * pi * n_active * D^2) * sqrt(G / (2 * rho))", "Hz", "Surge (natural) frequency, both ends fixed", $"{Part1} / {Part2}");
         c.Output("f_n", "Surge frequency");
 
         if (!c.Has("f_op") || c.InputSi("f_op") <= 0)
@@ -713,7 +722,7 @@ public sealed class SpringCalculator : ICalcCalculator
         c.Output("r_f", "Surge ratio f_n/f_op");
 
         if (c.Si("r_f") < SurgeRatioLimit)
-            c.Warn("surge", $"f_op: the surge frequency is {F(c.Si("r_f"))} times the operating frequency, below {SurgeRatioLimit:0}; the spring may resonate.");
+            c.Warn("surge", $"f_op: the surge frequency is {F(c.Si("r_f"))} times the operating frequency, below {SurgeRatioLimit:0}, so the spring may resonate.");
     }
 
     /// <summary>
@@ -736,11 +745,11 @@ public sealed class SpringCalculator : ICalcCalculator
         c.Assign("u_fat_B", "n_f_req * u_f_B", null, "Hook side-bend fatigue utilisation against the required factor");
         c.Output("u_f_B", "Goodman utilisation, hook side bend");
         c.Output("n_f_B", "Goodman safety factor, hook side bend");
-        c.Check("Goodman fatigue of the hook side-bend torsion against the required safety factor", "n_f_req", "n_f_B", "Goodman, as M4");
+        c.Check("Goodman fatigue of the hook side-bend torsion against the required safety factor", "n_f_req", "n_f_B", "Goodman, as M4", resultSymbol: "u_fat_B");
 
         if (!c.Has("S_e_b"))
         {
-            c.Warn("hook-fatigue", "S_e_b: the fatigue of the hook bending is not assessed because the bending endurance strength S_e_b is not entered; hook bending usually governs an extension spring (the Goodman row of the body does not cover it), so a pass here is not a pass for the whole spring. Enter S_e_b.");
+            c.Warn("hook-fatigue", "S_e_b: the hook bending fatigue is not assessed, because no bending endurance strength is entered. Hook bending usually governs an extension spring, so enter S_e_b.");
             return;
         }
 
@@ -753,7 +762,7 @@ public sealed class SpringCalculator : ICalcCalculator
         c.Assign("u_fat_A", "n_f_req * u_f_A", null, "Hook bending fatigue utilisation against the required factor");
         c.Output("u_f_A", "Goodman utilisation, hook bending");
         c.Output("n_f_A", "Goodman safety factor, hook bending");
-        c.Check("Goodman fatigue of the hook bending against the required safety factor", "n_f_req", "n_f_A", "Goodman, as M4");
+        c.Check("Goodman fatigue of the hook bending against the required safety factor", "n_f_req", "n_f_A", "Goodman, as M4", resultSymbol: "u_fat_A");
     }
 
     /// <summary>The Goodman check on the stresses at the two working points. The endurance strength has no default: a blank one is refused before the run.</summary>
@@ -766,7 +775,7 @@ public sealed class SpringCalculator : ICalcCalculator
             c.Input(s);
 
         if (c.Si("N_c") < 1e4)
-            c.Warn("fatigue-cycles", $"N_c: the required life is {F(c.Si("N_c"))} cycles; the Goodman relation is for high-cycle fatigue, so the static check governs.");
+            c.Warn("fatigue-cycles", $"N_c: the life is {F(c.Si("N_c"))} cycles, and the Goodman relation is for high-cycle fatigue. The static check governs.");
 
         var (amplitude, mean, kind) = shear ? ("tau_a", "tau_m", "shear") : ("sigma_a", "sigma_m", "bending");
         // Shear (compression and extension): the fatigue stresses carry k_c_fat/k_c on the sheet's own working stresses, which is 1 unless the correction was set to 'None'.
@@ -785,7 +794,7 @@ public sealed class SpringCalculator : ICalcCalculator
         c.Assign("u_fat", "n_f_req * u_f", null, "Fatigue utilisation against the required factor");
         c.Output("u_f", "Goodman utilisation");
         c.Output("n_f", "Goodman safety factor");
-        c.CheckUtilisation(bodyOnly ? "Goodman fatigue of the body only against the required safety factor (the hooks have their own rows)" : "Goodman fatigue against the required safety factor", "u_fat", "Goodman, as M4");
+        c.Check(bodyOnly ? "Goodman fatigue of the body only against the required safety factor (the hooks have their own rows)" : "Goodman fatigue against the required safety factor", "n_f_req", "n_f", "Goodman, as M4", resultSymbol: "u_fat");
     }
 
     private static string F(double v) => double.IsFinite(v) ? CalcValue.FormatNumber(v, 5) : "—";

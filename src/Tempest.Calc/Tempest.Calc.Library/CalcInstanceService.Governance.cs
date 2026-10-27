@@ -306,7 +306,7 @@ public sealed partial class CalcInstanceService
         var entry = _catalogue.Find(instance.TemplateReference);
 
         if (entry is null)
-            return CalcActionResult.Refused($"Template '{instance.TemplateReference}' is no longer registered.", instance);
+            return CalcActionResult.Refused(OlderVersionRefusal(instance), instance);
 
         if (!entry.Template.RequiresAttestation)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' does not take an attestation: its template does not require one.", instance);
@@ -381,7 +381,7 @@ public sealed partial class CalcInstanceService
         var entry = _catalogue.Find(instance.TemplateReference);
 
         if (entry is null)
-            return CalcActionResult.Refused($"Template '{instance.TemplateReference}' is no longer registered.", instance);
+            return CalcActionResult.Refused(OlderVersionRefusal(instance), instance);
 
         if (!entry.Template.RequiresSecondCheck)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' does not take a second check: its template does not require one.", instance);

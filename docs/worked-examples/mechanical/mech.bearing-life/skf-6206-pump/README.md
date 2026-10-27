@@ -11,7 +11,7 @@ A 6206 deep groove ball bearing carries 2.5 kN radial at 1500 rpm. The basic lif
 | `F_a` | 0 kN | assumption: Locating bearing elsewhere; no axial load here. |
 | `F_r` | 2.5 kN | assumption: Radial reaction from the shaft calculation. |
 | `L_req` | 5000 h | spec: Pump specification, minimum bearing life |
-| `R` | 95 % | assumption: Client reliability target. |
+| `R_rel` | 95 % | assumption: Client reliability target. |
 | `X` | 0.56 | spec: Manufacturer factor for single-row deep groove bearings |
 | `X_0` | 0.6 | spec: Manufacturer static factor |
 | `Y` | 2 | spec: Manufacturer factor for single-row deep groove bearings |
@@ -30,4 +30,4 @@ A 6206 deep groove ball bearing carries 2.5 kN radial at 1500 rpm. The basic lif
 | `L_nmh` | 7589.6 h | 7589.55 h | PASS |
 | `s_0` | 4.48  | 4.48  | PASS |
 
-Governing check: Modified rating life against required life — PASS (utilisation 0.66). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Required life against modified life — PASS (utilisation 0.66). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

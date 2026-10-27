@@ -32,7 +32,7 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 | Motor sizing | `F_ax_pk` | Bearing A life | `F_a` | 0 kN |
 | Shaft | `d_A` | Bearing A seat fit | `D` | 35 mm |
 | Motor sizing | `T_pk` | Shaft | `T_pk` | 0.159248 kN*m |
-| Motor sizing | `T_design` | Coupling flange bolts | `T_z` | 0.159248 kN*m |
+| Motor sizing | `T_design` | Coupling flange bolts | `M_z` | 0.159248 kN*m |
 
 ## Inputs and provenance
 

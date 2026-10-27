@@ -20,6 +20,17 @@ public static class CalcRunner
         if (!CalcInputAliases.TryCanonicalise(calculator.Template, inputs, out inputs, out var aliasConflict))
             return CalcRunResult.Blocked([new CalcNotice("input-alias", CalcNoticeSeverity.Block, aliasConflict!)]);
 
+        // ADR-0177 review: a bare number of an input or column whose default unit changed is given the unit of the version the values were recorded
+        // on before anything reads it, so a calculator that reads a table cell with its own fallback unit sees the right one too; a record that
+        // cannot be dated blocks with the sentence (CalcInputUnits).
+        var given = inputs.Values.ToList();
+
+        if (!CalcInputUnits.TryPin(calculator.Template, given, inputs.MadeOn, out var pinned, out var ambiguous))
+            return CalcRunResult.Blocked([new CalcNotice("input-unit", CalcNoticeSeverity.Block, ambiguous!)]);
+
+        if (!ReferenceEquals(pinned, given))
+            inputs = new CalcInputSet(pinned, inputs.MadeOn);
+
         var notices = CalcInputValidator.Validate(calculator.Template, inputs).ToList();
 
         if (notices.Any(n => n.Severity == CalcNoticeSeverity.Block))
@@ -89,7 +100,7 @@ public static class CalcRunner
             if (spec.Kind is not (CalcInputKind.Quantity or CalcInputKind.Number))
                 throw new CalcEvaluationException($"'{s}' is not a numeric input.");
 
-            var v = CalcInputBinder.Bind(spec, inputs.Find(s)) as Engine.Values.ScalarValue ?? throw new CalcEvaluationException($"'{s}' is not a number.");
+            var v = CalcInputBinder.Bind(spec, inputs.Find(s), inputs.MadeOn) as Engine.Values.ScalarValue ?? throw new CalcEvaluationException($"'{s}' is not a number.");
             result[s] = v.Si;
         }
 

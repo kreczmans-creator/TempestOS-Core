@@ -42,19 +42,19 @@ public sealed class WorksheetRecordsScreenTests
             Assert.Equal(["cable.ampacity", "device.ratings"], sheet.MissingRequiredKinds.Order(StringComparer.Ordinal));
             Assert.StartsWith("2 required records are missing", sheet.RequirementsSummary, StringComparison.Ordinal);
             Assert.Contains(sheet.GetLogicalDescendants().OfType<TextBlock>(), t => (t.Text ?? string.Empty).Contains("E4 cannot size a conductor", StringComparison.Ordinal));
-            Assert.Contains(sheet.GetLogicalDescendants().OfType<Button>(), b => AutomationProperties.GetName(b) == "Fill record: Cable current-carrying capacities");
+            Assert.Contains(sheet.GetLogicalDescendants().OfType<Button>(), b => AutomationProperties.GetName(b) == "Fill record: Cable ampacity (current-carrying capacities)");
 
             // The link lands on the records screen, on that record type.
-            Click(sheet, CalcSheetView.FillRecordName("Cable current-carrying capacities"));
+            Click(sheet, CalcSheetView.FillRecordName("Cable ampacity (current-carrying capacities)"));
             await Settle();
             var screen = window.GetLogicalDescendants().OfType<CalcRecordsView>().Single();
             Assert.Equal("cable.ampacity", screen.Model.SelectedKind);
             Assert.Equal("04 bs7671.ampacity (cable.ampacity)", screen.Model.Template!.Label);
-            Assert.Contains(screen.GetLogicalDescendants().OfType<ListBoxItem>(), i => AutomationProperties.GetName(i) == "Record type: Cable current-carrying capacities");
+            Assert.Contains(screen.GetLogicalDescendants().OfType<ListBoxItem>(), i => AutomationProperties.GetName(i) == "Record type: Cable ampacity (current-carrying capacities)");
             Assert.Equal("test.engineer", screen.GetLogicalDescendants().OfType<TextBox>().Single(t => AutomationProperties.GetName(t) == CalcRecordsView.EnteredByName).Text);
 
             // Provenance is required: without it the import is not offered.
-            await screen.Model.LoadFileBytesAsync("ampacity.csv", Csv(Ampacity, "1.5,,15", "2.5,,20", "4,,27"));
+            await screen.Model.LoadFileBytesAsync("ampacity.csv", Csv(Ampacity, "1.5,,15", "2.5,,20", "4,,27.5"));
             await Settle();
             Assert.All(screen.Model.FilePreview!.Errors, e => Assert.Contains("provenance needs", e.Message, StringComparison.Ordinal));
             Assert.False(screen.Model.CanImportFile);
@@ -90,7 +90,7 @@ public sealed class WorksheetRecordsScreenTests
             var listed = screen.GetLogicalDescendants().OfType<TextBlock>().Single(t => (AutomationProperties.GetName(t) ?? string.Empty).StartsWith("Record: Method C ampacity", StringComparison.Ordinal));
             Assert.Contains("LICENSED (never exported)", listed.Text, StringComparison.Ordinal);
             Assert.Contains("ampacity (3 rows)", listed.Text, StringComparison.Ordinal);
-            Assert.DoesNotContain("27", listed.Text, StringComparison.Ordinal);
+            Assert.DoesNotContain("27.5", listed.Text, StringComparison.Ordinal);
 
             // What the screen saved is what the worksheet reads again, with no step in between: only the ratings are missing now.
             Assert.Equal(["device.ratings"], sheet.MissingRequiredKinds);

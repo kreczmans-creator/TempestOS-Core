@@ -42,28 +42,28 @@ public sealed class CoolingChainTests
 
         // E2 → B5: the shortfall is the duty the exchanger is sized for (W into kW), and sizing meets it exactly.
         Assert.Equal(Si(e2, "P_cool"), InputSi(b5, "Q_req"), 9);
-        Assert.Equal(Si(e2, "P_cool"), Si(b5, "Q"), 9);
+        Assert.Equal(Si(e2, "P_cool"), Si(b5, "Phi"), 9);
 
         // E2 → B5: the air enters the coil at E2's temperature limit (45 °C) and has c_p 1006 J/(kg·K) (E2's own constant), 0.4 kg/s through the coil.
         Assert.Equal(Si(e2, "T_max"), InputSi(b5, "T_h_in"), 9);
         Assert.Equal(45, InputSi(b5, "T_h_in") - 273.15, 9);
         Assert.Contains(b5.Inputs, i => i.Symbol == "T_h_in" && CalcLink.From(i.Provenance) is { OutputSymbol: "T_max" });
-        Assert.Equal(45 - Si(b5, "Q") / (0.4 * 1006), Si(b5, "T_h_out") - 273.15, 9);
+        Assert.Equal(45 - Si(b5, "Phi") / (0.4 * 1006), Si(b5, "T_h_out") - 273.15, 9);
         Assert.True(Si(b5, "T_h_out") - 273.15 > 35, "the air leaves the coil above the ambient it must be cooled towards");
 
         // B5: the cold stream (0.25 kg/s, 4180 J/kg·K) takes that duty as a rise of Q/C_c from 22 °C.
-        Assert.Equal(Si(b5, "Q") / (0.25 * 4180), Si(b5, "dT_c"), 9);
+        Assert.Equal(Si(b5, "Phi") / (0.25 * 4180), Si(b5, "dT_c"), 9);
         Assert.Equal(22 + Si(b5, "dT_c") / 2, Si(b5, "T_c_m") - 273.15, 9);
         Assert.Equal(22 + Si(b5, "dT_c"), Si(b5, "T_c_out") - 273.15, 9);
 
         // B5 → B1: duty, rise and mean temperature; B1 works the flow out as Φ/(ρ c_p ΔT), which is the cold side's mass flow over ρ.
-        Assert.Equal(Si(b5, "Q"), InputSi(b1, "Phi_load"), 9);
+        Assert.Equal(Si(b5, "Phi"), InputSi(b1, "Phi_load"), 9);
         Assert.Equal(Si(b5, "dT_c"), InputSi(b1, "dT_load"), 9);
-        Assert.Equal(Si(b5, "T_c_m"), InputSi(b1, "T"), 9);
+        Assert.Equal(Si(b5, "T_c_m"), InputSi(b1, "T_fluid"), 9);
         Assert.Equal(4180, Si(b5, "cp_c"), 9);
         Assert.Equal(Si(b5, "cp_c"), InputSi(b1, "cp_load"), 9);
         Assert.Contains(b1.Inputs, i => i.Symbol == "cp_load" && CalcLink.From(i.Provenance) is { OutputSymbol: "cp_c" });
-        Assert.Contains(b1.Inputs, i => i.Symbol == "T" && CalcLink.From(i.Provenance) is { OutputSymbol: "T_c_m" });
+        Assert.Contains(b1.Inputs, i => i.Symbol == "T_fluid" && CalcLink.From(i.Provenance) is { OutputSymbol: "T_c_m" });
         Assert.Equal(0.25 / Water.Density(Si(b5, "T_c_m") - 273.15), Si(b1, "Q_design"), 12);
         Assert.DoesNotContain(b1.Warnings, w => w.RuleId == "heat-t");
         Assert.True(Si(b1, "T_shaft") > 0);
@@ -91,18 +91,18 @@ public sealed class CoolingChainTests
     {
         var host = Host();
         var made = await InstantiateAsync(host);
-        var duty = Si(made.Instances["b5"], "Q");
+        var duty = Si(made.Instances["b5"], "Phi");
         var flow = Si(made.Instances["b1"], "Q_design");
 
         // A bigger extruder drive: more heat in the panel, so every step below it moves.
         await ReviseAndUpdateAsync(host, made, "e6", ScaleCell("loads", 0, "P", 1.4), ["e2", "b5", "b1"]);
 
         var (e6, e2, b5, b1) = (await Fresh(host, made, "e6"), await Fresh(host, made, "e2"), await Fresh(host, made, "b5"), await Fresh(host, made, "b1"));
-        Assert.True(Si(b5, "Q") > duty);
+        Assert.True(Si(b5, "Phi") > duty);
         Assert.True(Si(b1, "Q_design") > flow);
         Assert.Equal(Si(e6, "Phi"), InputSi(e2, "P_add"), 9);
         Assert.Equal(Si(e2, "P_cool"), InputSi(b5, "Q_req"), 9);
-        Assert.Equal(Si(b5, "Q"), InputSi(b1, "Phi_load"), 9);
+        Assert.Equal(Si(b5, "Phi"), InputSi(b1, "Phi_load"), 9);
         Assert.Equal(Si(b5, "dT_c"), InputSi(b1, "dT_load"), 9);
     }
 
@@ -115,7 +115,7 @@ public sealed class CoolingChainTests
 
         Assert.Contains("link: Panel load budget rev A · Phi", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Enclosure heat rev A · P_cool", sheet, StringComparison.Ordinal);
-        Assert.Contains("link: Cooling-water air coil rev A · Q", sheet, StringComparison.Ordinal);
+        Assert.Contains("link: Cooling-water air coil rev A · Phi", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Cooling-water air coil rev A · dT_c", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Cooling-water air coil rev A · T_c_m", sheet, StringComparison.Ordinal);
         Assert.Contains("link: Cooling-water air coil rev A · cp_c", sheet, StringComparison.Ordinal);
@@ -157,8 +157,8 @@ public sealed class CoolingChainTests
         Assert.Contains(e2.Warnings, w => w.RuleId == "limit");
 
         Assert.Equal(3683.76, InputSi(b5, "Q_req"), 6);
-        Assert.Equal(3683.76, Si(b5, "Q"), 6);
-        Assert.Equal(Si(b5, "Q"), InputSi(b1, "Phi_load"), 9);
+        Assert.Equal(3683.76, Si(b5, "Phi"), 6);
+        Assert.Equal(Si(b5, "Phi"), InputSi(b1, "Phi_load"), 9);
         Assert.True(Si(b1, "Q_design") > 0);
     }
 
@@ -174,7 +174,7 @@ public sealed class CoolingChainTests
         var (b5, b1) = (made.Instances["b5"], made.Instances["b1"]);
 
         Assert.Equal(3700, InputSi(b1, "cp_load"), 9);
-        Assert.Equal(Si(b5, "Q") / (0.25 * 3700), Si(b5, "dT_c"), 9);
+        Assert.Equal(Si(b5, "Phi") / (0.25 * 3700), Si(b5, "dT_c"), 9);
         Assert.Equal(0.25 / Water.Density(Si(b5, "T_c_m") - 273.15), Si(b1, "Q_design"), 12);
     }
 }

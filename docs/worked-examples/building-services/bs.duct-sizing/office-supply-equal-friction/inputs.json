@@ -1,6 +1,6 @@
 [
   {
-    "Symbol": "T",
+    "Symbol": "T_air",
     "Number": 20,
     "Unit": "degC",
     "Provenance": {
@@ -33,7 +33,7 @@
     "ValueText": "1"
   },
   {
-    "Symbol": "eps",
+    "Symbol": "eps_rough",
     "Number": 0.09,
     "Unit": "mm",
     "Provenance": {

@@ -169,12 +169,12 @@ public sealed class ElectricalTests
         Assert.Equal(205.95, r.OutputSi("P_cool"), 1e-3);
 
         var ports = Enclosure.Template.OutputPorts!;
-        Assert.Contains(ports, p => p is { Symbol: "P_cool", Unit: "W" });
-        Assert.Contains(ports, p => p is { Symbol: "P_total", Unit: "W" });
+        Assert.Contains(ports, p => p is { Symbol: "P_cool", Unit: "kW" });
+        Assert.Contains(ports, p => p is { Symbol: "P_total", Unit: "kW" });
 
         // Every declared port is produced by a run (the fan duty only when a fan curve is given).
         Assert.All(ports.Where(p => p.Symbol is not ("V_duty" or "dp_seal" or "F_seal")), p => Assert.NotNull(r.FindOutput(p.Symbol)));
-        Assert.Equal("1.6.0", Enclosure.Template.Version);
+        Assert.Equal("1.7.1", Enclosure.Template.Version);
     }
 
     [Fact]

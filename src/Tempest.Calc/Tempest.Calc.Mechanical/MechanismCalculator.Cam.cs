@@ -37,13 +37,13 @@ public sealed partial class MechanismCalculator
         inputs.AddRange(
         [
             new("follower", "Follower type: roller (translating, pressure angle and undercut checked) or flat-faced (in-line)", CalcInputKind.Choice, Choices: [Roller, FlatFaced], DefaultChoice: Roller, IsOptional: true, Group: "Cam"),
-            new("Rb", "Base-circle radius of the cam profile R_b", CalcInputKind.Quantity, "mm", Default: 40, Min: 1, Max: 1000, HardMin: 0.1, HardMax: 1e5, IsOptional: true, Group: "Cam"),
-            new("R_r", "Roller radius R_r (roller follower)", CalcInputKind.Quantity, "mm", Default: 8, Min: 1, Max: 200, HardMin: 0.01, HardMax: 1e4, IsOptional: true, Group: "Cam"),
+            new("Rb", "Base-circle radius of the cam profile", CalcInputKind.Quantity, "mm", Default: 40, Min: 1, Max: 1000, HardMin: 0.1, HardMax: 1e5, IsOptional: true, Group: "Cam"),
+            new("R_r", "Roller radius (roller follower)", CalcInputKind.Quantity, "mm", Default: 8, Min: 1, Max: 200, HardMin: 0.01, HardMax: 1e4, IsOptional: true, Group: "Cam"),
             new("phi_max", "Maximum pressure angle allowed (roller follower)", CalcInputKind.Quantity, "deg", Default: 30, Min: 5, Max: 45, HardMin: 0.1, HardMax: 89.9, IsOptional: true, Group: "Cam"),
             new("segs", "Cam segments: rise, dwell or return, with motion law, angle and lift; the angles add to 360° and the rises equal the returns", CalcInputKind.Table, Columns: SegmentColumns, MaxRows: 24, IsOptional: true, Group: "Cam"),
             new("m_f", "Follower mass (all moving parts that follow the cam)", CalcInputKind.Quantity, "kg", Default: 0.2, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e9, IsOptional: true, Group: "Follower loads"),
-            new("k_sp", "Return spring rate (link M7 rate k)", CalcInputKind.Quantity, "N/mm", Default: 5, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e9, IsOptional: true, Group: "Follower loads"),
-            new("F_pre", "Spring preload at the base circle (link an M7 force)", CalcInputKind.Quantity, "N", Default: 20, Min: 0, Max: 100000, HardMin: -1e9, HardMax: 1e9, IsOptional: true, Group: "Follower loads"),
+            new("k_sp", "Return spring rate", CalcInputKind.Quantity, "kN/m", Default: 5, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e9, IsOptional: true, Group: "Follower loads"),
+            new("F_pre", "Spring preload at the base circle", CalcInputKind.Quantity, "N", Default: 20, Min: 0, Max: 100000, HardMin: -1e9, HardMax: 1e9, IsOptional: true, Group: "Follower loads"),
             new("F_ext", "External load on the follower, positive against the rise", CalcInputKind.Quantity, "N", Default: 0, Min: -100000, Max: 100000, HardMin: -1e9, HardMax: 1e9, IsOptional: true, Group: "Follower loads"),
         ]);
     }
@@ -52,7 +52,7 @@ public sealed partial class MechanismCalculator
     {
         rules.Add(new CalcApplicabilityRule("segments", "The cam segments do not form a cam: angles not adding to 360°, rises and returns not cancelling, a rise or return without a law or a lift, or a return below the base circle.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative));
         rules.Add(new CalcApplicabilityRule("cam-geometry", "The follower offset reaches the prime-circle radius.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative));
-        rules.Add(new CalcApplicabilityRule("contact", "The follower force falls below zero: the follower leaves the cam (follower jump); a stronger spring or a smaller acceleration is needed.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative));
+        rules.Add(new CalcApplicabilityRule("contact", "The follower force falls below zero, so the follower leaves the cam. A stronger spring or a smaller acceleration is needed.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative));
     }
 
     /// <summary>One row of the segment table, for callers that build inputs (examples, tests).</summary>
@@ -68,7 +68,7 @@ public sealed partial class MechanismCalculator
 
         if (rows.Count == 0)
         {
-            c.Block("segs", c.EnterRows("segs"));
+            c.Block("missing", c.EnterRows("segs"));
             return null;
         }
 
@@ -99,7 +99,7 @@ public sealed partial class MechanismCalculator
 
             if (kind != CamSegmentKind.Dwell && (rows[i].Get("law")?.Text is not { Length: > 0 } || !(lift > 0)))
             {
-                c.Block("segments", $"segs[{i + 1}]: a {kind.ToString().ToLowerInvariant()} needs a motion law and a lift above zero; enter them or make the segment a dwell.");
+                c.Block("segments", $"segs[{i + 1}]: a {kind.ToString().ToLowerInvariant()} needs a motion law and a lift above zero. Enter them or make the segment a dwell.");
                 return null;
             }
 
@@ -108,7 +108,7 @@ public sealed partial class MechanismCalculator
 
         if (CamProfile.Validate(segments) is { } problem)
         {
-            c.Block("segments", $"segs: {problem}; enter segments whose angles add to 360° and whose rises and returns cancel.");
+            c.Block("segments", $"segs: {problem}. Enter segments whose angles add to 360° and whose rises and returns cancel.");
             return null;
         }
 
@@ -163,6 +163,9 @@ public sealed partial class MechanismCalculator
             c.Block("cam-geometry", $"e_off: the follower offset {F(Mm(Math.Abs(e)))} mm must be smaller than the prime-circle radius R_b + R_r = {F(Mm(rb + rr))} mm.");
             return;
         }
+
+        if (roller && !c.Has("phi_max"))
+            c.Assign("phi_max", "30 deg", "deg", "Maximum pressure angle allowed (the default, as none was entered)");
 
         var cam = new CamAnalysis(profile, roller, rb, rr, e, omega, mass, rate, preload, external);
         var count = profile.Count;
@@ -288,7 +291,7 @@ public sealed partial class MechanismCalculator
         if (!roller)
         {
             Scalar(c, "rho_min", "min (R_b + s + s″)", "signed, scan of each segment, refined", Mm(radiusMin), "mm", "Smallest radius of curvature of the cam profile (zero or negative: the profile has a cusp and the flat follower cannot follow it)", CamClause);
-            c.CheckCondition("No cusp: the profile's radius of curvature stays above zero", radiusMin > 0, $"ρ_min = {F(Mm(radiusMin))} mm", "> 0 mm", "rho_min", CamClause);
+            c.CheckCondition("Smallest profile radius of curvature against zero", radiusMin > 0, $"ρ_min = {F(Mm(radiusMin))} mm", "> 0 mm", "rho_min", CamClause);
         }
         else if (kappaMax > 1e-9)
         {
@@ -296,33 +299,33 @@ public sealed partial class MechanismCalculator
             Scalar(c, "rho_min", "1/κ_max", "pitch curve", Mm(rhoMin), "mm", "Smallest radius of curvature of the pitch curve", CamClause);
             c.Record("u_rho", "R_r / ρ_min", $"{F(Mm(limit))} mm / {F(Mm(rhoMin))} mm", new ScalarValue(limit / rhoMin), "Roller radius against the smallest radius of curvature (undercut at 1 or more)", CamClause);
             c.Output("u_rho", "Roller radius against the smallest radius of curvature");
-            c.CheckCondition("No undercut: ρ_min of the pitch curve exceeds the roller radius", rhoMin > limit, $"ρ_min = {F(Mm(rhoMin))} mm", $"> {F(Mm(limit))} mm", "rho_min", CamClause);
+            c.CheckCondition("Smallest radius of curvature against the roller radius", rhoMin > limit, $"ρ_min = {F(Mm(rhoMin))} mm", $"> {F(Mm(limit))} mm", "rho_min", CamClause);
         }
         else
         {
             c.Output("rho_min", "Smallest radius of curvature", new TextValue("none: the pitch curve is nowhere convex, so it cannot be undercut"));
-            c.CheckCondition("No undercut: the pitch curve is nowhere convex", true, "no convex region", $"> {F(Mm(limit))} mm", "rho_min", CamClause);
+            c.CheckCondition("Smallest radius of curvature against the roller radius", true, "no convex region", $"> {F(Mm(limit))} mm", "rho_min", CamClause);
         }
 
         if (roller)
         {
             c.Record("u_phi", "φ_max / φ_allowed", $"{F(Deg(phiPk))}° / {F(Deg(phiReq))}°", new ScalarValue(phiPk / phiReq), "Largest pressure angle against the allowed one", CamClause);
             c.Output("u_phi", "Largest pressure angle against the allowed one");
-            c.CheckUtilisation("Pressure angle φ_max within the allowed maximum", "u_phi", CamClause);
+            c.Check("Largest pressure angle against the allowed pressure angle", "phi_max_pk", "phi_max", CamClause, resultSymbol: "u_phi");
         }
 
-        c.CheckCondition("Follower stays on the cam: F_min ≥ 0", fMin >= 0, $"F_min = {F(fMin)} N", "≥ 0 N", "F_min", CamClause);
+        c.CheckCondition("Smallest follower force against zero", fMin >= 0, $"F_min = {F(fMin)} N", "≥ 0 N", "F_min", CamClause);
 
         if (fMin < 0)
-            c.Warn("contact", $"k_sp: the follower force falls to {F(fMin)} N: the follower leaves the cam (follower jump). A stiffer spring, a larger preload or a lower speed is needed.");
+            c.Warn("contact", $"k_sp: the follower force falls to {F(fMin)} N, so the follower leaves the cam. Use a stiffer spring, a larger preload or a lower speed.");
 
         // The ports.
-        Scalar(c, "input_torque", "max |F·ds/dθ|", "virtual work, scan of each segment, refined", tPk, "N*m", "Peak input torque by virtual work (mech.input_torque)", "Virtual work");
-        Scalar(c, "output_motion", "max |v|", "follower", vPk, "m/s", "Peak follower velocity (mech.output_motion)", CamClause);
-        Scalar(c, "peak_accel", "max |a|", "follower", aPk, "m/s^2", "Peak follower acceleration (mech.peak_accel)", CamClause);
-        Scalar(c, "follower_force", "max |F|", "m·a + k·s + F_pre + F_ext", fPk, "N", "Peak axial force of the follower on the cam (mech.follower_force)", CamClause);
-        Scalar(c, "F_pin_pk", roller ? "max |F|/cos φ" : "max |F|", roller ? "roller contact normal force" : "flat-faced contact force", normalPk, "N", "Peak contact normal force on the cam, the load on the cam shaft's bearings (mech.F_pin_pk → M4, M5)", CamClause);
-        Scalar(c, "F_spring_max", "k·h + F_pre", "spring force at full lift, no inertia", rate * lift + preload, "N", "Spring force at full lift (mech.F_spring_max → M7 working force)", CamClause);
+        Scalar(c, "input_torque", "max |F·ds/dθ|", "virtual work, scan of each segment, refined", tPk, "N*m", "Peak input torque by virtual work", "Virtual work");
+        Scalar(c, "output_motion", "max |v|", "follower", vPk, "m/s", "Peak follower velocity", CamClause);
+        Scalar(c, "peak_accel", "max |a|", "follower", aPk, "m/s^2", "Peak follower acceleration", CamClause);
+        Scalar(c, "follower_force", "max |F|", "m·a + k·s + F_pre + F_ext", fPk, "N", "Peak axial force of the follower on the cam", CamClause);
+        Scalar(c, "F_pin_pk", roller ? "max |F|/cos φ" : "max |F|", roller ? "roller contact normal force" : "flat-faced contact force", normalPk, "N", "Peak contact normal force on the cam, the load on the cam shaft's bearings", CamClause);
+        Scalar(c, "F_spring_max", "k·h + F_pre", "spring force at full lift, no inertia", rate * lift + preload, "N", "Spring force at full lift", CamClause);
 
         // RMS torque and mean power over the revolution, Simpson per segment.
         double sumT = 0, sumT2 = 0;
@@ -345,10 +348,10 @@ public sealed partial class MechanismCalculator
             sumT2 += beta * a2 / (3.0 * m);
         }
 
-        Scalar(c, "T_rms_in", "√(mean T²)", "Simpson per segment", Math.Sqrt(sumT2 / (2 * Math.PI)), "N*m", "RMS input torque over the cam revolution (mech.T_rms_in → E1 thermal sizing)", "Virtual work");
-        Scalar(c, "P_mean", "ω·mean(T)", "Simpson per segment", omega * sumT / (2 * Math.PI), "W", "Mean input power over the cam revolution (mech.P_mean)", "Virtual work");
-        c.Output("n_in", "Cam-shaft speed, passed through for E1's load speed (mech.n_in)");
-        Scalar(c, "f_in", "n_in / 60", "rpm to Hz", omega / (2 * Math.PI), "Hz", "Cam-shaft frequency, for the spring surge check of M7 (mech.f_in)");
+        Scalar(c, "T_rms_in", "√(mean T²)", "Simpson per segment", Math.Sqrt(sumT2 / (2 * Math.PI)), "N*m", "RMS input torque over the cam revolution", "Virtual work");
+        Scalar(c, "P_mean", "ω·mean(T)", "Simpson per segment", omega * sumT / (2 * Math.PI) / 1e3, "kW", "Mean input power over the cam revolution", "Virtual work");
+        c.Output("n_in", "Cam-shaft speed, passed through");
+        Scalar(c, "f_in", "n_in / 60", "rpm to Hz", omega / (2 * Math.PI), "Hz", "Cam-shaft frequency, for a spring surge check");
     }
 
     private static CalcInputValue[] CamInputs(IReadOnlyList<CalcRow> segments, double rpm, double rb, double rr, double offset, double mass, double rate, double preload, double external, string follower = Roller) =>
@@ -356,7 +359,7 @@ public sealed partial class MechanismCalculator
         CalcInputValue.Choice("mode", CamMode), CalcInputValue.Choice("follower", follower),
         Q("Rb", rb, "mm"), Q("R_r", rr, "mm"), Q("e_off", offset, "mm"), Q("phi_max", 30, "deg"),
         CalcInputValue.Table("segs", segments), CalcInputValue.Of("steps", 72), Q("n_in", rpm, "rpm"),
-        Q("m_f", mass, "kg"), Q("k_sp", rate, "N/mm"), Q("F_pre", preload, "N"), Q("F_ext", external, "N"),
+        Q("m_f", mass, "kg"), Q("k_sp", rate, "kN/m"), Q("F_pre", preload, "N"), Q("F_ext", external, "N"),
     ];
 
     private const string CamOracle = "Independent python3 recomputation: the four laws from their closed forms, SVAJ per segment, pitch-curve curvature from a fourth-order finite-difference stencil of the parametric pitch curve, peaks by a scan of each segment polished by golden section";

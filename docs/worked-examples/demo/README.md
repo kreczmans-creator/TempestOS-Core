@@ -41,7 +41,7 @@ That is every pack template in the build (twelve), and the scan-to-seal workflow
 
 ## Every chain runs, and one check fails on purpose
 
-Every calculation runs with no block, every link is bound and current (none is stale), and every sheet's checks pass except one: **Control panel cooling: Enclosure heat — "Natural dissipation holds T_max"** fails (utilisation about 15). The panel cannot lose its heat by itself, which is the reason the chain goes on to size a cooling coil; the coil, its pipework and the pump all pass. The tests name this one failing check and fail if any other appears.
+Every calculation runs with no block, every link is bound and current (none is stale), and every sheet's checks pass except one: **Control panel cooling: Enclosure heat — "Natural temperature rise against the allowed rise"** fails (utilisation about 15). The panel cannot lose its heat by itself, which is the reason the chain goes on to size a cooling coil; the coil, its pipework and the pump all pass. The tests name this one failing check and fail if any other appears.
 
 ## DEMO, on everything
 

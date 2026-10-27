@@ -28,8 +28,8 @@ Eighteen examples end on a **FAIL** governing check on purpose: they show how an
 | building-services | `bs.sealed-system` | [heat-pump-retrofit-55-45](building-services/bs.sealed-system/heat-pump-retrofit-55-45/README.md) | FAIL — Selected emitters against room heat (governing room) |
 | electrical | `elec.conductor-sizing` | [conveyor-motor-circuit](electrical/elec.conductor-sizing/conveyor-motor-circuit/README.md) | PASS — Design current within device rating (I_b ≤ I_n) |
 | electrical | `elec.containment` | [servo-cable-pull-three-bends](electrical/elec.containment/servo-cable-pull-three-bends/README.md) | PASS — Fill against the space factor |
-| electrical | `elec.enclosure-heat` | [outdoor-kiosk-cooling-unit](electrical/elec.enclosure-heat/outdoor-kiosk-cooling-unit/README.md) | FAIL — Natural dissipation holds T_max |
-| electrical | `elec.enclosure-heat` | [wall-mounted-plc-panel](electrical/elec.enclosure-heat/wall-mounted-plc-panel/README.md) | FAIL — Natural dissipation holds T_max |
+| electrical | `elec.enclosure-heat` | [outdoor-kiosk-cooling-unit](electrical/elec.enclosure-heat/outdoor-kiosk-cooling-unit/README.md) | FAIL — Natural temperature rise against the allowed rise |
+| electrical | `elec.enclosure-heat` | [wall-mounted-plc-panel](electrical/elec.enclosure-heat/wall-mounted-plc-panel/README.md) | FAIL — Natural temperature rise against the allowed rise |
 | electrical | `elec.fault-protection` | [workshop-radial-c16](electrical/elec.fault-protection/workshop-radial-c16/README.md) | PASS — Loop impedance within maximum (disconnection in time) |
 | electrical | `elec.load-budget` | [pump-skid-panel](electrical/elec.load-budget/pump-skid-panel/README.md) | FAIL — Starting peak against transformer overload |
 | electrical | `elec.motor-sizing` | [ball-screw-pick-and-place](electrical/elec.motor-sizing/ball-screw-pick-and-place/README.md) | PASS — RMS torque SF·T_rms ≤ T_rated |

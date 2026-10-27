@@ -5,7 +5,7 @@
     "Unit": "cm^2",
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "S1 section sheet SEC-01, UB 457\u00D7191\u00D798 (A = 125.265 cm\u00B2)",
+      "Reference": "Section properties sheet SEC-01, UB 457\u00D7191\u00D798 (A = 125.265 cm\u00B2)",
       "IsSufficientToIssue": true
     },
     "ValueText": "125.265"
@@ -48,21 +48,21 @@
     "Unit": "cm^4",
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "S1 section sheet SEC-01 (J = 121.287 cm\u2074)",
+      "Reference": "Section properties sheet SEC-01 (J = 121.287 cm\u2074)",
       "IsSufficientToIssue": true
     },
     "ValueText": "121.287"
   },
   {
     "Symbol": "I_w",
-    "Number": 1.1755386,
-    "Unit": "dm^6",
+    "Number": 1175538.6,
+    "Unit": "cm^6",
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "S1 section sheet SEC-01 (I_w = 1.17554 dm\u2076)",
+      "Reference": "Section properties sheet SEC-01 (I_w = 1175538.6 cm\u2076)",
       "IsSufficientToIssue": true
     },
-    "ValueText": "1.17554"
+    "ValueText": "1175540"
   },
   {
     "Symbol": "I_y",
@@ -70,7 +70,7 @@
     "Unit": "cm^4",
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "S1 section sheet SEC-01 (I_xx = 45727.99 cm\u2074)",
+      "Reference": "Section properties sheet SEC-01 (I_y = 45727.99 cm\u2074)",
       "IsSufficientToIssue": true
     },
     "ValueText": "45728"
@@ -81,7 +81,7 @@
     "Unit": "cm^4",
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "S1 section sheet SEC-01 (I_yy = 2347.02 cm\u2074)",
+      "Reference": "Section properties sheet SEC-01 (I_z = 2347.02 cm\u2074)",
       "IsSufficientToIssue": true
     },
     "ValueText": "2347.02"
@@ -172,7 +172,7 @@
     "Unit": "cm^3",
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "S1 section sheet SEC-01 (W_el,x = 1957.53 cm\u00B3)",
+      "Reference": "Section properties sheet SEC-01 (W_el,y = 1957.53 cm\u00B3)",
       "IsSufficientToIssue": true
     },
     "ValueText": "1957.53"
@@ -183,7 +183,7 @@
     "Unit": "cm^3",
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "S1 section sheet SEC-01 (W_el,y = 243.467 cm\u00B3)",
+      "Reference": "Section properties sheet SEC-01 (W_el,z = 243.467 cm\u00B3)",
       "IsSufficientToIssue": true
     },
     "ValueText": "243.467"
@@ -194,7 +194,7 @@
     "Unit": "cm^3",
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "S1 section sheet SEC-01 (W_pl,x = 2232.46 cm\u00B3)",
+      "Reference": "Section properties sheet SEC-01 (W_pl,y = 2232.46 cm\u00B3)",
       "IsSufficientToIssue": true
     },
     "ValueText": "2232.46"
@@ -205,7 +205,7 @@
     "Unit": "cm^3",
     "Provenance": {
       "Kind": "Reference",
-      "Reference": "S1 section sheet SEC-01 (W_pl,y = 378.904 cm\u00B3)",
+      "Reference": "Section properties sheet SEC-01 (W_pl,z = 378.904 cm\u00B3)",
       "IsSufficientToIssue": true
     },
     "ValueText": "378.904"

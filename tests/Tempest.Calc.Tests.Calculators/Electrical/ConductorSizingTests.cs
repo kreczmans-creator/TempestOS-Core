@@ -26,12 +26,13 @@ public sealed class ConductorSizingTests
     [Fact]
     public void Declares_Its_Ports_And_Record_Kinds()
     {
-        Assert.Equal(["I_b", "I_n", "CSA", "I_z", "L", "theta_op", "device_code"], Sizing.Template.OutputPorts!.Select(p => p.Symbol));
+        Assert.Equal(["I_b", "I_n", "CSA", "I_z", "L", "T_op", "device_code"], Sizing.Template.OutputPorts!.Select(p => p.Symbol));
         Assert.Equal(["cable.ampacity", "cable.correction-factors", "device.ratings"], Sizing.Template.RecordKinds!.Select(k => k.Kind).Order(StringComparer.Ordinal));
         Assert.All(Sizing.Template.Inputs.Where(i => i.Kind is CalcInputKind.Quantity or CalcInputKind.Number), i =>
         {
-            Assert.Equal(i.Min, i.HardMin);
-            Assert.Equal(i.Max, i.HardMax);
+            // The usual range sits inside the hard range and is never the same as it (the sheet standard, G42).
+            Assert.True(i.Min >= i.HardMin && i.Max <= i.HardMax, i.Symbol);
+            Assert.True(i.Min != i.HardMin || i.Max != i.HardMax, i.Symbol);
         });
     }
 
@@ -40,8 +41,8 @@ public sealed class ConductorSizingTests
     [InlineData("P", 501.0, "kW")]
     [InlineData("U", 11.0, "V")]
     [InlineData("U", 1001.0, "V")]
-    [InlineData("theta_a", -11.0, "degC")]
-    [InlineData("theta_a", 71.0, "degC")]
+    [InlineData("T_amb", -11.0, "degC")]
+    [InlineData("T_amb", 71.0, "degC")]
     public void Quantities_Outside_Their_Range_Are_A_Hard_Fail(string symbol, double value, string unit)
     {
         var r = Run(Q(symbol, value, unit));
@@ -152,7 +153,7 @@ public sealed class ConductorSizingTests
     {
         var r = Run(Installation, Choice("device", ConductorSizingCalculator.Mccb));
         Assert.False(r.IsBlocked);
-        Assert.Contains(r.Warnings, w => w.RuleId == "I2" && w.Message.Contains("1.45·I_n", StringComparison.Ordinal));
+        Assert.Contains(r.Warnings, w => w.RuleId == "I2-deemed" && w.Message.Contains("1.45·I_n", StringComparison.Ordinal));
         Assert.Null(r.FindOutput("u_I2"));
         var check = Assert.Single(r.Checks, c => c.Name.Contains("deemed", StringComparison.Ordinal));
         Assert.True(check.Passed);
@@ -167,7 +168,7 @@ public sealed class ConductorSizingTests
         var machine = Run(Choice("device", ConductorSizingCalculator.GgFuse));
         var block = Assert.Single(machine.Blocks);
         Assert.Equal("I2", block.RuleId);
-        Assert.Contains("1.6", block.Message, StringComparison.Ordinal);
+        Assert.Contains("machine-wiring context", block.Message, StringComparison.Ordinal);
 
         // With its datasheet I2 = 1.6 * 16 A = 25.6 A the check is made and fails: 25.6 / (1.45 * 16.88687) = 1.04546.
         var checkedRun = Run(Choice("device", ConductorSizingCalculator.GgFuse), Q("I2", 25.6, "A"));
@@ -214,10 +215,10 @@ public sealed class ConductorSizingTests
         // Black B-A-20: AWG selected with metric rows (and the reverse) used to read as an empty table.
         var awgWithMetric = Run(Choice("system", ConductorSizingCalculator.Awg));
         var block = Assert.Single(awgWithMetric.Blocks);
-        Assert.Equal("ampacity: the rows give cross-sections (metric) but the conductor system is AWG; enter AWG gauge numbers or switch the system to metric.", block.Message);
+        Assert.Equal("ampacity: the rows hold cross-sections but the conductor system is AWG. Enter AWG gauge numbers, or switch the system to metric.", block.Message);
 
         var metricWithAwg = Run(ConductorSizingCalculator.AwgAmpacity((12, 19.4), (10, 27.8)));
-        Assert.Equal("ampacity: the rows give AWG gauge numbers but the conductor system is metric; enter cross-sections or switch the system to AWG.", Assert.Single(metricWithAwg.Blocks).Message);
+        Assert.Equal("ampacity: the rows hold AWG gauge numbers but the conductor system is metric. Enter cross-sections, or switch the system to AWG.", Assert.Single(metricWithAwg.Blocks).Message);
 
         Assert.Equal("ampacity: enter the current-carrying capacities for the installation method from your own licensed table (record kind cable.ampacity).", Assert.Single(Run(CalcInputValue.Table("ampacity", [])).Blocks).Message);
     }
@@ -243,21 +244,21 @@ public sealed class ConductorSizingTests
     [Fact]
     public void Derived_Ambient_Factor_Is_The_Square_Root_Formula_And_Labelled()
     {
-        var r = Run(CalcInputValue.Switch("derive_Ca", true), Q("theta_a", 40, "degC"));
+        var r = Run(CalcInputValue.Switch("derive_Ca", true), Q("T_amb", 40, "degC"));
         Assert.Equal(Math.Sqrt(30.0 / 40.0), r.OutputSi("C_a"), 12);
-        Assert.Contains(r.Warnings, w => w.RuleId == "C_a" && w.Message.Contains("derived approximation — compare with the licensed table", StringComparison.Ordinal));
+        Assert.Contains(r.Warnings, w => w.RuleId == "C_a" && w.Message.Contains("derived approximation, so compare it with the licensed table", StringComparison.Ordinal));
         Assert.Contains(r.Steps, s => s.Symbol == "C_a" && s.Formula.Contains("derived approximation", StringComparison.Ordinal));
 
-        var xlpe = Run(CalcInputValue.Switch("derive_Ca", true), Q("theta_a", 40, "degC"), Choice("insulation", ConductorSizingCalculator.Xlpe));
+        var xlpe = Run(CalcInputValue.Switch("derive_Ca", true), Q("T_amb", 40, "degC"), Choice("insulation", ConductorSizingCalculator.Xlpe));
         Assert.Equal(Math.Sqrt(50.0 / 60.0), xlpe.OutputSi("C_a"), 12);
 
-        var user = Run(CalcInputValue.Switch("derive_Ca", true), Q("theta_a", 40, "degC"), Choice("insulation", ConductorSizingCalculator.UserInsulation), Q("theta_p", 105, "degC"));
+        var user = Run(CalcInputValue.Switch("derive_Ca", true), Q("T_amb", 40, "degC"), Choice("insulation", ConductorSizingCalculator.UserInsulation), Q("T_user", 105, "degC"));
         Assert.Equal(Math.Sqrt(65.0 / 75.0), user.OutputSi("C_a"), 12);
 
         var missing = Run(CalcInputValue.Switch("derive_Ca", true), Choice("insulation", ConductorSizingCalculator.UserInsulation));
         Assert.Equal("theta_p", Assert.Single(missing.Blocks).RuleId);
 
-        var hot = Run(CalcInputValue.Switch("derive_Ca", true), Q("theta_a", 70, "degC"));
+        var hot = Run(CalcInputValue.Switch("derive_Ca", true), Q("T_amb", 70, "degC"));
         Assert.True(hot.IsBlocked);
     }
 

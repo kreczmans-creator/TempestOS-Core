@@ -18,8 +18,8 @@ Radial and axial load combine through the catalogue X and Y factors into a 3.93 
 
 | Output | Expected | Computed | Result |
 |---|---|---|---|
-| `P` | 3.93 kN | 3.93 kN | PASS |
+| `F_dyn` | 3.93 kN | 3.93 kN | PASS |
 | `L_10h` | 4290.3 h | 4290.33 h | PASS |
 | `L_nmh` | 2745.8 h | 2745.81 h | PASS |
 
-Governing check: Modified life against required life — PASS (utilisation 0.73). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Required life against modified life — PASS (utilisation 0.73). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

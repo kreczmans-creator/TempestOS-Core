@@ -77,11 +77,11 @@ public sealed class LiftingLugTests
     [InlineData("beta", 31, "deg")]
     [InlineData("n_cycles", 16001, "")]
     [InlineData("n_cycles", 0, "")]
-    [InlineData("t", 4, "mm")]
-    [InlineData("t", 151, "mm")]
+    [InlineData("t_p", 4, "mm")]
+    [InlineData("t_p", 151, "mm")]
     [InlineData("Dh", 9, "mm")]
     [InlineData("Dp", 7, "mm")]
-    [InlineData("R", 14, "mm")]
+    [InlineData("r_lug", 14, "mm")]
     [InlineData("be", 4, "mm")]
     [InlineData("a", 4, "mm")]
     [InlineData("f_y", 99, "MPa")]
@@ -100,11 +100,11 @@ public sealed class LiftingLugTests
     }
 
     [Fact]
-    public void Every_Numeric_Input_Has_A_Hard_Limit_Equal_To_Its_Stated_Range() =>
+    public void Every_Numeric_Input_Has_A_Usual_Range_Inside_Its_Hard_Range() =>
         Assert.All(Lug.Template.Inputs.Where(i => i.Kind is CalcInputKind.Number or CalcInputKind.Quantity), i =>
         {
-            Assert.Equal(i.Min, i.HardMin);
-            Assert.Equal(i.Max, i.HardMax);
+            Assert.True(i.HardMin <= i.Min, i.Symbol);
+            Assert.True(i.HardMax >= i.Max, i.Symbol);
         });
 
     [Fact]
@@ -188,13 +188,13 @@ public sealed class LiftingLugTests
     public void The_Effective_Width_Is_Limited_By_4t_And_By_The_Strength_Ratio()
     {
         // t = 10 mm: 4t = 40 mm caps a 60 mm edge distance (the plate is wide enough: R = 100).
-        var thin = Run(Q("t", 10, "mm"), Q("R", 100, "mm"), Q("be", 60, "mm"), Q("a", 50, "mm"));
+        var thin = Run(Q("t_p", 10, "mm"), Q("r_lug", 100, "mm"), Q("be", 60, "mm"), Q("a", 50, "mm"));
         Assert.Equal(40, thin.OutputSi("be_eff") * 1e3, 9);
         Assert.Equal(2 * 10 * 40, thin.OutputSi("A_t") * 1e6, 6);
         Assert.Contains(thin.Warnings, w => w.RuleId == "be-eff");
 
         // The third limit, 0.6·(f_u/f_y)·√(D_h/b)·b, is below b here (f_u = f_y, a wide edge distance).
-        var strength = Run(Q("t", 40, "mm"), Q("R", 200, "mm"), Q("be", 120, "mm"), Q("f_y", 355, "MPa"), Q("f_u", 355, "MPa"));
+        var strength = Run(Q("t_p", 40, "mm"), Q("r_lug", 200, "mm"), Q("be", 120, "mm"), Q("f_y", 355, "MPa"), Q("f_u", 355, "MPa"));
         Assert.Equal(0.6 * Math.Sqrt(50.0 / 120) * 120, strength.OutputSi("be_eff") * 1e3, 9);
     }
 
@@ -208,7 +208,7 @@ public sealed class LiftingLugTests
             Assert.True(r.IsBlocked, symbol);
             Assert.StartsWith(symbol + ": ", r.Blocks[0].Message, StringComparison.Ordinal);
             Assert.Contains("enter", r.Blocks[0].Message, StringComparison.OrdinalIgnoreCase);
-            Assert.Contains("no default", r.Blocks[0].Message, StringComparison.Ordinal);
+            Assert.Contains("own copy of the code", r.Blocks[0].Message, StringComparison.Ordinal);
         }
     }
 
@@ -231,16 +231,16 @@ public sealed class LiftingLugTests
         var en = Kn(r, "cap_en");
         Assert.Equal(Math.Min(bth, en), Kn(r, "capacity"), 9);
         Assert.Equal(150 / Math.Max(r.OutputSi("u_bth"), r.OutputSi("u_en")), Kn(r, "capacity"), 9);
-        Assert.Equal(8, r.Checks.Count(c => c.Name.StartsWith("BTH-1", StringComparison.Ordinal) || c.Name.StartsWith("EN 13155", StringComparison.Ordinal)) - 1 /* dishing */);
+        Assert.Equal(8, r.Checks.Count(c => c.Name.EndsWith("(BTH-1)", StringComparison.Ordinal) || c.Name.StartsWith("Sling force against", StringComparison.Ordinal)) - 1 /* dishing */);
     }
 
     [Fact]
     public void The_Governing_Mode_Names_The_Section_And_For_EN13155_The_Route()
     {
-        var shear = Run(Choice("mode", LiftingLugCalculator.ModeBoth), Q("t", 30, "mm"), Q("Dh", 40, "mm"), Q("Dp", 38, "mm"), Q("R", 40, "mm"), Q("be", 30, "mm"), Q("f_y", 235, "MPa"), Q("f_u", 360, "MPa"), Q("WLL", 100, "kN"), Q("theta", 20, "deg"), Q("beta", 0, "deg"));
+        var shear = Run(Choice("mode", LiftingLugCalculator.ModeBoth), Q("t_p", 30, "mm"), Q("Dh", 40, "mm"), Q("Dp", 38, "mm"), Q("r_lug", 40, "mm"), Q("be", 30, "mm"), Q("f_y", 235, "MPa"), Q("f_u", 360, "MPa"), Q("WLL", 100, "kN"), Q("theta", 20, "deg"), Q("beta", 0, "deg"));
         Assert.Equal("BTH-1: double-plane shear", Text(shear, "governing_mode"));
 
-        var en = Run(Choice("mode", LiftingLugCalculator.ModeEn), Q("t", 30, "mm"), Q("Dh", 40, "mm"), Q("Dp", 38, "mm"), Q("R", 40, "mm"), Q("be", 30, "mm"), Q("f_y", 235, "MPa"), Q("f_u", 360, "MPa"), Q("WLL", 100, "kN"), Q("theta", 20, "deg"), Q("beta", 0, "deg"));
+        var en = Run(Choice("mode", LiftingLugCalculator.ModeEn), Q("t_p", 30, "mm"), Q("Dh", 40, "mm"), Q("Dp", 38, "mm"), Q("r_lug", 40, "mm"), Q("be", 30, "mm"), Q("f_y", 235, "MPa"), Q("f_u", 360, "MPa"), Q("WLL", 100, "kN"), Q("theta", 20, "deg"), Q("beta", 0, "deg"));
         Assert.Equal("EN 13155 (2×WLL elastic): double-plane shear", Text(en, "governing_mode"));
 
         // Higher-strength steel: the 3× route governs.
@@ -329,7 +329,7 @@ public sealed class LiftingLugTests
     {
         var withArea = Run(CalcInputValue.Switch("beam", true), Q("A_beam", 120, "cm^2"));
         Assert.NotNull(withArea.FindOutput("u_beam"));
-        Assert.Contains(withArea.Checks, c => c.Name == "Spreader beam axial yield");
+        Assert.Contains(withArea.Checks, c => c.Name == "Beam axial utilisation against its limit");
 
         var without = Run(CalcInputValue.Switch("beam", true));
         Assert.Null(without.FindOutput("u_beam"));
@@ -368,9 +368,9 @@ public sealed class LiftingLugTests
         Assert.True(pin.IsBlocked);
         Assert.StartsWith("Dp: ", pin.Blocks[0].Message, StringComparison.Ordinal);
 
-        var radius = Run(Q("Dh", 140, "mm"), Q("Dp", 120, "mm"), Q("R", 65, "mm"));
+        var radius = Run(Q("Dh", 140, "mm"), Q("Dp", 120, "mm"), Q("r_lug", 65, "mm"));
         Assert.True(radius.IsBlocked);
-        Assert.StartsWith("R: ", radius.Blocks[0].Message, StringComparison.Ordinal);
+        Assert.StartsWith("r_lug: ", radius.Blocks[0].Message, StringComparison.Ordinal);
 
         var strength = Run(Q("f_y", 500, "MPa"), Q("f_u", 450, "MPa"));
         Assert.True(strength.IsBlocked);
@@ -445,9 +445,9 @@ public sealed class LiftingLugTests
     {
         Gen.Double[12, 40].Select(Gen.Double[250, 700]).Sample((t, fy) =>
         {
-            var weak = Run(Q("t", t, "mm"), Q("f_y", fy, "MPa"), Q("f_u", fy * 1.3, "MPa"));
-            var thick = Run(Q("t", t + 3, "mm"), Q("f_y", fy, "MPa"), Q("f_u", fy * 1.3, "MPa"));
-            var strong = Run(Q("t", t, "mm"), Q("f_y", fy + 50, "MPa"), Q("f_u", fy * 1.3 + 65, "MPa"));
+            var weak = Run(Q("t_p", t, "mm"), Q("f_y", fy, "MPa"), Q("f_u", fy * 1.3, "MPa"));
+            var thick = Run(Q("t_p", t + 3, "mm"), Q("f_y", fy, "MPa"), Q("f_u", fy * 1.3, "MPa"));
+            var strong = Run(Q("t_p", t, "mm"), Q("f_y", fy + 50, "MPa"), Q("f_u", fy * 1.3 + 65, "MPa"));
 
             if (weak.IsBlocked || thick.IsBlocked || strong.IsBlocked)
                 return;

@@ -29,4 +29,4 @@ A 90° index in 0.3 s through a 10:1 gearbox: the motor sees 5.9e-3 kg·m² of r
 | `T_pk` | 5.0126 N*m | 5.01269 N*m | PASS |
 | `J_ratio` | 11.76  | 11.7647  | PASS |
 
-Governing check: RMS torque SF·T_rms ≤ T_rated — PASS (utilisation 0.93). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: RMS torque with the safety factor against the rated torque — PASS (utilisation 0.93). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -23,12 +23,12 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|
-| Panel load budget | `Phi` | Enclosure heat | `P_add` | 3510 W |
+| Panel load budget | `Phi` | Enclosure heat | `P_add` | 3.51 kW |
 | Enclosure heat | `P_cool` | Cooling-water air coil | `Q_req` | 3.4224 kW |
 | Enclosure heat | `T_max` | Cooling-water air coil | `T_h_in` | 45 degC |
-| Cooling-water air coil | `Q` | Cooling-water pipework and pump | `Phi_load` | 3422.4 W |
+| Cooling-water air coil | `Phi` | Cooling-water pipework and pump | `Phi_load` | 3.4224 kW |
 | Cooling-water air coil | `dT_c` | Cooling-water pipework and pump | `dT_load` | 3.27502 K |
-| Cooling-water air coil | `T_c_m` | Cooling-water pipework and pump | `T` | 23.6375 degC |
+| Cooling-water air coil | `T_c_m` | Cooling-water pipework and pump | `T_fluid` | 23.6375 degC |
 | Cooling-water air coil | `cp_c` | Cooling-water pipework and pump | `cp_load` | 4180 J/(kg*K) |
 
 ## Inputs and provenance

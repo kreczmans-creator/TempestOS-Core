@@ -23,7 +23,7 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|
 | Room heat loss | `U_1` | Wall condensation | `U_ref` | 0.399135 W/(m^2*K) |
-| Room air state | `t_1_out` | Wall condensation | `theta_int` | 21 degC |
+| Room air state | `T_1_out` | Wall condensation | `T_int` | 21 degC |
 | Room air state | `phi_1` | Wall condensation | `RH_int` | 50 % |
 
 ## Inputs and provenance

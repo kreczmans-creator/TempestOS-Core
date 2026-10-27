@@ -129,16 +129,6 @@
     "ValueText": "0.87"
   },
   {
-    "Symbol": "cos_phi2",
-    "Number": 0.95,
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "Connection agreement CA-2: power factor not below 0.95",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "0.95"
-  },
-  {
     "Symbol": "cos_phi_st",
     "Number": 0.3,
     "Provenance": {
@@ -147,6 +137,16 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "0.3"
+  },
+  {
+    "Symbol": "cos_phi_target",
+    "Number": 0.95,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Connection agreement CA-2: power factor not below 0.95",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.95"
   },
   {
     "Symbol": "dip_limit",

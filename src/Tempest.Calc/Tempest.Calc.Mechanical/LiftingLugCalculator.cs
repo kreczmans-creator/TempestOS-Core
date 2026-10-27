@@ -32,7 +32,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
 
     private static CalcInputValue[] Example(double p, double t, double w, double dh, double dp, double a, double ts, double g) =>
     [
-        CalcInputValue.Quantity("P", p, "kN"), CalcInputValue.Quantity("t", t, "mm"), CalcInputValue.Quantity("W", w, "mm"),
+        CalcInputValue.Quantity("F_lug", p, "kN"), CalcInputValue.Quantity("t_lug", t, "mm"), CalcInputValue.Quantity("W", w, "mm"),
         CalcInputValue.Quantity("d_h", dh, "mm"), CalcInputValue.Quantity("d_p", dp, "mm"), CalcInputValue.Quantity("a", a, "mm"),
         CalcInputValue.Quantity("t_s", ts, "mm"), CalcInputValue.Quantity("g", g, "mm"),
         CalcInputValue.Quantity("f_t", 150, "MPa"), CalcInputValue.Quantity("f_br", 200, "MPa"), CalcInputValue.Quantity("f_v", 90, "MPa"),
@@ -40,12 +40,18 @@ public sealed class LiftingLugCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Mechanical, "Lifting lug and pin joint",
-        DesignNotice + " A pinned lug between two cheek plates under a load along the lug: tension on the net section through the hole, bearing of the pin on the hole, shear tear-out beyond the hole, and the pin in double shear and in bending, each against an allowable stress; the largest utilisation governs. This sheet does not replace the thorough examination and inspection of lifting equipment by a competent person (LOLER reg 9) or the marking, test and certification that the regulations require. It is available only while the lifting feature is enabled; its issue needs a competent-person attestation and a second independent check. " + SignatureNotice,
-        "Tension across the net section beside the hole: σ_t = P/((W − d_h)·t).\nBearing of the pin on the lug: σ_br = P/(d_p·t).\nTear-out shear beyond the hole, on two planes: τ_to = P/(2·a·t).\nPin shear, in double shear: τ_p = P/(2·π·d_p²/4).\nPin bending, from the lever arm across the lug, the gap and the shackle: M = (P/2)·(t/4 + g + t_s/2); σ_b = 32·M/(π·d_p³).\nUtilisation of each mode, its stress over the allowable from the material and design category in force (the sheet adds no design factor of its own): u = σ/σ_allow.",
+        Id, "1.2.0", CalcDiscipline.Mechanical, "Lifting lug and pin joint",
+        "Calculates the net-section tension, bearing, tear-out, pin shear and pin bending of a pinned lifting lug between two cheek plates under a load along the lug. It is a design calculation, not a thorough examination.",
+        "Net-section tension, beside the hole: σ_t = F_lug/((W − d_h)·t_lug)\n" +
+        "Bearing of the pin on the lug: σ_br = F_lug/(d_p·t_lug)\n" +
+        "Tear-out shear beyond the hole, on two planes: τ_to = F_lug/(2·a·t_lug)\n" +
+        "Pin shear, in double shear: τ_p = F_lug/(2·π·d_p²/4)\n" +
+        "Pin bending moment, from the lever arm across the lug, the gap and the cheek plate: M = (F_lug/2)·(t_lug/4 + g + t_s/2)\n" +
+        "Pin bending stress: σ_b = 32·M/(π·d_p³)\n" +
+        "Utilisation of each mode, its stress over the allowable entered: u = σ/σ_allow",
         [
-            new CalcInputSpec("P", "Load on the lug (along the lug)", CalcInputKind.Quantity, "kN", Default: 50, Min: 0.01, Max: 1e5, HardMin: 1e-9, HardMax: 1e8, Group: "Load"),
-            new CalcInputSpec("t", "Lug thickness", CalcInputKind.Quantity, "mm", Default: 20, Min: 1, Max: 500, HardMin: 1e-6, HardMax: 1e5, Group: "Lug"),
+            new CalcInputSpec("F_lug", "Load on the lug (along the lug)", CalcInputKind.Quantity, "kN", Default: 50, Min: 0.01, Max: 1e5, HardMin: 1e-9, HardMax: 1e8, Group: "Loads", Aliases: ["P"]),
+            new CalcInputSpec("t_lug", "Lug thickness", CalcInputKind.Quantity, "mm", Default: 20, Min: 1, Max: 500, HardMin: 1e-6, HardMax: 1e5, Group: "Lug", Aliases: ["t"]),
             new CalcInputSpec("W", "Lug width at the hole", CalcInputKind.Quantity, "mm", Default: 100, Min: 5, Max: 2000, HardMin: 1e-6, HardMax: 1e5, Group: "Lug"),
             new CalcInputSpec("d_h", "Hole diameter", CalcInputKind.Quantity, "mm", Default: 32, Min: 2, Max: 1000, HardMin: 1e-6, HardMax: 1e5, Group: "Lug"),
             new CalcInputSpec("a", "Edge distance, hole edge to lug end (load direction)", CalcInputKind.Quantity, "mm", Default: 40, Min: 1, Max: 2000, HardMin: 1e-6, HardMax: 1e5, Group: "Lug"),
@@ -63,13 +69,14 @@ public sealed class LiftingLugCalculator : ICalcCalculator
         ],
         [
             new CalcAssumption("The load acts along the lug's axis through the hole centre.", "No out-of-plane or side load."),
-            new CalcAssumption("The pin bears uniformly over the lug thickness and over each cheek plate; each cheek plate reacts half the load.", "Pin-bending idealisation for a lug between two cheek plates."),
-            new CalcAssumption("A close-fitting pin (d_p ≥ 0.9·d_h).", "Uniform-bearing idealisation."),
-            new CalcAssumption("A design calculation, not a thorough examination: it checks the lug and pin at the stated loads against the allowable stresses entered and nothing else.", "LOLER reg 9 and PUWER duties are the owner's and the competent person's."),
+            new CalcAssumption("The pin bears uniformly over the lug thickness and over each cheek plate.", "Pin-bending idealisation for a lug between two cheek plates."),
+            new CalcAssumption("Each cheek plate reacts half the load.", "Pin-bending idealisation for a lug between two cheek plates."),
+            new CalcAssumption("The pin is a close fit, with d_p at least 0.9 d_h.", "Uniform-bearing idealisation."),
+            new CalcAssumption(DesignNotice, "The sheet checks the lug and pin at the stated loads against the allowables entered. LOLER reg 9 and PUWER duties stay with the owner and the competent person."),
         ],
         [
             new CalcClauseRef("ASME BTH-1", "Ch. 3", "Pinned connections"),
-            new CalcClauseRef("Shigley's Mechanical Engineering Design", "Ch. 3", "Shear, bearing and bending stresses"),
+            new CalcClauseRef("Budynas and Nisbett, Shigley's Mechanical Engineering Design", "Ch. 3, 11th ed.", "Shear, bearing and bending stresses"),
         ],
         [
             new CalcApplicabilityRule("geometry", "The lug must be wider than the hole and the pin must fit the hole.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
@@ -87,17 +94,26 @@ public sealed class LiftingLugCalculator : ICalcCalculator
         IndependentCheck: true,
         FeatureFlag: CalcFeatures.Lifting,
         RequiresAttestation: true,
-        RequiresSecondCheck: true);
+        RequiresSecondCheck: true,
+        OutputPorts:
+        [
+            new CalcOutputPort("u_t", "", "Net-section tension utilisation", "lug.utilisation_tension"),
+            new CalcOutputPort("u_br", "", "Bearing utilisation", "lug.utilisation_bearing"),
+            new CalcOutputPort("u_to", "", "Tear-out utilisation", "lug.utilisation_tear_out"),
+            new CalcOutputPort("u_p", "", "Pin shear utilisation", "lug.utilisation_pin_shear"),
+            new CalcOutputPort("u_b", "", "Pin bending utilisation", "lug.utilisation_pin_bending"),
+            new CalcOutputPort("M_p", "kN*m", "Pin bending moment", "lug.moment_pin"),
+        ]);
 
     public void Run(CalcRunContext c)
     {
         c.MarkUtilisation("u_b", "u_br", "u_p", "u_t", "u_to");
-        foreach (var s in new[] { "P", "t", "W", "d_h", "a", "d_p", "t_s", "g", "f_t", "f_br", "f_v", "f_b_pin", "f_v_pin" })
+        foreach (var s in new[] { "F_lug", "t_lug", "W", "d_h", "a", "d_p", "t_s", "g", "f_t", "f_br", "f_v", "f_b_pin", "f_v_pin" })
             c.Input(s);
 
         if (!(c.Si("W") > c.Si("d_h")))
         {
-            c.Block("geometry", "W: the lug must be wider than the hole; there is no net section.");
+            c.Block("geometry", "W: the lug must be wider than the hole. Otherwise it has no net section.");
             return;
         }
 
@@ -111,19 +127,19 @@ public sealed class LiftingLugCalculator : ICalcCalculator
 
         if (c.Si("k_fit") < 0.9)
         {
-            c.Block("loose-pin", $"d_p: the pin is {CalcValue.FormatNumber(c.Si("k_fit"), 3)} of the hole, below 0.9; bearing concentrates and the uniform-bearing method does not apply.");
+            c.Block("loose-pin", $"d_p: the pin is {CalcValue.FormatNumber(c.Si("k_fit"), 3)} of the hole, below 0.9. Bearing concentrates, so the uniform-bearing method does not apply.");
             return;
         }
 
-        c.Assign("A_net", "(W - d_h) * t", "mm^2", "Net section through the hole");
-        c.Assign("sigma_t", "P / A_net", "MPa", "Net-section tension", "ASME BTH-1 Ch. 3");
-        c.Assign("A_br", "d_p * t", "mm^2", "Bearing area");
-        c.Assign("sigma_br", "P / A_br", "MPa", "Bearing of the pin on the hole");
-        c.Assign("A_to", "2 * a * t", "mm^2", "Tear-out area (two planes beyond the hole)");
-        c.Assign("tau_to", "P / A_to", "MPa", "Tear-out shear");
+        c.Assign("A_net", "(W - d_h) * t_lug", "mm^2", "Net section through the hole");
+        c.Assign("sigma_t", "F_lug / A_net", "MPa", "Net-section tension", "ASME BTH-1 Ch. 3");
+        c.Assign("A_br", "d_p * t_lug", "mm^2", "Bearing area");
+        c.Assign("sigma_br", "F_lug / A_br", "MPa", "Bearing of the pin on the hole");
+        c.Assign("A_to", "2 * a * t_lug", "mm^2", "Tear-out area (two planes beyond the hole)");
+        c.Assign("tau_to", "F_lug / A_to", "MPa", "Tear-out shear");
         c.Assign("A_p", "2 * pi * d_p^2 / 4", "mm^2", "Pin area in double shear");
-        c.Assign("tau_p", "P / A_p", "MPa", "Pin shear");
-        c.Assign("M_p", "P / 2 * (t / 4 + g + t_s / 2)", "N*m", "Pin bending moment (uniform bearing on lug and cheek plates)");
+        c.Assign("tau_p", "F_lug / A_p", "MPa", "Pin shear");
+        c.Assign("M_p", "F_lug / 2 * (t_lug / 4 + g + t_s / 2)", "kN*m", "Pin bending moment (uniform bearing on lug and cheek plates)");
         c.Assign("Z_p", "pi * d_p^3 / 32", "mm^3", "Pin section modulus");
         c.Assign("sigma_b", "M_p / Z_p", "MPa", "Pin bending stress");
 
@@ -138,10 +154,10 @@ public sealed class LiftingLugCalculator : ICalcCalculator
 
         c.Output("sheet_notice", "Status of this sheet", new TextValue(DesignNotice + " It does not replace the thorough examination by a competent person (LOLER reg 9) or the marking, testing and certification that the regulations require. " + SignatureNotice));
 
-        c.CheckUtilisation("Net-section tension", "u_t", "ASME BTH-1 Ch. 3");
-        c.CheckUtilisation("Bearing", "u_br", "ASME BTH-1 Ch. 3");
-        c.CheckUtilisation("Tear-out", "u_to", "ASME BTH-1 Ch. 3");
-        c.CheckUtilisation("Pin double shear", "u_p");
-        c.CheckUtilisation("Pin bending", "u_b");
+        c.Check("Net-section tension against the allowable tensile stress", "sigma_t", "f_t", "ASME BTH-1 Ch. 3", resultSymbol: "u_t");
+        c.Check("Pin bearing against the allowable bearing stress", "sigma_br", "f_br", "ASME BTH-1 Ch. 3", resultSymbol: "u_br");
+        c.Check("Tear-out shear against the allowable shear stress", "tau_to", "f_v", "ASME BTH-1 Ch. 3", resultSymbol: "u_to");
+        c.Check("Pin double shear against the allowable pin shear stress", "tau_p", "f_v_pin", resultSymbol: "u_p");
+        c.Check("Pin bending stress against the allowable pin bending stress", "sigma_b", "f_b_pin", resultSymbol: "u_b");
     }
 }

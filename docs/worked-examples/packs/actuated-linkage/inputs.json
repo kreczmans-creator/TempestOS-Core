@@ -155,7 +155,7 @@
     {
       "Symbol": "k_sp",
       "Number": 5,
-      "Unit": "N/mm",
+      "Unit": "kN/m",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
@@ -311,7 +311,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8b3e80021fdf4ced90761ad6a1b0d244#follower_force",
+        "Reference": "calc:eb2172463a2e4813b80b333ada138b23#follower_force",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -323,7 +323,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8b3e80021fdf4ced90761ad6a1b0d244#follower_force",
+        "Reference": "calc:eb2172463a2e4813b80b333ada138b23#follower_force",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -478,18 +478,6 @@
       "ValueText": "Standard"
     },
     {
-      "Symbol": "p",
-      "Number": 100,
-      "Unit": "bar",
-      "Provenance": {
-        "Kind": "Drawing",
-        "Reference": "DRG-EJT-210",
-        "Revision": "B",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "100"
-    },
-    {
       "Symbol": "p_back",
       "Number": 0,
       "Unit": "bar",
@@ -499,6 +487,18 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "0"
+    },
+    {
+      "Symbol": "p_sys",
+      "Number": 100,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-EJT-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "100"
     },
     {
       "Symbol": "rho",
@@ -552,7 +552,7 @@
       "Unit": "mm/s",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:8b3e80021fdf4ced90761ad6a1b0d244#output_motion",
+        "Reference": "calc:eb2172463a2e4813b80b333ada138b23#output_motion",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -621,7 +621,7 @@
       "Unit": "L",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e5cdfdd406c549f5ab3e3055ee07d57d#dV",
+        "Reference": "calc:4409c1a50cba407d874cb77d71d7831e#dV",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -648,7 +648,7 @@
       "ValueText": "Emergency stroke"
     },
     {
-      "Symbol": "n",
+      "Symbol": "n_gas",
       "Number": 1.4,
       "Provenance": {
         "Kind": "Specification",
@@ -685,7 +685,7 @@
       "Unit": "bar",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e5cdfdd406c549f5ab3e3055ee07d57d#p",
+        "Reference": "calc:4409c1a50cba407d874cb77d71d7831e#p_sys",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -718,7 +718,7 @@
       "Unit": "bar",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e5cdfdd406c549f5ab3e3055ee07d57d#p_push",
+        "Reference": "calc:4409c1a50cba407d874cb77d71d7831e#p_push",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

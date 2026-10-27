@@ -7,11 +7,11 @@ A 1.5 m vessel at 3 MPa needs 18 mm; the 15 mm plate fails at 1.20, and its hoop
 | Input | Value | Source |
 |---|---|---|
 | `E_j` | 1 | spec: SPEC-MECH-03 design criteria |
-| `P` | 3 MPa | spec: LOAD-SCHEDULE-01 |
-| `R` | 750 mm | drawing: DRG-PV-602 rev A |
+| `R_in` | 750 mm | drawing: DRG-PV-602 rev A |
 | `S` | 138 MPa | spec: SPEC-MECH-03 design criteria |
 | `c` | 1.5 mm | spec: SPEC-MECH-03 design criteria |
-| `n` | 1 | spec: SPEC-MECH-03 design criteria |
+| `n_design` | 1 | spec: SPEC-MECH-03 design criteria |
+| `p_design` | 3 MPa | spec: LOAD-SCHEDULE-01 |
 | `t_p` | 15 mm | drawing: DRG-PV-602 rev A |
 
 | Output | Expected | Computed | Result |

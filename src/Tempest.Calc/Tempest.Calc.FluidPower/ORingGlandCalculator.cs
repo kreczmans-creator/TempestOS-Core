@@ -65,8 +65,8 @@ public sealed class ORingGlandCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.4.0", CalcDiscipline.FluidPower, "O-ring and seal gland",
-        "Squeeze, stretch, gland fill and extrusion gap of a radial piston, radial rod or face O-ring seal, from the ring and groove dimensions with their tolerances, at the cold and shrunk and at the hot and swollen end of the temperature and swell range. The ring's cross-section shrinks with stretch by a relation you choose (none, constant-volume rubber, the quadratic cited from Parker ORD 5700 section 3.5, or linear in stretch). The worst case and the capability indices run through the tolerance-stack engine of M1, and the seeded Monte Carlo of the engine runs the exact non-linear model and reports the fraction outside each limit. A face seal is entered with the pressure on its outside or its inside. Measured groove distributions (from the scan import) can replace the toleranced dimensions. Ring sizes, the squeeze and fill bands and the extrusion limit are your own records: no O-ring size table, gland table or extrusion chart is shipped.",
+        Id, "1.5.0", CalcDiscipline.FluidPower, "O-ring and seal gland",
+        "Calculates squeeze, stretch, gland fill and extrusion gap of a piston, rod or face O-ring seal at the cold and hot ends of its temperature and swell range. You supply the ring sizes, bands and extrusion limits.",
         "Ring stretch: X = (g·D_ref)/(f·d) − 1, D_ref the diameter the ring ID sits on (groove root for a piston or face seal, rod for a rod seal); f = (1 + α(T − 20 °C))(1 + swell)^(1/3) the ring and g = 1 + α_m(T − 20 °C) the groove metal\n" +
         "Ring cross-section: W_eff = f·W·(1 − r(X))/√(1 − c), r(X) the chosen relation (none; 1 − 1/√(1+X); Y = 0.56 + 0.59X − 0.0046X² per cent as cited, used for about 3 to 25 % stretch only; ν·X) and c the compression of the ring outside diameter where it is held (rod seal in the housing groove; internal-pressure face seal on the groove outer wall), c = 1 − g·D_g/(f·(d + 2W))\n" +
         "Depth and gap: piston h = (D_s − D_g)/2, gap = D_s − D_c; rod h = (D_g − D_s)/2, gap = D_c − D_s; face h and gap entered directly (all times g)\n" +
@@ -76,13 +76,13 @@ public sealed class ORingGlandCalculator : ICalcCalculator
         "Monte Carlo: the engine's seeded Monte Carlo on the exact criterion, each dimension from its own distribution; the fraction below the lower and above the upper limit. The capability index C_pk uses the criterion linearised about the mean dimensions (secant slope across each band)\n" +
         "Extrusion gap: the largest gap over the installed, cold and hot temperatures (the sealing-surface part and the groove metal each with its own expansion) plus the bore dilation under pressure, against the permitted gap from your record (interpolated in hardness and pressure) or the value entered; with neither the check fails (not verified)",
         [
-            new CalcInputSpec("type", "Gland arrangement", CalcInputKind.Choice, Choices: [TypePiston, TypeRod, TypeFace], DefaultChoice: TypePiston, Group: "Seal"),
-            new CalcInputSpec("duty", "Static or dynamic duty (selects the squeeze band)", CalcInputKind.Choice, Choices: [DutyStatic, DutyDynamic], DefaultChoice: DutyStatic, Group: "Seal"),
-            new CalcInputSpec("face_p", "Face seal only: which side the pressure acts on (external: the ring ID seats on the groove inner wall and is stretched; internal: the ring OD seats on the groove outer wall and is compressed)", CalcInputKind.Choice, Choices: [PressureExternal, PressureInternal], DefaultChoice: PressureExternal, Group: "Seal"),
+            new CalcInputSpec("type", "Gland arrangement", CalcInputKind.Choice, Choices: [TypePiston, TypeRod, TypeFace], DefaultChoice: TypePiston, Group: "Setup"),
+            new CalcInputSpec("duty", "Static or dynamic duty (selects the squeeze band)", CalcInputKind.Choice, Choices: [DutyStatic, DutyDynamic], DefaultChoice: DutyStatic, Group: "Setup"),
+            new CalcInputSpec("face_p", "Face seal only: which side the pressure acts on (external: the ring ID seats on the groove inner wall and is stretched; internal: the ring OD seats on the groove outer wall and is compressed)", CalcInputKind.Choice, Choices: [PressureExternal, PressureInternal], DefaultChoice: PressureExternal, Group: "Setup"),
 
             new CalcInputSpec("d_r", "Ring inside diameter d (mean of the supplier's tolerance)", CalcInputKind.Quantity, "mm", Default: 50, Min: 3, Max: 500, HardMin: 1, HardMax: 1000, Group: "Ring"),
             new CalcInputSpec("d_r_tol", "Ring inside diameter tolerance, plus or minus", CalcInputKind.Quantity, "mm", Default: 0.4, Min: 0, Max: 2, HardMin: 0, HardMax: 5, Group: "Ring"),
-            new CalcInputSpec("W", "Ring cross-section diameter W", CalcInputKind.Quantity, "mm", Default: 3.5, Min: 1, Max: 10, HardMin: 0.5, HardMax: 20, Group: "Ring"),
+            new CalcInputSpec("W", "Ring cross-section diameter", CalcInputKind.Quantity, "mm", Default: 3.5, Min: 1, Max: 10, HardMin: 0.5, HardMax: 20, Group: "Ring"),
             new CalcInputSpec("W_tol", "Ring cross-section tolerance, plus or minus", CalcInputKind.Quantity, "mm", Default: 0.1, Min: 0, Max: 0.4, HardMin: 0, HardMax: 2, Group: "Ring"),
 
             new CalcInputSpec("D_s", "Sealing-surface diameter: the bore of a piston seal, the rod of a rod seal (not used for a face seal)", CalcInputKind.Quantity, "mm", Default: 56.9, Min: 5, Max: 1000, HardMin: 1, HardMax: 2000, Group: "Gland"),
@@ -94,38 +94,38 @@ public sealed class ORingGlandCalculator : ICalcCalculator
             new CalcInputSpec("D_c", "Mating part that sets the extrusion gap: the piston outside diameter, or the housing bore round the rod (not used for a face seal)", CalcInputKind.Quantity, "mm", Default: 56.9, Min: 5, Max: 1000, HardMin: 1, HardMax: 2000, Group: "Gland"),
             new CalcInputSpec("D_c_u", "Mating part diameter, upper deviation", CalcInputKind.Quantity, "mm", Default: -0.03, Min: -0.5, Max: 0.5, HardMin: -5, HardMax: 5, Group: "Gland"),
             new CalcInputSpec("D_c_l", "Mating part diameter, lower deviation", CalcInputKind.Quantity, "mm", Default: -0.06, Min: -0.5, Max: 0.5, HardMin: -5, HardMax: 5, Group: "Gland"),
-            new CalcInputSpec("h_f", "Face-seal groove depth (face seal only; the ring is compressed over h_f + e_f)", CalcInputKind.Quantity, "mm", Default: 2.7, Min: 0.3, Max: 20, HardMin: 0.1, HardMax: 50, Group: "Gland"),
+            new CalcInputSpec("h_f", "Face-seal groove depth (face seal only), where the ring is compressed over the depth plus the gap", CalcInputKind.Quantity, "mm", Default: 2.7, Min: 0.3, Max: 20, HardMin: 0.1, HardMax: 50, Group: "Gland"),
             new CalcInputSpec("h_f_u", "Face-seal groove depth, upper deviation", CalcInputKind.Quantity, "mm", Default: 0.05, Min: -0.5, Max: 0.5, HardMin: -5, HardMax: 5, Group: "Gland"),
             new CalcInputSpec("h_f_l", "Face-seal groove depth, lower deviation", CalcInputKind.Quantity, "mm", Default: 0, Min: -0.5, Max: 0.5, HardMin: -5, HardMax: 5, Group: "Gland"),
-            new CalcInputSpec("e_f", "Face-seal gap between the flanges (face seal only): the extrusion gap, and it adds to the compression height h_f + e_f", CalcInputKind.Quantity, "mm", Default: 0.05, Min: 0, Max: 2, HardMin: 0, HardMax: 10, Group: "Gland"),
+            new CalcInputSpec("e_f", "Face-seal gap between the flanges (face seal only), which is the extrusion gap and adds to the compression height", CalcInputKind.Quantity, "mm", Default: 0.05, Min: 0, Max: 2, HardMin: 0, HardMax: 10, Group: "Gland"),
             new CalcInputSpec("e_f_u", "Face-seal gap, upper deviation", CalcInputKind.Quantity, "mm", Default: 0.05, Min: -0.5, Max: 0.5, HardMin: -5, HardMax: 5, Group: "Gland"),
             new CalcInputSpec("e_f_l", "Face-seal gap, lower deviation", CalcInputKind.Quantity, "mm", Default: 0, Min: -0.5, Max: 0.5, HardMin: -5, HardMax: 5, Group: "Gland"),
-            new CalcInputSpec("b", "Groove width b", CalcInputKind.Quantity, "mm", Default: 4.8, Min: 1, Max: 20, HardMin: 0.3, HardMax: 50, Group: "Gland"),
+            new CalcInputSpec("b", "Groove width", CalcInputKind.Quantity, "mm", Default: 4.8, Min: 1, Max: 20, HardMin: 0.3, HardMax: 50, Group: "Gland"),
             new CalcInputSpec("b_u", "Groove width, upper deviation", CalcInputKind.Quantity, "mm", Default: 0.1, Min: -0.5, Max: 0.5, HardMin: -5, HardMax: 5, Group: "Gland"),
             new CalcInputSpec("b_l", "Groove width, lower deviation", CalcInputKind.Quantity, "mm", Default: 0, Min: -0.5, Max: 0.5, HardMin: -5, HardMax: 5, Group: "Gland"),
             new CalcInputSpec("ecc", "Gland eccentricity or run-out (one-sided offset; it deepens the gland by this much where the squeeze is least and shallows it where the squeeze is most; 0 if none)", CalcInputKind.Quantity, "mm", Default: 0, Min: 0, Max: 0.5, HardMin: 0, HardMax: 5, Group: "Gland"),
             new CalcInputSpec("r_g", "Groove bottom corner radius", CalcInputKind.Quantity, "mm", Default: 0.2, Min: 0, Max: 1, HardMin: 0, HardMax: 5, Group: "Gland"),
 
-            new CalcInputSpec("T_min", "Lowest operating temperature (the ring sits at 20 °C when installed)", CalcInputKind.Quantity, "degC", Default: -20, Min: -60, Max: 100, HardMin: -150, HardMax: 400, Group: "Environment"),
-            new CalcInputSpec("T_max", "Highest operating temperature", CalcInputKind.Quantity, "degC", Default: 80, Min: -40, Max: 200, HardMin: -150, HardMax: 400, Group: "Environment"),
-            new CalcInputSpec("alpha", "Ring linear thermal expansion coefficient α (an indicative elastomer figure; take yours from the compound or the material library)", CalcInputKind.Quantity, "1/K", Default: 1.5e-4, Min: 5e-5, Max: 3e-4, HardMin: 0, HardMax: 1e-3, Group: "Environment", MaterialProperty: "alpha"),
-            new CalcInputSpec("alpha_m", "Groove metal linear thermal expansion coefficient α_m (the part that carries the groove; one material record per sheet, so this one is entered from the metal's data sheet)", CalcInputKind.Quantity, "1/K", Default: 1.2e-5, Min: 5e-6, Max: 3e-5, HardMin: 0, HardMax: 1e-4, Group: "Environment"),
-            new CalcInputSpec("alpha_s", "Linear thermal expansion coefficient of the part that carries the sealing surface (the bore of a piston seal, the rod of a rod seal), if it differs from the groove metal's (leave blank to use α_m); it sets the extrusion gap over temperature", CalcInputKind.Quantity, "1/K", Min: 5e-6, Max: 3e-5, HardMin: 0, HardMax: 1e-4, IsOptional: true, Group: "Environment"),
-            new CalcInputSpec("s_min", "Smallest volume change of the ring in the fluid (negative for shrinkage; 0 if none)", CalcInputKind.Quantity, "%", Default: 0, Min: -10, Max: 0, HardMin: -20, HardMax: 100, Group: "Environment"),
-            new CalcInputSpec("s_max", "Largest volume swell of the ring in the fluid", CalcInputKind.Quantity, "%", Default: 5, Min: 0, Max: 25, HardMin: -20, HardMax: 100, Group: "Environment"),
+            new CalcInputSpec("T_min", "Lowest operating temperature (the ring sits at 20 °C when installed)", CalcInputKind.Quantity, "degC", Default: -20, Min: -60, Max: 100, HardMin: -150, HardMax: 400, Group: "Conditions"),
+            new CalcInputSpec("T_max", "Highest operating temperature", CalcInputKind.Quantity, "degC", Default: 80, Min: -40, Max: 200, HardMin: -150, HardMax: 400, Group: "Conditions"),
+            new CalcInputSpec("alpha", "Ring linear thermal expansion coefficient α (an indicative elastomer figure; take yours from the compound or the material library)", CalcInputKind.Quantity, "1/K", Default: 1.5e-4, Min: 5e-5, Max: 3e-4, HardMin: 0, HardMax: 1e-3, Group: "Conditions", MaterialProperty: "alpha"),
+            new CalcInputSpec("alpha_m", "Groove metal linear thermal expansion coefficient α_m (the part that carries the groove; one material record per sheet, so this one is entered from the metal's data sheet)", CalcInputKind.Quantity, "1/K", Default: 1.2e-5, Min: 5e-6, Max: 3e-5, HardMin: 0, HardMax: 1e-4, Group: "Conditions"),
+            new CalcInputSpec("s_min", "Smallest volume change of the ring in the fluid (negative for shrinkage; 0 if none)", CalcInputKind.Quantity, "%", Default: 0, Min: -10, Max: 0, HardMin: -20, HardMax: 100, Group: "Conditions"),
+            new CalcInputSpec("s_max", "Largest volume swell of the ring in the fluid", CalcInputKind.Quantity, "%", Default: 5, Min: 0, Max: 25, HardMin: -20, HardMax: 100, Group: "Conditions"),
+            new CalcInputSpec("alpha_s", "Linear thermal expansion coefficient of the part that carries the sealing surface, the bore of a piston seal or the rod of a rod seal, which sets the extrusion gap over temperature (optional; blank = the groove metal's α_m)", CalcInputKind.Quantity, "1/K", Min: 5e-6, Max: 3e-5, HardMin: 0, HardMax: 1e-4, IsOptional: true, Group: "Conditions"),
 
             new CalcInputSpec("red", "Cross-section reduction with stretch", CalcInputKind.Choice, Choices: [RelationNone, RelationIncompressible, RelationParker, RelationLinear], DefaultChoice: RelationIncompressible, Group: "Stretch"),
             new CalcInputSpec("nu", "Poisson ratio of the ring, for the linear relation", CalcInputKind.Number, Default: 0.49, Min: 0.3, Max: 0.5, HardMin: 0, HardMax: 0.5, Group: "Stretch", MaterialProperty: "nu"),
 
-            new CalcInputSpec("q_lo_s", "Static duty: lowest acceptable squeeze (from your handbook)", CalcInputKind.Quantity, "%", Default: 15, Min: 5, Max: 30, HardMin: 0, HardMax: 60, Group: "Acceptance"),
-            new CalcInputSpec("q_hi_s", "Static duty: highest acceptable squeeze", CalcInputKind.Quantity, "%", Default: 30, Min: 10, Max: 45, HardMin: 0, HardMax: 80, Group: "Acceptance"),
-            new CalcInputSpec("q_lo_d", "Dynamic duty: lowest acceptable squeeze", CalcInputKind.Quantity, "%", Default: 10, Min: 5, Max: 25, HardMin: 0, HardMax: 60, Group: "Acceptance"),
-            new CalcInputSpec("q_hi_d", "Dynamic duty: highest acceptable squeeze", CalcInputKind.Quantity, "%", Default: 25, Min: 10, Max: 35, HardMin: 0, HardMax: 80, Group: "Acceptance"),
-            new CalcInputSpec("fill_lo", "Gland fill: lowest acceptable", CalcInputKind.Quantity, "%", Default: 60, Min: 40, Max: 80, HardMin: 0, HardMax: 100, Group: "Acceptance"),
-            new CalcInputSpec("fill_hi", "Gland fill: highest acceptable", CalcInputKind.Quantity, "%", Default: 85, Min: 60, Max: 95, HardMin: 0, HardMax: 100, Group: "Acceptance"),
-            new CalcInputSpec("x_lo", "Installed stretch: lowest acceptable (negative allows a ring that is compressed on its seat)", CalcInputKind.Quantity, "%", Default: 0, Min: -5, Max: 5, HardMin: -50, HardMax: 50, Group: "Acceptance"),
-            new CalcInputSpec("x_hi", "Installed stretch: highest acceptable (the installation rule is up to 6 % on a piston groove); also applied at the cold end", CalcInputKind.Quantity, "%", Default: 6, Min: 1, Max: 10, HardMin: 0.1, HardMax: 100, Group: "Acceptance"),
-            new CalcInputSpec("od_hi", "Ring outside-diameter compression: highest acceptable, in a rod-seal groove or against the groove outer wall of an internal-pressure face seal (your record; the default is a placeholder equal to the stretch limit, not a handbook value)", CalcInputKind.Quantity, "%", Default: 6, Min: 1, Max: 10, HardMin: 0.1, HardMax: 100, Group: "Acceptance"),
+            new CalcInputSpec("q_lo_s", "Static duty: lowest acceptable squeeze (from your handbook)", CalcInputKind.Quantity, "%", Default: 15, Min: 5, Max: 30, HardMin: 0, HardMax: 60, Group: "Requirements"),
+            new CalcInputSpec("q_hi_s", "Static duty: highest acceptable squeeze", CalcInputKind.Quantity, "%", Default: 30, Min: 10, Max: 45, HardMin: 0, HardMax: 80, Group: "Requirements"),
+            new CalcInputSpec("q_lo_d", "Dynamic duty: lowest acceptable squeeze", CalcInputKind.Quantity, "%", Default: 10, Min: 5, Max: 25, HardMin: 0, HardMax: 60, Group: "Requirements"),
+            new CalcInputSpec("q_hi_d", "Dynamic duty: highest acceptable squeeze", CalcInputKind.Quantity, "%", Default: 25, Min: 10, Max: 35, HardMin: 0, HardMax: 80, Group: "Requirements"),
+            new CalcInputSpec("fill_lo", "Gland fill: lowest acceptable", CalcInputKind.Quantity, "%", Default: 60, Min: 40, Max: 80, HardMin: 0, HardMax: 100, Group: "Requirements"),
+            new CalcInputSpec("fill_hi", "Gland fill: highest acceptable", CalcInputKind.Quantity, "%", Default: 85, Min: 60, Max: 95, HardMin: 0, HardMax: 100, Group: "Requirements"),
+            new CalcInputSpec("x_lo", "Installed stretch: lowest acceptable (negative allows a ring that is compressed on its seat)", CalcInputKind.Quantity, "%", Default: 0, Min: -5, Max: 5, HardMin: -50, HardMax: 50, Group: "Requirements"),
+            new CalcInputSpec("x_hi", "Installed stretch: highest acceptable (the installation rule is up to 6 % on a piston groove); also applied at the cold end", CalcInputKind.Quantity, "%", Default: 6, Min: 1, Max: 10, HardMin: 0.1, HardMax: 100, Group: "Requirements"),
+            new CalcInputSpec("od_hi", "Ring outside-diameter compression: highest acceptable, in a rod-seal groove or against the groove outer wall of an internal-pressure face seal (your record; the default is a placeholder equal to the stretch limit, not a handbook value)", CalcInputKind.Quantity, "%", Default: 6, Min: 1, Max: 10, HardMin: 0.1, HardMax: 100, Group: "Requirements"),
 
             new CalcInputSpec("H_A", "Ring hardness, Shore A (for the extrusion record)", CalcInputKind.Number, Default: 70, Min: 40, Max: 95, HardMin: 20, HardMax: 100, Group: "Extrusion"),
             new CalcInputSpec("p_op", "Operating pressure (for the extrusion record, gauge)", CalcInputKind.Quantity, "bar", Default: 160, Min: 0, Max: 700, HardMin: 0, HardMax: 2000, Group: "Extrusion", PressureBasis: CalcInputSpec.BasisGauge),
@@ -134,38 +134,64 @@ public sealed class ORingGlandCalculator : ICalcCalculator
             new CalcInputSpec("ext", "Permitted extrusion gap against hardness and pressure (your own record)", CalcInputKind.Table, Columns: ExtrusionColumns, MaxRows: 100, IsOptional: true, Group: "Extrusion"),
 
             new CalcInputSpec("n_mc", "Monte Carlo samples", CalcInputKind.Number, Default: 10_000, Min: 1_000, Max: 100_000, HardMin: 1, HardMax: CalcRunner.MaxCalculatorSamples, Group: "Statistics"),
-            new CalcInputSpec("seed", "Monte Carlo seed", CalcInputKind.Number, Default: 1, HardMin: 0, HardMax: 4_294_967_295, Group: "Statistics"),
+            new CalcInputSpec("seed", "Monte Carlo seed", CalcInputKind.Number, Default: 1, Min: 0, Max: 1_000_000, HardMin: 0, HardMax: 4_294_967_295, Group: "Statistics"),
             new CalcInputSpec("k_sigma", "Standard deviations per half-band (normal tolerances and measured normals)", CalcInputKind.Number, Default: 3, Min: 1, Max: 6, HardMin: 0.1, HardMax: 100, Group: "Statistics"),
             new CalcInputSpec("dist", "Distribution of the toleranced dimensions", CalcInputKind.Choice, Choices: Distributions, DefaultChoice: DistributionNormal, Group: "Statistics"),
             new CalcInputSpec("measured", "Measured groove or ring dimensions (mean, standard deviation, distribution), replacing the toleranced ones", CalcInputKind.Table, Columns: MeasuredColumns, MaxRows: 8, IsOptional: true, Group: "Statistics"),
         ],
         [
-            new CalcAssumption("The gland is a plain rectangular groove with a bottom corner radius; the ring is a circle of the stated cross-section. Edge breaks, groove wall angles and surface finish are not modelled.", "Closed-form gland geometry; no gland table."),
-            new CalcAssumption("Squeeze is the compressed fraction of the effective cross-section W_eff, which is the nominal section after thermal expansion, swell and the cross-section reduction of the stretch. The reduction relation is chosen by the user; the quadratic of Parker ORD 5700 section 3.5 is implemented as quoted second-hand, used for about 3 to 25 % stretch only, and is not confirmed against the handbook. Where the ring outside diameter is held (a rod seal in its housing groove, an internal-pressure face seal), the compression c thickens the section to W/√(1 − c).", "The relation is an input choice; the default is the constant-volume rubber relation, derived."),
-            new CalcAssumption("The cold end is the lowest temperature with the least swell and sets the minimum squeeze and fill; the hot end is the highest temperature with the most swell and sets the maximum. This assumes the ring expands more than the groove metal (alpha above alpha_m).", "Bounding cases of a monotonic model."),
-            new CalcAssumption("The worst case combines each dimension at its extreme independently. Where one dimension appears twice (the groove root diameter sets both the depth and the stretch of a piston seal) the worst case is slightly conservative.", "Independent ends of linear stacks."),
-            new CalcAssumption("The Monte Carlo samples each dimension from its own distribution about its mean and evaluates each criterion exactly (the non-linear model) on the engine's seeded sampler. It counts the fraction outside each limit at the cold or hot end; it does not model pressure, friction or compression set. The capability index C_pk uses the first-order (secant) linearisation.", "Exact model on the engine's seeded sampler."),
-            new CalcAssumption("The gland fill at the hot end is on a volume basis: a ring held circumferentially by the groove takes the whole volume change of thermal expansion and swell in its section, (1 + αΔT)³(1 + s), while the groove circumference grows with the groove metal. This is higher than scaling the section area isotropically.", "Volume conservation of the held ring."),
-            new CalcAssumption("The extrusion gap is the largest diametral clearance of a radial seal (the axial gap of a face seal) over the installed, cold and hot temperatures, the sealing-surface part and the groove metal each with its own expansion coefficient, plus the diametral growth of the bore under pressure that the user enters (0 if none). The permitted gap is the user's record; the sheet never states a handbook value. With no permitted gap entered the extrusion check fails (not verified) while the operating pressure is above zero.", "Extrusion limits are licensed data and are not shipped."),
+            new CalcAssumption("The gland is a plain rectangular groove with a bottom corner radius.", "Closed-form gland geometry; no gland table."),
+            new CalcAssumption("The ring is a circle of the stated cross-section.", "Closed-form gland geometry; no gland table."),
+            new CalcAssumption("Edge breaks, groove wall angles and surface finish are not modelled.", "Closed-form gland geometry; no gland table."),
+            new CalcAssumption("Squeeze is the compressed fraction of the effective cross-section W_eff.", "The relation is an input choice, and the default is the constant-volume rubber relation, derived."),
+            new CalcAssumption("W_eff is the nominal section after thermal expansion, swell and the cross-section reduction of the stretch.", "The relation is an input choice, and the default is the constant-volume rubber relation, derived."),
+            new CalcAssumption("The reduction relation is your choice, and the default is the constant-volume rubber relation.", "The relation is an input choice, and the default is the constant-volume rubber relation, derived."),
+            new CalcAssumption("The quadratic from the Parker handbook is implemented as quoted second-hand and is not confirmed against the handbook.", "The relation is an input choice, and the default is the constant-volume rubber relation, derived."),
+            new CalcAssumption("The quadratic is used for about 3 to 25 % stretch only.", "The relation is an input choice, and the default is the constant-volume rubber relation, derived."),
+            new CalcAssumption("Below 3 % the reduction is blended linearly to zero.", "The relation is an input choice, and the default is the constant-volume rubber relation, derived."),
+            new CalcAssumption("Above 25 % the reduction is held at its 25 % value.", "The relation is an input choice, and the default is the constant-volume rubber relation, derived."),
+            new CalcAssumption("Where the ring outside diameter is held, the compression c thickens the section to W/√(1 − c).", "The relation is an input choice, and the default is the constant-volume rubber relation, derived."),
+            new CalcAssumption("A rod seal in its housing groove and an internal-pressure face seal hold the ring outside diameter.", "The relation is an input choice, and the default is the constant-volume rubber relation, derived."),
+            new CalcAssumption("The cold end is the lowest temperature with the least swell, and it sets the minimum squeeze and fill.", "Bounding cases of a monotonic model."),
+            new CalcAssumption("The hot end is the highest temperature with the most swell, and it sets the maximum squeeze and fill.", "Bounding cases of a monotonic model."),
+            new CalcAssumption("This assumes the ring expands more than the groove metal (alpha above alpha_m).", "Bounding cases of a monotonic model."),
+            new CalcAssumption("The worst case combines each dimension at its extreme independently.", "Independent ends of linear stacks."),
+            new CalcAssumption("Where one dimension appears twice, the worst case is slightly conservative.", "Independent ends of linear stacks."),
+            new CalcAssumption("The groove root diameter sets both the depth and the stretch of a piston seal.", "Independent ends of linear stacks."),
+            new CalcAssumption("The Monte Carlo samples each dimension from its own distribution about its mean.", "Exact model on the engine's seeded sampler."),
+            new CalcAssumption("It evaluates each criterion exactly, with the non-linear model, on the seeded sampler of the engine.", "Exact model on the engine's seeded sampler."),
+            new CalcAssumption("It counts the fraction outside each limit at the cold or hot end.", "Exact model on the engine's seeded sampler."),
+            new CalcAssumption("It does not model pressure, friction or compression set.", "Exact model on the engine's seeded sampler."),
+            new CalcAssumption("The capability index C_pk uses the first-order (secant) linearisation.", "Exact model on the engine's seeded sampler."),
+            new CalcAssumption("The gland fill at the hot end is on a volume basis.", "Volume conservation of the held ring."),
+            new CalcAssumption("A ring held circumferentially by the groove takes the whole volume change of thermal expansion and swell in its section.", "Volume conservation of the held ring."),
+            new CalcAssumption("That change is (1 + αΔT)³(1 + s), while the groove circumference grows with the groove metal.", "Volume conservation of the held ring."),
+            new CalcAssumption("This is higher than scaling the section area isotropically.", "Volume conservation of the held ring."),
+            new CalcAssumption("The extrusion gap is the largest diametral clearance of a radial seal over the installed, cold and hot temperatures.", "Extrusion limits are licensed data and are not shipped."),
+            new CalcAssumption("The extrusion gap of a face seal is its axial gap.", "Extrusion limits are licensed data and are not shipped."),
+            new CalcAssumption("The sealing-surface part and the groove metal each have their own expansion coefficient.", "Extrusion limits are licensed data and are not shipped."),
+            new CalcAssumption("The gap adds the diametral growth of the bore under pressure that you enter, or 0 if none.", "Extrusion limits are licensed data and are not shipped."),
+            new CalcAssumption("The permitted gap is your record, and the sheet never states a handbook value.", "Extrusion limits are licensed data and are not shipped."),
+            new CalcAssumption("With no permitted gap entered, the extrusion check fails (not verified) while the operating pressure is above zero.", "Extrusion limits are licensed data and are not shipped."),
         ],
         [
-            new CalcClauseRef("Parker O-Ring Handbook ORD 5700", "Section 3.5", "Cross-section reduction with stretch (relation quoted second-hand; not confirmed)"),
+            new CalcClauseRef("Parker O-Ring Handbook ORD 5700", "§3.5", "Cross-section reduction with stretch (relation quoted second-hand; not confirmed)"),
             new CalcClauseRef("Parker PTD 5705", "—", "O-ring installation guidance (stretch rule quoted second-hand; not confirmed)"),
-            new CalcClauseRef("ISO 3601-1", "—", "O-rings: inside diameters, cross-sections, tolerances and size codes"),
-            new CalcClauseRef("ISO 3601-2", "—", "O-rings: housing dimensions for general applications"),
+            new CalcClauseRef("ISO 3601-1:2012", "—", "O-rings: inside diameters, cross-sections, tolerances and size codes"),
+            new CalcClauseRef("ISO 3601-2:2016", "—", "O-rings: housing dimensions for general applications"),
         ],
         [
             new CalcApplicabilityRule("geometry", "Every dimension stays positive across its band, the deviations are in order, the gland has a positive depth and area and the ring section does not vanish.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("limits", "Each lower limit is below its upper limit and the temperature and swell ranges are in order.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("measured", "A measured row names a dimension the arrangement does not use (a name that is not a dimension at all blocks).", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("extrusion", "No permitted extrusion gap is entered (no record rows and no value): the extrusion is not verified and the check fails while the operating pressure is above zero.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("extrusion", "No permitted extrusion gap is entered (no record rows and no value), so the extrusion is not verified and the check fails while the operating pressure is above zero.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("extrusion-range", "The pressure or hardness lies outside the extrusion record; the check fails because the record cannot confirm it.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("expansion", "The ring expands less than the groove metal: the cold and hot ends are not the bounding cases.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("stretch", "The installed stretch is far beyond installation practice, or the Parker quadratic is used outside about 3 to 25 % stretch.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("installed-state", "The operating temperature range does not include the installation temperature 20 °C: the installed state can have a smaller squeeze than the cold end.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("contact", "The minimum squeeze is zero or negative: the ring can lose contact.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("face", "A face seal is normally a static seal.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("worst-case", "The exact corner is lower than the stack worst case; the stack is not conservative for this geometry.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("worst-case", "The exact corner is outside the stack worst case by more than 0.2 points, so the stack is not conservative for this geometry.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
         ],
         [
             new CalcTestCase("ka-thermal-swell", "Piston seal with the constant-volume reduction, thermal expansion and swell: the defaults (analytic)",
@@ -347,16 +373,16 @@ public sealed class ORingGlandCalculator : ICalcCalculator
         Category: "Seals",
         OutputPorts:
         [
-            new CalcOutputPort("squeeze_min", "%", "Smallest squeeze over tolerance, temperature and swell (cold end)"),
-            new CalcOutputPort("squeeze_max", "%", "Largest squeeze over tolerance, temperature and swell (hot end)"),
-            new CalcOutputPort("fill_max", "%", "Largest gland fill (hot end, unstretched section)"),
-            new CalcOutputPort("stretch", "%", "Largest installed stretch of the ring inside diameter"),
+            new CalcOutputPort("squeeze_min", "%", "Smallest squeeze over tolerance, temperature and swell (cold end)", "gland.squeeze_min"),
+            new CalcOutputPort("squeeze_max", "%", "Largest squeeze over tolerance, temperature and swell (hot end)", "gland.squeeze_max"),
+            new CalcOutputPort("fill_max", "%", "Largest gland fill (hot end, unstretched section)", "gland.fill_max"),
+            new CalcOutputPort("stretch", "%", "Largest installed stretch of the ring inside diameter", "gland.stretch_max"),
         ],
         RecordKinds:
         [
             new CalcRecordKind(MaterialKind, "Material properties", ["alpha", "nu"], "A material from the library: its properties fill these inputs, each citing the material, its revision and the page or table of the value."),
             new CalcRecordKind("oring.ring", "Ring size", ["d_r", "d_r_tol", "W", "W_tol"], "The ring's inside diameter and cross-section with their tolerances, from the supplier's catalogue or your own size list. No size table is shipped."),
-            new CalcRecordKind("oring.criteria", "Squeeze, fill and stretch bands", ["q_lo_s", "q_hi_s", "q_lo_d", "q_hi_d", "fill_lo", "fill_hi", "x_lo", "x_hi", "od_hi"], "The acceptable squeeze for static and dynamic duty, the gland fill band, the installed stretch limits and the outside-diameter compression limit of a rod seal or an internal-pressure face seal, from your handbook or the seal maker, with edition and section."),
+            new CalcRecordKind("oring.criteria", "Squeeze, fill and stretch criteria", ["q_lo_s", "q_hi_s", "q_lo_d", "q_hi_d", "fill_lo", "fill_hi", "x_lo", "x_hi", "od_hi"], "The acceptable squeeze for static and dynamic duty, the gland fill band, the installed stretch limits and the outside-diameter compression limit of a rod seal or an internal-pressure face seal, from your handbook or the seal maker, with edition and section."),
             new CalcRecordKind("oring.extrusion", "Permitted extrusion gap", ["gap_allow", "ext"], "The permitted gap against pressure and hardness from the seal maker's extrusion data for the compound, as points (hardness, pressure, gap) or as one value. The chart is not shipped."),
         ]);
 
@@ -438,7 +464,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
 
             if (target < 0)
             {
-                c.Warn("measured", $"measured: row {i + 1} names {key}, which a {typeText.ToLowerInvariant()} gland does not use; the row is ignored.");
+                c.Warn("measured", $"measured: row {i + 1} names {key}, which a {typeText.ToLowerInvariant()} gland does not use. The row is ignored.");
                 continue;
             }
 
@@ -521,8 +547,8 @@ public sealed class ORingGlandCalculator : ICalcCalculator
         {
             c.Block("geometry", kind switch
             {
-                SealKind.Piston => "D_g: the groove root diameter is not below the bore, so the gland has no depth; check D_s and D_g.",
-                SealKind.Rod => "D_g: the housing groove root diameter is not above the rod, so the gland has no depth; check D_s and D_g.",
+                SealKind.Piston => "D_g: the groove root diameter is not below the bore, so the gland has no depth. Check D_s and D_g.",
+                SealKind.Rod => "D_g: the housing groove root diameter is not above the rod, so the gland has no depth. Check D_s and D_g.",
                 _ => "h_f: the groove depth is zero or negative.",
             });
             return;
@@ -530,7 +556,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
 
         if (radial && ORingGlandModel.Gap(kind, meanVector) < 0.0)
         {
-            c.Block("geometry", "D_c: the mating part is larger than the sealing surface, so the gap is negative; check D_s and D_c.");
+            c.Block("geometry", "D_c: the mating part is larger than the sealing surface, so the gap is negative. Check D_s and D_c.");
             return;
         }
 
@@ -577,7 +603,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
         }
 
         if (alpha < alphaMetal)
-            c.Warn("expansion", "alpha: the ring expands less than the groove metal, so the cold and hot ends do not bound the squeeze; the minimum and maximum shown may not be the extremes.");
+            c.Warn("expansion", "alpha: the ring expands less than the groove metal, so the cold and hot ends do not bound the squeeze. The minimum and maximum shown may not be the extremes.");
 
         // Installed stretch: the ring inside diameter on its seat, or (an internal-pressure face seal) the outside diameter on the groove outer wall.
         Contributor[] RingSeat(double f) => internalFace ? [ringId.Scaled(f), section.Scaled(2.0 * f)] : [ringId.Scaled(f)];
@@ -602,7 +628,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
         c.Record("u_stretch", "stretch / x_hi", $"{F(stretchMax * 100)} % / {F(xHi * 100)} %", new ScalarValue(xHi > 0 ? stretchMax / xHi : 0), "Largest installed stretch against its limit");
 
         if (stretchMax > 0.25)
-            c.Warn("stretch", $"d_r: the largest installed stretch is {F(stretchMax * 100)} %, far beyond installation practice; check the ring and groove diameters.");
+            c.Warn("stretch", $"d_r: the largest installed stretch is {F(stretchMax * 100)} %, far beyond installation practice. Check the ring and groove diameters.");
 
         // Cold end: minimum squeeze and fill.
         var drefC = Range(reference.Scaled(refCold));
@@ -636,18 +662,18 @@ public sealed class ORingGlandCalculator : ICalcCalculator
             var positive = new[] { stretchNom, stretchMin, stretchMax, stretchCold, stretchHot }.Where(x => x > 0.0).Select(x => x * 100).ToList();
 
             if (positive.Any(x => x < ORingGlandModel.ParkerStretchMin || x > ORingGlandModel.ParkerStretchCap))
-                c.Warn("stretch", $"red: the Parker quadratic is used for {F(ORingGlandModel.ParkerStretchMin)} to {F(ORingGlandModel.ParkerStretchCap)} % stretch only; a stretch here is {F(positive.Min())} … {F(positive.Max())} %. Below {F(ORingGlandModel.ParkerStretchMin)} % the reduction is blended linearly to zero, above {F(ORingGlandModel.ParkerStretchCap)} % it is held at its {F(ORingGlandModel.ParkerStretchCap)} % value; take the reduction from your handbook for this range.");
+                c.Warn("stretch", $"red: the Parker quadratic holds for {F(ORingGlandModel.ParkerStretchMin)} to {F(ORingGlandModel.ParkerStretchCap)} % stretch, and the stretch here is {F(positive.Min())} … {F(positive.Max())} %. Take the reduction from your handbook for this range.");
         }
 
         if (!(effLow > 0.0) || !(effHigh > 0.0))
         {
-            c.Block("geometry", "d_r: the stretch leaves the ring no cross-section; check the ring and groove diameters.");
+            c.Block("geometry", "d_r: the stretch leaves the ring no cross-section. Check the ring and groove diameters.");
             return;
         }
 
         if (!(areaCold > 0.0) || !(areaHot > 0.0))
         {
-            c.Block("geometry", "r_g: the groove area is zero or negative; check the groove width, depth and corner radius.");
+            c.Block("geometry", "r_g: the groove area is zero or negative. Check the groove width, depth and corner radius.");
             return;
         }
 
@@ -693,14 +719,14 @@ public sealed class ORingGlandCalculator : ICalcCalculator
         c.Record("sq_max_exact", "exact non-linear corner (check)", "corner chosen by the sensitivities", ScalarValue.Of(exactHigh * 100, "%"), "Check: largest squeeze at the exact corner");
 
         if (exactLow < squeezeMin - 0.002 || exactHigh > squeezeMax + 0.002)
-            c.Warn("worst-case", $"squeeze: the exact corner ({F(exactLow * 100)} … {F(exactHigh * 100)} %) lies outside the stack worst case ({F(squeezeMin * 100)} … {F(squeezeMax * 100)} %) by more than 0.2 points; the stack is not conservative for this geometry.");
+            c.Warn("worst-case", $"squeeze: the exact corner ({F(exactLow * 100)} … {F(exactHigh * 100)} %) is outside the stack worst case ({F(squeezeMin * 100)} … {F(squeezeMax * 100)} %). The stack is not conservative for this geometry.");
 
         // fp.oring-gland-R1: the extremes are the cold and hot ends; the ring is installed at 20 °C with no swell, which is a third state. When the operating range leaves 20 °C out, that state can have the smallest squeeze.
         if (ORingGlandModel.ReferenceTemperature < tMin - 1e-9 || ORingGlandModel.ReferenceTemperature > tMax + 1e-9)
-            c.Warn("installed-state", $"T_min: the operating range {F(tMin)} … {F(tMax)} °C does not include the installation temperature 20 °C, so the minimum and maximum squeeze and fill shown are the ends of the range, not the installed state (no swell, 20 °C), which can have a smaller squeeze (the finding's example: 17.64 % installed against 18.32 % at the cold end); check the installed squeeze_nom or widen the range to include 20 °C.");
+            c.Warn("installed-state", $"T_min: the operating range {F(tMin)} … {F(tMax)} °C does not include the installation temperature 20 °C. The installed state can have a smaller squeeze, so check squeeze_nom or widen the range to include 20 °C.");
 
         if (squeezeMin <= 0.0)
-            c.Warn("contact", $"squeeze: the smallest squeeze is {F(squeezeMin * 100)} %; the ring can lose contact.");
+            c.Warn("contact", $"squeeze: the smallest squeeze is {F(squeezeMin * 100)} %. The ring can lose contact.");
 
         // Extrusion gap (over the temperature range, with the bore dilation) and the outside diameter held in the groove.
         (double Min, double Max, double Mid, double Sigma) GapRange(GlandCase gc)
@@ -739,35 +765,35 @@ public sealed class ORingGlandCalculator : ICalcCalculator
         // PASS/FAIL per criterion.
         const double Slack = 1e-9;
 
-        c.CheckCondition("Squeeze minimum within the band", squeezeMin >= qLo - Slack, $"squeeze_min {F(squeezeMin * 100)} %", $"≥ {F(qLo * 100)} %", "squeeze_min", "oring.criteria record");
-        c.CheckCondition("Squeeze maximum within the band", squeezeMax <= qHi + Slack, $"squeeze_max {F(squeezeMax * 100)} %", $"≤ {F(qHi * 100)} %", "squeeze_max", "oring.criteria record");
-        c.CheckCondition("Gland fill maximum within the band", fillMaxValue <= fillHi + Slack, $"fill_max {F(fillMaxValue * 100)} %", $"≤ {F(fillHi * 100)} %", "fill_max", "oring.criteria record");
-        c.CheckCondition("Gland fill minimum within the band", fillMinValue >= fillLo - Slack, $"fill_min {F(fillMinValue * 100)} %", $"≥ {F(fillLo * 100)} %", "fill_min", "oring.criteria record");
-        c.CheckCondition("Installed stretch not above the limit", stretchMax <= xHi + Slack, $"stretch {F(stretchMax * 100)} %", $"≤ {F(xHi * 100)} %", "stretch", "oring.criteria record; PTD 5705 installation rule");
-        c.CheckCondition("Installed stretch not above the limit at the cold end", stretchCold <= xHi + Slack, $"X_c {F(stretchCold * 100)} %", $"≤ {F(xHi * 100)} %", "X_c", "oring.criteria record");
+        c.CheckCondition("Squeeze minimum against the lower band limit", squeezeMin >= qLo - Slack, $"squeeze_min {F(squeezeMin * 100)} %", $"≥ {F(qLo * 100)} %", "squeeze_min", "oring.criteria record");
+        c.CheckCondition("Squeeze maximum against the upper band limit", squeezeMax <= qHi + Slack, $"squeeze_max {F(squeezeMax * 100)} %", $"≤ {F(qHi * 100)} %", "squeeze_max", "oring.criteria record");
+        c.CheckCondition("Gland fill maximum against the upper band limit", fillMaxValue <= fillHi + Slack, $"fill_max {F(fillMaxValue * 100)} %", $"≤ {F(fillHi * 100)} %", "fill_max", "oring.criteria record");
+        c.CheckCondition("Gland fill minimum against the lower band limit", fillMinValue >= fillLo - Slack, $"fill_min {F(fillMinValue * 100)} %", $"≥ {F(fillLo * 100)} %", "fill_min", "oring.criteria record");
+        c.CheckCondition("Installed stretch against the upper limit", stretchMax <= xHi + Slack, $"stretch {F(stretchMax * 100)} %", $"≤ {F(xHi * 100)} %", "stretch", "oring.criteria record; PTD 5705 installation rule");
+        c.CheckCondition("Installed stretch at the cold end against the upper limit", stretchCold <= xHi + Slack, $"X_c {F(stretchCold * 100)} %", $"≤ {F(xHi * 100)} %", "X_c", "oring.criteria record");
 
         if (!internalFace)
-            c.CheckCondition("Installed stretch not below the limit", stretchMin >= xLo - Slack, $"stretch_min {F(stretchMin * 100)} %", $"≥ {F(xLo * 100)} %", "stretch_min", "oring.criteria record");
+            c.CheckCondition("Installed stretch against the lower limit", stretchMin >= xLo - Slack, $"stretch_min {F(stretchMin * 100)} %", $"≥ {F(xLo * 100)} %", "stretch_min", "oring.criteria record");
 
         if (odHeld)
         {
-            c.CheckCondition("Ring OD compression not above the limit", odMax <= odHi + Slack, $"od_comp {F(odMax * 100)} %", $"≤ {F(odHi * 100)} %", "od_comp", "oring.criteria record");
-            c.CheckCondition("Ring OD compression at the hot end not above the limit", cHot <= odHi + Slack, $"c_h {F(cHot * 100)} %", $"≤ {F(odHi * 100)} %", "c_h", "oring.criteria record");
+            c.CheckCondition("Ring OD compression against the limit", odMax <= odHi + Slack, $"od_comp {F(odMax * 100)} %", $"≤ {F(odHi * 100)} %", "od_comp", "oring.criteria record");
+            c.CheckCondition("Ring OD compression at the hot end against the limit", cHot <= odHi + Slack, $"c_h {F(cHot * 100)} %", $"≤ {F(odHi * 100)} %", "c_h", "oring.criteria record");
         }
 
         if (gapLimit is { } allowed)
         {
             c.Record("gap_allow", "permitted extrusion gap", gapBasis, ScalarValue.Of(allowed, mm), "Permitted extrusion gap, diametral for a radial seal and axial for a face seal (your record or value)");
             c.Record("u_gap", "gap_max / gap_allow", $"{F(gapMax)} / {F(allowed)}", new ScalarValue(allowed > 0 ? gapMax / allowed : 0), "Largest gap against the permitted gap");
-            c.CheckCondition("Extrusion gap within the permitted gap", !gapOutOfRange && gapMax <= allowed + Slack, $"gap_max {F(gapMax)} mm", gapOutOfRange ? $"{gapBasis}" : $"≤ {F(allowed)} mm ({gapBasis})", "gap_max", "oring.extrusion record");
+            c.CheckCondition("Extrusion gap against the permitted gap", !gapOutOfRange && gapMax <= allowed + Slack, $"gap_max {F(gapMax)} mm", gapOutOfRange ? $"{gapBasis}" : $"≤ {F(allowed)} mm ({gapBasis})", "gap_max", "oring.extrusion record");
         }
         else if (gapOutOfRange)
         {
-            c.CheckCondition("Extrusion gap within the permitted gap", false, $"gap_max {F(gapMax)} mm", gapBasis, "gap_max", "oring.extrusion record");
+            c.CheckCondition("Extrusion gap against the permitted gap", false, $"gap_max {F(gapMax)} mm", gapBasis, "gap_max", "oring.extrusion record");
         }
         else
         {
-            c.Warn("extrusion", "gap_allow: no permitted extrusion gap is entered (no rows in the extrusion record and no value), so the extrusion is not verified. Enter the seal maker's limit for this pressure and hardness.");
+            c.Warn("extrusion", "gap_allow: enter the seal maker's permitted extrusion gap for this pressure and hardness. Without it the extrusion is not verified.");
 
             // Not verified is not passed: at a pressure the ring can extrude, the sheet fails until a limit is entered.
             if (pressureBar > 0.0)
@@ -775,7 +801,7 @@ public sealed class ORingGlandCalculator : ICalcCalculator
         }
 
         if (kind == SealKind.Face && dynamicDuty)
-            c.Warn("face", "duty: a face seal is normally a static seal; check that a dynamic squeeze band is what you want.");
+            c.Warn("face", "duty: a face seal is normally a static seal. Check that a dynamic squeeze band is what you want.");
 
         // Outputs.
         c.Output("squeeze_nom", "Squeeze at the mean dimensions");

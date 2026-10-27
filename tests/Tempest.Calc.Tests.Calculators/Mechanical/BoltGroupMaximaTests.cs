@@ -19,8 +19,8 @@ public sealed class BoltGroupMaximaTests
 
     private static CalcRunResult Run() => CalcRunner.Run(Group, CalcTemplateHasher.DefaultInputs(Group.Template).With(Bolts())
         .With(CalcInputValue.Quantity("F_x", 20, "kN")).With(CalcInputValue.Quantity("F_y", -80, "kN")).With(CalcInputValue.Quantity("e_x", 250, "mm")).With(CalcInputValue.Quantity("e_y", 30, "mm"))
-        .With(CalcInputValue.Quantity("T_z", 2, "kN*m")).With(CalcInputValue.Quantity("N", 30, "kN")).With(CalcInputValue.Quantity("M_x", 15, "kN*m")).With(CalcInputValue.Quantity("M_y", -8, "kN*m"))
-        .With(CalcInputValue.Quantity("V_R", 60, "kN")).With(CalcInputValue.Quantity("T_R", 90, "kN")));
+        .With(CalcInputValue.Quantity("M_z", 2, "kN*m")).With(CalcInputValue.Quantity("N", 30, "kN")).With(CalcInputValue.Quantity("M_x", 15, "kN*m")).With(CalcInputValue.Quantity("M_y", -8, "kN*m"))
+        .With(CalcInputValue.Quantity("F_v_Rd", 60, "kN")).With(CalcInputValue.Quantity("F_t_Rd", 90, "kN")));
 
     [Fact]
     public void The_Shear_And_Tension_Maxima_Are_The_Group_Maxima_Not_The_Governing_Bolts_Values()
@@ -28,10 +28,10 @@ public sealed class BoltGroupMaximaTests
         var r = Run();
 
         Assert.False(r.IsBlocked);
-        Assert.Equal(39.327, r.OutputSi("v_max") / 1e3, 3);
-        Assert.Equal(80, r.OutputSi("t_max") / 1e3, 6);
-        Assert.Equal(39.327 / 60, r.Checks.Single(c => c.Name.StartsWith("Shear alone", StringComparison.Ordinal)).Utilisation, 3);
-        Assert.Equal(80.0 / 90, r.Checks.Single(c => c.Name.StartsWith("Tension alone", StringComparison.Ordinal)).Utilisation, 6);
+        Assert.Equal(39.327, r.OutputSi("F_v_Ed_max") / 1e3, 3);
+        Assert.Equal(80, r.OutputSi("F_t_Ed_max") / 1e3, 6);
+        Assert.Equal(39.327 / 60, r.Checks.Single(c => c.Name.StartsWith("Largest bolt shear", StringComparison.Ordinal)).Utilisation, 3);
+        Assert.Equal(80.0 / 90, r.Checks.Single(c => c.Name.StartsWith("Largest bolt tension", StringComparison.Ordinal)).Utilisation, 6);
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public sealed class BoltGroupMaximaTests
     {
         var r = Run();
 
-        Assert.Contains("any bolt", r.FindOutput("v_max")!.Description, StringComparison.Ordinal);
-        Assert.Contains("any bolt", r.FindOutput("t_max")!.Description, StringComparison.Ordinal);
+        Assert.Contains("any bolt", r.FindOutput("F_v_Ed_max")!.Description, StringComparison.Ordinal);
+        Assert.Contains("any bolt", r.FindOutput("F_t_Ed_max")!.Description, StringComparison.Ordinal);
     }
 }

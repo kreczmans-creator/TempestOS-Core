@@ -46,18 +46,6 @@
     "ValueText": "1.8"
   },
   {
-    "Symbol": "R",
-    "Number": 75,
-    "Unit": "mm",
-    "Provenance": {
-      "Kind": "Drawing",
-      "Reference": "LB-150-02",
-      "Revision": "A",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "75"
-  },
-  {
     "Symbol": "WLL",
     "Number": 150,
     "Unit": "kN",
@@ -218,7 +206,19 @@
     "ValueText": "1.6"
   },
   {
-    "Symbol": "t",
+    "Symbol": "r_lug",
+    "Number": 75,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "LB-150-02",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "75"
+  },
+  {
+    "Symbol": "t_p",
     "Number": 25,
     "Unit": "mm",
     "Provenance": {

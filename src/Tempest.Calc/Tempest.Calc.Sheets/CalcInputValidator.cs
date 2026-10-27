@@ -74,7 +74,7 @@ public static class CalcInputValidator
             {
                 case CalcInputKind.Quantity:
                 case CalcInputKind.Number:
-                    ValidateNumber(spec, value, notices);
+                    ValidateNumber(spec, value, inputs.MadeOn, notices);
                     break;
 
                 case CalcInputKind.Choice:
@@ -93,11 +93,11 @@ public static class CalcInputValidator
                     break;
 
                 case CalcInputKind.Vector:
-                    ValidateVector(spec, value, notices);
+                    ValidateVector(spec, value, inputs.MadeOn, notices);
                     break;
 
                 case CalcInputKind.Table:
-                    ValidateTable(spec, value, notices);
+                    ValidateTable(spec, value, inputs.MadeOn, notices);
                     break;
             }
         }
@@ -145,7 +145,7 @@ public static class CalcInputValidator
 
     private static bool IsEmpty(CalcInputValue v) => v.Number is null && v.Text is null && v.Flag is null && v.Vector is null && v.Rows is null;
 
-    private static void ValidateNumber(CalcInputSpec spec, CalcInputValue value, List<CalcNotice> notices)
+    private static void ValidateNumber(CalcInputSpec spec, CalcInputValue value, string? madeOn, List<CalcNotice> notices)
     {
         if (value.Number is not { } n)
         {
@@ -163,7 +163,12 @@ public static class CalcInputValidator
 
         if (spec.Kind == CalcInputKind.Quantity)
         {
-            var unitText = value.Unit ?? spec.DefaultUnit;
+            // A bare number is read in the default unit of the version it was recorded on (ADR-0177 review, CalcInputUnits).
+            if (!CalcInputUnits.TryResolve(spec, value, madeOn, out var unitText, out var ambiguous))
+            {
+                notices.Add(Block(spec.Symbol, ambiguous!));
+                return;
+            }
 
             if (!UnitCatalog.TryParse(unitText, out var unit, out var error))
             {
@@ -211,7 +216,7 @@ public static class CalcInputValidator
         }
     }
 
-    private static void ValidateVector(CalcInputSpec spec, CalcInputValue value, List<CalcNotice> notices)
+    private static void ValidateVector(CalcInputSpec spec, CalcInputValue value, string? madeOn, List<CalcNotice> notices)
     {
         if (value.Vector is not { } vector)
         {
@@ -231,15 +236,15 @@ public static class CalcInputValidator
             return;
         }
 
-        var unitText = value.Unit ?? spec.DefaultUnit;
-
-        if (!UnitCatalog.TryParse(unitText, out var unit, out var error))
+        if (!CalcInputUnits.TryResolve(spec, value, madeOn, out var unitText, out var ambiguous))
+            notices.Add(Block(spec.Symbol, ambiguous!));
+        else if (!UnitCatalog.TryParse(unitText, out var unit, out var error))
             notices.Add(Block(spec.Symbol, $"{spec.Symbol}: {error}"));
         else if (unit.Dimension != spec.Dimension)
             notices.Add(Block(spec.Symbol, $"{spec.Symbol}: enter it in a unit of {CalcUnitText.Pretty(spec.DefaultUnit)}, not {CalcUnitText.Pretty(unitText)}."));
     }
 
-    private static void ValidateTable(CalcInputSpec spec, CalcInputValue value, List<CalcNotice> notices)
+    private static void ValidateTable(CalcInputSpec spec, CalcInputValue value, string? madeOn, List<CalcNotice> notices)
     {
         if (value.Rows is not { } rows)
         {
@@ -275,7 +280,7 @@ public static class CalcInputValidator
 
             foreach (var col in columns)
             {
-                var cell = row.Get(col.Key);
+                var cell = row.Get(col.Key) ?? (col.Aliases is { Count: > 0 } aliases ? aliases.Select(row.Get).FirstOrDefault(c => c is not null) : null);
                 if (cell is null || (cell.Number is null && cell.Text is null && cell.Flag is null))
                 {
                     if (!col.IsOptional)
@@ -299,7 +304,11 @@ public static class CalcInputValidator
 
                         if (col.Kind == CalcInputKind.Quantity)
                         {
-                            var unitText = cell.Unit ?? col.DefaultUnit;
+                            if (!CalcInputUnits.TryResolve(col, $"{spec.Symbol}[{r + 1}].{col.Key}", cell.Unit, madeOn, out var unitText, out var ambiguous))
+                            {
+                                notices.Add(Block(spec.Symbol, $"{spec.Symbol}: {ambiguous}"));
+                                break;
+                            }
 
                             if (!UnitCatalog.TryParse(unitText, out var unit, out var error))
                             {

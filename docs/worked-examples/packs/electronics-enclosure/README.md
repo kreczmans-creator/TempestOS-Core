@@ -25,7 +25,7 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|
 | Power trace | `trace_Ploss` | Board load budget | `loads` row 1 (`P`), a table-cell link | 0.00150734 kW |
-| Board load budget | `Phi` | Enclosure temperature | `P_add` | 73.0082 W |
+| Board load budget | `Phi` | Enclosure temperature | `P_add` | 0.0730082 kW |
 | Enclosure temperature | `T_int` | Cover latches | `T_use` | 56.8773 degC |
 | Enclosure temperature | `F_seal` | Cover latches | `F_req` | 300 N |
 | Enclosure temperature | `dp_seal` | Cover plate | `q` | 1 kPa |

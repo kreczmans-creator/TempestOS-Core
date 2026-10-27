@@ -33,7 +33,7 @@ public sealed class PipeFlowTests
         // The loss itself is unchanged: the fittings term K·ρ·v²/2 is added as entered.
         var v = 4.53764705882353 / 3600 / (Math.PI * 0.02 * 0.02 / 4);
         Assert.Equal(At(4.53764705882353, 0).OutputSi("dp_total") + 6 * 870 * v * v / 2, transitional.OutputSi("dp_total"), 1e-3);
-        Assert.Equal("1.9.0", Calc.Template.Version);
+        Assert.Equal("1.10.1", Calc.Template.Version);
     }
 
     [Fact]
@@ -120,7 +120,7 @@ public sealed class PipeFlowTests
     {
         static void Expect(CalcRunResult r, Func<CalcNotice, bool> match) => Assert.True(r.Blocks.Any(match), "blocks: " + string.Join(" | ", r.Blocks.Select(b => b.RuleId + ": " + b.Message)));
         Expect(Run(CalcInputValue.Choice("fluid", PipeFlowCalculator.FluidCustom), CalcInputValue.Quantity("Q", 1, "m^3/h"), PipeFlowCalculator.Segments(("s", 1, 50, 0, 0, 0, 0, "discharge"))), b => b.Message.StartsWith("rho_custom", StringComparison.Ordinal));
-        Expect(Run(CalcInputValue.Quantity("T", 150, "degC"), CalcInputValue.Quantity("Q", 1, "m^3/h"), PipeFlowCalculator.Segments(("s", 1, 50, 0, 0, 0, 0, "discharge"))), b => b.Message.StartsWith("T:", StringComparison.Ordinal));
+        Expect(Run(CalcInputValue.Quantity("T_fluid", 150, "degC"), CalcInputValue.Quantity("Q", 1, "m^3/h"), PipeFlowCalculator.Segments(("s", 1, 50, 0, 0, 0, 0, "discharge"))), b => b.Message.StartsWith("T_fluid:", StringComparison.Ordinal));
         Expect(Run(CalcInputValue.Quantity("Q", 1, "m^3/h")), b => b.Message.StartsWith("segments", StringComparison.Ordinal));
         Expect(Run(CalcInputValue.Quantity("Q", 1, "m^3/h"), PipeFlowCalculator.Segments(("s", 1, 50, 0, 0, 0, 0, "discharge")), CalcInputValue.VectorOf("Q_pump", [10, 5], "m^3/h"), CalcInputValue.VectorOf("H_pump", [1, 2], "m")), b => b.RuleId == "pump-curve");
     }
@@ -135,7 +135,7 @@ public sealed class PipeFlowTests
 
     private static CalcInputValue[] Loop(params CalcInputValue[] extra) =>
     [
-        CalcInputValue.Choice("fluid", PipeFlowCalculator.FluidWater), CalcInputValue.Quantity("T", 70, "degC"),
+        CalcInputValue.Choice("fluid", PipeFlowCalculator.FluidWater), CalcInputValue.Quantity("T_fluid", 70, "degC"),
         PipeFlowCalculator.Segments(("loop", 40, 28, 0.045, 6, 0, 2, "discharge")), CalcInputValue.Quantity("h_out", 0, "m"), .. extra,
     ];
 
@@ -144,13 +144,13 @@ public sealed class PipeFlowTests
     {
         Gen.Select(Gen.Double[100, 1e6], Gen.Double[2, 40], Gen.Double[30, 90]).Sample((phi, dt, temp) =>
         {
-            var r = Run([.. Loop(CalcInputValue.Quantity("Phi_load", phi, "W"), CalcInputValue.Quantity("dT_load", dt, "K"), CalcInputValue.Quantity("cp_load", 4186, "J/(kg*K)")), CalcInputValue.Quantity("T", temp, "degC")]);
+            var r = Run([.. Loop(CalcInputValue.Quantity("Phi_load", phi, "W"), CalcInputValue.Quantity("dT_load", dt, "K"), CalcInputValue.Quantity("cp_load", 4186, "J/(kg*K)")), CalcInputValue.Quantity("T_fluid", temp, "degC")]);
             Assert.False(r.IsBlocked);
             var expected = phi / (Water.Density(temp) * 4186 * dt);
             Assert.Equal(expected, r.OutputSi("Q_design"), expected * 1e-9);
 
             // The same flow typed in gives the same hydraulics.
-            var typed = Run([.. Loop(CalcInputValue.Quantity("Q", expected * 3600, "m^3/h")), CalcInputValue.Quantity("T", temp, "degC")]);
+            var typed = Run([.. Loop(CalcInputValue.Quantity("Q", expected * 3600, "m^3/h")), CalcInputValue.Quantity("T_fluid", temp, "degC")]);
             Assert.Equal(typed.OutputSi("P_hyd"), r.OutputSi("P_hyd"), Math.Abs(typed.OutputSi("P_hyd")) * 1e-9 + 1e-15);
         }, iter: 60);
     }
@@ -212,7 +212,7 @@ public sealed class PipeFlowTests
         Assert.DoesNotContain(given.RunAssumptions, a => a.Statement.Contains("4186", StringComparison.Ordinal));
 
         var custom = Run(CalcInputValue.Choice("fluid", PipeFlowCalculator.FluidCustom), CalcInputValue.Quantity("rho_custom", 1050, "kg/m^3"), CalcInputValue.Quantity("mu_custom", 3, "mPa*s"),
-            CalcInputValue.Quantity("Phi_load", 12, "kW"), CalcInputValue.Quantity("dT_load", 20, "K"), CalcInputValue.Quantity("T", 60, "degC"),
+            CalcInputValue.Quantity("Phi_load", 12, "kW"), CalcInputValue.Quantity("dT_load", 20, "K"), CalcInputValue.Quantity("T_fluid", 60, "degC"),
             PipeFlowCalculator.Segments(("loop", 40, 28, 0.045, 0, 0, 0, "discharge")));
         Assert.True(custom.IsBlocked);
         Assert.Contains(custom.Blocks, b => b.RuleId == "cp_load" && b.Message.StartsWith("cp_load:", StringComparison.Ordinal));
@@ -225,13 +225,13 @@ public sealed class PipeFlowTests
 
         var heat = Run([.. noTemperature, CalcInputValue.Quantity("Phi_load", 12, "kW"), CalcInputValue.Quantity("dT_load", 20, "K")]);
         Assert.False(heat.IsBlocked);
-        Assert.Contains(heat.Notices, n => n.RuleId == "heat-t" && n.Message.StartsWith("T:", StringComparison.Ordinal));
+        Assert.Contains(heat.Notices, n => n.RuleId == "heat-t" && n.Message.StartsWith("T_fluid:", StringComparison.Ordinal));
 
         // Without a heat load the template default applies with the validator's usual notice, as before.
         var flow = Run([.. noTemperature, CalcInputValue.Quantity("Q", 5, "m^3/h")]);
         Assert.False(flow.IsBlocked);
         Assert.DoesNotContain(flow.Notices, n => n.RuleId == "heat-t");
-        Assert.Contains(flow.Notices, n => n.RuleId == "input.T");
+        Assert.Contains(flow.Notices, n => n.RuleId == "input.T_fluid");
 
         var entered = Run(Loop(CalcInputValue.Quantity("Phi_load", 12, "kW"), CalcInputValue.Quantity("dT_load", 20, "K")));
         Assert.DoesNotContain(entered.Notices, n => n.RuleId == "heat-t");
@@ -315,7 +315,7 @@ public sealed class PipeFlowTests
         Assert.Contains(Calc.Template.FindInput("segments")!.Columns!, c => c is { Key: "OD", IsOptional: true });
         Assert.True(Calc.Template.FindInput("T_line")!.IsOptional);
 
-        var r = Run(CalcInputValue.Quantity("T", 9, "degC"), CalcInputValue.Quantity("T_line", 6, "degC"), CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(54));
+        var r = Run(CalcInputValue.Quantity("T_fluid", 9, "degC"), CalcInputValue.Quantity("T_line", 6, "degC"), CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(54));
         Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
         Assert.Equal(0.054, r.OutputSi("OD_1"), 12);
 
@@ -323,10 +323,10 @@ public sealed class PipeFlowTests
         Assert.Equal(6 + 273.15, r.OutputSi("T_line"), 9);
         Assert.Equal("degC", ((Tempest.Calc.Engine.Values.ScalarValue)r.FindOutput("T_line")!.Value).DisplayUnit.Symbol);
         Assert.Equal("mm", ((Tempest.Calc.Engine.Values.ScalarValue)r.FindOutput("OD_1")!.Value).DisplayUnit.Symbol);
-        Assert.Equal(Run(CalcInputValue.Quantity("T", 9, "degC"), CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(54)).OutputSi("dp_total"), r.OutputSi("dp_total"), 12);
+        Assert.Equal(Run(CalcInputValue.Quantity("T_fluid", 9, "degC"), CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(54)).OutputSi("dp_total"), r.OutputSi("dp_total"), 12);
 
         // The OD changes nothing the sheet worked out before.
-        var without = Run(CalcInputValue.Quantity("T", 9, "degC"), CalcInputValue.Quantity("T_line", 6, "degC"), CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(null));
+        var without = Run(CalcInputValue.Quantity("T_fluid", 9, "degC"), CalcInputValue.Quantity("T_line", 6, "degC"), CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(null));
         Assert.Null(without.FindOutput("OD_1"));
         Assert.Equal(without.OutputSi("dp_total"), r.OutputSi("dp_total"), 12);
         Assert.Equal(without.OutputSi("V_pipe"), r.OutputSi("V_pipe"), 12);
@@ -335,7 +335,7 @@ public sealed class PipeFlowTests
     [Fact]
     public void Without_T_Line_The_Port_Is_The_Entered_T_And_With_Neither_It_Is_Not_Offered_So_The_Default_20_C_Never_Travels()
     {
-        var onlyT = Run(CalcInputValue.Quantity("T", 9, "degC"), CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(54));
+        var onlyT = Run(CalcInputValue.Quantity("T_fluid", 9, "degC"), CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(54));
         Assert.Equal(9 + 273.15, onlyT.OutputSi("T_line"), 9);
 
         var neither = Run(CalcInputValue.Quantity("Q", 12, "m^3/h"), Cold(54));

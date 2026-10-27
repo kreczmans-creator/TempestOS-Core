@@ -16,7 +16,7 @@
     "Unit": "N",
     "Provenance": {
       "Kind": "Assumption",
-      "Reference": "Example preload at the base circle; link a force of the M7 spring sheet.",
+      "Reference": "Example preload at the base circle; link a force of the spring sheet.",
       "IsSufficientToIssue": true
     },
     "ValueText": "20"
@@ -71,10 +71,10 @@
   {
     "Symbol": "k_sp",
     "Number": 5,
-    "Unit": "N/mm",
+    "Unit": "kN/m",
     "Provenance": {
       "Kind": "Assumption",
-      "Reference": "Example return-spring rate; link the rate k of the M7 spring sheet.",
+      "Reference": "Example return-spring rate; link the rate k of the spring sheet.",
       "IsSufficientToIssue": true
     },
     "ValueText": "5"

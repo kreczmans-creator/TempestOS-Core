@@ -7,24 +7,25 @@ Checker: —    Checked: —
 Issued: —
 
 1. Scope and method
-Steady heat flow through a composite plane wall between two fluids, or between two known surface temperatures: each layer's conduction resistance, each film's convection resistance, the overall U-value, the heat flow and flux, and every surface and interface temperature.
-Resistance of each surface film: R = 1/(h·A). Resistance of each conducting layer: R_i = t_i/(k_i·A). Total resistance, hot side first: R_tot = Σ R. Heat flow through the wall: Q = (T_1 − T_2)/R_tot. Heat flux and overall U-value: q = Q/A; U = 1/(R_tot·A). Surface and interface temperatures, stepping down from T_1 across each resistance in turn: T_next = T_previous − Q·R.
+Calculates the steady heat flow through a composite plane wall, between two fluids or between two known surface temperatures. It gives the overall U-value, the heat flux and every surface and interface temperature.
+Resistance of each surface film: R = 1/(h·A). Resistance of each conducting layer: R_i = t_i/(k_i·A). Total resistance, hot side first: R_tot = Σ R. Heat flow through the wall: Phi = (T_1 − T_2)/R_tot. Heat flux and overall U-value: q = Phi/A; U_wall = 1/(R_tot·A). Surface and interface temperatures, stepping down from T_1 across each resistance in turn: T_next = T_previous − Phi·R.
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
-  T_1 | Side 1 temperature (the fluid's, or the surface's when no film is given) | 20 | °C | spec: SPEC-BS-04 design conditions | -60 … 400 °C
-  h_1 | Side 1 film coefficient (omit when T_1 is the surface temperature) | 10 | W/(m²·K) | spec: SPEC-BS-04 design conditions | 2 … 10000 W/(m²·K)
   layers | Conducting layers, side 1 first | 3 row(s) |  | drawing: DRG-GL-802 rev A | any
   layers[1] |  | name = glass; t = 4 mm; k = 0.78 W/(m·K) |  |  | 
   layers[2] |  | name = air gap; t = 10 mm; k = 0.026 W/(m·K) |  |  | 
   layers[3] |  | name = glass; t = 4 mm; k = 0.78 W/(m·K) |  |  | 
-  h_2 | Side 2 film coefficient (omit when T_2 is the surface temperature) | 40 | W/(m²·K) | spec: SPEC-BS-04 design conditions | 2 … 10000 W/(m²·K)
-  T_2 | Side 2 temperature (the fluid's, or the surface's when no film is given) | -10 | °C | spec: SPEC-BS-04 design conditions | -60 … 400 °C
   A | Wall area normal to the heat flow | 1.2 | m² | drawing: DRG-GL-802 rev A | 0.001 … 10000 m²
+  T_1 | Side 1 temperature (the fluid's, or the surface's when no film is given) | 20 | °C | spec: SPEC-BS-04 design conditions | -60 … 400 °C
+  T_2 | Side 2 temperature (the fluid's, or the surface's when no film is given) | -10 | °C | spec: SPEC-BS-04 design conditions | -60 … 400 °C
+  h_1 | Side 1 film coefficient (optional; blank = no film, so T_1 is the surface temperature) | 10 | W/(m²·K) | spec: SPEC-BS-04 design conditions | 2 … 10000 W/(m²·K)
+  h_2 | Side 2 film coefficient (optional; blank = no film, so T_2 is the surface temperature) | 40 | W/(m²·K) | spec: SPEC-BS-04 design conditions | 2 … 10000 W/(m²·K)
 
 3. Assumptions
   A1. Steady, one-dimensional conduction through plane layers of constant conductivity, with no internal heat generation. (Thermal-circuit idealisation: equal layer areas, no edge losses.)
-  A2. Layers are in perfect thermal contact; each film coefficient is constant over its surface. (A contact resistance can be entered as a thin layer of equivalent thickness and conductivity.)
+  A2. Layers are in perfect thermal contact. (A contact resistance can be entered as a thin layer of equivalent thickness and conductivity.)
+  A3. Each film coefficient is constant over its surface. (Thermal-circuit idealisation.)
 
 4. Working
   [6] R_h1 = 1 / (h_1 · A)    « Incropera §3.1
@@ -51,39 +52,39 @@ Resistance of each surface film: R = 1/(h·A). Resistance of each conducting lay
       = 0.083333 + 0.0042735 + 0.32051 + 0.0042735 + 0.020833 K/W
       = 0.43323 K/W
         Total thermal resistance
-  [12] Q = (T_1 - T_2) / R_tot
+  [12] Phi = (T_1 - T_2) / R_tot
       = (20 degC − (-10 degC)) / 0.43323 K/W
-      = 69.248 W
+      = 0.069248 kW
         Heat flow from side 1 to side 2
-  [13] q = Q / A
-      = 69.248 W / 1.2 m²
+  [13] q = Phi / A
+      = 0.069248 kW / 1.2 m²
       = 57.707 W/m²
         Heat flux
-  [14] U = 1 / (R_tot * A)
+  [14] U_wall = 1 / (R_tot * A)
       = 1 / (0.43323 K/W × 1.2 m²)
       = 1.9236 W/(m²·K)
         Overall heat transfer coefficient
-  [15] T_s0 = T_1 − Q · R_h1
+  [15] T_s0 = T_1 − Phi · R_h1
       = 20 °C − 69.248 W × 0.083333 K/W
       = 14.229 degC
         Side 1 surface
-  [16] T_s1 = T_s0 − Q · R_1
+  [16] T_s1 = T_s0 − Phi · R_1
       = 14.229 °C − 69.248 W × 0.0042735 K/W
       = 13.933 degC
         Interface 1
-  [17] T_s2 = T_s1 − Q · R_2
+  [17] T_s2 = T_s1 − Phi · R_2
       = 13.933 °C − 69.248 W × 0.32051 K/W
       = -8.2614 degC
         Interface 2
-  [18] T_s3 = T_s2 − Q · R_3
+  [18] T_s3 = T_s2 − Phi · R_3
       = -8.2614 °C − 69.248 W × 0.0042735 K/W
       = -8.5573 degC
         Side 2 surface
 
 5. Results
-  Q = 69.25 W    Heat flow
+  Phi = 0.06925 kW    Heat flow
   q = 57.71 W/m²    Heat flux
-  U = 1.924 W/(m²·K)    Overall heat transfer coefficient
+  U_wall = 1.924 W/(m²·K)    Overall heat transfer coefficient
   R_tot = 0.4332 K/W    Total thermal resistance
   R_h1 = 0.08333 K/W    Side 1 film resistance
   R_1 = 0.004274 K/W    Layer 1 resistance
@@ -102,13 +103,13 @@ Resistance of each surface film: R = 1/(h·A). Resistance of each conducting lay
   None.
 
 8. Verification
-  Template: bs.plane-wall@1.0.1
+  Template: bs.plane-wall@1.1.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3
   Test run: —
 
 9. References
-  1. Incropera & DeWitt, Fundamentals of Heat and Mass Transfer §3.1 — The plane wall: thermal resistance and the composite wall
-  2. Çengel & Ghajar, Heat and Mass Transfer §3-3 — Generalized thermal resistance networks (multilayer plane walls)
-  3. BS EN ISO 6946 §6 — Thermal resistance of building components (method)
+  1. Incropera & DeWitt, Fundamentals of Heat and Mass Transfer §3.1, 7th ed. — The plane wall: thermal resistance and the composite wall
+  2. Çengel & Ghajar, Heat and Mass Transfer §3-3, 5th ed. — Generalized thermal resistance networks (multilayer plane walls)
+  3. BS EN ISO 6946:2017 cl. 6 — Thermal resistance of building components (method)

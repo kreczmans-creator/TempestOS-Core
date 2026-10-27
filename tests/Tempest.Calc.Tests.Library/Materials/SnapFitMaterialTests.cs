@@ -64,7 +64,7 @@ public sealed class SnapFitMaterialTests
         Assert.NotNull(run);
         Assert.Empty(run!.Instance.Blocks.Select(b => b.Message));
         Assert.Equal(2100e6, run.Instance.Outputs.Single(o => o.Symbol == "Es").Si!.Value, 1);
-        Assert.Equal(11.2, run.Instance.Outputs.Single(o => o.Symbol == "P").Si!.Value, 1e-6);
+        Assert.Equal(11.2, run.Instance.Outputs.Single(o => o.Symbol == "F_defl").Si!.Value, 1e-6);
         Assert.Equal(0.5, run.Instance.Outputs.Single(o => o.Symbol == "strain_util").Si!.Value, 1e-9);
 
         // A later revision of the plastic makes the sheet stale: the limits and the curve are revision-pinned.

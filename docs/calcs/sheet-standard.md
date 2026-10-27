@@ -118,6 +118,7 @@ grow the list. A reviewer rejects a diff that raises a number by hand. The rules
   already bumped. Where both phases bumped one template, the integrator keeps the higher version and re-records the manifest line
   (`TEMPEST_UPDATE_TEMPLATE_MANIFEST=1`, which only adds lines).
 - The guided test mode takes its tolerance from the digits the form shows, `CalcDisplay.ShownResolution(shownText)` (C2-22), not from a fixed five figures (`GuidedToleranceTests`, `AddendumCSecurityRegressionTests`).
+- Every manifest line is a resolvable version (DC-14, ADR-0177): the Library embeds the manifest, a calculation made on a superseded version opens as stored with a sentence saying whether the installed version reproduces it exactly, and Revise carries it to the current version. See `docs/calcs/workflows/dc14-template-versions.md`.
 
 ## A. Layout and section order (rows 1 to 4)
 
@@ -336,8 +337,10 @@ The nine calculators of the audit's port map, as named:
 | `struct.load-combinations` | `E_d_max` → `combination.effect_uls_max`, `E_d_min` → `combination.effect_uls_min`, `E_k_max` → `combination.effect_sls_characteristic_max`, `E_qp_max` → `combination.effect_sls_quasi_permanent_max` |
 | `elec.load-budget` | `P_dem` → `load.power_demand`, `S_dem` → `load.apparent_demand`, `I_3ph` → `load.current_three_phase`, `I_1ph` → `load.current_single_phase`, `I_DC` → `load.current_dc`, `Phi` → `load.heat_dissipated`, `U_L` → `load.voltage_line`, `pf_link` → `load.power_factor_linked`, `C_req` → `battery.capacity_required` |
 | `elec.fault-protection` | `Z_s` → `fault.impedance_loop`, `I_f` → `fault.current_earth`, `S_min` → `conductor.area_adiabatic_min`, `I_k3` → `fault.current_three_phase`, `c_k3` → `fault.factor_voltage` |
-| `bs.heat-exchanger` | `Q` → `exchanger.duty`, `T_h_out` → `exchanger.temperature_hot_out`, `T_c_out` → `exchanger.temperature_cold_out`, `A_req` → `exchanger.area_required`, `dT_c` → `exchanger.temperature_rise_cold`, `T_c_m` → `exchanger.temperature_cold_mean`, `cp_c` → `exchanger.specific_heat_cold` |
-| `bs.sealed-system` | `Phi_tot` → `heating.heat_required`, `V_s` → `heating.volume_system`, `V_e` → `heating.volume_expansion_min`, `dT` → `heating.temperature_difference_emitter`, `dT_fr` → `heating.temperature_difference_loop`, `t_m` → `heating.temperature_mean` |
+| `bs.heat-exchanger` | `Phi` → `exchanger.duty`, `T_h_out` → `exchanger.temperature_hot_out`, `T_c_out` → `exchanger.temperature_cold_out`, `A_req` → `exchanger.area_required`, `dT_c` → `exchanger.temperature_rise_cold`, `T_c_m` → `exchanger.temperature_cold_mean`, `cp_c` → `exchanger.specific_heat_cold` |
+| `bs.sealed-system` | `Phi_tot` → `heating.heat_required`, `V_s` → `heating.volume_system`, `V_e` → `heating.volume_expansion_min`, `dT` → `heating.temperature_difference_emitter`, `dT_fr` → `heating.temperature_difference_loop`, `T_m` → `heating.temperature_mean` |
+
+Phases B and C rename output symbols as section C says and keep the old symbol as an alias of the port. Example (phase B): `mech.bearing-life` names its equivalent dynamic load `F_dyn`, because a bare `P` is a power: `F_dyn` → `bearing.load_dynamic`, with `P` as an alias, so a link saved as `calc:<id>#P` still resolves.
 
 **Good example.** `{ Symbol: "L_nmh", Unit: "h", Name: "bearing.life_modified" }`; a pack binding `("shaft", "R_A", "bearing", "F_r")` and a link saved as `calc:<id>#R_A` still resolve.
 
@@ -373,7 +376,7 @@ line, label first (`Equivalent load: P = …`), at most 8 lines.
 is `cl. x` for standards, `reg. x` for BS 7671 only, `Ch. n` or `§x` for books, `Table n`; never a bare number. A book is `<Author>, <Title>` with its edition in the locator
 (`11th ed., Ch. 11`). A reference title holds no licence note (`cited, not copied`) and no brand name; a licence note is a separate field.
 
-**Good example.** `BS EN 1993-1-8:2005` / `cl. 3.6.1` / `Design resistance of bolts`; `Budynas, Shigley's Mechanical Engineering Design` / `11th ed., Ch. 11`.
+**Good example.** `BS EN 1993-1-8:2005` / `cl. 3.6.1` / `Design resistance of bolts`; `ASME B31.3-2022` / `cl. 319.4` (a dash year); `IEC TR 60890:2022`; `IPC-2221B:2012`; `BS 7671:2018` / `reg. 525`; `Budynas, Shigley's Mechanical Engineering Design` / `11th ed., Ch. 11` or `Ch. 11, 11th ed.` (the edition before or after the locator).
 
 **Enforced by** `J51-standard-designation`, `J52-clause-locator`, `J53-book-citations`, `J54-no-notes-in-reference-titles`.
 

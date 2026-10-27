@@ -9,6 +9,8 @@ The dew point of 28 °C air at 70 % is 22.01 °C, so the surface must stay above
 | `D_i` | 90 mm | drawing: M-PIP-014 rev A |
 | `L_surf` | 1 m | assumption: Not used: a pipe. |
 | `RH_a` | 70 % | spec: SPEC-M-11 §2: plant-room design humidity |
+| `T_amb` | 28 degC | spec: SPEC-M-11 §2: plant-room design temperature |
+| `T_proc` | 6 degC | spec: SPEC-M-11 §3: chilled-water flow temperature |
 | `dew_margin` | 1 K | spec: SPEC-M-11 §5: surface at least 1 K above the dew point |
 | `eps` | 0.9 | assumption: Painted or plastic jacket (invented for this example); with h_se given it only judges that value against condensation. |
 | `geometry` | pipe (cylinder) | assumption: A round pipe. |
@@ -17,18 +19,16 @@ The dew point of 28 °C air at 70 % is 22.01 °C, so the surface must stay above
 | `lambda` | 0.035 W/(m*K) | assumption: Closed-cell elastomeric insulation; take the maker's value at the mean temperature (W3 material) |
 | `q_max_m` | 12 W/m | spec: SPEC-M-11 §5: heat gain not to exceed 12 W/m |
 | `t_chosen` | 25 mm | spec: Pipework schedule M-SCH-014: 25 mm sleeves |
-| `theta_a` | 28 degC | spec: SPEC-M-11 §2: plant-room design temperature |
-| `theta_i` | 6 degC | spec: SPEC-M-11 §3: chilled-water flow temperature |
 | `v_wind` | 0 m/s | assumption: Not used: h_se is given. |
 
 | Output | Expected | Computed | Result |
 |---|---|---|---|
-| `theta_dew` | 22.0122 degC | 22.0122 degC | PASS |
-| `t_dew` | 13.1616 mm | 13.1616 mm | PASS |
-| `t_q` | 17.8144 mm | 17.8144 mm | PASS |
+| `T_dew` | 22.0122 degC | 22.0122 degC | PASS |
+| `t_req_dew` | 13.1616 mm | 13.1616 mm | PASS |
+| `t_req_q` | 17.8144 mm | 17.8144 mm | PASS |
 | `thickness` | 17.8144 mm | 17.8144 mm | PASS |
 | `q_per_m` | 9.59298 W/m | 9.59298 W/m | PASS |
-| `theta_se` | 25.2736 degC | 25.2736 degC | PASS |
+| `T_se` | 25.2736 degC | 25.2736 degC | PASS |
 | `u_q` | 0.799415  | 0.799415  | PASS |
 | `u_dew` | 0.546608  | 0.546608  | PASS |
 
