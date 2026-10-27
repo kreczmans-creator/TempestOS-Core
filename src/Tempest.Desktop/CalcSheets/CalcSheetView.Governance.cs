@@ -26,6 +26,9 @@ public sealed partial class CalcSheetView
     public sealed record CountersignDraft(string Organisation, string Statement, CheckOutcome Outcome);
 
     private readonly StackPanel _governancePanel = new() { Spacing = DesignTokens.SpaceSm, IsVisible = false };
+
+    // The titled section around the panel: hidden with it, so a worksheet with no sign-off shows no empty "Sign-off" expander.
+    private Expander? _governanceSection;
     private readonly TextBlock _governanceNote = Caption("Signatures are not authenticated by TempestOS: the names and statements below are recorded as typed, beside the person signed in. Whether they are who they say is the company's to establish.");
     private readonly StackPanel _attestGroup = new() { Spacing = DesignTokens.SpaceXs, IsVisible = false };
     private readonly TextBox _attestName = Input(string.Empty, "Competent person's name, as printed");
@@ -47,6 +50,9 @@ public sealed partial class CalcSheetView
 
     /// <summary>Whether the sign-off panel is shown (the template requires an attestation or a second check).</summary>
     public bool IsGovernancePanelVisible => _governancePanel.IsVisible;
+
+    /// <summary>Whether the titled Sign-off section is drawn at all (only when it has something in it).</summary>
+    public bool IsGovernanceSectionVisible => _governanceSection?.IsVisible == true;
 
     /// <summary>Whether Attest is offered (a draft whose template requires an attestation).</summary>
     public bool CanAttest => _attestGroup.IsVisible && _attestButton.IsEnabled;
@@ -119,7 +125,9 @@ public sealed partial class CalcSheetView
         _governancePanel.Children.Add(_attestState);
         _governancePanel.Children.Add(_attestGroup);
         _governancePanel.Children.Add(_countersignGroup);
-        return Section(GovernancePanelName, _governancePanel);
+        _governanceSection = Section(GovernancePanelName, _governancePanel);
+        _governanceSection.IsVisible = false;
+        return _governanceSection;
     }
 
     /// <summary>Shows only the sign-off steps the shown template and the shown calculation's status call for.</summary>
@@ -130,6 +138,9 @@ public sealed partial class CalcSheetView
         var needsAttest = template is { RequiresAttestation: true };
         var needsSecond = template is { RequiresSecondCheck: true };
         _governancePanel.IsVisible = needsAttest || needsSecond;
+
+        if (_governanceSection is not null)
+            _governanceSection.IsVisible = _governancePanel.IsVisible;
 
         var canAttest = needsAttest && instance is { Status: CalcInstanceStatus.Draft };
         _attestGroup.IsVisible = canAttest;

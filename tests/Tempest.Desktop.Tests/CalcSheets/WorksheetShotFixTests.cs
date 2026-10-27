@@ -1,7 +1,9 @@
+using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
+using Avalonia.VisualTree;
 using Tempest.Calc.Library;
 using Tempest.Calc.Sheets;
 using Tempest.Desktop.CalcSheets;
@@ -126,7 +128,7 @@ public sealed class WorksheetShotFixTests
     }
     private static CalcSheetView Live(string templateId)
     {
-        var catalogue = new CalcCatalogue(CalcCalculatorComposition.All());
+        var catalogue = new CalcCatalogue(CalcCalculatorComposition.All(), new CalcFeatureFlags(CalcFeatures.All));
         var view = new CalcSheetView();
         view.InputsChanged += inputs => view.ShowRun(CalcRunner.Run(catalogue.Get(templateId).Calculator, inputs));
         view.ShowCatalogue(catalogue.Current());
@@ -201,5 +203,46 @@ public sealed class WorksheetShotFixTests
         view.ShowTemplate(entry, Instance(entry, CalcInstanceStatus.Issued));
         view.SetRecordRequirements(entry.Reference, [Required("snapfit.friction", "mu")]);
         Assert.False(view.IsRequirementsShown);
+    }
+    [AvaloniaFact]
+    public void Item8_A_Long_Catalogue_Title_Wraps_And_Keeps_Its_Version_In_The_Column()
+    {
+        var long1 = new TestWorksheetCalculator();
+        var longTitle = new LongTitle(long1);
+        var catalogue = new CalcCatalogue([longTitle]);
+        var view = new CalcSheetView();
+        view.ShowCatalogue(catalogue.Current());
+        var window = new Window { Width = 1200, Height = 900, Content = view };
+        window.Show();
+        window.UpdateLayout();
+
+        var tree = view.GetLogicalDescendants().OfType<TreeView>().Single(t => AutomationProperties.GetName(t) == CalcSheetView.CatalogueAutomationName);
+        var leaf = tree.Items.OfType<TreeViewItem>().Single().Items.OfType<TreeViewItem>().Single();
+        Assert.Contains("v1.0.0", leaf.Header?.ToString(), StringComparison.Ordinal);
+
+        var version = leaf.GetVisualDescendants().OfType<TextBlock>().Single(t => AutomationProperties.GetName(t) == CalcSheetView.LeafVersionName);
+        Assert.StartsWith("v1.0.0 ", version.Text, StringComparison.Ordinal);
+        var right = version.TranslatePoint(new Point(version.Bounds.Width, 0), view)!.Value.X;
+        Assert.True(right <= 380, $"the version ends at {right} px, past the 380 px catalogue column");
+    }
+
+    private sealed class LongTitle(TestWorksheetCalculator inner) : ICalcCalculator
+    {
+        public CalcTemplate Template { get; } = inner.Template with { Title = "Glaser condensation (interstitial and surface) with a much longer title than fits" };
+
+        public void Run(CalcRunContext context) => inner.Run(context);
+    }
+
+    [AvaloniaFact]
+    public void Item9_The_Sign_Off_Section_Is_Shown_Only_When_It_Has_Something_In_It()
+    {
+        var (view, _) = Shown();
+        Assert.False(view.IsGovernanceSectionVisible);
+        Assert.DoesNotContain(view.GetLogicalDescendants().OfType<Expander>(), e => e.IsVisible && Equals(e.Header, CalcSheetView.GovernancePanelName));
+
+        var lifting = Live("mech.lifting-lug");
+        Assert.Equal("mech.lifting-lug", lifting.SelectedTemplate?.Template.Id);
+        Assert.True(lifting.IsGovernancePanelVisible);
+        Assert.True(lifting.IsGovernanceSectionVisible);
     }
 }

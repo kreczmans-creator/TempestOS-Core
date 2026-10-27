@@ -191,6 +191,9 @@ public sealed partial class CalcSheetView : UserControl
         AutomationProperties.SetName(_results, "Results");
 
         _catalogue.SelectionChanged += (_, _) => OnCatalogueSelectionChanged();
+
+        // The catalogue's rows take the column's width (no sideways scroll), so a long title wraps beside its version.
+        ScrollViewer.SetHorizontalScrollBarVisibility(_catalogue, ScrollBarVisibility.Disabled);
         _saveButton.Click += (_, _) => SaveRequested?.Invoke();
         _checkButton.Click += (_, _) => CheckRequested?.Invoke();
         _issueButton.Click += (_, _) => IssueRequested?.Invoke();
@@ -596,7 +599,7 @@ public sealed partial class CalcSheetView : UserControl
 
             foreach (var entry in group.OrderBy(e => e.Template.Title, StringComparer.Ordinal))
             {
-                var leaf = new TreeViewItem { Header = $"{entry.Template.Title}  ·  v{entry.Template.Version} {entry.ShortHash[..8]}", Tag = entry };
+                var leaf = new TreeViewItem { Header = $"{entry.Template.Title}{LeafVersionSeparator}v{entry.Template.Version} {entry.ShortHash[..8]}", Tag = entry, HeaderTemplate = CatalogueLeafTemplate };
                 AutomationProperties.SetName(leaf, entry.Template.Title);
                 ToolTip.SetTip(leaf, $"{entry.Reference} — hash {entry.ShortHash}\n{entry.Template.Scope}");
                 node.Items.Add(leaf);
@@ -627,6 +630,29 @@ public sealed partial class CalcSheetView : UserControl
         if (entries.Count == 0)
             _scope.Text = "No worksheets are registered in this build.";
     }
+
+    /// <summary>Between a catalogue leaf's title and its version.</summary>
+    private const string LeafVersionSeparator = "  ·  ";
+
+    /// <summary>The automation name of a catalogue leaf's version text.</summary>
+    public const string LeafVersionName = "Worksheet version";
+
+    /// <summary>
+    /// A catalogue leaf: the title wraps in the width left, and the version and hash keep their own column at the right, so a long title
+    /// (Glaser condensation, Plane wall heat transfer) no longer pushes the hash out of the 380 px column. The header stays the plain text.
+    /// </summary>
+    private static readonly Avalonia.Controls.Templates.FuncDataTemplate<string> CatalogueLeafTemplate = new((text, _) =>
+    {
+        var at = text?.LastIndexOf(LeafVersionSeparator, StringComparison.Ordinal) ?? -1;
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        var title = new TextBlock { Text = at < 0 ? text : text![..at], TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
+        var version = new TextBlock { Text = at < 0 ? string.Empty : text![(at + LeafVersionSeparator.Length)..], Opacity = 0.75, Margin = new Thickness(DesignTokens.SpaceSm, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+        AutomationProperties.SetName(version, LeafVersionName);
+        Grid.SetColumn(version, 1);
+        grid.Children.Add(title);
+        grid.Children.Add(version);
+        return grid;
+    }, supportsRecycling: false);
 
     public void SelectTemplate(string reference)
     {
