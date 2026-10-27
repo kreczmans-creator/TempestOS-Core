@@ -31,7 +31,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
     private const string Source = "Vector-loop closed form (Freudenstein / law of cosines)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.Mechanical, "Mechanism kinematics",
+        Id, "1.3.1", CalcDiscipline.Mechanical, "Mechanism kinematics",
         "Calculates the position, velocity, acceleration, input torque and forces of a one-degree-of-freedom planar four-bar, slider-crank or cam mechanism. The input turns at constant speed, and the links are rigid, with no clearance and no friction.",
         "Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}, with ℓ = |A − O₄|, cos γ = (c² + ℓ² − b²)/(2cℓ) and θ₄ = φ ∓ γ (φ the direction O₄→A; open: −, crossed: +); θ₃ from B − A\n" +
         "Four-bar velocity and acceleration: differentiated loop, 2×2 system with det = b·c·sin(θ₃ − θ₄); ω₃ = ω₂·a·sin(θ₄ − θ₂)/(b·sin(θ₃ − θ₄)), ω₄ = ω₂·a·sin(θ₃ − θ₂)/(c·sin(θ₃ − θ₄)); α from the second derivative at constant ω₂\n" +
@@ -206,7 +206,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
     private static void Table(CalcRunContext c, string symbol, string formula, string substitution, IReadOnlyList<double> values, string unit, string description, string? clause = null)
     {
         c.Record(symbol, formula, substitution, VectorValue.Of(values, unit), description, clause);
-        c.Output(symbol, description);
+        c.Output(symbol, description, noiseProne: true);
     }
 
     private static void Scalar(CalcRunContext c, string symbol, string formula, string substitution, double value, string unit, string description, string? clause = null)
@@ -214,6 +214,27 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         c.Record(symbol, formula, substitution, unit.Length == 0 ? new ScalarValue(value) : ScalarValue.Of(value, unit), description, clause);
         c.Output(symbol, description, noiseProne: true);
     }
+
+    /// <summary>
+    /// The two self-consistency residuals: the loop-closure residual (mm) with its floor from the size of the linkage, and the velocity-loop residual (relative)
+    /// with the relative floor. Below its floor a residual is round-off and is shown as "below" the floor, in its row, its working and its check line (C2-20).
+    /// </summary>
+    private static void Residuals(CalcRunContext c, int tableRows, int scanAngles, double resMaxMetres, double velRes, double sizeMetres, string clause)
+    {
+        Scalar(c, "res_max", "max |loop residual|", $"{tableRows} table rows and {scanAngles} scan angles", Mm(resMaxMetres), "mm", "Largest loop-closure residual", clause);
+        c.MarkResidual("res_max", ClosureFloorMm(sizeMetres));
+        Scalar(c, "res_vel_max", "max |velocity loop| / its terms", $"{tableRows} table rows", velRes, "", "Largest velocity-loop residual, relative to the size of its terms", clause);
+        c.MarkResidual("res_vel_max", CalcDisplay.ResidualFloor);
+    }
+
+    /// <summary>
+    /// The noise floor of the loop-closure residual in mm: <see cref="CalcDisplay.ResidualFloor"/> of the longest link, not below 1e-12 mm and at most a tenth of
+    /// <see cref="ClosureLimitMm"/>, so a residual shown below it always reads as passing its check. A product and a clamp only, so every platform gets the same floor.
+    /// </summary>
+    private static double ClosureFloorMm(double sizeMetres) => Math.Clamp(CalcDisplay.ResidualFloor * Mm(sizeMetres), 1e-12, ClosureLimitMm / 10);
+
+    private static void VelocityCheck(CalcRunContext c, double velRes) =>
+        c.CheckCondition("Velocity-loop residual against its limit", velRes < 1e-8, CalcDisplay.ResidualText("max residual", velRes, CalcDisplay.ResidualFloor), "< 1e-8", "res_vel_max", "Self-consistency");
 
     private static double Sgn(double x) => x > 0 ? 1 : x < 0 ? -1 : 0;
 
@@ -280,13 +301,21 @@ public sealed partial class MechanismCalculator : ICalcCalculator
     }
 
     /// <summary>The mean-power, RMS-torque and speed outputs the motor sizing needs (over the swept range).</summary>
-    private static void DriveOutputs(CalcRunContext c, IReadOnlyList<double> torque, double omega, string span)
+    private static void DriveOutputs(CalcRunContext c, IReadOnlyList<double> torque, double omega, string span, double peakTorque)
     {
         var mean = SimpsonMean(torque);
         var rms = Math.Sqrt(SimpsonMean([.. torque.Select(t => t * t)]));
         Scalar(c, "T_rms_in", "√(mean T_in²)", span, rms, "N*m", "RMS input torque over the swept range", "Virtual work");
+        PeakPower(c, omega, peakTorque);
         Scalar(c, "P_mean", "ω·mean(T_in)", span, omega * mean / 1e3, "kW", "Mean input power over the swept range (negative: the mechanism returns energy)", "Virtual work");
     }
+
+    /// <summary>
+    /// The peak input power ω·max |T_in| (working only): the scale of the power in the run, against which a mean power that is zero by the cycle (a full turn
+    /// with conservative loads) is recognised as round-off and shown as 0 (C2-20).
+    /// </summary>
+    private static void PeakPower(CalcRunContext c, double omega, double peakTorque) =>
+        c.Record("P_in_pk", "ω·max |T_in|", $"{F(omega)} rad/s × {F(peakTorque)} N·m", ScalarValue.Of(omega * peakTorque / 1e3, "kW"), "Peak input power (the scale of the mean power)", "Virtual work");
 
     // ------------------------------------------------------------------
     // Four-bar
@@ -469,6 +498,7 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         Table(c, "theta4_sw", "θ₄ = φ ∓ γ", cols, rows.Select(r => Deg(r.Theta4)).ToList(), "deg", "Table: rocker angle", clause);
         Table(c, "omega3_sw", "ω₃", cols, rows.Select(r => r.Omega3).ToList(), "rad/s", "Table: coupler angular velocity", clause);
         Table(c, "omega4_sw", "ω₄", cols, rows.Select(r => r.Omega4).ToList(), "rad/s", "Table: rocker angular velocity", clause);
+        c.Record("alpha_ref", "ω₂²", $"({F(w2)} rad/s)²", ScalarValue.Of(w2 * w2, "rad/s^2"), "Angular-acceleration scale of the input (an α below 1e-9 of it is round-off and is shown as 0)", clause);
         Table(c, "alpha3_sw", "α₃", cols, rows.Select(r => r.Alpha3).ToList(), "rad/s^2", "Table: coupler angular acceleration", clause);
         Table(c, "alpha4_sw", "α₄", cols, rows.Select(r => r.Alpha4).ToList(), "rad/s^2", "Table: rocker angular acceleration", clause);
         Table(c, "mu_sw", "μ", cols, rows.Select(r => Deg(r.Mu)).ToList(), "deg", "Table: transmission angle", clause);
@@ -504,10 +534,8 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         Scalar(c, "theta4_max", "max θ₄", "unwrapped along the sweep", Deg(t4Max), "deg", "Largest rocker angle", clause);
         Scalar(c, "swing", "max θ₄ − min θ₄", "over the sweep", Deg(t4Max - t4Min), "deg", "Rocker swing over the sweep", clause);
         Scalar(c, "mu_min", "min μ", unbounded ? "0 at a toggle in the sweep" : "dense scan, refined", Deg(muMin), "deg", "Smallest transmission angle over the sweep", clause);
-        Scalar(c, "res_max", "max |loop residual|", $"{rows.Count} table rows and {n + 1} scan angles", Mm(resMax), "mm", "Largest loop-closure residual", clause);
-
         var velRes = rows.Where(r => Math.Abs(Math.Sin(r.Theta3 - r.Theta4)) > 1e-5).Select(r => r.VelocityResidual).DefaultIfEmpty(0).Max();
-        Scalar(c, "res_vel_max", "max |velocity loop| / its terms", $"{rows.Count} table rows", velRes, "", "Largest velocity-loop residual, relative to the size of its terms", clause);
+        Residuals(c, rows.Count, n + 1, resMax, velRes, Math.Max(Math.Max(d, a), Math.Max(b, cc)), clause);
 
         c.Output("toggle_angles", "Toggle crank angles (coupler and rocker collinear, μ = 0): the limits of the crank's assemblable range", new TextValue(limits.Count == 0
             ? "none: coupler and rocker are never collinear"
@@ -548,12 +576,12 @@ public sealed partial class MechanismCalculator : ICalcCalculator
             Scalar(c, "F_pin_pk", "max |(T_L + J·α₄)/(c·sin μ)|", "force in the coupler = the crank-pin force", couplerPk.Value.Value, "N", "Peak force in the coupler, which is also the force at the crank pin and the pin loads on the bearings", "Virtual work");
 
             var dense = states.Select(s => TIn(s!.Value)).ToList();
-            DriveOutputs(c, dense, w2, "Simpson over the scan");
+            DriveOutputs(c, dense, w2, "Simpson over the scan", tInPk.Value.Value);
         }
 
         UtilisationMu(c, muReq, muMin);
-        ClosureCheck(c, resMax);
-        c.CheckCondition("Velocity-loop residual against its limit", velRes < 1e-8, $"max residual = {CalcValue.FormatNumber(velRes)}", "< 1e-8", "res_vel_max", "Self-consistency");
+        ClosureCheck(c, resMax, Math.Max(Math.Max(d, a), Math.Max(b, cc)));
+        VelocityCheck(c, velRes);
     }
 
     private static double WrapPi(double angle)
@@ -562,11 +590,11 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         return (w < 0 ? w + 2 * Math.PI : w) - Math.PI;
     }
 
-    private static void ClosureCheck(CalcRunContext c, double residualMetres)
+    private static void ClosureCheck(CalcRunContext c, double residualMetres, double sizeMetres)
     {
         var mm = Mm(residualMetres);
         var ok = mm < ClosureLimitMm;
-        c.CheckCondition("Loop-closure residual against its limit", ok, $"max residual = {CalcValue.FormatNumber(mm)} mm", $"< {CalcValue.FormatNumber(ClosureLimitMm)} mm", "res_max", "Self-consistency");
+        c.CheckCondition("Loop-closure residual against its limit", ok, CalcDisplay.ResidualText("max residual", mm, ClosureFloorMm(sizeMetres), "mm"), $"< {CalcValue.FormatNumber(ClosureLimitMm)} mm", "res_max", "Self-consistency");
 
         if (!ok)
             c.Warn("closure", $"L3: the loop-closure residual {CalcValue.FormatNumber(mm)} mm reached 1e-9 mm. The geometry is near-degenerate, so the position is no longer exact.");
@@ -720,10 +748,8 @@ public sealed partial class MechanismCalculator : ICalcCalculator
         Scalar(c, "x_min", "min x", "over the sweep", Mm(xMin.Value.Value), "mm", "Smallest slider position over the sweep", clause);
         Scalar(c, "stroke", "max x − min x", "over the sweep", Mm(xMax.Value.Value - xMin.Value.Value), "mm", "Slider stroke over the sweep (the full stroke when the sweep covers 360°)", clause);
         Scalar(c, "mu_min", "min μ", unbounded ? "0 at a limit in the sweep" : "dense scan, refined", Deg(muMin), "deg", "Smallest transmission angle over the sweep", clause);
-        Scalar(c, "res_max", "max |loop residual|", $"{rows.Count} table rows and {n + 1} scan angles", Mm(resMax), "mm", "Largest loop-closure residual", clause);
-
         var velRes = rows.Where(row => row.RodCos > 1e-5).Select(row => row.VelocityResidual).DefaultIfEmpty(0).Max();
-        Scalar(c, "res_vel_max", "max |velocity loop| / its terms", $"{rows.Count} table rows", velRes, "", "Largest velocity-loop residual, relative to the size of its terms", clause);
+        Residuals(c, rows.Count, n + 1, resMax, velRes, Math.Max(Math.Max(r, l), Math.Abs(e)), clause);
 
         var dead = link.DeadCentres();
         c.Output("dead_centres", "Dead centres (crank and rod collinear, slider velocity zero)", new TextValue(dead.Count == 0
@@ -764,11 +790,11 @@ public sealed partial class MechanismCalculator : ICalcCalculator
             Scalar(c, "F_guide_pk", "max |m·a + F_L|·tanθ₃", "reaction of the slide on the slider", guidePk.Value.Value, "N", "Peak side reaction of the guide on the slider (frictionless)", "Virtual work");
 
             var dense = states.Select(s => TIn(s!.Value)).ToList();
-            DriveOutputs(c, dense, w, "Simpson over the scan");
+            DriveOutputs(c, dense, w, "Simpson over the scan", tPk.Value.Value);
         }
 
         UtilisationMu(c, muReq, muMin);
-        ClosureCheck(c, resMax);
-        c.CheckCondition("Velocity-loop residual against its limit", velRes < 1e-8, $"max residual = {CalcValue.FormatNumber(velRes)}", "< 1e-8", "res_vel_max", "Self-consistency");
+        ClosureCheck(c, resMax, Math.Max(Math.Max(r, l), Math.Abs(e)));
+        VelocityCheck(c, velRes);
     }
 }

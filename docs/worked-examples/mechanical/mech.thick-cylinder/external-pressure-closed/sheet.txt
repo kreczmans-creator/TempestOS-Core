@@ -113,7 +113,7 @@ Lamé constants from the bore and outside pressures: A = (a² p_i − b² p_o)/(
     nu: not entered, so the default of 0.3 is used.
 
 8. Verification
-  Template: mech.thick-cylinder@2.2.0
+  Template: mech.thick-cylinder@2.2.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 3/3

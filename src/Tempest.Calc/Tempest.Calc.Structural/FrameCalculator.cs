@@ -73,7 +73,7 @@ public sealed class FrameCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.6.0", CalcDiscipline.Structural, "Beam and 2D frame analysis",
+        Id, "1.6.1", CalcDiscipline.Structural, "Beam and 2D frame analysis",
         "Calculates reactions, member forces and deflections of a linear elastic plane frame or continuous beam by the direct stiffness method. Global x is right and y up; bending is about the section y-y axis, anticlockwise positive.",
         "Member stiffness: three freedoms per node, Euler–Bernoulli members with axial EA/L and bending EI/L³ terms.\nEnd releases: pins are taken out by static condensation; supports remove freedoms or add spring stiffness.\nSpan loads: they become equivalent nodal loads, the exact fixed-end forces.\nNodal displacements: K u = F, solved by banded LDLᵀ after a reverse Cuthill–McKee ordering; a non-positive pivot is reported as a mechanism.\nInternal forces: they follow from the member end actions and the Macaulay functions of the span loads.\nMember extremes: found at stations along each member, plus the zero-shear and zero-slope points found by bisection.",
         [

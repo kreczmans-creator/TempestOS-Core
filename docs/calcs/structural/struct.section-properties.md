@@ -1,4 +1,4 @@
-# Section properties (`struct.section-properties@1.2.1`)
+# Section properties (`struct.section-properties@1.2.2`)
 
 **In plain terms.** Every bending, stress and buckling check needs the shape's geometric properties: its area, where its centroid is, how its area is spread about each axis (second moments), and the section moduli that turn a bending moment into a stress. This worksheet computes them from the outline itself, adding up the contribution of each edge of the polygon, so any shape, with holes or built from plates, gives the same properties a handbook table would for a standard section.
 
@@ -128,6 +128,8 @@ A polygon whose loop crosses itself, whose loops cross one another, or whose hol
 The caps are 2,000 vertex rows, 100 parts, 200 loops and 20,000 vertices per loop.
 
 ### Changes by version
+
+**1.2.2 (round-off on the sheet, C2-20).** The substitution of the principal angle shows `I_y − I_z` as 0 when it is round-off (below 1e-9 of the larger second moment, a square or round section), as `I_yz` already was; no digit of round-off is printed. No calculated value changes.
 
 **1.2.1.** Declares the change of meaning of 1.2.0 (ADR-0177 review): the ports `W_el_y` and `W_pl_y` meant the moduli about the vertical axis of the drawing (the minor axis of an upright I-section) before 1.2.0 and mean the EN 1993 y-y (major-axis) moduli since, so a link, pack binding or import that takes `W_el_y` or `W_pl_y` from a calculation made on 1.1.1 or earlier is refused with a sentence that says so, instead of binding the major-axis value under the old name. A link under the old symbols `W_el_x` and `W_pl_x` keeps its meaning. The composite column `t` is an alias of `t_w`. No calculated value changes.
 

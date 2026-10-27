@@ -82,127 +82,135 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}, with ℓ =
       = 73 rows, θ₂ from 0° to 360°
       = [-2.6928, -2.3371, -1.9398, -1.5152, -1.0781, -0.64174, -0.21757, 0.18575, 0.56219, 0.90807, 1.2216, 1.5026, … (73 items)] rad/s
         Table: rocker angular velocity
-  [24] alpha3_sw = α₃    « Vector-loop closed form (Freudenstein / law of cosines)
+  [24] alpha_ref = ω₂²    « Vector-loop closed form (Freudenstein / law of cosines)
+      = (6.2832 rad/s)²
+      = 39.478 rad/s²
+        Angular-acceleration scale of the input (an α below 1e-9 of it is round-off and is shown as 0)
+  [25] alpha3_sw = α₃    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ₂ from 0° to 360°
       = [-1.6439, 2.0963, 5.3499, 7.9793, 9.9336, 11.238, 11.97, 12.238, 12.157, 11.832, 11.354, 10.795, … (73 items)] rad/s²
         Table: coupler angular acceleration
-  [25] alpha4_sw = α₄    « Vector-loop closed form (Freudenstein / law of cosines)
+  [26] alpha4_sw = α₄    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ₂ from 0° to 360°
       = [23.794, 27.273, 29.765, 31.194, 31.596, 31.098, 29.878, 28.129, 26.035, 23.751, 21.398, 19.064, … (73 items)] rad/s²
         Table: rocker angular acceleration
-  [26] mu_sw = μ    « Vector-loop closed form (Freudenstein / law of cosines)
+  [27] mu_sw = μ    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 rows, θ₂ from 0° to 360°
       = [48.441, 48.581, 48.999, 49.687, 50.631, 51.814, 53.216, 54.816, 56.592, 58.522, 60.583, 62.755, … (73 items)] deg
         Table: transmission angle
-  [27] T_in_sw = (T_L + J·α₄)·ω₄/ω₂    « Virtual work
+  [28] T_in_sw = (T_L + J·α₄)·ω₄/ω₂    « Virtual work
       = 73 rows, θ₂ from 0° to 360°
       = [1.5919, 1.3661, 1.1246, 0.87436, 0.62126, 0.37043, 0.1261, 0.12823, 0.38586, 0.61929, 0.82764, 1.0113, … (73 items)] N·m
         Table: input torque by virtual work
-  [28] theta3_0 = θ₃    « Vector-loop closed form (Freudenstein / law of cosines)
+  [29] theta3_0 = θ₃    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = 45.45 deg
         Coupler angle at the first input angle
-  [29] theta4_0 = θ₄    « Vector-loop closed form (Freudenstein / law of cosines)
+  [30] theta4_0 = θ₄    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = 93.891 deg
         Rocker angle at the first input angle
-  [30] omega3_0 = ω₃    « Vector-loop closed form (Freudenstein / law of cosines)
+  [31] omega3_0 = ω₃    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = -2.6928 rad/s
         Coupler angular velocity at the first input angle
-  [31] omega4_0 = ω₄    « Vector-loop closed form (Freudenstein / law of cosines)
+  [32] omega4_0 = ω₄    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = -2.6928 rad/s
         Rocker angular velocity at the first input angle
-  [32] alpha3_0 = α₃    « Vector-loop closed form (Freudenstein / law of cosines)
+  [33] alpha3_0 = α₃    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = -1.6439 rad/s²
         Coupler angular acceleration at the first input angle
-  [33] alpha4_0 = α₄    « Vector-loop closed form (Freudenstein / law of cosines)
+  [34] alpha4_0 = α₄    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = 23.794 rad/s²
         Rocker angular acceleration at the first input angle
-  [34] mu_0 = μ    « Vector-loop closed form (Freudenstein / law of cosines)
+  [35] mu_0 = μ    « Vector-loop closed form (Freudenstein / law of cosines)
       = at the first input angle
       = 48.441 deg
         Transmission angle at the first input angle
-  [35] T_in_0 = (T_L + J·α₄)·ω₄/ω₂    « Virtual work
+  [36] T_in_0 = (T_L + J·α₄)·ω₄/ω₂    « Virtual work
       = at the first input angle
       = 1.5919 N·m
         Input torque at the first input angle
-  [36] theta4_alt = θ₄ on the other circuit    « Vector-loop closed form (Freudenstein / law of cosines)
+  [37] theta4_alt = θ₄ on the other circuit    « Vector-loop closed form (Freudenstein / law of cosines)
       = mirror branch, at the first input angle
       = 266.11 deg
         Rocker angle on the other circuit at the first input angle
-  [37] theta4_min = min θ₄    « Vector-loop closed form (Freudenstein / law of cosines)
+  [38] theta4_min = min θ₄    « Vector-loop closed form (Freudenstein / law of cosines)
       = unwrapped along the sweep
       = 86.704 deg
         Smallest rocker angle
-  [38] theta4_max = max θ₄    « Vector-loop closed form (Freudenstein / law of cosines)
+  [39] theta4_max = max θ₄    « Vector-loop closed form (Freudenstein / law of cosines)
       = unwrapped along the sweep
       = 141.49 deg
         Largest rocker angle
-  [39] swing = max θ₄ − min θ₄    « Vector-loop closed form (Freudenstein / law of cosines)
+  [40] swing = max θ₄ − min θ₄    « Vector-loop closed form (Freudenstein / law of cosines)
       = over the sweep
       = 54.786 deg
         Rocker swing over the sweep
-  [40] mu_min = min μ    « Vector-loop closed form (Freudenstein / law of cosines)
+  [41] mu_min = min μ    « Vector-loop closed form (Freudenstein / law of cosines)
       = dense scan, refined
       = 48.441 deg
         Smallest transmission angle over the sweep
-  [41] res_max = max |loop residual|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [42] res_max = max |loop residual|    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 table rows and 1441 scan angles
-      = 9.3095e-14 mm
+      = below 1e-10 mm
         Largest loop-closure residual
-  [42] res_vel_max = max |velocity loop| / its terms    « Vector-loop closed form (Freudenstein / law of cosines)
+  [43] res_vel_max = max |velocity loop| / its terms    « Vector-loop closed form (Freudenstein / law of cosines)
       = 73 table rows
-      = 2.1412e-16
+      = below 1e-12
         Largest velocity-loop residual, relative to the size of its terms
-  [43] omega3_pk = max |ω₃|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [44] omega3_pk = max |ω₃|    « Vector-loop closed form (Freudenstein / law of cosines)
       = dense scan, refined
       = 2.6976 rad/s
         Peak coupler angular velocity
-  [44] omega_out_pk = max |ω₄|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [45] omega_out_pk = max |ω₄|    « Vector-loop closed form (Freudenstein / law of cosines)
       = dense scan, refined
       = 3.5435 rad/s
         Peak output (rocker) angular velocity
-  [45] alpha3_pk = max |α₃|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [46] alpha3_pk = max |α₃|    « Vector-loop closed form (Freudenstein / law of cosines)
       = dense scan, refined
       = 22.724 rad/s²
         Peak coupler angular acceleration
-  [46] alpha_out_pk = max |α₄|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [47] alpha_out_pk = max |α₄|    « Vector-loop closed form (Freudenstein / law of cosines)
       = dense scan, refined
       = 31.599 rad/s²
         Peak output (rocker) angular acceleration
-  [47] input_torque = max |T_in|    « Virtual work
+  [48] input_torque = max |T_in|    « Virtual work
       = dense scan, refined
       = 2.2654 N·m
         Peak input (crank) torque by virtual work
-  [48] output_motion = c · max |ω₄|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [49] output_motion = c · max |ω₄|    « Vector-loop closed form (Freudenstein / law of cosines)
       = output pin at the rocker length
       = 0.35435 m/s
         Peak speed of the output pin at the rocker length c (a kinematic proxy for a cylinder only if the cylinder acts perpendicular to the rocker at that radius; the angular velocity is omega_out_pk)
-  [49] peak_accel = max |a_pin|    « Vector-loop closed form (Freudenstein / law of cosines)
+  [50] peak_accel = max |a_pin|    « Vector-loop closed form (Freudenstein / law of cosines)
       = √(α₄² + ω₄⁴)·c
       = 3.1625 m/s²
         Peak acceleration of the output pin
-  [50] follower_force = max |(T_L + J·α₄)/c|    « Virtual work
+  [51] follower_force = max |(T_L + J·α₄)/c|    « Virtual work
       = tangential force at the output pin
       = 43.476 N
         Peak force perpendicular to the rocker at the output pin, the drive force of the output
-  [51] F_pin_pk = max |(T_L + J·α₄)/(c·sin μ)|    « Virtual work
+  [52] F_pin_pk = max |(T_L + J·α₄)/(c·sin μ)|    « Virtual work
       = force in the coupler = the crank-pin force
       = 53.69 N
         Peak force in the coupler, which is also the force at the crank pin and the pin loads on the bearings
-  [52] T_rms_in = √(mean T_in²)    « Virtual work
+  [53] T_rms_in = √(mean T_in²)    « Virtual work
       = Simpson over the scan
       = 1.3744 N·m
         RMS input torque over the swept range
-  [53] P_mean = ω·mean(T_in)    « Virtual work
+  [54] P_in_pk = ω·max |T_in|    « Virtual work
+      = 6.2832 rad/s × 2.2654 N·m
+      = 0.014234 kW
+        Peak input power (the scale of the mean power)
+  [55] P_mean = ω·mean(T_in)    « Virtual work
       = Simpson over the scan
       = 0.0076496 kW
         Mean input power over the swept range (negative: the mechanism returns energy)
-  [54] u_mu = μ_req / μ_min    « Transmission angle
+  [56] u_mu = μ_req / μ_min    « Transmission angle
       = 40° / 48.441°
       = 0.82575
         Transmission angle: required minimum against the smallest over the sweep
@@ -242,8 +250,8 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}, with ℓ =
   theta4_max = 141.49°    Largest rocker angle
   swing = 54.79°    Rocker swing over the sweep
   mu_min = 48.44°    Smallest transmission angle over the sweep
-  res_max = 0 mm    Largest loop-closure residual
-  res_vel_max = 0    Largest velocity-loop residual, relative to the size of its terms
+  res_max = below 1e-10 mm    Largest loop-closure residual
+  res_vel_max = below 1e-12    Largest velocity-loop residual, relative to the size of its terms
   toggle_angles = "none: coupler and rocker are never collinear"    Toggle crank angles (coupler and rocker collinear, μ = 0): the limits of the crank's assemblable range
   limit_positions = "θ₂ = 32.66° with θ₄ = 86.704°; θ₂ = 220.95° with θ₄ = 141.49°"    Crank and coupler collinear (the rocker's dead-centre positions)
   omega3_pk = 2.698 rad/s    Peak coupler angular velocity
@@ -254,14 +262,14 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}, with ℓ =
 
 6. Checks (governing first)
   PASS  Required transmission angle against the smallest transmission angle: 40° vs 48.44°  utilisation 0.83  « Transmission angle
-  PASS  Loop-closure residual against its limit: max residual = 9.3095e-14 mm vs < 1e-9 mm  « Self-consistency
-  PASS  Velocity-loop residual against its limit: max residual = 2.1412e-16 vs < 1e-8  « Self-consistency
+  PASS  Loop-closure residual against its limit: max residual below 1e-10 mm vs < 1e-9 mm  « Self-consistency
+  PASS  Velocity-loop residual against its limit: max residual below 1e-12 vs < 1e-8  « Self-consistency
 
 7. Applicability
   None.
 
 8. Verification
-  Template: mech.mechanism@1.3.0
+  Template: mech.mechanism@1.3.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 16/16

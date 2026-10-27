@@ -65,7 +65,7 @@ public sealed class SectionPropertiesAxisSwapTests
     {
         var (host, project, section) = await SectionMadeOn111Async();
         var member = await host.Service.CreateAsync(MemberChecksCalculator.Id, project, "Floor beam member");
-        var refusal = $"'Floor beam section' rev {section.Revision} was made on {OldReference}, where {WelChanged}, so 'W_el_y' is not linked from it: revise 'Floor beam section' onto {Id}@1.2.1 and link to that revision.";
+        var refusal = $"'Floor beam section' rev {section.Revision} was made on {OldReference}, where {WelChanged}, so 'W_el_y' is not linked from it: revise 'Floor beam section' onto {Id}@1.2.2 and link to that revision.";
 
         var bySymbol = await host.Service.BindAsync(member.Id, "W_el_y", section.Id, "W_el_y");
         Assert.False(bySymbol.Succeeded);
@@ -99,7 +99,7 @@ public sealed class SectionPropertiesAxisSwapTests
 
         // The form such a link has in a calculation saved before 1.2.0: the old symbol in the provenance, the minor-axis value it took.
         var saved = CalcInputValue.Quantity("W_el_y", 243.5, "cm^3", CalcProvenance.Link(section.Id, "W_el_y", section.Revision));
-        var refusal = $"'Floor beam section' rev {section.Revision} was made on {OldReference}, where {WelChanged}, so 'W_el_y' is not linked from it: revise 'Floor beam section' onto {Id}@1.2.1 and link to that revision.";
+        var refusal = $"'Floor beam section' rev {section.Revision} was made on {OldReference}, where {WelChanged}, so 'W_el_y' is not linked from it: revise 'Floor beam section' onto {Id}@1.2.2 and link to that revision.";
 
         // Creating a calculation with such a link today is refused outright; one saved before 1.2.0 sits in the store with the link already in it.
         var creating = await Assert.ThrowsAsync<CalcLinkRefusedException>(() => host.Service.CreateAsync(MemberChecksCalculator.Id, project, "Floor beam member (old link)", [saved]));
@@ -127,7 +127,7 @@ public sealed class SectionPropertiesAxisSwapTests
         Assert.Null(host.Service.ValidatePackTemplate(Chain(null)));
         Assert.Null(host.Service.ValidatePackTemplate(Chain("1.2.0")));
         Assert.Null(host.Service.ValidatePackTemplate(Chain("1.1.1", output: "W_el_x")));
-        Assert.Equal($"Pack template 'Section and member': step 's1' was saved from {OldReference}, where {WelChanged}, so the link s1.W_el_y → s2.W_el_y cannot be made; save the chain again from calculations on {Id}@1.2.1.",
+        Assert.Equal($"Pack template 'Section and member': step 's1' was saved from {OldReference}, where {WelChanged}, so the link s1.W_el_y → s2.W_el_y cannot be made; save the chain again from calculations on {Id}@1.2.2.",
             host.Service.ValidatePackTemplate(Chain("1.1.1")));
     }
 }

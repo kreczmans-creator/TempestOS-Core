@@ -139,7 +139,7 @@ Area and centroid: A = ½∮(x dy − y dx); x_c = ∫x dA / A; y_c = ∫y dA / 
   WARNING  J: the open thin-walled sum with the rolled-section fillet term is used.  [thin-walled-torsion]
 
 8. Verification
-  Template: struct.section-properties@1.2.1
+  Template: struct.section-properties@1.2.2
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5

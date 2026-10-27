@@ -4,7 +4,7 @@
  "sources": {
   "rederivation": "3738520fd54a185312ad9441b014f89a0e52620ca01f5d3390e706fb0ae90082",
   "knownDefects": "7b31f620002431f204885bce359ca6a72161ca0cfdae6660daa7ec8c3d8c59e3",
-  "katResults": "2a6b0f3af33935887fda27cc7a723b4a07d9a601d718250b596677835a195f30",
+  "katResults": "4e7e1f7277bca28c1652d81667cb78b4a619f62b6bb37299a8370924816139af",
   "workedExamples": "be8131b2b8102cda2632de6a822db4767a8307a8d24f43b912880d155889fd14",
   "generator": "44f38f035fcf5937ab168f648e6a714578568d822ffce5c1d151e261c577171e"
  },
@@ -1551,7 +1551,7 @@
   "mech.mechanism": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.3.0",
+    "version": "1.3.1",
     "kats": 16,
     "katsPassed": 16,
     "failedKats": [],
@@ -1817,7 +1817,7 @@
   "mech.thick-cylinder": {
    "workedExamples": 2,
    "kat": {
-    "version": "2.2.0",
+    "version": "2.2.1",
     "kats": 3,
     "katsPassed": 3,
     "failedKats": [],
@@ -2837,7 +2837,7 @@
   "struct.frame-2d": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.6.0",
+    "version": "1.6.1",
     "kats": 6,
     "katsPassed": 6,
     "failedKats": [],
@@ -3061,7 +3061,7 @@
   "struct.section-properties": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.2.1",
+    "version": "1.2.2",
     "kats": 5,
     "katsPassed": 5,
     "failedKats": [],
