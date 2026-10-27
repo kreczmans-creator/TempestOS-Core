@@ -660,15 +660,24 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
                 return;
             }
 
-            // A draft made on an older version of a template that has since been revised (Grey GR-B-01): it cannot run on the
-            // current formulas, so its inputs open as a new, unsaved sheet on the current version and the draft stays as it was.
-            if (_service.PlanDraftUpgrade(instance) is { } upgrade)
+            // The version it was made on is not installed (ADR-0177, DC-14). A draft made on an older version of a template that has since
+            // been revised (Grey GR-B-01) cannot run on the current formulas, so its inputs open as a new, unsaved sheet on the current
+            // version and the draft stays as it was. A checked, issued or superseded calculation is shown as it was stored, read-only,
+            // with one sentence saying what became of its version and whether a re-run on the installed version reproduces it.
+            if (_service.OpenOlderVersion(instance) is { } opening)
             {
-                _view.SelectTemplate(upgrade.Current.Reference);
-                _view.ShowTemplate(upgrade.Current, null, upgrade.Inputs);
-                _view.SuggestName($"{instance.Name} ({upgrade.Current.Template.Version})");
-                _latest = upgrade.Inputs;
-                _view.ShowStatus(upgrade.Message);
+                if (opening is { Kind: CalcOlderVersionKind.DraftUpgrade, Upgrade: { } upgrade })
+                {
+                    _view.SelectTemplate(upgrade.Current.Reference);
+                    _view.ShowTemplate(upgrade.Current, null, upgrade.Inputs);
+                    _view.SuggestName($"{instance.Name} ({upgrade.Current.Template.Version})");
+                    _latest = upgrade.Inputs;
+                    _view.ShowStatus(upgrade.Message);
+                    return;
+                }
+
+                _view.ShowStoredRecord(instance, opening.RecordText);
+                _view.ShowStatus(opening.Message);
                 return;
             }
 

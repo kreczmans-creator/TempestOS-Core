@@ -147,6 +147,9 @@ public sealed partial class CalcSheetView : UserControl
     private readonly StackPanel _scanHost = new();
     private readonly Dictionary<string, StackPanel> _stepRows = new(StringComparer.Ordinal);
     private bool _loadingForm;
+
+    // Whether the form shows a calculation as its stored record (ADR-0177): read-only text, with Revise as the only way forward.
+    private bool _storedRecord;
     private string? _governingStep;
 
     private sealed record FieldControls(CalcInputSpec Spec, TextBox? Text, ComboBox? Unit, ComboBox? Choice, CheckBox? Flag, ComboBox Provenance, TextBox ProvenanceRef, TextBlock Problem, Grid Row);
@@ -646,6 +649,7 @@ public sealed partial class CalcSheetView : UserControl
         SelectedTemplate = entry;
         CurrentInstance = instance;
         IsReadOnly = instance is { IsImmutable: true };
+        _storedRecord = false;
         ClearComparison();
         _loadingForm = true;
 
@@ -1068,6 +1072,37 @@ public sealed partial class CalcSheetView : UserControl
         ArgumentNullException.ThrowIfNull(instance);
         ArgumentNullException.ThrowIfNull(sheetText);
 
+        _storedRecord = false;
+        ShowReadOnlyText(instance, sheetText, LegacyArchiveSheet.MethodText, "ARCHIVE", Brushes.Gray, ArchiveSheetName);
+        _status.Text = "A migrated legacy calculation record: read-only. Re-enter its inputs in the matching worksheet template for a sheet with working.";
+    }
+
+    /// <summary>Automation name of the read-only text a calculation made on a template version that is not installed shows (ADR-0177).</summary>
+    public const string StoredRecordName = "Stored calculation record";
+
+    /// <summary>What the scope line says over a stored record.</summary>
+    public const string StoredRecordScope = "The formulas of the template version this calculation was made on are not installed in this build, so it is shown as it was stored, read-only: the sheet as issued, or the stored results of a calculation that was never issued. Revise carries its inputs to the current version as a new revision.";
+
+    /// <summary>
+    /// Shows a checked, issued or superseded calculation whose own template version is not installed (ADR-0177, DC-14) as the record it
+    /// stored: the sheet as issued, or a summary of its stored results, read-only, with no form. The coordinator sets the status line to the
+    /// sentence that says what became of the version and what a re-run on the installed version came to. Revise is offered for an issued
+    /// calculation and for a checked one (both carry the inputs to the current version); nothing else can be done to it here.
+    /// </summary>
+    public void ShowStoredRecord(CalcInstance instance, string recordText)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(recordText);
+
+        _storedRecord = true;
+        var colour = instance.Status == CalcInstanceStatus.Issued ? Brushes.SeaGreen : instance.Status == CalcInstanceStatus.Superseded ? Brushes.Gray : Brushes.DarkOrange;
+        ShowReadOnlyText(instance, recordText, StoredRecordScope, instance.Status.ToString().ToUpperInvariant(), colour, StoredRecordName);
+        _status.Text = $"'{instance.Name}' rev {instance.Revision} is shown as stored, read-only.";
+    }
+
+    /// <summary>The one read-only text display: no form, no fields, no diagram; the lifecycle actions follow <see cref="UpdateActions"/>.</summary>
+    private void ShowReadOnlyText(CalcInstance instance, string text, string scope, string watermark, IBrush watermarkColour, string automationName)
+    {
         _loadingForm = true;
         SelectedTemplate = null;
         _requirements = [];
@@ -1080,19 +1115,21 @@ public sealed partial class CalcSheetView : UserControl
         LastRun = null;
         _title.Text = instance.Name;
         _reference.Text = instance.TemplateReference;
-        _scope.Text = LegacyArchiveSheet.MethodText;
-        _watermark.Text = "ARCHIVE";
+        _scope.Text = scope;
+        _watermark.Text = watermark;
         _watermark.IsVisible = true;
-        _watermark.Foreground = Brushes.Gray;
+        _watermark.Foreground = watermarkColour;
+        _staleBanner.IsVisible = false;
+        _updateLinksButton.IsVisible = false;
+        _linkPanel.IsVisible = false;
         _form.Children.Clear();
         _fields.Clear();
         _referencePickers.Clear();
         _carriedInputs.Clear();
         _problems.Text = string.Empty;
-        var text = new SelectableTextBlock { Text = sheetText, FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeCaption + 1, TextWrapping = TextWrapping.NoWrap };
-        AutomationProperties.SetName(text, ArchiveSheetName);
-        _form.Children.Add(new ScrollViewer { Content = text, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto });
-        _status.Text = "A migrated legacy calculation record: read-only. Re-enter its inputs in the matching worksheet template for a sheet with working.";
+        var block = new SelectableTextBlock { Text = text, FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeCaption + 1, TextWrapping = TextWrapping.NoWrap };
+        AutomationProperties.SetName(block, automationName);
+        _form.Children.Add(new ScrollViewer { Content = block, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto });
         _exportButton.IsEnabled = false;
         _importButton.IsEnabled = false;
         _loadingForm = false;
@@ -1104,12 +1141,14 @@ public sealed partial class CalcSheetView : UserControl
         var instance = CurrentInstance;
         _saveButton.Content = instance is null ? SaveCaption : "Save changes";
         _saveButton.IsEnabled = !IsReadOnly && SelectedTemplate is not null && LastRun is { IsBlocked: false };
-        _checkButton.IsVisible = instance is { Status: CalcInstanceStatus.Draft, IsLegacyArchive: false };
+        _checkButton.IsVisible = instance is { Status: CalcInstanceStatus.Draft, IsLegacyArchive: false } && !_storedRecord;
         _compareButton.IsVisible = instance is { PredecessorId: not null, IsLegacyArchive: false };
-        _issueButton.IsVisible = instance is { Status: CalcInstanceStatus.Checked };
-        _reviseButton.IsVisible = instance is { Status: CalcInstanceStatus.Issued };
-        _importCadButton.IsEnabled = instance is { Status: CalcInstanceStatus.Draft };
-        _importScanButton.IsEnabled = instance is { Status: CalcInstanceStatus.Draft };
+        _issueButton.IsVisible = instance is { Status: CalcInstanceStatus.Checked } && !_storedRecord;
+
+        // A stored record (ADR-0177) cannot be issued on a version that is not installed; a checked one is revised forward instead, as an issued one is.
+        _reviseButton.IsVisible = instance is { Status: CalcInstanceStatus.Issued } || (_storedRecord && instance is { Status: CalcInstanceStatus.Checked });
+        _importCadButton.IsEnabled = instance is { Status: CalcInstanceStatus.Draft } && !_storedRecord;
+        _importScanButton.IsEnabled = instance is { Status: CalcInstanceStatus.Draft } && !_storedRecord;
         UpdateGovernance();
     }
 
