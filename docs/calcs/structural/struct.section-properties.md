@@ -1,4 +1,4 @@
-# Section properties (`struct.section-properties@1.2.0`)
+# Section properties (`struct.section-properties@1.2.1`)
 
 **In plain terms.** Every bending, stress and buckling check needs the shape's geometric properties: its area, where its centroid is, how its area is spread about each axis (second moments), and the section moduli that turn a bending moment into a stress. This worksheet computes them from the outline itself, adding up the contribution of each edge of the polygon, so any shape, with holes or built from plates, gives the same properties a handbook table would for a standard section.
 
@@ -128,6 +128,8 @@ A polygon whose loop crosses itself, whose loops cross one another, or whose hol
 The caps are 2,000 vertex rows, 100 parts, 200 loops and 20,000 vertices per loop.
 
 ### Changes by version
+
+**1.2.1.** Declares the change of meaning of 1.2.0 (ADR-0177 review): the ports `W_el_y` and `W_pl_y` meant the moduli about the vertical axis of the drawing (the minor axis of an upright I-section) before 1.2.0 and mean the EN 1993 y-y (major-axis) moduli since, so a link, pack binding or import that takes `W_el_y` or `W_pl_y` from a calculation made on 1.1.1 or earlier is refused with a sentence that says so, instead of binding the major-axis value under the old name. A link under the old symbols `W_el_x` and `W_pl_x` keeps its meaning. The composite column `t` is an alias of `t_w`. No calculated value changes.
 
 **1.2.0 (C-2 consistency).** The properties are named in the EN 1993 axes: `I_xx` is now `I_y`, `I_yy` is `I_z`, `I_xy` is `I_yz`, `W_el_x` is `W_el_y`, `W_el_y` is `W_el_z`, `W_pl_x` is `W_pl_y`, `W_pl_y` is `W_pl_z`, `i_x` is `r_g_y`, `i_y` is `r_g_z` and `alpha_pl_x` is `alpha_pl_y`. The old symbols of `I_xx`, `I_yy`, `I_xy`, `W_el_x`, `W_pl_x`, `i_x`, `i_y` and `alpha_pl_x` stay as aliases of the ports, so a saved link, pack binding or example that names them still resolves. A link saved under the old `W_el_y` or `W_pl_y` (the minor-axis moduli) now meets the major-axis modulus of the same name; relink it to `W_el_z` or `W_pl_z`. The input `t` is now `t_w` (old symbol kept as an alias, and a composite table that still has a `t` column is read). The radius of gyration is shown in mm, and the warping constant in cm⁶ (1 dm⁶ is 1,000,000 cm⁶). The sheet declares its ports.
 

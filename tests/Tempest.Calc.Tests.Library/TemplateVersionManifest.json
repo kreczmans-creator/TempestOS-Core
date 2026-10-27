@@ -224,5 +224,6 @@
   "struct.section-properties@1.0.1": "b7d59144d05267d439aaa63ba5cee6000f9f4f055ef9797e660451e0e7b95a0c",
   "struct.section-properties@1.1.0": "985ed28ba222c801e40e19931dc01cbb1e97c9121d23f99121ce1de3a583a8ed",
   "struct.section-properties@1.1.1": "18d6536f1f7df3e196748171f6bc258a19674dbadeb0db132fd184d478016809",
-  "struct.section-properties@1.2.0": "a95bd0059585bd3647268f1c394b05e4eab5c77f8325ffab7d9af415bf7b9c36"
+  "struct.section-properties@1.2.0": "a95bd0059585bd3647268f1c394b05e4eab5c77f8325ffab7d9af415bf7b9c36",
+  "struct.section-properties@1.2.1": "8371b0d9f59f83769dee1a9d85a9985870bb88da65a4b4d2df93d87f68a60929"
 }

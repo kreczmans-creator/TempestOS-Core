@@ -54,7 +54,7 @@ public sealed class SectionPropertiesCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.Structural, "Section properties",
+        Id, "1.2.1", CalcDiscipline.Structural, "Section properties",
         "Calculates area, centroid, second moments, moduli, radii of gyration, and torsion and warping constants of a parametric, polygon or composite section. The outline has x horizontal and y vertical; properties use EN 1993 axes, y-y horizontal and z-z vertical.",
         "Area and centroid: A = ½∮(x dy − y dx); x_c = ∫x dA / A; y_c = ∫y dA / A.\nSecond moment about y-y: I_y = ∫y² dA − A y_c², by Green's theorem and the parallel-axis theorem.\nSecond moment about z-z: I_z = ∫x² dA − A x_c²; product I_yz = ∫xy dA − A x_c y_c.\nPrincipal axes: tan 2θ = −2 I_yz / (I_y − I_z).\nElastic section modulus: W_el_y = I_y / y_max.\nPlastic section modulus about the equal-area axis, found by bisection: W_pl_y = |Q_above| + |Q_below|.\nTorsion constant J: Saint-Venant series (solid rectangle), πd⁴/32 (circle), Bredt (closed thin-walled), Σbt³/3 (open).\nWarping constant of an I-section: I_w = I_z (h − t_f)²/4.",
         [
@@ -119,9 +119,9 @@ public sealed class SectionPropertiesCalculator : ICalcCalculator
             new CalcOutputPort("I_y", "cm^4", "Second moment of area about the y-y axis", "section.second_moment_y", ["I_xx"]),
             new CalcOutputPort("I_z", "cm^4", "Second moment of area about the z-z axis", "section.second_moment_z", ["I_yy"]),
             new CalcOutputPort("I_yz", "cm^4", "Product of inertia about the y-y and z-z axes", "section.product_inertia", ["I_xy"]),
-            new CalcOutputPort("W_el_y", "cm^3", "Elastic section modulus about the y-y axis", "section.modulus_elastic_y", ["W_el_x"]),
+            new CalcOutputPort("W_el_y", "cm^3", "Elastic section modulus about the y-y axis", "section.modulus_elastic_y", ["W_el_x"], MeaningChangedAt: "1.2.0", MeaningWas: "the elastic section modulus about the vertical axis of the drawing (the minor axis of an upright I-section)", MeaningNow: "the elastic section modulus about the EN 1993 y-y axis (the major axis of an upright I-section)"),
             new CalcOutputPort("W_el_z", "cm^3", "Elastic section modulus about the z-z axis", "section.modulus_elastic_z"),
-            new CalcOutputPort("W_pl_y", "cm^3", "Plastic section modulus about the y-y axis", "section.modulus_plastic_y", ["W_pl_x"]),
+            new CalcOutputPort("W_pl_y", "cm^3", "Plastic section modulus about the y-y axis", "section.modulus_plastic_y", ["W_pl_x"], MeaningChangedAt: "1.2.0", MeaningWas: "the plastic section modulus about the vertical axis of the drawing (the minor axis of an upright I-section)", MeaningNow: "the plastic section modulus about the EN 1993 y-y axis (the major axis of an upright I-section)"),
             new CalcOutputPort("W_pl_z", "cm^3", "Plastic section modulus about the z-z axis", "section.modulus_plastic_z"),
             new CalcOutputPort("r_g_y", "mm", "Radius of gyration about the y-y axis", "section.radius_gyration_y", ["i_x"]),
             new CalcOutputPort("r_g_z", "mm", "Radius of gyration about the z-z axis", "section.radius_gyration_z", ["i_y"]),
