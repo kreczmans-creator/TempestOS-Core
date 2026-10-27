@@ -44,7 +44,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 42/42
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References
@@ -144,7 +144,7 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}, with ℓ =
         Table: follower acceleration
   [19] j_sw = j = ω³·d³s/dθ³    « Cam follower kinematics
       = 73 rows, θ from 0° to 360°
-      = [666.2, 643.5, 576.94, 471.07, 333.1, 172.42, 4.0793e-14, -172.42, -333.1, -471.07, -576.94, -643.5, … (73 items)] m/s³
+      = [666.2, 643.5, 576.94, 471.07, 333.1, 172.42, 0, -172.42, -333.1, -471.07, -576.94, -643.5, … (73 items)] m/s³
         Table: follower jerk
   [20] phi_sw = φ = arctan[(s′ − e)/(√(R_p² − e²) + s)]    « Cam follower kinematics
       = 73 rows, θ from 0° to 360°
@@ -258,11 +258,15 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}, with ℓ =
       = Simpson per segment
       = 4.8162 N·m
         RMS input torque over the cam revolution
-  [48] P_mean = ω·mean(T)    « Virtual work
+  [48] P_in_pk = ω·max |T_in|    « Virtual work
+      = 15.708 rad/s × 10.111 N·m
+      = 0.15883 kW
+        Peak input power (the scale of the mean power)
+  [49] P_mean = ω·mean(T)    « Virtual work
       = Simpson per segment
-      = 4.885e-17 kW
+      = 0 kW
         Mean input power over the cam revolution
-  [49] f_in = n_in / 60
+  [50] f_in = n_in / 60
       = rpm to Hz
       = 2.5 Hz
         Cam-shaft frequency, for a spring surge check
@@ -276,14 +280,14 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}, with ℓ =
   T_rms_in = 4.816 N·m    RMS input torque over the cam revolution
   n_in = 150 rpm    Cam-shaft speed, passed through
   f_in = 2.500 Hz    Cam-shaft frequency, for a spring surge check
-  P_mean = 4.885e-17 kW    Mean input power over the cam revolution
+  P_mean = 0 kW    Mean input power over the cam revolution
   lift = 40 mm    Greatest follower displacement
   F_spring_max = 445.0 N    Spring force at full lift
   theta_sw = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, … (73 items)] deg    Table: cam angle
   s_sw = [0, 0.018973, 0.15023, 0.49842, 1.1534, 2.1841, 3.6338, 5.5174, 7.82, 10.498, 13.484, 16.686, … (73 items)] mm    Table: follower displacement
   v_sw = [0, 0.010222, 0.040192, 0.087868, 0.15, 0.22235, 0.3, 0.37765, 0.45, 0.51213, 0.55981, 0.58978, … (73 items)] m/s    Table: follower velocity
   a_sw = [0, 3.659, 7.0686, 9.9965, 12.243, 13.655, 14.137, 13.655, 12.243, 9.9965, 7.0686, 3.659, … (73 items)] m/s²    Table: follower acceleration
-  j_sw = [666.2, 643.5, 576.94, 471.07, 333.1, 172.42, 4.0793e-14, -172.42, -333.1, -471.07, -576.94, -643.5, … (73 items)] m/s³    Table: follower jerk
+  j_sw = [666.2, 643.5, 576.94, 471.07, 333.1, 172.42, 0, -172.42, -333.1, -471.07, -576.94, -643.5, … (73 items)] m/s³    Table: follower jerk
   phi_sw = [0, 0.49701, 1.9501, 4.2374, 7.1473, 10.393, 13.652, 16.625, 19.081, 20.873, 21.938, 22.27, … (73 items)] deg    Table: pressure angle
   kappa_sw = [0.013333, 0.010696, 0.0082506, 0.0062316, 0.0048729, 0.004318, 0.0045434, 0.0053644, 0.0065244, 0.0077948, 0.0090261, 0.010145, … (73 items)] 1/mm    Table: curvature of the pitch curve (the radius of curvature is 1/κ where κ is positive)
   F_sw = [50, 64.823, 79.758, 94.907, 110.36, 126.19, 142.43, 159.1, 176.19, 193.65, 211.41, 229.39, … (73 items)] N    Table: follower force on the cam
@@ -315,11 +319,11 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}, with ℓ =
   None.
 
 8. Verification
-  Template: mech.mechanism@1.3.0
-  Content hash: 2f3baaba1b0ea215
+  Template: mech.mechanism@1.3.1
+  Content hash: 7366a85fb532ee70
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 16/16
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References
@@ -629,7 +633,7 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n_active) (compression, extension)
   Content hash: e5989f67c99ce450
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References
@@ -842,7 +846,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   Content hash: 269fa49d39e54f67
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References
@@ -966,7 +970,7 @@ Equivalent load: F_dyn = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_
   Content hash: 91324fe50f42db2d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References
@@ -1223,7 +1227,7 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
   Content hash: 7ccfbf19d3cec269
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References
@@ -1398,7 +1402,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: c0657fdab51c927d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References

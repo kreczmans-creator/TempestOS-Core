@@ -1,4 +1,4 @@
-# Beam and 2D frame analysis (`struct.frame-2d@1.6.0`)
+# Beam and 2D frame analysis (`struct.frame-2d@1.6.1`)
 
 **In plain terms.** A frame is treated as members joined at nodes, each member a spring that resists stretching and bending. The stiffness method assembles those springs into one set of equations relating the forces at the nodes to how far they move, solves for the movements under each load case, and works back to the forces and moments along every member. Load combinations add the cases with their factors, and the envelope keeps the worst value at each point.
 
@@ -169,6 +169,8 @@ A point or couple load row needs its position `a`: a blank `a` blocks (rule `mod
 The magnitude outputs are set to zero below 1e-9 of the largest reaction, so solver noise on an unloaded support does not print as 3e-14. They exist because the design checks downstream take shear and moment unsigned, and a reaction's sign follows the load direction. A load-table cell can be linked to another calculation's output (a table-cell link), for example the governing effect of the load combinations sheet in the steel-support pack.
 
 ### Changes by version
+
+**1.6.1 (round-off on the sheet, C2-20).** A reaction, an equilibrium sum or a member extreme that comes out as solver noise (a moment on a pinned support) is shown as 0 in its working line and in the substitutions that use it (`|0| kN·m`), as its Results row already was; no digit of round-off is printed. No calculated value changes.
 
 **1.6.0 (DC-15 frame caps, owner decision DC-21).** The table caps are lowered from 2,000 nodes, 4,000 elements and 20,000 load rows to 1,200, 2,400 and 2,400, so that the largest frame within the caps stores under the 4 MB document cap with margin (the arithmetic is under Limitations), and a table past its cap is refused at entry by the input validator, naming the table and the cap. The other caps (50 cases, 50 combinations, 200 load rows per member, 100 stations, the factorisation work and the banded entries) do not change. Every shipped example, known-answer case and test frame is within the new caps. No calculated value changes.
 

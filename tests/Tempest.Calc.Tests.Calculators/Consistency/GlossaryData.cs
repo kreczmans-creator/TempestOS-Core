@@ -116,6 +116,9 @@ internal static class GlossaryData
     public static readonly JsonSerializerOptions Options = new()
     {
         WriteIndented = true,
+
+        // The committed file has LF line ends on every platform: the default is Environment.NewLine, "\r\n" on Windows.
+        NewLine = "\n",
         DefaultIgnoreCondition = JsonIgnoreCondition.Never,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,

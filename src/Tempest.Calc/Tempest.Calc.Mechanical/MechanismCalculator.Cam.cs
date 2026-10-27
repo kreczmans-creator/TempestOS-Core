@@ -349,6 +349,7 @@ public sealed partial class MechanismCalculator
         }
 
         Scalar(c, "T_rms_in", "√(mean T²)", "Simpson per segment", Math.Sqrt(sumT2 / (2 * Math.PI)), "N*m", "RMS input torque over the cam revolution", "Virtual work");
+        PeakPower(c, omega, tPk);
         Scalar(c, "P_mean", "ω·mean(T)", "Simpson per segment", omega * sumT / (2 * Math.PI) / 1e3, "kW", "Mean input power over the cam revolution", "Virtual work");
         c.Output("n_in", "Cam-shaft speed, passed through");
         Scalar(c, "f_in", "n_in / 60", "rpm to Hz", omega / (2 * Math.PI), "Hz", "Cam-shaft frequency, for a spring surge check");

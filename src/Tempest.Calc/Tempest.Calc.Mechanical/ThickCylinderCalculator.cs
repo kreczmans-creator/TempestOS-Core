@@ -9,7 +9,7 @@ public sealed class ThickCylinderCalculator : ICalcCalculator
     public const string Id = "mech.thick-cylinder";
 
     public CalcTemplate Template { get; } = new(
-        Id, "2.2.0", CalcDiscipline.Mechanical, "Thick-walled cylinder (Lamé)",
+        Id, "2.2.1", CalcDiscipline.Mechanical, "Thick-walled cylinder (Lamé)",
         "Calculates the radial, hoop and axial stresses at the bore and outer surface of a thick-walled cylinder under internal and external pressure. It also gives von Mises and Tresca stresses, the utilisation and a thin-wall estimate.",
         "Lamé constants from the bore and outside pressures: A = (a² p_i − b² p_o)/(b² − a²); B = a² b² (p_i − p_o)/(b² − a²).\nRadial and hoop stress at radius r: σ_r = A − B/r²; σ_θ = A + B/r².\nAxial stress, closed or open ends: σ_z = A (closed); σ_z = 0 (open).\nEquivalent stresses from the three principal stresses: von Mises; Tresca = the largest principal difference.",
         [

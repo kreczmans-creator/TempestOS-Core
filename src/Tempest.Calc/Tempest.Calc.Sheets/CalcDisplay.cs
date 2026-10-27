@@ -20,7 +20,8 @@ namespace Tempest.Calc.Sheets;
 /// rounded down; a failing check line shows its demand rounded up and its capacity rounded down.</para>
 /// <para>A utilisation is recognised by what the template declares, never by its symbol or description: an output flagged
 /// <see cref="CalcOutputKind.Utilisation"/> and the symbol a utilisation check is made on (C2-21). A value is shown as 0 for being solver noise
-/// only when its template flagged it noise-prone (C2-20).</para>
+/// only when its template flagged it noise-prone (C2-20); a residual its template declared, with its noise floor, is shown as "below" the floor when it is
+/// under it, never with the digits of its round-off (C2-20).</para>
 /// </remarks>
 public static class CalcDisplay
 {
@@ -32,6 +33,12 @@ public static class CalcDisplay
 
     /// <summary>A noise-prone output below this fraction of the largest working value of its dimension is shown as 0.</summary>
     public const double NoiseFraction = 1e-9;
+
+    /// <summary>
+    /// The noise floor of a relative residual (a residual divided by the size of its terms), and the factor that gives an absolute residual its floor from the
+    /// size of what it measures: a residual below its floor is round-off, whose digits differ between platforms, and is shown as "below" the floor (C2-20).
+    /// </summary>
+    public const double ResidualFloor = 1e-12;
 
     /// <summary>At least this many significant figures are always shown (a result of 3.1595 cm³ is never "3.2 cm³").</summary>
     public const int MinimumSignificantFigures = 4;
@@ -461,6 +468,24 @@ public static class CalcDisplay
     {
         var unit = CalcUnitText.Pretty(value.DisplayUnit.Symbol);
         return unit.Length == 0 ? "0" : unit == "°" ? "0°" : $"0 {unit}";
+    }
+
+    /// <summary>"below 1e-12", "below 1e-10 mm": how a residual under its stated floor (<paramref name="floor"/>, in the unit <paramref name="value"/> is shown in) is shown.</summary>
+    public static string BelowText(double floor, ScalarValue value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        var unit = CalcUnitText.Pretty(value.DisplayUnit.Symbol);
+        return "below " + CalcValue.FormatNumber(floor) + (unit.Length == 0 ? string.Empty : " " + unit);
+    }
+
+    /// <summary>
+    /// A residual as a check line quotes it: "max residual below 1e-12" under its floor, "max residual = 3.2e-9" otherwise. <paramref name="residual"/> and
+    /// <paramref name="floor"/> are in the unit <paramref name="unit"/> names (empty for a plain number), the same as the residual's output row uses.
+    /// </summary>
+    public static string ResidualText(string label, double residual, double floor, string unit = "")
+    {
+        var suffix = unit.Length == 0 ? string.Empty : " " + CalcUnitText.Pretty(unit);
+        return Math.Abs(residual) < floor ? $"{label} below {CalcValue.FormatNumber(floor)}{suffix}" : $"{label} = {CalcValue.FormatNumber(residual)}{suffix}";
     }
 
     /// <summary>

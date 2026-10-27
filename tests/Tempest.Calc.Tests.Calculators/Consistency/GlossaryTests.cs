@@ -89,6 +89,15 @@ public sealed partial class GlossaryTests
     }
 
     [Fact]
+    public void The_Glossary_Data_Is_Written_With_Lf_Line_Ends_On_Every_Platform()
+    {
+        // The Windows CI run of 9c92e672: the serialiser's NewLine defaults to Environment.NewLine, "\r\n" on Windows, so the live text never matched the
+        // committed file (read with "\r\n" normalised to "\n"). The options fix the line end, and this holds on every platform, not only on Windows.
+        Assert.Equal("\n", GlossaryData.Options.NewLine);
+        Assert.DoesNotContain('\r', GlossaryData.ToJson(GlossaryData.Build(Facts.Value)));
+    }
+
+    [Fact]
     public void Every_Symbol_Of_Every_Template_Is_In_The_Glossary_With_The_Quantity_Type_The_Template_Gives_It()
     {
         var rows = GlossaryRows();

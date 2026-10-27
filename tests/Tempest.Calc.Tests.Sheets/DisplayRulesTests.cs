@@ -190,6 +190,80 @@ public sealed class DisplayRulesTests
         Assert.Equal("8.7771e-14 mm", alone.FindOutput("res")!.ValueText);
     }
 
+    [Fact]
+    public void A_Value_Shown_As_Noise_Is_Shown_As_Zero_In_Its_Working_And_In_The_Substitutions_That_Quote_It_And_Keeps_Its_Value()
+    {
+        var r = Run(c =>
+        {
+            c.Record("sigma_t_b", "hoop", "from the geometry", ScalarValue.Of(144.9, "MPa"), "Hoop stress");
+            c.Record("M_r", "reaction moment", "Σ member end moments", ScalarValue.Of(-1.4552e-14, "MPa"), "Moment at a pin");
+            c.Record("M_abs", "|M|", "|-1.4552e-14| MPa", ScalarValue.Of(0, "MPa"), "Magnitude");
+            c.Record("sum", "sum", "144.9 MPa − 1.4552e-14 MPa, 11.4552e-14", ScalarValue.Of(144.9, "MPa"), "Sum");
+            c.MarkNoiseProne("M_r");
+            c.Output("M_r", "Moment at a pin");
+        });
+
+        Assert.Equal("0 MPa", r.FindOutput("M_r")!.ValueText);
+        Assert.Equal("0 MPa", r.Steps.Single(s => s.Symbol == "M_r").ResultText);
+        Assert.Equal("|0| MPa", r.Steps.Single(s => s.Symbol == "M_abs").Substitution);
+
+        // Only the number on its own is replaced: an operator minus is kept, and a longer number that ends in the same digits is left alone.
+        Assert.Equal("144.9 MPa − 0 MPa, 11.4552e-14", r.Steps.Single(s => s.Symbol == "sum").Substitution);
+        Assert.Equal(ScalarValue.Of(-1.4552e-14, "MPa").Si, ((ScalarValue)r.Steps.Single(s => s.Symbol == "M_r").Result).Si);
+        Assert.Equal(ScalarValue.Of(-1.4552e-14, "MPa").Si, ((ScalarValue)r.FindOutput("M_r")!.Value).Si);
+    }
+
+    [Fact]
+    public void A_Declared_Residual_Under_Its_Floor_Is_Shown_Below_The_Floor_Never_Zeroed_And_Above_It_As_It_Is()
+    {
+        var r = Run(c =>
+        {
+            c.Record("L", "length", "input", ScalarValue.Of(250, "mm"), "Length");
+            c.Record("res", "residual", "closure", ScalarValue.Of(8.7771e-14, "mm"), "Largest loop-closure residual");
+            c.Record("res_rel", "relative residual", "loop", new ScalarValue(1.9375e-16), "Relative residual");
+            c.Record("res_big", "residual", "closure", ScalarValue.Of(3.2e-9, "mm"), "A residual above its floor");
+            c.Output("res", "Largest loop-closure residual", noiseProne: true);
+            c.Output("res_rel", "Relative residual", noiseProne: true);
+            c.Output("res_big", "A residual above its floor", noiseProne: true);
+            c.MarkResidual("res", 1e-10);
+            c.MarkResidual("res_rel", CalcDisplay.ResidualFloor);
+            c.MarkResidual("res_big", 1e-10);
+        });
+
+        // Below the floor: "below" the floor in the row and the working, never 0 (the noise rule alone would have shown 0 mm beside 250 mm).
+        Assert.Equal("below 1e-10 mm", r.FindOutput("res")!.ValueText);
+        Assert.Equal("below 1e-10 mm", r.Steps.Single(s => s.Symbol == "res").ResultText);
+        Assert.Equal("below 1e-12", r.FindOutput("res_rel")!.ValueText);
+        Assert.Equal("below 1e-12", r.Steps.Single(s => s.Symbol == "res_rel").ResultText);
+
+        // At or above its floor a residual is information, and is shown as it is.
+        Assert.Equal("3.2e-9 mm", r.FindOutput("res_big")!.ValueText);
+        Assert.Equal(ScalarValue.Of(8.7771e-14, "mm").Si, ((ScalarValue)r.FindOutput("res")!.Value).Si);
+
+        Assert.Equal("max residual below 1e-12", CalcDisplay.ResidualText("max residual", 1.9375e-16, CalcDisplay.ResidualFloor));
+        Assert.Equal("max residual below 1e-10 mm", CalcDisplay.ResidualText("max residual", 8.7771e-14, 1e-10, "mm"));
+        Assert.Equal("max residual = 3.2e-9 mm", CalcDisplay.ResidualText("max residual", 3.2e-9, 1e-10, "mm"));
+        // A floor that is not a positive number is a template error: the run is refused, not shown with a floor of 0.
+        Assert.True(Run(c => c.MarkResidual("res", 0)).IsBlocked);
+    }
+
+    [Fact]
+    public void An_Entry_Of_A_Noise_Prone_Table_That_Is_Noise_Is_Shown_As_Zero_And_An_Unflagged_Table_Is_Left_Alone()
+    {
+        var r = Run(c =>
+        {
+            c.Record("j_sw", "j", "73 rows", VectorValue.Of([170.55, 44.141, 1.0443e-14, -44.141], "m/s^3"), "Table: follower jerk");
+            c.Record("k_sw", "k", "73 rows", VectorValue.Of([170.55, 1.0443e-14], "m/s^3"), "Table: unflagged");
+            c.Output("j_sw", "Table: follower jerk", noiseProne: true);
+            c.Output("k_sw", "Table: unflagged");
+        });
+
+        Assert.Equal("[170.55, 44.141, 0, -44.141] m/s³", r.FindOutput("j_sw")!.ValueText);
+        Assert.Equal("[170.55, 44.141, 0, -44.141] m/s³", r.Steps.Single(s => s.Symbol == "j_sw").ResultText);
+        Assert.Equal(1.0443e-14, ((VectorValue)r.FindOutput("j_sw")!.Value).Si[2]);
+        Assert.Contains("1.0443e-14", r.FindOutput("k_sw")!.ValueText, StringComparison.Ordinal);
+    }
+
     // ---- H2: rounding that cannot cross a limit ---------------------------------------------------------------------------------------------
 
     [Theory]

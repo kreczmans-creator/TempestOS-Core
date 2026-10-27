@@ -151,7 +151,13 @@ public sealed record VectorValue : CalcValue
         return new VectorValue(_si, Dimension, unit);
     }
 
-    public override string Format(int significantFigures = 5)
+    public override string Format(int significantFigures = 5) => Format(significantFigures, 0);
+
+    /// <summary>
+    /// The vector as text, with every entry whose magnitude is below <paramref name="zeroBelowSi"/> (in SI) shown as 0: how a sheet shows the entries of a
+    /// table that are solver noise (a jerk of 1e-14 m/s³ where it crosses zero beside 170 m/s³). The values themselves are not changed.
+    /// </summary>
+    public string Format(int significantFigures, double zeroBelowSi)
     {
         var sb = new StringBuilder("[");
         var shown = Math.Min(_si.Length, 12);
@@ -161,7 +167,7 @@ public sealed record VectorValue : CalcValue
             if (i > 0)
                 sb.Append(", ");
 
-            sb.Append(FormatNumber(DisplayUnit.FromSi(_si[i]), significantFigures));
+            sb.Append(Math.Abs(_si[i]) < zeroBelowSi ? "0" : FormatNumber(DisplayUnit.FromSi(_si[i]), significantFigures));
         }
 
         if (_si.Length > shown)

@@ -70,14 +70,14 @@ Member stiffness: three freedoms per node, Euler–Bernoulli members with axial 
         Vertical reaction at node 1
   [10] R1_m = reaction at node 1, moment
       = Σ member end moments − applied nodal couple
-      = -1.4552e-14 kN·m
+      = 0 kN·m
         Moment reaction at node 1
   [11] R1_x_abs = |R_x| at node 1
       = |-2.9968| kN
       = 2.9968 kN
         Magnitude of the horizontal reaction at node 1
   [12] R1_m_abs = |M| at node 1
-      = |-1.4552e-14| kN·m
+      = |0| kN·m
       = 0 kN·m
         Magnitude of the moment reaction at node 1
   [13] R4_x = reaction at node 4, x
@@ -90,14 +90,14 @@ Member stiffness: three freedoms per node, Euler–Bernoulli members with axial 
         Vertical reaction at node 4
   [15] R4_m = reaction at node 4, moment
       = Σ member end moments − applied nodal couple
-      = -2.9104e-14 kN·m
+      = 0 kN·m
         Moment reaction at node 4
   [16] R4_x_abs = |R_x| at node 4
       = |-21.003| kN
       = 21.003 kN
         Magnitude of the horizontal reaction at node 4
   [17] R4_m_abs = |M| at node 4
-      = |-2.9104e-14| kN·m
+      = |0| kN·m
       = 0 kN·m
         Magnitude of the moment reaction at node 4
   [18] sum_R_y = Σ R_y
@@ -275,7 +275,7 @@ Member stiffness: three freedoms per node, Euler–Bernoulli members with axial 
   None.
 
 8. Verification
-  Template: struct.frame-2d@1.6.0
+  Template: struct.frame-2d@1.6.1
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 6/6

@@ -1,4 +1,4 @@
-# Thick-walled cylinder (Lamé) (`mech.thick-cylinder@2.2.0`)
+# Thick-walled cylinder (Lamé) (`mech.thick-cylinder@2.2.1`)
 
 **In plain terms.** In a thin pipe the wall stress is nearly uniform, but in a thick wall it is not: the hoop stress is highest at the bore and falls towards the outside. Lamé's solution gives the radial and hoop stresses at every radius for any inner and outer pressure, and the axial stress for closed ends. The largest equivalent stress, at the bore for internal pressure, is compared with the allowable.
 
@@ -64,6 +64,8 @@ The stress check is not a stability check. Under external pressure a thin wall c
 
 Three v0.16 vectors (internal pressure with closed ends, external pressure with closed ends, internal pressure with open ends). Each is analytic and confirmed.
 
+**Changes in 2.2.1 (round-off on the sheet, C2-20).** A radial stress at a free surface that comes out as round-off is shown as 0 MPa in its working line and in the substitutions that use it, as its Results row already was; no digit of round-off is printed. No result changes.
+
 **Changes in 2.2.0 (C-2).** The inputs are in groups with `closed` first; the checks show the stress and the allowable, and the pressure and the collapse pressure; two ports are declared; messages are rewritten. No result changes.
 
 **Changes in 2.1.0.** `E` and `nu` are inputs for the collapse comparison above.
@@ -76,13 +78,13 @@ A = ((50 mm)^2 × 50 MPa − (100 mm)^2 × 0 MPa) / ((100 mm)^2 − (50 mm)^2) =
 B = (50 mm)^2 × (100 mm)^2 × (50 MPa − 0 MPa) / ((100 mm)^2 − (50 mm)^2) = 166670 MPa·mm²
 sigma_r_a = 16.667 MPa − 166670 MPa·mm² / (50 mm)^2 = -50 MPa
 sigma_t_a = 16.667 MPa + 166670 MPa·mm² / (50 mm)^2 = 83.333 MPa
-sigma_r_b = 16.667 MPa − 166670 MPa·mm² / (100 mm)^2 = 1.8626e-15 MPa
+sigma_r_b = 16.667 MPa − 166670 MPa·mm² / (100 mm)^2 = 0 MPa
 sigma_t_b = 16.667 MPa + 166670 MPa·mm² / (100 mm)^2 = 33.333 MPa
 sigma_z = 16.667 MPa
 sigma_vm_a = sqrt(((83.333 MPa − (-50 MPa))^2 + ((-50 MPa) − 16.667 MPa)^2 + (16.667 MPa − 83.333 MPa)^2) / 2) = 115.47 MPa
-sigma_vm_b = sqrt(((33.333 MPa − 1.8626e-15 MPa)^2 + (1.8626e-15 MPa − 16.667 MPa)^2 + (16.667 MPa − 33.333 MPa)^2) / 2) = 28.868 MPa
+sigma_vm_b = sqrt(((33.333 MPa − 0 MPa)^2 + (0 MPa − 16.667 MPa)^2 + (16.667 MPa − 33.333 MPa)^2) / 2) = 28.868 MPa
 sigma_tr_a = max(83.333 MPa, -50 MPa, 16.667 MPa) − min(83.333 MPa, -50 MPa, 16.667 MPa) = 133.33 MPa
-sigma_tr_b = max(33.333 MPa, 1.8626e-15 MPa, 16.667 MPa) − min(33.333 MPa, 1.8626e-15 MPa, 16.667 MPa) = 33.333 MPa
+sigma_tr_b = max(33.333 MPa, 0 MPa, 16.667 MPa) − min(33.333 MPa, 0 MPa, 16.667 MPa) = 33.333 MPa
 sigma_vm_max = max(115.47 MPa, 28.868 MPa) = 115.47 MPa
 u = 115.47 MPa / 200 MPa = 0.57735
 sigma_thin = (50 MPa − 0 MPa) × (50 mm + 100 mm) / 2 / (100 mm − 50 mm) = 75 MPa

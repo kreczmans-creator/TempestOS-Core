@@ -54,7 +54,7 @@ public sealed class SectionPropertiesCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.1", CalcDiscipline.Structural, "Section properties",
+        Id, "1.2.2", CalcDiscipline.Structural, "Section properties",
         "Calculates area, centroid, second moments, moduli, radii of gyration, and torsion and warping constants of a parametric, polygon or composite section. The outline has x horizontal and y vertical; properties use EN 1993 axes, y-y horizontal and z-z vertical.",
         "Area and centroid: A = ½∮(x dy − y dx); x_c = ∫x dA / A; y_c = ∫y dA / A.\nSecond moment about y-y: I_y = ∫y² dA − A y_c², by Green's theorem and the parallel-axis theorem.\nSecond moment about z-z: I_z = ∫x² dA − A x_c²; product I_yz = ∫xy dA − A x_c y_c.\nPrincipal axes: tan 2θ = −2 I_yz / (I_y − I_z).\nElastic section modulus: W_el_y = I_y / y_max.\nPlastic section modulus about the equal-area axis, found by bisection: W_pl_y = |Q_above| + |Q_below|.\nTorsion constant J: Saint-Venant series (solid rectangle), πd⁴/32 (circle), Bredt (closed thin-walled), Σbt³/3 (open).\nWarping constant of an I-section: I_w = I_z (h − t_f)²/4.",
         [
@@ -219,7 +219,7 @@ public sealed class SectionPropertiesCalculator : ICalcCalculator
         c.Record("I_yz", "∫xy dA − A x_c y_c", green, ScalarValue.Of(cm4.FromSi(p.Ixy), cm4), "Product of inertia about the centroidal y-y and z-z axes");
         c.Assign("I_1", "(I_y + I_z)/2 + sqrt(((I_y - I_z)/2)^2 + I_yz^2)", "cm^4", "Major principal second moment");
         c.Assign("I_2", "(I_y + I_z)/2 - sqrt(((I_y - I_z)/2)^2 + I_yz^2)", "cm^4", "Minor principal second moment");
-        c.Record("theta", "½ atan2(−2 I_yz, I_y − I_z)", $"½ atan2({F(cm4.FromSi(-2 * p.Ixy))}, {F(cm4.FromSi(p.Ixx - p.Iyy))})", ScalarValue.Of(p.Theta * 180 / Math.PI, "deg"), "Angle from the y-y axis to the major principal axis, anticlockwise");
+        c.Record("theta", "½ atan2(−2 I_yz, I_y − I_z)", $"½ atan2({F(cm4.FromSi(-2 * p.Ixy))}, {F(cm4.FromSi(Zero(p.Ixx - p.Iyy, Math.Max(p.Ixx, p.Iyy))))})", ScalarValue.Of(p.Theta * 180 / Math.PI, "deg"), "Angle from the y-y axis to the major principal axis, anticlockwise");
         c.Record("y_top", "y_max − y_c", green, ScalarValue.Of(mm.FromSi(p.YTop), mm), "Extreme fibre above the centroid");
         c.Record("y_bot", "y_c − y_min", green, ScalarValue.Of(mm.FromSi(p.YBottom), mm), "Extreme fibre below the centroid");
         c.Record("x_ext", "max(x_max − x_c, x_c − x_min)", green, ScalarValue.Of(mm.FromSi(Math.Max(p.XRight, p.XLeft)), mm), "Extreme fibre from the centroid, x");

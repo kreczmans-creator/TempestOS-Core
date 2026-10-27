@@ -1,4 +1,4 @@
-# Mechanism kinematics (`mech.mechanism@1.3.0`)
+# Mechanism kinematics (`mech.mechanism@1.3.1`)
 
 **In plain terms.** A mechanism is a set of rigid links that turns one motion into another, like a crank driving a rocker or a slider. The worksheet takes the link lengths (or the cam profile) and works out, for each crank angle, where every link is, its speed and acceleration, how well it transmits force, and the forces in the pins and guides. It also tells you what kind of linkage you have, and where it locks.
 
@@ -188,6 +188,8 @@ The cam turns counter-clockwise (θ increasing) with the follower axis at +x off
 
 ## Changes
 
+**1.3.1 (round-off on the sheet, C2-20).** No sheet prints the digits of round-off, which differ between platforms. The two residuals are declared with their noise floors: `res_vel_max` is shown as "below 1e-12" under the relative floor 1e-12, and `res_max` as "below" its floor in mm, 1e-12 of the longest link (at least 1e-12 mm, at most 1e-10 mm, a tenth of the 1e-9 mm closure limit), in the Results row, the working and the check line; a residual at or above its floor is shown as it is. The tables are noise-prone like the scalars: an entry more than nine orders of magnitude below the largest working value of its dimension (the jerk where it crosses zero) is shown as 0. Two working lines give the noise rule its scale: `P_in_pk`, the peak input power ω·max |T_in|, against which a mean power that is zero over the cam revolution is shown as 0 kW, and, for the four-bar, `alpha_ref` = ω₂², against which the angular accelerations of a parallelogram linkage are shown as 0. Calculated values and check verdicts are unchanged.
+
 **1.3.0 (C-2, phase B).** The inputs are grouped (`Setup`, `Geometry`, `Sweep`, `Loads`, `Requirements`, then the cam groups) and the sweep inputs that are required come before the optional ones. `mu_req` has a usual range of 10° to 80°. The return spring rate `k_sp` is entered in kN/m (the same value as N/mm) and the mean power `P_mean` is shown in kW (it was W). The eleven ports have public names `mechanism.<quantity>`, and their descriptions name the quantity, not a legacy module. The checks show a value against a value: the required transmission angle against the smallest one, and the largest pressure angle against the allowed one, both with their utilisation; the other conditions are named against their limit. The block and warning messages are at most two sentences of 20 words or fewer. The scope is two sentences, the method has eight lines, and the assumptions are single sentences. When `mu_req` or `phi_max` is blank, the default the sheet uses is a step of the working. Calculated values are unchanged.
 
 **1.2.2 and earlier.** 1.2.0 added `f_in`, 1.1.0 the assembly limits, the unbounded-peak rule and the force and drive ports, and 1.0.0 the first sheet.
@@ -213,13 +215,13 @@ theta3_sw = 73 rows, θ₂ from 0° to 360° = [45.45, 43.305, 41.183, 39.119, 3
 theta4_sw = 73 rows, θ₂ from 0° to 360° = [93.891, 91.886, 90.182, 88.806, 87.774, 87.09, 86.749, 86.738, 87.038, 87.625, 88.475, 89.561, … (73 items)] deg
 omega3_sw = 73 rows, θ₂ from 0° to 360° = [-2.6928, -2.6892, -2.6368, -2.5435, -2.4183, -2.2706, -2.1088, -1.9402, -1.7705, -1.6037, -1.4425, -1.2886, … (73 items)] rad/s
 omega4_sw = 73 rows, θ₂ from 0° to 360° = [-2.6928, -2.3371, -1.9398, -1.5152, -1.0781, -0.64174, -0.21757, 0.18575, 0.56219, 0.90807, 1.2216, 1.5026, … (73 items)] rad/s
+alpha_ref = (6.2832 rad/s)² = 39.478 rad/s²
 alpha3_sw = 73 rows, θ₂ from 0° to 360° = [-1.6439, 2.0963, 5.3499, 7.9793, 9.9336, 11.238, 11.97, 12.238, 12.157, 11.832, 11.354, 10.795, … (73 items)] rad/s²
 alpha4_sw = 73 rows, θ₂ from 0° to 360° = [23.794, 27.273, 29.765, 31.194, 31.596, 31.098, 29.878, 28.129, 26.035, 23.751, 21.398, 19.064, … (73 items)] rad/s²
 mu_sw = 73 rows, θ₂ from 0° to 360° = [48.441, 48.581, 48.999, 49.687, 50.631, 51.814, 53.216, 54.816, 56.592, 58.522, 60.583, 62.755, … (73 items)] deg
 T_in_sw = 73 rows, θ₂ from 0° to 360° = [1.5919, 1.3661, 1.1246, 0.87436, 0.62126, 0.37043, 0.1261, 0.12823, 0.38586, 0.61929, 0.82764, 1.0113, … (73 items)] N·m
 theta3_0 = at the first input angle = 45.45 deg
-theta4_0 = at the first input angle = 93.891 deg
-… 25 more step(s) on the sheet
+… 27 more step(s) on the sheet
 Governing: PASS  Required transmission angle against the smallest transmission angle: 40° vs 48.44°  utilisation 0.83  « Transmission angle
 ```
 <!-- hand-arithmetic:end -->

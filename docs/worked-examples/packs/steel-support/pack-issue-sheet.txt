@@ -45,7 +45,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 49/49
-  Test run: 2026-10-27 08:08 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References
@@ -186,7 +186,7 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   Content hash: cb9c9324da911c6f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-27 08:08 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References
@@ -394,11 +394,11 @@ Member stiffness: three freedoms per node, Euler–Bernoulli members with axial 
   None.
 
 8. Verification
-  Template: struct.frame-2d@1.6.0
-  Content hash: 228c165050cec261
+  Template: struct.frame-2d@1.6.1
+  Content hash: 7cc285fbdb0f1aaf
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-27 08:08 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References
@@ -661,7 +661,7 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   Content hash: 09dec90614ac2f64
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-27 08:08 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References
@@ -830,7 +830,7 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   Content hash: 6612491a876c3ed5
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-27 08:08 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References
@@ -1022,7 +1022,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: 9d487fad84a4c3c8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-27 08:08 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References
@@ -1200,7 +1200,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: 9d487fad84a4c3c8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-27 08:08 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References
@@ -1258,7 +1258,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   gamma_M2 | Partial factor for the anchor bolts | 1.25 |  | assumption: Sheet default value; no project figure given. | 1.1 … 1.4
   C_fd | Friction coefficient, plate to grout | 0.2 |  | assumption: Sheet default value; no project figure given. | 0 … 0.4
   alpha | Concentration factor √(A_c1/A_c0) of the foundation (1 when the foundation geometry is not known) | 1 |  | drawing: DRG-STR-315 rev B | 1 … 2.5
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: e904907cd0a747ca846f239e23793ed7/d4d837925a784b0d8f1eab00919eb72a | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 517bad8446594156bb35b02829f74701/ef8cec8f0b95412ab5c5b815a5a9d24f | any
 
 3. Assumptions
   A1. The axial force is positive in compression, the opposite of the member check sheet. (Sign convention.)
@@ -1491,7 +1491,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   Content hash: a1c272121ecc4f6f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-27 08:08 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References

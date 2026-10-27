@@ -314,7 +314,7 @@
     },
     {
       "id": "mech.mechanism",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "kats": 16,
       "katsPassed": 16,
       "failedKats": [],
@@ -384,7 +384,7 @@
     },
     {
       "id": "mech.thick-cylinder",
-      "version": "2.2.0",
+      "version": "2.2.1",
       "kats": 3,
       "katsPassed": 3,
       "failedKats": [],
@@ -484,7 +484,7 @@
     },
     {
       "id": "struct.frame-2d",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "kats": 6,
       "katsPassed": 6,
       "failedKats": [],
@@ -534,7 +534,7 @@
     },
     {
       "id": "struct.section-properties",
-      "version": "1.2.1",
+      "version": "1.2.2",
       "kats": 5,
       "katsPassed": 5,
       "failedKats": [],

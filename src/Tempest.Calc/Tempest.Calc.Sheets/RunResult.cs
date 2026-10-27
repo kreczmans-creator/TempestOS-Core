@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Tempest.Calc.Engine;
 using Tempest.Calc.Engine.Units;
 using Tempest.Calc.Engine.Values;
@@ -26,8 +27,8 @@ public enum CalcOutputKind
 /// (<see cref="CalcDisplay"/>, C-2 rows 29 and 30); the value itself is never rounded. <see cref="Decimals"/> overrides the decimals for
 /// one output where the template justifies it. <see cref="Kind"/> is what the template says the output is checked against.
 /// <see cref="NoiseProne"/> is set by a template for a solver residual, an equilibrium sum or a computed zero: only such an output is shown as 0
-/// when it is solver noise (C2-20). <see cref="DisplayText"/> is the text a run settled on for a noise-prone output that came out as noise; an
-/// output built by hand has none and shows its own. <see cref="Rounded"/> is the direction the run settled on from the checks made on the output (C2-21): the
+/// when it is solver noise (C2-20). <see cref="DisplayText"/> is the text a run settled on for a noise-prone output that came out as noise, or for a
+/// residual below its stated floor ("below 1e-12"); an output built by hand has none and shows its own. <see cref="Rounded"/> is the direction the run settled on from the checks made on the output (C2-21): the
 /// demand of a failing check is rounded away from its limit and its capacity toward it, a utilisation by the verdict of its check; it is <see langword="null"/>
 /// for an output no failing check is made on.
 /// </summary>
@@ -121,6 +122,7 @@ public sealed class CalcRunContext
     private readonly List<CalcAssumption> _assumptions = [];
     private readonly Dictionary<string, CalcOutputKind> _kinds = new(StringComparer.Ordinal);
     private readonly HashSet<string> _noiseProne = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, double> _residualFloors = new(StringComparer.Ordinal);
     private readonly HashSet<string> _failingDemands = new(StringComparer.Ordinal);
     private readonly HashSet<string> _failingCapacities = new(StringComparer.Ordinal);
     private readonly HashSet<string> _strictSymbols = new(StringComparer.Ordinal);
@@ -235,6 +237,22 @@ public sealed class CalcRunContext
     }
 
     /// <summary>
+    /// Declares that the output of <paramref name="symbol"/> is a residual (a loop-closure or self-consistency error, whose whole purpose is to be near zero)
+    /// and states its noise floor, in the unit the output is shown in: a residual below the floor is shown as "below" the floor ("below 1e-12", "below
+    /// 1e-10 mm"), in its row and in its working, never with the digits of its round-off, which differ between platforms (C2-20). A residual at or above
+    /// its floor is shown as it is. The value is not changed. Use <see cref="CalcDisplay.ResidualText"/> for a check line that quotes it.
+    /// </summary>
+    public void MarkResidual(string symbol, double floor)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(symbol);
+
+        if (!double.IsFinite(floor) || floor <= 0)
+            throw new ArgumentOutOfRangeException(nameof(floor), floor, "A residual's floor is a positive number.");
+
+        _residualFloors[symbol] = floor;
+    }
+
+    /// <summary>
     /// Records a utilisation check: demand/capacity, passed when utilisation ≤ 1 (within a hair of rounding). A failing check shows its demand rounded up and
     /// its capacity rounded down, so the two never print as equal or in the passing order (C2-21). <paramref name="resultSymbol"/> names the output the sheet
     /// marks as governing when this check governs (the utilisation the demand and the capacity give); it is the demand when it is not given, so a check
@@ -342,6 +360,10 @@ public sealed class CalcRunContext
         var steps = Session.Steps;
         var outputs = new List<CalcOutput>(_outputs.Count);
 
+        // What the working shows for a symbol whose output the run settled as noise or as a residual below its floor: the step's result text, and the number
+        // a later step's substitution shows as 0 (C2-20). The working and the Results row then say the same, and no digit of round-off is printed in either.
+        var working = new Dictionary<string, (CalcValue Value, string Text, string? Number)>(StringComparer.Ordinal);
+
         foreach (var o in _outputs)
         {
             var settled = o.Kind == CalcOutputKind.Value && _kinds.TryGetValue(o.Symbol, out var declared) ? o with { Kind = declared } : o;
@@ -357,18 +379,36 @@ public sealed class CalcRunContext
                     settled = settled with { Rounded = CalcDisplay.Rounding.TowardZero, StrictRounding = _strictSymbols.Contains(settled.Symbol) };
             }
 
-            if ((settled.NoiseProne || _noiseProne.Contains(settled.Symbol)) && settled.Value is ScalarValue { IsFinite: true } s && s.Si != 0)
+            var noiseProne = settled.NoiseProne || _noiseProne.Contains(settled.Symbol);
+
+            if (_residualFloors.TryGetValue(settled.Symbol, out var floor))
+            {
+                // A residual is never zeroed: below its stated floor it is shown as below the floor, in its row and in its working.
+                if (settled.Value is ScalarValue { IsFinite: true } residual && Math.Abs(residual.Displayed) < floor)
+                {
+                    settled = settled with { DisplayText = CalcDisplay.BelowText(floor, residual) };
+                    working[settled.Symbol] = (residual, settled.DisplayText, null);
+                }
+            }
+            else if (noiseProne && settled.Value is ScalarValue { IsFinite: true } s && s.Si != 0)
             {
                 // The comparison is with the working values of this run (inputs and steps) of the same dimension and unit, never with another output as such.
-                var largest = steps
-                    .Select(t => t.Result as ScalarValue)
-                    .Where(r => r is { IsFinite: true } && r.Dimension == s.Dimension && (!s.Dimension.IsDimensionless || r.DisplayUnit.Symbol == s.DisplayUnit.Symbol))
-                    .Select(r => Math.Abs(r!.Si))
-                    .DefaultIfEmpty(0)
-                    .Max();
-
-                if (CalcDisplay.IsNoise(s, largest))
+                if (CalcDisplay.IsNoise(s, LargestWorkingValue(steps, s.Dimension, s.DisplayUnit)))
+                {
                     settled = settled with { DisplayText = CalcDisplay.ZeroText(s) };
+                    working[settled.Symbol] = (s, settled.DisplayText, CalcValue.FormatNumber(Math.Abs(s.Displayed), Session.SignificantFigures));
+                }
+            }
+            else if (noiseProne && settled.Value is VectorValue v)
+            {
+                // A table of a noise-prone quantity: an entry more than nine orders of magnitude below the largest working value of its dimension is shown as 0.
+                var below = CalcDisplay.NoiseFraction * LargestWorkingValue(steps, v.Dimension, v.DisplayUnit);
+
+                if (v.Si.Any(x => x != 0 && Math.Abs(x) < below))
+                {
+                    settled = settled with { DisplayText = v.Format(5, below) };
+                    working[settled.Symbol] = (v, v.Format(Session.SignificantFigures, below), null);
+                }
             }
 
             outputs.Add(settled);
@@ -393,7 +433,68 @@ public sealed class CalcRunContext
             outputs.Add(new CalcOutput(symbol, description, value, null, null, CalcOutputKind.Utilisation, false, verdict ? CalcDisplay.Rounding.Nearest : value.Si < 0 ? CalcDisplay.Rounding.Down : CalcDisplay.Rounding.Up));
         }
 
-        return new CalcRunResult(Session.Steps, outputs, _checks, _notices, _series, _assumptions);
+        return new CalcRunResult(Shown(steps, working), outputs, _checks, _notices, _series, _assumptions);
+    }
+
+    /// <summary>The largest magnitude among the working values of the run (scalar steps and the entries of tables) of one dimension and, for a plain number, one unit.</summary>
+    private static double LargestWorkingValue(IReadOnlyList<CalcStep> steps, Dimension dimension, Unit unit)
+    {
+        var largest = 0.0;
+
+        foreach (var t in steps)
+        {
+            if (t.Result.Dimension != dimension || (dimension.IsDimensionless && t.Result.DisplayUnit.Symbol != unit.Symbol))
+                continue;
+
+            IEnumerable<double> values = t.Result switch
+            {
+                ScalarValue r => [r.Si],
+                VectorValue v => v.Si,
+                _ => [],
+            };
+
+            foreach (var x in values)
+            {
+                if (double.IsFinite(x))
+                    largest = Math.Max(largest, Math.Abs(x));
+            }
+        }
+
+        return largest;
+    }
+
+    /// <summary>
+    /// The steps as the sheet shows them: a step of a symbol settled as noise or as a residual below its floor shows the text its output shows, and a later
+    /// step's substitution shows such a noise value as 0. Only text changes; every step keeps its value.
+    /// </summary>
+    private static IReadOnlyList<CalcStep> Shown(IReadOnlyList<CalcStep> steps, Dictionary<string, (CalcValue Value, string Text, string? Number)> working)
+    {
+        if (working.Count == 0)
+            return steps;
+
+        var shown = new List<CalcStep>(steps.Count);
+        var zeroed = new List<Regex>();
+
+        foreach (var step in steps)
+        {
+            var current = step;
+
+            foreach (var number in zeroed)
+                current = current with { Substitution = number.Replace(current.Substitution, "0") };
+
+            if (working.TryGetValue(step.Symbol, out var w) && (ReferenceEquals(step.Result, w.Value) || step.Result.Equals(w.Value)))
+            {
+                current = current with { ResultText = w.Text };
+
+                // The number as a substitution prints it, alone (not part of a longer number), with a sign written against it.
+                if (w.Number is { } n)
+                    zeroed.Add(new Regex(@"(?<![\w.])[-−]?" + Regex.Escape(n) + @"(?![\w.])", RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1)));
+            }
+
+            shown.Add(current);
+        }
+
+        return shown;
     }
 }
 

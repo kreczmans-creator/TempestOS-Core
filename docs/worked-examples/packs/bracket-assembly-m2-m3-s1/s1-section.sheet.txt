@@ -131,11 +131,11 @@ Area and centroid: A = ½∮(x dy − y dx); x_c = ∫x dA / A; y_c = ∫y dA / 
   None.
 
 8. Verification
-  Template: struct.section-properties@1.2.1
-  Content hash: 4a7820882bb2be8b
+  Template: struct.section-properties@1.2.2
+  Content hash: cf66d0391654fa79
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References

@@ -41,7 +41,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 12/12
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References
@@ -192,7 +192,7 @@ Radial interference: δ_r = δ/2. Interface pressure, the hub and the shaft as t
   Content hash: ff1d6e619181e260
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 2/2
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References
@@ -452,7 +452,7 @@ Tensile stress area: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 p_
   Content hash: c143be03cdb54ee7
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References
@@ -594,11 +594,11 @@ Area and centroid: A = ½∮(x dy − y dx); x_c = ∫x dA / A; y_c = ∫y dA / 
   None.
 
 8. Verification
-  Template: struct.section-properties@1.2.1
-  Content hash: 4a7820882bb2be8b
+  Template: struct.section-properties@1.2.2
+  Content hash: cf66d0391654fa79
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 10:55 UTC
   Application: TempestOS test
 
 9. References
