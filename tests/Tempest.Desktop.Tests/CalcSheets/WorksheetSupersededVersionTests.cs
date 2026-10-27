@@ -75,6 +75,27 @@ public sealed class WorksheetSupersededVersionTests
         }
     }
 
+    /// <summary>A margin p in bar on 1.0.0 and in kPa on 2.0.0, which says so (ADR-0177 review, UnitChangedAt).</summary>
+    private sealed class Margin(string version, string unit, double @default, bool changed) : ICalcCalculator
+    {
+        public const string MarginId = "test.desktop-margin";
+
+        public static Margin V100 => new("1.0.0", "bar", 0.5, false);
+
+        public static Margin V200 => new("2.0.0", "kPa", 50, true);
+
+        public CalcTemplate Template { get; } = new(MarginId, version, CalcDiscipline.Mechanical, "Margin", "", "",
+            [new CalcInputSpec("p", "Pre-charge margin", CalcInputKind.Quantity, unit, Default: @default, HardMin: 0, HardMax: changed ? 200 : 2, UnitChangedAt: changed ? "2.0.0" : null, UnitWas: changed ? "bar" : null)],
+            [], [], [], []);
+
+        public void Run(CalcRunContext c)
+        {
+            c.Input("p");
+            c.Assign("p_out", "p", "Pa", "Margin");
+            c.Output("p_out", "Margin");
+        }
+    }
+
     private sealed record Fixture(WorkspaceHost Host, Guid ProjectId) : IAsyncDisposable
     {
         public async ValueTask DisposeAsync()
@@ -241,6 +262,38 @@ public sealed class WorksheetSupersededVersionTests
         Assert.True(view.IsReadOnly);
         Assert.Contains("Opened 'Kept stress'", view.StatusText, StringComparison.Ordinal);
         Assert.Equal(12, view.ReadForm().Find("F_old")?.Number);
+    }
+
+    [AvaloniaFact]
+    public async Task A_Bare_Stored_Number_Opens_In_The_Unit_It_Was_Recorded_In_And_A_New_Sheet_In_The_New_One()
+    {
+        await using var fx = await StartAsync("P-VSN-UNIT");
+        var draft = await BuildService(fx.Host, [Margin.V100]).CreateAsync(Margin.MarginId, fx.ProjectId, "Bare margin", [CalcInputValue.Of("p", 0.3, CalcProvenance.Assumed("Test value."))]);
+        Assert.Null(draft.Inputs.Single().Unit);
+
+        // The next build reads p in kPa. The picker seeds from the record's own version, so the bare 0.3 shows as 0.3 bar, never 0.3 kPa.
+        var (view, coordinator) = Open(fx, [Margin.V200]);
+        var current = BuildService(fx.Host, [Margin.V200]).Catalogue.Get(Margin.MarginId);
+        view.ShowTemplate(current, draft, null);
+        var unit = view.GetLogicalDescendants().OfType<ComboBox>().Single(c => AutomationProperties.GetName(c) == "p unit");
+        Assert.Equal("bar", unit.SelectedItem);
+        Assert.Equal(("bar", 0.3), (view.ReadForm().Find("p")!.Unit, view.ReadForm().Find("p")!.Number));
+
+        // Opened through the coordinator, the old draft is carried onto a new sheet on 2.0.0 with the unit made explicit, and runs as 30 kPa.
+        await coordinator.OpenAsync(draft.Id);
+        await WaitFor(() => view.SelectedTemplate?.Reference == $"{Margin.MarginId}@2.0.0", () => view.StatusText);
+        unit = view.GetLogicalDescendants().OfType<ComboBox>().Single(c => AutomationProperties.GetName(c) == "p unit");
+        Assert.Equal("bar", unit.SelectedItem);
+        Assert.Equal("bar", view.ReadForm().Find("p")!.Unit);
+        var run = CalcRunner.Run(Margin.V200, view.ReadForm());
+        Assert.False(run.IsBlocked, string.Join(" ", run.Blocks.Select(b => b.Message)));
+        Assert.Equal(30_000, run.OutputSi("p_out"), 6);
+
+        // A new sheet starts in the new unit with the new default.
+        view.ShowTemplate(current, null, null);
+        unit = view.GetLogicalDescendants().OfType<ComboBox>().Single(c => AutomationProperties.GetName(c) == "p unit");
+        Assert.Equal("kPa", unit.SelectedItem);
+        Assert.Equal(50, view.ReadForm().Find("p")?.Number);
     }
 
     // ---------------------------------------------------------------

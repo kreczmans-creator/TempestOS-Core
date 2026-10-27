@@ -246,7 +246,15 @@ public static class CalcCsv
                         continue;
                     }
 
-                    Put(new CalcInputValue(symbol, Number: n, Unit: unit.Length > 0 ? unit : (spec.Kind == CalcInputKind.Quantity ? spec.DefaultUnit : null), Provenance: provenance), nameUsed, r + 1);
+                    // A bare quantity takes the template's default unit; a file carries no template version, so a bare number of an input whose
+                    // default unit changed cannot be told apart and is refused (ADR-0177 review, CalcInputUnits).
+                    if (spec.Kind == CalcInputKind.Quantity && !CalcInputUnits.TryResolve(spec.Symbol, spec.DefaultUnit, spec.UnitChangedAt, spec.UnitWas, unit.Length > 0 ? unit : null, CalcInputUnits.NoVersion, out unit, out var ambiguous))
+                    {
+                        notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Block, $"Row {r + 1}: {ambiguous}"));
+                        continue;
+                    }
+
+                    Put(new CalcInputValue(symbol, Number: n, Unit: spec.Kind == CalcInputKind.Quantity ? unit : null, Provenance: provenance), nameUsed, r + 1);
                     break;
 
                 case CalcInputKind.Choice:
@@ -287,7 +295,13 @@ public static class CalcCsv
                         continue;
                     }
 
-                    Put(new CalcInputValue(symbol, Unit: unit.Length > 0 ? unit : spec.DefaultUnit, Vector: values, Provenance: provenance), nameUsed, r + 1);
+                    if (!CalcInputUnits.TryResolve(spec.Symbol, spec.DefaultUnit, spec.UnitChangedAt, spec.UnitWas, unit.Length > 0 ? unit : null, CalcInputUnits.NoVersion, out unit, out var vectorAmbiguous))
+                    {
+                        notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Block, $"Row {r + 1}: {vectorAmbiguous}"));
+                        continue;
+                    }
+
+                    Put(new CalcInputValue(symbol, Unit: unit, Vector: values, Provenance: provenance), nameUsed, r + 1);
                     break;
                 }
 
@@ -396,6 +410,13 @@ public static class CalcCsv
                 if (!double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var n) || !double.IsFinite(n))
                 {
                     notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Block, $"Row {line}: {reference.Table}[{reference.Row}].{key} must be a finite number, not '{Truncate(raw)}'."));
+                    return;
+                }
+
+                // A bare cell of a column whose default unit changed cannot be told apart in a file with no template version (CalcInputUnits).
+                if (column.Kind == CalcInputKind.Quantity && column.HasUnitChange && !CalcInputUnits.TryResolve(column, $"{reference.Table}[{reference.Row}].{key}", unit.Length > 0 ? unit : null, CalcInputUnits.NoVersion, out _, out var ambiguous))
+                {
+                    notices.Add(new CalcNotice("csv", CalcNoticeSeverity.Block, $"Row {line}: {ambiguous}"));
                     return;
                 }
 

@@ -362,7 +362,7 @@ public sealed partial class CalcInstanceService
         }
 
         var entry = _catalogue.Get(instance.TemplateReference);
-        var inputs = new CalcInputSet(instance.Inputs);
+        var inputs = instance.InputSet();
         var result = CalcRunner.Run(entry.Calculator, inputs, _engine, cancellationToken: cancellationToken);
         var sheet = await BuildSheetAsync(entry, instance, inputs, result, cancellationToken).ConfigureAwait(false);
         return new CalcInstanceRun(instance, result, sheet, CalcSheetTextRenderer.Render(sheet));
@@ -596,7 +596,7 @@ public sealed partial class CalcInstanceService
         if (IssueGovernanceRefusal(instance, entry.Template) is { } governance)
             return CalcActionResult.Refused(governance, instance);
 
-        var inputs = new CalcInputSet(instance.Inputs);
+        var inputs = instance.InputSet();
         var provenance = CalcInputValidator.ValidateProvenanceForIssue(entry.Template, inputs);
 
         if (provenance.Count > 0)
@@ -737,7 +737,12 @@ public sealed partial class CalcInstanceService
         if (!CalcInputAliases.TryCanonicalise(entry.Template, carried.ToList(), out var canonicalCarried, out var aliasConflict))
             return CalcActionResult.Refused($"Calculation '{instance.Name}' cannot be revised: {aliasConflict}", instance);
 
-        carried = canonicalCarried;
+        // A bare number is carried with the unit it was recorded in, so an input whose default unit changed since the calculation's version keeps
+        // its value on the revision instead of being read in the new unit (ADR-0177 review, CalcInputUnits).
+        if (!CalcInputUnits.TryPin(entry.Template, canonicalCarried, instance.TemplateVersion, out var pinnedCarried, out var unitRefusal))
+            return CalcActionResult.Refused($"Calculation '{instance.Name}' cannot be revised: {unitRefusal}", instance);
+
+        carried = pinnedCarried;
 
         var probe = new CalcInstance(
             id, entry.Reference, entry.ContentHash, instance.ProjectId, instance.Name, nextRevision,
@@ -1139,7 +1144,7 @@ public sealed partial class CalcInstanceService
                     return CalcActionResult.Refused(packRefusal);
             }
 
-            var inputs = new CalcInputSet(member.Inputs);
+            var inputs = member.InputSet();
             var provenance = CalcInputValidator.ValidateProvenanceForIssue(entry.Template, inputs);
 
             if (provenance.Count > 0)
@@ -1253,7 +1258,7 @@ public sealed partial class CalcInstanceService
             return LegacyArchiveSheet.Build(instance, await ProjectLabelAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false), instance.CreatedBy, _engine.EngineVersion, _applicationVersion, _time.GetUtcNow());
 
         var entry = _catalogue.Get(instance.TemplateReference);
-        var inputs = new CalcInputSet(instance.Inputs);
+        var inputs = instance.InputSet();
         var result = CalcRunner.Run(entry.Calculator, inputs, _engine, cancellationToken: cancellationToken);
         return await BuildSheetAsync(entry, instance, inputs, result, cancellationToken).ConfigureAwait(false);
     }
@@ -1462,7 +1467,7 @@ public sealed partial class CalcInstanceService
 
     private async Task<CalcInstance> RunAndSnapshotAsync(CalcCatalogueEntry entry, CalcInstance instance, CancellationToken cancellationToken)
     {
-        var result = CalcRunner.Run(entry.Calculator, new CalcInputSet(instance.Inputs), _engine, cancellationToken: cancellationToken);
+        var result = CalcRunner.Run(entry.Calculator, instance.InputSet(), _engine, cancellationToken: cancellationToken);
         var snapshot = Snapshot(instance, result);
         var upstreamHashes = new Dictionary<string, string>(StringComparer.Ordinal);
 

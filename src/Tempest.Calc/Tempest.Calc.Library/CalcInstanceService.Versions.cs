@@ -104,7 +104,7 @@ public sealed partial class CalcInstanceService
 
         try
         {
-            result = CalcRunner.Run(entry.Calculator, new CalcInputSet(instance.Inputs), _engine, cancellationToken: cancellationToken);
+            result = CalcRunner.Run(entry.Calculator, instance.InputSet(), _engine, cancellationToken: cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

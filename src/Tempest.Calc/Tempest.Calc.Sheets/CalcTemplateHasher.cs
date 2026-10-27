@@ -138,8 +138,12 @@ public static class CalcTemplateHasher
             if (i.HasMeaningChange)
                 sb.Append("  meaning=").Append(i.MeaningChangedAt).Append('|').Append(i.MeaningWas).Append('|').Append(i.MeaningNow).Append('\n');
 
+            // ADR-0177 review: a declared change of default unit is likewise part of the contract; an input or column that declares none keeps its hash.
+            if (i.HasUnitChange)
+                sb.Append("  unit=").Append(i.UnitChangedAt).Append('|').Append(i.UnitWas).Append('\n');
+
             foreach (var c in i.Columns ?? [])
-                sb.Append("  column=").Append(c.Key).Append('|').Append(c.Label).Append('|').Append(c.Kind).Append('|').Append(c.DefaultUnit).Append('|').Append(string.Join(",", c.Choices ?? [])).Append('\n');
+                sb.Append("  column=").Append(c.Key).Append('|').Append(c.Label).Append('|').Append(c.Kind).Append('|').Append(c.DefaultUnit).Append('|').Append(string.Join(",", c.Choices ?? [])).Append(c.HasUnitChange ? $"|unit={c.UnitChangedAt}|{c.UnitWas}" : string.Empty).Append('\n');
         }
 
         foreach (var a in t.Assumptions)

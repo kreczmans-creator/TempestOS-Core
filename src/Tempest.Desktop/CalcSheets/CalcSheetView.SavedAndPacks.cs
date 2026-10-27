@@ -482,7 +482,7 @@ public sealed partial class CalcSheetView
         if (SelectedTemplate is not { } entry || IsReadOnly)
             return false;
 
-        var baseline = CurrentInstance is { } instance ? new CalcInputSet(instance.Inputs) : CalcTemplateHasher.NewSheetInputs(entry.Template);
+        var baseline = CurrentInstance is { } instance ? instance.InputSet() : CalcTemplateHasher.NewSheetInputs(entry.Template);
 
         foreach (var value in ReadForm().Values)
         {

@@ -65,7 +65,18 @@ public sealed partial class CalcInstanceService
                 continue;
             }
 
-            carried.Set((values.FirstOrDefault(v => string.Equals(v.Symbol, spec.Symbol, StringComparison.Ordinal)) ?? values[0]) with { Symbol = spec.Symbol });
+            var chosen = (values.FirstOrDefault(v => string.Equals(v.Symbol, spec.Symbol, StringComparison.Ordinal)) ?? values[0]) with { Symbol = spec.Symbol };
+
+            // A bare number is carried with the unit it was recorded in, so an input whose default unit changed since the draft's version keeps its
+            // value on the new sheet (ADR-0177 review, CalcInputUnits); one the draft's record cannot date is left out, named.
+            if (!CalcInputUnits.TryPin(spec, chosen, instance.TemplateVersion, out var pinned, out var unitRefusal))
+            {
+                dropped.AddRange(values.Select(v => v.Symbol));
+                reasons.Add($"{unitRefusal} It was not carried.");
+                continue;
+            }
+
+            carried.Set(pinned);
         }
 
         var gone = dropped.Where(d => template.ResolveInput(d) is null).ToList();

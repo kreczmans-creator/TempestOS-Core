@@ -169,7 +169,7 @@ public static class CalcInputAliases
 
         var values = inputs.Values.ToList();
         var canonical = Canonicalise(template, values);
-        return ReferenceEquals(canonical, values) ? inputs : new CalcInputSet(canonical);
+        return ReferenceEquals(canonical, values) ? inputs : new CalcInputSet(canonical, inputs.MadeOn);
     }
 
     /// <summary>As <see cref="Canonicalise(CalcTemplate, CalcInputSet)"/>, returning <see langword="false"/> and the message on a conflict instead of throwing.</summary>

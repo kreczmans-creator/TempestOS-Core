@@ -147,6 +147,16 @@ public sealed class CalcInputSet
             Set(v);
     }
 
+    /// <summary>The values as a stored calculation holds them, with the template version it was made on (<see cref="MadeOn"/>).</summary>
+    public CalcInputSet(IEnumerable<CalcInputValue> values, string? madeOn) : this(values) => MadeOn = madeOn;
+
+    /// <summary>
+    /// The template version these values were recorded on, which decides the unit a bare number is read in (<see cref="CalcInputUnits"/>, ADR-0177
+    /// review): a stored calculation's own version; <see langword="null"/> for values entered against the installed template (a new sheet, a test
+    /// case, an import whose units were made explicit); <see cref="CalcInputUnits.NoVersion"/> for a record that carries none.
+    /// </summary>
+    public string? MadeOn { get; init; }
+
     public IReadOnlyCollection<CalcInputValue> Values => _values.Values;
 
     public CalcInputValue? Find(string symbol) => _values.GetValueOrDefault(symbol);
@@ -159,7 +169,7 @@ public sealed class CalcInputSet
 
     public CalcInputSet With(CalcInputValue value)
     {
-        var copy = new CalcInputSet(_values.Values);
+        var copy = new CalcInputSet(_values.Values, MadeOn);
         copy.Set(value);
         return copy;
     }

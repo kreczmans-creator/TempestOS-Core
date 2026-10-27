@@ -264,6 +264,9 @@ public sealed partial class CalcSheetView : UserControl
     /// <summary>Raised on every input change with the current form; the coordinator answers with <see cref="ShowRun"/>.</summary>
     public event Action<CalcInputSet>? InputsChanged;
 
+    /// <summary>The template version the shown values were recorded on (<see cref="CalcInputSet.MadeOn"/>): the record's own, or none for a new sheet.</summary>
+    private string? _seedMadeOn;
+
     /// <summary>Raised after every run the form shows (<see cref="ShowRun"/>), so a reader of <see cref="LastRun"/> (the Guided test) knows what it read has been replaced.</summary>
     public event Action? RunShown;
 
@@ -672,7 +675,8 @@ public sealed partial class CalcSheetView : UserControl
         _status.Text = IsReadOnly ? $"This calculation is {instance!.Status}; it is read-only. Revise it to start a new revision." : string.Empty;
 
         // C-2: a saved calculation that still names an input by the symbol it had before it was renamed opens under the current one (an input given under both names with different values stays as saved, and the run blocks on it).
-        var seed = seedOverride ?? (instance is null ? CalcTemplateHasher.NewSheetInputs(entry.Template) : CalcInputAliases.TryCanonicalise(entry.Template, new CalcInputSet(instance.Inputs), out var canonicalSeed, out _) ? canonicalSeed : new CalcInputSet(instance.Inputs));
+        var seed = seedOverride ?? (instance is null ? CalcTemplateHasher.NewSheetInputs(entry.Template) : CalcInputAliases.TryCanonicalise(entry.Template, instance.InputSet(), out var canonicalSeed, out _) ? canonicalSeed : instance.InputSet());
+        _seedMadeOn = seed.MadeOn;
         _shownLinks.Clear();
 
         foreach (var value in seed.Values.Where(v => v.Provenance is { Kind: CalcProvenanceKind.Link or CalcProvenanceKind.CadImport or CalcProvenanceKind.ScanImport }))
@@ -914,7 +918,8 @@ public sealed partial class CalcSheetView : UserControl
     /// <summary>Reads the form into an input set, every value as typed with its unit and provenance. Unparseable numbers become NaN so validation names them.</summary>
     public CalcInputSet ReadForm()
     {
-        var set = new CalcInputSet();
+        // The form's values carry the version the shown record was made on, so a bare number (a unit the picker could not choose) is read, or refused, by it.
+        var set = new CalcInputSet { MadeOn = _seedMadeOn };
 
         foreach (var (symbol, f) in _fields)
         {
@@ -1200,8 +1205,15 @@ public sealed partial class CalcSheetView : UserControl
                     if (seed?.Unit is { Length: > 0 } seedUnit && !units.Contains(seedUnit))
                         units.Add(seedUnit);
 
+                    // A bare stored number is shown in the default unit of the version it was recorded on, never the new one (ADR-0177 review,
+                    // CalcInputUnits); one the record cannot date is shown with no unit chosen, and the run refuses it with the sentence.
+                    var resolved = CalcInputUnits.TryResolve(spec, seed, _seedMadeOn, out var read, out _) ? read : null;
+
+                    if (resolved is { Length: > 0 } && !units.Contains(resolved))
+                        units.Add(resolved);
+
                     unit.ItemsSource = units;
-                    unit.SelectedItem = seed?.Unit is { } u && units.Contains(u) ? u : spec.DefaultUnit;
+                    unit.SelectedItem = seed?.Unit is { } u && units.Contains(u) ? u : resolved;
                     unit.Tag = unit.SelectedItem;
                     unit.SelectionChanged += (_, _) => OnUnitChanged(spec.Symbol);
                     AutomationProperties.SetName(unit, $"{spec.Symbol} unit");

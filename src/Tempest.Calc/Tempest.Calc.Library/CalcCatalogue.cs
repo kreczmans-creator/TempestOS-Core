@@ -298,6 +298,21 @@ public sealed class CalcCatalogue
                 throw new ArgumentException($"Template '{t.Id}': '{symbol}' says its meaning changed at {at} but not what it meant before and what it means now.");
         }
 
+        // ADR-0177 review: a declared change of default unit names a version the template has reached and the unit it was in before, which must be
+        // another unit of the same dimension, or a bare number stored before the change would be read in the wrong unit, or refused for nothing.
+        foreach (var (symbol, at, was, unit) in t.Inputs.Where(i => i.HasUnitChange).Select(i => (i.Symbol, i.UnitChangedAt, i.UnitWas, i.DefaultUnit))
+            .Concat(t.Inputs.SelectMany(i => (i.Columns ?? []).Where(c => c.HasUnitChange).Select(c => ($"{i.Symbol}.{c.Key}", c.UnitChangedAt, c.UnitWas, c.DefaultUnit)))))
+        {
+            if (!CalcTemplateVersion.IsWellFormed(at) || CalcTemplateVersion.Compare(at!, t.Version) > 0)
+                throw new ArgumentException($"Template '{t.Id}': '{symbol}' says its unit changed at version '{at}', which is not a version of the template up to {t.Version}.");
+
+            if (string.IsNullOrWhiteSpace(was) || !Tempest.Calc.Engine.Units.UnitCatalog.TryParse(was, out var before, out _) || !Tempest.Calc.Engine.Units.UnitCatalog.TryParse(unit, out var now2, out _))
+                throw new ArgumentException($"Template '{t.Id}': '{symbol}' says its unit changed at {at} but '{was}' is not a unit it could have been in.");
+
+            if (before.Dimension != now2.Dimension || string.Equals(was, unit, StringComparison.Ordinal))
+                throw new ArgumentException($"Template '{t.Id}': '{symbol}' says its unit changed at {at} from '{was}' to '{unit}', which is not a change of unit within one dimension.");
+        }
+
         // ADR-0173: the governance a template asks for must be satisfiable, or no instance of it could ever be issued.
         if (t.FeatureFlag is { Length: > 0 } flag && !CalcFeatures.All.Contains(flag, StringComparer.Ordinal))
             throw new ArgumentException($"Template '{t.Id}' names the unknown feature flag '{flag}'.");

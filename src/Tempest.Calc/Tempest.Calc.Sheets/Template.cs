@@ -49,6 +49,9 @@ public enum CalcInputKind
 /// came to mean something else (an axis swapped, a width that became a depth), with <see cref="MeaningWas"/> and <see cref="MeaningNow"/>
 /// saying what in plain words: a value stored under this symbol by a calculation made on an earlier version is not carried, linked or bound
 /// (ADR-0177 review); a value stored under an alias keeps its meaning, since an alias is declared precisely because the old symbol is this input.
+/// <see cref="UnitChangedAt"/> is the template version at which <see cref="DefaultUnit"/> changed, with <see cref="UnitWas"/> the unit before it: a
+/// bare number (no unit of its own) stored by a calculation made before that version is read in the old unit, never the new one, and one on a
+/// record that carries no version is refused (<see cref="CalcInputUnits"/>). A value with a unit of its own is unaffected.
 /// </summary>
 public sealed record CalcInputSpec(
     string Symbol,
@@ -74,10 +77,15 @@ public sealed record CalcInputSpec(
     IReadOnlyList<string>? Aliases = null,
     string? MeaningChangedAt = null,
     string? MeaningWas = null,
-    string? MeaningNow = null)
+    string? MeaningNow = null,
+    string? UnitChangedAt = null,
+    string? UnitWas = null)
 {
     /// <summary>Whether this input declares that its meaning changed at a version (<see cref="MeaningChangedAt"/>).</summary>
     public bool HasMeaningChange => MeaningChangedAt is { Length: > 0 };
+
+    /// <summary>Whether this input declares that its default unit changed at a version (<see cref="UnitChangedAt"/>, <see cref="UnitWas"/>).</summary>
+    public bool HasUnitChange => UnitChangedAt is { Length: > 0 };
 
     /// <summary>
     /// Whether a value stored under <paramref name="givenSymbol"/> by a calculation made on template version <paramref name="version"/> means
@@ -205,8 +213,15 @@ public static class CalcTemplateVersion
         $"{symbol} meant {was} on {oldReference}; since {templateId}@{changedAt} it means {now}";
 }
 
-/// <summary>One column of a <see cref="CalcInputKind.Table"/> input.</summary>
-public sealed record CalcColumnSpec(string Key, string Label, CalcInputKind Kind, string DefaultUnit = "", IReadOnlyList<string>? Choices = null, double? Min = null, double? Max = null, double? HardMin = null, double? HardMax = null, bool IsOptional = false);
+/// <summary>
+/// One column of a <see cref="CalcInputKind.Table"/> input. <paramref name="UnitChangedAt"/> and <paramref name="UnitWas"/> are as on
+/// <see cref="CalcInputSpec"/>: a bare cell stored before that version is read in the old unit (<see cref="CalcInputUnits"/>).
+/// </summary>
+public sealed record CalcColumnSpec(string Key, string Label, CalcInputKind Kind, string DefaultUnit = "", IReadOnlyList<string>? Choices = null, double? Min = null, double? Max = null, double? HardMin = null, double? HardMax = null, bool IsOptional = false, string? UnitChangedAt = null, string? UnitWas = null)
+{
+    /// <summary>Whether this column declares that its default unit changed at a version.</summary>
+    public bool HasUnitChange => UnitChangedAt is { Length: > 0 };
+}
 
 /// <summary>A standard cited by number and title only (never its text).</summary>
 public sealed record CalcClauseRef(string Standard, string Clause, string Title);
