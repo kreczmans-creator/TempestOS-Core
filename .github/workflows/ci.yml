@@ -1332,7 +1332,12 @@ jobs:
       # default convention (looks for that exact filename in the current
       # working directory) - no -f flag needed. Its break threshold (70)
       # is what makes this step's own exit code meaningful; it is not
-      # wired into `gate` regardless.
+      # wired into `gate` regardless. The config names no solution: with
+      # one, Stryker 5 built the solution with Platform="Any CPU" and then
+      # looked for the test assembly under bin/Any CPU/Debug, where nothing
+      # is built, and every scheduled run ended there ("The test project
+      # binaries could not be found", run 40323110048). Without one it
+      # builds the test project and finds it where the build puts it.
       - name: Run Stryker.NET
         run: dotnet stryker
 

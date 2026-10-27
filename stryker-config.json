@@ -1,7 +1,6 @@
 {
   "stryker-config": {
     "project": "Tempest.Core.csproj",
-    "solution": "src/TempestOS.slnx",
     "test-projects": [
       "tests/Tempest.Core.Tests/Tempest.Core.Tests.csproj"
     ],
