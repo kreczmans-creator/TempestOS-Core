@@ -548,9 +548,9 @@ public sealed class DocumentViewerView : UserControl
 
         SetViewControlsShown(true);
 
-        _pageIndicator.Text = session.IsMultiPage
-            ? $"Page {session.CurrentPage} of {session.PageCount}"
-            : "1 page";
+        // I2: a document shown but not whole says so in the page status, beside the page count.
+        _pageIndicator.Text = (session.IsMultiPage ? $"Page {session.CurrentPage} of {session.PageCount}" : "1 page")
+            + (session.RenderingNote is { } note ? $" · {note}" : string.Empty);
         _zoomIndicator.Text = $"{Math.Round(session.Viewport.Zoom * 100)}%";
 
         _previousPage.IsEnabled = session.CanGoToPreviousPage;
@@ -578,6 +578,13 @@ public sealed class DocumentViewerView : UserControl
             "No content stored",
             $"'{session.FileName}' is recorded as an attachment, but this platform holds no file for it. " +
             "Attachments created before content storage — and external references — describe a file rather than containing one."),
+
+        // F10: the content is intact but the reader was stopped at its
+        // deadline — said as that, since "damaged" would be untrue of the
+        // file and "cannot be displayed" untrue of the format.
+        DocumentViewStatus.Corrupt when session.UnavailableDetail is { } detail => (
+            "This attachment could not be read",
+            $"'{session.FileName}' {detail}"),
 
         DocumentViewStatus.Corrupt => (
             "This attachment is damaged",

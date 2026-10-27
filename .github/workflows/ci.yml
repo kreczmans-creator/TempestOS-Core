@@ -959,6 +959,57 @@ jobs:
       - name: Check the calculation glossary is what its generator writes
         run: python3 scripts/generate-glossary.py --check
 
+  # DB-08 review: the full-size hostile-SVG probes (SvgBoundedProbeTests,
+  # Category=BoundedProbe, opt-in through TEMPEST_BOUNDED_PROBES=1). Each
+  # probe runs in a process of its own (Tempest.Desktop.dll --svg-probe)
+  # under a 512 MB managed heap cap and a 2 GiB ulimit -v, and the test
+  # asserts its exit code, wall time and peak working set against the
+  # review's bound. Linux, because ulimit is what keeps a class that still
+  # allocates without bound from taking the runner with it; its own job,
+  # because the files are up to 30 MB and took seconds to minutes, or
+  # killed the process, before the fixes, and no test host should carry
+  # them. The ordinary Desktop shards see the class return at once.
+  svg-bounded-probes:
+    name: SVG Bounded Probes
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      TEMPEST_BOUNDED_PROBES: "1"
+      TEMPEST_TEST_TIMEOUT_FACTOR: "3"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up .NET SDK (from global.json)
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Restore (locked)
+        run: dotnet restore "${{ env.SOLUTION_PATH }}" --locked-mode
+
+      - name: Build the Desktop tests (Release)
+        run: dotnet build tests/Tempest.Desktop.Tests --configuration Release --no-restore
+
+      - name: Run the bounded probes, one process each
+        run: |
+          dotnet test tests/Tempest.Desktop.Tests \
+            --configuration Release \
+            --no-build \
+            --logger trx \
+            --logger "console;verbosity=normal" \
+            --results-directory "TestResults/Release/svg-bounded-probes" \
+            --filter "Category=BoundedProbe"
+
+      - name: Upload the probe results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: svg-bounded-probes
+          path: TestResults/Release/svg-bounded-probes
+          if-no-files-found: warn
+          retention-days: 14
+
   # WP 16.5B — Linux/X11 launch smoke test. `TD-116` (a Linux `TypeLoadException`
   # inside Avalonia.FreeDesktop's DBus/X11 IME path, root-caused to a security
   # pin — `Tmds.DBus.Protocol` 0.94.2 — that Avalonia.FreeDesktop 11.2.3
@@ -1238,7 +1289,7 @@ jobs:
   # printed (v0.23.0 CI board G-23).
   gate:
     name: CI Gate
-    needs: [build-and-test, governance-health-check, dependency-scan, branch-name, licence-check]
+    needs: [build-and-test, governance-health-check, dependency-scan, branch-name, licence-check, svg-bounded-probes]
     if: always()
     runs-on: windows-2022
     timeout-minutes: 5
@@ -1273,8 +1324,12 @@ jobs:
             Write-Host "::error::Licence Check did not succeed - a NuGet package is missing from scripts/licence-allowlist.json or has a licence outside MIT, BSD-2/3-Clause and Apache-2.0; see that job's log."
             $failed = $true
           }
+          if ("${{ needs.svg-bounded-probes.result }}" -ne "success") {
+            Write-Host "::error::SVG Bounded Probes did not succeed - a hostile SVG probe exceeded its exit, time or memory bound (DB-08 review); see that job's log and the uploaded results."
+            $failed = $true
+          }
           if ($failed) { exit 1 }
           if ("${{ github.event_name }}" -eq "pull_request") {
             Write-Host "Pull request: Debug built in every leg; its tests are not run on a pull request (ADR-0160) and run on the push to main or release/**."
           }
-          Write-Host "All Build & Test configurations, the Governance Health Check, the Dependency Scan and the Licence Check succeeded."
+          Write-Host "All Build & Test configurations, the Governance Health Check, the Dependency Scan, the Licence Check and the SVG Bounded Probes succeeded."

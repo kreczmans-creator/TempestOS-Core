@@ -476,7 +476,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         var packs = await _service.Store.ListPacksAsync(projectId).ConfigureAwait(true);
         var templates = (await _service.Store.ListInstancesAsync(projectId).ConfigureAwait(true)).ToDictionary(i => i.Id, i => i.TemplateReference);
         bool NeedsSecondCheck(CalcPack p) => p.InstanceIds.Any(id => templates.TryGetValue(id, out var reference) && _service.Catalogue.Find(reference)?.Template.RequiresSecondCheck == true);
-        _view.SetPacks([.. packs.Take(MaxListed).Select(p => new CalcSheetView.PackChoice(p.Id, p.Title, p.Revision, p.Status, p.InstanceIds.Count, NeedsSecondCheck(p), p.SecondCheck is not null))], packs.Count > MaxListed);
+        _view.SetPacks([.. packs.Take(MaxListed).Select(p => new CalcSheetView.PackChoice(p.Id, p.Title, p.Revision, p.Status, p.InstanceIds.Count, NeedsSecondCheck(p), p.SecondCheck is not null, p.SelfCheck is not null))], packs.Count > MaxListed);
         await ShowPackMembersAsync(_view.SelectedPackId, staleness).ConfigureAwait(true);
     }
 
@@ -484,7 +484,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
     {
         var stale = known ?? await _service.StalenessAsync(instance).ConfigureAwait(true);
         var title = _service.Catalogue.Find(instance.TemplateReference)?.Template.Title ?? instance.TemplateReference;
-        return new CalcSheetView.SavedCalculation(instance.Id, instance.Name, title, instance.Revision, instance.Status.ToString(), stale.IsStale && instance.Status != CalcInstanceStatus.Superseded);
+        return new CalcSheetView.SavedCalculation(instance.Id, instance.Name, title, instance.Revision, instance.Status.ToString(), stale.IsStale && instance.Status != CalcInstanceStatus.Superseded, instance.SelfCheck is not null);
     }
 
     private async Task ShowPackMembersAsync(Guid? packId, IReadOnlyDictionary<Guid, CalcStaleness>? staleness = null)
@@ -566,9 +566,14 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         // The checker is the person signed in now (a "Switch person" since the panel was last drawn counts), never typed text.
         var who = CheckerName();
         _view.SetPackChecker(who);
-        var result = await _service.CheckPackAsync(packId, who, draft.Organisation, draft.Statement, draft.Outcome).ConfigureAwait(true);
+        var result = await _service.CheckPackAsync(packId, who, draft.Organisation, draft.Statement, draft.Outcome, selfCheckStatement: draft.SelfCheckStatement).ConfigureAwait(true);
         await RefreshListsAsync().ConfigureAwait(true);
-        _view.ShowStatus(result.Succeeded ? $"Pack checked by {who}. Issue it when ready." : result.Reason ?? "Refused.");
+
+        if (result.Succeeded)
+            _view.FillPackSelfCheck(false, string.Empty);
+
+        // A successful result's Reason is a warning to show beside the success (D4: the audit row could not be written).
+        _view.ShowStatus(result.Succeeded ? $"Pack checked by {who}. Issue it when ready. {result.Reason}".Trim() : result.Reason ?? "Refused.");
     }
 
     /// <summary>`ADR-0173`: records the pack's second, independent check under the signed-in principal, so a pack holding a calculation that needs one can be issued.</summary>
@@ -726,8 +731,9 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
             return;
 
         var who = _principalId() ?? "engineer";
-        var result = await _service.CheckAsync(instance.Id, who, "Tempest Engineering", "Checked in the worksheet form.", CheckOutcome.Accepted).ConfigureAwait(true);
-        await ReportAsync(result, "Checked. Issue when ready.").ConfigureAwait(true);
+        var selfCheck = _view.SelfCheckStatement;
+        var result = await _service.CheckAsync(instance.Id, who, "Tempest Engineering", "Checked in the worksheet form.", CheckOutcome.Accepted, selfCheckStatement: selfCheck).ConfigureAwait(true);
+        await ReportAsync(result, result.Instance?.SelfCheck is null ? "Checked. Issue when ready." : "Checked by the preparer (self-check recorded). Issue when ready.").ConfigureAwait(true);
     }
 
     /// <summary>

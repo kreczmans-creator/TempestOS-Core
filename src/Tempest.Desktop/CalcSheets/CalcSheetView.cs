@@ -252,6 +252,7 @@ public sealed partial class CalcSheetView : UserControl
 
         WireSavedAndPacks();
         WireGovernance();
+        WireSelfCheck();
         InitialiseRequirements();
         Content = BuildLayout();
     }
@@ -1111,6 +1112,7 @@ public sealed partial class CalcSheetView : UserControl
         _importCadButton.IsEnabled = instance is { Status: CalcInstanceStatus.Draft };
         _importScanButton.IsEnabled = instance is { Status: CalcInstanceStatus.Draft };
         UpdateGovernance();
+        UpdateSelfCheck();
     }
 
     private void RevealGoverningStep()
@@ -1416,6 +1418,7 @@ public sealed partial class CalcSheetView : UserControl
         right.Children.Add(Section("Results", resultsHead));
 
         right.Children.Add(BuildGovernancePanel());
+        right.Children.Add(_selfCheckGroup);
 
         // A wrapping row: Compare (ADR-0167) and the two import panels' buttons (Addendum B) no longer fit one line in a narrow right column.
         var actions = new WrapPanel { Orientation = Orientation.Horizontal };

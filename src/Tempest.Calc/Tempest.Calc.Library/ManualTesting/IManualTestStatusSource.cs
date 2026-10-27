@@ -13,6 +13,7 @@ namespace Tempest.Calc.Library.ManualTesting;
 /// <param name="RunId">The run holding that result.</param>
 /// <param name="StepsRecorded">How many of the template's worked examples have a result.</param>
 /// <param name="StepsInScript">How many worked examples the current script holds for the template.</param>
+/// <param name="Build">The build that most recent result was recorded on, as the title bar showed it (for example <c>0.26.0 (abc1234)</c>); empty when the run recorded none (SEC-C-06).</param>
 public sealed record ManualTestStatus(
     string TemplateId,
     ManualTestOutcome Outcome,
@@ -21,7 +22,8 @@ public sealed record ManualTestStatus(
     string Tester,
     Guid RunId,
     int StepsRecorded,
-    int StepsInScript);
+    int StepsInScript,
+    string Build = "");
 
 /// <summary>
 /// A read-only view of the manual test results for the verification dashboard (Addendum C, C-4): template id to its latest manual result.

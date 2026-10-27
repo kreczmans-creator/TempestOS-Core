@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <rect width="100" height="100" fill="#ffffff"/>
+  <defs>
+    <path id="curve" d="M10 80 Q50 10 90 80"/>
+  </defs>
+  <!-- Text on a path is not laid out by the reader: it is left out and reported, never drawn in a straight line somewhere. -->
+  <text font-size="12" fill="#1c2d97"><textPath href="#curve">Along the curve</textPath></text>
+</svg>

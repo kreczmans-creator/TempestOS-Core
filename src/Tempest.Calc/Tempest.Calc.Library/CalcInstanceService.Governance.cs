@@ -19,6 +19,47 @@ public sealed partial class CalcInstanceService
     /// <summary>The shortest statement a countersignature or a rejection carries.</summary>
     public const int MinSignatureStatementLength = 20;
 
+    /// <summary>The shortest self-check statement after trimming (DA-12): enough to say what was looked at, not a word.</summary>
+    public const int MinSelfCheckStatementLength = 20;
+
+    /// <summary>The longest self-check statement kept (DA-12); a longer one is refused, not cut, so what is printed is what was written.</summary>
+    public const int MaxSelfCheckStatementLength = CalcSheetStandard.MaxSelfCheckLength;
+
+    /// <summary>The words of the box the preparer ticks to check their own work (DA-12).</summary>
+    public const string SelfCheckCaption = "Self-check (no second person available)";
+
+    /// <summary>The audit action written when a preparer checks their own calculation (DA-12).</summary>
+    public const string SelfCheckedActionName = "Calc.SelfChecked";
+
+    /// <summary>The audit action written when a preparer checks their own calculation pack (DA-12).</summary>
+    public const string PackSelfCheckedActionName = "Calc.PackSelfChecked";
+
+    /// <summary>
+    /// Writes the audit row of a self-check: who, when, which calculation (or pack) and the statement they gave. Nothing is written where no
+    /// audit recorder is composed. The row is written after the check has committed (the recorder has no transactional form), so a recorder
+    /// that fails is reported as the warning this returns — the check stands, and the caller shows the sentence — rather than thrown out of
+    /// a check that succeeded (D4). <see langword="null"/> when the row was written or there is no recorder.
+    /// </summary>
+    private async Task<string?> RecordSelfCheckAsync(string action, CalcSelfCheck selfCheck, Dictionary<string, string> detail, CancellationToken cancellationToken)
+    {
+        if (_audit is null)
+            return null;
+
+        detail["Checker"] = selfCheck.Name;
+        detail["CheckerPrincipal"] = selfCheck.Principal;
+        detail["Statement"] = selfCheck.Statement;
+
+        try
+        {
+            await _audit.RecordAsync(action, detail, cancellationToken).ConfigureAwait(false);
+            return null;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return $"The self-check was recorded, but its audit row could not be written: {ex.Message}";
+        }
+    }
+
     /// <summary>Why <paramref name="templateReference"/> is switched off, or <see langword="null"/> (the catalogue's one message).</summary>
     private string? FeatureRefusal(string templateReference) => _catalogue.FeatureRefusal(templateReference);
 
@@ -354,7 +395,7 @@ public sealed partial class CalcInstanceService
         if (await StalenessAsync(instance, cancellationToken).ConfigureAwait(false) is { IsStale: true } stale)
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is stale: {stale.Reasons[0]} Revise it before the second check.", instance);
 
-        if (IndependenceRefusal(instance, $"'{instance.Name}'", "countersign it") is { } notIndependent)
+        if (IndependenceRefusal(instance, $"'{instance.Name}'", "countersign it", null, out _) is { } notIndependent)
             return CalcActionResult.Refused(notIndependent, instance);
 
         var principal = CurrentPrincipal();
@@ -439,7 +480,7 @@ public sealed partial class CalcInstanceService
             if (staleness[member.Id] is { IsStale: true } stale)
                 return CalcActionResult.Refused($"Pack member '{member.Name}' is stale: {stale.Reasons[0]} Update it, reopen the pack and check it again.");
 
-            if (IndependenceRefusal(member, $"Pack member '{member.Name}'", "countersign the pack") is { } notIndependent)
+            if (IndependenceRefusal(member, $"Pack member '{member.Name}'", "countersign the pack", null, out _) is { } notIndependent)
                 return CalcActionResult.Refused(notIndependent);
 
             if (_catalogue.Find(member.TemplateReference)?.Template is { } template && AttesterIsSigningRefusal(member, template, checkerName, $"Pack member '{member.Name}'") is { } attester)

@@ -45,6 +45,14 @@ public interface IDocumentPageSource : IDisposable
     /// is worth rasterising on demand.
     /// </remarks>
     Bitmap RenderPage(int pageIndex, double scale);
+
+    /// <summary>
+    /// A sentence for the page status when the document is shown but not
+    /// whole — an SVG whose clip paths or filters this platform does not
+    /// draw says so here (I2) — or <see langword="null"/> when it is shown
+    /// as stored, which is what every source means unless it says otherwise.
+    /// </summary>
+    string? RenderingNote => null;
 }
 
 /// <summary>

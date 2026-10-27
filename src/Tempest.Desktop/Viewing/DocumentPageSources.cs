@@ -7,7 +7,6 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using PDFtoImage;
 using SkiaSharp;
-using Svg.Skia;
 using Tempest.Workspace.Viewing;
 
 namespace Tempest.Desktop.Viewing;
@@ -594,8 +593,9 @@ public sealed class TextDocumentPageSource : IDocumentPageSource
 }
 
 /// <summary>
-/// An SVG, rasterised through <c>Svg.Skia</c> (MIT-licensed; version pinned
-/// in <c>Tempest.Desktop.csproj</c>'s own remarks) to the same
+/// An SVG, rasterised through the app's own <see cref="SvgPictureBuilder"/>
+/// (SkiaSharp, MIT; it replaced <c>Svg.Skia</c> and its MS-PL transitive
+/// <c>Svg.Custom</c> under owner decision DB-08) to the same
 /// <see cref="SKBitmap"/>-backed page a PDF produces (`TD-99`).
 /// </summary>
 /// <remarks>
@@ -614,35 +614,39 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
     /// <summary>The largest edge, in pixels, any single rasterised page may have — the same ceiling <see cref="PdfDocumentPageSource.MaxRasterEdge"/> applies, and for the same reason: an SVG's own <c>viewBox</c> can claim any size at all, and a deep zoom must not ask Skia for a bitmap of hundreds of megapixels.</summary>
     public const int MaxRasterEdge = 8000;
 
-    private readonly SKSvg _svg;
+    private readonly SvgPictureBuilder.SvgPicture _svg;
     private readonly Size _pageSize;
 
     /// <summary>Loads <paramref name="content"/> as an SVG.</summary>
+    /// <param name="content">The attachment's bytes.</param>
+    /// <param name="cancellationToken">Stops the read: the builder looks at it before every element, so a deadline set by the caller ends a hostile document as an <see cref="OperationCanceledException"/> rather than a hang (F10).</param>
     /// <exception cref="DocumentRenderException">The bytes are not an SVG this platform can read.</exception>
-    public SvgDocumentPageSource(byte[] content)
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled before the document was read.</exception>
+    public SvgDocumentPageSource(byte[] content, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(content);
 
         using var stream = new MemoryStream(content, writable: false);
-        _svg = Load(stream);
-        _pageSize = NaturalSize(_svg);
+        _svg = Load(stream, cancellationToken);
+        _pageSize = new Size(_svg.Size.Width, _svg.Size.Height);
     }
 
     /// <summary>
     /// Loads an SVG from <paramref name="content"/> without requiring a
     /// <c>byte[]</c> up front (`TD-96`'s own established convention for
-    /// every page source) — <see cref="SKSvg.Load(Stream)"/> reads the
-    /// stream directly.
+    /// every page source): the stream is read as text straight into the
+    /// builder.
     /// </summary>
     /// <exception cref="DocumentRenderException">The bytes are not an SVG this platform can read.</exception>
-    public SvgDocumentPageSource(Stream content)
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled before the document was read.</exception>
+    public SvgDocumentPageSource(Stream content, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(content);
 
         try
         {
-            _svg = Load(content);
-            _pageSize = NaturalSize(_svg);
+            _svg = Load(content, cancellationToken);
+            _pageSize = new Size(_svg.Size.Width, _svg.Size.Height);
         }
         finally
         {
@@ -652,6 +656,12 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
 
     /// <inheritdoc />
     public int PageCount => 1;
+
+    /// <summary>The kinds of feature the document uses that the reader does not draw, by element name (<see cref="SvgPictureBuilder.SvgPicture.NotShown"/>); empty when it is drawn whole.</summary>
+    public IReadOnlyList<string> NotShown => _svg.NotShown;
+
+    /// <inheritdoc />
+    public string? RenderingNote => NotShown.Count == 0 ? null : $"Some parts of this drawing are not shown: {string.Join(", ", NotShown)}.";
 
     /// <inheritdoc />
     public Size PageSize(int pageIndex) => _pageSize;
@@ -684,9 +694,9 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
     /// <inheritdoc />
     public void Dispose() => _svg.Dispose();
 
-    private static SKSvg Load(Stream stream)
+    private static SvgPictureBuilder.SvgPicture Load(Stream stream, CancellationToken cancellationToken)
     {
-        SKSvg svg;
+        SvgPictureBuilder.SvgPicture svg;
 
         try
         {
@@ -694,20 +704,10 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
             using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: true))
                 markup = reader.ReadToEnd();
 
-            var sanitised = SvgMarkupSanitiser.Sanitise(markup);
+            cancellationToken.ThrowIfCancellationRequested();
+            svg = SvgPictureBuilder.Build(SvgMarkupSanitiser.Sanitise(markup), cancellationToken);
 
-            svg = new SKSvg();
-            SKPicture? picture;
-            using (var sanitisedStream = new MemoryStream(Encoding.UTF8.GetBytes(sanitised)))
-                picture = svg.Load(sanitisedStream);
-
-            if (picture is null)
-            {
-                svg.Dispose();
-                throw new DocumentRenderException("This SVG could not be read: the file has no readable SVG content.");
-            }
-
-            if (picture.CullRect.Width <= 0 || picture.CullRect.Height <= 0)
+            if (svg.Size.Width <= 0 || svg.Size.Height <= 0)
             {
                 svg.Dispose();
                 throw new DocumentRenderException("This SVG could not be read: it has no visible size.");
@@ -717,22 +717,24 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
         {
             throw;
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // The caller's own deadline, not a fault in the file: it goes
+            // back as what it is, for the viewer to say "took too long".
+            throw;
+        }
         catch (Exception ex)
         {
-            // Svg.Skia reports a malformed document by throwing (an
-            // XmlException over broken markup, most commonly) — translated
-            // here, at the boundary, into this platform's own type, exactly
-            // as PdfDocumentPageSource does for PDFium.
+            // The builder reports a malformed document by throwing (an
+            // XmlException over broken markup, most commonly; a
+            // RegexMatchTimeoutException over an attribute no honest file
+            // carries) — translated here, at the boundary, into this
+            // platform's own type, exactly as PdfDocumentPageSource does for
+            // PDFium.
             throw new DocumentRenderException($"This SVG could not be read: {ex.Message}", ex);
         }
 
         return svg;
-    }
-
-    private static Size NaturalSize(SKSvg svg)
-    {
-        var bounds = svg.Picture!.CullRect;
-        return new Size(bounds.Width, bounds.Height);
     }
 
     private static double EffectiveScale(Size page, double scale)
@@ -757,10 +759,9 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Why this exists, specifically:</b> <c>Svg.Skia</c>'s own image
-/// resolution (<c>Svg.Model.SvgExtensions.GetImageFromWeb</c>) calls
-/// <c>System.Net.WebRequest.Create(uri).GetResponse()</c> for any
-/// <c>&lt;image&gt;</c> reference that is not a <c>data:</c> URI —
+/// <b>Why this exists, specifically:</b> the renderer this platform used
+/// until DB-08, <c>Svg.Skia</c>, resolved any <c>&lt;image&gt;</c> reference
+/// that was not a <c>data:</c> URI through <c>System.Net.WebRequest</c> —
 /// <c>http://</c>, <c>https://</c> <b>and</b> <c>file://</c> alike, the last
 /// of which reads an arbitrary local file and folds its bytes into the
 /// rendered picture. An SVG is untrusted, attacker-controlled input the
@@ -770,8 +771,11 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
 /// content is even shown, with no further action from the user. Every
 /// <c>href</c>/<c>xlink:href</c> that is not a same-document fragment
 /// (<c>#id</c>) or an embedded <c>data:</c> URI is blanked by
-/// <see cref="Sanitise"/>, before the bytes ever reach <c>SKSvg.Load</c>, so
-/// the vulnerable call is never given anything to resolve.
+/// <see cref="Sanitise"/> before the bytes reach the renderer. The app's own
+/// <see cref="SvgPictureBuilder"/> has no fetch path at all (it draws only an
+/// embedded <c>data:</c> image and reads XML with no resolver), so this is
+/// now defence in depth rather than the one barrier; it stays because it is
+/// cheap and keeps the guarantee independent of the renderer.
 /// </para>
 /// <para>
 /// A <c>&lt;!DOCTYPE&gt;</c> declaration is removed outright — the XXE
@@ -781,18 +785,67 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
 /// cheap, unambiguous defence in depth against a future rendering path (or a
 /// future library upgrade) that does.
 /// </para>
+/// <para>
+/// <b>Illustrator's entities.</b> Adobe Illustrator's SVG export declares
+/// its namespaces as entities in the DOCTYPE's internal subset
+/// (<c>&lt;!ENTITY ns_extend "http://ns.adobe.com/Extensibility/1.0/"&gt;</c>)
+/// and refers to them from the root (<c>xmlns:x="&amp;ns_extend;"</c>), so
+/// removing the DOCTYPE alone left the reference undeclared and the whole
+/// file refused — the most common exporter in an engineering office. Before
+/// the DOCTYPE goes, the internal subset's <em>harmless</em> entities are
+/// read and their references in the markup replaced by their text: only a
+/// general entity with a literal value (never <c>SYSTEM</c>, <c>PUBLIC</c>
+/// or a parameter entity), only a value with no <c>&amp;</c>, <c>&lt;</c>
+/// or <c>%</c> in it (so nothing is expanded into a reference, markup or
+/// another declaration), at most <see cref="MaxInternalEntities"/> of them
+/// of at most <see cref="MaxEntityValueLength"/> characters, replaced at
+/// most <see cref="MaxEntityReferences"/> times. The XML reader itself keeps
+/// its DTD prohibited and its entity-expansion cap at zero: it never sees a
+/// declaration at all, and anything this sanitiser does not expand stays an
+/// undeclared reference the reader refuses.
+/// </para>
 /// </remarks>
 internal static class SvgMarkupSanitiser
 {
+    /// <summary>
+    /// Declared first, since static fields initialise in textual order and every pattern below takes it.
+    /// Every pattern here gives up after this long (F1): a document is
+    /// untrusted input, and a regular expression that can be made to run
+    /// for minutes on a crafted attribute is a hang of the viewer. The two
+    /// patterns that have no lookaround or backreference also run on the
+    /// non-backtracking engine, which is linear in the input whatever the
+    /// text; <see cref="ExternalReferencePattern"/> needs both, so it keeps
+    /// the backtracking engine and relies on the timeout.
+    /// </summary>
+    private static readonly TimeSpan MatchTimeout = TimeSpan.FromMilliseconds(250);
+
+    /// <summary>The most internal-subset entities read from a DOCTYPE (Illustrator declares eight).</summary>
+    public const int MaxInternalEntities = 32;
+
+    /// <summary>The longest entity value expanded.</summary>
+    public const int MaxEntityValueLength = 256;
+
+    /// <summary>The most entity references replaced in one document; the rest stay undeclared and the reader refuses the file.</summary>
+    public const int MaxEntityReferences = 10_000;
+
+    /// <summary>The five entities XML itself defines, which no declaration may replace.</summary>
+    private static readonly HashSet<string> BuiltInEntities = new(StringComparer.Ordinal) { "amp", "lt", "gt", "quot", "apos" };
+
+    /// <summary>A general entity declared with a literal value that holds no reference, markup or parameter-entity character.</summary>
+    private static readonly Regex InternalEntityPattern = new(
+        @"<!ENTITY\s+([A-Za-z_][\w.\-]*)\s+(?:""([^""&<%]*)""|'([^'&<%]*)')\s*>", RegexOptions.NonBacktracking, MatchTimeout);
+
+    private static readonly Regex EntityReferencePattern = new(@"&([A-Za-z_][\w.\-]*);", RegexOptions.NonBacktracking, MatchTimeout);
+
     private static readonly Regex DoctypePattern = new(
-        @"<!DOCTYPE[^>[]*(\[[^\]]*\])?[^>]*>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+        @"<!DOCTYPE[^>[]*(\[[^\]]*\])?[^>]*>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.NonBacktracking, MatchTimeout);
 
     private static readonly Regex ScriptElementPattern = new(
-        @"<script\b[^>]*>.*?</script\s*>|<script\b[^>]*/\s*>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+        @"<script\b[^>]*>.*?</script\s*>|<script\b[^>]*/\s*>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.NonBacktracking, MatchTimeout);
 
     private static readonly Regex ExternalReferencePattern = new(
         @"(?<attr>xlink:href|href)\s*=\s*(?<quote>[""'])(?!\s*(#|data:))(?<value>[^""']*)\k<quote>",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        RegexOptions.IgnoreCase | RegexOptions.Compiled, MatchTimeout);
 
     /// <summary>
     /// A dangerous <c>href</c>/<c>xlink:href</c> is replaced with this,
@@ -803,11 +856,9 @@ internal static class SvgMarkupSanitiser
     /// base URI regardless of the value being empty; a document loaded
     /// from a bare stream (every attachment this platform opens) carries
     /// no base URI at all, and resolving a relative reference against a
-    /// null one throws. A <c>data:</c> URI is absolute — Svg.Skia's own
-    /// image resolution (<c>Svg.Model.SvgExtensions.GetImageUri</c>)
-    /// returns it immediately, before any base-URI resolution is even
-    /// attempted — so this is the one substitution that is both inert and
-    /// never touches that code path at all.
+    /// null one throws. A <c>data:</c> URI is absolute, so no reader resolves
+    /// it against a base URI, and an empty one carries nothing to decode:
+    /// <see cref="SvgPictureBuilder"/> draws no image for it.
     /// </summary>
     private const string InertReferenceValue = "data:,";
 
@@ -816,10 +867,45 @@ internal static class SvgMarkupSanitiser
     {
         ArgumentNullException.ThrowIfNull(markup);
 
+        var entities = InternalEntities(markup);
         var sanitised = DoctypePattern.Replace(markup, string.Empty);
+
+        if (entities.Count > 0)
+        {
+            var replaced = 0;
+            sanitised = EntityReferencePattern.Replace(sanitised, m =>
+                entities.TryGetValue(m.Groups[1].Value, out var value) && ++replaced <= MaxEntityReferences ? value : m.Value);
+        }
+
         sanitised = ScriptElementPattern.Replace(sanitised, string.Empty);
         sanitised = ExternalReferencePattern.Replace(sanitised, m => $"{m.Groups["attr"].Value}=\"{InertReferenceValue}\"");
         return sanitised;
+    }
+
+    /// <summary>The harmless entities of the DOCTYPE's internal subset, by name (see the remarks); empty when there is no DOCTYPE or no subset.</summary>
+    internal static Dictionary<string, string> InternalEntities(string markup)
+    {
+        var entities = new Dictionary<string, string>(StringComparer.Ordinal);
+        var doctype = DoctypePattern.Match(markup);
+
+        if (!doctype.Success || !doctype.Groups[1].Success)
+            return entities;
+
+        foreach (Match declaration in InternalEntityPattern.Matches(doctype.Groups[1].Value))
+        {
+            if (entities.Count >= MaxInternalEntities)
+                break;
+
+            var name = declaration.Groups[1].Value;
+            var value = declaration.Groups[2].Success ? declaration.Groups[2].Value : declaration.Groups[3].Value;
+
+            if (BuiltInEntities.Contains(name) || value.Length > MaxEntityValueLength)
+                continue;
+
+            entities.TryAdd(name, value);
+        }
+
+        return entities;
     }
 }
 
@@ -855,7 +941,8 @@ public static class DocumentPageSourceFactory
     /// <see langword="null"/> when this platform cannot render that format.
     /// </summary>
     /// <exception cref="DocumentRenderException">The format is supported but these particular bytes could not be opened.</exception>
-    public static IDocumentPageSource? Create(ViewableDocumentFormat format, byte[] content) => format switch
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled before a source that honours it (the SVG reader) finished.</exception>
+    public static IDocumentPageSource? Create(ViewableDocumentFormat format, byte[] content, CancellationToken cancellationToken = default) => format switch
     {
         // Guarded rather than suppressed. PDFium ships native binaries for
         // Windows, Linux and macOS, which is every platform this desktop
@@ -870,7 +957,7 @@ public static class DocumentPageSourceFactory
         ViewableDocumentFormat.Image => new ImageDocumentPageSource(content),
         ViewableDocumentFormat.Text => new TextDocumentPageSource(content),
         ViewableDocumentFormat.Svg when OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()
-            => new SvgDocumentPageSource(content),
+            => new SvgDocumentPageSource(content, cancellationToken),
 
         // ExternalOnly falls to the same null the default arm returns for
         // any other unmatched format — named here rather than left to fall
@@ -899,14 +986,15 @@ public static class DocumentPageSourceFactory
     /// unsupported by calling this method first.
     /// </remarks>
     /// <exception cref="DocumentRenderException">The format is supported but these particular bytes could not be opened.</exception>
-    public static IDocumentPageSource? CreateFromStream(ViewableDocumentFormat format, Stream content) => format switch
+    /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled before a source that honours it (the SVG reader) finished.</exception>
+    public static IDocumentPageSource? CreateFromStream(ViewableDocumentFormat format, Stream content, CancellationToken cancellationToken = default) => format switch
     {
         ViewableDocumentFormat.Pdf when OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()
             => new PdfDocumentPageSource(content),
         ViewableDocumentFormat.Image => new ImageDocumentPageSource(content),
         ViewableDocumentFormat.Text => new TextDocumentPageSource(content),
         ViewableDocumentFormat.Svg when OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()
-            => new SvgDocumentPageSource(content),
+            => new SvgDocumentPageSource(content, cancellationToken),
         _ => null,
     };
 }

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="200" height="150">
+  <rect width="200" height="150" fill="#f5f6fa"/>
+  <image x="20" y="20" width="80" height="80" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAEklEQVR4nGNQSDjwHxkzkC4AAK54I/EcHE5WAAAAAElFTkSuQmCC"/>
+  <image x="120" y="20" width="60" height="60" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAEklEQVR4nGNQSDjwHxkzkC4AAK54I/EcHE5WAAAAAElFTkSuQmCC"/>
+</svg>

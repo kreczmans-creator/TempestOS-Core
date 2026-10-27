@@ -59,13 +59,24 @@ public enum DashboardManualTestOutcome
     Partial,
 }
 
-/// <summary>The manual-test status of one row: the outcome, when it was recorded and an optional note.</summary>
-public sealed record DashboardManualTestStatus(DashboardManualTestOutcome Outcome, DateTimeOffset? At = null, string? Note = null)
+/// <summary>
+/// The manual-test status of one row: the outcome, when it was recorded and an optional note. <paramref name="Build"/> and
+/// <paramref name="BuildCommit"/> name the build the latest finished result was recorded on, and <paramref name="RecordedOnOtherBuild"/> is true when
+/// that is not the build now running, so a result recorded on an older build is not read as a result of this one (SEC-C-06).
+/// </summary>
+public sealed record DashboardManualTestStatus(
+    DashboardManualTestOutcome Outcome, DateTimeOffset? At = null, string? Note = null, string? Build = null, string? BuildCommit = null, bool RecordedOnOtherBuild = false)
 {
+    /// <summary>The words shown when a result names no build at all.</summary>
+    public const string UnknownBuild = "unknown build";
+
+    /// <summary>The words added to a result recorded on a build other than the one running.</summary>
+    public const string OtherBuildNote = "recorded on a different build";
+
     /// <summary>The status of a row nobody has tested.</summary>
     public static DashboardManualTestStatus NotTested { get; } = new(DashboardManualTestOutcome.NotTested);
 
-    /// <summary>How the dashboard words it.</summary>
+    /// <summary>How the dashboard words the outcome alone.</summary>
     public string Label => Outcome switch
     {
         DashboardManualTestOutcome.Passed => "Passed",
@@ -73,6 +84,21 @@ public sealed record DashboardManualTestStatus(DashboardManualTestOutcome Outcom
         DashboardManualTestOutcome.Partial => "Partly passed",
         _ => "Not tested",
     };
+
+    /// <summary>
+    /// The build the result was recorded on, as the title bar shows it: the build text, else the commit, else <see cref="UnknownBuild"/>.
+    /// Empty for a row nobody has tested.
+    /// </summary>
+    public string BuildText => Outcome == DashboardManualTestOutcome.NotTested
+        ? string.Empty
+        : !string.IsNullOrWhiteSpace(Build) ? Build!
+        : !string.IsNullOrWhiteSpace(BuildCommit) && !string.Equals(BuildCommit, "unknown", StringComparison.OrdinalIgnoreCase) ? BuildCommit!
+        : UnknownBuild;
+
+    /// <summary>What a dashboard cell, the PDF and the Markdown print: <c>Passed — 0.26.0 (abc1234)</c>, with <c> — recorded on a different build</c> added when it was.</summary>
+    public string Display => Outcome == DashboardManualTestOutcome.NotTested
+        ? Label
+        : $"{Label} — {BuildText}" + (RecordedOnOtherBuild ? $" — {OtherBuildNote}" : string.Empty);
 }
 
 /// <summary>One Track P finding on a row, with where it stands.</summary>

@@ -18,10 +18,11 @@ public enum ViewableDocumentFormat
     Text,
 
     /// <summary>
-    /// A vector image rendered through <c>Svg.Skia</c> to the same
-    /// <c>SKBitmap</c> page a PDF or raster image produces (`TD-99`,
-    /// Product Owner decision 2026-09-15 §5's "small" half, closed by
-    /// `WP 21.4A`).
+    /// A vector image rendered through the app's own <c>SvgPictureBuilder</c>
+    /// (SkiaSharp; it replaced <c>Svg.Skia</c> under owner decision DB-08)
+    /// to the same <c>SKBitmap</c> page a PDF or raster image produces
+    /// (`TD-99`, Product Owner decision 2026-09-15 §5's "small" half, closed
+    /// by `WP 21.4A`).
     /// </summary>
     Svg,
 
@@ -193,8 +194,8 @@ public static class DocumentFormatDetector
             // platform has no raster decoder for it, so calling it Image
             // would promise a render that cannot happen. SVG (checked
             // above) is the one "image/*" content type that is not a
-            // raster at all — `Svg.Skia` renders its vector content
-            // directly (`TD-99`).
+            // raster at all — the app's own `SvgPictureBuilder` renders its
+            // vector content directly (`TD-99`, DB-08).
             return type is "image/png" or "image/jpeg" or "image/jpg" or "image/bmp" or "image/gif" or "image/webp"
                 ? ViewableDocumentFormat.Image
                 : ViewableDocumentFormat.Unsupported;

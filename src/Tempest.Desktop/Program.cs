@@ -20,6 +20,18 @@ public static class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        // DB-08 review: `--svg-probe <file>` reads one hostile SVG in a
+        // process of its own and exits with the outcome, for the bounded
+        // probes CI runs under memory and time limits
+        // (`SvgBoundedProbeTests`). Nothing else starts — not Velopack, not
+        // Avalonia — so the exit code and the peak working set are the
+        // reader's own.
+        if (args.Length > 0 && args[0] == Viewing.SvgProbeRunner.Switch)
+        {
+            Environment.ExitCode = Viewing.SvgProbeRunner.Run(args, Console.Out);
+            return;
+        }
+
         // `WP 21.5A` (`WP RC.0A`): must run first, before any Avalonia or
         // Runtime Host start-up — it is what makes an installed run
         // reportable at all (handles Velopack's own install/update/

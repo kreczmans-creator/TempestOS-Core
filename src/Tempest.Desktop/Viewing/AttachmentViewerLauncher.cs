@@ -124,6 +124,22 @@ public sealed class AttachmentViewerLauncher
     }
 
     /// <summary>Every attachment currently open in a viewer.</summary>
+    /// <summary>The time a document is given to open before it is reported instead of shown: <see cref="ReadDeadline"/>'s default.</summary>
+    public static readonly TimeSpan DefaultReadDeadline = TimeSpan.FromSeconds(15);
+
+    /// <summary>
+    /// How long a document may take to open (F10). The page source is built
+    /// on a pool thread under a token that cancels at this deadline, so a
+    /// file built to keep a reader busy — nested a hundred thousand levels,
+    /// a million gradient stops, an attribute a regular expression chokes on
+    /// — ends as a <see cref="DocumentViewStatus.Corrupt"/> tab saying the
+    /// document took too long to read, and never as a frozen window. The
+    /// SVG reader looks at the token before every element; the other
+    /// sources are bounded by their own caps and finish in well under this.
+    /// Settable so a test can make the deadline immediate.
+    /// </summary>
+    public TimeSpan ReadDeadline { get; set; } = DefaultReadDeadline;
+
     public IReadOnlyCollection<Guid> OpenAttachmentIds => _panelsByAttachment.Keys;
 
     /// <summary>The panel showing <paramref name="attachmentId"/>, or <see langword="null"/> when it is not open.</summary>
@@ -202,7 +218,7 @@ public sealed class AttachmentViewerLauncher
         }
         else
         {
-            OpenLoadedContent(view, attachment, content.Bytes, viewportWidth, viewportHeight);
+            await OpenLoadedContentAsync(view, attachment, content.Bytes, viewportWidth, viewportHeight, cancellationToken).ConfigureAwait(true);
         }
 
         // `TD-98`: loaded here, once, for both the Ready and the
@@ -221,7 +237,7 @@ public sealed class AttachmentViewerLauncher
     /// streamed read (`TD-96`), never materialising its content as one
     /// array. Returns <see langword="false"/> only when the format is not
     /// (yet) one the streamed path renders — the caller then falls back to
-    /// <see cref="OpenLoadedContent"/> over a fully read array, which still
+    /// <see cref="OpenLoadedContentAsync"/> over a fully read array, which still
     /// renders it; every other outcome (missing, corrupt, or genuinely
     /// unsupported) is handled here and reported identically to the
     /// byte-array path.
@@ -255,18 +271,17 @@ public sealed class AttachmentViewerLauncher
 
             var format = DocumentFormatDetector.Detect(attachment.ContentType, header.AsSpan(0, headerLength));
 
-            IDocumentPageSource? source;
-            try
+            // Same rule as the byte-array path: bytes that opened for
+            // reading but did not render are a format problem, not a
+            // damaged-content one — reported as such below rather than
+            // accusing the user's file of being what it is not.
+            var (source, tookTooLong) = await CreateSourceAsync(
+                token => DocumentPageSourceFactory.CreateFromStream(format, stream, token), cancellationToken).ConfigureAwait(true);
+
+            if (tookTooLong)
             {
-                source = DocumentPageSourceFactory.CreateFromStream(format, stream);
-            }
-            catch (DocumentRenderException)
-            {
-                // Same rule as the byte-array path: bytes that opened for
-                // reading but did not render are a format problem, not a
-                // damaged-content one — reported as such below rather than
-                // accusing the user's file of being what it is not.
-                source = null;
+                view.OpenUnavailable(TookTooLong(attachment, format));
+                return true;
             }
 
             if (source is null)
@@ -303,28 +318,68 @@ public sealed class AttachmentViewerLauncher
         return total;
     }
 
-    private void OpenLoadedContent(
+    /// <summary>
+    /// Builds a page source off the UI thread under <see cref="ReadDeadline"/>
+    /// (F10). A source that could not be opened is <see langword="null"/>
+    /// with <c>TookTooLong</c> false (the caller's "format problem" path); a
+    /// build the deadline stopped is <see langword="null"/> with it true. The
+    /// caller's own token still cancels the whole open, as before.
+    /// </summary>
+    private async Task<(IDocumentPageSource? Source, bool TookTooLong)> CreateSourceAsync(
+        Func<CancellationToken, IDocumentPageSource?> create, CancellationToken cancellationToken)
+    {
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        // A deadline of nothing allows no time at all, now rather than on a timer thread a moment later (a test's immediate deadline is deterministic).
+        if (ReadDeadline <= TimeSpan.Zero)
+            deadline.Cancel();
+        else
+            deadline.CancelAfter(ReadDeadline);
+
+        try
+        {
+            var token = deadline.Token;
+            return (await Task.Run(() => create(token), token).ConfigureAwait(true), false);
+        }
+        catch (DocumentRenderException)
+        {
+            return (null, false);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return (null, true);
+        }
+    }
+
+    /// <summary>The session for a document the deadline stopped: intact content that was not shown, and the sentence that says why.</summary>
+    private DocumentViewSession TookTooLong(IAttachment attachment, ViewableDocumentFormat format) =>
+        DocumentViewSession.Unavailable(
+            attachment.Id, attachment.FileName, attachment.ContentType, DocumentViewStatus.Corrupt, format,
+            unavailableDetail: $"took too long to read (more than {ReadDeadline.TotalSeconds:0.##} seconds), so it has not been shown: " +
+                "the file is far larger or more intricate than a drawing or document of its kind should be.");
+
+    private async Task OpenLoadedContentAsync(
         DocumentViewerView view,
         IAttachment attachment,
         byte[] bytes,
         double viewportWidth,
-        double viewportHeight)
+        double viewportHeight,
+        CancellationToken cancellationToken)
     {
         var format = DocumentFormatDetector.Detect(attachment.ContentType, bytes, attachment.FileName);
 
-        IDocumentPageSource? source;
-        try
+        // The bytes passed the store's integrity check — they are the
+        // file that was attached — and this platform still could not
+        // open them. That is a format problem, not a damaged-content
+        // problem, and saying "damaged" would accuse the user's data
+        // of something untrue.
+        var (source, tookTooLong) = await CreateSourceAsync(
+            token => DocumentPageSourceFactory.Create(format, bytes, token), cancellationToken).ConfigureAwait(true);
+
+        if (tookTooLong)
         {
-            source = DocumentPageSourceFactory.Create(format, bytes);
-        }
-        catch (DocumentRenderException)
-        {
-            // The bytes passed the store's integrity check — they are the
-            // file that was attached — and this platform still could not
-            // open them. That is a format problem, not a damaged-content
-            // problem, and saying "damaged" would accuse the user's data
-            // of something untrue.
-            source = null;
+            view.OpenUnavailable(TookTooLong(attachment, format));
+            return;
         }
 
         if (source is null)
@@ -365,7 +420,8 @@ public sealed class AttachmentViewerLauncher
                 firstPage.Width,
                 firstPage.Height,
                 viewportWidth,
-                viewportHeight),
+                viewportHeight,
+                source.RenderingNote),
             source);
     }
 

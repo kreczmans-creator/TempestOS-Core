@@ -120,11 +120,6 @@
         "resolved": "130.0.6721",
         "contentHash": "lP+F3IdHich8riSWg/9RuwZGIt6GJvk6t2e1mIb9sQoIUVfLYU2Npocc1yYOq6SQDifs5Ux2+MRw7je3A8c5cg=="
       },
-      "ExCSS": {
-        "type": "Transitive",
-        "resolved": "4.3.0",
-        "contentHash": "LyVZ925Cl6Z4TJrbogt3+DkvanYWZcJs0tzKg8lWHAY9PgniVMluNy+l5vXDMmvt5gBgekULasEnUqVAavPuZw=="
-      },
       "HarfBuzzSharp": {
         "type": "Transitive",
         "resolved": "8.3.1.1",
@@ -292,11 +287,6 @@
           "bblanchon.PDFium.macOS": "130.0.6721"
         }
       },
-      "ShimSkiaSharp": {
-        "type": "Transitive",
-        "resolved": "2.0.0.8",
-        "contentHash": "Ld4ClI8RbpKtj0Fi8YDbc7JuJLcy/Swok7NLWs0fylC9ffU8z+y9NBm+q1Gs7x7X/6DONc64vDwcbwAT+cQ3WA=="
-      },
       "SkiaSharp": {
         "type": "Transitive",
         "resolved": "2.88.9",
@@ -304,15 +294,6 @@
         "dependencies": {
           "SkiaSharp.NativeAssets.Win32": "2.88.9",
           "SkiaSharp.NativeAssets.macOS": "2.88.9"
-        }
-      },
-      "SkiaSharp.HarfBuzz": {
-        "type": "Transitive",
-        "resolved": "2.88.9",
-        "contentHash": "5lyjX04CSWTKFYMSNN6SMupV2qzYDr8W/u8S3ZEkr+Sg3kOi0YE06EOqG0tzn/YPBID89xam4L3rz3hUUKOGEQ==",
-        "dependencies": {
-          "HarfBuzzSharp": "7.3.0.3",
-          "SkiaSharp": "2.88.9"
         }
       },
       "SkiaSharp.NativeAssets.Linux": {
@@ -377,34 +358,6 @@
         "type": "Transitive",
         "resolved": "131.0.6728",
         "contentHash": "2j4VF6J71xeG8iYMMfldHRVnuBjpxw+nKSSqFYVWAxNQBkbmwFFdSVELNHPcVTS/XtnvqGNdIZh79QBzKfNDgQ=="
-      },
-      "Svg.Custom": {
-        "type": "Transitive",
-        "resolved": "2.0.0.8",
-        "contentHash": "y5BQ0dDevw2D7lnCgttT/tqwQFaWbg2wJdrXqcmf9K9NfbZLjK6caLSpM0VtaJaPeyLd1tQAOLH1mP2o6+Z2sg==",
-        "dependencies": {
-          "ExCSS": "4.3.0"
-        }
-      },
-      "Svg.Model": {
-        "type": "Transitive",
-        "resolved": "2.0.0.8",
-        "contentHash": "Z1Vzef44Rf2TBtm7rnNPum5KIJygEfgsz3cdTzlhFwKP2T/joieR4ZExC7xsQj3KhKSvKdrZ8I/F8rI+Kl/aiA==",
-        "dependencies": {
-          "ShimSkiaSharp": "2.0.0.8",
-          "Svg.Custom": "2.0.0.8"
-        }
-      },
-      "Svg.Skia": {
-        "type": "Transitive",
-        "resolved": "2.0.0.8",
-        "contentHash": "C9WT3Z+lY6OldZBA2jcjB5p2hq93b68HvwNk25zVevjsVfeH/BhilwBdxLaATTyQNOIeJtEta2p7frG25/dAGQ==",
-        "dependencies": {
-          "SkiaSharp": "2.88.9",
-          "SkiaSharp.HarfBuzz": "2.88.9",
-          "Svg.Custom": "2.0.0.8",
-          "Svg.Model": "2.0.0.8"
-        }
       },
       "System.Security.Cryptography.ProtectedData": {
         "type": "Transitive",
@@ -501,7 +454,6 @@
           "Avalonia.Fonts.Inter": "[11.3.20, )",
           "Avalonia.Themes.Fluent": "[11.3.20, )",
           "PDFtoImage": "[4.1.1, )",
-          "Svg.Skia": "[2.0.0.8, )",
           "Tempest.Calc.BuildingServices": "[0.26.0, )",
           "Tempest.Calc.Electrical": "[0.26.0, )",
           "Tempest.Calc.FluidPower": "[0.26.0, )",

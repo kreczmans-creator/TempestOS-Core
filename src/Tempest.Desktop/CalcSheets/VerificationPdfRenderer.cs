@@ -106,7 +106,7 @@ public sealed class VerificationPdfRenderer
         T($"{r.RederivationResult}: {r.RederivationFindings.Text}"),
         r.MissingRecordKinds.Count == 0 ? "none" : T(string.Join("; ", r.MissingRecordKinds)),
         T(r.OpenDefectsText),
-        T(r.ManualTest.Label),
+        T(r.ManualTest.Display),
     ];
 
     private static string T(string? text, int max = MaxCellLength)

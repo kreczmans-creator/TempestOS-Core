@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <rect width="100" height="100" fill="#ffffff"/>
+  <defs>
+    <symbol id="tile" viewBox="0 0 10 10">
+      <rect width="10" height="10" fill="#1c2d97"/>
+      <rect x="10" width="10" height="10" fill="#c0392b"/>
+    </symbol>
+  </defs>
+  <!-- A symbol used at a size is a viewport: its viewBox is fitted into the 50 by 50 and what lies outside is clipped. -->
+  <use href="#tile" x="10" y="10" width="50" height="50"/>
+</svg>
