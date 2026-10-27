@@ -22,6 +22,17 @@
     "ValueText": "205"
   },
   {
+    "Symbol": "F",
+    "Number": 100,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Factored brace force",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100"
+  },
+  {
     "Symbol": "I",
     "Number": 12,
     "Unit": "cm^4",
@@ -43,17 +54,6 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "1.5"
-  },
-  {
-    "Symbol": "P",
-    "Number": 100,
-    "Unit": "kN",
-    "Provenance": {
-      "Kind": "Assumption",
-      "Reference": "Factored brace force",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "100"
   },
   {
     "Symbol": "curve",

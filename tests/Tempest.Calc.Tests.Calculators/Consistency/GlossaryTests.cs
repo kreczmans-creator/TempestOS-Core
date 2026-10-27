@@ -55,8 +55,9 @@ public sealed partial class GlossaryTests
     {
         var rows = GlossaryRows();
 
-        var rho = Assert.Single(rows, r => r.Symbol == "rho" && r.Templates.Contains("struct.en1993-member"));
-        Assert.Equal("shear-reduction-factor", rho.Meaning);
+        // C-2 phase B: the shear reduction factor is rho_shear, so that a bare rho means a density only (the old symbol is an alias of the port member.reduction_shear).
+        Assert.DoesNotContain(rows, r => r.Symbol == "rho" && r.Templates.Contains("struct.en1993-member"));
+        var rho = Assert.Single(rows, r => r.Symbol == "rho_shear");
         Assert.Equal(["struct.en1993-member"], rho.Templates);
         Assert.DoesNotContain(rows, r => r.Meaning.Contains("density-ratio", StringComparison.Ordinal));
 
@@ -68,8 +69,8 @@ public sealed partial class GlossaryTests
 
         // The description the sheet prints for the output says what it is, and the glossary row quotes it.
         var member = Facts.Value.Single(f => f.Id == "struct.en1993-member");
-        var run = member.CaseRuns.Prepend(member.DefaultRun).First(r => r.FindOutput("rho") is not null);
-        Assert.Equal("Shear reduction factor ρ", run.FindOutput("rho")!.Description);
+        var run = member.CaseRuns.Prepend(member.DefaultRun).First(r => r.FindOutput("rho_shear") is not null);
+        Assert.Equal("Shear reduction factor ρ", run.FindOutput("rho_shear")!.Description);
         var text = File.ReadAllText(GlossaryPath).Replace("\r\n", "\n", StringComparison.Ordinal);
         Assert.Contains("| Plain number | — | Shear reduction factor ρ | struct.en1993-member |", text, StringComparison.Ordinal);
     }

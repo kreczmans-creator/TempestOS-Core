@@ -184,7 +184,7 @@
     "ValueText": "S275"
   },
   {
-    "Symbol": "t",
+    "Symbol": "t_p",
     "Number": 10,
     "Unit": "mm",
     "Provenance": {

@@ -805,7 +805,7 @@
             "cm²"
           ],
           "descriptions": [
-            "Gross cross-section area of the spreader or lifting beam, for its axial utilisation (blank: lug utilisation only)"
+            "Gross cross-section area of the spreader or lifting beam, for its axial utilisation (optional; blank = lug utilisation only)"
           ],
           "templates": [
             "struct.lifting"
@@ -1049,7 +1049,7 @@
             "cm²"
           ],
           "descriptions": [
-            "Net area of a tension member (A where there are no holes; needed when N_Ed is tension)"
+            "Net area of a tension member (optional; blank = the sheet is blocked when N_Ed is tension)"
           ],
           "templates": [
             "struct.en1993-member"
@@ -1067,7 +1067,7 @@
             "mm²"
           ],
           "descriptions": [
-            "Net area in tension"
+            "Net area in tension (optional; blank = no block tearing check)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -1085,7 +1085,7 @@
             "mm²"
           ],
           "descriptions": [
-            "Net area in shear"
+            "Net area in shear (optional; blank = no block tearing check)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -1139,7 +1139,7 @@
             "mm²"
           ],
           "descriptions": [
-            "Anchor bolt tensile stress area (from S4)",
+            "Anchor bolt tensile stress area (from the connection sheet)",
             "Stress area",
             "Tensile stress area"
           ],
@@ -1235,7 +1235,7 @@
           ],
           "descriptions": [
             "Shear area",
-            "Shear area A_v (blank = rolled I from h, b, t_w, t_f, r)"
+            "Shear area (optional; blank = rolled I-section from h, b, t_w, t_f and r)"
           ],
           "templates": [
             "struct.en1993-member",
@@ -1385,7 +1385,7 @@
           "units": [],
           "descriptions": [
             "C₁",
-            "C₁ (blank: from ψ, end moments with k = 1; enter it for transverse loads, and then also k_c and C_my: they are not taken from ψ)"
+            "Moment diagram factor C₁ (optional; blank = derived from ψ, valid for end moments with k = 1)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -1401,7 +1401,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "C₂ (0 for end moments; enter it for transverse loads)"
+            "Moment diagram factor C₂ (0 for end moments; enter it for a transverse load)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -1538,7 +1538,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "C_f,d, friction coefficient plate to grout"
+            "Friction coefficient, plate to grout"
           ],
           "templates": [
             "struct.base-plate"
@@ -1586,7 +1586,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "C_mLT"
+            "Equivalent uniform moment factor for lateral-torsional buckling"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -1602,7 +1602,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "C_mLT (Annex B; blank: as C_my)"
+            "Equivalent uniform moment factor for lateral-torsional buckling in Annex B (optional; blank = the value of C_my)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -1618,7 +1618,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "C_my (Annex B; blank: 0.6 + 0.4ψ_y ≥ 0.4, linear diagram; required when C₁ is entered, unless the diagram is given as end moments)"
+            "Equivalent uniform moment factor about y-y in Annex B (optional; blank = 0.6 + 0.4ψ_y, at least 0.4)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -1634,7 +1634,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "C_mz (Annex B; blank: 0.6 + 0.4ψ_z ≥ 0.4)"
+            "Equivalent uniform moment factor about z-z in Annex B (optional; blank = 0.6 + 0.4ψ_z, at least 0.4)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -1666,7 +1666,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "C_my"
+            "Equivalent uniform moment factor about y-y"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -1682,7 +1682,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "C_mz"
+            "Equivalent uniform moment factor about z-z"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -1794,19 +1794,6 @@
           "templates": [
             "elec.enclosure-heat"
           ]
-        },
-        {
-          "meaning": "flexural-rigidity",
-          "quantity": "Moment, torque",
-          "units": [
-            "N·m"
-          ],
-          "descriptions": [
-            "Flexural rigidity"
-          ],
-          "templates": [
-            "struct.plate-bending"
-          ]
         }
       ]
     },
@@ -1909,6 +1896,24 @@
           ],
           "templates": [
             "bs.insulation"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "D_flex",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Moment, torque",
+          "units": [
+            "kN·m"
+          ],
+          "descriptions": [
+            "Flexural rigidity"
+          ],
+          "templates": [
+            "struct.plate-bending"
           ]
         }
       ]
@@ -2209,7 +2214,7 @@
             "mm"
           ],
           "descriptions": [
-            "Hole diameter D_h"
+            "Hole diameter"
           ],
           "templates": [
             "struct.lifting"
@@ -2243,7 +2248,7 @@
             "mm"
           ],
           "descriptions": [
-            "Pin diameter D_p (not larger than the hole)"
+            "Pin diameter (not larger than the hole)"
           ],
           "templates": [
             "struct.lifting"
@@ -2261,10 +2266,9 @@
             "GPa"
           ],
           "descriptions": [
-            "Default modulus of elasticity",
-            "E (blank = sheet default)",
-            "Modulus of elasticity",
+            "Default Young's modulus",
             "Young's modulus",
+            "Young's modulus (blank = sheet default)",
             "Young's modulus (the elastic collapse pressure under external pressure only)",
             "Young's modulus of the pipe material at the installation (reference) temperature, for the stress check, in GPa (steel 210, copper 120, PE and PP about 1; not MPa)",
             "Young's modulus of the rod"
@@ -2647,6 +2651,19 @@
           ]
         },
         {
+          "meaning": "applied-axial-load",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Applied axial load"
+          ],
+          "templates": [
+            "struct.column-buckling"
+          ]
+        },
+        {
           "meaning": "lmtd-correction-factor",
           "quantity": "Plain number",
           "units": [],
@@ -2655,6 +2672,32 @@
           ],
           "templates": [
             "bs.heat-exchanger"
+          ]
+        },
+        {
+          "meaning": "plate-load-total",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Total force (force basis: uniform, patch and ring loads; a ring load always uses the force)"
+          ],
+          "templates": [
+            "struct.plate-bending"
+          ]
+        },
+        {
+          "meaning": "point-load",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Point load, downward (optional; blank = not used by the distributed-load and couple cases)"
+          ],
+          "templates": [
+            "struct.beam-formulas"
           ]
         }
       ]
@@ -2706,7 +2749,7 @@
             "kN"
           ],
           "descriptions": [
-            "Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd)"
+            "Bolt bearing resistance on the plate (from the bearing resistance of the connection sheet)"
           ],
           "templates": [
             "struct.base-plate"
@@ -2783,6 +2826,24 @@
           ],
           "templates": [
             "mech.bolted-joint"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "F_E",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Euler critical load"
+          ],
+          "templates": [
+            "struct.column-buckling"
           ]
         }
       ]
@@ -3085,6 +3146,24 @@
           ],
           "templates": [
             "mech.spring"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "F_c_Rd",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Force",
+          "units": [
+            "kN"
+          ],
+          "descriptions": [
+            "Compression resistance"
+          ],
+          "templates": [
+            "struct.column-buckling"
           ]
         }
       ]
@@ -3620,7 +3699,7 @@
           "descriptions": [
             "Tension resistance",
             "Tension resistance per bolt",
-            "Tension resistance per bolt (from S4)"
+            "Tension resistance per bolt (from the connection sheet)"
           ],
           "templates": [
             "mech.bolt-group",
@@ -3729,10 +3808,10 @@
           "meaning": "",
           "quantity": "Line force, distributed load, stiffness",
           "units": [
-            "N/mm"
+            "kN/m"
           ],
           "descriptions": [
-            "Weld force per unit length"
+            "Weld force per unit length (optional; blank = no weld check)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -4052,8 +4131,8 @@
             "cm⁴"
           ],
           "descriptions": [
-            "Second moment I",
             "Second moment of area",
+            "Second moment of area about the section y-y axis",
             "Second moment of area about the weaker axis"
           ],
           "templates": [
@@ -4165,7 +4244,7 @@
             "cm⁴"
           ],
           "descriptions": [
-            "I_1 (major principal)"
+            "Major principal second moment"
           ],
           "templates": [
             "struct.section-properties"
@@ -4201,7 +4280,7 @@
             "cm⁴"
           ],
           "descriptions": [
-            "I_2 (minor principal)"
+            "Minor principal second moment"
           ],
           "templates": [
             "struct.section-properties"
@@ -4553,7 +4632,7 @@
             "cm⁴"
           ],
           "descriptions": [
-            "Torsion constant I_t (S1: J)"
+            "Torsion constant"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -4640,10 +4719,10 @@
           "meaning": "warping-constant",
           "quantity": "Warping constant",
           "units": [
-            "dm⁶"
+            "cm⁶"
           ],
           "descriptions": [
-            "Warping constant I_w"
+            "Warping constant"
           ],
           "templates": [
             "struct.ltb-interaction",
@@ -4671,42 +4750,6 @@
       ]
     },
     {
-      "symbol": "I_xx",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Second moment of area",
-          "units": [
-            "cm⁴"
-          ],
-          "descriptions": [
-            "I_xx"
-          ],
-          "templates": [
-            "struct.section-properties"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "I_xy",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Second moment of area",
-          "units": [
-            "cm⁴"
-          ],
-          "descriptions": [
-            "I_xy"
-          ],
-          "templates": [
-            "struct.section-properties"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "I_y",
       "meanings": [
         {
@@ -4716,18 +4759,20 @@
             "cm⁴"
           ],
           "descriptions": [
-            "I_y",
-            "Second moment of area, major axis I_y (S1: I_xx)"
+            "Second moment of area about the y-y axis",
+            "Second moment of area about y-y",
+            "Second moment of area about y-y (major axis)"
           ],
           "templates": [
             "struct.en1993-member",
-            "struct.ltb-interaction"
+            "struct.ltb-interaction",
+            "struct.section-properties"
           ]
         }
       ]
     },
     {
-      "symbol": "I_yy",
+      "symbol": "I_yz",
       "meanings": [
         {
           "meaning": "",
@@ -4736,7 +4781,7 @@
             "cm⁴"
           ],
           "descriptions": [
-            "I_yy"
+            "Product of inertia about the y-y and z-z axes"
           ],
           "templates": [
             "struct.section-properties"
@@ -4747,6 +4792,23 @@
     {
       "symbol": "I_z",
       "meanings": [
+        {
+          "meaning": "second-moment-minor-axis",
+          "quantity": "Second moment of area",
+          "units": [
+            "cm⁴"
+          ],
+          "descriptions": [
+            "Second moment of area about the z-z axis",
+            "Second moment of area about z-z",
+            "Second moment of area about z-z (minor axis)"
+          ],
+          "templates": [
+            "struct.en1993-member",
+            "struct.ltb-interaction",
+            "struct.section-properties"
+          ]
+        },
         {
           "meaning": "current-carrying-capacity",
           "quantity": "Current",
@@ -4760,21 +4822,6 @@
           "templates": [
             "elec.conductor-sizing",
             "elec.voltage-drop"
-          ]
-        },
-        {
-          "meaning": "second-moment-minor-axis",
-          "quantity": "Second moment of area",
-          "units": [
-            "cm⁴"
-          ],
-          "descriptions": [
-            "I_z",
-            "Second moment of area, minor axis I_z (S1: I_yy)"
-          ],
-          "templates": [
-            "struct.en1993-member",
-            "struct.ltb-interaction"
           ]
         }
       ]
@@ -4802,7 +4849,7 @@
             "cm⁴"
           ],
           "descriptions": [
-            "Torsion constant J"
+            "Torsion constant"
           ],
           "templates": [
             "struct.section-properties"
@@ -5019,7 +5066,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "K_FI consequence-class factor"
+            "Consequence-class factor"
           ],
           "templates": [
             "struct.load-combinations"
@@ -5777,7 +5824,7 @@
             "kN·m"
           ],
           "descriptions": [
-            "Applied couple"
+            "Applied couple (optional; blank = not used by the other cases)"
           ],
           "templates": [
             "struct.beam-formulas"
@@ -5882,7 +5929,7 @@
           "meaning": "",
           "quantity": "Moment per unit length",
           "units": [
-            "N·m/m"
+            "kN·m/m"
           ],
           "descriptions": [
             "Moment at the centre"
@@ -5900,7 +5947,7 @@
           "meaning": "",
           "quantity": "Moment per unit length",
           "units": [
-            "N·m/m"
+            "kN·m/m"
           ],
           "descriptions": [
             "Edge moment"
@@ -6127,7 +6174,7 @@
             "kN·m"
           ],
           "descriptions": [
-            "Moment at end A about y-y, as an ordinate of the bending-moment diagram (end-moment mode): the same sign at both ends is single curvature, opposite signs double curvature. Not the end actions of a stiffness analysis, which flip sign at one end"
+            "Moment at end A about y-y as an ordinate of the bending-moment diagram, with the same sign at both ends for single curvature, unlike the end actions of a stiffness analysis (optional; blank = the sheet is blocked in the end-moment mode)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -6145,7 +6192,7 @@
             "kN·m"
           ],
           "descriptions": [
-            "Moment at end B about y-y, same convention as A: a bending-moment-diagram ordinate, the same sign as A for single curvature (end-moment mode)"
+            "Moment at end B about y-y, with the same convention as end A: an ordinate of the bending-moment diagram, the same sign as A for single curvature (optional; blank = the sheet is blocked in the end-moment mode)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -6163,9 +6210,9 @@
             "kN·m"
           ],
           "descriptions": [
-            "Design moment about y-y (major)",
+            "Design moment about y-y (major axis)",
             "Greatest design moment about y-y",
-            "Greatest design moment about y-y (ψ mode; S2 M_abs_e1 or S5)"
+            "Greatest design moment about y-y, used in the ψ mode (optional; blank = the sheet is blocked in the ψ mode)"
           ],
           "templates": [
             "struct.en1993-member",
@@ -6202,7 +6249,7 @@
             "kN·m"
           ],
           "descriptions": [
-            "M_y,Rk/γ_M1"
+            "Characteristic bending resistance about y-y over the partial factor"
           ],
           "templates": [
             "struct.en1993-member"
@@ -6220,7 +6267,7 @@
             "kN·m"
           ],
           "descriptions": [
-            "M_y,c,Rd"
+            "Bending resistance about y-y"
           ],
           "templates": [
             "struct.en1993-member"
@@ -6258,7 +6305,7 @@
             "kN·m"
           ],
           "descriptions": [
-            "Design moment about z-z (minor)",
+            "Design moment about z-z (minor axis)",
             "Greatest design moment about z-z"
           ],
           "templates": [
@@ -6296,7 +6343,7 @@
             "kN·m"
           ],
           "descriptions": [
-            "M_z,Rk/γ_M1"
+            "Characteristic bending resistance about z-z over the partial factor"
           ],
           "templates": [
             "struct.en1993-member"
@@ -6314,7 +6361,7 @@
             "kN·m"
           ],
           "descriptions": [
-            "M_z,c,Rd"
+            "Bending resistance about z-z"
           ],
           "templates": [
             "struct.en1993-member"
@@ -6810,8 +6857,8 @@
             "kN"
           ],
           "descriptions": [
-            "Design axial force, TENSION positive and compression negative (as S2 N_e1 and S3; 6.3.3 applies to compression)",
-            "Design axial force, TENSION positive and compression negative (the opposite sign to S6's N_Ed, which is compression positive; S2's N_e1 is tension positive)"
+            "Design axial force, tension positive and compression negative (a positive value is outside the range)",
+            "Design axial force, tension positive and compression negative, opposite in sign to the base plate sheet's axial force"
           ],
           "templates": [
             "struct.en1993-member",
@@ -6825,7 +6872,7 @@
             "kN"
           ],
           "descriptions": [
-            "Axial force, COMPRESSION positive (the opposite sign to S3's N_Ed, which is tension positive; S2's R1_y, an upward reaction, is compression positive)"
+            "Axial force, compression positive and opposite in sign to the member sheet's axial force (a frame reaction R1_y is compression positive)"
           ],
           "templates": [
             "struct.base-plate"
@@ -6843,7 +6890,7 @@
             "kN"
           ],
           "descriptions": [
-            "N_Rk"
+            "Characteristic axial resistance"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -6861,6 +6908,7 @@
             "kN"
           ],
           "descriptions": [
+            "Governing buckling resistance",
             "N_b,Rd"
           ],
           "templates": [
@@ -6880,6 +6928,7 @@
             "kN"
           ],
           "descriptions": [
+            "Buckling resistance about y-y",
             "N_b,y,Rd"
           ],
           "templates": [
@@ -6899,6 +6948,7 @@
             "kN"
           ],
           "descriptions": [
+            "Buckling resistance about z-z",
             "N_b,z,Rd"
           ],
           "templates": [
@@ -6952,6 +7002,7 @@
             "kN"
           ],
           "descriptions": [
+            "Elastic critical force about y-y",
             "N_cr,y"
           ],
           "templates": [
@@ -6971,6 +7022,7 @@
             "kN"
           ],
           "descriptions": [
+            "Elastic critical force about z-z",
             "N_cr,z"
           ],
           "templates": [
@@ -7078,7 +7130,7 @@
             "kN"
           ],
           "descriptions": [
-            "N_pl,Rd"
+            "Plastic axial resistance"
           ],
           "templates": [
             "struct.en1993-member"
@@ -7110,7 +7162,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Design factor N_d of the Design Category (BTH-1 mode; user record)"
+            "Design factor of the Design Category (optional; blank = BTH-1 mode is blocked; user record)"
           ],
           "templates": [
             "struct.lifting"
@@ -7175,19 +7227,6 @@
           ]
         },
         {
-          "meaning": "applied-axial-load",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Applied axial load"
-          ],
-          "templates": [
-            "struct.column-buckling"
-          ]
-        },
-        {
           "meaning": "dissipated-power",
           "quantity": "Power, heat flow",
           "units": [
@@ -7225,32 +7264,6 @@
           "templates": [
             "elec.enclosure-heat"
           ]
-        },
-        {
-          "meaning": "point-load",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Point load (downward)"
-          ],
-          "templates": [
-            "struct.beam-formulas"
-          ]
-        },
-        {
-          "meaning": "total-force",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Total force P (force basis: uniform, patch and ring loads; a ring load always uses P)"
-          ],
-          "templates": [
-            "struct.plate-bending"
-          ]
         }
       ]
     },
@@ -7286,24 +7299,6 @@
           ],
           "templates": [
             "mech.bearing-life"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "P_E",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Euler load"
-          ],
-          "templates": [
-            "struct.column-buckling"
           ]
         }
       ]
@@ -7410,24 +7405,6 @@
           ],
           "templates": [
             "elec.motor-sizing"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "P_c",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Force",
-          "units": [
-            "kN"
-          ],
-          "descriptions": [
-            "Compression resistance"
-          ],
-          "templates": [
-            "struct.column-buckling"
           ]
         }
       ]
@@ -8322,21 +8299,6 @@
       "symbol": "R",
       "meanings": [
         {
-          "meaning": "radius",
-          "quantity": "Length",
-          "units": [
-            "mm"
-          ],
-          "descriptions": [
-            "Lug end radius R about the hole centre (the plate is 2R wide at the hole)",
-            "Radius (bend)"
-          ],
-          "templates": [
-            "elec.containment",
-            "struct.lifting"
-          ]
-        },
-        {
           "meaning": "thermal-resistance",
           "quantity": "Thermal resistance",
           "units": [
@@ -8350,6 +8312,19 @@
           "templates": [
             "bs.insulation",
             "elec.thermal-chain"
+          ]
+        },
+        {
+          "meaning": "radius",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Radius (bend)"
+          ],
+          "templates": [
+            "elec.containment"
           ]
         },
         {
@@ -11264,7 +11239,7 @@
             "kN"
           ],
           "descriptions": [
-            "Group force for block tearing"
+            "Group force for block tearing (optional; blank = no block tearing check)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -11502,7 +11477,7 @@
             "kN"
           ],
           "descriptions": [
-            "V_pl,Rd"
+            "Plastic shear resistance"
           ],
           "templates": [
             "struct.en1993-member"
@@ -11770,24 +11745,6 @@
       ]
     },
     {
-      "symbol": "W_el_x",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Volume, section modulus",
-          "units": [
-            "cm³"
-          ],
-          "descriptions": [
-            "W_el,x"
-          ],
-          "templates": [
-            "struct.section-properties"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "W_el_y",
       "meanings": [
         {
@@ -11797,8 +11754,8 @@
             "cm³"
           ],
           "descriptions": [
-            "Elastic modulus, major axis (S1: W_el_x)",
-            "W_el,y"
+            "Elastic section modulus about the y-y axis",
+            "Elastic section modulus about y-y"
           ],
           "templates": [
             "struct.en1993-member",
@@ -11818,29 +11775,12 @@
             "cm³"
           ],
           "descriptions": [
-            "Elastic modulus, minor axis (S1: W_el_y)",
-            "W_el,z"
+            "Elastic section modulus about the z-z axis",
+            "Elastic section modulus about z-z"
           ],
           "templates": [
             "struct.en1993-member",
-            "struct.ltb-interaction"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "W_pl_x",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Volume, section modulus",
-          "units": [
-            "cm³"
-          ],
-          "descriptions": [
-            "W_pl,x"
-          ],
-          "templates": [
+            "struct.ltb-interaction",
             "struct.section-properties"
           ]
         }
@@ -11856,8 +11796,8 @@
             "cm³"
           ],
           "descriptions": [
-            "Plastic modulus, major axis (S1: W_pl_x)",
-            "W_pl,y"
+            "Plastic section modulus about the y-y axis",
+            "Plastic section modulus about y-y"
           ],
           "templates": [
             "struct.en1993-member",
@@ -11877,12 +11817,13 @@
             "cm³"
           ],
           "descriptions": [
-            "Plastic modulus, minor axis (S1: W_pl_y)",
-            "W_pl,z"
+            "Plastic section modulus about the z-z axis",
+            "Plastic section modulus about z-z"
           ],
           "templates": [
             "struct.en1993-member",
-            "struct.ltb-interaction"
+            "struct.ltb-interaction",
+            "struct.section-properties"
           ]
         }
       ]
@@ -11915,7 +11856,7 @@
             "cm³"
           ],
           "descriptions": [
-            "W_y"
+            "Section modulus for bending about y-y"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -12261,7 +12202,7 @@
           "descriptions": [
             "Throat",
             "Throat thickness",
-            "Weld throat"
+            "Weld throat (optional; blank = no weld check)"
           ],
           "templates": [
             "mech.weld-group",
@@ -12276,7 +12217,7 @@
             "m"
           ],
           "descriptions": [
-            "Load position from the left end",
+            "Load position from the left end (optional; blank = not used by the distributed-load cases)",
             "a from end i"
           ],
           "templates": [
@@ -12317,7 +12258,7 @@
             "mm"
           ],
           "descriptions": [
-            "End distance a from the hole edge to the plate edge along the load line (blank: R − D_h/2, a round-ended lug)"
+            "End distance from the hole edge to the plate edge along the load line (optional; blank = r_lug − D_h/2, the round end)"
           ],
           "templates": [
             "struct.lifting"
@@ -12343,7 +12284,7 @@
             "mm"
           ],
           "descriptions": [
-            "Radius a (circular) or side a (rectangular)"
+            "Plate radius (circular) or length in the x direction (rectangular)"
           ],
           "templates": [
             "struct.plate-bending"
@@ -12530,7 +12471,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "α, concentration factor √(A_c1/A_c0) of the foundation (1 when the foundation geometry is not known)"
+            "Concentration factor √(A_c1/A_c0) of the foundation (1 when the foundation geometry is not known)"
           ],
           "templates": [
             "struct.base-plate"
@@ -12656,7 +12597,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Imperfection factor α, curve a (recommended 0.21)"
+            "Imperfection factor for curve a (recommended 0.21)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -12672,7 +12613,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Imperfection factor α, curve a0 (recommended 0.13)"
+            "Imperfection factor for curve a0 (recommended 0.13)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -12699,7 +12640,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Imperfection factor α, curve b (recommended 0.34)"
+            "Imperfection factor for curve b (recommended 0.34)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -12731,7 +12672,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Imperfection factor α, curve c (recommended 0.49)"
+            "Imperfection factor for curve c (recommended 0.49)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -12747,7 +12688,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "α_cc, long-term effects on the concrete strength"
+            "Coefficient for long-term effects on the concrete strength"
           ],
           "templates": [
             "struct.base-plate"
@@ -12763,7 +12704,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Imperfection factor α, curve d (recommended 0.76)"
+            "Imperfection factor for curve d (recommended 0.76)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -12862,14 +12803,14 @@
       ]
     },
     {
-      "symbol": "alpha_pl_x",
+      "symbol": "alpha_pl_y",
       "meanings": [
         {
           "meaning": "",
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Shape factor, x"
+            "Shape factor about the y-y axis"
           ],
           "templates": [
             "struct.section-properties"
@@ -12953,7 +12894,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Imperfection factor α_y (blank = from the curve)",
+            "Imperfection factor about y-y (optional; blank = from the buckling curve)",
             "α_y"
           ],
           "templates": [
@@ -12971,7 +12912,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Imperfection factor α_z (blank = from the curve)",
+            "Imperfection factor about z-z (optional; blank = from the buckling curve)",
             "α_z"
           ],
           "templates": [
@@ -13084,13 +13025,12 @@
           ],
           "descriptions": [
             "Column width, along the plate width B (I/H and RHS)",
-            "Flange width b",
+            "Flange width",
             "Groove width b",
-            "Side b (rectangular; not used for a circular plate)",
+            "Length in the y direction (rectangular plate only, not used for a circular plate)",
             "Width at the root (cantilever); effective axial length of the ring (annular: that of a free ring, not the lip of a longer tube)",
-            "Width b (helper)",
-            "Width b (or horizontal leg)",
-            "b"
+            "Width for the shear area (optional; blank = use A_v)",
+            "Width or horizontal leg"
           ],
           "templates": [
             "fp.oring-gland",
@@ -13205,7 +13145,7 @@
             "mm"
           ],
           "descriptions": [
-            "Edge distance b_e from the hole edge to the plate edge on each side, across the load line (limited to R − D_h/2; the effective width for tension is reduced further by 4t and f_u/f_y)"
+            "Edge distance from the hole edge to the plate edge on each side, across the load line (limited to r_lug − D_h/2; the effective width for tension is reduced further by 4t_p and by f_u/f_y)"
           ],
           "templates": [
             "struct.lifting"
@@ -13283,7 +13223,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "β for 6.3.2.3 (recommended 0.75)"
+            "Slenderness correction factor for cl. 6.3.2.3 (recommended 0.75)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -13331,7 +13271,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Correlation factor β_w (0.8 S235, 0.85 S275, 0.9 S355, 1.0 S420/S460)"
+            "Correlation factor (0.8 S235, 0.85 S275, 0.9 S355, 1.0 S420 and S460)"
           ],
           "templates": [
             "struct.fillet-weld"
@@ -13367,7 +13307,7 @@
             "mm"
           ],
           "descriptions": [
-            "Bearing outstand c"
+            "Bearing outstand round the column footprint"
           ],
           "templates": [
             "struct.base-plate"
@@ -13579,6 +13519,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
+            "Buckling reduction factor about y-y",
             "χ_y"
           ],
           "templates": [
@@ -13596,6 +13537,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
+            "Buckling reduction factor about z-z",
             "χ_z"
           ],
           "templates": [
@@ -13914,7 +13856,7 @@
           ],
           "descriptions": [
             "Diameter",
-            "Diameter d (circle, tube)",
+            "Diameter of a circle or tube",
             "Interface (nominal) diameter",
             "Nominal thread diameter",
             "Shaft diameter",
@@ -14421,7 +14363,7 @@
             "mm"
           ],
           "descriptions": [
-            "Hole diameter (blank: normal clearance d + 2, or d + 3 from M27)"
+            "Hole diameter (optional; blank = normal clearance d + 2, or d + 3 from M27)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -14961,7 +14903,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Deflection limit: span/ratio (span = diameter of a circular plate, shorter side of a rectangle)"
+            "Deflection limit as span/ratio (span = diameter of a circular plate, shorter side of a rectangle)"
           ],
           "templates": [
             "struct.plate-bending"
@@ -15064,7 +15006,7 @@
             "mm"
           ],
           "descriptions": [
-            "Deflection limit"
+            "Deflection limit (optional; blank = no deflection check)"
           ],
           "templates": [
             "struct.beam-formulas"
@@ -15220,7 +15162,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Dishing-ratio limit on D_h/t (blank: the dishing check is not made; user record)"
+            "Dishing-ratio limit on the hole diameter over the thickness (optional; blank = the dishing check is not made; user record)"
           ],
           "templates": [
             "struct.lifting"
@@ -15725,7 +15667,7 @@
             "mm"
           ],
           "descriptions": [
-            "Across-corners dimension of the smaller of bolt head and nut (blank: punching takes d_m = the across-flats s, conservative)"
+            "Across-corners dimension of the smaller of bolt head and nut (optional; blank = punching takes the across-flats dimension, which is conservative)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -15759,7 +15701,7 @@
             "mm"
           ],
           "descriptions": [
-            "Edge distance e_min of the bolt row (used only with prying)"
+            "Edge distance of the bolt row, used only with prying (optional; blank = prying needs it)"
           ],
           "templates": [
             "struct.base-plate"
@@ -16097,7 +16039,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Shear-area factor η"
+            "Shear-area factor"
           ],
           "templates": [
             "struct.en1993-member"
@@ -16479,7 +16421,7 @@
             "MPa"
           ],
           "descriptions": [
-            "Grout characteristic strength (optional: checks the β_j = 2/3 condition)"
+            "Grout characteristic strength (optional; blank = the β_j = 2/3 condition is not checked)"
           ],
           "templates": [
             "struct.base-plate"
@@ -16581,7 +16523,7 @@
             "MPa"
           ],
           "descriptions": [
-            "Bearing strength f_jd"
+            "Design bearing strength of the joint"
           ],
           "templates": [
             "struct.base-plate"
@@ -16849,11 +16791,11 @@
             "MPa"
           ],
           "descriptions": [
-            "Plate ultimate strength",
-            "Ultimate strength f_u of the lug plate",
-            "Ultimate strength of the weaker part joined",
-            "Ultimate tensile strength (needed when N_Ed is tension)",
-            "Ultimate tensile strength (optional)"
+            "Plate ultimate tensile strength",
+            "Ultimate tensile strength (optional)",
+            "Ultimate tensile strength (optional; blank = the sheet is blocked when N_Ed is tension)",
+            "Ultimate tensile strength of the lug plate",
+            "Ultimate tensile strength of the weaker part joined"
           ],
           "templates": [
             "mech.material-margin",
@@ -16875,8 +16817,8 @@
             "MPa"
           ],
           "descriptions": [
-            "Anchor bolt ultimate strength",
-            "Bolt ultimate strength"
+            "Anchor bolt ultimate tensile strength",
+            "Bolt ultimate tensile strength"
           ],
           "templates": [
             "struct.base-plate",
@@ -16969,8 +16911,8 @@
           "descriptions": [
             "Plate yield strength",
             "Yield strength",
-            "Yield strength (for the thickness)",
-            "Yield strength f_y of the lug plate for its thickness",
+            "Yield strength for the thickness",
+            "Yield strength of the lug plate for its thickness",
             "Yield strength of the rod"
           ],
           "templates": [
@@ -17002,6 +16944,24 @@
           "templates": [
             "struct.base-plate",
             "struct.connection-ec3"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "f_yd",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Stress, pressure",
+          "units": [
+            "MPa"
+          ],
+          "descriptions": [
+            "Design yield strength"
+          ],
+          "templates": [
+            "struct.plate-bending"
           ]
         }
       ]
@@ -17201,10 +17161,9 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Partial factor γ_M0 (cross-section resistance)",
-            "Partial factor γ_M0 on the resistance of the cross-section",
-            "γ_M0",
-            "γ_M0, partial factor for the plate"
+            "Partial factor for cross-section resistance",
+            "Partial factor for the plate",
+            "Partial factor on the resistance of the cross-section"
           ],
           "templates": [
             "struct.base-plate",
@@ -17223,7 +17182,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Partial factor γ_M1 (member buckling)"
+            "Partial factor for member buckling"
           ],
           "templates": [
             "struct.en1993-member",
@@ -17240,10 +17199,10 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Partial factor γ_M2",
-            "Partial factor γ_M2 (net-section fracture)",
-            "γ_M2",
-            "γ_M2, partial factor for the anchor bolts"
+            "Partial factor for bolt and weld resistance",
+            "Partial factor for net-section fracture",
+            "Partial factor for the anchor bolts",
+            "Partial factor for the weld resistance"
           ],
           "templates": [
             "struct.base-plate",
@@ -17278,7 +17237,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "γ_c, partial factor for concrete"
+            "Partial factor for concrete"
           ],
           "templates": [
             "struct.base-plate"
@@ -17370,10 +17329,10 @@
           ],
           "descriptions": [
             "Column depth, along the plate length L (I/H and RHS)",
-            "Depth h (or vertical leg)",
-            "Depth h (shear-area helper; leave blank when A_v is given)",
-            "Overall depth h",
-            "h (or d for circle/tube)"
+            "Depth for the shear area (optional; blank = use A_v)",
+            "Depth or vertical leg",
+            "Depth, vertical leg, or diameter of a circle or tube",
+            "Overall section depth"
           ],
           "templates": [
             "struct.base-plate",
@@ -17402,7 +17361,7 @@
             "mm"
           ],
           "descriptions": [
-            "Distance h from the hole centre to the weld or base, for the out-of-plane moment (blank: no moment given)"
+            "Distance from the hole centre to the weld or base, for the out-of-plane moment (optional; blank = no moment given)"
           ],
           "templates": [
             "struct.lifting"
@@ -17829,42 +17788,6 @@
       ]
     },
     {
-      "symbol": "i_x",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Length",
-          "units": [
-            "cm"
-          ],
-          "descriptions": [
-            "i_x"
-          ],
-          "templates": [
-            "struct.section-properties"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "i_y",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Length",
-          "units": [
-            "cm"
-          ],
-          "descriptions": [
-            "i_y"
-          ],
-          "templates": [
-            "struct.section-properties"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "id",
       "meanings": [
         {
@@ -17977,7 +17900,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Effective length factor k (end rotation about the minor axis)"
+            "Effective length factor for end rotation about the minor axis"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -18217,7 +18140,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Bearing multiple k_b of the allowable stress on the projected pin area (BTH-1 mode; user record)"
+            "Bearing multiple of the allowable stress on the projected pin area (optional; blank = BTH-1 mode is blocked; user record)"
           ],
           "templates": [
             "struct.lifting"
@@ -18264,7 +18187,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "k_c for the f modification (blank: 1/(1.33 − 0.33ψ) for a linear diagram; required when C₁ is entered, unless the diagram is given as end moments)"
+            "Correction factor for the f modification (optional; blank = 1/(1.33 − 0.33ψ) for a linear diagram)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -18451,7 +18374,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Proof-load factor on the rated load (blank: no proof load given; user record)"
+            "Proof-load factor on the rated load (optional; blank = no proof load given; user record)"
           ],
           "templates": [
             "struct.lifting"
@@ -18553,7 +18476,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Service-class factor on the load (blank: 1.0; user record)"
+            "Service-class factor on the load (optional; blank = 1.0; user record)"
           ],
           "templates": [
             "struct.lifting"
@@ -18617,7 +18540,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Warping factor k_w"
+            "Effective length factor for warping"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -18685,8 +18608,8 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Interaction factor k_yy (member check)",
-            "k_yy"
+            "Interaction factor for bending about y-y in the member check",
+            "Interaction factor for major-axis bending in equation 6.61"
           ],
           "templates": [
             "struct.en1993-member",
@@ -18703,7 +18626,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "k_yz"
+            "Interaction factor for minor-axis bending in equation 6.61"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -18719,7 +18642,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "k_zy"
+            "Interaction factor for major-axis bending in equation 6.62"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -18735,8 +18658,8 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Interaction factor k_zz (member check)",
-            "k_zz"
+            "Interaction factor for bending about z-z in the member check",
+            "Interaction factor for minor-axis bending in equation 6.62"
           ],
           "templates": [
             "struct.en1993-member",
@@ -19005,7 +18928,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "λ̄_LT,0 for 6.3.2.3 (recommended 0.4)"
+            "Plateau slenderness for cl. 6.3.2.3 (recommended 0.4)"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -19039,6 +18962,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
+            "Non-dimensional slenderness about y-y",
             "λ̄_y"
           ],
           "templates": [
@@ -19056,6 +18980,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
+            "Non-dimensional slenderness about z-z",
             "λ̄_z"
           ],
           "templates": [
@@ -19919,7 +19844,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Load cycles in the life of the lug (the 2×/3× route covers up to 16,000; beyond that a fatigue assessment is needed and the sheet does not run)"
+            "Load cycles in the life of the lug (the 2×/3× route covers up to 16,000, and beyond that a fatigue assessment is needed and the sheet does not run)"
           ],
           "templates": [
             "struct.lifting"
@@ -20433,7 +20358,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Divisor n_u on f_u; the allowable stress is F_a = min(f_y/n_y, f_u/n_u) (BTH-1 mode; user record)",
+            "Divisor on the ultimate tensile strength in the allowable stress (optional; blank = BTH-1 mode is blocked; user record)",
             "Factor on ultimate"
           ],
           "templates": [
@@ -20451,7 +20376,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Divisor n_y on f_y; the allowable stress is F_a = min(f_y/n_y, f_u/n_u) (BTH-1 mode; user record)",
+            "Divisor on the yield strength in the allowable stress (optional; blank = BTH-1 mode is blocked; user record)",
             "Factor on yield"
           ],
           "templates": [
@@ -20864,7 +20789,7 @@
             "mm"
           ],
           "descriptions": [
-            "Pitch (load direction; blank: one row)"
+            "Pitch in the load direction (optional; blank = one row)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -20882,7 +20807,7 @@
             "mm"
           ],
           "descriptions": [
-            "Gauge (across the load; blank: one line)"
+            "Gauge across the load (optional; blank = one line)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -21711,8 +21636,8 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "ψ of the M_y diagram",
-            "ψ of the M_y diagram (ψ mode: ratio of the end moments, +1 uniform moment (the default, conservative), −1 reverse symmetric)"
+            "Ratio of the end moments about y-y, +1 for a uniform moment (optional; blank = 1, the conservative diagram)",
+            "ψ of the M_y diagram"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -21728,7 +21653,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "ψ of the M_z diagram"
+            "Ratio of the end moments about z-z"
           ],
           "templates": [
             "struct.ltb-interaction"
@@ -21770,7 +21695,7 @@
             "kPa"
           ],
           "descriptions": [
-            "Pressure q on the loaded area (uniform and patch loads, pressure basis)"
+            "Pressure on the loaded area (uniform and patch loads, pressure basis)"
           ],
           "templates": [
             "struct.plate-bending"
@@ -21964,9 +21889,9 @@
             "mm"
           ],
           "descriptions": [
-            "Root radius (helper)",
-            "Root radius r (I, channel, tee, angle) or outer corner radius (hollow rectangle; blank = 1.5 t)",
-            "r"
+            "Root or corner radius",
+            "Root radius for the shear area (optional; blank = 0)",
+            "Root radius of an I-section, channel, tee or angle, or outer corner radius of a hollow rectangle (optional; blank = 0 for the rolled shapes, 1.5 t_w for a hollow rectangle)"
           ],
           "templates": [
             "struct.en1993-member",
@@ -22107,6 +22032,42 @@
       ]
     },
     {
+      "symbol": "r_g_y",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Radius of gyration about the y-y axis"
+          ],
+          "templates": [
+            "struct.section-properties"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "r_g_z",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Radius of gyration about the z-z axis"
+          ],
+          "templates": [
+            "struct.section-properties"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "r_h1",
       "meanings": [
         {
@@ -22152,10 +22113,28 @@
             "mm"
           ],
           "descriptions": [
-            "Inner corner radius (hollow rectangle; blank = 1.0 t)"
+            "Inner corner radius of a hollow rectangle (optional; blank = 1.0 t_w, at most the outer radius)"
           ],
           "templates": [
             "struct.section-properties"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "r_lug",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Lug end radius about the hole centre (the plate is twice that wide at the hole)"
+          ],
+          "templates": [
+            "struct.lifting"
           ]
         }
       ]
@@ -22296,17 +22275,6 @@
           "templates": [
             "fp.cylinder"
           ]
-        },
-        {
-          "meaning": "shear-reduction-factor",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Shear reduction factor ρ"
-          ],
-          "templates": [
-            "struct.en1993-member"
-          ]
         }
       ]
     },
@@ -22385,6 +22353,22 @@
           ],
           "templates": [
             "bs.pipe-pump"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "rho_shear",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Shear reduction factor ρ"
+          ],
+          "templates": [
+            "struct.en1993-member"
           ]
         }
       ]
@@ -22855,7 +22839,7 @@
             "MPa"
           ],
           "descriptions": [
-            "Allowable bending stress",
+            "Allowable bending stress (optional; blank = no stress check)",
             "Allowable stress"
           ],
           "templates": [
@@ -22966,7 +22950,7 @@
             "MPa"
           ],
           "descriptions": [
-            "Directional: normal stress ⊥ throat"
+            "Directional method: normal stress perpendicular to the throat (optional; blank = no directional check)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -23646,20 +23630,10 @@
             "mm"
           ],
           "descriptions": [
-            "Lug plate thickness t",
-            "Plate thickness",
-            "Thickness",
-            "Wall / web / leg thickness t (t_w)",
-            "Wall thickness (RHS and CHS)",
-            "t / t_w"
+            "Thickness"
           ],
           "templates": [
-            "bs.plane-wall",
-            "struct.base-plate",
-            "struct.connection-ec3",
-            "struct.lifting",
-            "struct.plate-bending",
-            "struct.section-properties"
+            "bs.plane-wall"
           ]
         },
         {
@@ -23718,7 +23692,7 @@
             "mm"
           ],
           "descriptions": [
-            "Thickness of the other ply the bolt bears on (the column flange behind an end plate; blank = one ply only): bearing is taken on the thinner ply, with this sheet's f_u, edge distances and spacings"
+            "Thickness of the other ply, such as the column flange behind an end plate (optional; blank = one ply only)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -23936,11 +23910,10 @@
             "mm"
           ],
           "descriptions": [
+            "Flange thickness",
             "Flange thickness (I/H)",
-            "Flange thickness (helper)",
-            "Flange thickness t_f",
-            "Flange thickness t_f (S1: t_f; selects the flexural buckling curves of Table 6.2)",
-            "t_f"
+            "Flange thickness for the shear area (optional; blank = use A_v)",
+            "Flange thickness, which selects the flexural buckling curves of Table 6.2"
           ],
           "templates": [
             "struct.base-plate",
@@ -23992,7 +23965,7 @@
             "mm"
           ],
           "descriptions": [
-            "Grout thickness (optional: checks the β_j = 2/3 condition)"
+            "Grout thickness (optional; blank = the β_j = 2/3 condition is not checked)"
           ],
           "templates": [
             "struct.base-plate"
@@ -24155,12 +24128,16 @@
             "mm"
           ],
           "descriptions": [
+            "Lug plate thickness",
             "Plate thickness",
             "Shell thickness provided (nominal, before corrosion)"
           ],
           "templates": [
             "mech.thin-vessel",
-            "struct.base-plate"
+            "struct.base-plate",
+            "struct.connection-ec3",
+            "struct.lifting",
+            "struct.plate-bending"
           ]
         }
       ]
@@ -24352,12 +24329,14 @@
             "mm"
           ],
           "descriptions": [
+            "Wall, web or leg thickness",
             "Web thickness (I/H)",
-            "Web thickness (helper)"
+            "Web thickness for the shear area (optional; blank = use A_v)"
           ],
           "templates": [
             "struct.base-plate",
-            "struct.en1993-member"
+            "struct.en1993-member",
+            "struct.section-properties"
           ]
         },
         {
@@ -24379,16 +24358,18 @@
       "symbol": "t_wall",
       "meanings": [
         {
-          "meaning": "",
+          "meaning": "wall-thickness",
           "quantity": "Length",
           "units": [
             "mm"
           ],
           "descriptions": [
-            "Pipe wall thickness"
+            "Pipe wall thickness",
+            "Wall thickness (RHS and CHS)"
           ],
           "templates": [
-            "bs.pipe-expansion"
+            "bs.pipe-expansion",
+            "struct.base-plate"
           ]
         }
       ]
@@ -24612,7 +24593,7 @@
             "MPa"
           ],
           "descriptions": [
-            "Directional: shear ∥ weld axis"
+            "Directional method: shear parallel to the weld axis (optional; blank = no directional check)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -24630,7 +24611,7 @@
             "MPa"
           ],
           "descriptions": [
-            "Directional: shear ⊥ weld axis"
+            "Directional method: shear perpendicular to the weld axis (optional; blank = no directional check)"
           ],
           "templates": [
             "struct.connection-ec3"
@@ -25502,7 +25483,7 @@
           "units": [],
           "descriptions": [
             "Bending term, y",
-            "Bending y utilisation"
+            "Bending y-y utilisation"
           ],
           "templates": [
             "struct.en1993-member",
@@ -25520,7 +25501,7 @@
           "units": [],
           "descriptions": [
             "Bending term, z",
-            "Bending z utilisation"
+            "Bending z-z utilisation"
           ],
           "templates": [
             "struct.en1993-member",
@@ -26195,7 +26176,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Governing utilisation reported by the PROFIS anchorage design (from the attached report; blank = the anchorage is not assessed here)"
+            "Governing utilisation reported by the PROFIS anchorage design, from the attached report (optional; blank = the anchorage is not assessed here)"
           ],
           "templates": [
             "struct.base-plate"
@@ -27030,7 +27011,7 @@
             "kN/m"
           ],
           "descriptions": [
-            "Distributed load (downward)"
+            "Distributed load, downward (optional; blank = not used by the point-load and couple cases)"
           ],
           "templates": [
             "struct.beam-formulas"
@@ -27705,7 +27686,7 @@
             "mm"
           ],
           "descriptions": [
-            "Extreme-fibre distance from the neutral axis (for the stress check)"
+            "Extreme-fibre distance from the neutral axis (optional; blank = no stress check)"
           ],
           "templates": [
             "struct.beam-formulas"
@@ -27813,7 +27794,7 @@
             "mm"
           ],
           "descriptions": [
-            "Lever arm z"
+            "Lever arm between the compression resultant and the bolt row"
           ],
           "templates": [
             "struct.base-plate"
@@ -27831,7 +27812,7 @@
             "mm"
           ],
           "descriptions": [
-            "Compression lever arm z_C"
+            "Distance from the column axis to the compression resultant"
           ],
           "templates": [
             "struct.base-plate"
@@ -27849,7 +27830,7 @@
             "mm"
           ],
           "descriptions": [
-            "Compression resultant distance from the column axis (blank: from the section)"
+            "Compression resultant distance from the column axis (optional; blank = from the section)"
           ],
           "templates": [
             "struct.base-plate"
@@ -27867,7 +27848,7 @@
             "mm"
           ],
           "descriptions": [
-            "Load height z_g above the shear centre, towards the compression flange (positive destabilises)"
+            "Load height above the shear centre, positive towards the compression flange (destabilising)"
           ],
           "templates": [
             "struct.ltb-interaction"

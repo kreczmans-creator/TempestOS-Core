@@ -7,8 +7,8 @@ Checker: —    Checked: —
 Issued: —
 
 1. Scope and method
-Area, centroid, second moments of area (Ixx, Iyy, Ixy), principal axes and values, elastic and plastic section moduli, radii of gyration, torsion constant and (I-sections) warping constant for a parametric shape, an arbitrary polygon with holes, or a composite of placed parts. The x axis is horizontal (major axis of an I-section), y vertical.
-Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − y dx); Ixx = ∫y² dA; Iyy = ∫x² dA; Ixy = ∫xy dA. Second moments moved to the centroid by the parallel-axis theorem: I_c = I − A d². Principal axes: tan 2θ = −2Ixy/(Ixx − Iyy). Elastic section modulus: W_el = Ixx/y_max. Plastic section modulus, about the equal-area axis found by bisection: W_pl = |Q_above| + |Q_below|. Torsion constant by shape, a Saint-Venant series for a solid rectangle, πd⁴/32 for a circle, Bredt for a closed thin-walled section, Σbt³/3 (plus a fillet term for rolled I) for an open section. Warping constant of an I-section: I_w = Iyy (h − t_f)²/4.
+Calculates area, centroid, second moments, moduli, radii of gyration, and torsion and warping constants of a parametric, polygon or composite section. The outline has x horizontal and y vertical; properties use EN 1993 axes, y-y horizontal and z-z vertical.
+Area and centroid: A = ½∮(x dy − y dx); x_c = ∫x dA / A; y_c = ∫y dA / A. Second moment about y-y: I_y = ∫y² dA − A y_c², by Green's theorem and the parallel-axis theorem. Second moment about z-z: I_z = ∫x² dA − A x_c²; product I_yz = ∫xy dA − A x_c y_c. Principal axes: tan 2θ = −2 I_yz / (I_y − I_z). Elastic section modulus: W_el_y = I_y / y_max. Plastic section modulus about the equal-area axis, found by bisection: W_pl_y = |Q_above| + |Q_below|. Torsion constant J: Saint-Venant series (solid rectangle), πd⁴/32 (circle), Bredt (closed thin-walled), Σbt³/3 (open). Warping constant of an I-section: I_w = I_z (h − t_f)²/4.
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
@@ -24,9 +24,11 @@ Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − 
   vertices[8] |  | x = -180 mm; y = 280 mm; loop = 2 |  |  | 
 
 3. Assumptions
-  A1. A polygon outline is simple (no self-intersection); holes lie inside the outline and do not overlap. (Green's theorem integrates the signed loops as given.)
-  A2. Rolled-section root fillets are quarter circles of radius r; flange tips are square; hollow-section corners are quarter circles of outer radius r_o (default 1.5 t) and inner radius r_i (default 1.0 t). (Published section tables use the same idealisation.)
-  A3. Thin-walled torsion constants neglect the junction and tip effects except the fillet term kept for rolled I-sections. (Open sections: Σbt³/3; closed: Bredt.)
+  A1. A polygon outline does not cross itself. (Green's theorem integrates the signed loops as given.)
+  A2. Holes lie inside the outline and do not overlap one another. (Green's theorem integrates the signed loops as given.)
+  A3. Rolled-section root fillets are quarter circles of radius r and flange tips are square. (Published section tables use the same idealisation.)
+  A4. Hollow-section corners are quarter circles of radius 1.5 t_w outside and 1.0 t_w inside by default. (BS EN 10210-2 hot-finished idealisation.)
+  A5. Thin-walled torsion constants neglect the junction and tip effects except the fillet term kept for rolled I-sections. (Open sections: Σbt³/3; closed: Bredt.)
 
 4. Working
   [2] A = ½ ∮ (x dy − y dx)    « Roark Table A.1
@@ -36,35 +38,35 @@ Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − 
   [3] x_c = ∫x dA / A
       = Green's theorem over 8 vertices in 2 loop(s)
       = 0 mm
-        Centroid x (from the shape origin)
+        Centroid x from the shape origin
   [4] y_c = ∫y dA / A
       = Green's theorem over 8 vertices in 2 loop(s)
       = 0 mm
-        Centroid y (from the shape origin)
-  [5] I_xx = ∫y² dA − A y_c²
+        Centroid y from the shape origin
+  [5] I_y = ∫y² dA − A y_c²
       = Green's theorem over 8 vertices in 2 loop(s)
       = 193150 cm⁴
-        Second moment of area about the centroidal x axis
-  [6] I_yy = ∫x² dA − A x_c²
+        Second moment of area about the centroidal y-y axis
+  [6] I_z = ∫x² dA − A x_c²
       = Green's theorem over 8 vertices in 2 loop(s)
       = 102270 cm⁴
-        Second moment of area about the centroidal y axis
-  [7] I_xy = ∫xy dA − A x_c y_c
+        Second moment of area about the centroidal z-z axis
+  [7] I_yz = ∫xy dA − A x_c y_c
       = Green's theorem over 8 vertices in 2 loop(s)
       = 0 cm⁴
-        Product of inertia about the centroid
-  [8] I_1 = (I_xx + I_yy)/2 + sqrt(((I_xx - I_yy)/2)^2 + I_xy^2)
+        Product of inertia about the centroidal y-y and z-z axes
+  [8] I_1 = (I_y + I_z)/2 + sqrt(((I_y - I_z)/2)^2 + I_yz^2)
       = (193150 cm⁴ + 102270 cm⁴) / 2 + sqrt(((193150 cm⁴ − 102270 cm⁴) / 2)^2 + (0 cm⁴)^2)
       = 193150 cm⁴
         Major principal second moment
-  [9] I_2 = (I_xx + I_yy)/2 - sqrt(((I_xx - I_yy)/2)^2 + I_xy^2)
+  [9] I_2 = (I_y + I_z)/2 - sqrt(((I_y - I_z)/2)^2 + I_yz^2)
       = (193150 cm⁴ + 102270 cm⁴) / 2 − sqrt(((193150 cm⁴ − 102270 cm⁴) / 2)^2 + (0 cm⁴)^2)
       = 102270 cm⁴
         Minor principal second moment
-  [10] theta = ½ atan2(−2 I_xy, I_xx − I_yy)
+  [10] theta = ½ atan2(−2 I_yz, I_y − I_z)
       = ½ atan2(0, 90880)
       = 0 deg
-        Angle from the x axis to the major principal axis (anticlockwise)
+        Angle from the y-y axis to the major principal axis, anticlockwise
   [11] y_top = y_max − y_c
       = Green's theorem over 8 vertices in 2 loop(s)
       = 300 mm
@@ -77,52 +79,52 @@ Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − 
       = Green's theorem over 8 vertices in 2 loop(s)
       = 200 mm
         Extreme fibre from the centroid, x
-  [14] W_el_x = I_xx / max(y_top, y_bot)
+  [14] W_el_y = I_y / max(y_top, y_bot)
       = 193150 cm⁴ / max(300 mm, 300 mm)
       = 6438.4 cm³
-        Elastic section modulus about x (governing fibre)
-  [15] W_el_y = I_yy / x_ext
+        Elastic section modulus about the y-y axis, governing fibre
+  [15] W_el_z = I_z / x_ext
       = 102270 cm⁴ / 200 mm
       = 5113.6 cm³
-        Elastic section modulus about y
-  [16] W_pl_x = |Q_above| + |Q_below| about the equal-area axis
+        Elastic section modulus about the z-z axis
+  [16] W_pl_y = |Q_above| + |Q_below| about the equal-area axis
       = equal-area axis at y = 0 mm
       = 7776 cm³
-        Plastic section modulus about x
-  [17] W_pl_y = |Q_right| + |Q_left| about the equal-area axis
+        Plastic section modulus about the y-y axis
+  [17] W_pl_z = |Q_right| + |Q_left| about the equal-area axis
       = equal-area axis at x = 0 mm
       = 5856 cm³
-        Plastic section modulus about y
-  [18] i_x = sqrt(I_xx / A)
+        Plastic section modulus about the z-z axis
+  [18] r_g_y = sqrt(I_y / A)
       = sqrt(193150 cm⁴ / 384 cm²)
-      = 22.428 cm
-        Radius of gyration about x
-  [19] i_y = sqrt(I_yy / A)
+      = 224.28 mm
+        Radius of gyration about the y-y axis
+  [19] r_g_z = sqrt(I_z / A)
       = sqrt(102270 cm⁴ / 384 cm²)
-      = 16.32 cm
-        Radius of gyration about y
-  [20] alpha_pl_x = W_pl_x / W_el_x
+      = 163.2 mm
+        Radius of gyration about the z-z axis
+  [20] alpha_pl_y = W_pl_y / W_el_y
       = 7776 cm³ / 6438.4 cm³
       = 1.2078
-        Shape factor about x
+        Shape factor about the y-y axis
 
 5. Results
   A = 384 cm²    Area
+  I_y = 193152 cm⁴    Second moment of area about the y-y axis
+  I_z = 102272 cm⁴    Second moment of area about the z-z axis
+  I_yz = 0 cm⁴    Product of inertia about the y-y and z-z axes
+  W_el_y = 6438.4 cm³    Elastic section modulus about the y-y axis
+  W_el_z = 5113.6 cm³    Elastic section modulus about the z-z axis
+  W_pl_y = 7776 cm³    Plastic section modulus about the y-y axis
+  W_pl_z = 5856 cm³    Plastic section modulus about the z-z axis
+  r_g_y = 224.3 mm    Radius of gyration about the y-y axis
+  r_g_z = 163.2 mm    Radius of gyration about the z-z axis
   x_c = 0 mm    Centroid x
   y_c = 0 mm    Centroid y
-  I_xx = 193152 cm⁴    I_xx
-  I_yy = 102272 cm⁴    I_yy
-  I_xy = 0 cm⁴    I_xy
-  I_1 = 193152 cm⁴    I_1 (major principal)
-  I_2 = 102272 cm⁴    I_2 (minor principal)
+  I_1 = 193152 cm⁴    Major principal second moment
+  I_2 = 102272 cm⁴    Minor principal second moment
   theta = 0°    Principal axis angle
-  W_el_x = 6438.4 cm³    W_el,x
-  W_el_y = 5113.6 cm³    W_el,y
-  W_pl_x = 7776 cm³    W_pl,x
-  W_pl_y = 5856 cm³    W_pl,y
-  i_x = 22.43 cm    i_x
-  i_y = 16.32 cm    i_y
-  alpha_pl_x = 1.2078    Shape factor, x
+  alpha_pl_y = 1.2078    Shape factor about the y-y axis
 
 6. Checks (governing first)
   None.
@@ -131,14 +133,14 @@ Area and second moments of each outline, by Green's theorem: A = ½∮(x dy − 
   WARNING  J: no torsion constant is computed for an arbitrary polygon.  [no-torsion]
 
 8. Verification
-  Template: struct.section-properties@1.1.1
+  Template: struct.section-properties@1.2.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 5/5
   Test run: —
 
 9. References
-  1. Roark's Formulas for Stress and Strain Appendix A, Table A.1; Ch. 10, Table 10.1 — Properties of sections; torsion of solid and thin-walled sections
-  2. AISC Design Guide 9 (Seaburg & Carter) Appendix — Torsional properties of rolled I-shapes
-  3. BS EN 10365 — Hot rolled steel channels, I and H sections: dimensions and masses
-  4. BS EN 10210-2 — Hot finished structural hollow sections: tolerances, dimensions and sectional properties
+  1. Young and Budynas, Roark's Formulas for Stress and Strain Table A.1 and Table 10.1, 8th ed. — Properties of sections; torsion of solid and thin-walled sections
+  2. Seaburg and Carter, Torsional Analysis of Structural Steel Members (AISC Design Guide 9) App., 1st ed. — Torsional properties of rolled I-shapes
+  3. BS EN 10365:2017 — Hot rolled steel channels, I and H sections: dimensions and masses
+  4. BS EN 10210-2:2019 — Hot finished structural hollow sections: tolerances, dimensions and sectional properties

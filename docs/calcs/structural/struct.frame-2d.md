@@ -1,16 +1,190 @@
-# S2 — Beam and 2D frame analysis (`struct.frame-2d@1.4.0`)
+# Beam and 2D frame analysis (`struct.frame-2d@1.5.0`)
 
 **In plain terms.** A frame is treated as members joined at nodes, each member a spring that resists stretching and bending. The stiffness method assembles those springs into one set of equations relating the forces at the nodes to how far they move, solves for the movements under each load case, and works back to the forces and moments along every member. Load combinations add the cases with their factors, and the envelope keeps the worst value at each point.
 
-**Scope.** Linear elastic plane frames and continuous beams: pin / roller / fixed / spring supports, member end releases, nodal, point, uniform, trapezoidal and couple loads in cases and user combinations. Reactions, member end forces, N/V/M and deflection along every member with extremes and positions, envelope over combinations.
+## Scope
 
-**Method.** Direct stiffness (`FrameSolver`): 3 DOF per node, Euler–Bernoulli 6×6 member stiffness, releases by static condensation, exact fixed-end forces from Macaulay functions (`MemberLoads`), reverse Cuthill–McKee ordering, banded LDLᵀ (non-positive pivot ⇒ "mechanism" block). Internal functions: V = F_yi + Σloads, M = F_yi x + Σ − M_i (sagging +), EI v from the end state plus the load integrals; extremes at stations plus zero-shear / zero-slope points by bisection, and, for the moment, the values just before and just after every applied couple (the diagram jumps there).
+Calculates reactions, member forces and deflections of a linear elastic plane frame or continuous beam by the direct stiffness method. Global x is right and y up; bending is about the section y-y axis, anticlockwise positive.
 
-**Inputs.** `E`; tables `nodes` (id, x, y, support, k_x, k_y, k_r), `elements` (id, i, j, A, I, E?, rel_i, rel_j), `loads` (case, kind, target, a, b, w1, w2, F_x, F_y, M, gravity), `combinations` (name, case, factor); `report`; `n_div`. **Outputs.** `R<n>_x/y/m` and, from 1.1.0, their magnitudes `R<n>_x_abs`, `R<n>_m_abs`, `sum_R_x/y`, per member `M_max_e<id>`, `M_min_e<id>`, `V_e<id>`, `N_e<id>`, `d_e<id>` and the greatest moment magnitude `M_abs_e<id>` (≤ 50 members), `M_max`, `x_Mmax`, `M_min`, `V_max`, `N_max`, `N_min`, `d_max`, envelope `*_env`. **Ports (1.1.0).** declared for node 1 and members 1 and 2 (further nodes and members follow the pattern): `R1_x`, `R1_y` (up positive; compression into a column base → S6 `N_Ed`), `R1_m`, `R1_x_abs` (→ S6 `V_Ed`), `R1_m_abs` (→ S6 `M_Ed`), `N_e1` (tension positive → S3 `N_Ed`), `V_e1`, `V_e2` (→ S3 `V_Ed`, S4 `V_Ed`), `M_abs_e1`, `M_abs_e2` (→ S3 `M_y_Ed`), `M_max_e1`, `M_min_e1`, `sum_R_x/y`, `M_max`, `M_min`, `V_max`, `N_max`, `N_min`, `d_max`. The magnitude outputs are snapped to zero below 1e-9 of the largest reaction, so solver noise on an unloaded support does not print as 3e-14. The magnitude outputs exist because the design checks downstream (S3, S6) take shear and moment unsigned, and a reaction's sign follows the load direction. A load-table cell (a `loads` row's `F_y`, `F_x`, `w1`…) can be linked to another calculation's output (a table-cell link, ADR-0168 amendment 2), e.g. S5's `E_d_min` in the steel-support chain. Series: M/V/N/δ per member, geometry. Caps: 2,000 nodes, 4,000 elements, 50 cases, 50 combinations, 20,000 load rows, 100 stations, 20 M banded entries.
+## Method
 
-A point or couple load row needs its position `a`: a blank `a` blocks (rule `model`, "enter a") instead of placing the load at the start of the member; type 0 for the start. **Test cases.** Roark 8.1 simply supported UDL, cantilever tip load, propped cantilever UDL, concentrated couple at midspan (`ka-ss-couple`: M_max +15, M_min −15 kN·m); pinned portal sway (Hibbeler, equal columns, axially stiff beam); two-span beam with a hinge (statics). All analytic, Confirmed.
+- Member stiffness: three freedoms per node, Euler–Bernoulli members with axial EA/L and bending EI/L³ terms.
+- End releases: pins are taken out by static condensation; supports remove freedoms or add spring stiffness.
+- Span loads: they become equivalent nodal loads, the exact fixed-end forces.
+- Nodal displacements: K u = F, solved by banded LDLᵀ after a reverse Cuthill–McKee ordering; a non-positive pivot is reported as a mechanism.
+- Internal forces: they follow from the member end actions and the Macaulay functions of the span loads.
+- Member extremes: found at stations along each member, plus the zero-shear and zero-slope points found by bisection.
+
+Direct stiffness (`FrameSolver`): 3 DOF per node, Euler–Bernoulli 6×6 member stiffness, releases by static condensation, exact fixed-end forces from Macaulay functions (`MemberLoads`), reverse Cuthill–McKee ordering, banded LDLᵀ (non-positive pivot ⇒ "mechanism" block). Internal functions: V = F_yi + Σloads, M = F_yi x + Σ − M_i (sagging +), EI v from the end state plus the load integrals; extremes at stations plus zero-shear / zero-slope points by bisection, and, for the moment, the values just before and just after every applied couple (the diagram jumps there).
+
+## Inputs
+
+| Symbol | Description | Unit | Default | Usual range | Group | Old symbols |
+|---|---|---|---|---|---|---|
+| `nodes` | Nodes | — | — | table | Setup | — |
+| `elements` | Elements | — | — | table | Setup | — |
+| `loads` | Loads | — | — | table | Setup | — |
+| `n_div` | Stations per member | — | 20 | 4 to 100 | Setup | — |
+| `combinations` | Load combinations (optional; blank = each case alone) | — | blank | table | Setup | — |
+| `report` | Combination to report in detail (optional; blank = the first) | — | blank | — | Setup | — |
+| `E` | Default Young's modulus | GPa | 210 | 1 to 500 | Material | — |
+
+Columns of `nodes`:
+
+| Column | Description | Unit | Required |
+|---|---|---|---|
+| `id` | Node | — | yes |
+| `x` | x | m | yes |
+| `y` | y | m | yes |
+| `support` | Support (free, pin, roller (vertical), roller (horizontal), fixed, spring) | — | no |
+| `k_x` | Spring k_x | kN/m | no |
+| `k_y` | Spring k_y | kN/m | no |
+| `k_r` | Spring k_r (per radian) | kN·m | no |
+
+Columns of `elements`:
+
+| Column | Description | Unit | Required |
+|---|---|---|---|
+| `id` | Element | — | yes |
+| `i` | Node i | — | yes |
+| `j` | Node j | — | yes |
+| `A` | Area A | cm² | yes |
+| `I` | Second moment of area about the section y-y axis | cm⁴ | yes |
+| `E` | Young's modulus (blank = sheet default) | GPa | no |
+| `rel_i` | Moment release at i | — | no |
+| `rel_j` | Moment release at j | — | no |
+
+Columns of `loads`:
+
+| Column | Description | Unit | Required |
+|---|---|---|---|
+| `case` | Load case | — | yes |
+| `kind` | Kind (nodal, point, udl, trapezoid, moment) | — | yes |
+| `target` | Node (nodal) or element | — | yes |
+| `a` | a from end i | m | no |
+| `b` | b from end i (distributed) | m | no |
+| `w1` | w at a (+ towards local y, i.e. left of i→j; gravity rows: + downward) | kN/m | no |
+| `w2` | w at b (trapezoid) | kN/m | no |
+| `F_x` | F_x (global) | kN | no |
+| `F_y` | F_y (global) | kN | no |
+| `M` | Couple M (anticlockwise) | kN·m | no |
+| `gravity` | Gravity load: w positive downward, per metre of member | — | no |
+
+Columns of `combinations`:
+
+| Column | Description | Unit | Required |
+|---|---|---|---|
+| `name` | Combination | — | yes |
+| `case` | Load case | — | yes |
+| `factor` | Factor | — | yes |
+
+## Assumptions
+
+1. The analysis is linear elastic and first order, with small displacements. Basis: Euler–Bernoulli direct stiffness.
+2. Members have no shear deformation, and there are no P–Δ effects or buckling. Basis: Euler–Bernoulli direct stiffness.
+3. Members are prismatic between nodes and connect rigidly unless a release is stated. Basis: Static condensation of the released rotation.
+4. A released member end transmits no moment. Basis: Static condensation of the released rotation.
+5. Distributed loads act perpendicular to the member unless marked as gravity loads. Basis: Load table convention.
+6. Gravity loads act in global −y per metre of member length. Basis: Load table convention.
+
+## Outputs
+
+| Symbol | Description | Unit |
+|---|---|---|
+| `R1_x` | R_x node 1 | kN |
+| `R1_y` | R_y node 1 | kN |
+| `R1_m` | M node 1 | kN·m |
+| `R1_x_abs` | \|R_x\| node 1 | kN |
+| `R1_m_abs` | \|M\| node 1 | kN·m |
+| `R2_x` | R_x node 2 | kN |
+| `R2_y` | R_y node 2 | kN |
+| `R2_m` | M node 2 | kN·m |
+| `R2_x_abs` | \|R_x\| node 2 | kN |
+| `R2_m_abs` | \|M\| node 2 | kN·m |
+| `sum_R_y` | Σ R_y | kN |
+| `sum_R_x` | Σ R_x | kN |
+| `M_max_e1` | M max, member 1 | kN·m |
+| `M_min_e1` | M min, member 1 | kN·m |
+| `M_abs_e1` | \|M\| max, member 1 | kN·m |
+| `V_e1` | \|V\| max, member 1 | kN |
+| `N_e1` | N, member 1 | kN |
+| `d_e1` | δ max, member 1 | mm |
+| `M_max` | M max | kN·m |
+| `x_Mmax` | x of M max | m |
+| `M_min` | M min | kN·m |
+| `V_max` | \|V\| max | kN |
+| `N_max` | N max (tension) | kN |
+| `N_min` | N min (compression) | kN |
+| `d_max` | δ max | mm |
+
+## Ports
+
+The ports are declared for node 1 and members 1 and 2; further nodes and members follow the pattern (`R<n>_x`, `N_e<e>`). Old output symbols stay as the ports' symbols.
+
+| Port | Output symbol | Description | Unit | Old symbols |
+|---|---|---|---|---|
+| `frame.reaction_x_node1` | `R1_x` | Horizontal reaction at node 1, signed (node n follows the same pattern, R<n>_x) | kN | — |
+| `frame.reaction_y_node1` | `R1_y` | Vertical reaction at node 1, up positive: compression into a column base (→ base-plate N_Ed) | kN | — |
+| `frame.reaction_moment_node1` | `R1_m` | Moment reaction at node 1, signed | kN·m | — |
+| `frame.reaction_x_magnitude_node1` | `R1_x_abs` | Magnitude of the horizontal reaction at node 1 (→ base-plate V_Ed) | kN | — |
+| `frame.reaction_moment_magnitude_node1` | `R1_m_abs` | Magnitude of the moment reaction at node 1 (→ base-plate M_Ed) | kN·m | — |
+| `frame.axial_force_member1` | `N_e1` | Axial force of greatest magnitude in member 1, tension positive (→ en1993-member N_Ed; member e follows the same pattern, N_e<e>) | kN | — |
+| `frame.shear_member1` | `V_e1` | Greatest shear magnitude in member 1 (→ en1993-member V_Ed, connection-ec3 V_Ed) | kN | — |
+| `frame.moment_magnitude_member1` | `M_abs_e1` | Greatest bending-moment magnitude in member 1, sagging or hogging (→ en1993-member M_y_Ed) | kN·m | — |
+| `frame.moment_max_member1` | `M_max_e1` | Maximum sagging moment in member 1 | kN·m | — |
+| `frame.moment_min_member1` | `M_min_e1` | Minimum (hogging) moment in member 1 | kN·m | — |
+| `frame.shear_member2` | `V_e2` | Greatest shear magnitude in member 2 (V_e<e> for any member) | kN | — |
+| `frame.moment_magnitude_member2` | `M_abs_e2` | Greatest bending-moment magnitude in member 2 (M_abs_e<e> for any member) | kN·m | — |
+| `frame.reaction_y_total` | `sum_R_y` | Total vertical reaction | kN | — |
+| `frame.reaction_x_total` | `sum_R_x` | Total horizontal reaction | kN | — |
+| `frame.moment_max` | `M_max` | Maximum sagging moment, reported combination | kN·m | — |
+| `frame.moment_min` | `M_min` | Minimum (hogging) moment, reported combination | kN·m | — |
+| `frame.shear_max` | `V_max` | Greatest shear magnitude, reported combination | kN | — |
+| `frame.axial_force_max` | `N_max` | Maximum axial tension, reported combination | kN | — |
+| `frame.axial_force_min` | `N_min` | Maximum axial compression (negative), reported combination | kN | — |
+| `frame.deflection_max` | `d_max` | Maximum transverse deflection, reported combination | mm | — |
+
+## Checks
+
+Applicability rules:
+
+| Rule | Severity | Effect | Condition |
+|---|---|---|---|
+| `model` | Block | Conservative | The model is incomplete or inconsistent (a missing node, a zero-length member, a load off the member). |
+| `report-name` | Warning | Conservative | The combination named in report does not exist: the first combination is reported instead. |
+| `mechanism` | Block | Conservative | The structure is a mechanism: a non-positive stiffness pivot. |
+| `size` | Block | Conservative | The model exceeds a cap (2,000 nodes, 4,000 elements, 50 cases, 200 load rows per member, factorisation work). |
+| `summary-only` | Warning | Conservative | More than 50 members or supports: per-member and per-support lines are omitted from the sheet; the extremes and envelope remain. |
+| `large-deflection` | Warning | Unconservative | A deflection exceeds 1/50 of its member length: the small-displacement assumption is doubtful. |
+
+## Limitations
+
+The caps are 2,000 nodes, 4,000 elements, 50 cases, 50 combinations, 20,000 load rows, 100 stations and 20 million banded entries. With more than 50 members or supports the sheet omits the per-member and per-support lines (rule `summary-only`).
+
+A point or couple load row needs its position `a`: a blank `a` blocks (rule `model`) instead of placing the load at the start of the member. Type 0 for the start.
+
+The magnitude outputs are set to zero below 1e-9 of the largest reaction, so solver noise on an unloaded support does not print as 3e-14. They exist because the design checks downstream take shear and moment unsigned, and a reaction's sign follows the load direction. A load-table cell can be linked to another calculation's output (a table-cell link), for example the governing effect of the load combinations sheet in the steel-support pack.
+
+### Changes by version
+
+**1.5.0 (C-2 consistency).** The sheet gives its ports public names `frame.<quantity>`; the output symbols are unchanged, so links and pack bindings that name them keep working. Port descriptions name their target sheets by template id and input. The inputs are grouped (the model tables and the analysis settings in Setup, the default Young's modulus in Material). The new rule `report-name` carries the warning for an unknown combination in `report`, which used the blocking rule `model`. The scope, method, assumptions and references follow the sheet standard. No calculated value changes.
 
 **Changes in 1.4.0.** A load row with no magnitude is blocked instead of running as zero: a `udl` row with `w1` blank, a `trapezoid` row with `w1` or `w2` blank, a `moment` row with `M` blank, a `point` row with both `F_x` and `F_y` blank, and a `nodal` row with `F_x`, `F_y` and `M` all blank (a typed 0 is accepted; a trapezoid with `w2` blank used to become a triangle carrying half the load). The large-deflection warning (a deflection above 1/50 of the length) compares the deflection with the length of the straight chain of members joined end to end through unsupported two-member nodes, so a long beam cut into short elements no longer gets one false warning per element; a single member is still judged against its own length. The greatest-moment port `M_abs_e<n>` already reports the full jump of a couple at a member end (1.3.0).
+
+## References
+
+- Hibbeler, Structural Analysis, Ch. 16, 9th ed.: Plane frame analysis using the stiffness method.
+- Young and Budynas, Roark's Formulas for Stress and Strain, Table 8.1, 8th ed.: Shear, moment, slope and deflection formulas for elastic straight beams.
+- BS EN 1990:2002+A1:2005, cl. 6.4.3: Combinations of actions (user-entered factors).
+
+## Test cases
+
+- `ka-ss-udl`: Simply supported beam, UDL (Roark Table 8.1 case 2e). Source: Roark's Formulas for Stress and Strain, 8th ed..
+- `ka-cantilever-point`: Cantilever, point load at the tip (Roark Table 8.1 case 1a). Source: Roark's Formulas for Stress and Strain, 8th ed..
+- `ka-propped-cantilever`: Propped cantilever, UDL (Roark Table 8.1 case 2c). Source: Roark's Formulas for Stress and Strain, 8th ed..
+- `ka-portal-sway`: Pinned-base portal frame with a lateral load (Hibbeler, portal frame symmetry). Source: Hibbeler, Structural Analysis, 9th ed..
+- `ka-two-span-release`: Two-span beam with a hinge (release) at the interior support side, point load. Source: Statics (hinge makes the right span simply supported).
+- `ka-ss-couple`: Simply supported beam, concentrated couple at midspan (the moment diagram jumps). Source: Statics (closed form).
 
 <!-- hand-arithmetic:begin generated from the worked-example sheet by SpecHandArithmeticTests; do not edit -->
 **Worked example, by hand.** Two-span continuous beam, ULS and SLS combinations ([sheet](../../worked-examples/structural/struct.frame-2d/two-span-continuous-beam/sheet.txt)).

@@ -10,8 +10,8 @@ PACK INDEX
   1. Power trace — PCB trace width (IPC-2221) — rev A — ISSUED — Trace width as drawn against the minimum for the rise PASS
   2. Board load budget — Load budget, PSU, transformer and battery — rev A — ISSUED
   3. Enclosure temperature — Enclosure heat dissipation and fan sizing — rev A — ISSUED — Natural dissipation holds T_max PASS
-  4. Cover latches — Snap-fits — rev A — ISSUED — Required holding force against the force the latches hold PASS
-  5. Cover plate — Plate bending — rev A — ISSUED — Deflection w_max ≤ span/ratio PASS
+  4. Cover latches — Snap-fits — rev A — ISSUED — Latches hold the load: F_req ≤ n·W′ PASS
+  5. Cover plate — Plate bending — rev A — ISSUED — Deflection against the deflection limit PASS
 
 REVISIONS
   A  2026-10-26  test.engineer  First issue
@@ -43,7 +43,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 36/36
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:30 UTC
   Application: TempestOS test
 
 9. References
@@ -164,7 +164,7 @@ Trace cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725
   Content hash: dd80f3d7b37e8d46
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:30 UTC
   Application: TempestOS test
 
 9. References
@@ -347,7 +347,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   Content hash: c6e0bb5c482dbf0f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:30 UTC
   Application: TempestOS test
 
 9. References
@@ -506,7 +506,7 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   Content hash: 17b6553fe6039be8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:30 UTC
   Application: TempestOS test
 
 9. References
@@ -524,56 +524,48 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: ELX-ENC-001    Client: Client Co
 
 1. Scope and method
-Calculates the strain, deflection force and joining forces of a plastic snap-fit: a cantilever lug, an annular ring or a torsion bar. It checks the strain against the permissible strain and whether the joint is self-locking.
-Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (constant section; the design guides print the rounded 0.67); a linear taper of the thickness to r_h = h_tip/h gives K_y = 2·J/φ_max with J = [2r_h − r_h²/2 − ln r_h − 3/2]/(1 − r_h)³ and φ_max = 1 for r_h ≥ 1/2 (otherwise the strain peaks inside the beam at t = (2a − 1)/a, a = 1 − r_h, with φ_max = (1 − t)/(1 − a·t)²); a linear taper of the width to r_b gives K_y = 2·J with J = [1/2 − 2r_b + 3r_b²/2 − r_b²·ln r_b]/(1 − r_b)³ Strain and force of the cantilever: ε = y·h/(K_y·l²); F_defl = b·h²·Es·ε/(6·l·φ_max) = (b·h²/6)·(Es·ε/l) at the root of a constant section; Es is the secant modulus at ε (typed, or interpolated from the W3 points Es(ε)) Annular (derived, free thin ring): nominal hoop strain ε_nom = ΔD/D (the mean diameter D widened by the diametral interference ΔD); the strain checked is the larger of ε = K_ann·ε_nom (K_ann the user's strain factor) and the inner-surface strain ΔD/(D − h); the radial contact force summed round the ring is F_defl = K_F·2π·Es·ε_nom·h·b (hoop force Es·ε_nom·h·b over the radius, K_F the user's optional force factor, 1 if none), b being the effective length of a free ring Torsion bar of radius r with a lever of length a deflected y: φ = y/a; the bar is held at one end (free length l_eff = l) or at both ends with the lever in the middle (l_eff = l/2, two halves in parallel); γ = φ·r/l_eff, equivalent tensile strain ε = γ/(1 + ν), γ_perm = ε_perm·(1 + ν); G = Es/(2(1 + ν)), T = n·G·(π r⁴/2)·φ/l_eff with n = 1 or 2, F_defl = T/a (both ends: F_defl = 4·G·J·φ/(l·a)) Joining forces: W = F_defl·(μ + tan α)/(1 − μ·tan α) on the entry face (angle α to the joining direction) and W′ = F_defl·(μ + tan α′)/(1 − μ·tan α′) on the return face (α′); the joint is self-locking, with an infinite separation force, when α′ ≥ arctan(1/μ); assembly jams when μ·tan α ≥ 1 Utilisation and permissible deflection: u = ε/ε_perm (FAIL above 1); y_perm = K_y·ε_perm·l²/h (annular ΔD_perm = ε_perm·min(D/K_ann, D − h); torsion y_perm = γ_perm·l_eff·a/r)
+A plastic snap-fit joint of one of five forms: a cantilever lug of constant section, of tapered thickness or of tapered width, an annular (closed ring) snap, or a torsion bar. The strain at the critical section against the permissible strain of the plastic (one-time or repeated joining), the deflection force with the secant modulus, the assembly force (inclined entry face) and the separation force (return face) with Coulomb friction, and whether the joint is self-locking.
+Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (constant section; the design guides print the rounded 0.67); a linear taper of the thickness to r_h = h_tip/h gives K_y = 2·J/φ_max with J = [2r_h − r_h²/2 − ln r_h − 3/2]/(1 − r_h)³ and φ_max = 1 for r_h ≥ 1/2 (otherwise the strain peaks inside the beam at t = (2a − 1)/a, a = 1 − r_h, with φ_max = (1 − t)/(1 − a·t)²); a linear taper of the width to r_b gives K_y = 2·J with J = [1/2 − 2r_b + 3r_b²/2 − r_b²·ln r_b]/(1 − r_b)³ Strain and force of the cantilever: ε = y·h/(K_y·l²); P = b·h²·Es·ε/(6·l·φ_max) = (b·h²/6)·(Es·ε/l) at the root of a constant section; Es is the secant modulus at ε (typed, or interpolated from the W3 points Es(ε)) Annular (derived, free thin ring): nominal hoop strain ε_nom = ΔD/D (the mean diameter D widened by the diametral interference ΔD); the strain checked is the larger of ε = K_ann·ε_nom (K_ann the user's strain factor) and the inner-surface strain ΔD/(D − h); the radial contact force summed round the ring is P = K_F·2π·Es·ε_nom·h·b (hoop force Es·ε_nom·h·b over the radius, K_F the user's optional force factor, 1 if none), b being the effective length of a free ring Torsion bar of radius r with a lever of length a deflected y: φ = y/a; the bar is held at one end (free length l_eff = l) or at both ends with the lever in the middle (l_eff = l/2, two halves in parallel); γ = φ·r/l_eff, equivalent tensile strain ε = γ/(1 + ν), γ_perm = ε_perm·(1 + ν); G = Es/(2(1 + ν)), T = n·G·(π r⁴/2)·φ/l_eff with n = 1 or 2, P = T/a (both ends: P = 4·G·J·φ/(l·a)) Joining forces: W = P·(μ + tan α)/(1 − μ·tan α) on the entry face (angle α to the joining direction) and W′ = P·(μ + tan α′)/(1 − μ·tan α′) on the return face (α′); the joint is self-locking, with an infinite separation force, when α′ ≥ arctan(1/μ); assembly jams when μ·tan α ≥ 1 Utilisation u = ε/ε_perm (FAIL above 1); permissible deflection y_perm = K_y·ε_perm·l²/h (annular ΔD_perm = ε_perm·min(D/K_ann, D − h); torsion y_perm = γ_perm·l_eff·a/r)
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   mode | Form of snap-fit | Cantilever, constant section |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | any
-  bar_support | How the torsion bar is held: at one end, or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length) | Held at one end |  | assumption: Sheet default value; no project figure given. | any
   l | Length of the beam (cantilever); of the torsion bar: its free length when held at one end, or its whole length between the two supports when held at both ends with the lever in the middle | 12 | mm | spec: SPEC-ELX-02 §6 (lid latch geometry) | 2 … 100 mm
   h | Thickness at the root (cantilever); wall thickness of the ring (annular) | 1.6 | mm | spec: SPEC-ELX-02 §6 (lid latch geometry) | 0.3 … 10 mm
   b | Width at the root (cantilever); effective axial length of the ring (annular: that of a free ring, not the lip of a longer tube) | 5 | mm | spec: SPEC-ELX-02 §6 (lid latch geometry) | 1 … 50 mm
-  y | Deflection at the tip (cantilever) or at the end of the lever (torsion): the undercut to be cleared | 1 | mm | spec: SPEC-ELX-02 §6 (lid latch geometry) | 0.05 … 20 mm
   h_ratio | Tip thickness / root thickness (tapered thickness) | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.25 … 1
   b_ratio | Tip width / root width (tapered width) | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
+  y | Deflection at the tip (cantilever) or at the end of the lever (torsion): the undercut to be cleared | 1 | mm | spec: SPEC-ELX-02 §6 (lid latch geometry) | 0.05 … 20 mm
   D_ring | Mean diameter of the ring (annular) | 30 | mm | assumption: Sheet default value; no project figure given. | 5 … 500 mm
   dD | Interference on the diameter: how much the ring is widened to pass the undercut (annular) | 0.4 | mm | assumption: Sheet default value; no project figure given. | 0 … 5 mm
+  bar_support | How the torsion bar is held: at one end, or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length) | Held at one end |  | assumption: Sheet default value; no project figure given. | any
   r_bar | Radius of the torsion bar | 1.5 | mm | assumption: Sheet default value; no project figure given. | 0.3 … 10 mm
   a_arm | Length of the lever on the torsion bar | 8 | mm | assumption: Sheet default value; no project figure given. | 2 … 100 mm
-  Es_source | Where the secant modulus comes from: typed at the design strain, or interpolated from the Es(ε) points of a material record | Typed secant modulus |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | any
-  loading | How often the joint is made: selects the one-time or the repeated permissible strain | One-time (assembled once or rarely) |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | any
-  T_use | Temperature of use. Recorded: Es and the permissible strain must be the values at this temperature | 56.8773 | °C | link: Enclosure temperature rev A · T_int | -40 … 120 °C
-  Es | Secant modulus at the design strain and temperature (annular: at the nominal hoop strain ΔD/D) (typed; no default: the plastic's stress–strain data) | 1400 | MPa | spec: SPEC-ELX-02 §6 (latch plastic: Es and eps_perm at 60 C) | 10 … 20000 MPa
-  eps_perm_once | Permissible strain for one-time joining, as a fraction, for example 0.04, at the temperature of use (no default: from the plastic's data) | 0.03 |  | spec: SPEC-ELX-02 §6 (latch plastic: Es and eps_perm at 60 C) | 0.001 … 0.3
   alpha | Entry (assembly) angle α of the inclined face to the joining direction | 30 | ° | spec: SPEC-ELX-02 §6 (lid latch geometry) | 5 … 60 °
   alpha_r | Return (separation) angle α′ of the retaining face (90° is a face square to the joining direction) | 70 | ° | spec: SPEC-ELX-02 §6 (lid latch geometry) | 10 … 90 °
   mu | Coefficient of friction between the two parts (record snapfit.friction; no default: the pair of materials, from your reference or a W3 friction pair) | 0.3 |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | 0.05 … 1
-  n_latch | Number of identical latches that share a holding load (a whole number) (optional; blank = the holding force is not worked out) | 6 |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | 1 … 100
-  F_req | Force the latches must hold against, for example the pressure on a cover (optional; blank = no check; n_latch must be entered too) | 300 | N | link: Enclosure temperature rev A · F_seal | 0 … 100000 N
+  Es_source | Where the secant modulus comes from: typed at the design strain, or interpolated from the Es(ε) points of a W3 material | Typed secant modulus |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | any
+  Es | Secant modulus Es at the design strain and temperature (annular: at the nominal hoop strain ΔD/D) (typed; no default: the plastic's stress–strain data) | 1400 | MPa | spec: SPEC-ELX-02 §6 (latch plastic: Es and eps_perm at 60 C) | 10 … 20000 MPa
+  loading | How often the joint is made: selects the one-time or the repeated permissible strain | One-time (assembled once or rarely) |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | any
+  eps_perm_once | Permissible strain for one-time joining, as a fraction (0.04 is 4 %) at the temperature of use (no default: from the plastic's data) | 0.03 |  | spec: SPEC-ELX-02 §6 (latch plastic: Es and eps_perm at 60 C) | 0.001 … 0.3
+  n_latch | Number of identical latches that share a holding load (a whole number; blank = the holding force is not worked out) | 6 |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | 1 … 100
+  F_req | Force the latches must hold against, for example the pressure on a cover (blank = no check; needs n_latch; may be linked from E2 F_seal) | 300 | N | link: Enclosure temperature rev A · F_seal | 0 … 100000 N
+  T_use | Temperature of use. Recorded: Es and the permissible strain must be the values at this temperature | 56.8773 | °C | link: Enclosure temperature rev A · T_int | -40 … 120 °C
 
 3. Assumptions
-  A1. The cantilever follows Euler–Bernoulli beam theory, with a rigid root, a linear taper and small deflection. (Euler–Bernoulli beam theory (derived); the guide's closed forms for the constant section are to be checked against the owner's copy.)
-  A2. The secant modulus is constant over the whole beam, at the design strain. (One modulus stands for the stress–strain curve.)
-  A3. The strain is the nominal surface strain at the critical section, with no local concentration from the root fillet. (The geometry factors are derived by integration, and the 0.67 of the design guides is the constant-section 2/3 rounded.)
-  A4. Es and the permissible strain are the plastic's values for the temperature, loading and moisture of use. (No plastics data are shipped, so they come from the plastic maker's data or a material record.)
-  A5. The annular snap is a free, thin, closed ring of effective axial length b. (Derived from ring geometry, not a relation of the design guide, so compare it with the owner's copy of the guide.)
-  A6. The nominal hoop strain is the diametral interference over the mean diameter, ΔD/D. (Derived from ring geometry.)
-  A7. The strain checked is the larger of K_ann times the nominal strain and the inner-surface strain ΔD/(D − h). (K_ann is the user's strain factor (record snapfit.annular-factor, no default), and the inner-surface strain is slightly above the mean-diameter value.)
-  A8. The contact force is the hoop force Es·ε_nom·h·b taken round the ring, times the optional force factor K_F. (K_F is the user's record (blank is 1), and a tube behind the ring stiffens the joint, which only K_F can represent.)
-  A9. The torsion bar is solid and round, loaded at a lever end, with a small angle φ = y/a. (γ = φ·r/l and γ_perm ≈ ε_perm·(1 + ν) are the brief's design-guide relations, to be checked against the owner's copy.)
-  A10. The bar is held at one end, or at both ends with the lever in the middle. (Held at both ends it has twice the strain and four times the stiffness of one end for the same total length, and the two-ended case is derived.)
-  A11. The permissible shear strain is ε_perm·(1 + ν), and the equivalent tensile strain is γ/(1 + ν). (G = Es/(2(1 + ν)) uses the secant modulus at that strain.)
-  A12. The mating part is rigid, with Coulomb friction μ on the inclined face (α for assembly, α′ for separation). (Friction on an inclined plane, with the friction coefficient the user's record.)
-  A13. The deflection force is taken at the design deflection, with no creep, stress relaxation or impact effect in service. (A static joint model.)
-  A14. bar_support (How the torsion bar is held: at one end, or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length)) is taken as Held at one end. (Sheet default value; no project figure given.)
-  A15. h_ratio (Tip thickness / root thickness (tapered thickness)) is taken as 0.5. (Sheet default value; no project figure given.)
-  A16. b_ratio (Tip width / root width (tapered width)) is taken as 0.5. (Sheet default value; no project figure given.)
-  A17. D_ring (Mean diameter of the ring (annular)) is taken as 30 mm. (Sheet default value; no project figure given.)
-  A18. dD (Interference on the diameter: how much the ring is widened to pass the undercut (annular)) is taken as 0.4 mm. (Sheet default value; no project figure given.)
-  A19. r_bar (Radius of the torsion bar) is taken as 1.5 mm. (Sheet default value; no project figure given.)
-  A20. a_arm (Length of the lever on the torsion bar) is taken as 8 mm. (Sheet default value; no project figure given.)
-  A21. Es and the permissible strain are the plastic's values at 56.877 °C, the temperature of use. The sheet cannot check them, or the moisture state of the part. (Recorded temperature of use.)
+  A1. Beam theory (Euler–Bernoulli) for the cantilever: a rigid root, a linear taper, a constant secant modulus Es at the design strain over the whole beam, small deflection. The strain is the nominal surface strain at the critical section, with no local concentration from the root fillet; the geometry factors are derived by integration (the 0.67 of the design guides is the constant-section 2/3 rounded). (Euler–Bernoulli beam theory (derived); the guide's closed forms for the constant section are to be checked against the owner's copy.)
+  A2. Es and the permissible strain are properties of the plastic at the temperature of use, with the loading (one-time or repeated) and the moisture state of the part. No values are supplied: they come from the plastic maker's data or a W3 material, and the temperature entered records what they were taken at. (No plastics data are shipped.)
+  A3. Annular snap: a free, thin, closed ring of effective axial length b. The nominal hoop strain is the diametral interference over the mean diameter, ΔD/D; the strain checked is the larger of that times the user's strain factor K_ann (record snapfit.annular-factor, no default) and the inner-surface strain. The contact force is the hoop force Es·ε_nom·h·b taken round the ring, from the nominal strain only, times the user's optional force factor K_F (record snapfit.annular-force-factor; blank is 1); a tube behind the ring stiffens the joint and raises the force, which only K_F can represent. The strain on the inner (contact) surface is ΔD/(D − h), slightly above the mean-diameter value, so the check takes the larger of the two; a wall above a tenth of the diameter warns that the thin-ring model has run out. (Derived from ring geometry (not a relation of the design guide); compare with the owner's copy of the guide.)
+  A4. Torsion bar: a solid round bar of radius r loaded at the end of a lever, the angle small (φ = y/a), held at one end or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length). The permissible shear strain is ε_perm·(1 + ν) and the equivalent tensile strain γ/(1 + ν); G = Es/(2(1 + ν)) with the secant modulus at that strain. (γ = φ·r/l and γ_perm ≈ ε_perm·(1 + ν) are the brief's design-guide relations, to be checked against the owner's copy; the torque, the force and the two-ended case are derived.)
+  A5. Assembly and separation: a rigid mating part, Coulomb friction μ on the inclined face (α for assembly, α′ for separation), the deflection force P taken at the design deflection; no creep or stress relaxation of the joint in service, no impact (speed) effect. (Friction on an inclined plane; the friction coefficient is the user's record.)
+  A6. h_ratio (Tip thickness / root thickness (tapered thickness)) is taken as 0.5. (Sheet default value; no project figure given.)
+  A7. b_ratio (Tip width / root width (tapered width)) is taken as 0.5. (Sheet default value; no project figure given.)
+  A8. D_ring (Mean diameter of the ring (annular)) is taken as 30 mm. (Sheet default value; no project figure given.)
+  A9. dD (Interference on the diameter: how much the ring is widened to pass the undercut (annular)) is taken as 0.4 mm. (Sheet default value; no project figure given.)
+  A10. bar_support (How the torsion bar is held: at one end, or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length)) is taken as Held at one end. (Sheet default value; no project figure given.)
+  A11. r_bar (Radius of the torsion bar) is taken as 1.5 mm. (Sheet default value; no project figure given.)
+  A12. a_arm (Length of the lever on the torsion bar) is taken as 8 mm. (Sheet default value; no project figure given.)
+  A13. Es and the permissible strain are the values of the plastic at the temperature of use, 56.877 °C, as entered, in the moisture state of the part; the sheet cannot check this. (Recorded temperature of use.)
 
 4. Working
   [10] l_h = l / h
@@ -588,7 +580,7 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
       = constant section
       = 0.66667
         Deflection factor: y = K_y·ε·l²/h (derived; the design guides print the rounded 0.67)
-  [13] eps_max = y * h / (K_y * l^2)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+  [13] eps = y * h / (K_y * l^2)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
       = 1 mm × 1.6 mm / (0.66667 × (12 mm)^2)
       = 1.6667 %
         Maximum surface strain at the critical section (nominal)
@@ -596,15 +588,15 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
       = 0.03
       = 3 %
         Permissible strain (one-time joining, as entered)
-  [19] F_defl = b * h^2 * Es * eps_max / (6 * l * phi_max)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+  [19] P = b * h^2 * Es * eps / (6 * l * phi_max)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
       = 5 mm × (1.6 mm)^2 × 1400 MPa × 1.6667 % / (6 × 12 mm × 1)
       = 4.1481 N
-        Deflection force at the tip: F_defl = (b·h²/6)·(Es·ε/l) at the root of a constant section
+        Deflection force at the tip: P = (b·h²/6)·(Es·ε/l) at the root of a constant section
   [20] y_perm = K_y * eps_perm * l^2 / h    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
       = 0.66667 × 3 % × (12 mm)^2 / 1.6 mm
       = 1.8 mm
         Permissible tip deflection
-  [21] strain_util = eps_max / eps_perm
+  [21] strain_util = eps / eps_perm
       = 1.6667 % / 3 %
       = 0.55556
         Strain / permissible strain
@@ -616,10 +608,10 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
       = 0.3 × 0.57735
       = 0.17321
         μ·tan α of the entry face
-  [24] assembly_force = F_defl * (mu + tan_a) / (1 - mu_tan_a)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+  [24] assembly_force = P * (mu + tan_a) / (1 - mu_tan_a)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
       = 4.1481 N × (0.3 + 0.57735) / (1 − 0.17321)
       = 4.4018 N
-        Assembly force W = F_defl·(μ + tan α)/(1 − μ·tan α)
+        Assembly force W = P·(μ + tan α)/(1 − μ·tan α)
   [25] alpha_lock = arctan(1/μ)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
       = arctan(1/0.3)
       = 73.301 deg
@@ -628,10 +620,10 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
       = tan(70 deg)
       = 2.7475
         tan α′ of the return face
-  [27] retention_force = F_defl * (mu + tan_ar) / (1 - mu * tan_ar)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+  [27] retention_force = P * (mu + tan_ar) / (1 - mu * tan_ar)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
       = 4.1481 N × (0.3 + 2.7475) / (1 − 0.3 × 2.7475)
       = 71.925 N
-        Separation force W′ = F_defl·(μ + tan α′)/(1 − μ·tan α′)
+        Separation force W′ = P·(μ + tan α′)/(1 − μ·tan α′)
   [29] F_hold = n_latch * retention_force    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
       = 6 × 71.925 N
       = 431.55 N
@@ -646,37 +638,38 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
   retention_force = 71.93 N    Separation force
   strain_util = 0.56    Strain / permissible strain
   F_hold = 431.6 N    Holding force of the latches
-  eps_max = 1.667 %    Maximum strain
+  eps = 1.667 %    Maximum strain
   eps_perm = 3 %    Permissible strain
   Es = 1400 MPa    Secant modulus used
-  F_defl = 4.148 N    Deflection force
+  P = 4.148 N    Deflection force
   y_perm = 1.800 mm    Permissible deflection
   l_h = 7.5    Slenderness l/h
-  K_y = 0.66667    Deflection factor of the cantilever
+  K_y = 0.66667    Deflection factor K_y
   phi_max = 1    Strain shape maximum
   alpha_lock = 73.30°    Self-locking return angle
   self_locking = "No"    Self-locking
   fillet_advisory = "The strain above is the nominal strain, with no local concentration. A sharp internal corner at the root (or at the end of the bar or ring) concentrates the strain and is the usual place for a snap-fit to break: give the root a generous fillet radius, of the order of the thickness, taper the section away from it, and apply a concentration factor from your own reference if the radius is small."    Root-fillet advisory
-  u_hold = 0.70    Holding utilisation
+  u_hold = 0.70    Holding utilisation (governing)
 
 6. Checks (governing first)
-  PASS  Required holding force against the force the latches hold: 300 N vs 431.6 N  utilisation 0.70  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
-  PASS  Strain at the critical section against the permissible strain: 1.667 % vs 3 %  utilisation 0.56  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
-  PASS  Entry-face friction μ·tan α against the jamming limit: μ·tan α = 0.17321 vs < 1  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+  PASS  Latches hold the load: F_req ≤ n·W′: u_hold = 0.70 vs u_hold ≤ 1  utilisation 0.70  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+  PASS  Strain at the critical section against the permissible strain: strain_util = 0.56 vs strain_util ≤ 1  utilisation 0.56  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+  PASS  Assembly: the entry face does not jam (μ·tan α < 1): μ·tan α = 0.17321 vs < 1  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are eps_perm_once (Material properties); mu (Coefficient of friction); Es (Secant modulus at the design strain). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: mech.snap-fit@1.5.0
+  Template: mech.snap-fit@1.4.0
   Content hash: 46293e9a5ca7bba9
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 11/11
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:30 UTC
   Application: TempestOS test
 
 9. References
-  1. Covestro, Snap-Fit Joints for Plastics: A Design Guide Ch. B — Cantilever, annular and torsion snap-fit relations
+  1. Covestro, Snap-Fit Joints for Plastics: A Design Guide Section B — Cantilever, annular and torsion snap-fit relations
+  2. Euler–Bernoulli beam theory — Tip deflection and surface strain of a tapered cantilever, by integration
 
 
 CALCULATION SHEET — ISSUED
@@ -688,54 +681,56 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: ELX-ENC-001    Client: Client Co
 
 1. Scope and method
-Bending of a thin, flat, isotropic plate under a lateral load by Kirchhoff small-deflection theory: circular plates (uniform pressure, central patch, ring load; clamped or simply supported) in closed form; rectangular plates simply supported (uniform pressure or central patch, Navier series) or clamped (Ritz, approximate). Maximum deflection, greatest von Mises stress at the surface, stress and deflection utilisations and the fundamental frequency.
-Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von Mises σ_vm = √(σ_x² − σ_x·σ_y + σ_y² + 3τ_xy²) Circular, uniform q, clamped: w = q·a⁴/(64D); σ_edge = 3q·a²/(4t²); simply supported: w = (5 + ν)·q·a⁴/(64(1 + ν)D); σ_centre = 3(3 + ν)·q·a²/(8t²) Circular, central patch (radius c, pressure q) or ring (radius b, force F): w = A + B·r² (+ q·r⁴/64D) inside, A′ + B′·r² + C′·ln(r/a) + k·r²·ln(r/a) outside, k = q·c²/8D or F/8πD; constants from continuity of w, w′, M_r at the load radius and the edge conditions; M_r = −D(w″ + ν·w′/r), M_θ = −D(w′/r + ν·w″) Rectangular, simply supported: w = Σ W_mn·sin(mπx/a)·sin(nπy/b) over odd m, n; W_mn = q_mn/(π⁴D(m²/a² + n²/b²)²); q_mn = 16q/(π²mn) (uniform) or 16q/(π²mn)·sin(mπ/2)·sin(nπ/2)·sin(mπu/2a)·sin(nπv/2b) (patch u × v); M_x = Dπ²ΣW_mn(m²/a² + ν·n²/b²)·sin·sin, M_y likewise, M_xy = −D(1 − ν)π²ΣW_mn(mn/ab)·cos·cos; terms added until w, the centre moments and the corner M_xy each change by < 10⁻⁶ over a doubling (cap 1024 × 1024; the corner sum of a uniform load, which converges like 1/N², is Richardson-extrapolated before it is compared) Rectangular, clamped: Ritz, w = Σ c_ij·X_i(x/a)·Y_j(y/b), X_k(ξ) = ξ²(1 − ξ)²·P₂ₖ(2ξ − 1); c from the minimum of the total potential energy; order K taken as 8, 12, 16, 20, 25, 30 until w and the stress change by < 10⁻⁵ (or the change stops falling) Fundamental frequency: simply supported rectangle ω₁₁ = π²(1/a² + 1/b²)·√(D/(ρt)), f = ω/2π; circular ω = (λ²/a²)·√(D/(ρt)), λ² from the Bessel characteristic equation; clamped rectangle by Rayleigh–Ritz with the same basis Plate checks: σ_vm ≤ f_y/γ_M0; w_max ≤ span/ratio (circular span = diameter, rectangle span = shorter side); WARN w/t > 0.5
+Calculates the deflection, von Mises stress and fundamental frequency of a thin, flat, isotropic plate under a lateral load, by Kirchhoff small-deflection theory. It covers circular and rectangular plates, simply supported or clamped, under uniform, patch or ring loads.
+Flexural rigidity: D = D_flex = E·t_p³/(12(1 − ν²)); surface stress σ = 6M/t_p²; von Mises σ_vm = √(σ_x² − σ_x·σ_y + σ_y² + 3τ_xy²) Circular, uniform q, clamped: w = q·a⁴/(64D); σ_edge = 3q·a²/(4t_p²); simply supported: w = (5 + ν)·q·a⁴/(64(1 + ν)D); σ_centre = 3(3 + ν)·q·a²/(8t_p²) Circular, central patch (radius c, pressure q) or ring (radius b, force F): w = A + B·r² (+ q·r⁴/64D) inside, A′ + B′·r² + C′·ln(r/a) + k·r²·ln(r/a) outside, k = q·c²/8D or F/8πD; constants from continuity of w, w′, M_r at the load radius and the edge conditions; M_r = −D(w″ + ν·w′/r), M_θ = −D(w′/r + ν·w″) Rectangular, simply supported: w = Σ W_mn·sin(mπx/a)·sin(nπy/b) over odd m, n; W_mn = q_mn/(π⁴D(m²/a² + n²/b²)²); q_mn = 16q/(π²mn) (uniform) or 16q/(π²mn)·sin(mπ/2)·sin(nπ/2)·sin(mπu/2a)·sin(nπv/2b) (patch u × v); M_x = Dπ²ΣW_mn(m²/a² + ν·n²/b²)·sin·sin, M_y likewise, M_xy = −D(1 − ν)π²ΣW_mn(mn/ab)·cos·cos; terms added until w, the centre moments and the corner M_xy each change by < 10⁻⁶ over a doubling (cap 1024 × 1024; the corner sum of a uniform load, which converges like 1/N², is Richardson-extrapolated before it is compared) Rectangular, clamped: Ritz, w = Σ c_ij·X_i(x/a)·Y_j(y/b), X_k(ξ) = ξ²(1 − ξ)²·P₂ₖ(2ξ − 1); c from the minimum of the total potential energy; order K taken as 8, 12, 16, 20, 25, 30 until w and the stress change by < 10⁻⁵ (or the change stops falling) Fundamental frequency: simply supported rectangle ω₁₁ = π²(1/a² + 1/b²)·√(D/(ρ·t_p)), f = ω/2π; circular ω = (λ²/a²)·√(D/(ρ·t_p)), λ² from the Bessel characteristic equation; clamped rectangle by Rayleigh–Ritz with the same basis Plate checks: σ_vm ≤ f_y/γ_M0; w_max ≤ span/ratio (circular span = diameter, rectangle span = shorter side); WARN w/t_p > 0.5
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   shape | Plate shape | rectangular |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
   support | Edge support, all round | simply supported |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
-  a | Radius a (circular) or side a (rectangular) | 600 | mm | spec: SPEC-ELX-02 §7 (lid plate geometry) | 10 … 10000 mm
-  b | Side b (rectangular; not used for a circular plate) | 500 | mm | spec: SPEC-ELX-02 §7 (lid plate geometry) | 10 … 10000 mm
-  t | Plate thickness | 4 | mm | spec: SPEC-ELX-02 §7 (lid plate geometry) | 0.5 … 100 mm
-  load_type | Load | uniform |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
+  load_type | Load type | uniform |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
   load_basis | Uniform and patch loads given as | pressure q |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
-  q | Pressure q on the loaded area (uniform and patch loads, pressure basis) | 1 | kPa | link: Enclosure temperature rev A · dp_seal | 0.001 … 5000 kPa
-  P | Total force P (force basis: uniform, patch and ring loads; a ring load always uses P) | 5 | kN | assumption: Sheet default value; no project figure given. | 0.001 … 10000 kN
+  a | Plate radius (circular) or length in the x direction (rectangular) | 600 | mm | spec: SPEC-ELX-02 §7 (lid plate geometry) | 10 … 10000 mm
+  b | Length in the y direction (rectangular plate only, not used for a circular plate) | 500 | mm | spec: SPEC-ELX-02 §7 (lid plate geometry) | 10 … 10000 mm
+  t_p | Plate thickness | 4 | mm | spec: SPEC-ELX-02 §7 (lid plate geometry) | 0.5 … 100 mm
+  E | Young's modulus | 69 | GPa | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 0.1 … 500 GPa
+  nu | Poisson's ratio | 0.33 |  | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 0 … 0.45
+  rho | Density (for the frequency) | 2700 | kg/m³ | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 100 … 20000 kg/m³
+  f_y | Yield strength | 120 | MPa | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 5 … 2000 MPa
+  q | Pressure on the loaded area (uniform and patch loads, pressure basis) | 1 | kPa | link: Enclosure temperature rev A · dp_seal | 0.001 … 5000 kPa
+  F | Total force (force basis: uniform, patch and ring loads; a ring load always uses the force) | 5 | kN | assumption: Sheet default value; no project figure given. | 0.001 … 10000 kN
   r0 | Patch radius (circular plate, central patch) | 50 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
   u | Patch size in x (rectangular plate, central patch) | 100 | mm | assumption: Sheet default value; no project figure given. | 1 … 10000 mm
   v | Patch size in y (rectangular plate, central patch) | 100 | mm | assumption: Sheet default value; no project figure given. | 1 … 10000 mm
   r_ring | Ring radius (circular plate, ring load) | 150 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
-  E | Modulus of elasticity | 69 | GPa | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 0.1 … 500 GPa
-  nu | Poisson's ratio | 0.33 |  | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 0 … 0.45
-  rho | Density (for the frequency) | 2700 | kg/m³ | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 100 … 20000 kg/m³
-  f_y | Yield strength | 120 | MPa | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 5 … 2000 MPa
-  gamma_M0 | Partial factor γ_M0 on the resistance of the cross-section | 1 |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | 1 … 1.5
-  defl_ratio | Deflection limit: span/ratio (span = diameter of a circular plate, shorter side of a rectangle) | 250 |  | assumption: Sheet default value; no project figure given. | 50 … 2000
+  gamma_M0 | Partial factor on the resistance of the cross-section | 1 |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | 1 … 1.5
+  defl_ratio | Deflection limit as span/ratio (span = diameter of a circular plate, shorter side of a rectangle) | 250 |  | assumption: Sheet default value; no project figure given. | 50 … 2000
 
 3. Assumptions
-  A1. Thin plate, small-deflection (Kirchhoff) theory: flat, isotropic, linear elastic, constant thickness; the middle surface is unstrained; shear deformation is neglected (span/t of 10 or more). (Scope of S9; a warning below span/t = 10.)
-  A2. The deflection stays small against the thickness: w/t above 0.5 means membrane action stiffens the plate and the small-deflection result is not valid (it overstates the deflection and the bending stress and ignores the membrane stress). (The sheet warns at w/t > 0.5.)
-  A3. The edge support is the same all round and ideal: a simply supported edge is held at zero deflection and free to rotate; a clamped edge allows no deflection or rotation. A simply supported rectangle has its corners held down (the corner reaction 2·M_xy is reported); if the corners can lift, the deflection and the central moments are larger than computed. (Navier solution; no elastic edges, no rotational springs.)
-  A4. The von Mises stress is that of the plane-stress field at the plate surface from the bending and twisting moments (σ = 6M/t²); the through-thickness shear and the local stress under a concentrated load are not included. The stress governing a simply supported rectangle is at the centre or at a corner (twisting); a clamped rectangle is scanned on a 21 × 21 grid over a quarter of the plate. (Surface stresses; no local effects.)
-  A5. The rectangular patch and the circular patch are centred; a ring load is concentric. A load smaller than the thickness is a concentrated load whose local stress thin-plate theory does not give. (Warning `patch-thin`; patches below 1 % (circular), 2 % (simply supported rectangle) or 25 % (clamped rectangle) of the plate size are refused.)
-  A6. The clamped rectangle is a Ritz approximation: the deflection converges quickly, the moments and stress more slowly (the sheet reports the order used and the last change; long plates and small patches converge slowest, and the last change understates the error). Compare a critical result with finite elements. (Approximate; the sheet states the order used and the last change.)
-  A7. Material properties are inputs taken from the W3 library (E, ν, ρ, f_y), each citing the material record, its revision and the page or table; the generic textbook seeds are indicative. (Record kind material.properties.)
-  A8. P (Total force P (force basis: uniform, patch and ring loads; a ring load always uses P)) is taken as 5 kN. (Sheet default value; no project figure given.)
-  A9. r0 (Patch radius (circular plate, central patch)) is taken as 50 mm. (Sheet default value; no project figure given.)
-  A10. u (Patch size in x (rectangular plate, central patch)) is taken as 100 mm. (Sheet default value; no project figure given.)
-  A11. v (Patch size in y (rectangular plate, central patch)) is taken as 100 mm. (Sheet default value; no project figure given.)
-  A12. r_ring (Ring radius (circular plate, ring load)) is taken as 150 mm. (Sheet default value; no project figure given.)
-  A13. defl_ratio (Deflection limit: span/ratio (span = diameter of a circular plate, shorter side of a rectangle)) is taken as 250. (Sheet default value; no project figure given.)
+  A1. The plate is thin, flat, isotropic, linear elastic and of constant thickness, so Kirchhoff small-deflection theory applies. (The middle surface is unstrained, and shear deformation is neglected, so the sheet is blocked below span/t of 10.)
+  A2. The deflection stays small against the thickness, with w/t at most 0.5. (Above 0.5, membrane action stiffens the plate, and the small-deflection result overstates the deflection and the bending stress. The sheet warns.)
+  A3. The edge support is the same all round and ideal. (A simply supported edge is held at zero deflection and is free to rotate, and a clamped edge allows no deflection or rotation. There are no elastic edges.)
+  A4. A simply supported rectangle has its corners held down. (The sheet reports the corner reaction 2·M_xy. If the corners can lift, the deflection and the central moments are larger than computed.)
+  A5. The von Mises stress is that of the plane-stress field at the plate surface, from the bending and twisting moments. (The stress is 6M/t². The through-thickness shear and the local stress under a concentrated load are not included.)
+  A6. The stress of a clamped rectangle is scanned on a 21 × 21 grid over a quarter of the plate. (A simply supported rectangle is governed at the centre or at a corner, where the twisting moment acts.)
+  A7. The patches are centred and a ring load is concentric. (A load smaller than the thickness is a concentrated load, and the sheet warns (rule `patch-thin`). Patches below 1 % (circular), 2 % (simply supported rectangle) or 25 % (clamped rectangle) of the plate size are refused.)
+  A8. The clamped rectangle is a Ritz approximation, so its moments and stress converge more slowly than its deflection. (The sheet reports the order used and the last change, which understates the error for long plates and small patches. Compare a critical result with finite elements.)
+  A9. The material properties E, ν, ρ and f_y are inputs, each citing its source when taken from the material library. (The generic textbook seeds in the library are indicative.)
+  A10. F (Total force (force basis: uniform, patch and ring loads; a ring load always uses the force)) is taken as 5 kN. (Sheet default value; no project figure given.)
+  A11. r0 (Patch radius (circular plate, central patch)) is taken as 50 mm. (Sheet default value; no project figure given.)
+  A12. u (Patch size in x (rectangular plate, central patch)) is taken as 100 mm. (Sheet default value; no project figure given.)
+  A13. v (Patch size in y (rectangular plate, central patch)) is taken as 100 mm. (Sheet default value; no project figure given.)
+  A14. r_ring (Ring radius (circular plate, ring load)) is taken as 150 mm. (Sheet default value; no project figure given.)
+  A15. defl_ratio (Deflection limit as span/ratio (span = diameter of a circular plate, shorter side of a rectangle)) is taken as 250. (Sheet default value; no project figure given.)
 
 4. Working
   [15] F_total = q·A_loaded    « Kirchhoff theory
       = 1 kPa × 300000 mm²
       = 0.3 kN
         Total load on the plate
-  [16] D = E*t^3/(12*(1 - nu^2))    « Kirchhoff theory
+  [16] D_flex = E*t_p^3/(12*(1 - nu^2))    « Kirchhoff theory
       = 69 GPa × (4 mm)^3 / (12 × (1 − 0.33^2))
-      = 412.97 N·m
+      = 0.41297 kN·m
         Flexural rigidity of the plate
   [17] terms_used = odd terms per direction N (m, n = 1, 3, … 2N − 1)    « T&WK Ch. 5
       = 128 odd terms per direction (16384 terms), last change 7.1087e-7
@@ -747,100 +742,105 @@ Flexural rigidity: D = E·t³/(12(1 − ν²)); surface stress σ = 6M/t²; von 
         Maximum deflection (centre)
   [19] M_x_c = D·π²·Σ W_mn(m²/a² + ν·n²/b²)·sin·sin at the centre    « T&WK Ch. 5
       = 128 odd terms per direction (16384 terms), last change 7.1087e-7
-      = 12.913 N·m/m
+      = 0.012913 kN·m/m
         M_x at the centre
   [20] M_y_c = D·π²·Σ W_mn(n²/b² + ν·m²/a²)·sin·sin at the centre    « T&WK Ch. 5
       = 128 odd terms per direction (16384 terms), last change 7.1087e-7
-      = 15.928 N·m/m
+      = 0.015928 kN·m/m
         M_y at the centre
   [21] M_xy_k = |D(1 − ν)·π²·Σ W_mn·(mn/ab)| at a corner, with the 1/N² tail of the sum removed by Richardson extrapolation (s_N + (s_N − s_N/2)/3)    « T&WK Ch. 5
       = 128 odd terms per direction (16384 terms), last change 7.1087e-7
-      = 9.0825 N·m/m
+      = 0.0090825 kN·m/m
         Twisting moment at a corner
   [22] R_corner = 2·M_xy at a corner    « T&WK Ch. 5
-      = 2 × 9.0825 N·m/m
+      = 2 × 0.0090825 kN·m/m
       = 0.018165 kN
         Corner reaction holding the corner down
   [23] M_vm_c = √(M_x² − M_x·M_y + M_y²) at the centre    « von Mises
-      = M_x = 12.913, M_y = 15.928 N·m/m
-      = 14.655 N·m/m
+      = M_x = 0.012913, M_y = 0.015928 kN·m/m
+      = 0.014655 kN·m/m
         Von Mises moment at the centre
   [24] M_vm_k = √3·|M_xy| at a corner    « von Mises
-      = M_xy = 9.0825 N·m/m
-      = 15.731 N·m/m
+      = M_xy = 0.0090825 kN·m/m
+      = 0.015731 kN·m/m
         Von Mises moment at a corner (pure twist)
   [25] omega_11 = π²(1/a² + 1/b²)·√(D/(ρt))    « T&WK Ch. 5
-      = a = 600 mm, b = 500 mm, D = 412.97 N·m, ρt = 10.8 kg/m²
+      = a = 600 mm, b = 500 mm, D_flex = 0.41297 kN·m, ρt = 10.8 kg/m²
       = 413.65 rad/s
         Angular frequency of the (1,1) mode
   [26] M_vm = √(M_1² − M_1·M_2 + M_2² + 3M_12²) at the governing point    « von Mises
       = corner (twisting moment)
-      = 15.731 N·m/m
+      = 0.015731 kN·m/m
         Greatest von Mises moment per unit width
   [27] sigma_max = 6·M_vm/t²    « Kirchhoff theory
-      = 6 × 15.731 N·m/m / (4 mm)²
+      = 6 × 0.015731 kN·m/m / (4 mm)²
       = 5.8993 MPa
         Greatest von Mises surface stress
   [28] sigma_principal = 6·M_principal/t²    « Kirchhoff theory
-      = 6 × 15.928 N·m/m / (4 mm)²
+      = 6 × 0.015928 kN·m/m / (4 mm)²
       = 5.9731 MPa
         Greatest principal surface stress
   [29] f1 = ω/2π    « Leissa
-      = D = 412.97 N·m, ρt = 10.8 kg/m²
+      = D_flex = 0.41297 kN·m, ρt = 10.8 kg/m²
       = 65.835 Hz
         Fundamental natural frequency (ω is the angular frequency, rad/s; f is in Hz)
-  [30] w_over_t = w_max/t    « Kirchhoff theory
+  [30] w_over_t = w_max/t_p    « Kirchhoff theory
       = 0.85516 mm / 4 mm
       = 0.21379
         Deflection over thickness
-  [31] u_stress = sigma_max/(f_y/gamma_M0)    « BS EN 1993-1-1 6.2.1(5)
-      = 5.8993 MPa / (120 MPa / 1)
+  [31] f_yd = f_y/gamma_M0    « BS EN 1993-1-1 6.2.1(5)
+      = 120 MPa / 1
+      = 120 MPa
+        Design yield strength
+  [32] u_stress = sigma_max/f_yd    « BS EN 1993-1-1 6.2.1(5)
+      = 5.8993 MPa / 120 MPa
       = 0.049161
         Stress utilisation
-  [32] w_lim = span/ratio    « Serviceability
+  [33] w_lim = span/ratio    « Serviceability
       = 500 mm / 250
       = 2 mm
         Deflection limit
-  [33] u_defl = w_max/w_lim    « Serviceability
+  [34] u_defl = w_max/w_lim    « Serviceability
       = 0.85516 mm / 2 mm
       = 0.42758
         Deflection utilisation
 
 5. Results
-  w_max = 0.8552 mm    Maximum deflection
+  w_max = 0.8552 mm    Maximum deflection (governing)
   sigma_max = 5.899 MPa    Greatest von Mises stress
   f1 = 65.83 Hz    Fundamental frequency
+  D_flex = 0.4130 kN·m    Flexural rigidity
   sigma_principal = 5.973 MPa    Greatest principal stress
+  f_yd = 120 MPa    Design yield strength
   w_over_t = 0.21379    Deflection over thickness
-  D = 412.97 N·m    Flexural rigidity
   terms_used = 128    Series terms used
-  M_x_c = 12.91 N·m/m    M_x at the centre
-  M_y_c = 15.93 N·m/m    M_y at the centre
-  M_xy_k = 9.083 N·m/m    Corner twisting moment
+  M_x_c = 0.01291 kN·m/m    M_x at the centre
+  M_y_c = 0.01593 kN·m/m    M_y at the centre
+  M_xy_k = 0.009083 kN·m/m    Corner twisting moment
   R_corner = 0.01817 kN    Corner reaction
   location = "corner (twisting moment)"    Governing stress point
   u_stress = 0.05    Stress utilisation
-  u_defl = 0.43    Deflection utilisation (governing)
+  u_defl = 0.43    Deflection utilisation
 
 6. Checks (governing first)
-  PASS  Deflection w_max ≤ span/ratio: u_defl = 0.43 vs u_defl ≤ 1  utilisation 0.43  « Serviceability
-  PASS  Stress σ_vm ≤ f_y/γ_M0: u_stress = 0.05 vs u_stress ≤ 1  utilisation 0.05  « 6.2.1(5)
+  PASS  Deflection against the deflection limit: 0.8552 mm vs 2 mm  utilisation 0.43  « Serviceability
+  PASS  Von Mises stress against the design yield strength: 5.899 MPa vs 120 MPa  utilisation 0.05  « cl. 6.2.1(5)
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are E, nu, rho, f_y (Material properties); gamma_M0 (EN 1993 National Annex factors); defl_ratio (Deflection limit). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: struct.plate-bending@1.3.0
-  Content hash: de24a86c46e1b8cf
+  Template: struct.plate-bending@1.4.0
+  Content hash: 73b2e646dac2f675
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 11/11
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 23:30 UTC
   Application: TempestOS test
 
 9. References
-  1. Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 3 — Symmetrical bending of circular plates
-  2. Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 5 — Simply supported rectangular plates (Navier solution)
-  3. Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 6 — Rectangular plates with various edge conditions
-  4. Leissa, Vibration of Plates (NASA SP-160) Ch. 2, 4 — Natural frequencies of circular and rectangular plates
-  5. BS EN 1993-1-1:2005+A1:2014 6.1(1) — Partial factor γ_M0
-  6. BS EN 1993-1-1:2005+A1:2014 6.2.1(5) — Yield criterion for the cross-section
+  1. Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 3, 2nd ed. — Symmetrical bending of circular plates
+  2. Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 5, 2nd ed. — Simply supported rectangular plates (Navier solution)
+  3. Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 6, 2nd ed. — Rectangular plates with various edge conditions
+  4. Leissa, Vibration of Plates (NASA SP-160) Ch. 2 and 4, 1st ed. — Natural frequencies of circular and rectangular plates
+  5. BS EN 1993-1-1:2005+A1:2014 cl. 6.1(1) — Partial factor γ_M0
+  6. BS EN 1993-1-1:2005+A1:2014 cl. 6.2.1(5) — Yield criterion for the cross-section

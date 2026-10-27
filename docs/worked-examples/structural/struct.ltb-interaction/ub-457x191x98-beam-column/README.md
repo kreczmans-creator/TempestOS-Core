@@ -6,14 +6,14 @@ A beam-column between lateral restraints 5 m apart, carrying 400 kN compression 
 
 | Input | Value | Source |
 |---|---|---|
-| `A` | 125.265 cm^2 | reference: S1 section sheet SEC-01, UB 457×191×98 (A = 125.265 cm²) |
+| `A` | 125.265 cm^2 | reference: Section properties sheet SEC-01, UB 457×191×98 (A = 125.265 cm²) |
 | `C_2` | 0 | assumption: C₂ is 0 for end-moment loading. |
 | `E` | 210 GPa | spec: BS EN 1993-1-1 cl. 3.2.6 |
 | `G` | 81 GPa | spec: BS EN 1993-1-1 cl. 3.2.6: G = E/(2(1 + ν)) ≈ 81 GPa |
-| `I_t` | 121.287 cm^4 | reference: S1 section sheet SEC-01 (J = 121.287 cm⁴) |
-| `I_w` | 1.17554 dm^6 | reference: S1 section sheet SEC-01 (I_w = 1.17554 dm⁶) |
-| `I_y` | 45728 cm^4 | reference: S1 section sheet SEC-01 (I_xx = 45727.99 cm⁴) |
-| `I_z` | 2347.02 cm^4 | reference: S1 section sheet SEC-01 (I_yy = 2347.02 cm⁴) |
+| `I_t` | 121.287 cm^4 | reference: Section properties sheet SEC-01 (J = 121.287 cm⁴) |
+| `I_w` | 1175540 cm^6 | reference: Section properties sheet SEC-01 (I_w = 1175538.6 cm⁶) |
+| `I_y` | 45728 cm^4 | reference: Section properties sheet SEC-01 (I_y = 45727.99 cm⁴) |
+| `I_z` | 2347.02 cm^4 | reference: Section properties sheet SEC-01 (I_z = 2347.02 cm⁴) |
 | `L` | 5 m | drawing: FR-BM-12 rev B |
 | `L_cr_y` | 5 m | drawing: FR-BM-12 rev B |
 | `L_cr_z` | 5 m | drawing: FR-BM-12 rev B |
@@ -21,10 +21,10 @@ A beam-column between lateral restraints 5 m apart, carrying 400 kN compression 
 | `M_y_B` | 170 kN*m | reference: S2 frame sheet FR-01, member 2, end B (same side: single curvature) |
 | `M_z_Ed` | 6 kN*m | assumption: Small minor-axis moment from the cladding-rail eccentricity (engineer's estimate). |
 | `N_Ed` | -400 kN | reference: S2 frame sheet FR-01, member 2, ULS combination (compression negative) |
-| `W_el_y` | 1957.53 cm^3 | reference: S1 section sheet SEC-01 (W_el,x = 1957.53 cm³) |
-| `W_el_z` | 243.467 cm^3 | reference: S1 section sheet SEC-01 (W_el,y = 243.467 cm³) |
-| `W_pl_y` | 2232.46 cm^3 | reference: S1 section sheet SEC-01 (W_pl,x = 2232.46 cm³) |
-| `W_pl_z` | 378.904 cm^3 | reference: S1 section sheet SEC-01 (W_pl,y = 378.904 cm³) |
+| `W_el_y` | 1957.53 cm^3 | reference: Section properties sheet SEC-01 (W_el,y = 1957.53 cm³) |
+| `W_el_z` | 243.467 cm^3 | reference: Section properties sheet SEC-01 (W_el,z = 243.467 cm³) |
+| `W_pl_y` | 2232.46 cm^3 | reference: Section properties sheet SEC-01 (W_pl,y = 2232.46 cm³) |
+| `W_pl_z` | 378.904 cm^3 | reference: Section properties sheet SEC-01 (W_pl,z = 378.904 cm³) |
 | `alpha_a` | 0.21 | spec: EN 1993-1-1 Table 6.1, recommended value |
 | `alpha_a0` | 0.13 | spec: EN 1993-1-1 Table 6.1, recommended value |
 | `alpha_b` | 0.34 | spec: EN 1993-1-1 Table 6.1, recommended value |
@@ -69,4 +69,4 @@ A beam-column between lateral restraints 5 m apart, carrying 400 kN compression 
 | `u_61` | 0.64441  | 0.64441  | PASS |
 | `u_62` | 0.930503  | 0.930503  | PASS |
 
-Governing check: Interaction, equation 6.62 — PASS (utilisation 0.93). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Interaction equation 6.62 against its limit — PASS (utilisation 0.93). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

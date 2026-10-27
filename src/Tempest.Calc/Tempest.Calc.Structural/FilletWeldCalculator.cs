@@ -30,19 +30,19 @@ public sealed class FilletWeldCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Structural, "Fillet weld (EN 1993-1-8)",
-        "A fillet weld carrying forces parallel to, transverse to and normal to its axis, by the simplified method: the resultant over the throat area against the design shear strength of the weld, with the required throat and leg.",
+        Id, "1.2.0", CalcDiscipline.Structural, "Fillet weld (EN 1993-1-8)",
+        "Calculates the utilisation of a fillet weld loaded parallel, transverse and normal to its axis, with the required throat and leg. The simplified method compares the resultant over the throat with the design shear strength.",
         "Resultant force on the weld: F = √(F_∥² + F_⊥² + F_n²).\nDesign shear strength of the weld, simplified method: f_vw,d = f_u/(√3·β_w·γ_M2).\nLong-joint reduction of a lap joint longer than 150·a (4.11(3)): β_Lw = min(1, 1.2 − 0.2·L/(150·a)); 1 for a shorter lap or another joint type.\nShear stress on the throat: τ_w = F/(a·L).\nWeld resistance and utilisation: F_w,Rd = β_Lw·f_vw,d·a·L; u = F/F_w,Rd.\nThroat needed (not less than 3 mm, with the β_Lw of the throat provided) and the matching leg: a_req = max(F/(β_Lw·f_vw,d·L), 3 mm); leg = √2·a.",
         [
+            new CalcInputSpec("joint", "Joint type: a lap joint is reduced beyond 150 throats, and Other is for a weld whose stress follows the base metal", CalcInputKind.Choice, Choices: [LapJoint, OtherJoint], DefaultChoice: LapJoint, Group: "Setup"),
+            new CalcInputSpec("L", "Effective weld length", CalcInputKind.Quantity, "mm", Default: 200, Min: 30, Max: 1e4, HardMin: 1e-3, HardMax: 1e6, Group: "Geometry"),
+            new CalcInputSpec("a", "Throat thickness", CalcInputKind.Quantity, "mm", Default: 5, Min: 3, Max: 50, HardMin: 1e-3, HardMax: 1e3, Group: "Geometry"),
+            new CalcInputSpec("f_u", "Ultimate tensile strength of the weaker part joined", CalcInputKind.Quantity, "MPa", ReferenceLibrary: "Materials", ReferenceProperty: "UltimateTensileStrength", ReferenceDimension: "Pressure", Default: 490, Min: 300, Max: 1000, HardMin: 1e-3, HardMax: 1e5, Group: "Material"),
             new CalcInputSpec("F_par", "Force parallel to the weld axis", CalcInputKind.Quantity, "kN", Default: 150, Min: -1e5, Max: 1e5, HardMin: -1e8, HardMax: 1e8, Group: "Loads"),
             new CalcInputSpec("F_tr", "Force transverse to the weld axis, in the plane of the parts", CalcInputKind.Quantity, "kN", Default: 0, Min: -1e5, Max: 1e5, HardMin: -1e8, HardMax: 1e8, Group: "Loads"),
             new CalcInputSpec("F_n", "Force normal to the plane of the parts", CalcInputKind.Quantity, "kN", Default: 0, Min: -1e5, Max: 1e5, HardMin: -1e8, HardMax: 1e8, Group: "Loads"),
-            new CalcInputSpec("L", "Effective weld length", CalcInputKind.Quantity, "mm", Default: 200, Min: 30, Max: 1e4, HardMin: 1e-3, HardMax: 1e6, Group: "Weld"),
-            new CalcInputSpec("a", "Throat thickness", CalcInputKind.Quantity, "mm", Default: 5, Min: 3, Max: 50, HardMin: 1e-3, HardMax: 1e3, Group: "Weld"),
-            new CalcInputSpec("joint", "Joint type for the long-joint reduction of BS EN 1993-1-8 4.11: a lap joint is reduced beyond 150 throats; choose Other for a weld whose stress follows the base metal's, as a flange-to-web weld does", CalcInputKind.Choice, Choices: [LapJoint, OtherJoint], DefaultChoice: LapJoint, Group: "Weld"),
-            new CalcInputSpec("f_u", "Ultimate strength of the weaker part joined", CalcInputKind.Quantity, "MPa", ReferenceLibrary: "Materials", ReferenceProperty: "UltimateTensileStrength", ReferenceDimension: "Pressure", Default: 490, Min: 300, Max: 1000, HardMin: 1e-3, HardMax: 1e5, Group: "Material"),
-            new CalcInputSpec("beta_w", "Correlation factor β_w (0.8 S235, 0.85 S275, 0.9 S355, 1.0 S420/S460)", CalcInputKind.Number, Default: 0.9, Min: 0.8, Max: 1.0, HardMin: 0.01, HardMax: 5, Group: "Material"),
-            new CalcInputSpec("gamma_M2", "Partial factor γ_M2", CalcInputKind.Number, Default: 1.25, Min: 1, Max: 2, HardMin: 1, HardMax: 10, Group: "Material"),
+            new CalcInputSpec("beta_w", "Correlation factor (0.8 S235, 0.85 S275, 0.9 S355, 1.0 S420 and S460)", CalcInputKind.Number, Default: 0.9, Min: 0.8, Max: 1.0, HardMin: 0.01, HardMax: 5, Group: "Factors"),
+            new CalcInputSpec("gamma_M2", "Partial factor for the weld resistance", CalcInputKind.Number, Default: 1.25, Min: 1, Max: 2, HardMin: 1, HardMax: 10, Group: "Factors"),
         ],
         [
             new CalcAssumption("The resultant force is shared uniformly along the effective length.", "Simplified method."),
@@ -51,10 +51,10 @@ public sealed class FilletWeldCalculator : ICalcCalculator
             new CalcAssumption("The weld length L is the length of the lap in the direction of the force.", "BS EN 1993-1-8 4.11(3)."),
         ],
         [
-            new CalcClauseRef("BS EN 1993-1-8", "4.5.3.3", "Simplified method for design resistance of fillet weld"),
-            new CalcClauseRef("BS EN 1993-1-8", "4.5.2(2)", "Effective throat thickness: minimum 3 mm"),
-            new CalcClauseRef("BS EN 1993-1-8", "4.5.1(2)", "Effective length: welds shorter than 30 mm or 6 throats not to carry load"),
-            new CalcClauseRef("BS EN 1993-1-8", "4.11", "Long joints"),
+            new CalcClauseRef("BS EN 1993-1-8:2005", "cl. 4.5.3.3", "Simplified method for design resistance of fillet weld"),
+            new CalcClauseRef("BS EN 1993-1-8:2005", "cl. 4.5.2(2)", "Effective throat thickness: minimum 3 mm"),
+            new CalcClauseRef("BS EN 1993-1-8:2005", "cl. 4.5.1(2)", "Effective length: welds shorter than 30 mm or 6 throats not to carry load"),
+            new CalcClauseRef("BS EN 1993-1-8:2005", "cl. 4.11", "Long joints"),
         ],
         [
             new CalcApplicabilityRule("throat", "Throats below 3 mm are outside the method.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
@@ -71,7 +71,16 @@ public sealed class FilletWeldCalculator : ICalcCalculator
             new CalcTestCase("ka-legacy-overloaded", "Legacy example 3: overloaded normal weld", Legacy(3), Example(0, 0, 120, 100, 4, 490, 0.9),
                 [new CalcExpectedValue("tau_w", 300.00, "MPa", 5e-5), new CalcExpectedValue("u", 1.1930, "", 5e-5), new CalcExpectedValue("a_calc", 4.7719, "mm", 5e-5), new CalcExpectedValue("F_w_Rd", 100.587, "kN", 5e-5), new CalcExpectedValue("a_req", 4.7719, "mm", 5e-5)]),
         ],
-        Category: "Connections");
+        Category: "Connections",
+        OutputPorts:
+        [
+            new CalcOutputPort("F_w_Rd", "kN", "Design resistance of the weld", "weld.resistance_design"),
+            new CalcOutputPort("u", "", "Utilisation of the weld", "weld.utilisation"),
+            new CalcOutputPort("f_vw_d", "MPa", "Design shear strength of the weld", "weld.strength_shear_design"),
+            new CalcOutputPort("tau_w", "MPa", "Stress on the throat", "weld.stress_throat"),
+            new CalcOutputPort("a_req", "mm", "Required throat", "weld.throat_required"),
+            new CalcOutputPort("s_leg", "mm", "Leg length of the throat provided", "weld.leg_provided"),
+        ]);
 
     public void Run(CalcRunContext c)
     {
@@ -98,7 +107,7 @@ public sealed class FilletWeldCalculator : ICalcCalculator
         // BS EN 1993-1-8 4.11(3): a lap joint longer than 150·a is reduced by β_Lw = 1.2 − 0.2·L/(150·a), not above 1. It was a warning that said the reduction was not applied (1.0.2 and before).
         if (lap && ratio > 1 && 1.2 - 0.2 * ratio <= 0)
         {
-            c.Block("long-joint-range", $"L: the lap length ({CalcValue.FormatNumber(c.Si("L") * 1e3, 5)} mm) is {CalcValue.FormatNumber(ratio * 150, 5)} throats, beyond the 900 throats where the long-joint factor 1.2 − 0.2·L/(150·a) reaches zero; shorten the lap, or split it into welds of a usable length.");
+            c.Block("long-joint-range", $"L: the lap length of {CalcValue.FormatNumber(c.Si("L") * 1e3, 5)} mm is {CalcValue.FormatNumber(ratio * 150, 5)} throats, beyond the 900 where the long-joint factor reaches zero. Shorten the lap, or split it into shorter welds.");
             return;
         }
 
@@ -116,7 +125,7 @@ public sealed class FilletWeldCalculator : ICalcCalculator
 
         if (!(c.Si("F") > 0))
         {
-            c.Block("no-load", "F: every force is zero; there is nothing to check.");
+            c.Block("no-load", "F: every force is zero. There is nothing to check.");
             return;
         }
 
@@ -131,6 +140,6 @@ public sealed class FilletWeldCalculator : ICalcCalculator
         foreach (var (symbol, text) in new[] { ("F", "Resultant force"), ("f_vw_d", "Design shear strength"), ("tau_w", "Throat stress"), ("beta_Lw", "Long-joint factor"), ("F_w_Rd", "Weld resistance"), ("u", "Utilisation"), ("a_calc", "Throat needed"), ("a_req", "Required throat"), ("s_leg", "Leg length provided") })
             c.Output(symbol, text);
 
-        c.CheckUtilisation("Weld resistance", "u", "BS EN 1993-1-8 4.5.3.3");
+        c.Check("Weld force against weld resistance", "F", "F_w_Rd", "BS EN 1993-1-8 4.5.3.3");
     }
 }

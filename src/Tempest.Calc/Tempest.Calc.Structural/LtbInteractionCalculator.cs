@@ -39,8 +39,8 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
     public const string MaterialKind = "material.properties";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.Structural, "Lateral-torsional buckling and N+M interaction (EN 1993-1-1)",
-        "Lateral-torsional buckling (6.3.2), flexural buckling (6.3.1) and the interaction of axial compression with bending (6.3.3) for a uniform doubly-symmetric I-section member on fork supports, class 1 to 3: M_cr, λ̄_LT, χ_LT and M_b,Rd; χ_y, χ_z and N_b,Rd; the Annex B (or Annex A) interaction factors and both interaction ratios, with the governing check.",
+        Id, "1.3.0", CalcDiscipline.Structural, "Lateral-torsional buckling and N+M interaction (EN 1993-1-1)",
+        "Calculates the lateral-torsional buckling, flexural buckling and bending-with-compression interaction of a uniform doubly-symmetric I-section member on fork supports, to EN 1993-1-1. Class 4 sections are outside this sheet.",
         "Critical moment (NCCI SN003 form): M_cr = C₁·π²E·I_z/(kL)²·[√((k/k_w)²·I_w/I_z + (kL)²·G·I_t/(π²E·I_z) + (C₂z_g)²) − C₂z_g]; C₁ = 1.88 − 1.40ψ + 0.52ψ² ≤ 2.70 (end moments, k = 1) unless entered\n" +
         "LTB slenderness: λ̄_LT = √(W_y·f_y/M_cr), W_y = W_pl,y (class 1, 2) or W_el,y (class 3)\n" +
         "Lateral-torsional buckling, general case (6.3.2.2): Φ_LT = 0.5[1 + α_LT(λ̄_LT − 0.2) + λ̄_LT²]; χ_LT = 1/(Φ_LT + √(Φ_LT² − λ̄_LT²)) ≤ 1\n" +
@@ -50,83 +50,84 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
         "Interaction (6.3.3(4)): N_Ed/(χ_y·N_Rk/γ_M1) + k_yy·M_y,Ed/(χ_LT·M_y,Rk/γ_M1) + k_yz·M_z,Ed/(M_z,Rk/γ_M1) ≤ 1; N_Ed/(χ_z·N_Rk/γ_M1) + k_zy·M_y,Ed/(χ_LT·M_y,Rk/γ_M1) + k_zz·M_z,Ed/(M_z,Rk/γ_M1) ≤ 1\n" +
         "Factors k_ij: Annex B from the slenderness, N_Ed/(χ·N_Rk/γ_M1) and C_m (C_m = 0.6 + 0.4ψ ≥ 0.4 for a linear diagram, or entered); Annex A from the μ, w, n_pl, a_LT and C_ij expressions (class 1, 2: plastic column of Table A.1; class 3: elastic column, without the 0.6√(w_i/w_j) factors of k_yz, k_zy)",
         [
-            new CalcInputSpec("edition", "EN 1993-1-1 edition (2005+A1:2014 until the 2022 edition is adopted; the 2022 choice changes only the label, see the sheet note)", CalcInputKind.Choice, Choices: [Edition2005, Edition2022], DefaultChoice: Edition2005, Group: "Method"),
-            new CalcInputSpec("ltb_method", "χ_LT method", CalcInputKind.Choice, Choices: [Rolled, General], DefaultChoice: Rolled, Group: "Method"),
-            new CalcInputSpec("annex", "Interaction factors", CalcInputKind.Choice, Choices: [AnnexBMethod, AnnexAMethod], DefaultChoice: AnnexBMethod, Group: "Method"),
-            new CalcInputSpec("torsion", "Member behaviour for Annex B", CalcInputKind.Choice, Choices: [Susceptible, NotSusceptible], DefaultChoice: Susceptible, Group: "Method"),
+            new CalcInputSpec("edition", "EN 1993-1-1 edition (the 2022 choice changes the printed label only)", CalcInputKind.Choice, Choices: [Edition2005, Edition2022], DefaultChoice: Edition2005, Group: "Setup"),
+            new CalcInputSpec("ltb_method", "Method for the lateral-torsional buckling reduction factor", CalcInputKind.Choice, Choices: [Rolled, General], DefaultChoice: Rolled, Group: "Setup"),
+            new CalcInputSpec("annex", "Annex for the interaction factors", CalcInputKind.Choice, Choices: [AnnexBMethod, AnnexAMethod], DefaultChoice: AnnexBMethod, Group: "Setup"),
+            new CalcInputSpec("torsion", "Member behaviour for Annex B", CalcInputKind.Choice, Choices: [Susceptible, NotSusceptible], DefaultChoice: Susceptible, Group: "Setup"),
+            new CalcInputSpec("section_class", "Cross-section class (class 4 is outside this sheet)", CalcInputKind.Choice, Choices: ["1", "2", "3", "4"], DefaultChoice: "1", Group: "Setup"),
+            new CalcInputSpec("section_type", "Section type, which selects the buckling curve of Table 6.4 or Table 6.5", CalcInputKind.Choice, Choices: [RolledI, WeldedI], DefaultChoice: RolledI, Group: "Setup"),
+            new CalcInputSpec("moment_mode", "Moment diagram given as", CalcInputKind.Choice, Choices: [ModePsi, ModeEnds], DefaultChoice: ModePsi, Group: "Setup"),
+            new CalcInputSpec("ltb_curve", "Buckling curve for lateral-torsional buckling", CalcInputKind.Choice, Choices: [CurveAuto, "a", "b", "c", "d"], DefaultChoice: CurveAuto, Group: "Setup"),
+            new CalcInputSpec("curve_y", "Buckling curve about y-y (auto = Table 6.2 for f_y up to 420 MPa)", CalcInputKind.Choice, Choices: Curves, DefaultChoice: FlexuralAuto, Group: "Setup"),
+            new CalcInputSpec("curve_z", "Buckling curve about z-z (auto = Table 6.2 for f_y up to 420 MPa)", CalcInputKind.Choice, Choices: Curves, DefaultChoice: FlexuralAuto, Group: "Setup"),
+            new CalcInputSpec("use_f", "Apply the modification factor f of cl. 6.3.2.3(2) to the reduction factor", CalcInputKind.Boolean, Default: 0, Group: "Setup"),
 
-            new CalcInputSpec("f_y", "Yield strength (for the thickness)", CalcInputKind.Quantity, "MPa", Default: 355, Min: 235, Max: 460, HardMin: 235, HardMax: 460, Group: "Material", MaterialProperty: "f_y"),
-            new CalcInputSpec("E", "Modulus of elasticity", CalcInputKind.Quantity, "GPa", Default: 210, Min: 190, Max: 220, HardMin: 190, HardMax: 220, Group: "Material", MaterialProperty: "E"),
-            new CalcInputSpec("G", "Shear modulus", CalcInputKind.Quantity, "GPa", Default: 81, Min: 70, Max: 90, HardMin: 70, HardMax: 90, Group: "Material", MaterialProperty: "G"),
-            new CalcInputSpec("gamma_M1", "Partial factor γ_M1 (member buckling)", CalcInputKind.Number, Default: 1.0, Min: 1.0, Max: 1.25, HardMin: 1.0, HardMax: 1.25, Group: "Material"),
+            new CalcInputSpec("h", "Overall section depth", CalcInputKind.Quantity, "mm", Default: 467.2, Min: 100, Max: 1500, HardMin: 50, HardMax: 2500, Group: "Geometry"),
+            new CalcInputSpec("b", "Flange width", CalcInputKind.Quantity, "mm", Default: 192.8, Min: 50, Max: 600, HardMin: 30, HardMax: 1000, Group: "Geometry"),
+            new CalcInputSpec("t_f", "Flange thickness, which selects the flexural buckling curves of Table 6.2", CalcInputKind.Quantity, "mm", Default: 19.6, Min: 5, Max: 60, HardMin: 2, HardMax: 150, Group: "Geometry"),
+            new CalcInputSpec("A", "Cross-section area", CalcInputKind.Quantity, "cm^2", Default: 125.27, Min: 10, Max: 1000, HardMin: 5, HardMax: 3000, Group: "Geometry"),
+            new CalcInputSpec("I_y", "Second moment of area about y-y (major axis)", CalcInputKind.Quantity, "cm^4", Default: 45728, Min: 500, Max: 1e6, HardMin: 50, HardMax: 5e6, Group: "Geometry"),
+            new CalcInputSpec("I_z", "Second moment of area about z-z (minor axis)", CalcInputKind.Quantity, "cm^4", Default: 2347.0, Min: 50, Max: 1e5, HardMin: 5, HardMax: 5e5, Group: "Geometry"),
+            new CalcInputSpec("I_t", "Torsion constant", CalcInputKind.Quantity, "cm^4", Default: 121.29, Min: 1, Max: 1e4, HardMin: 0.1, HardMax: 1e5, Group: "Geometry"),
+            new CalcInputSpec("I_w", "Warping constant", CalcInputKind.Quantity, "cm^6", Default: 1175500, Min: 1e3, Max: 1e9, HardMin: 10, HardMax: 1e11, Group: "Geometry"),
+            new CalcInputSpec("W_pl_y", "Plastic section modulus about y-y", CalcInputKind.Quantity, "cm^3", Default: 2232.5, Min: 10, Max: 2e4, HardMin: 1, HardMax: 1e5, Group: "Geometry"),
+            new CalcInputSpec("W_el_y", "Elastic section modulus about y-y", CalcInputKind.Quantity, "cm^3", Default: 1957.5, Min: 10, Max: 2e4, HardMin: 1, HardMax: 1e5, Group: "Geometry"),
+            new CalcInputSpec("W_pl_z", "Plastic section modulus about z-z", CalcInputKind.Quantity, "cm^3", Default: 378.9, Min: 5, Max: 1e4, HardMin: 0.5, HardMax: 5e4, Group: "Geometry"),
+            new CalcInputSpec("W_el_z", "Elastic section modulus about z-z", CalcInputKind.Quantity, "cm^3", Default: 243.47, Min: 5, Max: 1e4, HardMin: 0.5, HardMax: 5e4, Group: "Geometry"),
+            new CalcInputSpec("L", "Length between lateral restraints (fork supports)", CalcInputKind.Quantity, "m", Default: 6, Min: 0.5, Max: 50, HardMin: 0.1, HardMax: 100, Group: "Geometry"),
 
-            new CalcInputSpec("section_class", "Cross-section class (class 4 needs effective properties and is outside this sheet)", CalcInputKind.Choice, Choices: ["1", "2", "3", "4"], DefaultChoice: "1", Group: "Section"),
-            new CalcInputSpec("section_type", "Section type (selects the buckling curve of Table 6.4 / 6.5)", CalcInputKind.Choice, Choices: [RolledI, WeldedI], DefaultChoice: RolledI, Group: "Section"),
-            new CalcInputSpec("h", "Overall depth h", CalcInputKind.Quantity, "mm", Default: 467.2, Min: 50, Max: 2500, HardMin: 50, HardMax: 2500, Group: "Section"),
-            new CalcInputSpec("b", "Flange width b", CalcInputKind.Quantity, "mm", Default: 192.8, Min: 30, Max: 1000, HardMin: 30, HardMax: 1000, Group: "Section"),
-            new CalcInputSpec("t_f", "Flange thickness t_f (S1: t_f; selects the flexural buckling curves of Table 6.2)", CalcInputKind.Quantity, "mm", Default: 19.6, Min: 2, Max: 150, HardMin: 2, HardMax: 150, Group: "Section"),
-            new CalcInputSpec("A", "Area A", CalcInputKind.Quantity, "cm^2", Default: 125.27, Min: 5, Max: 3000, HardMin: 5, HardMax: 3000, Group: "Section"),
-            new CalcInputSpec("I_y", "Second moment of area, major axis I_y (S1: I_xx)", CalcInputKind.Quantity, "cm^4", Default: 45728, Min: 50, Max: 5e6, HardMin: 50, HardMax: 5e6, Group: "Section"),
-            new CalcInputSpec("I_z", "Second moment of area, minor axis I_z (S1: I_yy)", CalcInputKind.Quantity, "cm^4", Default: 2347.0, Min: 5, Max: 5e5, HardMin: 5, HardMax: 5e5, Group: "Section"),
-            new CalcInputSpec("I_t", "Torsion constant I_t (S1: J)", CalcInputKind.Quantity, "cm^4", Default: 121.29, Min: 0.1, Max: 1e5, HardMin: 0.1, HardMax: 1e5, Group: "Section"),
-            new CalcInputSpec("I_w", "Warping constant I_w", CalcInputKind.Quantity, "dm^6", Default: 1.1755, Min: 1e-5, Max: 1e5, HardMin: 1e-5, HardMax: 1e5, Group: "Section"),
-            new CalcInputSpec("W_pl_y", "Plastic modulus, major axis (S1: W_pl_x)", CalcInputKind.Quantity, "cm^3", Default: 2232.5, Min: 1, Max: 1e5, HardMin: 1, HardMax: 1e5, Group: "Section"),
-            new CalcInputSpec("W_el_y", "Elastic modulus, major axis (S1: W_el_x)", CalcInputKind.Quantity, "cm^3", Default: 1957.5, Min: 1, Max: 1e5, HardMin: 1, HardMax: 1e5, Group: "Section"),
-            new CalcInputSpec("W_pl_z", "Plastic modulus, minor axis (S1: W_pl_y)", CalcInputKind.Quantity, "cm^3", Default: 378.9, Min: 0.5, Max: 5e4, HardMin: 0.5, HardMax: 5e4, Group: "Section"),
-            new CalcInputSpec("W_el_z", "Elastic modulus, minor axis (S1: W_el_y)", CalcInputKind.Quantity, "cm^3", Default: 243.47, Min: 0.5, Max: 5e4, HardMin: 0.5, HardMax: 5e4, Group: "Section"),
+            new CalcInputSpec("f_y", "Yield strength for the thickness", CalcInputKind.Quantity, "MPa", Default: 355, Min: 235, Max: 420, HardMin: 235, HardMax: 460, Group: "Material", MaterialProperty: "f_y"),
+            new CalcInputSpec("E", "Young's modulus", CalcInputKind.Quantity, "GPa", Default: 210, Min: 200, Max: 215, HardMin: 190, HardMax: 220, Group: "Material", MaterialProperty: "E"),
+            new CalcInputSpec("G", "Shear modulus", CalcInputKind.Quantity, "GPa", Default: 81, Min: 75, Max: 85, HardMin: 70, HardMax: 90, Group: "Material", MaterialProperty: "G"),
 
-            new CalcInputSpec("L", "Length between lateral restraints (fork supports)", CalcInputKind.Quantity, "m", Default: 6, Min: 0.1, Max: 100, HardMin: 0.1, HardMax: 100, Group: "Lateral-torsional buckling"),
-            new CalcInputSpec("k", "Effective length factor k (end rotation about the minor axis)", CalcInputKind.Number, Default: 1.0, Min: 0.5, Max: 1.0, HardMin: 0.5, HardMax: 1.0, Group: "Lateral-torsional buckling"),
-            new CalcInputSpec("k_w", "Warping factor k_w", CalcInputKind.Number, Default: 1.0, Min: 0.5, Max: 1.0, HardMin: 0.5, HardMax: 1.0, Group: "Lateral-torsional buckling"),
-            new CalcInputSpec("z_g", "Load height z_g above the shear centre, towards the compression flange (positive destabilises)", CalcInputKind.Quantity, "mm", Default: 0, Min: -1000, Max: 1000, HardMin: -1000, HardMax: 1000, Group: "Lateral-torsional buckling"),
-            new CalcInputSpec("C_1", "C₁ (blank: from ψ, end moments with k = 1; enter it for transverse loads, and then also k_c and C_my: they are not taken from ψ)", CalcInputKind.Number, Min: 1.0, Max: 4.0, HardMin: 1.0, HardMax: 4.0, IsOptional: true, Group: "Lateral-torsional buckling"),
-            new CalcInputSpec("C_2", "C₂ (0 for end moments; enter it for transverse loads)", CalcInputKind.Number, Default: 0, Min: 0, Max: 1.5, HardMin: 0, HardMax: 1.5, Group: "Lateral-torsional buckling"),
-            new CalcInputSpec("ltb_curve", "Buckling curve for χ_LT", CalcInputKind.Choice, Choices: [CurveAuto, "a", "b", "c", "d"], DefaultChoice: CurveAuto, Group: "Lateral-torsional buckling"),
-            new CalcInputSpec("use_f", "Apply the f modification to χ_LT (6.3.2.3(2))", CalcInputKind.Boolean, Default: 0, Group: "Lateral-torsional buckling"),
-            new CalcInputSpec("k_c", "k_c for the f modification (blank: 1/(1.33 − 0.33ψ) for a linear diagram; required when C₁ is entered, unless the diagram is given as end moments)", CalcInputKind.Number, Min: 0.5, Max: 1.0, HardMin: 0.5, HardMax: 1.0, IsOptional: true, Group: "Lateral-torsional buckling"),
+            new CalcInputSpec("N_Ed", "Design axial force, tension positive and compression negative (a positive value is outside the range)", CalcInputKind.Quantity, "kN", Default: -500, Min: -2e4, Max: 0, HardMin: -1e5, HardMax: 0, Group: "Loads"),
+            new CalcInputSpec("M_z_Ed", "Greatest design moment about z-z", CalcInputKind.Quantity, "kN*m", Default: 0, Min: 0, Max: 1e4, HardMin: 0, HardMax: 1e5, Group: "Loads"),
+            new CalcInputSpec("psi_z", "Ratio of the end moments about z-z", CalcInputKind.Number, Default: 1, Min: -0.9, Max: 1, HardMin: -1, HardMax: 1, Group: "Loads"),
+            new CalcInputSpec("M_y_Ed", "Greatest design moment about y-y, used in the ψ mode (optional; blank = the sheet is blocked in the ψ mode)", CalcInputKind.Quantity, "kN*m", Default: 300, Min: 0, Max: 1e4, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("psi_y", "Ratio of the end moments about y-y, +1 for a uniform moment (optional; blank = 1, the conservative diagram)", CalcInputKind.Number, Default: 1, Min: -0.9, Max: 1, HardMin: -1, HardMax: 1, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("M_y_A", "Moment at end A about y-y as an ordinate of the bending-moment diagram, with the same sign at both ends for single curvature, unlike the end actions of a stiffness analysis (optional; blank = the sheet is blocked in the end-moment mode)", CalcInputKind.Quantity, "kN*m", Min: -1e4, Max: 1e4, HardMin: -1e5, HardMax: 1e5, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("M_y_B", "Moment at end B about y-y, with the same convention as end A: an ordinate of the bending-moment diagram, the same sign as A for single curvature (optional; blank = the sheet is blocked in the end-moment mode)", CalcInputKind.Quantity, "kN*m", Min: -1e4, Max: 1e4, HardMin: -1e5, HardMax: 1e5, IsOptional: true, Group: "Loads"),
 
-            new CalcInputSpec("alpha_a0", "Imperfection factor α, curve a0 (recommended 0.13)", CalcInputKind.Number, Default: 0.13, Min: 0.05, Max: 1.0, HardMin: 0.05, HardMax: 1.0, Group: "Factors (EN 1993-1-1 Table 6.1, recommended values)"),
-            new CalcInputSpec("alpha_a", "Imperfection factor α, curve a (recommended 0.21)", CalcInputKind.Number, Default: 0.21, Min: 0.05, Max: 1.0, HardMin: 0.05, HardMax: 1.0, Group: "Factors (EN 1993-1-1 Table 6.1, recommended values)"),
-            new CalcInputSpec("alpha_b", "Imperfection factor α, curve b (recommended 0.34)", CalcInputKind.Number, Default: 0.34, Min: 0.05, Max: 1.0, HardMin: 0.05, HardMax: 1.0, Group: "Factors (EN 1993-1-1 Table 6.1, recommended values)"),
-            new CalcInputSpec("alpha_c", "Imperfection factor α, curve c (recommended 0.49)", CalcInputKind.Number, Default: 0.49, Min: 0.05, Max: 1.0, HardMin: 0.05, HardMax: 1.0, Group: "Factors (EN 1993-1-1 Table 6.1, recommended values)"),
-            new CalcInputSpec("alpha_d", "Imperfection factor α, curve d (recommended 0.76)", CalcInputKind.Number, Default: 0.76, Min: 0.05, Max: 1.0, HardMin: 0.05, HardMax: 1.0, Group: "Factors (EN 1993-1-1 Table 6.1, recommended values)"),
-            new CalcInputSpec("lambda_LT0", "λ̄_LT,0 for 6.3.2.3 (recommended 0.4)", CalcInputKind.Number, Default: 0.4, Min: 0.2, Max: 0.5, HardMin: 0.2, HardMax: 0.5, Group: "Factors (EN 1993-1-1 Table 6.1, recommended values)"),
-            new CalcInputSpec("beta_LT", "β for 6.3.2.3 (recommended 0.75)", CalcInputKind.Number, Default: 0.75, Min: 0.5, Max: 1.0, HardMin: 0.5, HardMax: 1.0, Group: "Factors (EN 1993-1-1 Table 6.1, recommended values)"),
+            new CalcInputSpec("k", "Effective length factor for end rotation about the minor axis", CalcInputKind.Number, Default: 1.0, Min: 0.7, Max: 1.0, HardMin: 0.5, HardMax: 1.0, Group: "Conditions"),
+            new CalcInputSpec("k_w", "Effective length factor for warping", CalcInputKind.Number, Default: 1.0, Min: 0.7, Max: 1.0, HardMin: 0.5, HardMax: 1.0, Group: "Conditions"),
+            new CalcInputSpec("z_g", "Load height above the shear centre, positive towards the compression flange (destabilising)", CalcInputKind.Quantity, "mm", Default: 0, Min: -500, Max: 500, HardMin: -1000, HardMax: 1000, Group: "Conditions"),
+            new CalcInputSpec("L_cr_y", "Buckling length about y-y", CalcInputKind.Quantity, "m", Default: 6, Min: 0.5, Max: 50, HardMin: 0.1, HardMax: 100, Group: "Conditions"),
+            new CalcInputSpec("L_cr_z", "Buckling length about z-z", CalcInputKind.Quantity, "m", Default: 6, Min: 0.5, Max: 50, HardMin: 0.1, HardMax: 100, Group: "Conditions"),
 
-            new CalcInputSpec("moment_mode", "Moment diagram given as", CalcInputKind.Choice, Choices: [ModePsi, ModeEnds], DefaultChoice: ModePsi, Group: "Actions"),
-            new CalcInputSpec("N_Ed", "Design axial force, TENSION positive and compression negative (as S2 N_e1 and S3; 6.3.3 applies to compression)", CalcInputKind.Quantity, "kN", Default: -500, Min: -1e5, Max: 0, HardMin: -1e5, HardMax: 0, Group: "Actions"),
-            new CalcInputSpec("M_y_Ed", "Greatest design moment about y-y (ψ mode; S2 M_abs_e1 or S5)", CalcInputKind.Quantity, "kN*m", Default: 300, Min: 0, Max: 1e5, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Actions"),
-            new CalcInputSpec("psi_y", "ψ of the M_y diagram (ψ mode: ratio of the end moments, +1 uniform moment (the default, conservative), −1 reverse symmetric)", CalcInputKind.Number, Default: 1, Min: -1, Max: 1, HardMin: -1, HardMax: 1, IsOptional: true, Group: "Actions"),
-            new CalcInputSpec("M_y_A", "Moment at end A about y-y, as an ordinate of the bending-moment diagram (end-moment mode): the same sign at both ends is single curvature, opposite signs double curvature. Not the end actions of a stiffness analysis, which flip sign at one end", CalcInputKind.Quantity, "kN*m", Min: -1e5, Max: 1e5, HardMin: -1e5, HardMax: 1e5, IsOptional: true, Group: "Actions"),
-            new CalcInputSpec("M_y_B", "Moment at end B about y-y, same convention as A: a bending-moment-diagram ordinate, the same sign as A for single curvature (end-moment mode)", CalcInputKind.Quantity, "kN*m", Min: -1e5, Max: 1e5, HardMin: -1e5, HardMax: 1e5, IsOptional: true, Group: "Actions"),
-            new CalcInputSpec("M_z_Ed", "Greatest design moment about z-z", CalcInputKind.Quantity, "kN*m", Default: 0, Min: 0, Max: 1e5, HardMin: 0, HardMax: 1e5, Group: "Actions"),
-            new CalcInputSpec("psi_z", "ψ of the M_z diagram", CalcInputKind.Number, Default: 1, Min: -1, Max: 1, HardMin: -1, HardMax: 1, Group: "Actions"),
-            new CalcInputSpec("C_m_y", "C_my (Annex B; blank: 0.6 + 0.4ψ_y ≥ 0.4, linear diagram; required when C₁ is entered, unless the diagram is given as end moments)", CalcInputKind.Number, Min: 0.4, Max: 1.0, HardMin: 0.4, HardMax: 1.0, IsOptional: true, Group: "Actions"),
-            new CalcInputSpec("C_m_z", "C_mz (Annex B; blank: 0.6 + 0.4ψ_z ≥ 0.4)", CalcInputKind.Number, Min: 0.4, Max: 1.0, HardMin: 0.4, HardMax: 1.0, IsOptional: true, Group: "Actions"),
-            new CalcInputSpec("C_m_LT", "C_mLT (Annex B; blank: as C_my)", CalcInputKind.Number, Min: 0.4, Max: 1.0, HardMin: 0.4, HardMax: 1.0, IsOptional: true, Group: "Actions"),
-
-            new CalcInputSpec("L_cr_y", "Buckling length about y-y", CalcInputKind.Quantity, "m", Default: 6, Min: 0.1, Max: 100, HardMin: 0.1, HardMax: 100, Group: "Flexural buckling"),
-            new CalcInputSpec("L_cr_z", "Buckling length about z-z", CalcInputKind.Quantity, "m", Default: 6, Min: 0.1, Max: 100, HardMin: 0.1, HardMax: 100, Group: "Flexural buckling"),
-            new CalcInputSpec("curve_y", "Buckling curve about y-y (auto: Table 6.2 from the section type, h/b and t_f, for f_y up to 420 MPa)", CalcInputKind.Choice, Choices: Curves, DefaultChoice: FlexuralAuto, Group: "Flexural buckling"),
-            new CalcInputSpec("curve_z", "Buckling curve about z-z (auto: Table 6.2 from the section type, h/b and t_f, for f_y up to 420 MPa)", CalcInputKind.Choice, Choices: Curves, DefaultChoice: FlexuralAuto, Group: "Flexural buckling"),
+            new CalcInputSpec("gamma_M1", "Partial factor for member buckling", CalcInputKind.Number, Default: 1.0, Min: 1.0, Max: 1.1, HardMin: 1.0, HardMax: 1.25, Group: "Factors"),
+            new CalcInputSpec("alpha_a0", "Imperfection factor for curve a0 (recommended 0.13)", CalcInputKind.Number, Default: 0.13, Min: 0.1, Max: 0.8, HardMin: 0.05, HardMax: 1.0, Group: "Factors"),
+            new CalcInputSpec("alpha_a", "Imperfection factor for curve a (recommended 0.21)", CalcInputKind.Number, Default: 0.21, Min: 0.1, Max: 0.8, HardMin: 0.05, HardMax: 1.0, Group: "Factors"),
+            new CalcInputSpec("alpha_b", "Imperfection factor for curve b (recommended 0.34)", CalcInputKind.Number, Default: 0.34, Min: 0.1, Max: 0.8, HardMin: 0.05, HardMax: 1.0, Group: "Factors"),
+            new CalcInputSpec("alpha_c", "Imperfection factor for curve c (recommended 0.49)", CalcInputKind.Number, Default: 0.49, Min: 0.1, Max: 0.8, HardMin: 0.05, HardMax: 1.0, Group: "Factors"),
+            new CalcInputSpec("alpha_d", "Imperfection factor for curve d (recommended 0.76)", CalcInputKind.Number, Default: 0.76, Min: 0.1, Max: 0.8, HardMin: 0.05, HardMax: 1.0, Group: "Factors"),
+            new CalcInputSpec("lambda_LT0", "Plateau slenderness for cl. 6.3.2.3 (recommended 0.4)", CalcInputKind.Number, Default: 0.4, Min: 0.2, Max: 0.4, HardMin: 0.2, HardMax: 0.5, Group: "Factors"),
+            new CalcInputSpec("beta_LT", "Slenderness correction factor for cl. 6.3.2.3 (recommended 0.75)", CalcInputKind.Number, Default: 0.75, Min: 0.6, Max: 1.0, HardMin: 0.5, HardMax: 1.0, Group: "Factors"),
+            new CalcInputSpec("C_2", "Moment diagram factor C₂ (0 for end moments; enter it for a transverse load)", CalcInputKind.Number, Default: 0, Min: 0, Max: 1.0, HardMin: 0, HardMax: 1.5, Group: "Factors"),
+            new CalcInputSpec("C_1", "Moment diagram factor C₁ (optional; blank = derived from ψ, valid for end moments with k = 1)", CalcInputKind.Number, Min: 1.0, Max: 3.0, HardMin: 1.0, HardMax: 4.0, IsOptional: true, Group: "Factors"),
+            new CalcInputSpec("k_c", "Correction factor for the f modification (optional; blank = 1/(1.33 − 0.33ψ) for a linear diagram)", CalcInputKind.Number, Min: 0.6, Max: 1.0, HardMin: 0.5, HardMax: 1.0, IsOptional: true, Group: "Factors"),
+            new CalcInputSpec("C_m_y", "Equivalent uniform moment factor about y-y in Annex B (optional; blank = 0.6 + 0.4ψ_y, at least 0.4)", CalcInputKind.Number, Min: 0.5, Max: 1.0, HardMin: 0.4, HardMax: 1.0, IsOptional: true, Group: "Factors"),
+            new CalcInputSpec("C_m_z", "Equivalent uniform moment factor about z-z in Annex B (optional; blank = 0.6 + 0.4ψ_z, at least 0.4)", CalcInputKind.Number, Min: 0.5, Max: 1.0, HardMin: 0.4, HardMax: 1.0, IsOptional: true, Group: "Factors"),
+            new CalcInputSpec("C_m_LT", "Equivalent uniform moment factor for lateral-torsional buckling in Annex B (optional; blank = the value of C_my)", CalcInputKind.Number, Min: 0.5, Max: 1.0, HardMin: 0.4, HardMax: 1.0, IsOptional: true, Group: "Factors"),
         ],
         [
-            new CalcAssumption("Uniform doubly-symmetric I-section member on fork supports (free to warp and to rotate about the minor axis at the ends, restrained against twist); no mono-symmetric or tapered members, no cantilevers, no continuous-restraint effects.", "Scope of S7; k and k_w below 1 model partial end restraint of the minor-axis rotation and of warping."),
-            new CalcAssumption("Class 1, 2 or 3 as stated by the user; class 4 effective properties are outside this sheet.", "6.2.2.5 is not implemented."),
-            new CalcAssumption("C₁ from the ψ formula applies to end-moment diagrams with k = 1; for transverse loads, k ≠ 1 or other diagrams the user enters C₁, C₂ (and k_c, C_m) from the source in use. With C₁ entered the sheet blocks until k_c (when the f modification is used) and C_my (Annex B) are entered too, unless the diagram is given as end moments: ψ is then a real, entered moment shape.", "No table of C₁ or C₂ values is shipped (reference records only)."),
-            new CalcAssumption("The imperfection factors, β and λ̄_LT,0 default to the recommended values and are a user-verifiable factor set; the National Annex in use may differ.", "Record kind ec3.ltb-factors."),
-            new CalcAssumption("The 2022 edition choice changes the label printed on the sheet only, by decision: the arithmetic implemented is that of EN 1993-1-1:2005+A1:2014, the differences between the editions are not implemented (they cannot be stated with certainty), and the clause numbers in the 2022 edition differ and must be checked by the user.", "The sheet says so (warning `edition`)."),
-            new CalcAssumption("The flexural buckling curves selected automatically are those of Table 6.2 for S 235 to S 420 (rolled I: a, b for h/b > 1.2 and t_f ≤ 40 mm, b, c above 40 mm or h/b ≤ 1.2 up to 100 mm, d, d beyond; welded I: b, c up to 40 mm, c, d above); for f_y above 420 MPa or a combination the table does not cover the curves are chosen by hand.", "Table 6.2 is a small selection rule and is not reproduced beyond it."),
-            new CalcAssumption("The Annex A and Annex B expressions are implemented as published; their coefficients are to be checked against the owner's copy of the standard.", "Interaction factors for diagrams other than linear are entered, not derived."),
+            new CalcAssumption("The member is uniform, doubly symmetric and on fork supports, free to warp and to rotate about the minor axis.", "Mono-symmetric, tapered and cantilever members and continuous restraint are not modelled."),
+            new CalcAssumption("A k or k_w below 1 models partial restraint of the end rotation or of the warping.", "The factors k and k_w are entered, not derived."),
+            new CalcAssumption("The cross-section class is the class the user states, 1, 2 or 3.", "Effective properties of class 4 sections are not derived."),
+            new CalcAssumption("The factor C₁ from the ψ formula applies to end-moment diagrams with k = 1.", "For other diagrams the user enters C₁, C₂, k_c and C_my from the source in use."),
+            new CalcAssumption("No table of C₁ or C₂ values is shipped, so the user takes them from the source in use.", "The factors are stored as reference records."),
+            new CalcAssumption("The imperfection factors, β and λ̄_LT,0 default to the recommended values, which the National Annex may change.", "They are a factor set the user can verify."),
+            new CalcAssumption("The 2022 edition choice changes the printed label only, and the arithmetic stays that of the 2005+A1:2014 edition.", "The differences between the editions cannot be stated with certainty, and the sheet warns."),
+            new CalcAssumption("The flexural buckling curves chosen automatically are those of Table 6.2 for S 235 to S 420.", "For a higher f_y or a combination without a row the user chooses the curve."),
+            new CalcAssumption("The Annex A and Annex B expressions are implemented as published.", "The user checks their coefficients against the owner's copy of the standard."),
         ],
         [
-            new CalcClauseRef("EN 1993-1-1:2005+A1:2014", "6.3.1.2, 6.3.1.3", "Buckling curves; slenderness for flexural buckling"),
-            new CalcClauseRef("EN 1993-1-1:2005+A1:2014", "6.3.2.2", "Lateral-torsional buckling curves: general case"),
-            new CalcClauseRef("EN 1993-1-1:2005+A1:2014", "6.3.2.3", "Lateral-torsional buckling curves for rolled sections and equivalent welded sections"),
-            new CalcClauseRef("EN 1993-1-1:2005+A1:2014", "6.3.3", "Uniform members in bending and axial compression"),
-            new CalcClauseRef("EN 1993-1-1:2005+A1:2014", "Annex A, Annex B", "Interaction factors k_ij: methods 1 and 2"),
+            new CalcClauseRef("BS EN 1993-1-1:2005+A1:2014", "cl. 6.3.1.2, 6.3.1.3", "Buckling curves; slenderness for flexural buckling"),
+            new CalcClauseRef("BS EN 1993-1-1:2005+A1:2014", "cl. 6.3.2.2", "Lateral-torsional buckling curves: general case"),
+            new CalcClauseRef("BS EN 1993-1-1:2005+A1:2014", "cl. 6.3.2.3", "Lateral-torsional buckling curves for rolled sections and equivalent welded sections"),
+            new CalcClauseRef("BS EN 1993-1-1:2005+A1:2014", "cl. 6.3.3", "Uniform members in bending and axial compression"),
+            new CalcClauseRef("BS EN 1993-1-1:2005+A1:2014", "Annex A, Annex B", "Interaction factors k_ij: methods 1 and 2"),
             new CalcClauseRef("NCCI SN003", "Mcr expression", "Elastic critical moment of a doubly-symmetric member"),
-            new CalcClauseRef("EN 1993-1-1:2022", "8.3", "Stability of members (label only, see the edition note)"),
+            new CalcClauseRef("BS EN 1993-1-1:2022", "cl. 8.3", "Stability of members (label only, see the edition note)"),
         ],
         [
             new CalcApplicabilityRule("class-4", "Class 4 cross-sections need effective properties: outside this sheet.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
@@ -197,14 +198,14 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
         Category: "Members",
         OutputPorts:
         [
-            new CalcOutputPort("Mb_Rd", "kN*m", "Design buckling resistance moment (→ S8 spreader beams)"),
-            new CalcOutputPort("Mcr", "kN*m", "Elastic critical moment for lateral-torsional buckling"),
-            new CalcOutputPort("chi_LT", "", "Lateral-torsional reduction factor used"),
-            new CalcOutputPort("lambda_LT", "", "Lateral-torsional non-dimensional slenderness"),
-            new CalcOutputPort("N_b_Rd", "kN", "Flexural buckling resistance, the smaller of the two axes"),
-            new CalcOutputPort("u_LTB", "", "Lateral-torsional buckling utilisation M_y,Ed/M_b,Rd"),
-            new CalcOutputPort("u_interaction", "", "Greatest utilisation of the two interaction equations 6.61 and 6.62"),
-            new CalcOutputPort("u_member", "", "Governing utilisation of the member: the greatest of buckling, LTB and the interaction ratios"),
+            new CalcOutputPort("Mb_Rd", "kN*m", "Design buckling resistance moment", "ltb.resistance_moment"),
+            new CalcOutputPort("Mcr", "kN*m", "Elastic critical moment for lateral-torsional buckling", "ltb.moment_critical"),
+            new CalcOutputPort("chi_LT", "", "Lateral-torsional reduction factor used", "ltb.reduction_ltb"),
+            new CalcOutputPort("lambda_LT", "", "Lateral-torsional non-dimensional slenderness", "ltb.slenderness_ltb"),
+            new CalcOutputPort("N_b_Rd", "kN", "Flexural buckling resistance, the smaller of the two axes", "ltb.resistance_buckling"),
+            new CalcOutputPort("u_LTB", "", "Lateral-torsional buckling utilisation", "ltb.utilisation_ltb"),
+            new CalcOutputPort("u_interaction", "", "Greatest utilisation of the two interaction equations 6.61 and 6.62", "ltb.utilisation_interaction"),
+            new CalcOutputPort("u_member", "", "Governing utilisation of the member: the greatest of buckling, LTB and the interaction ratios", "ltb.utilisation_member"),
         ],
         RecordKinds:
         [
@@ -218,7 +219,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
     private static CalcInputValue[] WeldedSection() =>
     [
         Choice("section_type", WeldedI), Q("h", 500, "mm"), Q("b", 200, "mm"), Q("t_f", 16, "mm"), Q("A", 110.8, "cm^2"), Q("I_y", 46036.54933333333, "cm^4"), Q("I_z", 2137.2333333333333, "cm^4"), Q("I_t", 70.21333333333334, "cm^4"),
-        Q("I_w", 1.2493653333333332, "dm^6"), Q("W_pl_y", 2096.36, "cm^3"), Q("W_el_y", 1841.4619733333332, "cm^3"), Q("W_pl_z", 331.7, "cm^3"), Q("W_el_z", 213.72333333333333, "cm^3"),
+        Q("I_w", 1249365.3333333332, "cm^6"), Q("W_pl_y", 2096.36, "cm^3"), Q("W_el_y", 1841.4619733333332, "cm^3"), Q("W_pl_z", 331.7, "cm^3"), Q("W_el_z", 213.72333333333333, "cm^3"),
     ];
 
     private static CalcInputValue Q(string symbol, double value, string unit) => CalcInputValue.Quantity(symbol, value, unit);
@@ -265,7 +266,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
 
         if (cls == "4")
         {
-            c.Block("class-4", "section_class: class 4 needs effective section properties; this sheet covers classes 1 to 3.");
+            c.Block("class-4", "section_class: choose class 1, 2 or 3, because class 4 sections are outside this sheet.");
             return;
         }
 
@@ -274,7 +275,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
 
         if (c.InputSi("W_pl_y") < c.InputSi("W_el_y") || c.InputSi("W_pl_z") < c.InputSi("W_el_z"))
         {
-            c.Block("section", "W_pl_y: the plastic moduli cannot be below the elastic moduli; enter W_pl,y ≥ W_el,y and W_pl,z ≥ W_el,z.");
+            c.Block("section", "W_pl_y: a plastic modulus cannot be below the elastic modulus. Enter W_pl_y ≥ W_el_y and W_pl_z ≥ W_el_z.");
             return;
         }
 
@@ -288,7 +289,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
         c.Output("edition_used", "EN 1993-1-1 edition", new TextValue(edition == Edition2005 ? "EN 1993-1-1:2005+A1:2014" : "EN 1993-1-1:2022 (arithmetic of 2005+A1:2014)"));
 
         if (edition == Edition2022)
-            c.Warn("edition", "edition: the 2022 choice changes the label only; the arithmetic is that of EN 1993-1-1:2005+A1:2014 and the clause numbers shown are the 2005 ones. Check the 2022 clauses and parameters before relying on this sheet for that edition.");
+            c.Warn("edition", "edition: the 2022 choice changes only the printed label, not the arithmetic of EN 1993-1-1:2005+A1:2014. Check the 2022 clauses before relying on this sheet.");
 
         // Units in this method: N, mm, MPa.
         var fy = c.InputSi("f_y") / 1e6;
@@ -318,7 +319,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
         var lcrZ = c.InputSi("L_cr_z") * 1e3;
 
         if (Math.Abs(zg) > 1e-12 && c2 == 0)
-            c.Warn("zg-c2", "z_g: the load height has no effect while C₂ = 0; enter C₂ (and C₁) for the transverse loading, or set z_g to 0.");
+            c.Warn("zg-c2", "z_g: the load height has no effect while C₂ = 0. Enter C₂ and C₁ for a transverse load, or set z_g to 0.");
 
         // The moment diagram about y-y.
         double myEd, psiY;
@@ -328,7 +329,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
         {
             if (!c.Has("M_y_A") || !c.Has("M_y_B"))
             {
-                c.Block("end-moments", "M_y_A: end-moment mode needs both end moments; enter M_y_A and M_y_B.");
+                c.Block("end-moments", "M_y_A: enter both end moments M_y_A and M_y_B in the end-moment mode.");
                 return;
             }
 
@@ -346,7 +347,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
             if (psiY < 0)
             {
                 // A frame program prints member end actions, which have OPPOSITE signs for single curvature. Typed that way the diagram reads as a reversal: C₁ rises to its cap and the check can turn from FAIL to PASS without a sign of it.
-                c.Warn("double-curvature", $"M_y_A, M_y_B: opposite signs, so the diagram is taken as double curvature (M_A = {F(ma / 1e6)} kN·m ——— M_B = {F(mb / 1e6)} kN·m, ψ = {F(psiY)}): {UsedFactors(c, psiY, annexA)}. These are bending-moment-diagram ordinates, not stiffness-analysis end actions. If the member is bent in single curvature, as most beam-columns are, give both moments the same sign (single curvature has opposite signs in a frame program's end actions); only a true reversal justifies this C₁.");
+                c.Warn("double-curvature", $"M_y_B: opposite signs ({F(ma / 1e6)} and {F(mb / 1e6)} kN·m) make this double curvature, so enter same-sign ordinates for single curvature. This uses {UsedFactors(c, psiY, annexA)}.");
             }
         }
         else
@@ -369,6 +370,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
         c.Output("M_y_Ed", "Greatest design moment about y-y");
         var compression = nSigned < 0;
         var nEd = compression ? -nSigned : 0.0;
+        c.Record("N_abs", "abs(N_Ed)", "the compression force, positive", ScalarValue.Of(nEd / 1e3, "kN"), "Axial force magnitude");
 
         // ----------------------------------------------------------------- lateral-torsional buckling
         double c1;
@@ -385,13 +387,13 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
             c.Record("C_1", "1.88 − 1.40ψ + 0.52ψ² ≤ 2.70", $"ψ = {F(psiY)}", new ScalarValue(c1), "C₁ for end moments (derived)", "NCCI SN003 / ENV 1993-1-1 Annex F");
 
             if (psiY < 0.25)
-                c.Warn("c1-psi", $"C_1: with ψ = {F(psiY)} the ψ formula (an ENV 1993-1-1 Annex F curve fit) gives C₁ = {F(c1)}, which can exceed the exact elastic value by up to about 10 % for long members and double curvature (more for very long members), so M_cr and M_b,Rd can be unconservative. Check C₁ against an elastic buckling program such as LTBeam and enter it, or treat the result as an upper bound.");
+                c.Warn("c1-psi", $"C_1: the ψ formula gives C₁ = {F(c1)} for ψ = {F(psiY)}, up to 10 % above the exact value. Check C₁ in an elastic buckling program and enter it.");
 
             if (Math.Abs(k - 1) > 1e-12)
-                c.Warn("c1-psi", "k: C₁ from the ψ formula applies to k = 1; enter C₁ for the actual end conditions.");
+                c.Warn("c1-psi", "k: the ψ formula for C₁ applies to k = 1. Enter C₁ for the actual end conditions.");
 
             if (Math.Abs(c2 * zg) > 1e-12)
-                c.Warn("c1-psi", "z_g: C₁ from the ψ formula describes end moments, for which C₂ is 0; enter C₁ and C₂ for transverse loading.");
+                c.Warn("c1-psi", "z_g: the ψ formula for C₁ describes end moments, where C₂ is 0. Enter C₁ and C₂ for a transverse load.");
         }
 
         c.Output("C_1", "C₁", new ScalarValue(c1));
@@ -454,7 +456,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
         {
             if (general)
             {
-                c.Warn("use-f", "use_f: the f modification belongs to 6.3.2.3; it is not applied with 6.3.2.2.");
+                c.Warn("use-f", "use_f: the f modification belongs to 6.3.2.3 and is not applied with 6.3.2.2.");
             }
             else
             {
@@ -467,7 +469,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
                 }
                 else if (c1Entered && !shapeEntered)
                 {
-                    c.Block("k_c", "k_c: C₁ is entered, so the moment diagram is not taken as the linear one that ψ describes; enter k_c for the actual diagram (record ec3.mcr-factors), or give the diagram as end moments.");
+                    c.Block("k_c", "k_c: enter k_c for the actual diagram, because C₁ is entered and ψ no longer describes it. Alternatively, enter the diagram as end moments.");
                     return;
                 }
                 else
@@ -563,7 +565,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
 
         if (annexA)
         {
-            c.Warn("annex-a", "annex: the Annex A expressions are implemented as published; check their coefficients against the standard before relying on the result.");
+            c.Warn("annex-a", "annex: the Annex A expressions are implemented as published. Check their coefficients against the standard before relying on the result.");
             var iZeroSq = (iy + iz) / area;
             var lT = kw * length;
             var ncrT = (g * it + Math.PI * Math.PI * e * iw / (lT * lT)) / iZeroSq;
@@ -573,7 +575,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
 
             if (nEd >= Math.Min(ncrY, Math.Min(ncrZ, ncrT)))
             {
-                c.Block("n-cr", $"N_Ed: the design compression ({F(nEd / 1e3)} kN) reaches an elastic buckling force (N_cr,y {F(ncrY / 1e3)}, N_cr,z {F(ncrZ / 1e3)}, N_cr,T {F(ncrT / 1e3)} kN); the Annex A factors are not defined.");
+                c.Block("n-cr", $"N_Ed: the compression of {F(nEd / 1e3)} kN reaches N_cr,y {F(ncrY / 1e3)}, N_cr,z {F(ncrZ / 1e3)} or N_cr,T {F(ncrT / 1e3)} kN. The Annex A factors are not defined there.");
                 return;
             }
 
@@ -585,13 +587,13 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
                 nRk / gM1, area, wely, plastic ? wply / wely : 1.0, plastic ? wplz / welz : 1.0, aLt, plastic));
 
             if (c1Entered && !shapeEntered)
-                c.Warn("c1-psi", "C_1: Annex A takes C_my,0 from the linear-diagram ψ_y, which describes the moment diagram only when it is linear; with C₁ entered for a transverse load check that ψ_y represents the actual diagram, or give the diagram as end moments.");
+                c.Warn("c1-psi", "C_1: Annex A takes C_my,0 from ψ_y, which describes only a linear diagram. Check that ψ_y represents the actual diagram, or enter end moments.");
         }
         else
         {
             if (c1Entered && !shapeEntered && !c.Has("C_m_y"))
             {
-                c.Block("C_m_y", "C_m_y: C₁ is entered, so the moment diagram is not taken as the linear one that ψ describes; enter C_my for the actual diagram (Table B.3), or give the diagram as end moments.");
+                c.Block("C_m_y", "C_m_y: enter C_my for the actual diagram, because C₁ is entered and ψ no longer describes it. Alternatively, enter the diagram as end moments.");
                 return;
             }
 
@@ -633,9 +635,9 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
         var table = annexA ? "Annex A Table A.1" : (torsionUsed ? "Annex B Table B.2" : "Annex B Table B.1");
 
         if (b1Replaced)
-            c.Warn("table-b1", $"torsion: Table B.1 is chosen, but this I-section buckles laterally (χ_LT = {F(chiUsed)} < 1) and is susceptible to torsional deformation unless it is restrained against twist, so the check uses Table B.2. Record the basis of Table B.1 on this input to use it.");
+            c.Warn("table-b1", $"torsion: Table B.1 is chosen, but this I-section buckles laterally (χ_LT = {F(chiUsed)}), so the check uses Table B.2. Record the basis for Table B.1 on this input to use it.");
         else if (!annexA && !torsion && chiUsed < 1 - 1e-9)
-            c.Warn("table-b1", $"torsion: Table B.1 is used on your recorded basis, but this I-section buckles laterally (χ_LT = {F(chiUsed)} < 1). Table B.1 gives a k_zy of 0.6·k_yy, far below Table B.2's, so the interaction can be about 20 % unconservative unless the member is restrained against twist.");
+            c.Warn("table-b1", $"torsion: Table B.1 is used on your recorded basis, but this I-section buckles laterally (χ_LT = {F(chiUsed)}). Table B.1 gives a smaller k_zy than Table B.2, so the interaction can be 20 % unconservative.");
         c.Record("k_yy", annexA ? "Annex A: C_my·C_mLT·μ_y/(1 − N/N_cr,y)/C_yy" : "Annex B: C_my(1 + (λ̄_y − 0.2)n_y) ≤ C_my(1 + 0.8n_y) (class 1, 2)", $"n_y = {F(ny)}", new ScalarValue(k2.Kyy), "Interaction factor k_yy", table);
         c.Record("k_yz", annexA ? "Annex A: C_mz·μ_y/(1 − N/N_cr,z)/C_yz·0.6√(w_z/w_y)" : "Annex B: 0.6k_zz (class 1, 2), k_zz (class 3)", "as above", new ScalarValue(k2.Kyz), "Interaction factor k_yz", table);
         c.Record("k_zy", annexA ? "Annex A: C_my·C_mLT·μ_z/(1 − N/N_cr,y)/C_zy·0.6√(w_y/w_z)" : "Annex B: Table B.1 0.6k_yy / 0.8k_yy; Table B.2 from λ̄_z, n_z and C_mLT", $"n_z = {F(nz)}", new ScalarValue(k2.Kzy), "Interaction factor k_zy", table);
@@ -661,8 +663,8 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
 
         foreach (var (symbol, text) in new[]
         {
-            ("Mcr", "M_cr"), ("lambda_LT", "λ̄_LT"), ("chi_LT", "χ_LT"), ("Mb_Rd", "M_b,Rd"), ("N_Rk", "N_Rk"), ("N_cr_y", "N_cr,y"), ("N_cr_z", "N_cr,z"), ("lambda_y", "λ̄_y"), ("lambda_z", "λ̄_z"), ("chi_y", "χ_y"), ("chi_z", "χ_z"),
-            ("N_b_y_Rd", "N_b,y,Rd"), ("N_b_z_Rd", "N_b,z,Rd"), ("N_b_Rd", "N_b,Rd"), ("k_yy", "k_yy"), ("k_yz", "k_yz"), ("k_zy", "k_zy"), ("k_zz", "k_zz"), ("u_LTB", "LTB utilisation"), ("u_buckling", "Buckling utilisation"),
+            ("Mcr", "M_cr"), ("lambda_LT", "λ̄_LT"), ("chi_LT", "χ_LT"), ("Mb_Rd", "M_b,Rd"), ("N_Rk", "Characteristic axial resistance"), ("N_cr_y", "N_cr,y"), ("N_cr_z", "N_cr,z"), ("lambda_y", "λ̄_y"), ("lambda_z", "λ̄_z"), ("chi_y", "χ_y"), ("chi_z", "χ_z"),
+            ("N_b_y_Rd", "N_b,y,Rd"), ("N_b_z_Rd", "N_b,z,Rd"), ("N_b_Rd", "N_b,Rd"), ("k_yy", "Interaction factor for major-axis bending in equation 6.61"), ("k_yz", "Interaction factor for minor-axis bending in equation 6.61"), ("k_zy", "Interaction factor for major-axis bending in equation 6.62"), ("k_zz", "Interaction factor for minor-axis bending in equation 6.62"), ("u_LTB", "LTB utilisation"), ("u_buckling", "Buckling utilisation"),
             ("u_61", "Equation 6.61"), ("u_62", "Equation 6.62"), ("u_interaction", "Interaction utilisation"), ("u_member", "Member utilisation"),
         })
         {
@@ -671,8 +673,8 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
 
         foreach (var (symbol, text) in new[]
         {
-            ("alpha_LT", "α_LT"), ("alpha_y", "α_y"), ("alpha_z", "α_z"), ("Phi_LT", "Φ_LT"), ("chi_LT_0", "χ_LT before the f modification"), ("k_c", "k_c"), ("f", "f"), ("W_y", "W_y"), ("M_y_Rk", "M_y,Rk"), ("M_z_Rk", "M_z,Rk"),
-            ("C_my", "C_my"), ("C_mz", "C_mz"), ("C_mLT", "C_mLT"), ("N_cr_T", "N_cr,T"), ("lambda_0", "λ̄_0"), ("a_LT", "a_LT"), ("u_N_y", "Axial term, y"), ("u_N_z", "Axial term, z"), ("u_M_y", "Bending term, y"), ("u_M_z", "Bending term, z"),
+            ("alpha_LT", "α_LT"), ("alpha_y", "α_y"), ("alpha_z", "α_z"), ("Phi_LT", "Φ_LT"), ("chi_LT_0", "χ_LT before the f modification"), ("k_c", "k_c"), ("f", "f"), ("W_y", "Section modulus for bending about y-y"), ("M_y_Rk", "M_y,Rk"), ("M_z_Rk", "M_z,Rk"),
+            ("C_my", "Equivalent uniform moment factor about y-y"), ("C_mz", "Equivalent uniform moment factor about z-z"), ("C_mLT", "Equivalent uniform moment factor for lateral-torsional buckling"), ("N_cr_T", "N_cr,T"), ("lambda_0", "λ̄_0"), ("a_LT", "a_LT"), ("u_N_y", "Axial term, y"), ("u_N_z", "Axial term, z"), ("u_M_y", "Bending term, y"), ("u_M_z", "Bending term, z"),
         })
         {
             if (c.Session.Find(symbol) is not null)
@@ -681,18 +683,19 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
 
         c.Output("governing", "Governing check", new TextValue($"{worst.Item1} ({CalcValue.FormatNumber(worst.Item2, 3)})"));
 
-        c.CheckUtilisation("Lateral-torsional buckling M_y,Ed ≤ M_b,Rd", "u_LTB", "6.3.2.1");
+        c.Record("u_limit", "limit", "the utilisation limit", new ScalarValue(1.0), "Utilisation limit");
+        c.Check("Bending moment against lateral-torsional buckling resistance", "M_y_Ed", "Mb_Rd", "cl. 6.3.2.1");
 
         if (compression)
         {
-            c.CheckUtilisation("Flexural buckling N_Ed ≤ N_b,Rd", "u_buckling", "6.3.1.1");
-            c.CheckUtilisation("Interaction, equation 6.61", "u_61", "6.3.3(4)");
-            c.CheckUtilisation("Interaction, equation 6.62", "u_62", "6.3.3(4)");
+            c.Check("Axial force against flexural buckling resistance", "N_abs", "N_b_Rd", "cl. 6.3.1.1");
+            c.Check("Interaction equation 6.61 against its limit", "u_61", "u_limit", "cl. 6.3.3(4)");
+            c.Check("Interaction equation 6.62 against its limit", "u_62", "u_limit", "cl. 6.3.3(4)");
         }
         else
         {
-            c.CheckUtilisation("Bending interaction (no compression), equation 6.61", "u_61", "6.3.3(4)");
-            c.CheckUtilisation("Bending interaction (no compression), equation 6.62", "u_62", "6.3.3(4)");
+            c.Check("Bending interaction without compression, equation 6.61, against its limit", "u_61", "u_limit", "cl. 6.3.3(4)");
+            c.Check("Bending interaction without compression, equation 6.62, against its limit", "u_62", "u_limit", "cl. 6.3.3(4)");
         }
     }
 

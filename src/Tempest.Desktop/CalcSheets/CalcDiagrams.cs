@@ -411,34 +411,34 @@ public static class CalcDiagrams
             Shape("A circular tube, outside diameter d, wall t", SectionPropertiesCalculator.ShapeTube,
             [
                 new DiagramCircle("outer", new(190, 120), 70, Filled: true, "d"),
-                new DiagramCircle("inner", new(190, 120), 56, Filled: false, "t"),
+                new DiagramCircle("inner", new(190, 120), 56, Filled: false, "t_w"),
                 new DiagramDimension("diameter", new(120, 120), new(260, 120), 84, "d", "d"),
-                new DiagramDimension("wall", new(246, 120), new(260, 120), -16, "t", "t", new(286, 96)),
+                new DiagramDimension("wall", new(246, 120), new(260, 120), -16, "t_w", "t_w", new(286, 96)),
             ]),
             Shape("A hollow rectangle b by h, wall t, corner radii r and r_i", SectionPropertiesCalculator.ShapeHollowRectangle,
             [
                 new DiagramPlate("outer", 130, 46, 120, 150, "h"),
-                new DiagramPlate("inner", 144, 60, 92, 122, "t"),
+                new DiagramPlate("inner", 144, 60, 92, 122, "t_w"),
                 new DiagramDimension("width", new(130, 196), new(250, 196), 14, "b", "b"),
                 new DiagramDimension("depth", new(250, 46), new(250, 196), 16, "h", "h", new(286, 120)),
-                new DiagramDimension("wall", new(130, 120), new(144, 120), -20, "t", "t", new(80, 100)),
+                new DiagramDimension("wall", new(130, 120), new(144, 120), -20, "t_w", "t_w", new(80, 100)),
                 new DiagramLabel("radii", new(70, 40), "r", "r"),
             ]),
             Shape("A doubly symmetric I-section b by h, web t, flanges t_f, root radius r", SectionPropertiesCalculator.ShapeI,
             [
                 new DiagramPlate("top-flange", 120, 40, 140, 16, "t_f"),
-                new DiagramPlate("web", 182, 56, 16, 128, "t"),
+                new DiagramPlate("web", 182, 56, 16, 128, "t_w"),
                 new DiagramPlate("bottom-flange", 120, 184, 140, 16, "t_f"),
                 new DiagramDimension("width", new(120, 200), new(260, 200), 14, "b", "b"),
                 new DiagramDimension("depth", new(260, 40), new(260, 200), 18, "h", "h", new(298, 120)),
-                new DiagramDimension("web-t", new(182, 120), new(198, 120), 0, "t", "t", new(244, 156)),
+                new DiagramDimension("web-t", new(182, 120), new(198, 120), 0, "t_w", "t_w", new(244, 156)),
                 new DiagramDimension("flange-t", new(120, 40), new(120, 56), -14, "t_f", "t_f", new(62, 48)),
                 new DiagramLabel("root", new(70, 120), "r", "r"),
             ]),
             Shape("A channel b by h, web t, flanges t_f, root radius r", SectionPropertiesCalculator.ShapeChannel,
             [
                 new DiagramPlate("top-flange", 150, 40, 90, 16, "t_f"),
-                new DiagramPlate("web", 150, 56, 16, 128, "t"),
+                new DiagramPlate("web", 150, 56, 16, 128, "t_w"),
                 new DiagramPlate("bottom-flange", 150, 184, 90, 16, "t_f"),
                 new DiagramDimension("width", new(150, 200), new(240, 200), 14, "b", "b"),
                 new DiagramDimension("depth", new(240, 40), new(240, 200), 18, "h", "h", new(278, 120)),
@@ -447,7 +447,7 @@ public static class CalcDiagrams
             Shape("A tee b by h, stem t, flange t_f, root radius r", SectionPropertiesCalculator.ShapeTee,
             [
                 new DiagramPlate("flange", 120, 40, 140, 16, "t_f"),
-                new DiagramPlate("stem", 182, 56, 16, 144, "t"),
+                new DiagramPlate("stem", 182, 56, 16, 144, "t_w"),
                 new DiagramDimension("width", new(120, 40), new(260, 40), -14, "b", "b", new(190, 18)),
                 new DiagramDimension("depth", new(260, 40), new(260, 200), 18, "h", "h", new(298, 120)),
                 new DiagramLabel("root", new(90, 120), "r", "r"),
@@ -458,7 +458,7 @@ public static class CalcDiagrams
                 new DiagramPlate("horizontal-leg", 150, 184, 110, 16, "b"),
                 new DiagramDimension("vertical", new(150, 40), new(150, 200), -18, "h", "h", new(90, 80)),
                 new DiagramDimension("horizontal", new(150, 200), new(260, 200), 14, "b", "b"),
-                new DiagramDimension("thickness", new(150, 120), new(166, 120), 0, "t", "t", new(218, 120)),
+                new DiagramDimension("thickness", new(150, 120), new(166, 120), 0, "t_w", "t_w", new(218, 120)),
                 new DiagramLabel("root", new(320, 80), "r", "r"),
             ]),
             Shape("A polygon through the vertices as listed (drawn representatively)", SectionPropertiesCalculator.ShapePolygon,
@@ -525,11 +525,11 @@ public static class CalcDiagrams
                     elements.Add(new DiagramDistributedLoad("load", Left, Right, Y - 6, 30, "w", "w"));
                     break;
                 case "point-at-a":
-                    elements.Add(new DiagramPointLoad("load", new(230, Y - 6), DiagramDirection.Down, 44, "P", "P"));
+                    elements.Add(new DiagramPointLoad("load", new(230, Y - 6), DiagramDirection.Down, 44, "F", "F"));
                     elements.Add(new DiagramDimension("position", new(Left, Y), new(230, Y), -64, "a", "a", new(140, 26)));
                     break;
                 case "point-centre":
-                    elements.Add(new DiagramPointLoad("load", new((Left + Right) / 2, Y - 6), DiagramDirection.Down, 44, "P", "P"));
+                    elements.Add(new DiagramPointLoad("load", new((Left + Right) / 2, Y - 6), DiagramDirection.Down, 44, "F", "F"));
                     break;
                 default:
                     elements.Add(new DiagramMoment("couple", new(Left + 22, Y), 18, Clockwise: true, "M_0", "M_0", new(Left + 22, Y - 38)));
@@ -551,12 +551,12 @@ public static class CalcDiagrams
         return new(BeamFormulasCalculator.Id,
         [
             Variant(BeamFormulasCalculator.SsUdl, "Simply supported, uniformly distributed load w", "pin", "roller", "udl"),
-            Variant(BeamFormulasCalculator.SsPoint, "Simply supported, point load P at a from the left end", "pin", "roller", "point-at-a"),
+            Variant(BeamFormulasCalculator.SsPoint, "Simply supported, point load F at a from the left end", "pin", "roller", "point-at-a"),
             Variant(BeamFormulasCalculator.SsMomentEnd, "Simply supported, couple M_0 at the left end", "pin", "roller", "couple"),
             Variant(BeamFormulasCalculator.CantUdl, "Cantilever fixed at the left, uniformly distributed load w", "fixed", null, "udl"),
-            Variant(BeamFormulasCalculator.CantPoint, "Cantilever fixed at the left, point load P at a from the fixed end", "fixed", null, "point-at-a"),
+            Variant(BeamFormulasCalculator.CantPoint, "Cantilever fixed at the left, point load F at a from the fixed end", "fixed", null, "point-at-a"),
             Variant(BeamFormulasCalculator.FixedUdl, "Fixed at both ends, uniformly distributed load w", "fixed", "fixed", "udl"),
-            Variant(BeamFormulasCalculator.FixedPointCentre, "Fixed at both ends, point load P at midspan", "fixed", "fixed", "point-centre"),
+            Variant(BeamFormulasCalculator.FixedPointCentre, "Fixed at both ends, point load F at midspan", "fixed", "fixed", "point-centre"),
             Variant(BeamFormulasCalculator.ProppedUdl, "Propped cantilever, fixed left and pinned right, uniformly distributed load w", "fixed", "roller", "udl"),
         ]);
     }
@@ -592,7 +592,7 @@ public static class CalcDiagrams
                 new DiagramMember("column", new(200, 62), new(200, 196), 10, "A"),
                 new DiagramSupport("base", new(200, 202), DiagramSupportKind.Pinned, DiagramDirection.Down),
                 new DiagramSupport("head", new(206, 62), DiagramSupportKind.Roller, DiagramDirection.Right),
-                new DiagramPointLoad("load", new(200, 56), DiagramDirection.Down, 34, "P", "P"),
+                new DiagramPointLoad("load", new(200, 56), DiagramDirection.Down, 34, "F", "F"),
                 new DiagramDimension("effective-length", new(200, 62), new(200, 196), -60, "L_E", "L_E", new(90, 129)),
                 new DiagramLabel("area", new(320, 80), "A", "A"),
                 new DiagramLabel("second-moment", new(320, 104), "I", "I"),

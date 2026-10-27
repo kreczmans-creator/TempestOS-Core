@@ -113,7 +113,7 @@ public sealed class ElectronicsEnclosureChainTests
         Assert.Equal("kPa", s9.Inputs.Single(i => i.Symbol == "q").Unit);
 
         // S9: the 600 × 500 × 4 mm aluminium front cover, E 69 GPa, ν 0.33: D = 412.973 N·m; w_max = 0.855161 mm (w/t 0.214; limit span/250 = 2 mm, u 0.428); σ_vM 5.8992 MPa (u 0.049 of 120); f₁₁ = 65.835 Hz (Navier series, python3).
-        Assert.Equal(412.9727303332959, Si(s9, "D"), 8);
+        Assert.Equal(412.9727303332959, Si(s9, "D_flex"), 8);
         Assert.Equal(8.551608852897289e-4, Si(s9, "w_max"), 1e-9);
         // The corner twisting stress converges slowly: python3 sums 5899242.0 Pa to 401 odd terms, 5899263.5 to 2401; the sheet sums further.
         Assert.Equal(5899264.0, Si(s9, "sigma_max"), 5.0);
@@ -310,7 +310,7 @@ public sealed class ElectronicsEnclosureChainTests
         var s9 = made.Instances["s9"];
 
         // A thinner cover: nothing is downstream of it, so nothing goes stale.
-        var thinner = await host.Service.UpdateInputsAsync(s9.Id, Scale("t", 0.75)(s9.Inputs));
+        var thinner = await host.Service.UpdateInputsAsync(s9.Id, Scale("t_p", 0.75)(s9.Inputs));
         Assert.True(thinner.Succeeded, thinner.Reason);
         foreach (var key in new[] { "e7", "e6", "e2", "m8", "s9" })
             Assert.False((await host.Service.StalenessAsync(await Fresh(host, made, key))).IsStale, key);

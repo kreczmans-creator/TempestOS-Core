@@ -42,4 +42,4 @@ The two-span floor beam from the S2 worked example, checked in bending and shear
 | `V_pl_Rd` | 318.62 kN | 318.616 kN | PASS |
 | `u_M_y` | 0.70043  | 0.700423  | PASS |
 
-Governing check: Bending y M_y,Ed ≤ M_y,c,Rd — PASS (utilisation 0.70). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Bending moment y-y against bending resistance — PASS (utilisation 0.70). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

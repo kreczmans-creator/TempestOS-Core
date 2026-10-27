@@ -10,14 +10,14 @@ A rolled universal beam with its root fillets. Every tabulated property is repro
 | `h` | 467.2 mm | spec: BS EN 10365 UB 457×191×98 |
 | `r` | 10.2 mm | spec: BS EN 10365 UB 457×191×98 |
 | `shape` | I-section | spec: BS EN 10365 UB 457×191×98 |
-| `t` | 11.4 mm | spec: BS EN 10365 UB 457×191×98 |
 | `t_f` | 19.6 mm | spec: BS EN 10365 UB 457×191×98 |
+| `t_w` | 11.4 mm | spec: BS EN 10365 UB 457×191×98 |
 
 | Output | Expected | Computed | Result |
 |---|---|---|---|
 | `A` | 125 cm^2 | 125.265 cm^2 | PASS |
-| `I_xx` | 45730 cm^4 | 45728 cm^4 | PASS |
-| `W_pl_x` | 2232 cm^3 | 2232.46 cm^3 | PASS |
+| `I_y` | 45730 cm^4 | 45728 cm^4 | PASS |
+| `W_pl_y` | 2232 cm^3 | 2232.46 cm^3 | PASS |
 | `J` | 121 cm^4 | 121.287 cm^4 | PASS |
 | `I_w` | 1.18 dm^6 | 1.17554 dm^6 | PASS |
 

@@ -160,7 +160,7 @@ public sealed class WorksheetSavedAndPacksTests
         var view = fx.View;
         var section = await service.CreateAsync("struct.section-properties", fx.ProjectId, "Floor beam section");
         var beam = await service.CreateAsync("struct.beam-formulas", fx.ProjectId, "Floor beam");
-        var bound = await service.BindAsync(beam.Id, "I", section.Id, "I_xx");
+        var bound = await service.BindAsync(beam.Id, "I", section.Id, "I_y");
         Assert.True(bound.Succeeded, bound.Reason);
 
         await fx.Coordinator.RefreshListsAsync();
@@ -180,7 +180,7 @@ public sealed class WorksheetSavedAndPacksTests
         Click(view, CalcSheetView.OpenSavedCaption);
         await WaitFor(() => view.CurrentInstance?.Id == beam.Id);
         await WaitFor(() => view.StaleText.Length > 0);
-        Assert.Contains("now gives a different 'I_xx'", view.StaleText, StringComparison.Ordinal);
+        Assert.Contains("now gives a different 'I_y'", view.StaleText, StringComparison.Ordinal);
 
         Click(view, CalcSheetView.UpdateLinksName);
         await WaitFor(() => view.SavedCalculations.All(r => !r.IsStale));

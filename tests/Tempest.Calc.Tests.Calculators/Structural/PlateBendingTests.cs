@@ -20,10 +20,10 @@ public sealed class PlateBendingTests
     private static CalcInputValue Choice(string symbol, string value) => CalcInputValue.Choice(symbol, value);
 
     private static CalcInputValue[] Circle(bool clamped, string load = PlateBendingCalculator.Uniform) =>
-        [Choice("shape", PlateBendingCalculator.Circular), Choice("support", clamped ? PlateBendingCalculator.Clamped : PlateBendingCalculator.Simple), Choice("load_type", load), Q("a", 250, "mm"), Q("t", 5, "mm"), Q("q", 20, "kPa"), Q("E", 200, "GPa"), N("nu", 0.3)];
+        [Choice("shape", PlateBendingCalculator.Circular), Choice("support", clamped ? PlateBendingCalculator.Clamped : PlateBendingCalculator.Simple), Choice("load_type", load), Q("a", 250, "mm"), Q("t_p", 5, "mm"), Q("q", 20, "kPa"), Q("E", 200, "GPa"), N("nu", 0.3)];
 
     private static CalcInputValue[] Rect(bool clamped, double a = 500, double b = 500, string load = PlateBendingCalculator.Uniform) =>
-        [Choice("shape", PlateBendingCalculator.Rectangular), Choice("support", clamped ? PlateBendingCalculator.Clamped : PlateBendingCalculator.Simple), Choice("load_type", load), Q("a", a, "mm"), Q("b", b, "mm"), Q("t", 8, "mm"), Q("q", 10, "kPa"), Q("E", 210, "GPa"), N("nu", 0.3)];
+        [Choice("shape", PlateBendingCalculator.Rectangular), Choice("support", clamped ? PlateBendingCalculator.Clamped : PlateBendingCalculator.Simple), Choice("load_type", load), Q("a", a, "mm"), Q("b", b, "mm"), Q("t_p", 8, "mm"), Q("q", 10, "kPa"), Q("E", 210, "GPa"), N("nu", 0.3)];
 
     private static CalcRunResult With(CalcInputValue[] set, params CalcInputValue[] more) => Run([.. set, .. more]);
 
@@ -286,11 +286,11 @@ public sealed class PlateBendingTests
     public void Review_L5_L9_The_Stress_Check_Cites_The_Yield_Criterion_And_A_Simply_Supported_Edge_Moment_Is_Exactly_Zero()
     {
         var r = Run(Circle(false));
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("Stress", StringComparison.Ordinal) && c.Clause == "6.2.1(5)");
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Von Mises stress", StringComparison.Ordinal) && c.Clause == "cl. 6.2.1(5)");
         Assert.Equal(0, r.OutputSi("M_edge"));
-        Assert.Contains(Plate.Template.ClauseRefs, c => c.Clause == "6.2.1(5)");
+        Assert.Contains(Plate.Template.ClauseRefs, c => c.Clause == "cl. 6.2.1(5)");
         Assert.DoesNotContain(Plate.Template.ApplicabilityRules, x => x.Id == "ring-basis");
-        Assert.Equal("1.3.0", Plate.Template.Version);
+        Assert.Equal("1.4.0", Plate.Template.Version);
     }
 
     [Fact]
@@ -377,7 +377,7 @@ public sealed class PlateBendingTests
     public void Total_Force_On_The_Whole_Plate_Is_The_Same_As_The_Equivalent_Pressure()
     {
         var byPressure = With(Rect(false, 600, 400), Q("q", 10, "kPa"));
-        var byForce = With(Rect(false, 600, 400), Choice("load_basis", PlateBendingCalculator.BasisForce), Q("P", 2.4, "kN"));
+        var byForce = With(Rect(false, 600, 400), Choice("load_basis", PlateBendingCalculator.BasisForce), Q("F", 2.4, "kN"));
         Assert.Equal(byPressure.OutputSi("w_max"), byForce.OutputSi("w_max"), byPressure.OutputSi("w_max") * 1e-12);
         Assert.Equal(byPressure.OutputSi("sigma_max"), byForce.OutputSi("sigma_max"), byPressure.OutputSi("sigma_max") * 1e-9);
     }
@@ -397,28 +397,28 @@ public sealed class PlateBendingTests
     [Fact]
     public void A_Deflection_Over_Half_The_Thickness_And_A_Thick_Plate_Warn()
     {
-        var thin = With(Circle(false), Q("t", 1, "mm"), Q("q", 50, "kPa"));
+        var thin = With(Circle(false), Q("t_p", 1, "mm"), Q("q", 50, "kPa"));
         Assert.True(thin.OutputSi("w_over_t") > 0.5);
-        Assert.Contains(thin.Warnings, w => w.RuleId == "large-deflection" && w.Message.StartsWith("t:", StringComparison.Ordinal));
+        Assert.Contains(thin.Warnings, w => w.RuleId == "large-deflection" && w.Message.StartsWith("t_p:", StringComparison.Ordinal));
         Assert.DoesNotContain(Run(Circle(true)).Warnings, w => w.RuleId == "large-deflection");
 
         // F2: below span/t = 10 the thin-plate theory is stiffer than the plate and the sheet warned and passed; it is refused (the default circle is 250 mm in radius: span 500 mm, so t = 60 mm is span/t 8.3).
-        var thickPlate = With(Circle(true), Q("t", 60, "mm"));
+        var thickPlate = With(Circle(true), Q("t_p", 60, "mm"));
         Assert.True(thickPlate.IsBlocked);
         var thickBlock = Assert.Single(thickPlate.Blocks, b => b.RuleId == "thin-plate");
-        Assert.StartsWith("t:", thickBlock.Message, StringComparison.Ordinal);
+        Assert.StartsWith("t_p:", thickBlock.Message, StringComparison.Ordinal);
         Assert.Empty(CalcMessageShape.Problems(thickBlock.Message));
-        Assert.DoesNotContain(With(Circle(true), Q("t", 50, "mm")).Notices, n => n.RuleId == "thin-plate");
+        Assert.DoesNotContain(With(Circle(true), Q("t_p", 50, "mm")).Notices, n => n.RuleId == "thin-plate");
         Assert.All(new[] { "thin-plate", "navier-converge" }, id => Assert.Contains(Plate.Template.ApplicabilityRules, r => r.Id == id && r.Severity == CalcNoticeSeverity.Block && r.Effect == CalcRuleEffect.Unconservative));
         Assert.Contains(Plate.Template.ApplicabilityRules, r => r.Id == "ritz-converge" && r.Severity == CalcNoticeSeverity.Warning && r.Effect == CalcRuleEffect.Unconservative);
-        Assert.DoesNotContain(With(Circle(true, PlateBendingCalculator.Ring), Q("P", 4, "kN"), Q("r_ring", 125, "mm")).Warnings, w => w.RuleId.Contains("ring", StringComparison.Ordinal));
+        Assert.DoesNotContain(With(Circle(true, PlateBendingCalculator.Ring), Q("F", 4, "kN"), Q("r_ring", 125, "mm")).Warnings, w => w.RuleId.Contains("ring", StringComparison.Ordinal));
         Assert.Contains(With(Rect(true)).Warnings, w => w.RuleId == "ritz-approx");
     }
 
     [Fact]
     public void Inputs_Outside_Their_Valid_Range_Are_Blocked()
     {
-        foreach (var change in new[] { Q("t", 0, "mm"), Q("t", 400, "mm"), Q("a", 1, "mm"), Q("q", 0, "kPa"), Q("E", 0, "GPa"), N("nu", 0.5), N("nu", -0.1), Q("rho", 0, "kg/m^3"), N("gamma_M0", 0.9), N("defl_ratio", 1) })
+        foreach (var change in new[] { Q("t_p", 0, "mm"), Q("t_p", 400, "mm"), Q("a", 1, "mm"), Q("q", 0, "kPa"), Q("E", 0, "GPa"), N("nu", 0.5), N("nu", -0.1), Q("rho", 0, "kg/m^3"), N("gamma_M0", 0.9), N("defl_ratio", 1) })
         {
             var notices = CalcInputValidator.Validate(Plate.Template, Defaults().With(change));
             Assert.Contains(notices, n => n.Severity == CalcNoticeSeverity.Block && n.RuleId.Contains(change.Symbol, StringComparison.Ordinal));
@@ -430,7 +430,7 @@ public sealed class PlateBendingTests
     {
         var r = Run(Circle(true));
         Assert.All(Plate.Template.OutputPorts!, p => Assert.NotNull(r.FindOutput(p.Symbol)));
-        Assert.Equal(["w_max", "sigma_max", "f1"], Plate.Template.OutputPorts!.Select(p => p.Symbol));
+        Assert.Equal(["w_max", "sigma_max", "f1", "D_flex"], Plate.Template.OutputPorts!.Select(p => p.Symbol));
         Assert.Contains(Plate.Template.OutputPorts!, p => p is { Symbol: "f1", Unit: "Hz" });
 
         foreach (var symbol in new[] { "E", "nu", "rho", "f_y" })
@@ -442,9 +442,9 @@ public sealed class PlateBendingTests
         var declared = Plate.Template.ApplicabilityRules.Select(x => x.Id).ToHashSet();
         var runs = new[]
         {
-            Run(Circle(true)), With(Circle(true, PlateBendingCalculator.Patch)), With(Circle(false, PlateBendingCalculator.Ring), Q("P", 4, "kN"), Q("r_ring", 100, "mm")), With(Rect(false)), With(Rect(true)),
-            With(Rect(false), Choice("load_type", PlateBendingCalculator.Ring)), With(Circle(true), Q("t", 60, "mm")), With(Circle(false), Q("t", 1, "mm"), Q("q", 50, "kPa")), With(Rect(false, 3000, 200)),
-            With(Circle(true, PlateBendingCalculator.Patch), Q("r0", 300, "mm")), With(Circle(true, PlateBendingCalculator.Patch), Q("r0", 2, "mm"), Q("t", 5, "mm")), With(Rect(true, 900, 200)),
+            Run(Circle(true)), With(Circle(true, PlateBendingCalculator.Patch)), With(Circle(false, PlateBendingCalculator.Ring), Q("F", 4, "kN"), Q("r_ring", 100, "mm")), With(Rect(false)), With(Rect(true)),
+            With(Rect(false), Choice("load_type", PlateBendingCalculator.Ring)), With(Circle(true), Q("t_p", 60, "mm")), With(Circle(false), Q("t_p", 1, "mm"), Q("q", 50, "kPa")), With(Rect(false, 3000, 200)),
+            With(Circle(true, PlateBendingCalculator.Patch), Q("r0", 300, "mm")), With(Circle(true, PlateBendingCalculator.Patch), Q("r0", 2, "mm"), Q("t_p", 5, "mm")), With(Rect(true, 900, 200)),
         };
 
         foreach (var notice in runs.SelectMany(x => x.Notices))
@@ -465,7 +465,7 @@ public sealed class PlateBendingTests
             Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
             var series = Assert.Single(r.Series);
             Assert.True(series.Points.Count >= 21);
-            Assert.Contains(r.Checks, c => c.Name.StartsWith("Stress", StringComparison.Ordinal));
+            Assert.Contains(r.Checks, c => c.Name.StartsWith("Von Mises stress", StringComparison.Ordinal));
             Assert.Contains(r.Checks, c => c.Name.StartsWith("Deflection", StringComparison.Ordinal));
         }
     }
@@ -475,7 +475,7 @@ public sealed class PlateBendingTests
     {
         Gen.Double[1.0, 5.0].Select(Gen.Double[1.0, 2.5], Gen.Int[0, 3]).Sample((t, grow, which) =>
         {
-            grow = Math.Min(grow, 40.0 / (t * 4)); // the thick plate stays at span/t of at least 10 on the shortest span of 400 mm (F2)
+            grow = Math.Min(grow, 39.9 / (t * 4)); // the thick plate stays at span/t of at least 10 on the shortest span of 400 mm (F2)
             CalcInputValue[] set = which switch
             {
                 0 => Circle(true),
@@ -483,8 +483,8 @@ public sealed class PlateBendingTests
                 2 => Rect(false, 600, 400),
                 _ => Rect(true, 500, 400),
             };
-            var thin = With(set, Q("t", t * 4, "mm"), Q("q", 1, "kPa"));
-            var thick = With(set, Q("t", t * 4 * grow, "mm"), Q("q", 1, "kPa"));
+            var thin = With(set, Q("t_p", t * 4, "mm"), Q("q", 1, "kPa"));
+            var thick = With(set, Q("t_p", t * 4 * grow, "mm"), Q("q", 1, "kPa"));
 
             if (thin.IsBlocked || thick.IsBlocked)
                 return false;

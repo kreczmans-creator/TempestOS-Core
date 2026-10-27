@@ -7,70 +7,83 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: STR-SUP-001    Client: Client Co
 
 1. Scope and method
-An unstiffened rectangular base plate under an I/H, RHS or CHS column on grouted concrete: bearing resistance, the force regime and holding-down bolt tension for a major-axis moment, the tension T-stub of the plate and the compression T-stub, shear by friction and anchor bolts, and the plate thickness that satisfies them together. The bolt tension and shear per anchor go to Hilti PROFIS for the anchorage, which is done outside this sheet.
+Calculates the bearing, bolt tension, T-stub and shear utilisations of a base plate under an I/H, RHS or CHS column on grout, and the plate thickness that satisfies them. The anchorage is designed outside this sheet.
 Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3; c = t_p·√[f_y/(3·f_jd·γ_M0)] Axial (cl. 6.2.8.2): N_j,Rd = f_jd·A_eff, A_eff the bearing strips of width c round the column footprint (full rectangle when they overlap); u_N = N_c,Ed/N_j,Rd Moment (cl. 6.2.8.3, Table 6.7): z_C from the section ((h − t_f)/2, (h − t)/2, half-annulus centroid) or entered, x_b the bolt row from the axis, z = z_C + x_b; C_Ed = (M_Ed + N_Ed·x_b)/z and T_Ed = C_Ed − N_Ed when both are ≥ 0; with N_Ed > 0 and T_Ed < 0 both sides are in compression, C = N_Ed/2 ± M_Ed/(2z_C); with N_Ed < 0 and C_Ed < 0 both rows are in tension, T = −N_Ed/2 ± M_Ed/(2x_b); F_t,Ed = T_Ed/n_t at the more loaded row Plate T-stub (cl. 6.2.6.11, 6.2.4, Table 6.2): M_pl,Rd = 0.25·l_eff·t_p²·f_y/γ_M0; without prying min(2·M_pl,Rd/m, n_t·F_t,Rd); with prying the modes 4·M_pl,Rd/m, (2·M_pl,Rd + n·ΣF_t,Rd)/(m + n) with n = min(e_min, 1.25m), and n_t·F_t,Rd; l_eff is the total for the n_t bolts Compression T-stub (cl. 6.2.6.9, 6.2.6.10): C_Rd = f_jd·A_flange, checked when M_Ed > 0 and the resultant is in compression Shear (cl. 6.2.2): F_2,vb,Rd = α_bc·f_ub·A_s/γ_M2, α_bc = 0.44 − 0.0003·f_yb; F_vb,Rd = min(F_1,vb,Rd, F_2,vb,Rd); V_Rd = C_f,d·N_c,Ed + n_b·F_vb,Rd; V_b,Ed = max(V_Ed − C_f,d·N_c,Ed, 0)/n_b Required thickness: the smallest t_p in 10–100 mm with u_N, u_C and u_T all ≤ 1, z_C, C_Ed and T_Ed re-evaluated at every trial t_p
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   column | Column section type | I/H |  | drawing: DRG-STR-315 rev B | any
-  h | Column depth, along the plate length L (I/H and RHS) | 203.2 | mm | drawing: DRG-STR-315 rev B | 50 … 1200 mm
-  b | Column width, along the plate width B (I/H and RHS) | 203.6 | mm | drawing: DRG-STR-315 rev B | 50 … 1200 mm
-  t_f | Flange thickness (I/H) | 11 | mm | drawing: DRG-STR-315 rev B | 3 … 100 mm
-  t_w | Web thickness (I/H) | 7.2 | mm | drawing: DRG-STR-315 rev B | 3 … 100 mm
-  t | Wall thickness (RHS and CHS) | 10 | mm | assumption: Sheet default value; no project figure given. | 3 … 100 mm
-  D | Outside diameter (CHS) | 220 | mm | assumption: Sheet default value; no project figure given. | 50 … 1200 mm
-  B | Plate width | 300 | mm | drawing: DRG-STR-315 rev B | 100 … 1500 mm
-  L | Plate length | 350 | mm | drawing: DRG-STR-315 rev B | 100 … 1500 mm
-  t_p | Plate thickness | 25 | mm | drawing: DRG-STR-315 rev B | 10 … 100 mm
-  f_y | Plate yield strength | 275 | MPa | assumption: Sheet default value; no project figure given. | 235 … 460 MPa
-  f_ck | Concrete characteristic cylinder strength | 25 | MPa | assumption: Sheet default value; no project figure given. | 20 … 50 MPa
-  alpha_cc | α_cc, long-term effects on the concrete strength | 0.85 |  | assumption: Sheet default value; no project figure given. | 0.8 … 1
-  gamma_c | γ_c, partial factor for concrete | 1.5 |  | assumption: Sheet default value; no project figure given. | 1.2 … 1.8
-  gamma_M0 | γ_M0, partial factor for the plate | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.25
-  gamma_M2 | γ_M2, partial factor for the anchor bolts | 1.25 |  | assumption: Sheet default value; no project figure given. | 1.1 … 1.5
-  C_fd | C_f,d, friction coefficient plate to grout | 0.2 |  | assumption: Sheet default value; no project figure given. | 0 … 0.45
-  alpha | α, concentration factor √(A_c1/A_c0) of the foundation (1 when the foundation geometry is not known) | 1 |  | drawing: DRG-STR-315 rev B | 1 … 3
-  N_Ed | Axial force, COMPRESSION positive (the opposite sign to S3's N_Ed, which is tension positive; S2's R1_y, an upward reaction, is compression positive) | 28.2 | kN | link: Support frame rev A · R1_y | -5000 … 10000 kN
-  M_Ed | Major-axis moment (uniaxial) | 43.2 | kN·m | link: Support frame rev A · R1_m_abs | 0 … 2000 kN·m
-  V_Ed | Shear force | 5 | kN | link: Support frame rev A · R1_x_abs | 0 … 2000 kN
-  n_t | Holding-down bolts in each bolt row (one row each side) | 2 |  | assumption: Sheet default value; no project figure given. | 1 … 20
-  n_b | Holding-down bolts in total (both sides) | 4 |  | assumption: Sheet default value; no project figure given. | 2 … 40
-  x_b | Bolt row distance from the column axis (outside the column face, inside the plate edge) | 135 | mm | drawing: DRG-STR-315 rev B | 50 … 1000 mm
-  m | Bolt to flange-weld toe distance, tension T-stub (required: it follows from x_b, the column and the weld) | 28 | mm | drawing: DRG-STR-315 rev B | 5 … 300 mm
-  l_eff | Effective length of the tension T-stub, total for the n_t bolts (required: from the cl. 6.2.6.5 patterns for the plate) | 150 | mm | drawing: DRG-STR-315 rev B | 10 … 2000 mm
   prying | Prying forces develop (short bolts, L_b ≤ L_b*); off is conservative for the plate | no |  | assumption: Sheet default value; no project figure given. | any
-  e_min | Edge distance e_min of the bolt row (used only with prying) | 40 | mm | drawing: DRG-STR-315 rev B | 5 … 500 mm
-  F_t_Rd | Tension resistance per bolt (from S4) | 141.002 | kN | link: Holding-down bolts rev A · F_t_Rd | 1 … 2000 kN
-  f_ub | Anchor bolt ultimate strength | 800 | MPa | link: Holding-down bolts rev A · f_ub | 400 … 1000 MPa
-  f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | link: Holding-down bolts rev A · f_yb | 235 … 640 MPa
-  A_s | Anchor bolt tensile stress area (from S4) | 244.794 | mm² | link: Holding-down bolts rev A · A_s | 50 … 1500 mm²
-  F_1_vb_Rd | Bolt bearing resistance on the plate, F_1,vb,Rd (from S4 F_b,Rd) | 248.485 | kN | link: Holding-down bolts rev A · F_b_Rd | 1 … 2000 kN
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 85844d70ba6940ab81e889c16afe687f/49f0358b53064501bb686b4150d92a5a | any
+  B | Plate width | 300 | mm | drawing: DRG-STR-315 rev B | 150 … 1200 mm
+  L | Plate length | 350 | mm | drawing: DRG-STR-315 rev B | 150 … 1200 mm
+  t_p | Plate thickness | 25 | mm | drawing: DRG-STR-315 rev B | 10 … 60 mm
+  n_t | Holding-down bolts in each bolt row (one row each side) | 2 |  | assumption: Sheet default value; no project figure given. | 1 … 6
+  n_b | Holding-down bolts in total (both sides) | 4 |  | assumption: Sheet default value; no project figure given. | 2 … 12
+  x_b | Bolt row distance from the column axis (outside the column face, inside the plate edge) | 135 | mm | drawing: DRG-STR-315 rev B | 80 … 600 mm
+  m | Bolt to flange-weld toe distance, tension T-stub (required: it follows from x_b, the column and the weld) | 28 | mm | drawing: DRG-STR-315 rev B | 10 … 100 mm
+  l_eff | Effective length of the tension T-stub, total for the n_t bolts (required: from the cl. 6.2.6.5 patterns for the plate) | 150 | mm | drawing: DRG-STR-315 rev B | 50 … 800 mm
+  h | Column depth, along the plate length L (I/H and RHS) | 203.2 | mm | drawing: DRG-STR-315 rev B | 100 … 1000 mm
+  b | Column width, along the plate width B (I/H and RHS) | 203.6 | mm | drawing: DRG-STR-315 rev B | 100 … 1000 mm
+  t_f | Flange thickness (I/H) | 11 | mm | drawing: DRG-STR-315 rev B | 5 … 50 mm
+  t_w | Web thickness (I/H) | 7.2 | mm | drawing: DRG-STR-315 rev B | 4 … 40 mm
+  t_wall | Wall thickness (RHS and CHS) | 10 | mm | assumption: Sheet default value; no project figure given. | 3 … 40 mm
+  D | Outside diameter (CHS) | 220 | mm | assumption: Sheet default value; no project figure given. | 60 … 1000 mm
+  e_min | Edge distance of the bolt row, used only with prying (optional; blank = prying needs it) | 40 | mm | drawing: DRG-STR-315 rev B | 10 … 200 mm
+  f_y | Plate yield strength | 275 | MPa | assumption: Sheet default value; no project figure given. | 235 … 440 MPa
+  f_ck | Concrete characteristic cylinder strength | 25 | MPa | assumption: Sheet default value; no project figure given. | 20 … 45 MPa
+  F_t_Rd | Tension resistance per bolt (from the connection sheet) | 141.002 | kN | link: Holding-down bolts rev A · F_t_Rd | 10 … 1000 kN
+  f_ub | Anchor bolt ultimate tensile strength | 800 | MPa | link: Holding-down bolts rev A · f_ub | 400 … 900 MPa
+  f_yb | Anchor bolt yield strength (α_bc is valid for 235–640 MPa) | 640 | MPa | link: Holding-down bolts rev A · f_yb | 240 … 640 MPa
+  A_s | Anchor bolt tensile stress area (from the connection sheet) | 244.794 | mm² | link: Holding-down bolts rev A · A_s | 80 … 1000 mm²
+  F_1_vb_Rd | Bolt bearing resistance on the plate (from the bearing resistance of the connection sheet) | 248.485 | kN | link: Holding-down bolts rev A · F_b_Rd | 10 … 1000 kN
+  N_Ed | Axial force, compression positive and opposite in sign to the member sheet's axial force (a frame reaction R1_y is compression positive) | 28.2 | kN | link: Support frame rev A · R1_y | -2000 … 5000 kN
+  M_Ed | Major-axis moment (uniaxial) | 43.2 | kN·m | link: Support frame rev A · R1_m_abs | 0 … 1000 kN·m
+  V_Ed | Shear force | 5 | kN | link: Support frame rev A · R1_x_abs | 0 … 1000 kN
+  alpha_cc | Coefficient for long-term effects on the concrete strength | 0.85 |  | assumption: Sheet default value; no project figure given. | 0.8 … 0.9
+  gamma_c | Partial factor for concrete | 1.5 |  | assumption: Sheet default value; no project figure given. | 1.2 … 1.6
+  gamma_M0 | Partial factor for the plate | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.15
+  gamma_M2 | Partial factor for the anchor bolts | 1.25 |  | assumption: Sheet default value; no project figure given. | 1.1 … 1.4
+  C_fd | Friction coefficient, plate to grout | 0.2 |  | assumption: Sheet default value; no project figure given. | 0 … 0.4
+  alpha | Concentration factor √(A_c1/A_c0) of the foundation (1 when the foundation geometry is not known) | 1 |  | drawing: DRG-STR-315 rev B | 1 … 2.5
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 58de7b5bc6a24a008631e44d47b06eff/fd9d1c0dc476470981d15881200f4557 | any
 
 3. Assumptions
-  A1. N_Ed is positive in compression here, the opposite of S3 (tension positive): a link from S2 must take the reaction R1_y (up positive, compression into the base), never the member force N_e1. (Sign convention.)
-  A2. Static loading; a major-axis moment only (uniaxial); an unstiffened rectangular plate on grout of adequate strength and thickness for β_j = 2/3 (checked when the grout strength and thickness are entered). (Scope of S6.)
-  A3. The simplified T-stub model: one compression resultant at the centre of the compression T-stub (flange centre, or the half-annulus centroid of a CHS) and one tension resultant per bolt row; the force regime follows EN 1993-1-8 Table 6.7. The web is not given credit in the moment check. (EN 1993-1-8 cl. 6.2.8.3.)
-  A4. The effective length l_eff is the total for the n_t bolts of a row, read from the cl. 6.2.6.5 patterns; it is used for modes 1 and 2 alike (l_eff,1 ≤ l_eff,2, so this is conservative for mode 2). (One input.)
-  A5. Concrete, anchor tension, pull-out, breakout, edge and the tension–shear interaction of the anchors are designed in Hilti PROFIS from F_t,Ed and V_b,Ed per anchor; the report is filed as Evidence and referenced. With prying switched on the prying force Q is not in F_t,Ed and PROFIS must add it. (External anchorage design.)
-  A6. The friction resistance counts only the compression, C_f,d·max(N_Ed, 0); a column in net tension has none. Anchor bolts share shear equally, with their holes assumed no larger than the standard clearance (oversized or slotted holes are outside this sheet). (EN 1993-1-8 cl. 6.2.2.)
-  A7. The bearing outstand c is cut back where it would pass the plate edge; the web and the column interior keep the full c. The CHS compression side is half of the annular bearing area, with its centroid as lever arm (an approximation). (Conservative against an uncut c.)
-  A8. The compression T-stub is checked against the flange area alone as soon as M_Ed > 0, while at M_Ed = 0 the whole footprint (web included) resists, so the compression check jumps at M_Ed = 0⁺ (conservative). (Limitation.)
-  A9. Partial factors and the friction coefficient come from the records in use (γ_c, α_cc: EN 1992-1-1 NA; γ_M2: EN 1993-1-8 NA; γ_M0: EN 1993-1-1 NA; C_f,d: the grout used); the values shown default to the EN recommended and UK values. (A small set of factors only; no table from a standard is shipped.)
-  A10. t (Wall thickness (RHS and CHS)) is taken as 10 mm. (Sheet default value; no project figure given.)
-  A11. D (Outside diameter (CHS)) is taken as 220 mm. (Sheet default value; no project figure given.)
-  A12. f_y (Plate yield strength) is taken as 275 MPa. (Sheet default value; no project figure given.)
-  A13. f_ck (Concrete characteristic cylinder strength) is taken as 25 MPa. (Sheet default value; no project figure given.)
-  A14. alpha_cc (α_cc, long-term effects on the concrete strength) is taken as 0.85. (Sheet default value; no project figure given.)
-  A15. gamma_c (γ_c, partial factor for concrete) is taken as 1.5. (Sheet default value; no project figure given.)
-  A16. gamma_M0 (γ_M0, partial factor for the plate) is taken as 1. (Sheet default value; no project figure given.)
-  A17. gamma_M2 (γ_M2, partial factor for the anchor bolts) is taken as 1.25. (Sheet default value; no project figure given.)
-  A18. C_fd (C_f,d, friction coefficient plate to grout) is taken as 0.2. (Sheet default value; no project figure given.)
-  A19. n_t (Holding-down bolts in each bolt row (one row each side)) is taken as 2. (Sheet default value; no project figure given.)
-  A20. n_b (Holding-down bolts in total (both sides)) is taken as 4. (Sheet default value; no project figure given.)
-  A21. prying (Prying forces develop (short bolts, L_b ≤ L_b*); off is conservative for the plate) is taken as no. (Sheet default value; no project figure given.)
-  A22. The outstand c is cut back to the plate edge where it would pass it, so no area outside the plate is counted. (Conservative against an uncut c.)
-  A23. β_j = 2/3 assumes the grout is at least 0.2·f_ck and no thicker than 0.2 × the smaller plate dimension; enter the grout strength and thickness to check it. (EN 1993-1-8 cl. 6.2.5.)
+  A1. The axial force is positive in compression, the opposite of the member check sheet. (Sign convention.)
+  A2. A link from the frame sheet takes the reaction R1_y, never the member force N_e1. (R1_y is up positive, so compression into the base.)
+  A3. Loading is static, with a major-axis moment only. (Scope of this sheet.)
+  A4. The plate is unstiffened and rectangular, on grout adequate for β_j = 2/3. (The grout is checked when its strength and thickness are entered.)
+  A5. The simplified T-stub model has one compression resultant and one tension resultant per bolt row. (BS EN 1993-1-8:2005 cl. 6.2.8.3.)
+  A6. The compression resultant acts at the flange centre, or at the half-annulus centroid of a CHS. (BS EN 1993-1-8:2005 cl. 6.2.8.3.)
+  A7. The force regime follows Table 6.7, and the web is not credited in the moment check. (BS EN 1993-1-8:2005 cl. 6.2.8.3.)
+  A8. The effective length l_eff is the total for the n_t bolts of a row. (Read from the cl. 6.2.6.5 patterns.)
+  A9. One l_eff serves modes 1 and 2, which is conservative for mode 2. (l_eff,1 is not more than l_eff,2.)
+  A10. The concrete, pull-out, breakout, edge and interaction failures of the anchors are designed in Hilti PROFIS. (From F_t,Ed and V_b,Ed per anchor; the report is filed as Evidence and referenced.)
+  A11. With prying switched on, the prying force Q is not in F_t,Ed and PROFIS must add it. (External anchorage design.)
+  A12. The friction resistance counts only the compression, C_f,d·max(N_Ed, 0). (BS EN 1993-1-8:2005 cl. 6.2.2.)
+  A13. A column in net tension has no friction resistance. (BS EN 1993-1-8:2005 cl. 6.2.2.)
+  A14. Anchor bolts share the shear equally. (BS EN 1993-1-8:2005 cl. 6.2.2.)
+  A15. Anchor bolt holes are no larger than the standard clearance. (Oversized or slotted holes are outside this sheet.)
+  A16. The bearing outstand c is cut back where it would pass the plate edge. (Conservative against an uncut c.)
+  A17. The web and the column interior keep the full outstand c. (Conservative against an uncut c.)
+  A18. The CHS compression side is half the annular bearing area, with its centroid as lever arm. (An approximation.)
+  A19. The compression T-stub is checked against the flange area alone when M_Ed is above 0. (Conservative limitation.)
+  A20. The whole footprint resists at M_Ed = 0, so the compression check jumps just above 0, conservatively. (Limitation.)
+  A21. Partial factors and the friction coefficient come from the records in use. (γ_c and α_cc: EN 1992-1-1 NA; γ_M2: EN 1993-1-8 NA; γ_M0: EN 1993-1-1 NA; C_f,d: the grout used.)
+  A22. The defaults are the EN recommended and UK values. (A small set of factors only; no table from a standard is shipped.)
+  A23. prying (Prying forces develop (short bolts, L_b ≤ L_b*); off is conservative for the plate) is taken as no. (Sheet default value; no project figure given.)
+  A24. n_t (Holding-down bolts in each bolt row (one row each side)) is taken as 2. (Sheet default value; no project figure given.)
+  A25. n_b (Holding-down bolts in total (both sides)) is taken as 4. (Sheet default value; no project figure given.)
+  A26. t_wall (Wall thickness (RHS and CHS)) is taken as 10 mm. (Sheet default value; no project figure given.)
+  A27. D (Outside diameter (CHS)) is taken as 220 mm. (Sheet default value; no project figure given.)
+  A28. f_y (Plate yield strength) is taken as 275 MPa. (Sheet default value; no project figure given.)
+  A29. f_ck (Concrete characteristic cylinder strength) is taken as 25 MPa. (Sheet default value; no project figure given.)
+  A30. alpha_cc (Coefficient for long-term effects on the concrete strength) is taken as 0.85. (Sheet default value; no project figure given.)
+  A31. gamma_c (Partial factor for concrete) is taken as 1.5. (Sheet default value; no project figure given.)
+  A32. gamma_M0 (Partial factor for the plate) is taken as 1. (Sheet default value; no project figure given.)
+  A33. gamma_M2 (Partial factor for the anchor bolts) is taken as 1.25. (Sheet default value; no project figure given.)
+  A34. C_fd (Friction coefficient, plate to grout) is taken as 0.2. (Sheet default value; no project figure given.)
+  A35. The outstand c is cut back to the plate edge where it would pass it, so no area outside the plate is counted. (Conservative against an uncut c.)
+  A36. β_j = 2/3 assumes the grout is at least 0.2·f_ck and no thicker than 0.2 × the smaller plate dimension; enter the grout strength and thickness to check it. (EN 1993-1-8 cl. 6.2.5.)
 
 4. Working
   [31] f_cd = alpha_cc * f_ck / gamma_c    « EN 1992-1-1 cl. 3.1.6
@@ -217,16 +230,16 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   u_max = 0.63    Governing utilisation
   f_cd = 14.17 MPa    Concrete design strength
   beta_j = 0.66667    Joint coefficient β_j
-  f_jd = 9.444 MPa    Bearing strength f_jd
-  c = 77.89 mm    Bearing outstand c
+  f_jd = 9.444 MPa    Design bearing strength of the joint
+  c = 77.89 mm    Bearing outstand round the column footprint
   A_eff = 101516 mm²    Effective bearing area
   t_req_N = 10 mm    Plate thickness required for axial bearing alone
   t_req = 15.42 mm    Plate thickness required (bearing, compression and tension T-stubs)
-  z_C = 93.86 mm    Compression lever arm z_C
-  z = 228.9 mm    Lever arm z
+  z_C = 93.86 mm    Distance from the column axis to the compression resultant
+  z = 228.9 mm    Lever arm between the compression resultant and the bolt row
   C_Ed = 205.40 kN    Compression resultant
   C_Ed_2 = 0 kN    Compression resultant, other side
-  T_Ed = 177.20 kN    Tension resultant, more loaded row
+  T_Ed = 177.20 kN    Tension resultant, more loaded row (governing)
   T_Ed_2 = 0 kN    Tension resultant, other row
   A_flange = 48686 mm²    Compression-side bearing area
   C_Rd = 459.81 kN    Compression-side resistance
@@ -243,39 +256,39 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   T_mode = "mode 3 (bolt failure)"    Governing T-stub mode
   u_N = 0.03    Axial bearing utilisation
   u_C = 0.45    Compression-side utilisation
-  u_T = 0.63    Tension T-stub utilisation (governing)
+  u_T = 0.63    Tension T-stub utilisation
   u_bt = 0.63    Bolt tension utilisation
   u_V = 0.03    Shear utilisation
 
 6. Checks (governing first)
-  PASS  Base plate tension T-stub (bending at the bolts): u_T = 0.63 vs u_T ≤ 1  utilisation 0.63  « EN 1993-1-8 cl. 6.2.6.11
-  PASS  Holding-down bolt tension: u_bt = 0.63 vs u_bt ≤ 1  utilisation 0.63  « EN 1993-1-8 cl. 6.2.6.12
-  PASS  Compression flange bearing: u_C = 0.45 vs u_C ≤ 1  utilisation 0.45  « EN 1993-1-8 cl. 6.2.6.9, 6.2.6.10
-  PASS  Shear: friction plus anchor bolts: u_V = 0.03 vs u_V ≤ 1  utilisation 0.03  « EN 1993-1-8 cl. 6.2.2
-  PASS  Concrete bearing under the axial force: u_N = 0.03 vs u_N ≤ 1  utilisation 0.03  « EN 1993-1-8 cl. 6.2.8.2, 6.2.5
+  PASS  Tension at the bolt row against the plate T-stub resistance: 177.20 kN vs 282.00 kN  utilisation 0.63  « EN 1993-1-8 cl. 6.2.6.11
+  PASS  Bolt tension against the bolt tension resistance: 88.60 kN vs 141.00 kN  utilisation 0.63  « EN 1993-1-8 cl. 6.2.6.12
+  PASS  Compression force against compression flange bearing resistance: 205.40 kN vs 459.81 kN  utilisation 0.45  « EN 1993-1-8 cl. 6.2.6.9, 6.2.6.10
+  PASS  Shear force against friction plus anchor bolt shear resistance: 5 kN vs 161.06 kN  utilisation 0.03  « EN 1993-1-8 cl. 6.2.2
+  PASS  Axial force against concrete bearing resistance: 28.20 kN vs 958.76 kN  utilisation 0.03  « EN 1993-1-8 cl. 6.2.8.2, 6.2.5
   PASS  Anchorage designed externally (PROFIS report attached as Evidence): external report attached: PROFIS-BP1-PLACEHOLDER.txt vs bolt tension 88.599 kN and shear 0 kN per anchor designed in PROFIS
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are alpha_cc, gamma_c (EN 1992-1-1 National Annex factors); gamma_M2 (EN 1993-1-8 National Annex factor); gamma_M0 (EN 1993-1-1 National Annex factor); C_fd (Friction coefficient plate to grout); f_y (Plate strength). Enter each as one so its source, edition and licence travel with it.  [record]
-  WARNING  f_y: one yield strength (275 MPa) is used at every plate thickness, but EN 10025-2 lowers the yield strength of a grade as the thickness passes 16 mm and again above 40 mm. t_p = 25 mm is above the first step: enter the yield strength for the plate thickness in use (steel.strengths record), so M_pl,Rd and the T-stub are not overstated.  [f_y_thickness]
-  WARNING  u_profis: the anchorage is not assessed on this sheet. The concrete failure modes of the anchors (cone, pull-out, edge, shear, interaction), which usually govern, are designed in PROFIS; u_max covers the steel parts only, whether or not a report is attached. Enter the report's governing utilisation to include it.  [anchorage-result]
+  WARNING  f_y: one strength of 275 MPa is used at every thickness, but EN 10025-2 lowers it above 16 mm. Enter the strength for the thickness in use, because t_p exceeds that step.  [f_y_thickness]
+  WARNING  u_profis: the anchorage is not assessed here, and u_max covers the steel parts only. Enter the PROFIS report's governing utilisation to include the concrete failure modes of the anchors.  [anchorage-result]
 
 8. Verification
-  Template: struct.base-plate@1.6.0
-  Content hash: 3ba3eee23aa8a758
+  Template: struct.base-plate@1.7.0
+  Content hash: b3f3c18d0ee3f47a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 22:50 UTC
   Application: TempestOS test
 
 9. References
-  1. EN 1993-1-8:2005 cl. 6.2.2 — Design resistance of column bases in shear
-  2. EN 1993-1-8:2005 cl. 6.2.4, Table 6.2 — Equivalent T-stub in tension
-  3. EN 1993-1-8:2005 cl. 6.2.5 — Equivalent T-stub in compression
-  4. EN 1993-1-8:2005 cl. 6.2.6.9 — Concrete in compression including grout
-  5. EN 1993-1-8:2005 cl. 6.2.6.10 — Base plate in bending under compression
-  6. EN 1993-1-8:2005 cl. 6.2.6.11 — Base plate in bending under tension
-  7. EN 1993-1-8:2005 cl. 6.2.6.12 — Anchor bolts in tension
-  8. EN 1993-1-8:2005 cl. 6.2.8.2 — Column bases subject to axial forces
-  9. EN 1993-1-8:2005 cl. 6.2.8.3, Table 6.7 — Column bases subject to axial force and bending moment
-  10. EN 1992-1-1:2004 cl. 3.1.6, 6.7 — Design strength of concrete; partial area loading
+  1. BS EN 1993-1-8:2005 cl. 6.2.2 — Design resistance of column bases in shear
+  2. BS EN 1993-1-8:2005 cl. 6.2.4, Table 6.2 — Equivalent T-stub in tension
+  3. BS EN 1993-1-8:2005 cl. 6.2.5 — Equivalent T-stub in compression
+  4. BS EN 1993-1-8:2005 cl. 6.2.6.9 — Concrete in compression including grout
+  5. BS EN 1993-1-8:2005 cl. 6.2.6.10 — Base plate in bending under compression
+  6. BS EN 1993-1-8:2005 cl. 6.2.6.11 — Base plate in bending under tension
+  7. BS EN 1993-1-8:2005 cl. 6.2.6.12 — Anchor bolts in tension
+  8. BS EN 1993-1-8:2005 cl. 6.2.8.2 — Column bases subject to axial forces
+  9. BS EN 1993-1-8:2005 cl. 6.2.8.3, Table 6.7 — Column bases subject to axial force and bending moment
+  10. BS EN 1992-1-1:2004 cl. 3.1.6, 6.7 — Design strength of concrete; partial area loading

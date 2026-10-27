@@ -297,7 +297,7 @@ internal static class CalcPackExamples
     /// <summary>The arm joint's bolt checks: M20 8.8 through a 20 mm S275 end plate against the 11 mm flange of the UC 203 × 203 × 46 column (bearing is on the thinner ply); the bolt forces arrive by link from the bolt group.</summary>
     public static IReadOnlyList<CalcInputValue> SteelS4A { get; } =
     [
-        C("grade", "8.8"), C("size", "M20"), C("steel", "S275"), Q("t", 20, "mm"), Q("t_2", 11, "mm"),
+        C("grade", "8.8"), C("size", "M20"), C("steel", "S275"), Q("t_p", 20, "mm"), Q("t_2", 11, "mm"),
         Q("e_1", 40, "mm"), Q("e_2", 40, "mm"), Q("p_1", 150, "mm"), Q("p_2", 120, "mm"),
         Q("A_nt", 1200, "mm^2"), Q("A_nv", 2400, "mm^2"),
     ];
@@ -309,7 +309,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> SteelS4B { get; } =
     [
-        C("grade", "8.8"), C("size", "M20"), C("steel", "S275"), Q("t", 25, "mm"),
+        C("grade", "8.8"), C("size", "M20"), C("steel", "S275"), Q("t_p", 25, "mm"),
         Q("e_1", 40, "mm"), Q("e_2", 75, "mm"), Q("p_2", 150, "mm"),
         Q("F_v_Ed", 0, "kN"), Q("F_t_Ed", 0, "kN"),
     ];
@@ -570,7 +570,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> ElxS9 { get; } =
     [
-        C("shape", "rectangular"), C("support", "simply supported"), Q("a", 600, "mm"), Q("b", 500, "mm"), Q("t", 4, "mm"),
+        C("shape", "rectangular"), C("support", "simply supported"), Q("a", 600, "mm"), Q("b", 500, "mm"), Q("t_p", 4, "mm"),
         C("load_type", "uniform"), C("load_basis", "pressure q"), Q("q", 1, "kPa"),
         Q("E", 69, "GPa"), N("nu", 0.33), Q("rho", 2700, "kg/m^3"), Q("f_y", 120, "MPa"), N("gamma_M0", 1),
     ];

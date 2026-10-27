@@ -58,8 +58,8 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Structural, "Load combinations (EN 1990)",
-        "Design values of a single action effect (a force, a moment or a load intensity) under every EN 1990 Annex A1 combination for buildings: ULS persistent/transient, SLS characteristic, frequent and quasi-permanent, and accidental. Every variable action is tried as the leading one; the maximum and minimum envelopes and their governing combinations are reported.",
+        Id, "1.2.0", CalcDiscipline.Structural, "Load combinations (EN 1990)",
+        "Calculates the design values of one action effect under every EN 1990 Annex A1 combination for buildings, from persistent to accidental. Each variable action leads in turn; the envelopes and governing combinations are reported.",
         "ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on γ_G,sup)\n" +
         "ULS 6.10a: Σ γ_G·G + Σ γ_Q·K_FI·ψ_0·Q_i; 6.10b: Σ ξ·γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i\n" +
         "Permanent factor: γ_G,sup when the action adds to the effect sought, γ_G,inf when it opposes it\n" +
@@ -67,28 +67,31 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
         "SLS characteristic 6.14b: Σ G + Q_1 + Σ ψ_0·Q_i; frequent 6.15b: Σ G + ψ_1·Q_1 + Σ ψ_2·Q_i; quasi-permanent 6.16b: Σ G + Σ ψ_2·Q_i\n" +
         "Accidental 6.11b: Σ G + A_d + ψ_1·Q_1 + Σ ψ_2·Q_i",
         [
-            new CalcInputSpec("actions", "Actions (one effect, signed)", CalcInputKind.Table, Columns: ActionColumns, MaxRows: MaxActions),
-            new CalcInputSpec("unit", "Unit of the effect", CalcInputKind.Choice, Choices: EffectUnits, DefaultChoice: "kN"),
-            new CalcInputSpec("method", "ULS expression", CalcInputKind.Choice, Choices: [Method610, Method610ab], DefaultChoice: Method610, Group: "Factors"),
+            new CalcInputSpec("actions", "Actions (one effect, signed)", CalcInputKind.Table, Columns: ActionColumns, MaxRows: MaxActions, Group: "Setup"),
+            new CalcInputSpec("unit", "Unit of the effect", CalcInputKind.Choice, Choices: EffectUnits, DefaultChoice: "kN", Group: "Setup"),
+            new CalcInputSpec("method", "ULS expression", CalcInputKind.Choice, Choices: [Method610, Method610ab], DefaultChoice: Method610, Group: "Setup"),
             new CalcInputSpec("gamma_G_sup", "γ_G,sup (unfavourable permanent)", CalcInputKind.Number, Default: 1.35, Min: 1, Max: 2, HardMin: 0.5, HardMax: 3, Group: "Factors"),
             new CalcInputSpec("gamma_G_inf", "γ_G,inf (favourable permanent)", CalcInputKind.Number, Default: 1.0, Min: 0.8, Max: 1.2, HardMin: 0, HardMax: 2, Group: "Factors"),
             new CalcInputSpec("gamma_Q", "γ_Q (variable)", CalcInputKind.Number, Default: 1.5, Min: 1, Max: 2, HardMin: 0.5, HardMax: 3, Group: "Factors"),
             new CalcInputSpec("xi", "ξ reduction for 6.10b", CalcInputKind.Number, Default: 0.85, Min: 0.8, Max: 1, HardMin: 0.5, HardMax: 1, Group: "Factors"),
-            new CalcInputSpec("K_FI", "K_FI consequence-class factor", CalcInputKind.Number, Default: 1.0, Min: 0.9, Max: 1.1, HardMin: 0.9, HardMax: 1.1, Group: "Factors"),
+            new CalcInputSpec("K_FI", "Consequence-class factor", CalcInputKind.Number, Default: 1.0, Min: 0.9, Max: 1.1, HardMin: 0.5, HardMax: 2, Group: "Factors"),
             new CalcInputSpec("psi", "ψ factors by category (replaces the recommended set)", CalcInputKind.Table, Columns: PsiColumns, MaxRows: 20, IsOptional: true, Group: "Factors"),
         ],
         [
-            new CalcAssumption("One scalar action effect; every action's characteristic value is its contribution to that effect, with sign.", "Linear superposition (EN 1990 cl. 6.3.1 representative values)."),
-            new CalcAssumption("Buildings only (Annex A1); no bridges, fatigue or seismic combinations.", "EN 1990 Annex A1 scope."),
-            new CalcAssumption("Without a ψ record the EN 1990 Annex A1 recommended values are used, labelled on the sheet; the UK National Annex (NA.A1.2(A)–(C)) values come from a user record.", "No National Annex table is shipped."),
-            new CalcAssumption("Each permanent action takes γ_G,sup or γ_G,inf by whether it adds to or opposes the effect sought; for EQU single-source checks, enter a source's permanent actions as one row.", "EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions."),
+            new CalcAssumption("Each action's characteristic value is its signed contribution to one scalar effect.", "Linear superposition (EN 1990 cl. 6.3.1 representative values)."),
+            new CalcAssumption("The combinations are those of EN 1990 Annex A1 for buildings.", "EN 1990 Annex A1 scope."),
+            new CalcAssumption("Bridge, fatigue and seismic combinations are not included.", "EN 1990 Annex A1 scope."),
+            new CalcAssumption("Without a ψ record the recommended values of EN 1990 Annex A1 are used and labelled on the sheet.", "No National Annex table is shipped."),
+            new CalcAssumption("UK National Annex values of ψ and γ come from a user record.", "No National Annex table is shipped."),
+            new CalcAssumption("Each permanent action takes γ_G,sup when it adds to the effect sought and γ_G,inf when it opposes it.", "EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions."),
+            new CalcAssumption("For an equilibrium check with one source, the source's permanent actions are entered as one row.", "EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions."),
         ],
         [
-            new CalcClauseRef("EN 1990:2002+A1:2005", "cl. 6.4.3.2", "Combinations for persistent or transient design situations (6.10, 6.10a, 6.10b)"),
-            new CalcClauseRef("EN 1990:2002+A1:2005", "cl. 6.4.3.3", "Combinations for accidental design situations (6.11b)"),
-            new CalcClauseRef("EN 1990:2002+A1:2005", "cl. 6.5.3", "Serviceability combinations (6.14b, 6.15b, 6.16b)"),
-            new CalcClauseRef("EN 1990:2002+A1:2005", "Annex A1, Tables A1.1, A1.2(B)", "Application for buildings: ψ and γ factors"),
-            new CalcClauseRef("UK NA to BS EN 1990:2002+A1:2005", "NA.A1.2(A)–(C)", "UK values of partial factors"),
+            new CalcClauseRef("BS EN 1990:2002+A1:2005", "cl. 6.4.3.2", "Combinations for persistent or transient design situations (6.10, 6.10a, 6.10b)"),
+            new CalcClauseRef("BS EN 1990:2002+A1:2005", "cl. 6.4.3.3", "Combinations for accidental design situations (6.11b)"),
+            new CalcClauseRef("BS EN 1990:2002+A1:2005", "cl. 6.5.3", "Serviceability combinations (6.14b, 6.15b, 6.16b)"),
+            new CalcClauseRef("BS EN 1990:2002+A1:2005", "Annex A1, Tables A1.1, A1.2(B)", "Application for buildings: ψ and γ factors"),
+            new CalcClauseRef("BS EN 1990:2002+A1:2005", "Table NA.A1.2(A) to (C)", "UK National Annex: UK values of partial factors"),
         ],
         [
             new CalcApplicabilityRule("no-actions", "No actions: nothing to combine.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
@@ -184,7 +187,7 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
         }
 
         if (!actions.Any(a => a.IsPermanent))
-            c.Warn("no-permanent", "actions: no permanent action is entered; check the combinations are what you intend.");
+            c.Warn("no-permanent", "actions: no permanent action is entered. Check the combinations are what you intend.");
 
         var gSup = c.InputSi("gamma_G_sup");
         var gInf = c.InputSi("gamma_G_inf");
