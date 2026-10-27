@@ -34,16 +34,30 @@ public sealed partial class CalcInstanceService
     /// <summary>The audit action written when a preparer checks their own calculation pack (DA-12).</summary>
     public const string PackSelfCheckedActionName = "Calc.PackSelfChecked";
 
-    /// <summary>Writes the audit row of a self-check: who, when, which calculation (or pack) and the statement they gave. Nothing is written where no audit recorder is composed.</summary>
-    private async Task RecordSelfCheckAsync(string action, CalcSelfCheck selfCheck, Dictionary<string, string> detail, CancellationToken cancellationToken)
+    /// <summary>
+    /// Writes the audit row of a self-check: who, when, which calculation (or pack) and the statement they gave. Nothing is written where no
+    /// audit recorder is composed. The row is written after the check has committed (the recorder has no transactional form), so a recorder
+    /// that fails is reported as the warning this returns — the check stands, and the caller shows the sentence — rather than thrown out of
+    /// a check that succeeded (D4). <see langword="null"/> when the row was written or there is no recorder.
+    /// </summary>
+    private async Task<string?> RecordSelfCheckAsync(string action, CalcSelfCheck selfCheck, Dictionary<string, string> detail, CancellationToken cancellationToken)
     {
         if (_audit is null)
-            return;
+            return null;
 
         detail["Checker"] = selfCheck.Name;
         detail["CheckerPrincipal"] = selfCheck.Principal;
         detail["Statement"] = selfCheck.Statement;
-        await _audit.RecordAsync(action, detail, cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            await _audit.RecordAsync(action, detail, cancellationToken).ConfigureAwait(false);
+            return null;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return $"The self-check was recorded, but its audit row could not be written: {ex.Message}";
+        }
     }
 
     /// <summary>Why <paramref name="templateReference"/> is switched off, or <see langword="null"/> (the catalogue's one message).</summary>

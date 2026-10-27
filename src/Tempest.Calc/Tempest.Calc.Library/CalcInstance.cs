@@ -53,7 +53,16 @@ public sealed record CalcCountersignature(string Name, string Organisation, stri
 /// <param name="Name">The checker's name as given.</param>
 /// <param name="Statement">The self-check statement, at least <see cref="CalcInstanceService.MinSelfCheckStatementLength"/> and at most <see cref="CalcInstanceService.MaxSelfCheckStatementLength"/> characters.</param>
 /// <param name="At">When the check was made.</param>
-public sealed record CalcSelfCheck(string Principal, string Name, string Statement, DateTimeOffset At);
+/// <param name="MemberIds">
+/// On a pack's self-check, the members it is true of: those whose template demands an independent check and whose preparer is the
+/// checker. Only their sheets print the statement (D1); a member prepared by someone else, or whose template never asked for an independent
+/// check, prints none. <see langword="null"/> on a calculation's own self-check.
+/// </param>
+public sealed record CalcSelfCheck(string Principal, string Name, string Statement, DateTimeOffset At, IReadOnlyList<Guid>? MemberIds = null)
+{
+    /// <summary>Whether this pack self-check is true of <paramref name="memberId"/>: named in <see cref="MemberIds"/>; a record from before the list was kept names nobody.</summary>
+    public bool AppliesTo(Guid memberId) => MemberIds is { } ids && ids.Contains(memberId);
+}
 
 /// <summary>
 /// The competent person's attestation of a calculation whose template requires one (ADR-0173): made by the signed-in principal, who is none

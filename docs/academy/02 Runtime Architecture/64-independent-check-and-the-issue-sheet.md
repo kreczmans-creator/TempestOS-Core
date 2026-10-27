@@ -235,8 +235,17 @@ the pack (`CalcPack.SelfCheck`), appended to the Evidence's own check
 statement, printed on the sheet under the Checker line as "Self-checked by
 the preparer: …" (`CalcSheetHeader.SelfCheck`, text and PDF alike) and
 written to the audit trail as `Calc.SelfChecked` or `Calc.PackSelfChecked`.
-A different person checks exactly as before, and a ticked box by such a
-person records nothing. S8 lifting and the lifting lug keep their
+A pack's self-check is true only of the members whose template demands an
+independent check and whose preparer is the checker (`CalcSelfCheck.MemberIds`):
+only their sheets print the line. A different person checks exactly as
+before; a ticked box by such a person is refused in a sentence ("you are
+not its preparer; untick …"), never silently recorded as something else.
+The Evidence layer's own `CheckRecord.SelfCheck` is set for a self-check
+whatever the global rule says, so its narrative reads "Checked by its own
+author"; a self-check audit row that cannot be written leaves the check
+standing and is reported as a warning on the result; and the Saved
+calculations and packs lists mark a self-checked row `SELF-CHECKED` beside
+its status, as a stale one is marked `STALE`. S8 lifting and the lifting lug keep their
 attestation and two-checker rule and never take a self-check (DB-13).
 `SelfCheckTests`, `SelfCheckSheetTests`, `WorksheetSelfCheckTests` and
 `SelfCheckPdfTests` cover both paths.

@@ -491,7 +491,7 @@ public sealed partial class CalcInstanceService
         {
             result = await _evidence.RecordCheckInOneTransactionAsync(evidenceId, checkerName, checkerOrganisation, statement, outcome,
                 alsoWrite: (transaction, token) => CalcInstanceStore.WriteGuardedAsync(transaction, updated, instance.UpdatedAt, token),
-                cancellationToken, owner: CalcOwner).ConfigureAwait(false);
+                cancellationToken, owner: CalcOwner, selfCheck: selfCheck is not null).ConfigureAwait(false);
         }
         catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException or CalcDocumentTooLargeException)
         {
@@ -501,8 +501,10 @@ public sealed partial class CalcInstanceService
         if (!result.Succeeded)
             return CalcActionResult.Refused(result.Reason ?? "The check was refused.", instance);
 
+        string? warning = null;
+
         if (updated.SelfCheck is { } recorded)
-            await RecordSelfCheckAsync(SelfCheckedActionName, recorded, new Dictionary<string, string>(StringComparer.Ordinal)
+            warning = await RecordSelfCheckAsync(SelfCheckedActionName, recorded, new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 ["Calculation"] = instance.Name,
                 ["CalculationId"] = instance.Id.ToString("N"),
@@ -511,7 +513,7 @@ public sealed partial class CalcInstanceService
             }, cancellationToken).ConfigureAwait(false);
 
         var checker = result.Evidence?.Check?.CheckerIdentityId ?? checkerName;
-        return CalcActionResult.Ok(updated with { CheckedBy = checker });
+        return new CalcActionResult(true, warning, updated with { CheckedBy = checker });
     }
 
     private static string? MissingText(string? value, string what) => string.IsNullOrWhiteSpace(value) ? $"{what} is needed." : null;
@@ -520,7 +522,8 @@ public sealed partial class CalcInstanceService
     /// Why the signed-in person may not check a calculation that demands an independent check (E4, E5, S6): nobody is signed in (the
     /// "unknown" sentinel is not a person — Red R-A-11), or they created it or set or changed any of its inputs (Red R-A-05).
     /// </summary>
-    private string? IndependenceRefusal(CalcInstance instance, string subject, string action, string? selfCheckStatement, out string? selfCheck)
+    /// <param name="packMember">The instance is one member of a pack being checked: a non-author's ticked box is then judged over the whole pack by the caller, not here.</param>
+    private string? IndependenceRefusal(CalcInstance instance, string subject, string action, string? selfCheckStatement, out string? selfCheck, bool packMember = false)
     {
         selfCheck = null;
 
@@ -533,14 +536,21 @@ public sealed partial class CalcInstanceService
             return $"{subject} needs an independent check: nobody is signed in, so there is no one to {action}.";
 
         var authors = instance.Authors;
+        var takesSelfCheck = !(template.HasExtraGovernance || template.FeatureFlag is { Length: > 0 });
 
         if (!authors.Contains(principal, StringComparer.Ordinal))
+        {
+            // D2: a second person who ticked the box is told, rather than having the tick silently discarded and an ordinary check recorded.
+            if (!packMember && takesSelfCheck && !string.IsNullOrWhiteSpace(selfCheckStatement))
+                return $"{subject}: you are not its preparer; untick \"{SelfCheckCaption}\" to record your check as an independent check.";
+
             return null;
+        }
 
         var who = authors.Count == 1 ? $"its author ({authors[0]})" : $"anyone who set up or changed its inputs ({string.Join(", ", authors)})";
 
         // DA-12: a template with a competent-person attestation or a second check (S8) keeps its rule exactly: another person, never a self-check.
-        if (template.HasExtraGovernance || template.FeatureFlag is { Length: > 0 })
+        if (!takesSelfCheck)
             return $"{subject} needs an independent check: sign in as someone other than {who} to {action}.";
 
         var statement = CalcSheetTextRenderer.Clean(selfCheckStatement ?? string.Empty).Trim();
@@ -985,6 +995,8 @@ public sealed partial class CalcInstanceService
         var staleness = await StalenessForAsync(pack.ProjectId, members, cancellationToken).ConfigureAwait(false);
         var together = pack.InstanceIds.ToHashSet();
         string? packSelfCheck = null;
+        var selfCheckedMembers = new List<Guid>();
+        var anyMemberTakesSelfCheck = false;
 
         foreach (var member in members)
         {
@@ -1004,10 +1016,17 @@ public sealed partial class CalcInstanceService
             if (await DraftUpstreamAsync(member, together, cancellationToken).ConfigureAwait(false) is { } draftUpstream)
                 return CalcActionResult.Refused($"Pack member '{member.Name}' {draftUpstream}");
 
-            if (IndependenceRefusal(member, $"Pack member '{member.Name}'", "check the pack", selfCheckStatement, out var memberSelfCheck) is { } notIndependent)
+            if (IndependenceRefusal(member, $"Pack member '{member.Name}'", "check the pack", selfCheckStatement, out var memberSelfCheck, packMember: true) is { } notIndependent)
                 return CalcActionResult.Refused(notIndependent);
 
             packSelfCheck ??= memberSelfCheck;
+
+            // D1: the self-check is true of the members whose template demands an independent check and whose preparer is the checker.
+            if (memberSelfCheck is not null)
+                selfCheckedMembers.Add(member.Id);
+
+            if (_catalogue.Find(member.TemplateReference)?.Template is { IndependentCheck: true } independent && !(independent.HasExtraGovernance || independent.FeatureFlag is { Length: > 0 }))
+                anyMemberTakesSelfCheck = true;
 
             // ADR-0173: a member that lacks the attestation its template demands holds an accepting check of the pack back (a rejection needs none), and
             // the attester of a member cannot be the one checking the pack.
@@ -1021,6 +1040,10 @@ public sealed partial class CalcInstanceService
             }
         }
 
+        // D2: the box was ticked by someone who prepared none of the members that could take a self-check — said, not silently dropped.
+        if (packSelfCheck is null && anyMemberTakesSelfCheck && !string.IsNullOrWhiteSpace(selfCheckStatement))
+            return CalcActionResult.Refused($"Pack '{pack.Title}': you are not the preparer of any calculation in it that needs an independent check; untick \"{SelfCheckCaption}\" to record your check as an independent check.");
+
         // A rejection leaves the pack and its Evidence as drafts (Black B-12).
         if (outcome == CheckOutcome.Rejected)
             return CalcActionResult.Refused($"The checker rejected the pack; it stays a draft. {statement}".TrimEnd());
@@ -1033,7 +1056,7 @@ public sealed partial class CalcInstanceService
         // DA-12: the preparer's own check of the pack keeps its statement on the pack, which its members' sheets print.
         if (packSelfCheck is not null)
         {
-            checkedPack = checkedPack with { SelfCheck = new CalcSelfCheck(CurrentPrincipal(), checkerName, packSelfCheck, now) };
+            checkedPack = checkedPack with { SelfCheck = new CalcSelfCheck(CurrentPrincipal(), checkerName, packSelfCheck, now, selfCheckedMembers) };
             statement = $"{statement} {CalcSheetStandard.SelfCheckPrefix}{packSelfCheck}".Trim();
         }
 
@@ -1043,7 +1066,7 @@ public sealed partial class CalcInstanceService
         {
             result = await _evidence.RecordCheckInOneTransactionAsync(evidenceId, checkerName, checkerOrganisation, statement, outcome,
                 alsoWrite: (transaction, token) => CalcInstanceStore.WriteGuardedPackAsync(transaction, checkedPack, pack.UpdatedAt, token),
-                cancellationToken, owner: CalcOwner).ConfigureAwait(false);
+                cancellationToken, owner: CalcOwner, selfCheck: packSelfCheck is not null).ConfigureAwait(false);
         }
         catch (InvalidOperationException ex) when (ex is CalcConcurrencyException or CalcInstanceImmutableException or CalcDocumentTooLargeException)
         {
@@ -1053,16 +1076,19 @@ public sealed partial class CalcInstanceService
         if (!result.Succeeded)
             return CalcActionResult.Refused(result.Reason ?? "The check was refused.");
 
+        string? warning = null;
+
         if (checkedPack.SelfCheck is { } recorded)
-            await RecordSelfCheckAsync(PackSelfCheckedActionName, recorded, new Dictionary<string, string>(StringComparer.Ordinal)
+            warning = await RecordSelfCheckAsync(PackSelfCheckedActionName, recorded, new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 ["Pack"] = pack.Title,
                 ["PackId"] = pack.Id.ToString("N"),
                 ["Revision"] = pack.Revision,
                 ["Members"] = pack.InstanceIds.Count.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                ["SelfCheckedMembers"] = string.Join(",", selfCheckedMembers.Select(id => id.ToString("N"))),
             }, cancellationToken).ConfigureAwait(false);
 
-        return new CalcActionResult(true, null, null);
+        return new CalcActionResult(true, warning, null);
     }
 
     /// <summary>
@@ -1222,7 +1248,7 @@ public sealed partial class CalcInstanceService
                 foreach (var (member, entry, inputs, result, report) in members)
                 {
                     n++;
-                    var header = await HeaderAsync(entry, member, evidence, CalcSheetStatus.Issued, issuedAtUtc, issueReference, client, token, second: pack.SecondCheck, packSelfCheck: pack.SelfCheck).ConfigureAwait(false);
+                    var header = await HeaderAsync(entry, member, evidence, CalcSheetStatus.Issued, issuedAtUtc, issueReference, client, token, second: pack.SecondCheck, packSelfCheck: pack.SelfCheck is { } packSelf && packSelf.AppliesTo(member.Id) ? packSelf : null).ConfigureAwait(false);
                     var sheet = await FinishSheetAsync(entry, inputs, result, header, Footer(entry, report), token).ConfigureAwait(false);
                     sheets.Add(sheet);
                     index.Add(new CalcPackIndexRow(n, member.Name, entry.Template.Title, member.Revision, "ISSUED", sheet.Governing is { } g ? $"{g.Name} {(g.Passed ? "PASS" : "FAIL")}" : null));
@@ -1326,8 +1352,9 @@ public sealed partial class CalcInstanceService
 
         CalcSelfCheck? packSelfCheck = null;
 
-        if (instance.PackId is { } selfPackId && instance.SelfCheck is null && await _store.FindPackAsync(selfPackId, cancellationToken).ConfigureAwait(false) is { } selfPack)
-            packSelfCheck = selfPack.SelfCheck;
+        // D1: a pack's self-check is printed only on the sheets of the members it is true of.
+        if (instance.PackId is { } selfPackId && instance.SelfCheck is null && await _store.FindPackAsync(selfPackId, cancellationToken).ConfigureAwait(false) is { SelfCheck: { } packSelf } && packSelf.AppliesTo(instance.Id))
+            packSelfCheck = packSelf;
 
         var header = await HeaderAsync(entry, instance, evidence, status, instance.IssuedAt, instance.IssueReference, packEvidence?.Issue?.Client ?? evidence?.Issue?.Client, cancellationToken, packEvidence, packSecond, packSelfCheck).ConfigureAwait(false);
         var footer = instance.Issue is { } issue

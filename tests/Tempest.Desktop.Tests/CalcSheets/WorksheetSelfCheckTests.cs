@@ -219,6 +219,42 @@ public sealed class WorksheetSelfCheckTests
     // Fixture
     // ------------------------------------------------------------------
 
+    [AvaloniaFact]
+    public async Task A_Self_Checked_Calculation_And_Pack_Carry_The_Mark_In_The_Lists()
+    {
+        await using var fx = await StartAsync("P-SELF-MARK");
+        var view = fx.View;
+        fx.SignInAs(Preparer, "Pat Preparer");
+        await OpenFaultProtectionAsync(fx, "IND marked");
+        var id = view.CurrentInstance!.Id;
+
+        // A draft carries no mark.
+        await fx.Coordinator.RefreshListsAsync();
+        await WaitFor(() => view.SavedCalculations.Any(r => r.Id == id), () => view.StatusText);
+        Assert.DoesNotContain(CalcSheetView.SelfCheckedListMark, view.SavedCalculations.Single(r => r.Id == id).Label, StringComparison.Ordinal);
+
+        // A pack the preparer self-checks carries it: a second draft of the same inputs (the form holds the first), in a pack checked through the service.
+        var member = await fx.Service.CreateAsync(FaultProtection, fx.ProjectId, "IND pack marked", view.CurrentInstance!.Inputs);
+        var pack = await fx.Service.CreatePackAsync(fx.ProjectId, "Marked pack", [member.Id]);
+        var packCheck = await fx.Service.CheckPackAsync(pack.Id, "Pat Preparer", "Tempest Engineering", "Checked the pack.", CheckOutcome.Accepted, selfCheckStatement: Statement);
+        Assert.True(packCheck.Succeeded, packCheck.Reason);
+        await fx.Coordinator.RefreshListsAsync();
+        await WaitFor(() => view.Packs.Any(p => p.Id == pack.Id && p.SelfChecked), () => string.Join("; ", view.Packs.Select(p => p.Label)));
+        Assert.Contains(" · Checked · " + CalcSheetView.SelfCheckedListMark + " · 1 calculation(s)", view.Packs.Single(p => p.Id == pack.Id).Label, StringComparison.Ordinal);
+
+        // The calculation the preparer self-checks in the form carries it too, like STALE: after the status, in the same list row.
+        view.FillSelfCheck(true, Statement);
+        Click(view, CalcSheetView.CheckCaption);
+        await WaitFor(() => view.CurrentInstance?.Status == CalcInstanceStatus.Checked, () => view.StatusText);
+        await fx.Coordinator.RefreshListsAsync();
+        await WaitFor(() => view.SavedCalculations.Any(r => r.Id == id && r.SelfChecked), () => string.Join("; ", view.SavedCalculations.Select(r => r.Label)));
+
+        var row = view.SavedCalculations.Single(r => r.Id == id);
+        Assert.Contains(" · Checked · " + CalcSheetView.SelfCheckedListMark, row.Label, StringComparison.Ordinal);
+        Assert.Equal("SELF-CHECKED", CalcSheetView.SelfCheckedListMark);
+        Assert.DoesNotContain(CalcSheetView.SelfCheckedListMark, view.SavedCalculations.Single(r => r.Id == member.Id).Label, StringComparison.Ordinal);
+    }
+
     private static CalcInstanceService BuildService(WorkspaceHost host, bool liftingOn, RecordingAudit audit)
     {
         var domain = (EngineeringDomainContext)host.Services!.GetService(typeof(EngineeringDomainContext));

@@ -60,7 +60,8 @@ public interface IEvidenceService
 
     /// <summary>`v0.26.0` Phase 6: as <see cref="RecordCheckAsync"/>, with <paramref name="alsoWrite"/> committed in the same transaction as the check record, after a transaction-time re-check of the status (a racing check is refused with <see cref="EvidenceRefusal.TransitionNotPermitted"/>).</summary>
     /// <param name="owner">The owner of the evidence when it is managed (`ADR-0173`); managed evidence is refused without it.</param>
-    Task<EvidenceActionResult> RecordCheckInOneTransactionAsync(Guid evidenceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome, Func<Persistence.IPersistenceTransaction, CancellationToken, Task>? alsoWrite, CancellationToken cancellationToken = default, EvidenceOwner? owner = null);
+    /// <param name="selfCheck">The owner says the checker is the author (a calculation's recorded self-check, DA-12), so <see cref="CheckRecord.SelfCheck"/> is set whether or not the global independent-check rule is on and finds it itself.</param>
+    Task<EvidenceActionResult> RecordCheckInOneTransactionAsync(Guid evidenceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome, Func<Persistence.IPersistenceTransaction, CancellationToken, Task>? alsoWrite, CancellationToken cancellationToken = default, EvidenceOwner? owner = null, bool selfCheck = false);
 
     /// <summary>
     /// Records an issue against <paramref name="evidenceId"/>'s own evidence

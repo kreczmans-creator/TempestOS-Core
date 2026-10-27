@@ -29,18 +29,22 @@ public sealed partial class CalcSheetView
     public const string CountersignPackCaption = "Countersign pack";
     public const string StaleListMark = "STALE";
 
-    /// <summary>One saved calculation as listed: its name, template title, revision, status and whether it is stale.</summary>
-    public sealed record SavedCalculation(Guid Id, string Name, string TemplateTitle, string Revision, string Status, bool IsStale)
+    /// <summary>The mark a self-checked calculation or pack carries in the lists (DA-12), after its status like <see cref="StaleListMark"/>: a check by the preparer is told apart from an independent one at a glance.</summary>
+    public const string SelfCheckedListMark = "SELF-CHECKED";
+
+    /// <summary>One saved calculation as listed: its name, template title, revision, status, whether it is stale and whether its check was the preparer's own.</summary>
+    public sealed record SavedCalculation(Guid Id, string Name, string TemplateTitle, string Revision, string Status, bool IsStale, bool SelfChecked = false)
     {
-        public string Label => $"{Name} · {TemplateTitle} · rev {Revision} · {Status}{(IsStale ? " · " + StaleListMark : string.Empty)}";
+        public string Label => $"{Name} · {TemplateTitle} · rev {Revision} · {Status}{(SelfChecked ? " · " + SelfCheckedListMark : string.Empty)}{(IsStale ? " · " + StaleListMark : string.Empty)}";
     }
 
     /// <summary>One pack as listed.</summary>
     /// <param name="NeedsSecondCheck">A member's template requires a second, independent check (`ADR-0173`), so the pack is countersigned before it is issued.</param>
     /// <param name="HasSecondCheck">The pack already holds that second check.</param>
-    public sealed record PackChoice(Guid Id, string Title, string Revision, CalcInstanceStatus Status, int Members, bool NeedsSecondCheck = false, bool HasSecondCheck = false)
+    /// <param name="SelfChecked">The pack's check was the preparer's own (DA-12).</param>
+    public sealed record PackChoice(Guid Id, string Title, string Revision, CalcInstanceStatus Status, int Members, bool NeedsSecondCheck = false, bool HasSecondCheck = false, bool SelfChecked = false)
     {
-        public string Label => $"{Title} · rev {Revision} · {Status} · {Members} calculation(s)";
+        public string Label => $"{Title} · rev {Revision} · {Status}{(SelfChecked ? " · " + SelfCheckedListMark : string.Empty)} · {Members} calculation(s)";
     }
 
     /// <summary>A pack template the project can start a pack from.</summary>

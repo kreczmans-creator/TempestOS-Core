@@ -291,7 +291,8 @@ public sealed class EvidenceService : IEvidenceService
         Guid evidenceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome,
         Func<Persistence.IPersistenceTransaction, CancellationToken, Task>? alsoWrite,
         CancellationToken cancellationToken = default,
-        EvidenceOwner? owner = null)
+        EvidenceOwner? owner = null,
+        bool selfCheck = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(checkerName);
         ArgumentException.ThrowIfNullOrWhiteSpace(checkerOrganisation);
@@ -322,7 +323,6 @@ public sealed class EvidenceService : IEvidenceService
 
         var principal = _principals.Current;
         string? checkerIdentityId = null;
-        var selfCheck = false;
 
         if (await IsIndependentCheckRequiredAsync(cancellationToken).ConfigureAwait(false))
         {
@@ -334,7 +334,8 @@ public sealed class EvidenceService : IEvidenceService
                     evidence);
             }
 
-            selfCheck = string.Equals(principal.Identity.Id, evidence.AuthorIdentityId, StringComparison.Ordinal);
+            // DA-12 (D3): an owner that already knows the checker is the author says so; the rule's own finding is OR-ed in.
+            selfCheck |= string.Equals(principal.Identity.Id, evidence.AuthorIdentityId, StringComparison.Ordinal);
 
             // `ADR-0161`: whether the checker must be a second person is the
             // global second-person sign-off switch (off by default). Off,

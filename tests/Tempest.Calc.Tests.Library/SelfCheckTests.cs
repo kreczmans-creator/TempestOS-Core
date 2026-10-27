@@ -17,6 +17,13 @@ internal sealed class RecordingAuditRecorder : IAuditRecorder
     }
 }
 
+/// <summary>An audit store that cannot be written (D4).</summary>
+internal sealed class FailingAuditRecorder : IAuditRecorder
+{
+    public Task RecordAsync(string action, IReadOnlyDictionary<string, string>? detail = null, CancellationToken cancellationToken = default) =>
+        throw new InvalidOperationException("the audit store is read-only tonight");
+}
+
 /// <summary>
 /// DA-12 as the owner settled it (DC-21): a template that demands an independent check (E4, E5, S6) is checked by a different person as
 /// before, or by the preparer alone with a statement of why they stand by it, which is kept on the calculation (or pack), printed on the
@@ -50,9 +57,10 @@ public sealed class SelfCheckTests
         Assert.Equal(Statement, selfCheck.Statement);
         Assert.Equal(checkedInstance.CheckedAt, selfCheck.At);
 
-        // On the Evidence's own check record too.
+        // On the Evidence's own check record too: the statement, and the record's own self-check flag (D3), whatever the global rule says.
         var evidence = Assert.IsType<Evidence>(await host.Context.Repository.FindAsync(instance.EvidenceId!.Value));
         Assert.Contains(CalcSheetStandard.SelfCheckPrefix + Statement, evidence.Check!.Statement, StringComparison.Ordinal);
+        Assert.True(evidence.Check.SelfCheck);
 
         // Printed on the sheet, drafted and issued alike.
         var sheet = await host.Service.SheetAsync(checkedInstance);
@@ -74,21 +82,47 @@ public sealed class SelfCheckTests
     }
 
     [Fact]
-    public async Task A_Different_Person_Checks_As_Before_And_Records_No_Self_Check()
+    public async Task A_Different_Person_Who_Ticks_The_Box_Is_Told_And_Checks_As_Before_Without_It()
     {
         var (host, audit) = HostWithAudit();
         var instance = await host.Service.CreateAsync("test.independent", await host.ProjectAsync(), "E5 circuit 2", LibraryTestHost.ProvenancedInputs());
 
+        // D2: a ticked box by someone who is not an author is refused in a sentence, not silently discarded.
         host.Principal = "another.engineer";
-        var check = await host.Service.CheckAsync(instance.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted, selfCheckStatement: Statement);
-        Assert.True(check.Succeeded, check.Reason);
+        var ticked = await host.Service.CheckAsync(instance.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted, selfCheckStatement: Statement);
+        Assert.False(ticked.Succeeded);
+        Assert.Equal($"'E5 circuit 2': you are not its preparer; untick \"{CalcInstanceService.SelfCheckCaption}\" to record your check as an independent check.", ticked.Reason);
+        Assert.Equal(CalcInstanceStatus.Draft, (await host.Store.FindInstanceAsync(instance.Id))!.Status);
 
-        // A ticked box by someone who is not an author is not a self-check: nothing is recorded, printed or audited.
+        // Without it, an independent check as before: nothing self-checked is recorded, printed or audited, and the Evidence record says so.
+        var check = await host.Service.CheckAsync(instance.Id, "J. Reviewer", "Client Co", "OK", CheckOutcome.Accepted);
+        Assert.True(check.Succeeded, check.Reason);
         var checkedInstance = (await host.Store.FindInstanceAsync(instance.Id))!;
         Assert.Null(checkedInstance.SelfCheck);
+        Assert.False(Assert.IsType<Evidence>(await host.Context.Repository.FindAsync(instance.EvidenceId!.Value)).Check!.SelfCheck);
         Assert.DoesNotContain(audit.Rows, r => r.Action == CalcInstanceService.SelfCheckedActionName);
         Assert.Null((await host.Service.SheetAsync(checkedInstance)).Header.SelfCheck);
         Assert.DoesNotContain(CalcSheetStandard.SelfCheckPrefix, CalcSheetTextRenderer.Render(await host.Service.SheetAsync(checkedInstance)), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Recorder_That_Cannot_Write_The_Audit_Row_Leaves_The_Check_Standing_With_A_Warning()
+    {
+        // D4: the row is written after the check has committed; a failure is a sentence on the result, not an exception out of a check that stands.
+        var host = new LibraryTestHost(calculators: [new IndependentStressCalculator()], audit: new FailingAuditRecorder());
+        var instance = await host.Service.CreateAsync("test.independent", await host.ProjectAsync(), "E5 circuit 7", LibraryTestHost.ProvenancedInputs());
+
+        var check = await host.Service.CheckAsync(instance.Id, "Sam Preparer", "Tempest Engineering", "OK", CheckOutcome.Accepted, selfCheckStatement: Statement);
+        Assert.True(check.Succeeded, check.Reason);
+        Assert.Equal("The self-check was recorded, but its audit row could not be written: the audit store is read-only tonight", check.Reason);
+        Assert.Equal(CalcInstanceStatus.Checked, (await host.Store.FindInstanceAsync(instance.Id))!.Status);
+        Assert.Equal(Statement, (await host.Store.FindInstanceAsync(instance.Id))!.SelfCheck!.Statement);
+
+        var pack = await host.Service.CreatePackAsync(instance.ProjectId, "Pack 7", [(await host.Service.CreateAsync("test.independent", instance.ProjectId, "E5 circuit 8", LibraryTestHost.ProvenancedInputs())).Id]);
+        var packCheck = await host.Service.CheckPackAsync(pack.Id, "Sam Preparer", "Tempest Engineering", "OK", CheckOutcome.Accepted, selfCheckStatement: Statement);
+        Assert.True(packCheck.Succeeded, packCheck.Reason);
+        Assert.StartsWith("The self-check was recorded, but its audit row could not be written", packCheck.Reason, StringComparison.Ordinal);
+        Assert.Equal(CalcInstanceStatus.Checked, (await host.Store.FindPackAsync(pack.Id))!.Status);
     }
 
     [Fact]
@@ -203,8 +237,11 @@ public sealed class SelfCheckTests
         Assert.Equal(Statement, row.Detail["Statement"]);
         Assert.DoesNotContain(audit.Rows, r => r.Action == CalcInstanceService.SelfCheckedActionName);
 
-        // A member's sheet carries the pack's self-check while the pack is checked.
+        // A member's sheet carries the pack's self-check while the pack is checked — the member it is true of (D1), not the plain one.
         Assert.Equal(Statement, (await host.Service.SheetAsync((await host.Store.FindInstanceAsync(strict.Id))!)).Header.SelfCheck);
+        Assert.Null((await host.Service.SheetAsync((await host.Store.FindInstanceAsync(plain.Id))!)).Header.SelfCheck);
+        Assert.Equal([strict.Id], checkedPack.SelfCheck.MemberIds);
+        Assert.Equal(strict.Id.ToString("N"), row.Detail["SelfCheckedMembers"]);
 
         // Reopened, the pack starts its next revision with no check and no self-check; checked again, it takes a new one.
         var reopened = await host.Service.ReopenPackAsync(pack.Id);
@@ -214,16 +251,80 @@ public sealed class SelfCheckTests
         Assert.True((await host.Service.CheckPackAsync(pack.Id, "Sam Preparer", "Tempest Engineering", "OK", CheckOutcome.Accepted, selfCheckStatement: Statement)).Succeeded);
         Assert.Equal(2, audit.Rows.Count(r => r.Action == CalcInstanceService.PackSelfCheckedActionName));
 
-        // The issued sheets print it.
+        // The issued sheet of the member the self-check is true of prints it; the plain member's sheet, whose template never asked for an
+        // independent check, does not (D1: the sentence would be false there).
         var issued = await host.Service.IssuePackAsync(pack.Id, "PACK-1", "Client Co");
         Assert.True(issued.Succeeded, issued.Reason);
 
-        foreach (var id in new[] { plain.Id, strict.Id })
-        {
-            var member = (await host.Store.FindInstanceAsync(id))!;
-            Assert.Equal(CalcInstanceStatus.Issued, member.Status);
-            Assert.Contains("Self-checked by the preparer: " + Statement, member.Issue!.SheetText, StringComparison.Ordinal);
-        }
+        var issuedStrict = (await host.Store.FindInstanceAsync(strict.Id))!;
+        Assert.Equal(CalcInstanceStatus.Issued, issuedStrict.Status);
+        Assert.Contains("Self-checked by the preparer: " + Statement, issuedStrict.Issue!.SheetText, StringComparison.Ordinal);
+
+        var issuedPlain = (await host.Store.FindInstanceAsync(plain.Id))!;
+        Assert.Equal(CalcInstanceStatus.Issued, issuedPlain.Status);
+        Assert.DoesNotContain("Self-checked by the preparer", issuedPlain.Issue!.SheetText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_Pack_Self_Check_Is_Printed_Only_On_The_Members_The_Checker_Prepared()
+    {
+        // D1: Plain-by-B and Strict-by-A and Strict-by-B in one pack; A self-checks it. Only Strict-by-A's sheet reads "Self-checked by the preparer".
+        var (host, audit) = HostWithAudit();
+        var project = await host.ProjectAsync();
+        host.Principal = "engineer.b";
+        var plainByB = await host.Service.CreateAsync("test.direct-stress", project, "Plain by B", LibraryTestHost.ProvenancedInputs());
+        var strictByB = await host.Service.CreateAsync("test.independent", project, "Strict by B", LibraryTestHost.ProvenancedInputs());
+        host.Principal = "engineer.a";
+        var strictByA = await host.Service.CreateAsync("test.independent", project, "Strict by A", LibraryTestHost.ProvenancedInputs());
+        var pack = await host.Service.CreatePackAsync(project, "Mixed pack", [plainByB.Id, strictByA.Id, strictByB.Id]);
+
+        var check = await host.Service.CheckPackAsync(pack.Id, "A. Preparer", "Tempest Engineering", "OK", CheckOutcome.Accepted, selfCheckStatement: Statement);
+        Assert.True(check.Succeeded, check.Reason);
+        var checkedPack = (await host.Store.FindPackAsync(pack.Id))!;
+        Assert.Equal([strictByA.Id], checkedPack.SelfCheck!.MemberIds);
+        Assert.True(checkedPack.SelfCheck.AppliesTo(strictByA.Id));
+        Assert.False(checkedPack.SelfCheck.AppliesTo(strictByB.Id));
+        Assert.Equal(strictByA.Id.ToString("N"), Assert.Single(audit.Rows, r => r.Action == CalcInstanceService.PackSelfCheckedActionName).Detail["SelfCheckedMembers"]);
+
+        Assert.Equal(Statement, (await host.Service.SheetAsync((await host.Store.FindInstanceAsync(strictByA.Id))!)).Header.SelfCheck);
+        Assert.Null((await host.Service.SheetAsync((await host.Store.FindInstanceAsync(strictByB.Id))!)).Header.SelfCheck);
+        Assert.Null((await host.Service.SheetAsync((await host.Store.FindInstanceAsync(plainByB.Id))!)).Header.SelfCheck);
+
+        var issued = await host.Service.IssuePackAsync(pack.Id, "PACK-2", "Client Co");
+        Assert.True(issued.Succeeded, issued.Reason);
+        Assert.Contains("Self-checked by the preparer: " + Statement, (await host.Store.FindInstanceAsync(strictByA.Id))!.Issue!.SheetText, StringComparison.Ordinal);
+        Assert.DoesNotContain("Self-checked by the preparer", (await host.Store.FindInstanceAsync(strictByB.Id))!.Issue!.SheetText, StringComparison.Ordinal);
+        Assert.DoesNotContain("Self-checked by the preparer", (await host.Store.FindInstanceAsync(plainByB.Id))!.Issue!.SheetText, StringComparison.Ordinal);
+
+        // A record kept before the member list existed applies to nobody rather than to everybody.
+        Assert.False(new CalcSelfCheck("p", "n", Statement, DateTimeOffset.UnixEpoch).AppliesTo(strictByA.Id));
+    }
+
+    [Fact]
+    public async Task A_Pack_Checker_Who_Prepared_None_Of_Its_Independent_Members_Is_Told_When_They_Tick_The_Box()
+    {
+        // D2 for a pack: the tick is judged over the whole pack — one self-checkable member the checker prepared is enough to take it.
+        var (host, _) = HostWithAudit();
+        var project = await host.ProjectAsync();
+        host.Principal = "engineer.b";
+        var strictByB = await host.Service.CreateAsync("test.independent", project, "Strict by B", LibraryTestHost.ProvenancedInputs());
+        var pack = await host.Service.CreatePackAsync(project, "B's pack", [strictByB.Id]);
+
+        host.Principal = "engineer.c";
+        var ticked = await host.Service.CheckPackAsync(pack.Id, "C. Checker", "Check Co", "OK", CheckOutcome.Accepted, selfCheckStatement: Statement);
+        Assert.False(ticked.Succeeded);
+        Assert.Equal($"Pack 'B's pack': you are not the preparer of any calculation in it that needs an independent check; untick \"{CalcInstanceService.SelfCheckCaption}\" to record your check as an independent check.", ticked.Reason);
+        Assert.Equal(CalcInstanceStatus.Draft, (await host.Store.FindPackAsync(pack.Id))!.Status);
+
+        // Without the box, C checks the pack independently; a plain pack ignores a stray tick as before.
+        var check = await host.Service.CheckPackAsync(pack.Id, "C. Checker", "Check Co", "OK", CheckOutcome.Accepted);
+        Assert.True(check.Succeeded, check.Reason);
+        Assert.Null((await host.Store.FindPackAsync(pack.Id))!.SelfCheck);
+
+        var plain = await host.Service.CreateAsync("test.direct-stress", project, "Plain", LibraryTestHost.ProvenancedInputs());
+        var plainPack = await host.Service.CreatePackAsync(project, "Plain pack", [plain.Id]);
+        Assert.True((await host.Service.CheckPackAsync(plainPack.Id, "C. Checker", "Check Co", "OK", CheckOutcome.Accepted, selfCheckStatement: Statement)).Succeeded);
+        Assert.Null((await host.Store.FindPackAsync(plainPack.Id))!.SelfCheck);
     }
 
     [Theory]
