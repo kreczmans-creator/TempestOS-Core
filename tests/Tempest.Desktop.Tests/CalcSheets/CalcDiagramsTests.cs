@@ -25,11 +25,7 @@ public sealed class CalcDiagramsTests
     /// template is not complete without it. The list is an explicit, reviewed exemption and nothing else is exempt: a template on it that gains a
     /// diagram must leave it (the test below fails until it does), and a template not on it must have exactly one. Drawing them is open work (TASKS).
     /// </summary>
-    public static readonly IReadOnlyList<string> WithoutDiagramYet =
-    [
-
-
-    ];
+    public static readonly IReadOnlyList<string> WithoutDiagramYet = [];
 
     public static TheoryData<string> TemplateIds => [.. Templates.Where(t => !WithoutDiagramYet.Contains(t.Id)).Select(t => t.Id)];
 
