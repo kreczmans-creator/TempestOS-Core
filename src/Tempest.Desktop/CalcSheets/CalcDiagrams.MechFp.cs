@@ -25,17 +25,17 @@ public static partial class CalcDiagrams
                 new DiagramPlate("outer-ring-top", 125, 54, 50, 16, "C"),
                 new DiagramPlate("inner-ring-top", 125, 94, 50, 16, "C"),
                 new DiagramPlate("inner-ring-bottom", 125, 140, 50, 16, "C"),
-                new DiagramPlate("outer-ring-bottom", 125, 180, 50, 16, "C", "C", new(50, 214)),
+                new DiagramPlate("outer-ring-bottom", 125, 180, 50, 16, "C", "C", new(44, 214)),
             };
 
             if (type == BearingLifeCalculator.Roller)
             {
-                elements.Add(new DiagramPlate("element-top", 138, 70, 24, 24, "type", "type", new(180, 214)));
+                elements.Add(new DiagramPlate("element-top", 138, 70, 24, 24, "type", "type", new(186, 214)));
                 elements.Add(new DiagramPlate("element-bottom", 138, 156, 24, 24, "type"));
             }
             else
             {
-                elements.Add(new DiagramCircle("element-top", new(150, 82), 12, Filled: true, "type", "type", new(180, 214), Solid: true));
+                elements.Add(new DiagramCircle("element-top", new(150, 82), 12, Filled: true, "type", "type", new(186, 214), Solid: true));
                 elements.Add(new DiagramCircle("element-bottom", new(150, 168), 12, Filled: true, "type", Solid: true));
             }
 
@@ -74,7 +74,7 @@ public static partial class CalcDiagrams
             new DiagramLabel("circuit", circuit, "circuit", "circuit"),
             new DiagramLabel("steps", steps, "steps", "steps"),
             new DiagramLabel("transmission-angle", transmission, "mu_req", "μ_req"),
-            new DiagramLabel("load-direction", new(200, 232), "load_dir", "load"),
+            new DiagramLabel("load-direction", new(200, 232), "load_dir", "load_dir"),
         ];
 
         static DiagramVariant Cam(string caption, IReadOnlyDictionary<string, string> when, bool roller)
@@ -114,7 +114,7 @@ public static partial class CalcDiagrams
 
         return new(MechanismCalculator.Id,
         [
-            new DiagramVariant("A four-bar linkage: ground d between O₂ and O₄, crank a turning at n_in, coupler b, rocker c carrying the load torque", When("mode", MechanismCalculator.FourBar),
+            new DiagramVariant("A four-bar linkage: ground L1 between O₂ and O₄, crank L2 turning at n_in, coupler L3, rocker L4 carrying the load torque T_load", When("mode", MechanismCalculator.FourBar),
             [
                 new DiagramMember("ground", new(70, 170), new(290, 170), 4, "L1", "L1", new(180, 192)),
                 new DiagramSupport("pivot-crank", new(70, 176), DiagramSupportKind.Pinned, DiagramDirection.Down),
@@ -126,12 +126,12 @@ public static partial class CalcDiagrams
                 new DiagramCircle("pin-a", new(100, 118), 4, Filled: true, Solid: true),
                 new DiagramCircle("pin-b", new(262, 88), 4, Filled: true, Solid: true),
                 new DiagramCircle("pin-o4", new(290, 170), 4, Filled: true, Solid: true),
-                new DiagramMoment("speed", new(70, 170), 16, Clockwise: true, "n_in", "n_in", new(60, 218)),
-                new DiagramMoment("load-torque", new(290, 170), 16, Clockwise: false, "T_load", "T_load", new(310, 218)),
+                new DiagramMoment("speed", new(70, 170), 16, Clockwise: true, "n_in", "n_in", new(60, 212)),
+                new DiagramMoment("load-torque", new(290, 170), 16, Clockwise: false, "T_load", "T_load", new(310, 212)),
                 new DiagramLabel("output-inertia", new(315, 48), "J_out", "J_out"),
                 .. Linkage(circuit: new(330, 72), steps: new(330, 96), transmission: new(330, 144)),
             ]),
-            new DiagramVariant("A slider-crank: crank r turning at n_in, connecting rod l, the slider of mass m on a slide line offset e above the crank centre", When("mode", MechanismCalculator.SliderCrank),
+            new DiagramVariant("A slider-crank: crank L2 turning at n_in, connecting rod L3, the slider of mass m on a slide line offset e above the crank centre", When("mode", MechanismCalculator.SliderCrank),
             [
                 new DiagramSupport("pivot-crank", new(80, 156), DiagramSupportKind.Pinned, DiagramDirection.Down),
                 new DiagramPolyline("crank-centreline", [new(80, 150), new(200, 150)], Dashed: true, Thickness: 1),
@@ -144,7 +144,7 @@ public static partial class CalcDiagrams
                 new DiagramCircle("pin-b", new(270, 120), 4, Filled: true, Solid: true),
                 new DiagramDimension("offset", new(200, 150), new(200, 120), 0, "e_off", "e"),
                 new DiagramPointLoad("slider-load", new(310, 120), DiagramDirection.Left, 40, "F_load", "F_load", new(340, 140)),
-                new DiagramMoment("speed", new(80, 150), 16, Clockwise: true, "n_in", "n_in", new(60, 218)),
+                new DiagramMoment("speed", new(80, 150), 16, Clockwise: true, "n_in", "n_in", new(60, 212)),
                 .. Linkage(circuit: new(330, 52), steps: new(330, 76), transmission: new(330, 100)),
             ]),
             Cam("A cam turning at n_in under a flat-faced follower: base circle R_b, the follower mass, its return spring and the loads on it", new Dictionary<string, string> { ["mode"] = MechanismCalculator.CamMode, ["follower"] = MechanismCalculator.FlatFaced }, roller: false),
@@ -279,7 +279,7 @@ public static partial class CalcDiagrams
                 new DiagramSpring("coil", new(120, 60), new(120, 180), "n_active", "n_active", new(60, 144)),
                 new DiagramLabel("wire", new(60, 96), "d", "d"),
                 new DiagramDimension("mean-diameter", new(108, 200), new(132, 200), 14, "D", "D"),
-                new DiagramDimension("free-length", new(120, 50), new(120, 190), 60, "L0", "L0"),
+                new DiagramDimension("free-length", new(120, 50), new(120, 190), 48, "L0", "L0"),
                 new DiagramPointLoad("load-1", new(104, 50), DiagramDirection.Down, 30, "F_1", "F_1", new(56, 30)),
                 new DiagramPointLoad("load-2", new(136, 50), DiagramDirection.Down, 30, "F_2", "F_2", new(190, 30)),
                 new DiagramLabel("ends", new(260, 214), "ends", "ends"),
@@ -293,7 +293,7 @@ public static partial class CalcDiagrams
                 new DiagramLabel("wire", new(100, 80), "d", "d"),
                 new DiagramLabel("mean-diameter", new(180, 80), "D", "D"),
                 new DiagramLabel("initial-tension", new(170, 136), "F_0", "F_0"),
-                new DiagramPointLoad("load-1", new(16, 110), DiagramDirection.Left, 44, "F_1", "F_1", new(40, 60)),
+                new DiagramPointLoad("load-1", new(16, 110), DiagramDirection.Left, 44, "F_1", "F_1", new(52, 60)),
                 new DiagramPointLoad("load-2", new(310, 110), DiagramDirection.Right, 36, "F_2", "F_2", new(250, 60)),
                 .. Material(new(320, 36), new(335, 60), new(335, 84), new(335, 164), new(335, 188), new(335, 212), new(335, 232)),
             ]),
@@ -315,7 +315,7 @@ public static partial class CalcDiagrams
     private static CalculationDiagramSpec WeldGroup() =>
         new(WeldGroupCalculator.Id,
         [
-            new DiagramVariant("A fillet-weld group in plan (two lines drawn; the welds as listed), x and y from one origin, under forces and moments at (e_x, e_y); beside it, the weld section with leg s", Always,
+            new DiagramVariant("A fillet-weld group in plan (two lines drawn; the welds as listed), x and y from one origin, under forces and moments at (e_x, e_y), + as drawn; beside it, the weld section with leg s", Always,
             [
                 new DiagramMember("x-axis", new(40, 200), new(300, 200), 1),
                 new DiagramLabel("x-note", new(312, 200), Symbol: "x"),

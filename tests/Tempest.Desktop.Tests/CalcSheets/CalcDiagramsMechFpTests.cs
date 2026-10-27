@@ -81,6 +81,7 @@ public sealed class CalcDiagramsMechFpTests
         Assert.StartsWith("A four-bar linkage", fourBar.Variant.Caption, StringComparison.Ordinal);
         Assert.Equal("L1 = 120 mm", fourBar.LabelFor("L1"));
         Assert.Equal("n_in = 120 rpm", fourBar.LabelFor("n_in"));
+        Assert.Equal("load_dir = " + MechanismCalculator.Opposes, fourBar.LabelFor("load_dir"));
         Assert.Contains(fourBar.Shapes, s => s.Element is DiagramMember { InputName: "L4" });
 
         var slider = Read(MechanismCalculator.Id, CalcInputValue.Choice("mode", MechanismCalculator.SliderCrank));
