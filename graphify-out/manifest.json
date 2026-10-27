@@ -7014,9 +7014,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Documents/DocumentTemplate.cs": {
-    "mtime": 1793133289.559542,
-    "seen": 1793138208.7489023,
-    "ast_hash": "cc8498dd3b82820cc01d31cd37eb9feb",
+    "mtime": 1793139686.6219046,
+    "seen": 1793145541.638424,
+    "ast_hash": "5f3b1b0afb921501977a5afbbb7da01f",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Documents/DrawingRegisters/DrawingRegisterDocumentRenderer.cs": {
@@ -11400,9 +11400,9 @@
     "semantic_hash": "98a610c8be19fde441ddd0b0f78211c7"
   },
   "tests/Tempest.Core.Tests/Invoicing/Connectors/OAuthAuthoriserTests.cs": {
-    "mtime": 1793133276.7604868,
-    "seen": 1793138208.7508788,
-    "ast_hash": "db3284b55c831a7000a8f37eb56f19c2",
+    "mtime": 1793139686.6219046,
+    "seen": 1793145541.6436372,
+    "ast_hash": "e46545fc7c549c0330f5f0371b1f6418",
     "semantic_hash": ""
   },
   "tests/Tempest.Core.Tests/Invoicing/Connectors/QuickBooksOnlineConnectorAccountsTests.cs": {
@@ -31830,9 +31830,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/CalcSheets/CalcSheetView.cs": {
-    "mtime": 1793133289.5561616,
-    "seen": 1793138208.7488203,
-    "ast_hash": "ba9ec574e080e7f81fbaf60e9c212046",
+    "mtime": 1793139707.9424622,
+    "seen": 1793145541.6381912,
+    "ast_hash": "91c6512226a531d416209a6bbd8f6419",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Documents/TrueTypeSubsetter.cs": {
@@ -32274,9 +32274,9 @@
     "semantic_hash": ""
   },
   "docs/decisions/v0.26.0-DECISIONS.md": {
-    "mtime": 1793133289.2701766,
-    "seen": 1793138208.7548149,
-    "ast_hash": "bf209c2c4b0ca0e24716195902d28a99",
+    "mtime": 1793139686.5928679,
+    "seen": 1793145541.654699,
+    "ast_hash": "e35843dc46a0a54e61cfa1f3626e2078",
     "semantic_hash": ""
   },
   "docs/handover/v0.26.0-handover.md": {
@@ -33018,15 +33018,15 @@
     "semantic_hash": ""
   },
   "docs/worked-examples/structural/struct.en1993-member/ub-beam-bending-shear/sheet.pdf": {
-    "mtime": 1793133843.0085204,
-    "seen": 1793138208.7564754,
-    "ast_hash": "5e2dd2c7939f03656e4d44fc4c1233b0",
+    "mtime": 1793139686.6008677,
+    "seen": 1793145541.6590889,
+    "ast_hash": "441c3591241bc28030ea9a484ff7f22c",
     "semantic_hash": ""
   },
   "docs/worked-examples/structural/struct.en1993-member/uc-column-axial-moment/sheet.pdf": {
-    "mtime": 1793133856.8925214,
-    "seen": 1793138208.7564769,
-    "ast_hash": "17ffffc03c8df131ce67cc34f8a85ced",
+    "mtime": 1793139686.604868,
+    "seen": 1793145541.6590931,
+    "ast_hash": "d9e5feec30e9c07b54572ec055f8fa17",
     "semantic_hash": ""
   },
   "docs/worked-examples/structural/struct.frame-2d/pinned-portal-gravity-wind/sheet.pdf": {
@@ -33852,9 +33852,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/CalcSheets/CalcSheetView.SavedAndPacks.cs": {
-    "mtime": 1793133289.553842,
-    "seen": 1793138208.748814,
-    "ast_hash": "bf2b855a8419ee3c7517d15350421639",
+    "mtime": 1793139686.608868,
+    "seen": 1793145541.6381779,
+    "ast_hash": "c8e47be8f31b5234aca7876f7404e278",
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Library/Chains/ChainInputs.cs": {
@@ -34626,9 +34626,9 @@
     "semantic_hash": ""
   },
   "docs/worked-examples/structural/struct.ltb-interaction/ub-457x191x98-beam-column/sheet.pdf": {
-    "mtime": 1793133861.4445217,
-    "seen": 1793138208.756509,
-    "ast_hash": "e6d44112ccce296d206e592ff3a74b62",
+    "mtime": 1793139686.608868,
+    "seen": 1793145541.6591284,
+    "ast_hash": "26225922a7e64dbf6b7a14002753a7e2",
     "semantic_hash": ""
   },
   "docs/worked-examples/building-services/bs.insulation/chilled-water-pipe-condensation/inputs.json": {
@@ -35826,9 +35826,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/CalcSheets/SymbolText.cs": {
-    "mtime": 1793133289.557205,
-    "seen": 1793138208.7488325,
-    "ast_hash": "fb58bc3b5ac3599025c51cd1e32323b1",
+    "mtime": 1793139686.6128678,
+    "seen": 1793145541.638216,
+    "ast_hash": "d5c47718c10f7b36a054b49c7a9dbf2b",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/Views/BesideOrAbovePanel.cs": {
@@ -38478,15 +38478,15 @@
     "semantic_hash": ""
   },
   "docs/worked-examples/electrical/elec.motor-start/pump-dol-500kva/sheet.pdf": {
-    "mtime": 1793133849.3085208,
-    "seen": 1793138208.756382,
-    "ast_hash": "184df1bf127d96a37ee62f89c5a30b03",
+    "mtime": 1793139686.5928679,
+    "seen": 1793145541.6588323,
+    "ast_hash": "556df424ae399580814769bb1f87ea17",
     "semantic_hash": ""
   },
   "docs/worked-examples/electrical/elec.motor-start/pump-star-delta-weak-supply/sheet.pdf": {
-    "mtime": 1793133854.8085213,
-    "seen": 1793138208.7563844,
-    "ast_hash": "8db3465f45e486ad573a939c397a0929",
+    "mtime": 1793139686.5968678,
+    "seen": 1793145541.6588387,
+    "ast_hash": "e2574ae829c59c11a6e66a73e7e8e11e",
     "semantic_hash": ""
   },
   "docs/worked-examples/electrical/elec.thermal-chain/three-stage-25W/sheet.pdf": {
@@ -38802,9 +38802,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Library/RecordImport/RecordRequirements.cs": {
-    "mtime": 1793133289.533438,
-    "seen": 1793138208.7462554,
-    "ast_hash": "59bf67f0ee52b0bec0504d6a24163318",
+    "mtime": 1793139686.608868,
+    "seen": 1793145541.6315575,
+    "ast_hash": "43a7d10d4525d902f10853b21d9beb9b",
     "semantic_hash": ""
   },
   "src/Tempest.Calc/Tempest.Calc.Library/RecordImport/RecordTemplate.cs": {
@@ -38916,9 +38916,9 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/CalcSheets/CalcSheetView.Requirements.cs": {
-    "mtime": 1793133289.553842,
-    "seen": 1793138208.7488112,
-    "ast_hash": "5d62ccf12c359e7512fafd642ebeb3f5",
+    "mtime": 1793139686.608868,
+    "seen": 1793145541.6381729,
+    "ast_hash": "53def0fec6ba2142ca5b3c86bee6deff",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/CalcSheets/CalcSheetView.SelfCheck.cs": {
@@ -40290,15 +40290,15 @@
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/CalcSheets/CalcDiagrams.Geometry.cs": {
-    "mtime": 1793133289.552028,
-    "seen": 1793138208.748786,
-    "ast_hash": "a2f79817764484117c54aaf7d023edcd",
+    "mtime": 1793139686.608868,
+    "seen": 1793145541.638121,
+    "ast_hash": "202fbbe1c884bba375b167d0bb5820f9",
     "semantic_hash": ""
   },
   "src/Tempest.Desktop/CalcSheets/CalcSheetView.Tables.cs": {
-    "mtime": 1793133289.555758,
-    "seen": 1793138208.748818,
-    "ast_hash": "f31e61f42c7c9cf9abe689e7bdca0b08",
+    "mtime": 1793139686.608868,
+    "seen": 1793145541.6381857,
+    "ast_hash": "5e81af2fc5a34abf7b146552c72b12a9",
     "semantic_hash": ""
   },
   "tests/Tempest.Calc.Tests.Calculators/Consistency/EmptySubstitutionContractTests.cs": {
@@ -40320,15 +40320,15 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/CalcSheets/CalcSheetPdfLayoutTests.cs": {
-    "mtime": 1793133289.622477,
-    "seen": 1793138208.751716,
-    "ast_hash": "871d0ef483a47e7531d756fde14cdc39",
+    "mtime": 1793139686.624868,
+    "seen": 1793145541.6457684,
+    "ast_hash": "30b4604de724c88382c47ad2d5c6e6fc",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/CalcSheets/WorksheetShotFixTests.cs": {
-    "mtime": 1793133289.6269739,
-    "seen": 1793138208.751777,
-    "ast_hash": "45c63fd6de0cd68425aef3a5e1aa78bd",
+    "mtime": 1793139686.6288679,
+    "seen": 1793145541.6460001,
+    "ast_hash": "cfa306c7a9a49c5bee3b12e7630d5532",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/CalcSheets/WorksheetStatusAreaTests.cs": {
@@ -40338,15 +40338,27 @@
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/CalcSheets/WorksheetTableEditorTests.cs": {
-    "mtime": 1793133289.6269739,
-    "seen": 1793138208.751783,
-    "ast_hash": "c3a85c069ac339a935470f2fd3ce363a",
+    "mtime": 1793139686.6288679,
+    "seen": 1793145541.6460152,
+    "ast_hash": "c73f7fd18c080b9845c1fdc35d2d59f2",
     "semantic_hash": ""
   },
   "tests/Tempest.Desktop.Tests/GuidedTest/GuidedHostEmptyNumberTests.cs": {
     "mtime": 1793133289.629878,
     "seen": 1793138208.7518966,
     "ast_hash": "8bd3f0a3aa915af21c5ad264d6d62302",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Desktop.Tests/CalcSheets/ScalarTextPlaceholderTests.cs": {
+    "mtime": 1793139716.6888697,
+    "seen": 1793145541.6458764,
+    "ast_hash": "4079f73538dcd68d16b1b63f6b3df751",
+    "semantic_hash": ""
+  },
+  "tests/Tempest.Desktop.Tests/CalcSheets/WorksheetShotFixReviewTests.cs": {
+    "mtime": 1793139686.624868,
+    "seen": 1793145541.6459954,
+    "ast_hash": "c956c8301d497a1db6a4fb3c2246b551",
     "semantic_hash": ""
   }
 }
