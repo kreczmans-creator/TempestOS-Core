@@ -3,6 +3,7 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 using Tempest.Calc.Library;
 using Tempest.Calc.Sheets;
@@ -244,5 +245,45 @@ public sealed class WorksheetShotFixTests
         Assert.Equal("mech.lifting-lug", lifting.SelectedTemplate?.Template.Id);
         Assert.True(lifting.IsGovernancePanelVisible);
         Assert.True(lifting.IsGovernanceSectionVisible);
+    }
+    [AvaloniaFact]
+    public void Item10_Repeated_Warnings_Of_One_Kind_Are_One_Collapsed_Notice_With_A_Count()
+    {
+        var (view, _) = Shown();
+        var symbols = Enumerable.Range(1, 14).Select(i => $"k_{i}").ToList();
+        var notices = symbols.Select(s => new CalcNotice("record." + s, CalcNoticeSeverity.Warning, $"{s}: a tabulated value not taken from a reference record (Lifting factors); enter it as one.")).ToList();
+        notices.Add(new CalcNotice("high-stress", CalcNoticeSeverity.Warning, "u: the stress is above 80 % of the allowable."));
+        view.ShowRun(new CalcRunResult([], [], [], notices, [], []));
+
+        var group = Assert.Single(view.GetLogicalDescendants().OfType<Expander>(), e => AutomationProperties.GetName(e) == CalcSheetView.WarningGroupName);
+        Assert.False(group.IsExpanded);
+        Assert.StartsWith("Warning — 14 inputs hold a tabulated value not taken from a reference record (k_1, k_2", SymbolText.Raw((TextBlock)group.Header!), StringComparison.Ordinal);
+        Assert.Equal(14, ((StackPanel)group.Content!).Children.Count);
+
+        // A warning that stands alone is still a line of its own.
+        Assert.Contains(view.GetLogicalDescendants().OfType<TextBlock>(), t => SymbolText.Raw(t) == "Warning — u: the stress is above 80 % of the allowable.");
+
+        // Two of a kind stay as two lines.
+        view.ShowRun(new CalcRunResult([], [], [], notices.Take(2).ToList(), [], []));
+        Assert.DoesNotContain(view.GetLogicalDescendants().OfType<Expander>(), e => AutomationProperties.GetName(e) == CalcSheetView.WarningGroupName);
+    }
+
+    [AvaloniaFact]
+    public void Item11_A_Long_Choice_Is_Shown_Whole_In_Its_Picker()
+    {
+        var view = Live("fp.oring-gland");
+        var window = new Window { Width = 1600, Height = 1000, Content = view };
+        window.Show();
+        var spec = view.SelectedTemplate!.Template.FindInput("face_p")!;
+        var longest = spec.Choices!.MaxBy(c => c.Length)!;
+        view.SetField("face_p", choice: longest);
+        window.UpdateLayout();
+
+        var picker = (ComboBox)view.FieldControl("face_p")!;
+        var shown = picker.GetVisualDescendants().OfType<TextBlock>().Single(t => AutomationProperties.GetName(t) == CalcSheetView.ChoiceTextName);
+        Assert.Equal(longest, shown.Text);
+        Assert.Equal(TextWrapping.Wrap, shown.TextWrapping);
+        Assert.True(shown.Bounds.Width <= picker.Bounds.Width, $"the choice is {shown.Bounds.Width} px in a {picker.Bounds.Width} px picker");
+        Assert.Equal(longest, view.ReadForm().Find("face_p")!.Text);
     }
 }

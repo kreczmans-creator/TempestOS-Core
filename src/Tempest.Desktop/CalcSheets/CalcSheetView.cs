@@ -899,8 +899,22 @@ public sealed partial class CalcSheetView : UserControl
         foreach (var n in result.Blocks)
             _notices.Children.Add(Typeset(new TextBlock { Foreground = Brushes.IndianRed, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, $"Block — {n.Message}"));
 
-        foreach (var n in result.EngineeringWarnings)
-            _notices.Children.Add(Typeset(new TextBlock { Foreground = Brushes.DarkOrange, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, $"Warning — {n.Message}"));
+        // Warnings of one kind (fourteen "a tabulated value not taken from a reference record") are one collapsed notice with a count, so they do
+        // not push Show working and the sign-off below the fold; a warning that stands alone is shown as before.
+        foreach (var group in result.EngineeringWarnings.GroupBy(n => WarningKind(n.RuleId), StringComparer.Ordinal))
+        {
+            var warnings = group.ToList();
+
+            if (warnings.Count < GroupWarningsFrom)
+            {
+                foreach (var n in warnings)
+                    _notices.Children.Add(Typeset(new TextBlock { Foreground = Brushes.DarkOrange, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, $"Warning — {n.Message}"));
+
+                continue;
+            }
+
+            _notices.Children.Add(WarningGroup(group.Key, warnings));
+        }
 
         // C-2, row 4: the notes that an empty input took its default are listed apart from the warnings, in a quieter colour.
         foreach (var n in result.DefaultNotices)
@@ -1290,7 +1304,8 @@ public sealed partial class CalcSheetView : UserControl
 
             case CalcInputKind.Choice:
             {
-                choice = new ComboBox { MinHeight = DesignTokens.MinControlSize, HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = spec.Choices ?? [] };
+                // A long choice ("External (ring ID seated on the groove ...)") wraps inside the picker and in its list, instead of being cut at the edge.
+                choice = new ComboBox { MinHeight = DesignTokens.MinControlSize, HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = spec.Choices ?? [], ItemTemplate = WrappingChoice };
                 choice.SelectedItem = seed?.Text ?? spec.DefaultChoice;
                 choice.SelectionChanged += (_, _) => RaiseInputsChanged();
                 AutomationProperties.SetName(choice, spec.Symbol);
@@ -1345,6 +1360,17 @@ public sealed partial class CalcSheetView : UserControl
         SetEnabled(controls, !IsReadOnly);
         return block;
     }
+
+    /// <summary>The automation name of the text a choice picker shows for a choice.</summary>
+    public const string ChoiceTextName = "Choice text";
+
+    /// <summary>A choice as a picker draws it: the whole text, wrapped to the picker's width.</summary>
+    private static readonly Avalonia.Controls.Templates.FuncDataTemplate<string> WrappingChoice = new((text, _) =>
+    {
+        var block = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
+        AutomationProperties.SetName(block, ChoiceTextName);
+        return block;
+    }, supportsRecycling: false);
 
     /// <summary>A unit change converts the value so the physical quantity is unchanged (§3.8a: values convert on change; the engine stores SI).</summary>
     private void OnUnitChanged(string symbol)
@@ -1599,6 +1625,34 @@ public sealed partial class CalcSheetView : UserControl
         row.Children.Add(text);
         row.Children.Add(control);
         return row;
+    }
+
+    /// <summary>This many warnings of one kind or more are shown as one collapsed notice with a count.</summary>
+    public const int GroupWarningsFrom = 3;
+
+    /// <summary>The kind a warning is grouped by: the rule, with a per-input rule ("record.mu") taken as its family ("record").</summary>
+    internal static string WarningKind(string ruleId) =>
+        ruleId.StartsWith("record.", StringComparison.Ordinal) ? "record" : ruleId;
+
+    /// <summary>The heading of a group of warnings of one kind.</summary>
+    internal static string WarningGroupHeading(string kind, IReadOnlyList<CalcNotice> warnings) => kind == "record"
+        ? $"Warning — {warnings.Count} inputs hold a tabulated value not taken from a reference record ({string.Join(", ", warnings.Select(w => w.RuleId["record.".Length..]).Take(8))}{(warnings.Count > 8 ? ", …" : string.Empty)})."
+        : $"Warning — {warnings.Count} warnings of one kind: {warnings[0].Message}";
+
+    /// <summary>The automation name of a group of warnings.</summary>
+    public const string WarningGroupName = "Grouped warnings";
+
+    private static Control WarningGroup(string kind, IReadOnlyList<CalcNotice> warnings)
+    {
+        var list = new StackPanel { Spacing = DesignTokens.SpaceXs };
+
+        foreach (var n in warnings)
+            list.Children.Add(Typeset(new TextBlock { Foreground = Brushes.DarkOrange, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, $"Warning — {n.Message}"));
+
+        var heading = Typeset(new TextBlock { Foreground = Brushes.DarkOrange, TextWrapping = TextWrapping.Wrap, FontSize = DesignTokens.FontSizeBody }, WarningGroupHeading(kind, warnings));
+        var expander = new Expander { Header = heading, IsExpanded = false, Content = list, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch };
+        AutomationProperties.SetName(expander, WarningGroupName);
+        return expander;
     }
 
     /// <summary>Text longer than this is not squeezed into the value column: it takes a row of its own across the panel.</summary>
