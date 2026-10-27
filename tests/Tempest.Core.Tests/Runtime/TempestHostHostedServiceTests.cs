@@ -8,16 +8,13 @@ namespace Tempest.Core.Tests.Runtime;
 // Initialisation and stops before Module Disposal, through the real,
 // unmodified TempestHost - no test-only wiring, no mock IHostedServiceManager.
 //
-// Deliberately does not use HostedServiceCallLog (BackgroundServices'
-// own shared, static call log) - that log is used only within
-// HostedServiceManagerTests' own single class, where xUnit's default
-// "sequential within a class" behaviour already makes it safe. Sharing it
-// here too, across two separate test classes that xUnit may run
-// concurrently by default, would reintroduce exactly the cross-test-class
-// static-state race already found and fixed once for SdkLifecycleLog - each
-// test attaches its own private RecordingLogSink (WP 17.0C) rather than
-// redirecting the process-global Console.Out, so no cross-class collection
-// is needed at all.
+// Asserts on its own private RecordingLogSink (WP 17.0C), never on
+// HostedServiceCallLog. But the fixtures it starts (AlphaHostedService and its
+// siblings) write to that static log as they start and stop, and
+// HostedServiceManagerTests asserts on the log's exact entries (a count,
+// an order, empty), so the two classes share HostedServiceCallLogCollection
+// and never run at the same time.
+[Collection(HostedServiceCallLogCollection.Name)]
 public class TempestHostHostedServiceTests
 {
     private static ITempestHostBuilder BuilderWithHostedServices(params Type[] hostedServiceTypes) =>
