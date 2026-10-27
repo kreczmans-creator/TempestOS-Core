@@ -247,6 +247,48 @@ public sealed class SoakHarnessTests
         Assert.Empty(SoakRunner.Evaluate([Pass(seconds: 10), Pass(seconds: 10 * SoakRunner.SlowdownFactor + 4.9)]));
     }
 
+    /// <summary>
+    /// Run 40492489380 (Debug, Windows): the chains' second pass took 8.9 s against 1.3 s, the same work (measured phase by phase on Linux, 0.73 s and 0.63 s)
+    /// with a stall of the machine in it. A second pass over the limit now asks for a third, and only a third still over the same limit is a slowdown.
+    /// </summary>
+    [Fact]
+    public void A_Second_Pass_Over_The_Time_Limit_Asks_For_A_Third_And_Only_A_Third_Still_Over_The_Same_Limit_Is_A_Slowdown()
+    {
+        static bool Slowdown(string finding) => finding.StartsWith("SLOWDOWN", StringComparison.Ordinal);
+
+        // The limit itself is unchanged: twice the first pass plus five seconds.
+        Assert.Equal(1.3 * SoakRunner.SlowdownFactor + 5, SoakRunner.SlowdownLimitSeconds(Pass(seconds: 1.3)), 9);
+        Assert.Equal(2.0, SoakRunner.SlowdownFactor);
+        Assert.Equal(5.0, SoakRunner.SlowdownSlackSeconds);
+
+        Assert.True(SoakRunner.NeedsThirdPass([Pass(seconds: 1.3), Pass(seconds: 8.9)]));
+        Assert.False(SoakRunner.NeedsThirdPass([Pass(seconds: 1.3), Pass(seconds: 7.5)]));
+
+        // A stall that is gone in the third pass is not a slowdown; one that is still there is, and the finding names every pass.
+        Assert.DoesNotContain(SoakRunner.Evaluate([Pass(seconds: 1.3), Pass(seconds: 8.9), Pass(seconds: 1.2)]), Slowdown);
+        var stayed = SoakRunner.Evaluate([Pass(seconds: 1.3), Pass(seconds: 8.9), Pass(seconds: 9.5)]);
+        Assert.Contains(stayed, f => Slowdown(f) && f.Contains("pass 3 took 9.5 s against 1.3 s", StringComparison.Ordinal) && f.Contains("1.3, 8.9, 9.5 s", StringComparison.Ordinal));
+
+        // The third pass is judged against the same limit, to the tenth of a second either side.
+        Assert.Contains(SoakRunner.Evaluate([Pass(seconds: 10), Pass(seconds: 60), Pass(seconds: 10 * SoakRunner.SlowdownFactor + 5.1)]), Slowdown);
+        Assert.DoesNotContain(SoakRunner.Evaluate([Pass(seconds: 10), Pass(seconds: 60), Pass(seconds: 10 * SoakRunner.SlowdownFactor + 4.9)]), Slowdown);
+
+        // A third pass run for the heap is judged on its time too: slow there is a slowdown though the second pass was within the limit.
+        const long mib = 1024 * 1024;
+        Assert.Contains(SoakRunner.Evaluate([Pass(seconds: 1.3, heapAfterDispose: 40 * mib), Pass(seconds: 2, heapAfterDispose: 50 * mib), Pass(seconds: 9.5, heapAfterDispose: 50 * mib)]), Slowdown);
+
+        // The report says why the third pass was run and what it showed.
+        var scenario = SoakScenarios.All[1];
+        var outcome = new SoakOutcome();
+        SoakRun Run(params SoakPass[] passes) => new() { Scenario = scenario, Scale = SoakScale.Ci, Passes = passes, Outcomes = [.. passes.Select(_ => outcome)], LeakFindings = SoakRunner.Evaluate(passes) };
+        var context = new SoakReportContext("abc123", "branch", new DateTimeOffset(2026, 10, 27, 12, 0, 0, TimeSpan.Zero), "a machine", 1);
+        var gone = SoakReport.Render([Run(Pass(seconds: 1.3), Pass(seconds: 8.9), Pass(seconds: 1.2))], SoakScale.Ci, context, null);
+        Assert.Contains("A third pass was run because pass 2 took 8.9 s, over the 7.6 s that pass 1 (1.3 s) allows. Pass 3 took 1.2 s, so the scenario did not stay slow", gone, StringComparison.Ordinal);
+        Assert.DoesNotContain("left the heap", gone, StringComparison.Ordinal);
+        var slow = SoakReport.Render([Run(Pass(seconds: 1.3), Pass(seconds: 8.9), Pass(seconds: 9.5))], SoakScale.Ci, context, null);
+        Assert.Contains("Pass 3 took 9.5 s, so the scenario **stayed slow**", slow, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void An_Outcome_Keeps_Every_Failure_Up_To_Its_Cap_And_Counts_The_Rest()
     {

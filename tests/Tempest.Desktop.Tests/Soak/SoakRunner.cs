@@ -95,16 +95,34 @@ internal static class SoakRunner
     /// <summary>How many more handles the process may hold once the host is disposed than before it was built (the runtime opens a few lazily: epoll, timers).</summary>
     public const int HandleSlack = 3;
 
-    /// <summary>How much slower the second pass may be than the first (plus a few seconds of noise): no scenario may degrade with use.</summary>
+    /// <summary>How much slower the second pass may be than the first (plus <see cref="SlowdownSlackSeconds"/> of noise): no scenario may degrade with use.</summary>
     public const double SlowdownFactor = 2.0;
+
+    /// <summary>The seconds of noise a later pass may take on top of <see cref="SlowdownFactor"/> times the first pass's time.</summary>
+    public const double SlowdownSlackSeconds = 5;
+
+    /// <summary>The longest a pass after the first may take: <see cref="SlowdownFactor"/> times the first pass's time plus <see cref="SlowdownSlackSeconds"/>.</summary>
+    public static double SlowdownLimitSeconds(SoakPass first) => first.Seconds * SlowdownFactor + SlowdownSlackSeconds;
+
+    /// <summary>
+    /// Whether the last of <paramref name="passes"/> took longer than the first allows (<see cref="SlowdownLimitSeconds"/>). The last pass is the one judged:
+    /// a scenario that degrades with use is at least as slow in a third pass as in the second, while a stall of the machine that lands in one pass (a disk
+    /// flush or a scan of a new file on a shared runner, many seconds against a pass of about one) is not there in the next. So a second pass over the limit
+    /// is followed by a third (<see cref="RunAsync"/>), and only a third over the same limit is a finding.
+    /// </summary>
+    public static bool SlowedDown(IReadOnlyList<SoakPass> passes) => passes[^1].Seconds > SlowdownLimitSeconds(passes[0]);
+
+    /// <summary>Whether a third pass is needed to judge the first two: the heap stepped up (<see cref="HeapSteppedUp"/>) or the second pass was over the time limit (<see cref="SlowedDown"/>).</summary>
+    public static bool NeedsThirdPass(IReadOnlyList<SoakPass> passes) => HeapSteppedUp(passes, HeapGrowthBoundBytes) || SlowedDown(passes);
 
     public static async Task<SoakRun> RunAsync(SoakScenario scenario, SoakScale scale, CancellationToken cancellationToken = default)
     {
         var passes = new List<SoakPass>();
         var outcomes = new List<SoakOutcome>();
 
-        // Two passes, always. A third is run only when the second left the settled heap higher than the first by more than the bound: a leak keeps
-        // growing from pass to pass, while a one-off step (a pooled buffer kept for a while, a cache filled once) does not, and the third pass tells them apart.
+        // Two passes, always. A third is run only when the second left the settled heap higher than the first by more than the bound, or took longer than
+        // the first allows: a leak keeps growing from pass to pass and a scenario that degrades with use stays slow, while a one-off step (a pooled buffer
+        // kept for a while, a cache filled once) or a one-off stall of the machine does not, and the third pass tells them apart.
         for (var pass = 1; pass <= 3; pass++)
         {
             SoakScale.Progress($"{scenario.Id}: pass {pass} starts");
@@ -113,7 +131,7 @@ internal static class SoakRunner
             outcomes.Add(outcome);
             SoakScale.Progress($"{scenario.Id}: pass {pass} done in {measured.Seconds:0.0} s, {outcome.FailureCount} failure(s)");
 
-            if (pass == 2 && !HeapSteppedUp(passes, HeapGrowthBoundBytes))
+            if (pass == 2 && !NeedsThirdPass(passes))
                 break;
         }
 
@@ -176,8 +194,12 @@ internal static class SoakRunner
                 findings.Add($"LEAK: pass {number} grew the database's open handles (SQLite connections) from {pass.SqliteHandlesBefore} to {pass.SqliteHandlesAfter}.");
         }
 
-        if (passes[1].Seconds > first.Seconds * SlowdownFactor + 5)
-            findings.Add($"SLOWDOWN: the second pass took {passes[1].Seconds:0.0} s against {first.Seconds:0.0} s for the first (limit {SlowdownFactor:0.#} × + 5 s).");
+        if (SlowedDown(passes))
+        {
+            findings.Add(passes.Count > 2
+                ? FormattableString.Invariant($"SLOWDOWN: pass {passes.Count} took {passes[^1].Seconds:0.0} s against {first.Seconds:0.0} s for the first (limit {SlowdownFactor:0.#} × + {SlowdownSlackSeconds:0} s); the passes took {string.Join(", ", passes.Select(p => p.Seconds.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)))} s.")
+                : $"SLOWDOWN: the second pass took {passes[1].Seconds:0.0} s against {first.Seconds:0.0} s for the first (limit {SlowdownFactor:0.#} × + {SlowdownSlackSeconds:0} s).");
+        }
 
         return findings;
     }
