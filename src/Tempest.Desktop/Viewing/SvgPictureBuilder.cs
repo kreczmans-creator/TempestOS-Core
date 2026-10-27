@@ -51,7 +51,9 @@ public static class SvgPictureBuilder
     public const int MaxNesting = 256;
     public const int MaxImageBytes = 16 * 1024 * 1024;
     public const int MaxImageEdge = 4096;
-    public const long MaxDocumentCharacters = 64L * 1024 * 1024;
+
+    /// <summary>The longest document read (F11): 16M characters, under the 25 MB attachment cap so that it binds, since the tree takes about twenty times the file.</summary>
+    public const long MaxDocumentCharacters = 16L * 1024 * 1024;
 
     /// <summary>The most stops a gradient contributes (F2): no drawn gradient has more, and a stop list is parsed into every shader that uses it.</summary>
     public const int MaxGradientStops = 64;
@@ -97,6 +99,7 @@ public static class SvgPictureBuilder
         public int Elements { get; init; } = MaxElements;
         public int Nesting { get; init; } = MaxNesting;
         public long Nodes { get; init; } = MaxNodes;
+        public long DocumentCharacters { get; init; } = MaxDocumentCharacters;
         public int GradientStops { get; init; } = MaxGradientStops;
         public int Dashes { get; init; } = MaxDashes;
         public int ImageEdge { get; init; } = MaxImageEdge;
@@ -175,7 +178,7 @@ public static class SvgPictureBuilder
             IgnoreComments = true,
             IgnoreProcessingInstructions = true,
             IgnoreWhitespace = false,
-            MaxCharactersInDocument = MaxDocumentCharacters,
+            MaxCharactersInDocument = limits.DocumentCharacters,
             MaxCharactersFromEntities = 0,
         };
 

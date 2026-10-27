@@ -329,7 +329,12 @@ public sealed class AttachmentViewerLauncher
         Func<CancellationToken, IDocumentPageSource?> create, CancellationToken cancellationToken)
     {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        deadline.CancelAfter(ReadDeadline);
+
+        // A deadline of nothing allows no time at all, now rather than on a timer thread a moment later (a test's immediate deadline is deterministic).
+        if (ReadDeadline <= TimeSpan.Zero)
+            deadline.Cancel();
+        else
+            deadline.CancelAfter(ReadDeadline);
 
         try
         {

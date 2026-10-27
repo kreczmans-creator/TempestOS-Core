@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Text;
+using System.Xml;
 using Avalonia.Headless.XUnit;
 using SkiaSharp;
 using Tempest.Desktop.Viewing;
@@ -265,6 +266,20 @@ public sealed class SvgHostileInputTests
         watch.Stop();
         Assert.Contains("deeper than 256 levels", ex.Message, StringComparison.Ordinal);
         Assert.True(watch.Elapsed < Budget, $"refusing took {watch.Elapsed.TotalSeconds:F2} s.");
+    }
+
+    [AvaloniaFact]
+    public void A_Document_Longer_Than_The_Character_Cap_Is_Refused_By_The_Reader()
+    {
+        // 16M characters: the DOM takes about twenty times the file, so the 64M cap of before (above the 25 MB attachment cap) never bound.
+        Assert.Equal(16L * 1024 * 1024, SvgPictureBuilder.MaxDocumentCharacters);
+        var limits = SvgPictureBuilder.Limits.Default with { DocumentCharacters = 2_000 };
+        var markup = Svg(string.Concat(Enumerable.Repeat("<rect width=\"5\" height=\"5\"/>", 100)));
+        Assert.True(markup.Length > 2_000);
+
+        Assert.Throws<XmlException>(() => SvgPictureBuilder.Build(markup, CancellationToken.None, limits));
+        using var picture = SvgPictureBuilder.Build(markup, CancellationToken.None, limits with { DocumentCharacters = 10_000 });
+        Assert.Equal(new SKColor(0, 0, 0), PixelAt(picture, 2, 2));
     }
 
     [AvaloniaFact]
