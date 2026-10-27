@@ -19,6 +19,9 @@ public sealed record ImportedFile(string FileName, byte[] Bytes, string Sha256)
 public static class BoundedInputReader
 {
     private const int ChunkBytes = 64 * 1024;
+
+    /// <summary>How long a cancelled read waits for its worker to close the file before the cancellation is passed on.</summary>
+    private static readonly TimeSpan WorkerCloseWait = TimeSpan.FromSeconds(1);
     private static readonly UTF8Encoding Strict = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
     /// <summary>Reads <paramref name="stream"/> to the end or to the cap, whichever comes first; past the cap the file is refused.</summary>
@@ -83,9 +86,11 @@ public static class BoundedInputReader
         var full = ImportPath.CanonicaliseExistingFile(path, requiredRoot);
         var leaf = ImportPath.SafeLeafName(full);
 
-        // The token the worker reads under is its own, cancelled at the limit; the caller's cancellation and the limit are both applied
-        // to the wait, so a worker stuck inside open() cannot hold the caller.
-        var workerStop = new CancellationTokenSource(limits.Timeout);
+        // The token the worker reads under is its own, cancelled at the limit or by the caller; the caller's cancellation and the limit
+        // are both applied to the wait, so a worker stuck inside open() cannot hold the caller.
+        var workerStop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        workerStop.CancelAfter(limits.Timeout);
+        var stopToken = workerStop.Token;
 
         var worker = Task.Run(
             async () =>
@@ -97,10 +102,13 @@ public static class BoundedInputReader
                     if (!stream.CanSeek)
                         throw new ImportRefusedException(ImportRefusalCode.UnsafePath, "Only a regular file is read; a pipe or a device is not.");
 
-                    return await ReadAsync(stream, leaf, limits, workerStop.Token).ConfigureAwait(false);
+                    return await ReadAsync(stream, leaf, limits, stopToken).ConfigureAwait(false);
                 }
             },
             CancellationToken.None);
+
+        // The source is disposed when the worker ends, not when this method returns: a worker still inside open() holds its token.
+        _ = worker.ContinueWith(static (_, source) => ((CancellationTokenSource)source!).Dispose(), workerStop, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 
         try
         {
@@ -108,12 +116,21 @@ public static class BoundedInputReader
         }
         catch (TimeoutException)
         {
-            await workerStop.CancelAsync().ConfigureAwait(false);
+            await StopWorkerAsync(workerStop).ConfigureAwait(false);
             throw new ImportRefusedException(ImportRefusalCode.Timeout, $"Opening or reading the file took longer than {limits.Timeout.TotalSeconds:0.#} seconds, so it was stopped.");
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             throw new ImportRefusedException(ImportRefusalCode.Timeout, $"Opening or reading the file took longer than {limits.Timeout.TotalSeconds:0.#} seconds, so it was stopped.");
+        }
+        catch (OperationCanceledException)
+        {
+            // The caller cancelled. Stop the worker and give it a short, bounded time to close the file, so the file is not
+            // left open behind the caller (Windows refuses to delete or rewrite a file another handle still holds).
+            await StopWorkerAsync(workerStop).ConfigureAwait(false);
+            await Task.WhenAny(worker, Task.Delay(WorkerCloseWait, CancellationToken.None)).ConfigureAwait(false);
+            _ = worker.Exception;
+            throw;
         }
         catch (IOException e)
         {
@@ -122,6 +139,18 @@ public static class BoundedInputReader
         catch (UnauthorizedAccessException)
         {
             throw new ImportRefusedException(ImportRefusalCode.UnsafePath, "The file could not be opened (access denied, or it is not a file).");
+        }
+    }
+
+    // The worker disposes the source when it ends, so a stop that comes after the end finds it disposed: there is nothing left to stop.
+    private static async Task StopWorkerAsync(CancellationTokenSource workerStop)
+    {
+        try
+        {
+            await workerStop.CancelAsync().ConfigureAwait(false);
+        }
+        catch (ObjectDisposedException)
+        {
         }
     }
 
