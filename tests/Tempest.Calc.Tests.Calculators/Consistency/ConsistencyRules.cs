@@ -241,9 +241,12 @@ internal static partial class ConsistencyRules
         }),
 
         // J. Clause references
-        new("J51-standard-designation", "J", "51", "A standard is written in full with its year, and the same everywhere.", f => f.Template.ClauseRefs.Where(c => IsStandard(c.Standard) && !Regex.IsMatch(c.Standard, @"^(BS )?(EN|ISO|IEC|IEC TR|IPC)[ \d].*:\d{4}") || Regex.IsMatch(c.Standard, @"^EN ")).Select(c => $"'{c.Standard}'").Distinct()),
-        new("J52-clause-locator", "J", "52", "A locator is 'cl. x', 'reg. x', 'Ch. n', '§x' or 'Table n', never a bare number.", f =>
-            f.Template.ClauseRefs.Where(c => c.Clause.Length > 0 && c.Clause != "—" && !Regex.IsMatch(c.Clause, @"^(cl\.|reg\.|Ch\.|§|Table |Fig\.|Annex |App\.)")).Select(c => $"{c.Standard} '{c.Clause}'")),
+        new("J51-standard-designation", "J", "51", "A standard is written in full with its year, and the same everywhere.", f =>
+            f.Template.ClauseRefs.Where(c => IsStandard(c.Standard) && !Designation().IsMatch(c.Standard) || Regex.IsMatch(c.Standard, @"^EN ")).Select(c => $"'{c.Standard}'")
+                .Concat(f.Template.ClauseRefs.Where(c => IsStandard(c.Standard) && UsualSpelling(c.Standard) is { } usual && !string.Equals(usual, c.Standard, StringComparison.Ordinal)).Select(c => $"'{c.Standard}' is written '{UsualSpelling(c.Standard)}' elsewhere in the catalogue"))
+                .Distinct()),
+        new("J52-clause-locator", "J", "52", "A locator is 'cl. x', 'reg. x' (BS 7671 only), 'Ch. n', '§x' or 'Table n', with the edition before or after it, never a bare number.", f =>
+            f.Template.ClauseRefs.Where(c => c.Clause.Length > 0 && c.Clause != "—" && (Locator().Match(c.Clause) is not { Success: true } m || m.Groups["kind"].Value == "reg." && !c.Standard.StartsWith("BS 7671", StringComparison.Ordinal))).Select(c => $"{c.Standard} '{c.Clause}'")),
         new("J53-book-citations", "J", "53", "A book is '<Author>, <Title>' with its edition in the locator.", f =>
             f.Template.ClauseRefs.Where(c => !IsStandard(c.Standard) && !(Regex.IsMatch(c.Standard, @"^[^,]+, .+") && Regex.IsMatch(c.Clause, @"\d+(st|nd|rd|th) ed\."))).Select(c => $"'{c.Standard}' / '{c.Clause}'")),
         new("J54-no-notes-in-reference-titles", "J", "54", "A reference title holds no licence note and no brand name.", f =>
@@ -281,7 +284,37 @@ internal static partial class ConsistencyRules
 
     private static string Cut(string text) => text.Length <= 90 ? text : text[..90] + "…";
 
-    private static bool IsStandard(string standard) => Regex.IsMatch(standard, @"^(BS |DIN )?(EN|ISO|IEC|IPC|ASME|VDI|JEDEC|API)\b|^BS \d");
+    private static bool IsStandard(string standard) => Regex.IsMatch(standard, @"^(BS |DIN )?(EN|ISO|IEC|IPC|ASME|VDI|JEDEC|API)\b|^(BS|DIN) \d");
+
+    /// <summary>
+    /// A designation written in full: the prefixes <see cref="IsStandard"/> admits (after an optional BS or DIN adoption), the number (with a part, a letter,
+    /// a "/TS" or a "Part n"), then a colon-or-dash year and any amendments ("BS EN 1993-1-1:2005+A1:2014", "ASME B31.3-2022", "IPC-2221B:2012",
+    /// "IEC TR 60890:2022", "VDI 2230 Part 1:2015"); or a national standard by number ("BS 7671:2018").
+    /// </summary>
+    [GeneratedRegex(@"^(BS |DIN )?(EN|ISO|IEC( TR)?|IPC|ASME|VDI|JEDEC|API)[ \-/]?\S.*[:\-]\d{4}|^(BS|DIN) \d+(-\d+)?:\d{4}")]
+    private static partial Regex Designation();
+
+    /// <summary>"cl. 6.2.3", "11th ed., Ch. 11", "Table 8.1, 8th ed.", "reg. 525": an optional edition, then a locator of a kind the standard allows.</summary>
+    [GeneratedRegex(@"^(\d+(st|nd|rd|th) ed\.(, )?)?(?<kind>cl\.|reg\.|Ch\.|§|Table |Fig\.|Annex |App\.)")]
+    private static partial Regex Locator();
+
+    /// <summary>The standard's number without its adoption prefix, year, amendments or part ("EN 1993-1-1", "7671"): what two spellings of one standard share.</summary>
+    private static string StandardKey(string standard)
+    {
+        var key = Regex.Replace(standard, @"^(BS |DIN )", string.Empty);
+        key = Regex.Replace(key, @"(:\d{4}.*|-\d{4}.*| Part .*)$", string.Empty);
+        return key.Trim();
+    }
+
+    /// <summary>Every standard designation of the catalogue, by number: its spellings, the most used first.</summary>
+    private static readonly Lazy<IReadOnlyDictionary<string, IReadOnlyList<string>>> Spellings = new(() =>
+        AllCalculators.All.SelectMany(c => c.Template.ClauseRefs.Select(r => r.Standard)).Where(IsStandard)
+            .GroupBy(StandardKey, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => (IReadOnlyList<string>)[.. g.GroupBy(x => x, StringComparer.Ordinal).OrderByDescending(x => x.Count()).ThenBy(x => x.Key, StringComparer.Ordinal).Select(x => x.Key)], StringComparer.Ordinal));
+
+    /// <summary>The spelling of this standard the catalogue uses most (the first in ordinal order on a tie), or <see langword="null"/> when it is spelled one way.</summary>
+    private static string? UsualSpelling(string standard) =>
+        Spellings.Value.TryGetValue(StandardKey(standard), out var spellings) && spellings.Count > 1 ? spellings[0] : null;
 
     private static IEnumerable<string> Symbols(TemplateFacts f, string row) =>
         f.QuantityFacts.Where(q => q.Origin != "port")

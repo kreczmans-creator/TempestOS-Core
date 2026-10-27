@@ -40,22 +40,14 @@
     "struct.ltb-interaction": 2
   },
   "J51-standard-designation": {
-    "bs.pipe-expansion": 1,
-    "elec.conductor-sizing": 1,
-    "elec.containment": 1,
-    "elec.fault-protection": 1,
-    "elec.pcb-trace": 1,
-    "elec.thermal-chain": 1,
-    "elec.voltage-drop": 1,
-    "fp.cylinder": 1,
-    "mech.bolted-joint": 1,
     "mech.lifting-lug": 1,
     "mech.thin-vessel": 1,
     "mech.tolerance-stack": 2,
-    "struct.column-buckling": 1,
-    "struct.lifting": 3
+    "struct.lifting": 3,
+    "struct.ltb-interaction": 1
   },
   "J52-clause-locator": {
+    "struct.lifting": 2,
     "struct.ltb-interaction": 1
   },
   "J53-book-citations": {

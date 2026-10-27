@@ -376,7 +376,7 @@ line, label first (`Equivalent load: P = …`), at most 8 lines.
 is `cl. x` for standards, `reg. x` for BS 7671 only, `Ch. n` or `§x` for books, `Table n`; never a bare number. A book is `<Author>, <Title>` with its edition in the locator
 (`11th ed., Ch. 11`). A reference title holds no licence note (`cited, not copied`) and no brand name; a licence note is a separate field.
 
-**Good example.** `BS EN 1993-1-8:2005` / `cl. 3.6.1` / `Design resistance of bolts`; `Budynas, Shigley's Mechanical Engineering Design` / `11th ed., Ch. 11`.
+**Good example.** `BS EN 1993-1-8:2005` / `cl. 3.6.1` / `Design resistance of bolts`; `ASME B31.3-2022` / `cl. 319.4` (a dash year); `IEC TR 60890:2022`; `IPC-2221B:2012`; `BS 7671:2018` / `reg. 525`; `Budynas, Shigley's Mechanical Engineering Design` / `11th ed., Ch. 11` or `Ch. 11, 11th ed.` (the edition before or after the locator).
 
 **Enforced by** `J51-standard-designation`, `J52-clause-locator`, `J53-book-citations`, `J54-no-notes-in-reference-titles`.
 
