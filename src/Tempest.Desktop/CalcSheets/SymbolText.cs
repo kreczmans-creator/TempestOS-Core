@@ -35,8 +35,9 @@ public static partial class SymbolText
 
     // A symbol: a letter (Latin or Greek) not preceded by a letter, an underscore, a dot or '@' (so "mech.bolt_x" and
     // a reference are left alone), its letters and digits, then an optional subscript of letters and digits joined by
-    // commas or underscores, or a decimal point before a digit (R_p0.2).
-    [GeneratedRegex(@"(?<![A-Za-zΑ-Ωα-ω_.@])([A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω0-9]*)(?:_([A-Za-zΑ-Ωα-ω0-9]+(?:(?:[,_]|\.(?=[0-9]))[A-Za-zΑ-Ωα-ω0-9]+)*))?")]
+    // commas or underscores, or a decimal point before a digit (R_p0.2). ⊥ and ∥ may be a subscript too (a fillet
+    // weld's F_⊥ and F_∥; the shots review found them printed with the underscore).
+    [GeneratedRegex(@"(?<![A-Za-zΑ-Ωα-ω_.@])([A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω0-9]*)(?:_([A-Za-zΑ-Ωα-ω0-9⊥∥]+(?:(?:[,_]|\.(?=[0-9]))[A-Za-zΑ-Ωα-ω0-9⊥∥]+)*))?")]
     private static partial Regex SymbolPattern();
 
     /// <summary>The pieces of <paramref name="text"/>, its symbols typeset; one plain piece when there is nothing to set.</summary>

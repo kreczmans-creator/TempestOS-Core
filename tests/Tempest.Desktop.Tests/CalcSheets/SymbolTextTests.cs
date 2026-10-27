@@ -23,6 +23,8 @@ public sealed class SymbolTextTests
     [InlineData("h = 1.006 t + W(2501 + 1.86 t) kJ/kg_da", "h = 1.006 t + W(2501 + 1.86 t) kJ/kg[da]")]
     [InlineData("ΔT_tot = P·R_tot", "ΔT[tot] = P·R[tot]")]
     [InlineData("R_p0.2 = 640 MPa. Then F_A.", "R[p0.2] = 640 MPa. Then F[A].")]
+    [InlineData("F = √(F_∥² + F_⊥² + F_n²)", "F = √(F[∥]² + F[⊥]² + F[n]²)")] // the fillet weld's forces (shots review)
+    [InlineData("√(σ_⊥² + 3(τ_⊥² + τ_∥²))", "√(σ[⊥]² + 3(τ[⊥]² + τ[∥]²))")]
     public void A_Subscript_Follows_The_First_Underscore_And_A_Second_Reads_As_A_Comma(string text, string expected) =>
         Assert.Equal(expected, Show(text));
 

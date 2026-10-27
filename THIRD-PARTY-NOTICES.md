@@ -104,6 +104,13 @@ charge; it does not permit selling the fonts on their own. See either
 vendored `OFL-*.txt` file, or <https://openfontlicense.org>, for the full
 licence text.
 
+One more embedded face is not third-party. **Tempest Symbols**
+(`src/Tempest.Desktop/Documents/Assets/Fonts/TempestSymbols-Regular.ttf`)
+draws the few symbols no other face has, such as ⊥, ∥ and ∮. It is drawn
+for TempestOS from plain geometry by `scripts/generate-symbol-font.py`, so it
+is the project's own work under the project's own licence. The script uses
+fontTools (MIT) at generation time only; the build does not need it.
+
 ## Brand assets
 
 The horizontal ink (light-ground) Tempest wordmark lockup

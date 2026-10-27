@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text;
 using SkiaSharp;
 
 namespace Tempest.Desktop.Documents;
@@ -21,6 +22,12 @@ public enum DocumentFontRole
 
     /// <summary>Numeric/machine-data readouts, the header band's reference line — Space Mono.</summary>
     Mono,
+
+    /// <summary>
+    /// The fallback for a symbol no other face has (⊥, ∥, ∮ …): Tempest Symbols, the project's own face
+    /// (<c>scripts/generate-symbol-font.py</c>). A renderer never asks for it; <see cref="DocumentTemplate.FallBackForMissingGlyphs"/> assigns it.
+    /// </summary>
+    Symbol,
 }
 
 /// <summary>
@@ -54,6 +61,10 @@ public static class DocumentFonts
     private static readonly Lazy<SKTypeface> DisplayBoldTypeface = new(() => Load("ChakraPetch-Bold.ttf"));
     private static readonly Lazy<SKTypeface> MonoRegularTypeface = new(() => Load("SpaceMono-Regular.ttf"));
     private static readonly Lazy<SKTypeface> MonoBoldTypeface = new(() => Load("SpaceMono-Bold.ttf"));
+    private static readonly Lazy<SKTypeface> SymbolTypeface = new(() => Load(SymbolFile));
+
+    /// <summary>The fallback face's file. It is drawn for TempestOS from plain geometry, so it carries no third-party licence.</summary>
+    private const string SymbolFile = "TempestSymbols-Regular.ttf";
 
     /// <summary>
     /// Deliberately still <see cref="SKTypeface.Default"/> — <c>Inter-Variable.ttf</c>
@@ -101,8 +112,58 @@ public static class DocumentFonts
     {
         DocumentFontRole.Display => bold ? DisplayBoldTypeface.Value : DisplayRegularTypeface.Value,
         DocumentFontRole.Mono => bold ? MonoBoldTypeface.Value : MonoRegularTypeface.Value,
+        DocumentFontRole.Symbol => SymbolTypeface.Value,
         _ => BodyTypeface.Value,
     };
+
+    /// <summary>Whether the fallback face (Tempest Symbols) loaded from its embedded resource.</summary>
+    public static bool SymbolLoaded => !ReferenceEquals(SymbolTypeface.Value, SKTypeface.Default);
+
+    /// <summary>
+    /// The faces a run in <paramref name="role"/> draws a character with, in order: its own face, then the body face, then
+    /// the fallback face. A character none of them has prints as a box.
+    /// </summary>
+    public static IReadOnlyList<DocumentFontRole> FallbackChain(DocumentFontRole role) => role switch
+    {
+        DocumentFontRole.Body => [DocumentFontRole.Body, DocumentFontRole.Symbol],
+        DocumentFontRole.Symbol => [DocumentFontRole.Symbol, DocumentFontRole.Body],
+        _ => [role, DocumentFontRole.Body, DocumentFontRole.Symbol],
+    };
+
+    /// <summary>The first face in <paramref name="role"/>'s chain (<see cref="FallbackChain"/>) with a glyph for <paramref name="rune"/>, or <see langword="null"/> when none has one.</summary>
+    public static DocumentFontRole? FaceFor(Rune rune, DocumentFontRole role, bool bold)
+    {
+        // White space and control characters draw nothing; the run's own face keeps them.
+        if (Rune.IsWhiteSpace(rune) || Rune.IsControl(rune))
+            return role;
+
+        var text = rune.ToString();
+
+        foreach (var candidate in FallbackChain(role))
+        {
+            if (For(candidate, bold).ContainsGlyphs(text))
+                return candidate;
+        }
+
+        return null;
+    }
+
+    /// <summary>Every distinct character of <paramref name="text"/> that no face in <paramref name="role"/>'s chain can draw (each would print as a box).</summary>
+    public static IReadOnlyList<string> Undrawable(string? text, DocumentFontRole role = DocumentFontRole.Body, bool bold = false)
+    {
+        if (string.IsNullOrEmpty(text))
+            return [];
+
+        var missing = new List<string>();
+
+        foreach (var rune in text.EnumerateRunes())
+        {
+            if (FaceFor(rune, role, bold) is null && !missing.Contains(rune.ToString()))
+                missing.Add(rune.ToString());
+        }
+
+        return missing;
+    }
 
     /// <summary>
     /// Loads <paramref name="fileName"/> from this assembly's own embedded
@@ -123,6 +184,7 @@ public static class DocumentFonts
         {
             DocumentFontRole.Display => bold ? "ChakraPetch-Bold.ttf" : "ChakraPetch-Regular.ttf",
             DocumentFontRole.Mono => bold ? "SpaceMono-Bold.ttf" : "SpaceMono-Regular.ttf",
+            DocumentFontRole.Symbol => SymbolFile,
             _ => null,
         };
 
