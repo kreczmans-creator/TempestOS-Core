@@ -566,8 +566,12 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         // The checker is the person signed in now (a "Switch person" since the panel was last drawn counts), never typed text.
         var who = CheckerName();
         _view.SetPackChecker(who);
-        var result = await _service.CheckPackAsync(packId, who, draft.Organisation, draft.Statement, draft.Outcome).ConfigureAwait(true);
+        var result = await _service.CheckPackAsync(packId, who, draft.Organisation, draft.Statement, draft.Outcome, selfCheckStatement: draft.SelfCheckStatement).ConfigureAwait(true);
         await RefreshListsAsync().ConfigureAwait(true);
+
+        if (result.Succeeded)
+            _view.FillPackSelfCheck(false, string.Empty);
+
         _view.ShowStatus(result.Succeeded ? $"Pack checked by {who}. Issue it when ready." : result.Reason ?? "Refused.");
     }
 
@@ -726,8 +730,9 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
             return;
 
         var who = _principalId() ?? "engineer";
-        var result = await _service.CheckAsync(instance.Id, who, "Tempest Engineering", "Checked in the worksheet form.", CheckOutcome.Accepted).ConfigureAwait(true);
-        await ReportAsync(result, "Checked. Issue when ready.").ConfigureAwait(true);
+        var selfCheck = _view.SelfCheckStatement;
+        var result = await _service.CheckAsync(instance.Id, who, "Tempest Engineering", "Checked in the worksheet form.", CheckOutcome.Accepted, selfCheckStatement: selfCheck).ConfigureAwait(true);
+        await ReportAsync(result, result.Instance?.SelfCheck is null ? "Checked. Issue when ready." : "Checked by the preparer (self-check recorded). Issue when ready.").ConfigureAwait(true);
     }
 
     /// <summary>

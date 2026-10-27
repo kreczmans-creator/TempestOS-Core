@@ -48,7 +48,7 @@ public sealed partial class CalcSheetView
 
     /// <summary>What the user typed to check a pack.</summary>
     /// <summary>The checker is not typed: the coordinator uses the signed-in principal, so the issued sheet can only name who really checked.</summary>
-    public sealed record PackCheckDraft(string Organisation, string Statement, CheckOutcome Outcome);
+    public sealed record PackCheckDraft(string Organisation, string Statement, CheckOutcome Outcome, string? SelfCheckStatement = null);
 
     /// <summary>What the user typed to issue a pack.</summary>
     public sealed record PackIssueDraft(string IssueReference, string Client);
@@ -76,6 +76,17 @@ public sealed partial class CalcSheetView
         (CheckOutcome.AcceptedWithComments, "Accepted with comments"),
         (CheckOutcome.Rejected, "Rejected"),
     ];
+
+    private readonly CheckBox _packSelfCheck = new() { Content = CalcInstanceService.SelfCheckCaption, MinHeight = DesignTokens.MinControlSize };
+    private readonly TextBox _packSelfCheckStatement = new()
+    {
+        Watermark = "Why you stand by these calculations (at least 20 characters)",
+        MaxLength = CalcInstanceService.MaxSelfCheckStatementLength,
+        FontSize = DesignTokens.FontSizeBody,
+        MinHeight = DesignTokens.MinControlSize,
+        HorizontalAlignment = HorizontalAlignment.Stretch,
+        IsEnabled = false,
+    };
 
     private readonly ComboBox _packOutcome = new() { HorizontalAlignment = HorizontalAlignment.Stretch, ItemsSource = Outcomes.Select(o => o.Text).ToList(), SelectedIndex = 0 };
     private readonly Button _checkPack = new() { Content = CheckPackCaption, MinHeight = DesignTokens.MinControlSize, IsEnabled = false };
@@ -121,6 +132,16 @@ public sealed partial class CalcSheetView
 
     /// <summary>The note shown when the packs list stopped at its cap, or empty.</summary>
     public string PacksCapNote => _packsCap.IsVisible ? _packsCap.Text ?? string.Empty : string.Empty;
+
+    /// <summary>The self-check statement to give <c>CheckPackAsync</c>: the trimmed text when the box is ticked, otherwise <see langword="null"/>.</summary>
+    public string? PackSelfCheckStatement => _packSelfCheck.IsChecked == true ? (_packSelfCheckStatement.Text ?? string.Empty).Trim() : null;
+
+    /// <summary>Ticks or clears the pack self-check box and types its statement.</summary>
+    public void FillPackSelfCheck(bool ticked, string statement)
+    {
+        _packSelfCheck.IsChecked = ticked;
+        _packSelfCheckStatement.Text = statement;
+    }
 
     /// <summary>The signed-in person the pack check will be recorded under, as shown.</summary>
     public string PackCheckerText => _packChecker.Text ?? string.Empty;
@@ -323,6 +344,9 @@ public sealed partial class CalcSheetView
         AutomationProperties.SetName(_packOrganisation, "Pack checker organisation");
         AutomationProperties.SetName(_packStatement, "Pack check statement");
         AutomationProperties.SetName(_packOutcome, "Pack check outcome");
+        AutomationProperties.SetName(_packSelfCheck, CalcInstanceService.SelfCheckCaption);
+        AutomationProperties.SetName(_packSelfCheckStatement, "Pack self-check statement");
+        _packSelfCheck.IsCheckedChanged += (_, _) => _packSelfCheckStatement.IsEnabled = _packSelfCheck.IsChecked == true;
         AutomationProperties.SetName(_checkPack, CheckPackCaption);
         AutomationProperties.SetName(_packReference, "Pack issue reference");
         AutomationProperties.SetName(_packClient, "Pack client");
@@ -387,7 +411,7 @@ public sealed partial class CalcSheetView
         _checkPack.Click += (_, _) =>
         {
             if (SelectedPackId is { } id && _packOutcome.SelectedIndex is >= 0 and var o && o < Outcomes.Length)
-                CheckPackRequested?.Invoke(id, new PackCheckDraft(_packOrganisation.Text?.Trim() ?? string.Empty, _packStatement.Text?.Trim() ?? string.Empty, Outcomes[o].Outcome));
+                CheckPackRequested?.Invoke(id, new PackCheckDraft(_packOrganisation.Text?.Trim() ?? string.Empty, _packStatement.Text?.Trim() ?? string.Empty, Outcomes[o].Outcome, PackSelfCheckStatement));
         };
         _countersignPack.Click += (_, _) =>
         {
@@ -455,6 +479,9 @@ public sealed partial class CalcSheetView
         panel.Children.Add(_packOrganisation);
         panel.Children.Add(_packStatement);
         panel.Children.Add(_packOutcome);
+        panel.Children.Add(Caption("Only needed when you also prepared a calculation in this pack that needs an independent check and no second person is available: tick the box and say why you stand by it. The statement is printed on those sheets and recorded in the audit trail."));
+        panel.Children.Add(_packSelfCheck);
+        panel.Children.Add(_packSelfCheckStatement);
         panel.Children.Add(_checkPack);
         panel.Children.Add(_countersignPack);
         panel.Children.Add(_reopenPack);

@@ -48,6 +48,7 @@ public sealed partial class CalcInstanceService
     private readonly Tempest.Core.Events.IEventBus? _events;
     private readonly IReadOnlyList<CalcPackTemplate> _packTemplates;
     private readonly Tempest.Core.Identity.IPrincipalDirectory? _principals;
+    private readonly Tempest.Core.Audit.IAuditRecorder? _audit;
 
     public CalcInstanceService(
         CalcCatalogue catalogue,
@@ -60,7 +61,8 @@ public sealed partial class CalcInstanceService
         string? applicationVersion = null,
         Tempest.Core.Events.IEventBus? events = null,
         IReadOnlyList<CalcPackTemplate>? packTemplates = null,
-        Tempest.Core.Identity.IPrincipalDirectory? principals = null)
+        Tempest.Core.Identity.IPrincipalDirectory? principals = null,
+        Tempest.Core.Audit.IAuditRecorder? audit = null)
     {
         _catalogue = catalogue ?? throw new ArgumentNullException(nameof(catalogue));
         _store = store ?? throw new ArgumentNullException(nameof(store));
@@ -73,6 +75,7 @@ public sealed partial class CalcInstanceService
         _events = events;
         _packTemplates = packTemplates ?? [];
         _principals = principals;
+        _audit = audit;
     }
 
     public CalcCatalogue Catalogue => _catalogue;
@@ -380,8 +383,14 @@ public sealed partial class CalcInstanceService
     // Check and issue
     // ------------------------------------------------------------------
 
-    /// <summary>Records the check on the governing Evidence and moves the instance to Checked. Blocks stop a check.</summary>
-    public async Task<CalcActionResult> CheckAsync(Guid instanceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Records the check on the governing Evidence and moves the instance to Checked. Blocks stop a check. Where the template demands an
+    /// independent check (E4, E5, S6) the signed-in checker must not be an author, unless <paramref name="selfCheckStatement"/> is given: the preparer
+    /// may check their own work when no second person is available, with a statement of at least <see cref="MinSelfCheckStatementLength"/> characters
+    /// that is kept on the calculation, printed on the issued sheet and written to the audit trail (DA-12). A template that also demands an
+    /// attestation or a second check (S8) never takes a self-check.
+    /// </summary>
+    public async Task<CalcActionResult> CheckAsync(Guid instanceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome, CancellationToken cancellationToken = default, string? selfCheckStatement = null)
     {
         if ((MissingText(checkerName, "A checker name") ?? MissingText(checkerOrganisation, "The checker's organisation")) is { } missing)
             return CalcActionResult.Refused(missing);
@@ -419,7 +428,7 @@ public sealed partial class CalcInstanceService
 
         // Addendum A, §A3: E4, E5 and S6 demand an independent check whatever the Evidence setting — the signed-in checker
         // must not be the author (DA-12).
-        if (IndependenceRefusal(instance, $"'{instance.Name}'", "check it") is { } notIndependent)
+        if (IndependenceRefusal(instance, $"'{instance.Name}'", "check it", selfCheckStatement, out var selfCheck) is { } notIndependent)
             return CalcActionResult.Refused(notIndependent, instance);
 
         // What Issue will demand is demanded here, so a checked calculation is never a dead end (Black B-13).
@@ -469,6 +478,13 @@ public sealed partial class CalcInstanceService
         if (checkedTemplate?.RequiresSecondCheck == true)
             updated = updated with { CheckerPrincipal = CurrentPrincipal() };
 
+        // DA-12: the preparer's own check keeps its statement on the calculation and in the Evidence's check record.
+        if (selfCheck is not null)
+        {
+            updated = updated with { SelfCheck = new CalcSelfCheck(CurrentPrincipal(), checkerName, selfCheck, checkedAt) };
+            statement = $"{statement} {CalcSheetStandard.SelfCheckPrefix}{selfCheck}".Trim();
+        }
+
         EvidenceActionResult result;
 
         try
@@ -485,6 +501,15 @@ public sealed partial class CalcInstanceService
         if (!result.Succeeded)
             return CalcActionResult.Refused(result.Reason ?? "The check was refused.", instance);
 
+        if (updated.SelfCheck is { } recorded)
+            await RecordSelfCheckAsync(SelfCheckedActionName, recorded, new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["Calculation"] = instance.Name,
+                ["CalculationId"] = instance.Id.ToString("N"),
+                ["Template"] = instance.TemplateReference,
+                ["Revision"] = instance.Revision,
+            }, cancellationToken).ConfigureAwait(false);
+
         var checker = result.Evidence?.Check?.CheckerIdentityId ?? checkerName;
         return CalcActionResult.Ok(updated with { CheckedBy = checker });
     }
@@ -495,9 +520,11 @@ public sealed partial class CalcInstanceService
     /// Why the signed-in person may not check a calculation that demands an independent check (E4, E5, S6): nobody is signed in (the
     /// "unknown" sentinel is not a person — Red R-A-11), or they created it or set or changed any of its inputs (Red R-A-05).
     /// </summary>
-    private string? IndependenceRefusal(CalcInstance instance, string subject, string action)
+    private string? IndependenceRefusal(CalcInstance instance, string subject, string action, string? selfCheckStatement, out string? selfCheck)
     {
-        if (_catalogue.Find(instance.TemplateReference)?.Template.IndependentCheck != true)
+        selfCheck = null;
+
+        if (_catalogue.Find(instance.TemplateReference)?.Template is not { IndependentCheck: true } template)
             return null;
 
         var principal = CurrentPrincipal();
@@ -511,7 +538,24 @@ public sealed partial class CalcInstanceService
             return null;
 
         var who = authors.Count == 1 ? $"its author ({authors[0]})" : $"anyone who set up or changed its inputs ({string.Join(", ", authors)})";
-        return $"{subject} needs an independent check: sign in as someone other than {who} to {action}.";
+
+        // DA-12: a template with a competent-person attestation or a second check (S8) keeps its rule exactly: another person, never a self-check.
+        if (template.HasExtraGovernance || template.FeatureFlag is { Length: > 0 })
+            return $"{subject} needs an independent check: sign in as someone other than {who} to {action}.";
+
+        var statement = CalcSheetTextRenderer.Clean(selfCheckStatement ?? string.Empty).Trim();
+
+        if (statement.Length == 0)
+            return $"{subject} needs an independent check: sign in as someone other than {who} to {action}, or, where no second person is available, tick \"{SelfCheckCaption}\" and say why you stand by it.";
+
+        if (statement.Length < MinSelfCheckStatementLength)
+            return $"{subject}: the self-check statement needs at least {MinSelfCheckStatementLength} characters saying why the preparer stands by the calculation.";
+
+        if (statement.Length > MaxSelfCheckStatementLength)
+            return $"{subject}: the self-check statement is limited to {MaxSelfCheckStatementLength} characters.";
+
+        selfCheck = statement;
+        return null;
     }
 
     /// <summary>
@@ -917,7 +961,7 @@ public sealed partial class CalcInstanceService
     }
 
     /// <summary>Checks a pack's Evidence; every member must be a block-free draft or already checked.</summary>
-    public async Task<CalcActionResult> CheckPackAsync(Guid packId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome, CancellationToken cancellationToken = default)
+    public async Task<CalcActionResult> CheckPackAsync(Guid packId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome, CancellationToken cancellationToken = default, string? selfCheckStatement = null)
     {
         if ((MissingText(checkerName, "A checker name") ?? MissingText(checkerOrganisation, "The checker's organisation")) is { } missing)
             return CalcActionResult.Refused(missing);
@@ -940,6 +984,7 @@ public sealed partial class CalcInstanceService
         // One read of the project answers the staleness of every member (Red R-A-07).
         var staleness = await StalenessForAsync(pack.ProjectId, members, cancellationToken).ConfigureAwait(false);
         var together = pack.InstanceIds.ToHashSet();
+        string? packSelfCheck = null;
 
         foreach (var member in members)
         {
@@ -959,8 +1004,10 @@ public sealed partial class CalcInstanceService
             if (await DraftUpstreamAsync(member, together, cancellationToken).ConfigureAwait(false) is { } draftUpstream)
                 return CalcActionResult.Refused($"Pack member '{member.Name}' {draftUpstream}");
 
-            if (IndependenceRefusal(member, $"Pack member '{member.Name}'", "check the pack") is { } notIndependent)
+            if (IndependenceRefusal(member, $"Pack member '{member.Name}'", "check the pack", selfCheckStatement, out var memberSelfCheck) is { } notIndependent)
                 return CalcActionResult.Refused(notIndependent);
+
+            packSelfCheck ??= memberSelfCheck;
 
             // ADR-0173: a member that lacks the attestation its template demands holds an accepting check of the pack back (a rejection needs none), and
             // the attester of a member cannot be the one checking the pack.
@@ -982,6 +1029,14 @@ public sealed partial class CalcInstanceService
         // leave a pack that can never be checked (Red R-A-14).
         var now = _time.GetUtcNow();
         var checkedPack = pack with { Status = CalcInstanceStatus.Checked, UpdatedAt = now, CheckerPrincipal = CurrentPrincipal(), CheckerName = checkerName };
+
+        // DA-12: the preparer's own check of the pack keeps its statement on the pack, which its members' sheets print.
+        if (packSelfCheck is not null)
+        {
+            checkedPack = checkedPack with { SelfCheck = new CalcSelfCheck(CurrentPrincipal(), checkerName, packSelfCheck, now) };
+            statement = $"{statement} {CalcSheetStandard.SelfCheckPrefix}{packSelfCheck}".Trim();
+        }
+
         EvidenceActionResult result;
 
         try
@@ -997,6 +1052,15 @@ public sealed partial class CalcInstanceService
 
         if (!result.Succeeded)
             return CalcActionResult.Refused(result.Reason ?? "The check was refused.");
+
+        if (checkedPack.SelfCheck is { } recorded)
+            await RecordSelfCheckAsync(PackSelfCheckedActionName, recorded, new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["Pack"] = pack.Title,
+                ["PackId"] = pack.Id.ToString("N"),
+                ["Revision"] = pack.Revision,
+                ["Members"] = pack.InstanceIds.Count.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            }, cancellationToken).ConfigureAwait(false);
 
         return new CalcActionResult(true, null, null);
     }
@@ -1039,6 +1103,7 @@ public sealed partial class CalcInstanceService
             CheckerPrincipal = null,
             CheckerName = null,
             SecondCheck = null,
+            SelfCheck = null,
         };
 
         try
@@ -1157,7 +1222,7 @@ public sealed partial class CalcInstanceService
                 foreach (var (member, entry, inputs, result, report) in members)
                 {
                     n++;
-                    var header = await HeaderAsync(entry, member, evidence, CalcSheetStatus.Issued, issuedAtUtc, issueReference, client, token, second: pack.SecondCheck).ConfigureAwait(false);
+                    var header = await HeaderAsync(entry, member, evidence, CalcSheetStatus.Issued, issuedAtUtc, issueReference, client, token, second: pack.SecondCheck, packSelfCheck: pack.SelfCheck).ConfigureAwait(false);
                     var sheet = await FinishSheetAsync(entry, inputs, result, header, Footer(entry, report), token).ConfigureAwait(false);
                     sheets.Add(sheet);
                     index.Add(new CalcPackIndexRow(n, member.Name, entry.Template.Title, member.Revision, "ISSUED", sheet.Governing is { } g ? $"{g.Name} {(g.Passed ? "PASS" : "FAIL")}" : null));
@@ -1177,7 +1242,7 @@ public sealed partial class CalcInstanceService
                 var project = await ProjectLabelAsync(pack.ProjectId, token).ConfigureAwait(false);
                 var cover = new CalcSheet(
                     new CalcSheetHeader(project, pack.Title, "Calculation pack", pack.Revision, CalcSheetStatus.Issued, evidence.AuthorIdentityId, CheckerLabel(evidence.Check?.CheckerName, pack.SecondCheck), evidence.CreatedAt, evidence.Check?.DateUtc, issuedAtUtc, client, issueReference,
-                        await WatermarkAsync(pack.ProjectId, token).ConfigureAwait(false)),
+                        await WatermarkAsync(pack.ProjectId, token).ConfigureAwait(false), pack.SelfCheck?.Statement),
                     "Calculation pack: the calculations listed in the index, issued together under one issue sheet.", string.Empty, [], [], [], [], [], [], [], [],
                     new CalcSheetFooter("pack", "—", _engine.EngineVersion, members.Sum(m => m.Report.Passed), members.Sum(m => m.Report.Total), issuedAtUtc, _applicationVersion,
                         string.Join("; ", members.Select(m => FeatureNoteFor(m.Entry.Template)).Where(n => n is not null).Distinct(StringComparer.Ordinal))),
@@ -1259,7 +1324,12 @@ public sealed partial class CalcInstanceService
         if (instance.PackId is { } secondPackId && instance.SecondCheck is null && await _store.FindPackAsync(secondPackId, cancellationToken).ConfigureAwait(false) is { } secondPack)
             packSecond = secondPack.SecondCheck;
 
-        var header = await HeaderAsync(entry, instance, evidence, status, instance.IssuedAt, instance.IssueReference, packEvidence?.Issue?.Client ?? evidence?.Issue?.Client, cancellationToken, packEvidence, packSecond).ConfigureAwait(false);
+        CalcSelfCheck? packSelfCheck = null;
+
+        if (instance.PackId is { } selfPackId && instance.SelfCheck is null && await _store.FindPackAsync(selfPackId, cancellationToken).ConfigureAwait(false) is { } selfPack)
+            packSelfCheck = selfPack.SelfCheck;
+
+        var header = await HeaderAsync(entry, instance, evidence, status, instance.IssuedAt, instance.IssueReference, packEvidence?.Issue?.Client ?? evidence?.Issue?.Client, cancellationToken, packEvidence, packSecond, packSelfCheck).ConfigureAwait(false);
         var footer = instance.Issue is { } issue
             ? new CalcSheetFooter(entry.Reference, CalcTemplateHasher.Short(instance.TemplateHash), issue.EngineVersion, issue.KnownAnswerPassed, issue.KnownAnswerTotal, issue.TestRunAt, issue.ApplicationVersion, issue.FeatureNote)
             : Footer(entry, KnownAnswerRunner.Run(entry.Calculator, _time));
@@ -1309,7 +1379,7 @@ public sealed partial class CalcInstanceService
 
     /// <param name="checkEvidence">The Evidence whose check the header shows when it is not the calculation's own (a pack member shows its pack's).</param>
     /// <param name="second">The second check a pack gives its members (ADR-0173); an instance's own second check takes precedence.</param>
-    private async Task<CalcSheetHeader> HeaderAsync(CalcCatalogueEntry entry, CalcInstance instance, Evidence? evidence, CalcSheetStatus status, DateTimeOffset? issuedAt, string? issueReference, string? client, CancellationToken cancellationToken, Evidence? checkEvidence = null, CalcCountersignature? second = null)
+    private async Task<CalcSheetHeader> HeaderAsync(CalcCatalogueEntry entry, CalcInstance instance, Evidence? evidence, CalcSheetStatus status, DateTimeOffset? issuedAt, string? issueReference, string? client, CancellationToken cancellationToken, Evidence? checkEvidence = null, CalcCountersignature? second = null, CalcSelfCheck? packSelfCheck = null)
     {
         var project = await ProjectLabelAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false);
         var check = (checkEvidence ?? evidence)?.Check;
@@ -1317,7 +1387,8 @@ public sealed partial class CalcInstanceService
             project, instance.Name, entry.Template.Title, instance.Revision, status,
             evidence?.AuthorIdentityId ?? instance.CreatedBy, CheckerLabel(check?.CheckerName ?? instance.CheckedBy, instance.SecondCheck ?? second),
             instance.CreatedAt, check?.DateUtc ?? instance.CheckedAt, issuedAt, client, issueReference,
-            await WatermarkAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false));
+            await WatermarkAsync(instance.ProjectId, cancellationToken).ConfigureAwait(false),
+            (instance.SelfCheck ?? packSelfCheck)?.Statement);
     }
 
     /// <summary>

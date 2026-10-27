@@ -24,7 +24,8 @@ public sealed record CalcPack(
     string? SheetAttachmentId = null,
     string? CheckerPrincipal = null,
     string? CheckerName = null,
-    CalcCountersignature? SecondCheck = null)
+    CalcCountersignature? SecondCheck = null,
+    CalcSelfCheck? SelfCheck = null)
 {
     public const int MaxInstances = 50;
 }

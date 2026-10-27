@@ -87,6 +87,10 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
         // Wrapped text collapses runs of spaces, so the fields are parted by a middle dot (the showcase journey found them run together).
         Line(state, measure, $"Status: {status}  ·  Author: {T(h.Author)} ({Date(h.AuthoredAt)})  ·  Checker: {T(h.Checker, MaxFieldChars, "—")} ({Date(h.CheckedAt)})  ·  Issued: {Date(h.IssuedAt)}");
 
+        // DA-12: a check by the preparer says so, with the statement they gave, printed whole (the service caps it at MaxSelfCheckLength, above this renderer's field cap).
+        if (h.SelfCheck is { Length: > 0 })
+            Line(state, measure, CalcSheetStandard.SelfCheckPrefix + T(h.SelfCheck, CalcSheetStandard.MaxSelfCheckLength));
+
         if (h.IssueReference is { Length: > 0 } || h.Client is { Length: > 0 })
             Line(state, measure, $"Issue: {T(h.IssueReference, MaxFieldChars, "—")}  ·  Client: {T(h.Client, MaxFieldChars, "—")}");
 

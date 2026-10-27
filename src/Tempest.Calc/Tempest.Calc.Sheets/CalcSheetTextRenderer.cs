@@ -31,6 +31,11 @@ public static class CalcSheetTextRenderer
         sb.Append("Title: ").AppendLine(Clean(h.Title));
         sb.Append("Author: ").Append(Clean(h.Author)).Append("    Authored: ").AppendLine(Date(h.AuthoredAt));
         sb.Append("Checker: ").Append(Clean(h.Checker ?? "—")).Append("    Checked: ").AppendLine(Date(h.CheckedAt));
+
+        // DA-12: a check by the preparer says so, with the statement they gave.
+        if (h.SelfCheck is { Length: > 0 })
+            sb.Append(CalcSheetStandard.SelfCheckPrefix).AppendLine(Clean(h.SelfCheck));
+
         sb.Append("Issued: ").Append(Date(h.IssuedAt));
 
         if (h.IssueReference is { Length: > 0 })

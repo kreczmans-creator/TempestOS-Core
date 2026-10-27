@@ -218,3 +218,25 @@ still uncorrected; and `TD-171`, reverified **Not closed**. `WP 19.5B`'s
 quote PDF duplicates, rather than reuses, `IssueSheetRenderer`'s
 layout — now its own row, `TD-182`. See
 `70-quotations-change-orders-and-the-project-lifecycle.md`. Unreleased.
+
+## The template rule and the self-check (v0.26.0)
+
+Addendum A made the independent check a per-template flag
+(`CalcTemplate.IndependentCheck`, DA-12): E4, E5 and S6 refuse a check by
+anyone who created the calculation or set or changed an input, whatever
+the global `Evidence:IndependentCheck` switch says. The owner then ruled
+(DC-21, 2026-10-26) that a second signed-in person is not workable in a
+one-person practice, so `CalcInstanceService.CheckAsync` and
+`CheckPackAsync` take an optional self-check statement: the preparer may
+check their own work by choosing "Self-check (no second person available)"
+and writing at least 20 characters (at most 500) saying why they stand by
+it. The statement is kept on the calculation (`CalcInstance.SelfCheck`) or
+the pack (`CalcPack.SelfCheck`), appended to the Evidence's own check
+statement, printed on the sheet under the Checker line as "Self-checked by
+the preparer: …" (`CalcSheetHeader.SelfCheck`, text and PDF alike) and
+written to the audit trail as `Calc.SelfChecked` or `Calc.PackSelfChecked`.
+A different person checks exactly as before, and a ticked box by such a
+person records nothing. S8 lifting and the lifting lug keep their
+attestation and two-checker rule and never take a self-check (DB-13).
+`SelfCheckTests`, `SelfCheckSheetTests`, `WorksheetSelfCheckTests` and
+`SelfCheckPdfTests` cover both paths.

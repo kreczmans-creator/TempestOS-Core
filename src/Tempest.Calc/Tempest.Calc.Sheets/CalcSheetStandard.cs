@@ -10,6 +10,12 @@ namespace Tempest.Calc.Sheets;
 /// </summary>
 public static class CalcSheetStandard
 {
+    /// <summary>What a sheet prints before the statement when the preparer checked their own work because no second person was available (DA-12).</summary>
+    public const string SelfCheckPrefix = "Self-checked by the preparer: ";
+
+    /// <summary>The longest self-check statement a calculation carries (DA-12); the sheet prints it whole, so no renderer may cut it shorter than this.</summary>
+    public const int MaxSelfCheckLength = 500;
+
     public const string ScopeAndMethod = "1. Scope and method";
     public const string Inputs = "2. Inputs";
     public const string Assumptions = "3. Assumptions";

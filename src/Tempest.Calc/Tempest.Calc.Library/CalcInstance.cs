@@ -46,6 +46,16 @@ public sealed record CalcIssueSnapshot(
 public sealed record CalcCountersignature(string Name, string Organisation, string Statement, string Principal, DateTimeOffset At, bool Accepted = true);
 
 /// <summary>
+/// The note a self-check carries (DA-12): the preparer checked their own calculation because no second person was available, saying why they
+/// stand by it. Held on the instance (or pack) beside the Evidence's own check record, printed on the issued sheet and written to the audit trail.
+/// </summary>
+/// <param name="Principal">The signed-in person who checked their own work.</param>
+/// <param name="Name">The checker's name as given.</param>
+/// <param name="Statement">The self-check statement, at least <see cref="CalcInstanceService.MinSelfCheckStatementLength"/> and at most <see cref="CalcInstanceService.MaxSelfCheckStatementLength"/> characters.</param>
+/// <param name="At">When the check was made.</param>
+public sealed record CalcSelfCheck(string Principal, string Name, string Statement, DateTimeOffset At);
+
+/// <summary>
 /// The competent person's attestation of a calculation whose template requires one (ADR-0173): made by the signed-in principal, who is none
 /// of its authors or checkers, with the name, qualification and statement they gave (printed in the sheet's inputs), and a hash of the inputs it
 /// was made on, so any later change to the inputs voids it.
@@ -93,7 +103,8 @@ public sealed record CalcInstance(
     string? CheckerPrincipal = null,
     CalcCountersignature? SecondCheck = null,
     CalcAttestationRecord? Attestation = null,
-    IReadOnlyList<string>? Notes = null)
+    IReadOnlyList<string>? Notes = null,
+    CalcSelfCheck? SelfCheck = null)
 {
     /// <summary>
     /// Everyone who set up or changed this revision's inputs: its creator and every principal in <see cref="EditedBy"/> (kept

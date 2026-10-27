@@ -359,7 +359,8 @@ public sealed class WorkspaceHost : IAsyncDisposable
             applicationVersion: $"TempestOS {typeof(WorkspaceHost).Assembly.GetName().Version?.ToString(3)}",
             events: eventBus,
             packTemplates: Tempest.Desktop.CalcSheets.CalcPackTemplateComposition.All(),
-            principals: (Tempest.Core.Identity.IPrincipalDirectory)host.Services!.GetService(typeof(Tempest.Core.Identity.IPrincipalDirectory)));
+            principals: (Tempest.Core.Identity.IPrincipalDirectory)host.Services!.GetService(typeof(Tempest.Core.Identity.IPrincipalDirectory)),
+            audit: (Tempest.Core.Audit.IAuditRecorder)host.Services!.GetService(typeof(Tempest.Core.Audit.IAuditRecorder)));
 
         // Addendum C, C-5 (ADR-0175): the guided test's run records. They live in their own collection, are written by nothing else and read by
         // nothing that calculates; the build and the tester are the ones the title bar and the sign-off use. A script this build cannot read
