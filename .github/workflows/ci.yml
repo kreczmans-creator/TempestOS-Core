@@ -1162,10 +1162,15 @@ jobs:
       - name: Build Tempest.Desktop (Release)
         run: dotnet build src/Tempest.Desktop/Tempest.Desktop.csproj --configuration Release --no-restore
 
+      # The package mirrors stall or drop a connection now and then: each
+      # fetch is retried, the packages' recommended extras (which the
+      # smoke does not use) are not fetched at all, and a step that still
+      # hangs is stopped after five minutes rather than holding the job.
       - name: Install Xvfb
+        timeout-minutes: 5
         run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo apt-get -o Acquire::Retries=3 install -y --no-install-recommends xvfb xauth
 
       - name: Launch under Xvfb (smoke)
         run: |
@@ -1250,7 +1255,8 @@ jobs:
       # support boundary is unchanged by it.
       - name: Install the journey's own tools (xdotool, ImageMagick)
         continue-on-error: true
-        run: sudo apt-get install -y xdotool imagemagick
+        timeout-minutes: 5
+        run: sudo apt-get -o Acquire::Retries=3 install -y --no-install-recommends xdotool imagemagick
 
       - name: Real-shell acceptance journey (advisory)
         continue-on-error: true
