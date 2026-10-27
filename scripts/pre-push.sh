@@ -64,10 +64,10 @@ for project in Engine Sheets Library Calculators FluidPower Import; do
 done
 
 if [ "$desktop" -eq 1 ]; then
-  # The CI shards' filters (ci.yml): the first letter of the class's own namespace segment, A-D, E-P and Q-Z.
+  # The CI shards' filters (ci.yml): the first letter of the class's own namespace segment, A-C, D-P and Q-Z.
   shard_filter() { local filter="" letter; for letter in "$@"; do filter="${filter:+$filter|}FullyQualifiedName~Tempest.Desktop.Tests.$letter"; done; echo "$filter"; }
-  run_tests "Desktop shard 1 (A-D)" tests/Tempest.Desktop.Tests --filter "$(shard_filter A B C D)"
-  run_tests "Desktop shard 2 (E-P)" tests/Tempest.Desktop.Tests --filter "$(shard_filter E F G H I J K L M N O P)"
+  run_tests "Desktop shard 1 (A-C)" tests/Tempest.Desktop.Tests --filter "$(shard_filter A B C)"
+  run_tests "Desktop shard 2 (D-P)" tests/Tempest.Desktop.Tests --filter "$(shard_filter D E F G H I J K L M N O P)"
   run_tests "Desktop shard 3 (Q-Z)" tests/Tempest.Desktop.Tests --filter "$(shard_filter Q R S T U V W X Y Z)"
 fi
 
