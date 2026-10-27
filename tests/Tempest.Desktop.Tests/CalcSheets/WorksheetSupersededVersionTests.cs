@@ -303,8 +303,8 @@ public sealed class WorksheetSupersededVersionTests
         // C-2 integration: bs.sealed-system 1.5.0 changed p_margin (and p_f, p_prv) from bar to kPa and declares it; a draft that stored a bare 0.3 on 1.4.0
         // meant 0.3 bar, and the unit picker seeds from the record's own version, never from the new default (0.3 kPa would be a hundred times smaller).
         await using var fx = await StartAsync("P-VSN-SEALED");
-        var sealed = new SealedSystemCalculator();
-        var service = BuildService(fx.Host, [sealed]);
+        var calculator = new SealedSystemCalculator();
+        var service = BuildService(fx.Host, [calculator]);
         var draft = await service.CreateAsync(SealedSystemCalculator.Id, fx.ProjectId, "Old sealed system", []);
         var store = new CalcInstanceStore(Domain(fx).PersistenceStore);
         await store.SaveInstanceAsync(draft with
@@ -315,7 +315,7 @@ public sealed class WorksheetSupersededVersionTests
         var stored = (await store.FindInstanceAsync(draft.Id))!;
         Assert.Equal("1.4.0", stored.TemplateVersion);
 
-        var (view, _) = Open(fx, [sealed]);
+        var (view, _) = Open(fx, [calculator]);
         var current = service.Catalogue.Get(SealedSystemCalculator.Id);
         Assert.Equal("kPa", current.Template.FindInput("p_margin")!.DefaultUnit);
         view.ShowTemplate(current, stored, null);
