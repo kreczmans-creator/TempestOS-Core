@@ -6,7 +6,12 @@ using Xunit.Abstractions;
 
 namespace Tempest.Calc.Tests.Import;
 
-/// <summary>The cost of a table at the row cap (W2 review, L5): rows are processed as they are read, so memory is the observations, not the rows twice over.</summary>
+/// <summary>
+/// The cost of a table at the row cap (W2 review, L5): rows are processed as they are read, so memory is the observations, not the rows twice over.
+/// It asserts a wall time as well, so it runs with the timing tests: alone, and on CI without the coverage collector.
+/// </summary>
+[Collection(TimingCollection.Name)]
+[Trait("Category", TimingCollection.Category)]
 public sealed class ScanMemoryTests(ITestOutputHelper output)
 {
     [Fact]
@@ -34,7 +39,7 @@ public sealed class ScanMemoryTests(ITestOutputHelper output)
         var analysis = ScanImporter.Analyse(file, profile);
 
         clock.Stop();
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before; // this thread only: other tests run beside this one
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before; // this thread only, the one that reads the table
         var retained = GC.GetTotalMemory(forceFullCollection: false) - baseline;
         output.WriteLine($"rows 999999, input {file.Length / 1e6:0.0} MB: {clock.Elapsed.TotalSeconds:0.00} s, allocated {allocated / 1e6:0} MB, managed heap peak (sampled) {(peak - baseline) / 1e6:0} MB above the baseline, retained at the end {retained / 1e6:0} MB, observations {analysis.Data.Observations.Count}");
 

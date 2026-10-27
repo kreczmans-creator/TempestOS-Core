@@ -344,11 +344,31 @@ jobs:
               --logger "console;verbosity=normal" `
               --results-directory "TestResults/Release/calc" `
               --collect:"XPlat Code Coverage" `
+              --filter "Category!=Timing" `
               --blame-hang `
               --blame-hang-timeout 5m
             if ($LASTEXITCODE -ne 0) {
               Write-Host "Calc tests failed in '$project' for configuration 'Release' (exit code $LASTEXITCODE)."
               $failed += $project
+            }
+            # The wall-clock tests (Category=Timing) run again here, without
+            # the coverage collector: its instrumentation slowed the code they
+            # time about four and a half fold, so the budget measured the
+            # collector (the tolerance stack at its hard limits: 2 s plain,
+            # 8.9 s instrumented, about 20 s against 15 s on this leg). A
+            # project with none prints that no test matched and passes.
+            dotnet test $project `
+              --configuration Release `
+              --no-build `
+              --logger trx `
+              --logger "console;verbosity=normal" `
+              --results-directory "TestResults/Release/calc" `
+              --filter "Category=Timing" `
+              --blame-hang `
+              --blame-hang-timeout 5m
+            if ($LASTEXITCODE -ne 0) {
+              Write-Host "Calc timing tests failed in '$project' for configuration 'Release' (exit code $LASTEXITCODE)."
+              $failed += "$project (timing)"
             }
           }
           if ($failed.Count -gt 0) {

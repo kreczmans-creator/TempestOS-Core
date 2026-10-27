@@ -9,6 +9,7 @@ namespace Tempest.Calc.Tests.Calculators.Structural;
 /// is the cost of the calculation and not of whatever else the machine was doing. The budget itself is unchanged.
 /// </summary>
 [Collection(TimingCollection.Name)]
+[Trait("Category", TimingCollection.Category)]
 public sealed class PlateBendingTimingTests
 {
     private static readonly PlateBendingCalculator Plate = new();

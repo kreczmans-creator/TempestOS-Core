@@ -15,6 +15,7 @@ namespace Tempest.Calc.Tests.Calculators;
 /// 5 s budget.
 /// </summary>
 [Collection(TimingCollection.Name)]
+[Trait("Category", TimingCollection.Category)]
 public sealed class Red_SolverAttacks
 {
     /// <summary>The CI runners scale every deadline by <c>TEMPEST_TEST_TIMEOUT_FACTOR</c> (3 on the Windows matrix); the budgets here scale the same way.</summary>

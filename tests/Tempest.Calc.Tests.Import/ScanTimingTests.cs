@@ -7,15 +7,23 @@ using Tempest.Calc.Import.Scan;
 
 namespace Tempest.Calc.Tests.Import;
 
-/// <summary>Runs alone: wall-clock assertions are not made while other test classes load the machine (the best of three runs per size is taken as well).</summary>
+/// <summary>
+/// Runs alone: wall-clock assertions are not made while other test classes load the machine (the best of three runs per size is taken as well).
+/// The classes also carry the trait <c>Category=Timing</c>, which CI's coverage run leaves out and runs again without the coverage collector,
+/// whose instrumentation slows the code it times several fold.
+/// </summary>
 [CollectionDefinition(Name, DisableParallelization = true)]
 public sealed class TimingCollection
 {
     public const string Name = "Timing";
+
+    /// <summary>The trait value CI filters on to run these tests without the coverage collector.</summary>
+    public const string Category = "Timing";
 }
 
 /// <summary>The scan statistics time tests (W2 review H2, N3, N6).</summary>
 [Collection(TimingCollection.Name)]
+[Trait("Category", TimingCollection.Category)]
 public sealed class ScanTimingTests
 {
     private static TimeSpan TimeAnalysis(int rows)
