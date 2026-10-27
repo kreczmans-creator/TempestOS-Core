@@ -44,6 +44,16 @@ public static partial class CalcDiagrams
         Accumulator(),
         Cylinder(),
         ORingGland(),
+        // ---- StructBs ----
+        BasePlate(),
+        ConnectionEc3(),
+        Lifting(),
+        LoadCombinations(),
+        LtbInteraction(),
+        PlateBending(),
+        Glaser(),
+        HeatExchanger(),
+        Insulation(),
     ];
 
     /// <summary>The diagram of the template <paramref name="templateId"/>, or <see langword="null"/>.</summary>

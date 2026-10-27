@@ -25,6 +25,8 @@ Formulas in own notation (see the template method text). `D_flex = E t_p³/(12(1
 - *Frequency (output Hz).* Simply supported rectangle `ω₁₁ = π²(1/a² + 1/b²)√(D/ρt_p)` (the §B6 formula is the angular frequency in rad/s; the sheet prints both and outputs `f = ω/2π` in Hz). Circular `ω = (λ²/a²)√(D/ρt_p)` with `λ²` from the characteristic equation solved at run time: clamped `J₀(λ)I₁(λ) + I₀(λ)J₁(λ) = 0` (`λ² = 10.2158`), simply supported `J₁/J₀ + I₁/I₀ = 2λ/(1 − ν)` (`λ² = 4.935` at ν = 0.3). Clamped rectangle: Rayleigh–Ritz lowest eigenvalue of `K c = ω² M c` with the same basis (square: `λ² = 35.985`).
 - *Checks.* `u_stress = σ_vm/(f_y/γ_M0)` (BS EN 1993-1-1 6.2.1(5), the yield criterion; γ_M0 from 6.1(1)); `u_defl = w_max/(span/ratio)` with span the diameter (circular) or the shorter side. **WARN** `w/t_p > 0.5` (small-deflection theory invalid) and span/t_p < 10 (thick plate).
 
+**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram: not to scale, inputs only, no result (ADR-0158, DI-08). It draws the plate in plan with the loaded area, and in section on its edge supports under the load. One variant per shape, edge support, load type and load basis. It binds `shape`, `support`, `a`, `b`, `t_p`, `q`, `F`, `r0`, `u`, `v`, `r_ring`, `E`, `nu`, `rho` and `f_y`.
+
 ## Inputs
 
 | Symbol | Description | Unit | Default | Usual range | Group | Old symbols |

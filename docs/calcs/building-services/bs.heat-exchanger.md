@@ -19,6 +19,8 @@ Calculates a single-phase heat exchanger with constant properties: the duty and 
 
 `C = ṁ c_p`, `C_r = C_min/C_max`, `U_f = 1/(1/U_clean + R_f)`, `NTU = U_f A/C_min`; ε(NTU, C_r) and its inverse per Incropera 7th ed. Tables 11.3–11.4 (crossflow inverse by bisection). `Phi = ε C_min (T_h,in − T_c,in)`; outlets by energy balance. Cross-check `Phi = U_f A F_corr ΔT_lm`, F from R and P for one shell pass, back-calculated for crossflow. Pinched ends warn and skip the LMTD line. **One fluid at constant temperature (C_r = 0)** takes `const_side` (the hot side, e.g. condensing vapour, or the cold side, e.g. boiling liquid): that fluid's capacity rate is infinite, `C_min` is the *other* stream's, `ε = 1 − e^−NTU`, and the constant stream leaves at its inlet temperature (its flow and specific heat are not used). The ε-NTU and LMTD duties describe one exchanger, so a gap of more than 2 % between them warns (`lmtd-mismatch`).
 
+**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram: not to scale, inputs only, no result (ADR-0158, DI-08). It draws the shell with the hot stream above the dividing wall and the cold stream below, the flow arrows as the arrangement runs them. One variant per arrangement (and per constant side for C_r = 0) and per mode; the rating variants label `A`, the sizing variants `Q_req`. It binds `A`, `Q_req`, `dT_min`, `m_h`, `cp_h`, `T_h_in`, `m_c`, `cp_c`, `T_c_in`, `U_clean` and `R_f`.
+
 ## Inputs
 
 | Symbol | Description | Unit | Default | Usual range | Hard range | Group |
