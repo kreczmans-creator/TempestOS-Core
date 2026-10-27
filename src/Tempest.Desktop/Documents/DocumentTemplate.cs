@@ -707,6 +707,9 @@ public static class DocumentTemplate
     /// <summary>The clear space between the logo and the header band's reference line.</summary>
     public const float HeaderLogoGap = 12f;
 
+    /// <summary>Between the parts of a header band's reference line (the name, the revision, the date); a name is cut short before the parts after it.</summary>
+    public const string ReferenceSeparator = "  ·  ";
+
     /// <summary>The smallest size the header band's reference line shrinks to before it is cut short.</summary>
     public const float HeaderReferenceMinSize = 6f;
 
@@ -732,6 +735,13 @@ public static class DocumentTemplate
             if (TwoLines(text, size) is { } lines)
                 return (lines, size);
         }
+
+        // Last resort with a reference line of the form "name  ·  Revision r  ·  date": only the name is cut short, on the first line;
+        // the revision and date stay whole on the second (the review found a long name with no space cutting them off the sheet).
+        var separator = text.IndexOf(ReferenceSeparator, StringComparison.Ordinal);
+
+        if (separator > 0 && separator + ReferenceSeparator.Length < text.Length)
+            return ([Ellipsise(text[..separator], HeaderReferenceMinSize), Ellipsise(text[(separator + ReferenceSeparator.Length)..], HeaderReferenceMinSize)], HeaderReferenceMinSize);
 
         // Last resort: the first line as wrapped at the smallest size, the rest cut to fit with an ellipsis.
         var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
