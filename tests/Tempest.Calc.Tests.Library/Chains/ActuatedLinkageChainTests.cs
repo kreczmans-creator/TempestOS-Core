@@ -95,7 +95,7 @@ public sealed class ActuatedLinkageChainTests
         // (python3: 1.3102067238305006 L; the one-exponent form gave 1.0778782868400334 L, 21.6 % less).
         Assert.Equal(["dV", "p_2", "p_load"], f2.Links.Select(l => l.Input.Symbol).Order(StringComparer.Ordinal));
         Assert.Equal(Si(f1, "dV"), InputSi(f2, "dV"), 15);
-        Assert.Equal(Si(f1, "p"), InputSi(f2, "p_2"), 6);
+        Assert.Equal(Si(f1, "p_sys"), InputSi(f2, "p_2"), 6);
         Assert.Equal("Gauge", f2.Inputs.Single(i => i.Symbol == "p_basis").Text);
         Assert.DoesNotContain(f2.Warnings, w => w.RuleId == "link-basis");
         Assert.Equal(1.3102067238305006e-3, Si(f2, "V0"), 12);
@@ -121,7 +121,7 @@ public sealed class ActuatedLinkageChainTests
 
         Assert.Equal(["m9", "f1", "f2"], template.Steps.Select(s => s.Key));
         Assert.Equal(
-            [("m9", "output_motion", "f1", "v_req"), ("m9", "follower_force", "f1", "F_push"), ("m9", "follower_force", "f1", "F_pull"), ("f1", "dV", "f2", "dV"), ("f1", "p", "f2", "p_2"), ("f1", "p_push", "f2", "p_load")],
+            [("m9", "output_motion", "f1", "v_req"), ("m9", "follower_force", "f1", "F_push"), ("m9", "follower_force", "f1", "F_pull"), ("f1", "dV", "f2", "dV"), ("f1", "p_sys", "f2", "p_2"), ("f1", "p_push", "f2", "p_load")],
             template.Bindings.Select(b => (b.FromStep, b.Output, b.ToStep, b.Input)));
         Assert.Contains(template.Steps, s => s.Key == "f1" && s.Omit is ["Q"]);
 
@@ -221,7 +221,7 @@ public sealed class ActuatedLinkageChainTests
         // The linkage takes its slide load from a cylinder circuit outside the pack, which becomes a new revision after the check: the linkage is stale with no pack member touched, and so are the cylinder and the
         // accumulator; the pack is still Checked, and Issue is refused naming the linkage.
         // A 40/22 cylinder at 30 bar (3.58 kN) outside the pack presses on the slide: its extend force becomes the slide's load, which is then 19 % above the typed 3 kN; the cylinder in the pack still covers the new peak force.
-        var press = ChainInputs.ActuatedLinkage(host)["f1"].Select(v => v.Symbol == "p" ? CalcInputValue.Quantity("p", 30, "bar") with { Provenance = CalcProvenance.Assumed("Outside press cylinder: supply pressure.") } : v).Concat(
+        var press = ChainInputs.ActuatedLinkage(host)["f1"].Select(v => v.Symbol == "p_sys" ? CalcInputValue.Quantity("p_sys", 30, "bar") with { Provenance = CalcProvenance.Assumed("Outside press cylinder: supply pressure.") } : v).Concat(
         [
             CalcInputValue.Quantity("Q", 36, "L/min") with { Provenance = CalcProvenance.Assumed("Outside press cylinder: circuit flow.") },
             CalcInputValue.Quantity("F_push", 3, "kN") with { Provenance = CalcProvenance.Assumed("Outside press cylinder: push load.") },

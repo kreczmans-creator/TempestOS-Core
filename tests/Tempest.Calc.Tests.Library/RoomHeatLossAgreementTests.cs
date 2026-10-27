@@ -45,7 +45,7 @@ public sealed class RoomHeatLossAgreementTests
 
         var inputs = new CalcInputSet(
         [
-            CalcInputValue.Quantity("theta_int", 21, "degC"),
+            CalcInputValue.Quantity("T_int", 21, "degC"),
             CalcInputValue.Quantity("theta_e", -3, "degC"),
             RoomHeatLossCalculator.Layers(layers.Select((l, i) => (name, $"Layer {i + 1}", l[0], l[1])).ToArray()),
             RoomHeatLossCalculator.Elements((name, 1, null, null, rsi, rse, rg > 0 ? rg : null, null, null)),

@@ -45,7 +45,7 @@
     "ValueText": "80"
   },
   {
-    "Symbol": "U",
+    "Symbol": "U_clean",
     "Number": 3000,
     "Unit": "W/(m^2*K)",
     "Provenance": {

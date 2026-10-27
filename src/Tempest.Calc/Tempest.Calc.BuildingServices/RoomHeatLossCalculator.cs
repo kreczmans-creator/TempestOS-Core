@@ -54,46 +54,51 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.4.0", CalcDiscipline.BuildingServices, "U-values and room heat loss",
-        "U-values of built-up elements from their layers and surface resistances, and the steady-state design heat loss of one room: fabric loss through each element to its adjacent temperature, a thermal-bridge allowance, ventilation loss (through the outside temperature or an MVHR supply temperature), the room load for sizing emitters, the heat loss coefficient and the loss per floor area; optionally checked against target U-values.",
+        Id, "1.5.0", CalcDiscipline.BuildingServices, "U-values and room heat loss",
+        "Calculates the U-values of built-up elements and the steady-state design heat loss of one room. It gives the fabric and ventilation loss, the room load for sizing emitters, the heat loss coefficient and an optional check against target U-values.",
         "Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing\n" +
-        "Element fabric loss: Φ_i = A·U·f·(θ_int − θ_adj), θ_adj = θ_e where the element faces outside\n" +
-        "Thermal bridges: Φ_tb = y_tb·Σ(A·f)_ext·(θ_int − θ_e) on the elements facing outside\n" +
+        "Element fabric loss: Φ_i = A·U·f·(T_int − θ_adj), with θ_adj = θ_e where the element faces outside\n" +
+        "Thermal bridges: Φ_tb = y_tb·Σ(A·f)_ext·(T_int − θ_e) on the elements facing outside\n" +
         "Fabric total: Φ_T = ΣΦ_i + Φ_tb\n" +
-        "Ventilation flow: q_v = n·V\n" +
-        "Ventilation loss: Φ_V = 0.34·q_v·(θ_int − θ_e), or (θ_int − θ_supply) through an MVHR supply, plus 0.34·n_inf·V·(θ_int − θ_e) infiltration with MVHR\n" +
+        "Ventilation loss: q_v = n·V; Φ_V = 0.34·q_v·(T_int − θ_e), or (T_int − T_supply) through an MVHR supply, plus 0.34·n_inf·V·(T_int − θ_e) infiltration with MVHR\n" +
         "Room load: Φ_HL = Φ_T + Φ_V (CIBSE DHDG method: × (1 + additional allowance))\n" +
-        "Heat loss coefficient: HLC = Φ_HL/(θ_int − θ_e); loss per floor area Φ_HL/A_floor\n" +
+        "Heat loss coefficient: HLC = Φ_HL/(T_int − θ_e); loss per floor area Φ_HL/A_floor\n" +
         "U-value check: U against the target U of each element (the global target applies to built-up elements facing outside only; an element's own target applies wherever it faces)",
         [
-            new CalcInputSpec("method", "Calculation method (changes the citations; the DHDG option adds the allowance below)", CalcInputKind.Choice, Choices: [En12831, Dhdg], DefaultChoice: En12831, Group: "Method"),
-            new CalcInputSpec("theta_int", "Internal design temperature", CalcInputKind.Quantity, "degC", Default: 21, Min: 16, Max: 24, HardMin: 16, HardMax: 24, Group: "Conditions"),
-            new CalcInputSpec("theta_e", "External design temperature (location record)", CalcInputKind.Quantity, "degC", Default: -3, Min: -15, Max: 5, HardMin: -15, HardMax: 5, Group: "Conditions"),
-            new CalcInputSpec("layers", "Construction layers (several elements share the table, keyed by element name)", CalcInputKind.Table, Columns: LayerColumns, MaxRows: 200, IsOptional: true, Group: "Construction"),
-            new CalcInputSpec("elements", "Building elements bounding the room", CalcInputKind.Table, Columns: ElementColumns, MaxRows: 60, Group: "Construction"),
-            new CalcInputSpec("y_tb", "Thermal-bridge allowance on the area facing outside", CalcInputKind.Quantity, "W/(m^2*K)", Default: 0, Min: 0, Max: 0.3, HardMin: 0, HardMax: 1, Group: "Construction"),
-            new CalcInputSpec("U_target", "Target U for built-up elements without their own target", CalcInputKind.Quantity, "W/(m^2*K)", Min: 0.05, Max: 8, HardMin: 0.01, HardMax: 10, IsOptional: true, Group: "Construction"),
-            new CalcInputSpec("n", "Air change rate", CalcInputKind.Quantity, "1/h", Default: 0.5, Min: 0.1, Max: 3, HardMin: 0.1, HardMax: 3, Group: "Ventilation"),
-            new CalcInputSpec("V", "Room volume", CalcInputKind.Quantity, "m^3", Default: 40, Min: 5, Max: 1000, HardMin: 1, HardMax: 5000, Group: "Ventilation"),
-            new CalcInputSpec("theta_supply", "MVHR supply air temperature after heat recovery (blank = natural ventilation, outside air)", CalcInputKind.Quantity, "degC", Min: -15, Max: 24, HardMin: -20, HardMax: 40, IsOptional: true, Group: "Ventilation"),
-            new CalcInputSpec("n_inf", "Infiltration air change rate at outside temperature, with MVHR only (n is then the MVHR rate; blank = no infiltration loss, with a warning; 0 = airtight)", CalcInputKind.Quantity, "1/h", Min: 0, Max: 1, HardMin: 0, HardMax: 3, IsOptional: true, Group: "Ventilation"),
-            new CalcInputSpec("A_floor", "Floor area, for the loss per floor area", CalcInputKind.Quantity, "m^2", Min: 1, Max: 200, HardMin: 0.1, HardMax: 2000, IsOptional: true, Group: "Result"),
-            new CalcInputSpec("f_add", "Additional allowance on the room load (CIBSE DHDG method only)", CalcInputKind.Quantity, "%", Default: 0, Min: 0, Max: 20, HardMin: 0, HardMax: 50, Group: "Result"),
+            new CalcInputSpec("method", "Calculation method (changes the citations; the DHDG option adds the allowance below)", CalcInputKind.Choice, Choices: [En12831, Dhdg], DefaultChoice: En12831, Group: "Setup"),
+            new CalcInputSpec("elements", "Building elements bounding the room", CalcInputKind.Table, Columns: ElementColumns, MaxRows: 60, Group: "Setup"),
+            new CalcInputSpec("layers", "Construction layers (several elements share the table, keyed by element name)", CalcInputKind.Table, Columns: LayerColumns, MaxRows: 200, IsOptional: true, Group: "Setup"),
+            new CalcInputSpec("V", "Room volume", CalcInputKind.Quantity, "m^3", Default: 40, Min: 5, Max: 1000, HardMin: 1, HardMax: 5000, Group: "Geometry"),
+            new CalcInputSpec("A_floor", "Floor area, for the loss per floor area (optional; blank = no loss per floor area)", CalcInputKind.Quantity, "m^2", Min: 1, Max: 200, HardMin: 0.1, HardMax: 2000, IsOptional: true, Group: "Geometry"),
+            new CalcInputSpec("T_int", "Internal design temperature", CalcInputKind.Quantity, "degC", Default: 21, Min: 16, Max: 23, HardMin: 16, HardMax: 24, Group: "Conditions", Aliases: ["theta_int"]),
+            new CalcInputSpec("theta_e", "External design temperature (location record)", CalcInputKind.Quantity, "degC", Default: -3, Min: -15, Max: 3, HardMin: -15, HardMax: 5, Group: "Conditions"),
+            new CalcInputSpec("T_supply", "MVHR supply air temperature after heat recovery (optional; blank = natural ventilation, outside air)", CalcInputKind.Quantity, "degC", Min: -15, Max: 24, HardMin: -20, HardMax: 40, IsOptional: true, Group: "Conditions", Aliases: ["theta_supply"]),
+            new CalcInputSpec("y_tb", "Thermal-bridge allowance on the area facing outside", CalcInputKind.Quantity, "W/(m^2*K)", Default: 0, Min: 0, Max: 0.3, HardMin: 0, HardMax: 1, Group: "Factors"),
+            new CalcInputSpec("f_add", "Additional allowance on the room load (CIBSE DHDG method only)", CalcInputKind.Quantity, "%", Default: 0, Min: 0, Max: 20, HardMin: 0, HardMax: 50, Group: "Factors"),
+            new CalcInputSpec("U_target", "Target U for built-up elements without their own target (optional; blank = no global target)", CalcInputKind.Quantity, "W/(m^2*K)", Min: 0.05, Max: 8, HardMin: 0.01, HardMax: 10, IsOptional: true, Group: "Requirements"),
+            new CalcInputSpec("n", "Air change rate", CalcInputKind.Quantity, "1/h", Default: 0.5, Min: 0.1, Max: 2.5, HardMin: 0.1, HardMax: 3, Group: "Ventilation"),
+            new CalcInputSpec("n_inf", "Infiltration air change rate at outside temperature, with MVHR only (optional; blank = no infiltration loss, with a warning; 0 = airtight; n is then the MVHR rate)", CalcInputKind.Quantity, "1/h", Min: 0, Max: 1, HardMin: 0, HardMax: 3, IsOptional: true, Group: "Ventilation"),
         ],
         [
             new CalcAssumption("Steady state: every temperature is constant, with no solar or internal gains, no thermal mass and no dynamic simulation.", "Design heat loss, not an annual energy estimate."),
-            new CalcAssumption("Layers are homogeneous and in series (one-dimensional flow); no bridged layers (timber studs, mortar joints, fixings) are corrected for: a thermal-bridge allowance y_tb is added instead.", "BS EN ISO 6946 homogeneous-layer calculation."),
-            new CalcAssumption("A blank Rsi is the conventional BS EN ISO 6946 value for the element's heat-flow direction (0.13 m²K/W horizontal, 0.10 upward, 0.17 downward) and a blank Rse is 0.04 m²K/W for an element facing outside (no adjacent temperature, or one at or below θ_e), or the same as Rsi where it faces another space.", "Small conventional BS EN ISO 6946 set (three values), not a table of design data."),
-            new CalcAssumption("The global target U applies to built-up elements facing outside only: an internal partition or floor has no outside target, so it is checked only against a target entered on its own row.", "Scope of the target check."),
-            new CalcAssumption("Ground-floor U-values and glazing U-values are entered by the user (override); the calculator does not model ground heat transfer.", "Stated limit."),
-            new CalcAssumption("The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air (about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600); it is derived, not read from a table.", "Derived."),
-            new CalcAssumption("Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are user records from the user's own licensed copies or manufacturers' data; none is embedded.", "No table from a standard or a manufacturer is shipped."),
+            new CalcAssumption("Layers are homogeneous and in series, with one-dimensional heat flow.", "BS EN ISO 6946:2017 homogeneous-layer calculation."),
+            new CalcAssumption("Bridged layers such as timber studs, mortar joints and fixings are not corrected for.", "BS EN ISO 6946:2017 homogeneous-layer calculation."),
+            new CalcAssumption("A thermal-bridge allowance y_tb is added instead of correcting bridged layers.", "Stated."),
+            new CalcAssumption("A blank Rsi is the conventional BS EN ISO 6946 value for the element's heat-flow direction.", "Small conventional BS EN ISO 6946 set (three values), not a table of design data."),
+            new CalcAssumption("The conventional Rsi is 0.13 m²K/W horizontal, 0.10 upward and 0.17 downward.", "Small conventional BS EN ISO 6946 set (three values), not a table of design data."),
+            new CalcAssumption("A blank Rse is 0.04 m²K/W for an element facing outside.", "Small conventional BS EN ISO 6946 set, not a table of design data."),
+            new CalcAssumption("Where an element faces another space, a blank Rse is the same as Rsi.", "Small conventional BS EN ISO 6946 set, not a table of design data."),
+            new CalcAssumption("The global target U applies to built-up elements facing outside only.", "Scope of the target check: an internal partition or floor is checked only against a target entered on its own row."),
+            new CalcAssumption("Ground-floor and glazing U-values are entered by the user as an override.", "Stated limit."),
+            new CalcAssumption("The calculator does not model ground heat transfer.", "Stated limit."),
+            new CalcAssumption("The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air.", "Derived: about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600, not read from a table."),
+            new CalcAssumption("Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are the user's own records.", "No table from a standard or a manufacturer is shipped."),
         ],
         [
-            new CalcClauseRef("BS EN ISO 6946", "homogeneous layers and surface resistances (clause numbers to be checked against the owner's copy)", "Building components — thermal resistance and thermal transmittance"),
-            new CalcClauseRef("BS EN 12831-1", "cl. 6.3.2 (clause number to be checked against the owner's copy)", "Heating systems in buildings — design heat load: transmission heat loss"),
-            new CalcClauseRef("BS EN 12831-1", "cl. 6.3.3 (clause number to be checked against the owner's copy)", "Heating systems in buildings — design heat load: ventilation heat loss"),
-            new CalcClauseRef("CIBSE Domestic Heating Design Guide", "2026 ed., reduced method (name and edition unverified; to be checked against the owner's copy)", "Room heat loss and the additional allowance"),
+            new CalcClauseRef("BS EN ISO 6946:2017", "—", "Thermal resistance and transmittance of building components (clause numbers to be checked)"),
+            new CalcClauseRef("BS EN 12831-1:2017", "cl. 6.3.2 (clause number to be checked against the owner's copy)", "Heating systems in buildings — design heat load: transmission heat loss"),
+            new CalcClauseRef("BS EN 12831-1:2017", "cl. 6.3.3 (clause number to be checked against the owner's copy)", "Heating systems in buildings — design heat load: ventilation heat loss"),
+            new CalcClauseRef("CIBSE, Domestic Heating Design Guide", "—", "Room heat loss and the additional allowance, reduced method (name and edition unverified)"),
         ],
         [
             new CalcApplicabilityRule("temperatures", "The internal design temperature must be above the external design temperature.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
@@ -113,7 +118,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
             new CalcTestCase("ka-cavity-wall", "Insulated cavity wall, a window and natural ventilation",
                 new CalcReferenceSource("Analytic (series resistance; Φ = A·U·Δθ + 0.34·n·V·Δθ)", null, "R = 0.13 + 0.1025/0.84 + 0.1/0.03 + 0.1/0.2 + 0.013/0.4 + 0.04 = 4.157857 m²K/W, U = 0.240509 W/m²K; wall 20 m² × U × 24 K = 115.444 W; window 3 m² × 1.4 × 24 K = 100.8 W; Φ_T = 216.244 W; q_v = 20 m³/h, Φ_V = 0.34 × 20 × 24 = 163.2 W; Φ_HL = 379.444 W; HLC = 15.8102 W/K; against a target U of 0.30 the wall's utilisation is 0.8017 (the window has a U override and is not checked against the global target). The layer conductivities are invented illustrative inputs, not design data"),
                 CavityRoom(),
-                [new CalcExpectedValue("R_1", 4.157857, "m^2*K/W", 1e-6), new CalcExpectedValue("U_1", 0.2405085, "W/(m^2*K)", 1e-6), new CalcExpectedValue("u_1", 0.8016950, "", 1e-6), new CalcExpectedValue("Phi_1", 115.44408, "W", 1e-6), new CalcExpectedValue("Phi_2", 100.8, "W", 1e-9), new CalcExpectedValue("Phi_T", 216.2441, "W", 1e-6), new CalcExpectedValue("q_v", 20, "m^3/h", 1e-9), new CalcExpectedValue("Phi_V", 163.2, "W", 1e-9), new CalcExpectedValue("Phi_HL", 379.4441, "W", 1e-6), new CalcExpectedValue("HLC", 15.81017, "W/K", 1e-6)]),
+                [new CalcExpectedValue("R_1", 4.157857, "m^2*K/W", 1e-6), new CalcExpectedValue("U_1", 0.2405085, "W/(m^2*K)", 1e-6), new CalcExpectedValue("u_target_1", 0.8016950, "", 1e-6), new CalcExpectedValue("Phi_1", 115.44408, "W", 1e-6), new CalcExpectedValue("Phi_2", 100.8, "W", 1e-9), new CalcExpectedValue("Phi_T", 216.2441, "W", 1e-6), new CalcExpectedValue("q_v", 20, "m^3/h", 1e-9), new CalcExpectedValue("Phi_V", 163.2, "W", 1e-9), new CalcExpectedValue("Phi_HL", 379.4441, "W", 1e-6), new CalcExpectedValue("HLC", 15.81017, "W/K", 1e-6)]),
             new CalcTestCase("ka-mvhr-partition", "MVHR supply, an 18 °C partition, a floor with a user U and a thermal-bridge allowance",
                 new CalcReferenceSource("Analytic (series resistance; MVHR Φ_V = 0.34·q_v·(θ_int − θ_supply))", null, "Partition: R = 0.13 + 2 × 0.0125/0.22 + 0.18 + 0.13 = 0.553636, U = 1.806240, Φ = 12 × U × 1 × 3 K = 65.025 W; wall 15 m² × 0.240509 × 24 = 86.583 W; floor 10 m² × 0.25 × 0.6 × 24 = 36 W; Φ_tb = 0.05 × (15 + 10 × 0.6) m² (partition excluded, f applied) × 24 = 25.2 W; Φ_T = 212.808 W; q_v = 30 m³/h, Φ_V = 0.34 × 30 × (21 − 16) = 51 W; Φ_HL = 263.808 W; HLC = 10.9920 W/K. Layer conductivities and the floor U are invented illustrative inputs, not design data"),
                 MvhrRoom(),
@@ -125,7 +130,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
             new CalcTestCase("ka-single-layer-target", "One 100 mm layer against a target U",
                 new CalcReferenceSource("Analytic (series resistance)", null, "R = 0.13 + 0.1/1.4 + 0.04 = 0.241429 m²K/W, U = 4.142012 W/m²K; against a target of 4.5 the utilisation is 0.920447; Φ = 10 × U × 24 = 994.083 W. The conductivity 1.4 is an invented illustrative input, not design data"),
                 [Layers(("Slab", "Concrete", 100, 1.4)), Elements(("Slab", 10, null, null, null, null, null, null, null)), CalcInputValue.Quantity("U_target", 4.5, "W/(m^2*K)"), CalcInputValue.Quantity("n", 0.1, "1/h"), CalcInputValue.Quantity("V", 5, "m^3")],
-                [new CalcExpectedValue("U_1", 4.142012, "W/(m^2*K)", 1e-6), new CalcExpectedValue("u_1", 0.9204471, "", 1e-6), new CalcExpectedValue("Phi_1", 994.0828, "W", 1e-6), new CalcExpectedValue("Phi_V", 4.08, "W", 1e-9)]),
+                [new CalcExpectedValue("U_1", 4.142012, "W/(m^2*K)", 1e-6), new CalcExpectedValue("u_target_1", 0.9204471, "", 1e-6), new CalcExpectedValue("Phi_1", 994.0828, "W", 1e-6), new CalcExpectedValue("Phi_V", 4.08, "W", 1e-9)]),
             new CalcTestCase("ka-mvhr-infiltration", "MVHR supply with a separate infiltration rate",
                 new CalcReferenceSource("Analytic (Φ_V = 0.34·[n·V·(θ_int − θ_supply) + n_inf·V·(θ_int − θ_e)])", null, "As the MVHR case with n_inf = 0.1 h⁻¹: MVHR flow 30 m³/h × 5 K and infiltration 5 m³/h × 24 K, Φ_V = 0.34 × (150 + 120) = 91.8 W; Φ_T = 212.808 W; Φ_HL = 304.608 W; HLC = 12.6920 W/K. Layer conductivities are invented illustrative inputs, not design data"),
                 [.. MvhrRoom(), CalcInputValue.Quantity("n_inf", 0.1, "1/h")],
@@ -133,23 +138,23 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
             new CalcTestCase("ka-roof-upward", "A roof: upward heat flow takes R_si = 0.10, and a heated neighbour's partition is not held to the outside target",
                 new CalcReferenceSource("Analytic (series resistance; BS EN ISO 6946 conventional surface resistances by flow direction)", null, "Roof, 100 mm of λ = 0.05 (invented): R = 0.10 + 0.1/0.05 + 0.04 = 2.14 m²K/W, U = 0.467290 W/m²K; Φ = 10 × U × 24 K = 112.150 W; a 12 m² partition to a 18 °C neighbour, U = 1/(0.13 + 0.1/0.5 + 0.13) = 2.173913, is checked only against its own target"),
                 [Layers(("Roof", "Insulation", 100, 0.05), ("Partition", "Board", 100, 0.5)), RoofAndPartition(), CalcInputValue.Quantity("U_target", 0.5, "W/(m^2*K)"), CalcInputValue.Quantity("n", 0.1, "1/h"), CalcInputValue.Quantity("V", 5, "m^3")],
-                [new CalcExpectedValue("R_1", 2.14, "m^2*K/W", 1e-9), new CalcExpectedValue("U_1", 0.4672897, "W/(m^2*K)", 1e-6), new CalcExpectedValue("u_1", 0.9345794, "", 1e-6), new CalcExpectedValue("Phi_1", 112.1495, "W", 1e-6), new CalcExpectedValue("U_2", 2.173913, "W/(m^2*K)", 1e-6)]),
+                [new CalcExpectedValue("R_1", 2.14, "m^2*K/W", 1e-9), new CalcExpectedValue("U_1", 0.4672897, "W/(m^2*K)", 1e-6), new CalcExpectedValue("u_target_1", 0.9345794, "", 1e-6), new CalcExpectedValue("Phi_1", 112.1495, "W", 1e-6), new CalcExpectedValue("U_2", 2.173913, "W/(m^2*K)", 1e-6)]),
         ],
         Category: "Thermal",
         OutputPorts:
         [
-            new CalcOutputPort("Phi_HL", "W", "Room design heat loss (→ B6 room heat required)"),
-            new CalcOutputPort("theta_int", "degC", "Internal design temperature of the room (→ B6 room temperature of that room's emitter)"),
-            new CalcOutputPort("HLC", "W/K", "Heat loss coefficient"),
-            new CalcOutputPort("Phi_T", "W", "Fabric heat loss including the thermal-bridge allowance"),
-            new CalcOutputPort("Phi_V", "W", "Ventilation heat loss"),
-            new CalcOutputPort("U_1", "W/(m^2*K)", "U-value of the first element in the elements table (→ B7 wall U-value cross-check)"),
+            new CalcOutputPort("Phi_HL", "kW", "Room design heat loss (→ sealed-system rooms table, column Phi)", "room.heat_loss_design"),
+            new CalcOutputPort("T_int", "degC", "Internal design temperature of the room (→ sealed-system rooms table, column t_i, the room temperature of that room's emitter)", "room.temperature_internal", ["theta_int"]),
+            new CalcOutputPort("HLC", "W/K", "Heat loss coefficient", "room.coefficient_heat_loss"),
+            new CalcOutputPort("Phi_T", "kW", "Fabric heat loss including the thermal-bridge allowance", "room.heat_loss_fabric"),
+            new CalcOutputPort("Phi_V", "kW", "Ventilation heat loss", "room.heat_loss_ventilation"),
+            new CalcOutputPort("U_1", "W/(m^2*K)", "U-value of the first element in the elements table (→ glaser U_ref, the wall U-value cross-check)", "room.u_value_first"),
         ],
         RecordKinds:
         [
             new CalcRecordKind("climate.design-temperature", "External design temperature", ["theta_e"], "The location's external design temperature from the user's own licensed or published source, with its edition."),
             new CalcRecordKind("material.conductivity", "Layer thermal conductivity", ["layers"], "The λ column of the layers table: manufacturer's declared value or the user's own licensed reference."),
-            new CalcRecordKind("thermal.bridging", "Thermal-bridge allowance", ["y_tb"], "From the user's own source or a bridging calculation for the construction."),
+            new CalcRecordKind("thermal.bridging", "Thermal bridging allowance", ["y_tb"], "From the user's own source or a bridging calculation for the construction."),
         ]);
 
     private static CalcInputValue Q(string symbol, double value, string unit) => CalcInputValue.Quantity(symbol, value, unit);
@@ -209,7 +214,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
 
     private static CalcInputValue[] CavityRoom() =>
     [
-        Q("theta_int", 21, "degC"), Q("theta_e", -3, "degC"),
+        Q("T_int", 21, "degC"), Q("theta_e", -3, "degC"),
         Layers(CavityLayers),
         Elements(("Cavity wall", 20, null, null, null, null, null, null, null), ("Window", 3, null, null, null, null, null, 1.4, null)),
         Q("U_target", 0.3, "W/(m^2*K)"), Q("n", 0.5, "1/h"), Q("V", 40, "m^3"),
@@ -225,37 +230,37 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
 
     private static CalcInputValue[] MvhrRoom() =>
     [
-        Q("theta_int", 21, "degC"), Q("theta_e", -3, "degC"),
+        Q("T_int", 21, "degC"), Q("theta_e", -3, "degC"),
         Layers(CavityLayers.Concat([("Partition", "Plasterboard", 12.5, 0.22), ("Partition", "Plasterboard", 12.5, 0.22)]).ToArray()),
         Elements(("Cavity wall", 15, null, null, null, null, null, null, null), ("Partition", 12, 18, null, null, null, 0.18, null, null), ("Ground floor", 10, null, 0.6, null, null, null, 0.25, null)),
-        Q("y_tb", 0.05, "W/(m^2*K)"), Q("n", 0.6, "1/h"), Q("V", 50, "m^3"), Q("theta_supply", 16, "degC"),
+        Q("y_tb", 0.05, "W/(m^2*K)"), Q("n", 0.6, "1/h"), Q("V", 50, "m^3"), Q("T_supply", 16, "degC"),
     ];
 
-    private sealed record Element(string Name, double Area, bool External, double ThetaAdj, double F, double U, double? Target, bool BuiltUp);
+    private sealed record Element(string Name, double Area, bool External, double ThetaAdj, double F, double U, double? Target, bool BuiltUp, bool TargetOwn);
 
     public void Run(CalcRunContext c)
     {
-        foreach (var s in new[] { "theta_int", "theta_e", "n", "V", "y_tb" })
+        foreach (var s in new[] { "T_int", "theta_e", "n", "V", "y_tb" })
             c.Input(s);
 
         var dhdg = c.InputText("method") == Dhdg;
         var tClause = dhdg ? "CIBSE DHDG (2026 ed.), reduced method" : "BS EN 12831-1 cl. 6.3.2";
         var vClause = dhdg ? "CIBSE DHDG (2026 ed.), reduced method" : "BS EN 12831-1 cl. 6.3.3";
 
-        if (!(c.Si("theta_int") > c.Si("theta_e")))
+        if (!(c.Si("T_int") > c.Si("theta_e")))
         {
             c.Block("temperatures", "theta_e: the external design temperature must be below the internal design temperature.");
             return;
         }
 
-        var mvhr = c.Has("theta_supply");
+        var mvhr = c.Has("T_supply");
 
         if (mvhr)
-            c.Input("theta_supply");
+            c.Input("T_supply");
 
-        if (mvhr && c.Si("theta_supply") > c.Si("theta_int") + 1e-9)
+        if (mvhr && c.Si("T_supply") > c.Si("T_int") + 1e-9)
         {
-            c.Block("supply", "theta_supply: the MVHR supply temperature must not exceed the internal design temperature.");
+            c.Block("supply", "T_supply: the MVHR supply temperature must not exceed the internal design temperature.");
             return;
         }
 
@@ -263,16 +268,16 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
 
         if (rows.Count == 0)
         {
-            c.Block("elements", "elements: enter at least one building element (walls, windows, floor, roof): its name, its area and, for an element facing another space, the adjacent temperature; then give each built-up element its layers or a U override.");
+            c.Block("elements", "elements: enter at least one building element, with its name and area. Give each built-up element its layers or a U override.");
             return;
         }
 
         var layerRows = c.Rows("layers");
-        var theta = c.Si("theta_int");
+        var theta = c.Si("T_int");
         var thetaE = c.Si("theta_e");
         var m2kw = UnitCatalog.Parse("m^2*K/W");
         var uUnit = UnitCatalog.Parse("W/(m^2*K)");
-        var w = UnitCatalog.Parse("W");
+        var kw = UnitCatalog.Parse("kW");
         var m2 = UnitCatalog.Parse("m^2");
         var wk = UnitCatalog.Parse("W/K");
         var names = new List<string>();
@@ -283,7 +288,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
 
             if (names.Contains(name, StringComparer.OrdinalIgnoreCase))
             {
-                c.Block("elements", $"elements: the name '{name}' is used twice; layers are matched to elements by name, so each name must be unique.");
+                c.Block("elements", $"elements: the name '{name}' is used twice. Layers are matched to elements by name, so each name must be unique.");
                 return;
             }
 
@@ -309,7 +314,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
             var f = row.Get("f")?.Number ?? 1.0;
 
             if (f < 1 - 1e-9 && adjEntered is { } adjacent && adjacent > thetaE + 1e-9)
-                c.Warn("f-and-adjacent", $"elements: {name} has both a temperature factor f = {F(f)} and an adjacent temperature of {F(adjacent - 273.15)} °C, so the temperature reduction is counted twice (θ_int − θ_adj and f). Use f for elements facing the outside only (a floor to ground, say) and the adjacent temperature for a neighbouring space; leave one of them blank.");
+                c.Warn("f-and-adjacent", $"elements: {name} has both a factor f = {F(f)} and an adjacent temperature of {F(adjacent - 273.15)} °C, counting the reduction twice. Use f for elements facing the outside, or the adjacent temperature for a neighbouring space.");
             var user = Si(row, "U_user", uUnit);
             var flow = row.Get("flow")?.Text is { Length: > 0 } flowText ? Clean(flowText) : Horizontal;
             var mine = new List<(string Layer, double D, double Lambda)>();
@@ -342,7 +347,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
             {
                 if (mine.Count == 0)
                 {
-                    c.Block("layers", $"layers: element '{name}' has no layers and no U override; add its layers (matched by element name) or enter a U-value.");
+                    c.Block("layers", $"layers: element '{name}' has no layers and no U override. Add its layers, matched by element name, or enter a U-value.");
                     return;
                 }
 
@@ -372,7 +377,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
 
             var phi = area * u * f * (theta - adj);
             var adjText = adjEntered is null ? $"θ_e = {F(thetaE - 273.15)} °C" : $"θ_adj = {F(adj - 273.15)} °C";
-            c.Record($"Phi_{no}", "A·U·f·(θ_int − θ_adj)", $"{F(area)} × {F(u)} × {F(f)} × ({F(theta - 273.15)} − {F(adj - 273.15)}) °C", ScalarValue.Of(phi, w), $"{name}: fabric loss to {adjText}", tClause);
+            c.Record($"Phi_{no}", "A·U·f·(T_int − θ_adj)", $"{F(area)} × {F(u)} × {F(f)} × ({F(theta - 273.15)} − {F(adj - 273.15)}) °C", ScalarValue.Of(phi / 1e3, kw), $"{name}: fabric loss to {adjText}", tClause);
 
             if (builtUp)
                 outputs.Add(($"R_{no}", $"{name}: thermal resistance"));
@@ -381,8 +386,9 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
             outputs.Add(($"Phi_{no}", $"{name}: fabric loss"));
 
             // The global target is an outside-facing target: a partition to a heated neighbour is checked only against its own (Black B-A-04).
-            var target = Si(row, "U_max", uUnit) ?? (builtUp && hasTarget && external ? globalTarget : (double?)null);
-            elements.Add(new Element(name, area, external, adj, f, u, target, builtUp));
+            var ownTarget = Si(row, "U_max", uUnit);
+            var target = ownTarget ?? (builtUp && hasTarget && external ? globalTarget : (double?)null);
+            elements.Add(new Element(name, area, external, adj, f, u, target, builtUp, ownTarget is not null));
         }
 
         var orphans = layerRows.Count - used.Count;
@@ -405,19 +411,19 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
         c.Record("A_tb", "Σ A·f facing outside", $"{F(areaTb)} m²", ScalarValue.Of(areaTb, m2), "Fabric area facing outside weighted by the temperature factor (thermal-bridge allowance applies)", tClause);
         c.Record("U_m", "Σ A·U / Σ A", $"{F(hU)} / {F(areaAll)}", ScalarValue.Of(hU / areaAll, uUnit), "Area-weighted mean U-value of the fabric (without the temperature factor f)");
         c.Record("U_eff", "Σ A·U·f / Σ A", $"{F(hT)} / {F(areaAll)}", ScalarValue.Of(hT / areaAll, uUnit), "Heat-loss weighted mean U-value of the fabric (includes the temperature factor f)");
-        c.Assign("dT", "theta_int - theta_e", "K", "Design temperature difference, inside to outside");
-        c.Record("Phi_el", "Σ Φ_i", $"{F(sumPhi)} W", ScalarValue.Of(sumPhi, w), "Fabric loss through the elements", tClause);
-        c.Assign("Phi_tb", "y_tb * A_tb * dT", "W", "Thermal-bridge allowance", tClause);
-        c.Assign("Phi_T", "Phi_el + Phi_tb", "W", "Fabric heat loss", tClause);
+        c.Assign("dT", "T_int - theta_e", "K", "Design temperature difference, inside to outside");
+        c.Record("Phi_el", "Σ Φ_i", $"{F(sumPhi)} W", ScalarValue.Of(sumPhi / 1e3, kw), "Fabric loss through the elements", tClause);
+        c.Assign("Phi_tb", "y_tb * A_tb * dT", "kW", "Thermal-bridge allowance", tClause);
+        c.Assign("Phi_T", "Phi_el + Phi_tb", "kW", "Fabric heat loss", tClause);
 
         c.Assign("q_v", "n * V", "m^3/h", "Ventilation air flow");
 
         if (mvhr)
         {
-            if (c.Si("theta_supply") < thetaE - 1e-9)
-                c.Warn("supply-below-external", "theta_supply: the MVHR supply temperature is below the external design temperature; check the heat-recovery figure.");
+            if (c.Si("T_supply") < thetaE - 1e-9)
+                c.Warn("supply-below-external", "T_supply: the MVHR supply temperature is below the external design temperature. Check the heat-recovery figure.");
 
-            c.Assign("dT_v", "theta_int - theta_supply", "K", "Ventilation temperature difference, inside to MVHR supply", "BS EN 12831-1 cl. 6.3.3");
+            c.Assign("dT_v", "T_int - T_supply", "K", "Ventilation temperature difference, inside to MVHR supply", "BS EN 12831-1 cl. 6.3.3");
         }
         else
         {
@@ -428,38 +434,38 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
 
         // bs.room-heat-loss-R1: with MVHR the air change rate n is the MVHR rate only; a room still leaks air at the outside temperature.
         if (mvhr && !c.Has("n_inf"))
-            c.Warn("mvhr-no-infiltration", "n_inf: an MVHR supply temperature is entered but the infiltration rate is blank, so the room has no infiltration loss: n is the MVHR rate only, and a room with MVHR still leaks air at the outside temperature. Enter n_inf (0 if the envelope is taken as airtight).");
+            c.Warn("mvhr-no-infiltration", "n_inf: an MVHR supply temperature is entered but the infiltration rate is blank, so no infiltration loss is counted. Enter n_inf, or 0 if the envelope is taken as airtight.");
 
         if (mvhr && ninf > 0)
         {
             c.Assign("q_inf", "n_inf * V", "m^3/h", "Infiltration air flow at the outside temperature (not through the MVHR)");
-            c.Assign("Phi_V", "0.34 Wh/(m^3*K) * (q_v * dT_v + q_inf * dT)", "W", "Ventilation heat loss: MVHR flow to the supply temperature plus infiltration to outside (0.34 Wh/m³K = conventional ρ·c_p of air, derived)", vClause);
+            c.Assign("Phi_V", "0.34 Wh/(m^3*K) * (q_v * dT_v + q_inf * dT)", "kW", "Ventilation heat loss: MVHR flow to the supply temperature plus infiltration to outside (0.34 Wh/m³K = conventional ρ·c_p of air, derived)", vClause);
         }
         else
         {
             if (!mvhr && ninf > 0)
-                c.Warn("n-inf-ignored", "n_inf: the infiltration rate applies with an MVHR supply temperature only; with natural ventilation n is the whole air change rate, so n_inf is ignored.");
+                c.Warn("n-inf-ignored", "n_inf: the infiltration rate applies with an MVHR supply temperature only. With natural ventilation n is the whole air change rate, so n_inf is ignored.");
 
-            c.Assign("Phi_V", "0.34 Wh/(m^3*K) * q_v * dT_v", "W", "Ventilation heat loss (0.34 Wh/m³K = conventional ρ·c_p of air, derived)", vClause);
+            c.Assign("Phi_V", "0.34 Wh/(m^3*K) * q_v * dT_v", "kW", "Ventilation heat loss (0.34 Wh/m³K = conventional ρ·c_p of air, derived)", vClause);
         }
 
         if (dhdg)
         {
             c.Input("f_add");
-            c.Assign("Phi_HL", "(Phi_T + Phi_V) * (1 + f_add)", "W", "Room design heat loss with the additional allowance", vClause);
+            c.Assign("Phi_HL", "(Phi_T + Phi_V) * (1 + f_add)", "kW", "Room design heat loss with the additional allowance", vClause);
         }
         else
         {
             if (c.Has("f_add") && c.InputSi("f_add") > 0)
                 c.Warn("f-add-ignored", "f_add: the additional allowance applies to the CIBSE DHDG method only and is ignored for BS EN 12831-1.");
 
-            c.Assign("Phi_HL", "Phi_T + Phi_V", "W", "Room design heat loss", "BS EN 12831-1 cl. 6.3.2");
+            c.Assign("Phi_HL", "Phi_T + Phi_V", "kW", "Room design heat loss", "BS EN 12831-1 cl. 6.3.2");
         }
 
         c.Assign("HLC", "Phi_HL / dT", "W/K", "Heat loss coefficient");
 
         if (c.Si("Phi_HL") <= 0)
-            c.Warn("gain", "Phi_HL: the room gains heat from warmer neighbours; Φ_HL ≤ 0, so no emitter is needed for design heating.");
+            c.Warn("gain", "Phi_HL: the room gains heat from warmer neighbours, so no emitter is sized for design heating.");
 
         var hasFloor = c.Has("A_floor");
 
@@ -472,7 +478,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
         foreach (var (symbol, text) in outputs)
             c.Output(symbol, text);
 
-        foreach (var (symbol, text) in new[] { ("theta_int", "Internal design temperature"), ("A_fab", "Total fabric area"), ("A_ext", "Fabric area facing outside"), ("A_tb", "Fabric area facing outside weighted by f"), ("U_m", "Mean fabric U-value (area-weighted)"), ("U_eff", "Heat-loss weighted fabric U-value (with f)"), ("dT", "Design temperature difference"), ("Phi_el", "Element fabric loss"), ("Phi_tb", "Thermal-bridge allowance"), ("Phi_T", "Fabric heat loss"), ("q_v", "Ventilation air flow"), ("Phi_V", "Ventilation heat loss"), ("Phi_HL", "Room design heat loss"), ("HLC", "Heat loss coefficient") })
+        foreach (var (symbol, text) in new[] { ("T_int", "Internal design temperature"), ("A_fab", "Total fabric area"), ("A_ext", "Fabric area facing outside"), ("A_tb", "Fabric area facing outside weighted by f"), ("U_m", "Mean fabric U-value (area-weighted)"), ("U_eff", "Heat-loss weighted fabric U-value (with f)"), ("dT", "Design temperature difference"), ("Phi_el", "Element fabric loss"), ("Phi_tb", "Thermal-bridge allowance"), ("Phi_T", "Fabric heat loss"), ("q_v", "Ventilation air flow"), ("Phi_V", "Ventilation heat loss"), ("Phi_HL", "Room design heat loss"), ("HLC", "Heat loss coefficient") })
             c.Output(symbol, text);
 
         if (hasFloor)
@@ -486,9 +492,11 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
                 continue;
 
             var no = i + 1;
-            c.Record($"u_{no}", "U / U_target", $"{F(e.U)} / {F(target)}", new ScalarValue(e.U / target), $"{e.Name}: utilisation of the target U-value");
-            c.Output($"u_{no}", $"{e.Name}: U against target");
-            c.CheckUtilisation($"U-value of {e.Name} against its target ({F(target)} W/m²K)", $"u_{no}");
+            c.MarkUtilisation($"u_target_{no}");
+            c.Record($"U_target_{no}", "target U of the element", e.TargetOwn ? "the target entered on the element's row" : "the global target U_target", ScalarValue.Of(target, uUnit), $"{e.Name}: target U-value");
+            c.Record($"u_target_{no}", "U / U_target", $"{F(e.U)} / {F(target)}", new ScalarValue(e.U / target), $"{e.Name}: utilisation of the target U-value");
+            c.Output($"u_target_{no}", $"{e.Name}: U against target");
+            c.Check($"U-value of {e.Name} against its target", $"U_{no}", $"U_target_{no}");
         }
     }
 

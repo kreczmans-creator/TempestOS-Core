@@ -86,16 +86,16 @@ public sealed class ORingGlandTests
         var ok = Run(At(52.9));
         Assert.Equal(5.8, Pct(ok, "stretch"), 9);
         Assert.Equal(5.8 / 6, ok.OutputSi("u_stretch"), 9);
-        Assert.Contains(ok.Checks, c => c.Name.StartsWith("Installed stretch not above", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(ok.Checks, c => c.Name.StartsWith("Installed stretch against the upper", StringComparison.Ordinal) && c.Passed);
 
         var tooMuch = Run(At(53.25));
         Assert.Equal(6.5, Pct(tooMuch, "stretch"), 9);
-        Assert.Contains(tooMuch.Checks, c => c.Name.StartsWith("Installed stretch not above", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(tooMuch.Checks, c => c.Name.StartsWith("Installed stretch against the upper", StringComparison.Ordinal) && !c.Passed);
         Assert.False(tooMuch.Passed);
 
         // A ring larger than its seat is not stretched at all: the lower limit catches it.
         var loose = Run(At(49.5));
-        Assert.Contains(loose.Checks, c => c.Name.StartsWith("Installed stretch not below", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(loose.Checks, c => c.Name.StartsWith("Installed stretch against the lower", StringComparison.Ordinal) && !c.Passed);
     }
 
     [Fact]
@@ -115,7 +115,7 @@ public sealed class ORingGlandTests
         // The Parker quadratic is used for about 3 to 25 % stretch, held at its 25 % value above that, reads zero without stretch and is cited, not confirmed.
         Assert.Equal(ORingGlandModel.Parker(25) / 100, ORingGlandModel.Reduction(ReductionRelation.Parker, 3.0, 0.49), 12);
         Assert.Equal(0, ORingGlandModel.Reduction(ReductionRelation.Parker, -0.02, 0.49));
-        Assert.Contains(Gland.Template.ClauseRefs, c => c.Standard.Contains("ORD 5700", StringComparison.Ordinal) && c.Clause == "Section 3.5");
+        Assert.Contains(Gland.Template.ClauseRefs, c => c.Standard.Contains("ORD 5700", StringComparison.Ordinal) && c.Clause == "§3.5");
         Assert.Contains(Run(CalcInputValue.Choice("red", ORingGlandCalculator.RelationParker)).RunAssumptions, a => a.Statement.Contains("not been confirmed", StringComparison.Ordinal));
     }
 
@@ -509,8 +509,8 @@ public sealed class ORingGlandTests
         var rod = Run(RodGland);
         Assert.Equal(2.7144408252, Pct(rod, "od_comp"), 9);
 
-        bool Od(CalcRunResult r) => r.Checks.Single(c => c.Name == "Ring OD compression not above the limit").Passed;
-        bool StretchOk(CalcRunResult r) => r.Checks.Single(c => c.Name == "Installed stretch not above the limit").Passed;
+        bool Od(CalcRunResult r) => r.Checks.Single(c => c.Name == "Ring OD compression against the limit").Passed;
+        bool StretchOk(CalcRunResult r) => r.Checks.Single(c => c.Name == "Installed stretch against the upper limit").Passed;
         Assert.True(Od(rod));
         Assert.False(Od(Run([.. RodGland, Percent("od_hi", 2.5)])));
         Assert.True(Od(Run([.. RodGland, Percent("od_hi", 3)])));
@@ -548,11 +548,11 @@ public sealed class ORingGlandTests
         Assert.Equal((67.0 - 66.725) / 67.0 * 100, Pct(internalFace, "od_comp_nom"), 9);
         Assert.NotNull(internalFace.FindOutput("od_comp"));
         Assert.Contains(internalFace.Checks, c => c.Name.StartsWith("Ring OD compression", StringComparison.Ordinal) && c.Passed);
-        Assert.DoesNotContain(internalFace.Checks, c => c.Name.StartsWith("Installed stretch not below", StringComparison.Ordinal));
+        Assert.DoesNotContain(internalFace.Checks, c => c.Name.StartsWith("Installed stretch against the lower", StringComparison.Ordinal));
 
         // The external-pressure face seal keeps its ID stretch and its lower stretch limit, and has no OD output.
         Assert.Null(external.FindOutput("od_comp"));
-        Assert.Contains(external.Checks, c => c.Name.StartsWith("Installed stretch not below", StringComparison.Ordinal));
+        Assert.Contains(external.Checks, c => c.Name.StartsWith("Installed stretch against the lower", StringComparison.Ordinal));
         Assert.Equal(ORingGlandCalculator.PressureExternal, Gland.Template.FindInput("face_p")!.DefaultChoice);
 
         // The old external-only model gave this ring a negative "stretch" that failed x_lo = 0; here the compression is judged against od_hi, a limit of its own.
@@ -641,12 +641,12 @@ public sealed class ORingGlandTests
         var r = Run();
         Assert.Equal(4.4072499513, Pct(r, "X_c"), 8);
         Assert.True(Pct(r, "X_c") > Pct(r, "stretch"));
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("Installed stretch not above the limit at the cold end", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Installed stretch at the cold end against the upper limit", StringComparison.Ordinal) && c.Passed);
 
         // A limit between the two: the installed stretch passes, the cold-end stretch fails.
         var between = Run(Percent("x_hi", 4.2));
-        Assert.Contains(between.Checks, c => c.Name == "Installed stretch not above the limit" && c.Passed);
-        Assert.Contains(between.Checks, c => c.Name.StartsWith("Installed stretch not above the limit at the cold end", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(between.Checks, c => c.Name == "Installed stretch against the upper limit" && c.Passed);
+        Assert.Contains(between.Checks, c => c.Name.StartsWith("Installed stretch at the cold end against the upper limit", StringComparison.Ordinal) && !c.Passed);
         Assert.False(between.Passed);
     }
 
@@ -719,16 +719,16 @@ public sealed class ORingGlandTests
     {
         // L-d: ka-rod-seal is compressed 2.71 % as installed and 5.07 % at the hot end (the ring grows more than the housing).
         var rod = Run(RodGland);
-        Assert.Contains(rod.Checks, c => c.Name == "Ring OD compression at the hot end not above the limit" && c.Passed);
+        Assert.Contains(rod.Checks, c => c.Name == "Ring OD compression at the hot end against the limit" && c.Passed);
 
         // An od_hi between the two: the installed check passes and the hot-end check fails.
         var between = Run([.. RodGland, Percent("od_hi", 4)]);
-        Assert.Contains(between.Checks, c => c.Name == "Ring OD compression not above the limit" && c.Passed);
-        Assert.Contains(between.Checks, c => c.Name == "Ring OD compression at the hot end not above the limit" && !c.Passed);
+        Assert.Contains(between.Checks, c => c.Name == "Ring OD compression against the limit" && c.Passed);
+        Assert.Contains(between.Checks, c => c.Name == "Ring OD compression at the hot end against the limit" && !c.Passed);
         Assert.False(between.Passed);
 
         // The internal-pressure face seal has it too, and the radial piston seal neither.
-        Assert.Contains(Run([.. InternalFace, Percent("od_hi", 3)]).Checks, c => c.Name == "Ring OD compression at the hot end not above the limit" && !c.Passed);
+        Assert.Contains(Run([.. InternalFace, Percent("od_hi", 3)]).Checks, c => c.Name == "Ring OD compression at the hot end against the limit" && !c.Passed);
         Assert.DoesNotContain(Run().Checks, c => c.Name.StartsWith("Ring OD compression", StringComparison.Ordinal));
     }
 
@@ -776,7 +776,7 @@ public sealed class ORingGlandTests
     [Fact]
     public void The_Template_Version_Is_Bumped_For_The_Changed_Model()
     {
-        Assert.Equal("1.4.0", Gland.Template.Version);
+        Assert.Equal("1.5.0", Gland.Template.Version);
     }
 
     [Fact]

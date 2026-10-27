@@ -32,7 +32,7 @@
       "ValueText": "12"
     },
     {
-      "Symbol": "T",
+      "Symbol": "T_fluid",
       "Number": 9,
       "Unit": "degC",
       "Provenance": {
@@ -164,7 +164,7 @@
       "ValueText": "1 row(s)"
     },
     {
-      "Symbol": "v_max",
+      "Symbol": "v_limit",
       "Number": 3,
       "Unit": "m/s",
       "Provenance": {
@@ -196,6 +196,17 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "60"
+    },
+    {
+      "Symbol": "T_db",
+      "Number": 28,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CHW-04 \u00A73 (plant room conditions)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "28"
     },
     {
       "Symbol": "altitude",
@@ -248,17 +259,6 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "none (state only)"
-    },
-    {
-      "Symbol": "t_db",
-      "Number": 28,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Specification",
-        "Reference": "SPEC-CHW-04 \u00A73 (plant room conditions)",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "28"
     }
   ],
   "b9": [
@@ -268,7 +268,7 @@
       "Unit": "mm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:09f78c7505b348ae8f2763dd10bc8076#OD_1",
+        "Reference": "calc:44b1a9882b7948cb85ac9eab1c2a482c#OD_1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -291,11 +291,47 @@
       "Unit": "%",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:09ba6ec1788a4ad5a49e53d7159ad05b#phi_1",
+        "Reference": "calc:682af6b82a714285827f5e1e0f45e727#phi_1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
       "ValueText": "60"
+    },
+    {
+      "Symbol": "T_amb",
+      "Number": 28,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:682af6b82a714285827f5e1e0f45e727#T_1_out",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "28"
+    },
+    {
+      "Symbol": "T_dew",
+      "Number": 19.514064574614167,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:682af6b82a714285827f5e1e0f45e727#T_dp_1",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "19.5141"
+    },
+    {
+      "Symbol": "T_proc",
+      "Number": 6,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:44b1a9882b7948cb85ac9eab1c2a482c#T_line",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "6"
     },
     {
       "Symbol": "dew_margin",
@@ -376,42 +412,6 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "25"
-    },
-    {
-      "Symbol": "theta_a",
-      "Number": 28,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Link",
-        "Reference": "calc:09ba6ec1788a4ad5a49e53d7159ad05b#t_1_out",
-        "Revision": "A",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "28"
-    },
-    {
-      "Symbol": "theta_dew",
-      "Number": 19.514064574614167,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Link",
-        "Reference": "calc:09ba6ec1788a4ad5a49e53d7159ad05b#t_dp_1",
-        "Revision": "A",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "19.5141"
-    },
-    {
-      "Symbol": "theta_i",
-      "Number": 6,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Link",
-        "Reference": "calc:09f78c7505b348ae8f2763dd10bc8076#T_line",
-        "Revision": "A",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "6"
     },
     {
       "Symbol": "v_wind",

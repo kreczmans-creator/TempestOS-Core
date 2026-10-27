@@ -132,7 +132,7 @@ public sealed partial class GlossaryTests
             Assert.All(group, r => Assert.Equal(several, r.Status.StartsWith("RESOLVE", StringComparison.Ordinal)));
         }
 
-        Assert.Contains(rows, r => r.Symbol == "T" && r.Status.StartsWith("RESOLVE", StringComparison.Ordinal));
+        Assert.Contains(rows, r => r.Symbol == "R" && r.Status.StartsWith("RESOLVE", StringComparison.Ordinal));
         Assert.Contains(rows, r => r.Symbol == "theta" && r.Status.StartsWith("RESOLVE", StringComparison.Ordinal));
     }
 
@@ -195,7 +195,6 @@ public sealed partial class GlossaryTests
         Assert.True(n.Count(r => r.Quantity == "Plain number") >= 2);
         Assert.Contains(n, r => r.Quantity != "Plain number");
         Assert.Equal(n.Count, n.Select(r => r.Meaning).Distinct(StringComparer.Ordinal).Count());
-        Assert.Contains(n, r => r.Meaning == "gas-exponent" && r.Templates.SequenceEqual(["fp.accumulator"]));
         Assert.All(n, r => Assert.StartsWith("RESOLVE", r.Status, StringComparison.Ordinal));
     }
 

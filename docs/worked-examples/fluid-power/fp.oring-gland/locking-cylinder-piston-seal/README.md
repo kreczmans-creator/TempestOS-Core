@@ -59,4 +59,4 @@ The groove leaves a gland depth of 2.780 mm ± 0.030 for a 3.5 ± 0.1 mm ring. O
 | `cpk_sq_min` | 1.56122  | 1.56122  | PASS |
 | `cpk_fill_max` | 1.648  | 1.648  | PASS |
 
-Governing check: Squeeze minimum within the band — PASS. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Squeeze minimum against the lower band limit — PASS. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

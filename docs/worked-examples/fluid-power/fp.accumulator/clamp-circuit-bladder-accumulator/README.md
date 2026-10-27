@@ -13,7 +13,7 @@ Delivering 14 L between 100 and 210 bar from a gas pre-charge of 90 bar (all abs
 | `dV` | 14 L | spec: Hydraulic specification HS-12: clamp stroke plus leakage make-up, 14 L per cycle |
 | `f_rg` | 1 | assumption: Ideal gas; the highest pressure is just above 200 bar, so the sheet warns. |
 | `mode` | Energy storage | assumption: Slow clamp-and-hold cycle: stored-energy duty. |
-| `n` | 1 | assumption: Isothermal: the clamp holds for minutes between cycles. |
+| `n_gas` | 1 | assumption: Isothermal: the clamp holds for minutes between cycles. |
 | `p_0` | 90 bar | spec: Hydraulic specification HS-12: pre-charge 90 bar at the maximum oil temperature |
 | `p_1` | 100 bar | spec: Hydraulic specification HS-12: lowest clamp pressure 100 bar |
 | `p_2` | 210 bar | spec: Hydraulic specification HS-12: pump cut-out 210 bar |
@@ -33,4 +33,4 @@ Delivering 14 L between 100 and 210 bar from a gas pre-charge of 90 bar (all abs
 | `u_rp` | 0.621818  | 0.621818  | PASS |
 | `bar_litres` | 7360 bar*L | 7360 bar*L | PASS |
 
-Governing check: Pre-charge within the p0/p1 rule — PASS (utilisation 1.00). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Pre-charge against the p0/p1 rule — PASS (utilisation 1.00). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

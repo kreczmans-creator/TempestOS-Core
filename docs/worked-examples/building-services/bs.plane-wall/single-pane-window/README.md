@@ -16,8 +16,8 @@ An 8 mm pane, 0.8 × 1.5 m. The glass itself is under 8 % of the resistance; the
 | Output | Expected | Computed | Result |
 |---|---|---|---|
 | `R_tot` | 0.11271 K/W | 0.112714 K/W | PASS |
-| `Q` | 266.16 W | 266.161 W | PASS |
-| `U` | 7.3934 W/(m^2*K) | 7.39336 W/(m^2*K) | PASS |
+| `Phi` | 0.26616 kW | 0.266161 kW | PASS |
+| `U_wall` | 7.3934 W/(m^2*K) | 7.39336 W/(m^2*K) | PASS |
 | `T_s0` | -2.1801 degC | -2.18009 degC | PASS |
 
 Governing check: none. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

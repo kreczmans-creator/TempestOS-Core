@@ -15,7 +15,7 @@ public sealed class RoomHeatLossTests
 
     private static CalcInputSet Wall(double insulationMm, double lambda = 0.03) =>
         new CalcInputSet()
-            .With(Q("theta_int", 21, "degC")).With(Q("theta_e", -3, "degC"))
+            .With(Q("T_int", 21, "degC")).With(Q("theta_e", -3, "degC"))
             .With(RoomHeatLossCalculator.Layers(("Wall", "Brick", 102.5, 0.84), ("Wall", "Insulation", insulationMm, lambda), ("Wall", "Block", 100, 0.2)))
             .With(RoomHeatLossCalculator.Elements(("Wall", 20, null, null, null, null, null, null, null)));
 
@@ -24,7 +24,7 @@ public sealed class RoomHeatLossTests
     {
         // bs.room-heat-loss-01: wall 18 m2 U 0.1967, roof 20 m2 U 0.1776, floor 20 m2 U 0.22 f 0.7, window 4 m2 U 1.4. U_m held sum(A U f)/sum(A) = 0.2544, 8 % under the true area-weighted
         // mean sum(A U)/sum(A) = (3.5406 + 3.552 + 4.4 + 5.6)/62 = 0.2757 (python3). The heat-loss weighted figure stays as U_eff.
-        var set = new CalcInputSet().With(Q("theta_int", 21, "degC")).With(Q("theta_e", -3, "degC")).With(RoomHeatLossCalculator.Elements(
+        var set = new CalcInputSet().With(Q("T_int", 21, "degC")).With(Q("theta_e", -3, "degC")).With(RoomHeatLossCalculator.Elements(
             ("Wall", 18, null, null, null, null, null, 0.1967, null), ("Roof", 20, null, null, null, null, null, 0.1776, null),
             ("Floor", 20, null, 0.7, null, null, null, 0.22, null), ("Window", 4, null, null, null, null, null, 1.4, null)));
         var r = CalcRunner.Run(Room, set);
@@ -37,15 +37,15 @@ public sealed class RoomHeatLossTests
     public void A_Temperature_Factor_Below_One_On_An_Element_With_An_Adjacent_Temperature_Warns_Of_A_Double_Reduction()
     {
         // bs.room-heat-loss-R2: 10 m2, U 0.3, theta_adj 10 degC, f 0.5, theta_int 21 degC gave Phi_1 16.5 W; either reduction alone gives 33 W (f only: 0.3 x 10 x 0.5 x 24 = 36 W; theta_adj only: 0.3 x 10 x 11 = 33 W).
-        var both = new CalcInputSet().With(Q("theta_int", 21, "degC")).With(Q("theta_e", -3, "degC")).With(RoomHeatLossCalculator.Elements(("Wall", 10, 10, 0.5, null, null, null, 0.3, null)));
+        var both = new CalcInputSet().With(Q("T_int", 21, "degC")).With(Q("theta_e", -3, "degC")).With(RoomHeatLossCalculator.Elements(("Wall", 10, 10, 0.5, null, null, null, 0.3, null)));
         var r = CalcRunner.Run(Room, both);
         Assert.Equal(16.5, r.OutputSi("Phi_1"), 6);
         var warning = Assert.Single(r.Warnings, w => w.RuleId == "f-and-adjacent");
         Assert.Contains("Wall", warning.Message, StringComparison.Ordinal);
 
-        var adjOnly = CalcRunner.Run(Room, new CalcInputSet().With(Q("theta_int", 21, "degC")).With(Q("theta_e", -3, "degC")).With(RoomHeatLossCalculator.Elements(("Wall", 10, 10, null, null, null, null, 0.3, null))));
+        var adjOnly = CalcRunner.Run(Room, new CalcInputSet().With(Q("T_int", 21, "degC")).With(Q("theta_e", -3, "degC")).With(RoomHeatLossCalculator.Elements(("Wall", 10, 10, null, null, null, null, 0.3, null))));
         Assert.DoesNotContain(adjOnly.Warnings, w => w.RuleId == "f-and-adjacent");
-        var fOnly = CalcRunner.Run(Room, new CalcInputSet().With(Q("theta_int", 21, "degC")).With(Q("theta_e", -3, "degC")).With(RoomHeatLossCalculator.Elements(("Wall", 10, null, 0.5, null, null, null, 0.3, null))));
+        var fOnly = CalcRunner.Run(Room, new CalcInputSet().With(Q("T_int", 21, "degC")).With(Q("theta_e", -3, "degC")).With(RoomHeatLossCalculator.Elements(("Wall", 10, null, 0.5, null, null, null, 0.3, null))));
         Assert.DoesNotContain(fOnly.Warnings, w => w.RuleId == "f-and-adjacent");
     }
 
@@ -76,7 +76,7 @@ public sealed class RoomHeatLossTests
 
         Gen.Select(Gen.Double[-15, 5], Gen.Double[16, 24]).Sample((te, ti) =>
         {
-            var r = CalcRunner.Run(Room, Defaults().With(Q("theta_e", te, "degC")).With(Q("theta_int", ti, "degC")));
+            var r = CalcRunner.Run(Room, Defaults().With(Q("theta_e", te, "degC")).With(Q("T_int", ti, "degC")));
             return !r.IsBlocked && Math.Abs(r.OutputSi("HLC") - hlc) < 1e-9 && Math.Abs(r.OutputSi("Phi_HL") - hlc * (ti - te)) < 1e-6;
         }, iter: 60);
     }
@@ -85,17 +85,17 @@ public sealed class RoomHeatLossTests
     public void An_Mvhr_Supply_Lowers_The_Ventilation_Loss()
     {
         var natural = CalcRunner.Run(Room, Defaults());
-        var mvhr = CalcRunner.Run(Room, Defaults().With(Q("theta_supply", 16, "degC")));
+        var mvhr = CalcRunner.Run(Room, Defaults().With(Q("T_supply", 16, "degC")));
         Assert.True(mvhr.OutputSi("Phi_V") < natural.OutputSi("Phi_V"));
         Assert.Equal(0.34 * 20 * 5, mvhr.OutputSi("Phi_V"), 9);
         Assert.Equal(natural.OutputSi("Phi_T"), mvhr.OutputSi("Phi_T"), 9);
-        Assert.Equal(0, CalcRunner.Run(Room, Defaults().With(Q("theta_supply", 21, "degC"))).OutputSi("Phi_V"), 9);
+        Assert.Equal(0, CalcRunner.Run(Room, Defaults().With(Q("T_supply", 21, "degC"))).OutputSi("Phi_V"), 9);
     }
 
     [Fact]
     public void A_Supply_Warmer_Than_The_Room_Blocks()
     {
-        var r = CalcRunner.Run(Room, Defaults().With(Q("theta_supply", 25, "degC")));
+        var r = CalcRunner.Run(Room, Defaults().With(Q("T_supply", 25, "degC")));
         Assert.True(r.IsBlocked);
         Assert.Equal("supply", r.Blocks[0].RuleId);
     }
@@ -114,7 +114,7 @@ public sealed class RoomHeatLossTests
     [Fact]
     public void Values_Outside_The_Hard_Ranges_Block()
     {
-        foreach (var (symbol, value, unit) in new[] { ("theta_int", 25.0, "degC"), ("theta_int", 15.0, "degC"), ("theta_e", 6.0, "degC"), ("theta_e", -16.0, "degC"), ("n", 3.5, "1/h"), ("n", 0.05, "1/h") })
+        foreach (var (symbol, value, unit) in new[] { ("T_int", 25.0, "degC"), ("T_int", 15.0, "degC"), ("theta_e", 6.0, "degC"), ("theta_e", -16.0, "degC"), ("n", 3.5, "1/h"), ("n", 0.05, "1/h") })
         {
             var r = CalcRunner.Run(Room, Defaults().With(Q(symbol, value, unit)));
             Assert.True(r.IsBlocked, $"{symbol} = {value} should block");
@@ -218,9 +218,9 @@ public sealed class RoomHeatLossTests
     [Fact]
     public void Infiltration_Is_Added_At_The_Outside_Temperature_With_Mvhr_Only()
     {
-        var withInf = CalcRunner.Run(Room, Defaults().With(Q("theta_supply", 16, "degC")).With(Q("n_inf", 0.1, "1/h")));
+        var withInf = CalcRunner.Run(Room, Defaults().With(Q("T_supply", 16, "degC")).With(Q("n_inf", 0.1, "1/h")));
         Assert.Equal(0.34 * (20 * 5 + 0.1 * 40 * 24), withInf.OutputSi("Phi_V"), 9);
-        var without = CalcRunner.Run(Room, Defaults().With(Q("theta_supply", 16, "degC")));
+        var without = CalcRunner.Run(Room, Defaults().With(Q("T_supply", 16, "degC")));
         Assert.True(withInf.OutputSi("Phi_V") > without.OutputSi("Phi_V"));
 
         var natural = CalcRunner.Run(Room, Defaults().With(Q("n_inf", 0.1, "1/h")));
@@ -234,7 +234,7 @@ public sealed class RoomHeatLossTests
     {
         // bs.room-heat-loss-R1: 21 / -3 C, n 0.5 h-1, V 50 m3, MVHR supply 16 C. Blank n_inf: Phi_V = 0.34 * 25 m3/h * 5 K = 42.5 W (no infiltration, no notice before);
         // n_inf 0.2: + 0.34 * 0.2 * 50 * 24 = 81.6 W, Phi_V 124.1 W (python3 arithmetic).
-        var mvhr = Defaults().With(Q("V", 50, "m^3")).With(Q("theta_supply", 16, "degC"));
+        var mvhr = Defaults().With(Q("V", 50, "m^3")).With(Q("T_supply", 16, "degC"));
         var blank = CalcRunner.Run(Room, mvhr);
         Assert.Equal(42.5, blank.OutputSi("Phi_V"), 9);
         var warning = Assert.Single(blank.Warnings, w => w.RuleId == "mvhr-no-infiltration");
@@ -252,7 +252,7 @@ public sealed class RoomHeatLossTests
     [Fact]
     public void A_Room_That_Gains_Heat_Warns()
     {
-        var gain = CalcRunner.Run(Room, Defaults().With(Q("theta_supply", 21, "degC")).With(RoomHeatLossCalculator.Elements(("Party wall", 10, 40, null, null, null, null, 0.5, null))));
+        var gain = CalcRunner.Run(Room, Defaults().With(Q("T_supply", 21, "degC")).With(RoomHeatLossCalculator.Elements(("Party wall", 10, 40, null, null, null, null, 0.5, null))));
         Assert.True(gain.OutputSi("Phi_HL") <= 0);
         Assert.Contains(gain.Warnings, w => w.RuleId == "gain");
         Assert.DoesNotContain(CalcRunner.Run(Room, Defaults()).Warnings, w => w.RuleId == "gain");
@@ -261,8 +261,8 @@ public sealed class RoomHeatLossTests
     [Fact]
     public void The_Mvhr_Supply_Temperature_Is_Entered_Once_On_The_Sheet()
     {
-        var r = CalcRunner.Run(Room, Defaults().With(Q("theta_supply", 16, "degC")));
-        Assert.Single(r.Steps, s => s.Symbol == "theta_supply");
+        var r = CalcRunner.Run(Room, Defaults().With(Q("T_supply", 16, "degC")));
+        Assert.Single(r.Steps, s => s.Symbol == "T_supply");
     }
 
     [Fact]
@@ -309,7 +309,7 @@ public sealed class RoomHeatLossTests
         Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
         Assert.Contains(r.Checks, c => c.Name.Contains("Cavity wall", StringComparison.Ordinal));
         Assert.DoesNotContain(r.Checks, c => c.Name.Contains("Partition", StringComparison.Ordinal));
-        Assert.Null(r.FindOutput("u_2"));
+        Assert.Null(r.FindOutput("u_target_2"));
         Assert.True(r.Passed);
 
         // Its own target still applies wherever it faces.
@@ -325,7 +325,7 @@ public sealed class RoomHeatLossTests
     public void The_Conventional_Internal_Surface_Resistance_Follows_The_Heat_Flow_Direction(string? flow, double rsi)
     {
         // Green G-B-14: a roof lost heat through R_si = 0.13 instead of the upward-flow 0.10.
-        var inputs = new CalcInputSet().With(Q("theta_int", 21, "degC")).With(Q("theta_e", -3, "degC"))
+        var inputs = new CalcInputSet().With(Q("T_int", 21, "degC")).With(Q("theta_e", -3, "degC"))
             .With(RoomHeatLossCalculator.Layers(("Roof", "Insulation", 100, 0.05)))
             .With(Table(("Roof", flow, 10, null)));
         var r = CalcRunner.Run(Room, inputs);
@@ -336,7 +336,7 @@ public sealed class RoomHeatLossTests
     [Fact]
     public void An_Internal_Floor_Takes_The_Same_Resistance_On_Both_Faces_For_Its_Direction()
     {
-        var inputs = new CalcInputSet().With(Q("theta_int", 21, "degC")).With(Q("theta_e", -3, "degC"))
+        var inputs = new CalcInputSet().With(Q("T_int", 21, "degC")).With(Q("theta_e", -3, "degC"))
             .With(RoomHeatLossCalculator.Layers(("Ceiling", "Board", 25, 0.22)))
             .With(Table(("Ceiling", "upward", 10, 18)));
         var r = CalcRunner.Run(Room, inputs);
@@ -358,7 +358,7 @@ public sealed class RoomHeatLossTests
     public void The_U_Value_Of_The_First_Element_Is_A_Declared_Port()
     {
         Assert.Contains(Room.Template.OutputPorts!, p => p is { Symbol: "U_1", Unit: "W/(m^2*K)" });
-        var inputs = new CalcInputSet().With(Q("theta_int", 21, "degC")).With(Q("theta_e", -3, "degC"))
+        var inputs = new CalcInputSet().With(Q("T_int", 21, "degC")).With(Q("theta_e", -3, "degC"))
             .With(RoomHeatLossCalculator.Layers(("Wall", "Brick", 215, 0.8), ("Wall", "Board", 12.5, 0.25)))
             .With(Table(("Wall", "horizontal", 10, null)));
         var r = CalcRunner.Run(Room, inputs);

@@ -25,7 +25,7 @@ public sealed class HydraulicPowerUnitChainTests
 
     /// <summary>The whole F1 revision of a bigger circuit: 10 % more bore, supply pressure, circuit flow and pump speed, so every downstream link carries a new value.</summary>
     private static IReadOnlyList<CalcInputValue> Uprate(IReadOnlyList<CalcInputValue> inputs) =>
-        Scale("D", 1.1)(Scale("p", 1.1)(Scale("Q", 1.1)(Scale("n_p", 1.1)(inputs))));
+        Scale("D", 1.1)(Scale("p_sys", 1.1)(Scale("Q", 1.1)(Scale("n_p", 1.1)(inputs))));
 
     [Fact]
     public async Task Values_Flow_Down_Every_Link_Of_The_Chain_With_Their_Units()
@@ -41,7 +41,7 @@ public sealed class HydraulicPowerUnitChainTests
         var areaBore = Math.PI * 0.1 * 0.1 / 4;
         Assert.Equal(areaBore * 0.5, Si(f1, "dV"), 12);
         Assert.Equal(3.926990816987242e-3, Si(f1, "dV"), 15);
-        Assert.Equal(160e5, Si(f1, "p"), 6);
+        Assert.Equal(160e5, Si(f1, "p_sys"), 6);
         Assert.Equal(36e-3 / 60, Si(f1, "Q"), 15);
         var pumpPower = 160e5 * (28e-6 * 1450 / 60 * 0.95) / 0.88;
         Assert.Equal(11687.878787878786, pumpPower, 6);
@@ -69,7 +69,7 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal("Emergency stroke", f2.Inputs.Single(i => i.Symbol == "mode").Text);
 
         // F1 → F2, supply pressure p (bar) is the accumulator's highest working pressure p_2; p_1 stays above the pressure the 80 kN push needs (80 kN / (A_b·η_m)).
-        Assert.Equal(Si(f1, "p"), InputSi(f2, "p_2"), 6);
+        Assert.Equal(Si(f1, "p_sys"), InputSi(f2, "p_2"), 6);
 
         // L-g: the linked p is gauge and F2's p_basis is Gauge (its default), so the link is consistent and F2 does not warn; in Absolute mode it would (see the accumulator tests).
         Assert.Equal("Gauge", f2.Inputs.Single(i => i.Symbol == "p_basis").Text);
@@ -99,7 +99,7 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.DoesNotContain(f2.Warnings, w => w.RuleId is "exponent" or "realgas" or "shock" or "process");
 
         // fp.accumulator-R2: n = 1.4 is the ideal-gas exponent; the sheet says its real-gas factor is applied on top and must be the discharge path's.
-        Assert.Contains("applied on top", Assert.Single(f2.Warnings, w => w.RuleId == "exponent-real").Message, StringComparison.Ordinal);
+        Assert.Contains("applies on top", Assert.Single(f2.Warnings, w => w.RuleId == "exponent-real").Message, StringComparison.Ordinal);
         Assert.Contains("charged slowly to p_2", f2.Outputs.Single(o => o.Symbol == "process").Text, StringComparison.Ordinal);
 
         // F1 → B1: the pressure line B1 judges is the line F1 judges, the line to the cylinder cap port: its flow Q_prs (L/min into m³/h) is the larger of the two strokes,
@@ -139,7 +139,7 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(247513.4521071798, frictionLoss + fittings, 2);
         Assert.Equal(frictionLoss + fittings, Si(b1, "dp_total"), 1);
         Assert.Equal(Si(b1, "dp_total"), Si(b1, "dp_sys"), 6);
-        Assert.True(Si(b1, "dp_total") < 0.02 * Si(f1, "p"));
+        Assert.True(Si(b1, "dp_total") < 0.02 * Si(f1, "p_sys"));
         Assert.Contains(b1.Warnings, w => w.RuleId == "transition");
         Assert.DoesNotContain(b1.Warnings, w => w.RuleId == "laminar");
 
@@ -319,7 +319,7 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(["f1", "f2", "b1", "e1", "e4", "e3", "e5", "e9"], template.Steps.Select(s => s.Key));
         Assert.Equal(
             [
-                ("f1", "dV", "f2", "dV"), ("f1", "p", "f2", "p_2"), ("f1", "p_push", "f2", "p_load"), ("f1", "Q_prs", "b1", "Q"), ("f1", "rho", "b1", "rho_custom"), ("f1", "d_prs", "b1", "segments"), ("f1", "T_shaft", "e1", "T_L"), ("f1", "n_shaft", "e1", "n_L"), ("e1", "P_rated", "e4", "P"),
+                ("f1", "dV", "f2", "dV"), ("f1", "p_sys", "f2", "p_2"), ("f1", "p_push", "f2", "p_load"), ("f1", "Q_prs", "b1", "Q"), ("f1", "rho", "b1", "rho_custom"), ("f1", "d_prs", "b1", "segments"), ("f1", "T_shaft", "e1", "T_L"), ("f1", "n_shaft", "e1", "n_L"), ("e1", "P_rated", "e4", "P"),
                 ("e4", "I_b", "e3", "I"), ("e4", "L", "e3", "L"), ("e4", "CSA", "e3", "A_c"), ("e4", "theta_op", "e3", "T_c"),
                 ("e4", "CSA", "e5", "S_line"), ("e4", "CSA", "e5", "S_cpc"), ("e4", "L", "e5", "L"), ("e4", "I_n", "e5", "I_n"), ("e4", "device_code", "e5", "device_code"), ("e4", "theta_op", "e5", "theta"),
                 ("e1", "P_rated", "e9", "P"), ("e4", "CSA", "e9", "A_c"), ("e4", "L", "e9", "L_cab"), ("e5", "I_k3", "e9", "I_k"), ("e5", "c_k3", "e9", "c_src"),
@@ -363,14 +363,14 @@ public sealed class HydraulicPowerUnitChainTests
         // The revision moved every value a link carries.
         Assert.NotEqual(Si(f1, "dV"), Si(f1New, "dV"));
         Assert.Equal(Math.PI * 0.11 * 0.11 / 4 * 0.5, Si(f1New, "dV"), 12);
-        Assert.Equal(176e5, Si(f1New, "p"), 6);
+        Assert.Equal(176e5, Si(f1New, "p_sys"), 6);
         Assert.Equal(39.6e-3 / 60, Si(f1New, "Q"), 15);
         Assert.Equal(1595, Si(f1New, "n_shaft") * 60 / (2 * Math.PI), 9);
         Assert.Equal(1.1 * Si(f1, "T_shaft"), Si(f1New, "T_shaft"), 9);
 
         // ... and the update carried each one to its step.
         Assert.Equal(Si(f1New, "dV"), InputSi(f2, "dV"), 15);
-        Assert.Equal(Si(f1New, "p"), InputSi(f2, "p_2"), 6);
+        Assert.Equal(Si(f1New, "p_sys"), InputSi(f2, "p_2"), 6);
         Assert.Equal(Si(f1New, "Q_prs"), InputSi(b1, "Q"), 15);
         Assert.Equal(71.30093055555555e-3 / 60, Si(f1New, "Q_prs"), 12);
         Assert.NotEqual(Si(f1, "Q_prs"), Si(f1New, "Q_prs"));
@@ -417,7 +417,7 @@ public sealed class HydraulicPowerUnitChainTests
         Assert.Equal(134.0, Si(f1, "p_push") / 1e5, 1);
         Assert.True(f1.Checks.Single(c => c.Name.StartsWith("Push load", StringComparison.Ordinal) || c.Name.StartsWith("Extend force", StringComparison.Ordinal)).Passed);
         Assert.Equal(needed / 120e5, Si(f2, "u_load"), 9);
-        Assert.Contains(f2.Checks, c => c.Name.StartsWith("Lowest working pressure p_1 carries the load", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(f2.Checks, c => c.Name.StartsWith("Load pressure against", StringComparison.Ordinal) && !c.Passed);
     }
 
     [Fact]
@@ -474,7 +474,7 @@ public sealed class HydraulicPowerUnitChainTests
         // The direct links say which value moved; E4 takes nothing from F1 and is stale only because E1, which it is linked to, is.
         var f2Reasons = (await host.Service.StalenessAsync(await Fresh(host, made, "f2"))).Reasons;
         Assert.Contains(f2Reasons, r => r.Contains("'dV'", StringComparison.Ordinal) && r.Contains("different 'dV'", StringComparison.Ordinal));
-        Assert.Contains(f2Reasons, r => r.Contains("'p_2'", StringComparison.Ordinal) && r.Contains("different 'p'", StringComparison.Ordinal));
+        Assert.Contains(f2Reasons, r => r.Contains("'p_2'", StringComparison.Ordinal) && r.Contains("different 'p_sys'", StringComparison.Ordinal));
         var b1Reasons = (await host.Service.StalenessAsync(await Fresh(host, made, "b1"))).Reasons;
         Assert.Contains(b1Reasons, r => r.Contains("'Q'", StringComparison.Ordinal) && r.Contains("different 'Q_prs'", StringComparison.Ordinal));
         var e1Reasons = (await host.Service.StalenessAsync(await Fresh(host, made, "e1"))).Reasons;
@@ -664,6 +664,6 @@ public sealed class HydraulicPowerUnitChainTests
         // The cylinder step takes its supply pressure from a circuit outside the pack, which becomes a new revision after the check: the cylinder step is stale with no pack member touched, and so is every step that takes from it,
         // down to the motor start four links away; the pack is still Checked, and Issue is refused naming the cylinder step.
         await ChainProofs.AnOutsideRevisionAfterTheCheckMakesTheWholeChainStaleAndRefusesIssueAsync(
-            host, made, "f1", "p", "fp.cylinder", ChainInputs.HydraulicPowerUnit(host)["f1"], "p", ["f2", "b1", "e1", "e4", "e3", "e5", "e9"]);
+            host, made, "f1", "p_sys", "fp.cylinder", ChainInputs.HydraulicPowerUnit(host)["f1"], "p_sys", ["f2", "b1", "e1", "e4", "e3", "e5", "e9"]);
     }
 }

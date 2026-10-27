@@ -34,6 +34,28 @@
     "ValueText": "60"
   },
   {
+    "Symbol": "T_amb",
+    "Number": 15,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-M-12 \u00A72: ambient design temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "15"
+  },
+  {
+    "Symbol": "T_proc",
+    "Number": 120,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-M-12 \u00A73: heating flow temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "120"
+  },
+  {
     "Symbol": "eps",
     "Number": 0.1,
     "Provenance": {
@@ -106,28 +128,6 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "50"
-  },
-  {
-    "Symbol": "theta_a",
-    "Number": 15,
-    "Unit": "degC",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "SPEC-M-12 \u00A72: ambient design temperature",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "15"
-  },
-  {
-    "Symbol": "theta_i",
-    "Number": 120,
-    "Unit": "degC",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "SPEC-M-12 \u00A73: heating flow temperature",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "120"
   },
   {
     "Symbol": "theta_se_max",

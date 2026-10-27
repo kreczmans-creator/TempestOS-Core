@@ -11,7 +11,7 @@
     "ValueText": "1"
   },
   {
-    "Symbol": "T",
+    "Symbol": "T_fluid",
     "Number": 20,
     "Unit": "degC",
     "Provenance": {
@@ -110,7 +110,7 @@
     "ValueText": "1 row(s)"
   },
   {
-    "Symbol": "v_max",
+    "Symbol": "v_limit",
     "Number": 3,
     "Unit": "m/s",
     "Provenance": {

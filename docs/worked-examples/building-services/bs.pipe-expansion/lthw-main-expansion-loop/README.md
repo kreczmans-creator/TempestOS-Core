@@ -25,12 +25,12 @@ The 50 m main grows 42 mm; fully restrained it would carry 176 MPa and push 152 
 | `Delta` | 21 mm | 21 mm | PASS |
 | `L_req` | 3.4295 m | 3.4295 m | PASS |
 | `u_leg` | 0.857375  | 0.857375  | PASS |
-| `anchor_force` | 654.934 N | 654.934 N | PASS |
-| `anchor_moment` | 1309.87 N*m | 1309.87 N*m | PASS |
+| `anchor_force` | 0.654934 kN | 0.654934 kN | PASS |
+| `anchor_moment` | 1.30987 kN*m | 1.30987 kN*m | PASS |
 | `sigma_leg` | 73.5092 MPa | 73.5092 MPa | PASS |
 | `Y_scr` | 42 mm | 42 mm | PASS |
 | `scr` | 58.3406 mm^2/m^2 | 58.3406 mm^2/m^2 | PASS |
 | `u_scr` | 0.486172  | 0.486172  | PASS |
 | `pass` | 1  | 1  | PASS |
 
-Governing check: Available leg against the required leg (3.4295 m) — PASS (utilisation 0.86). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Available leg against the required leg — PASS (utilisation 0.86). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

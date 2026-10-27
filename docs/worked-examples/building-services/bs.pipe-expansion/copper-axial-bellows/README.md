@@ -10,12 +10,12 @@ With the bellows in the run there is no leg to check and no screening. The ancho
 | `E` | 120 GPa | assumption: W3 seed 'Copper (generic)', indicative; replace with the project's material record. |
 | `L` | 24 m | drawing: DRG-M-212 rev B |
 | `OD` | 54 mm | drawing: DRG-M-212 rev B |
-| `P_b` | 6 bar | spec: Heating circuit design pressure, gauge |
+| `P_b` | 600 kPa | spec: Heating circuit design pressure, gauge |
 | `T_install` | 10 degC | assumption: Mean site temperature when the riser is anchored. |
 | `T_operate` | 70 degC | spec: SPEC-M-04 §3: heating flow temperature |
 | `alpha` | 17 um/(m*K) | assumption: W3 seed 'Copper (generic)' (17e-6 1/K), indicative; replace with the project's material record. |
 | `dL_rated` | 40 mm | assumption: Placeholder rated axial movement; replace with the manufacturer's datasheet value. |
-| `k_b` | 80 N/mm | assumption: Placeholder spring rate; replace with the manufacturer's datasheet value. |
+| `k_b` | 80 kN/m | assumption: Placeholder spring rate; replace with the manufacturer's datasheet value. |
 | `layout` | axial bellows (no leg or loop: the bellows absorbs the movement) | drawing: DRG-M-212 rev B |
 | `t_wall` | 1.5 mm | drawing: DRG-M-212 rev B |
 | `temp_mode` | install and operating temperatures | assumption: Install and operating temperatures are both known. |
@@ -24,10 +24,10 @@ With the bellows in the run there is no leg to check and no screening. The ancho
 |---|---|---|---|
 | `dL` | 24.48 mm | 24.48 mm | PASS |
 | `F_thrust` | 2.4 kN | 2.4 kN | PASS |
-| `F_spring` | 1958.4 N | 1958.4 N | PASS |
-| `anchor_force` | 4358.4 N | 4358.4 N | PASS |
-| `anchor_moment` | 0 N*m | 0 N*m | PASS |
+| `F_spring` | 1.9584 kN | 1.9584 kN | PASS |
+| `anchor_force` | 4.3584 kN | 4.3584 kN | PASS |
+| `anchor_moment` | 0 kN*m | 0 kN*m | PASS |
 | `u_bellows` | 0.612  | 0.612  | PASS |
 | `pass` | 1  | 1  | PASS |
 
-Governing check: Movement against the rated axial movement of the bellows (40 mm) — PASS (utilisation 0.61). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Movement against the rated axial movement of the bellows — PASS (utilisation 0.61). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

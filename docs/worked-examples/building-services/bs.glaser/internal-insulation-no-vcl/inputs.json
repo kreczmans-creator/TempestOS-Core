@@ -66,6 +66,17 @@
     "ValueText": "0.25"
   },
   {
+    "Symbol": "T_int",
+    "Number": 20,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-A-02 \u00A73.1: living-room design temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20"
+  },
+  {
     "Symbol": "breathable",
     "Flag": false,
     "Provenance": {
@@ -341,16 +352,5 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "3 row(s)"
-  },
-  {
-    "Symbol": "theta_int",
-    "Number": 20,
-    "Unit": "degC",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "SPEC-A-02 \u00A73.1: living-room design temperature",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "20"
   }
 ]

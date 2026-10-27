@@ -23,9 +23,9 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|
 | Chilled water pipe | `OD_1` | Pipe insulation | `D_i` | 54 mm |
-| Chilled water pipe | `T_line` | Pipe insulation | `theta_i` | 6 degC |
-| Plant room air | `t_1_out` | Pipe insulation | `theta_a` | 28 degC |
-| Plant room air | `t_dp_1` | Pipe insulation | `theta_dew` | 19.5141 degC |
+| Chilled water pipe | `T_line` | Pipe insulation | `T_proc` | 6 degC |
+| Plant room air | `T_1_out` | Pipe insulation | `T_amb` | 28 degC |
+| Plant room air | `T_dp_1` | Pipe insulation | `T_dew` | 19.5141 degC |
 | Plant room air | `phi_1` | Pipe insulation | `RH_a` | 60 % |
 
 ## Inputs and provenance

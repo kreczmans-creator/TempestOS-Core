@@ -15,7 +15,7 @@ public sealed class SealedSystemTests
     {
         Gen.Select(Gen.Double[35, 90], Gen.Double[1, 30]).Sample((tf, drop) =>
         {
-            var inputs = Defaults().With(CalcInputValue.Quantity("t_f", tf, "degC")).With(CalcInputValue.Quantity("t_r", Math.Max(tf - drop, 30), "degC"));
+            var inputs = Defaults().With(CalcInputValue.Quantity("T_flow", tf, "degC")).With(CalcInputValue.Quantity("T_return", Math.Max(tf - drop, 30), "degC"));
             var amtd = CalcRunner.Run(Sealed, inputs);
             var lmtd = CalcRunner.Run(Sealed, inputs.With(CalcInputValue.Choice("dT_method", SealedSystemCalculator.Lmtd)));
             return amtd.IsBlocked || lmtd.OutputSi("dT") <= amtd.OutputSi("dT") + 1e-9;
@@ -30,7 +30,7 @@ public sealed class SealedSystemTests
     {
         // chain.wet-heating-05 (W4): 350.4 W room, 400 W emitter at DN 50 K, 75/65 degC. The sheet's t_i 20 gives dT 50 K and u 0.876; the room's own 21 degC (B4's theta_int) gives dT 49 K and
         // u = 350.4/(400 x (49/50)^1.3) = 0.899 (+2.7 %, python3). A blank room cell takes the sheet's t_i.
-        var sheet = Defaults().With(CalcInputValue.Quantity("t_f", 75, "degC")).With(CalcInputValue.Quantity("t_r", 65, "degC")).With(CalcInputValue.Quantity("t_i", 20, "degC")).With(CalcInputValue.Of("n", 1.3));
+        var sheet = Defaults().With(CalcInputValue.Quantity("T_flow", 75, "degC")).With(CalcInputValue.Quantity("T_return", 65, "degC")).With(CalcInputValue.Quantity("T_room", 20, "degC")).With(CalcInputValue.Of("n", 1.3));
         var blank = CalcRunner.Run(Sealed, sheet.With(Room(null)));
         Assert.False(blank.IsBlocked, string.Join("; ", blank.Blocks.Select(b => b.Message)));
         Assert.Equal(0.876, blank.OutputSi("u_emit"), 3);
@@ -58,7 +58,7 @@ public sealed class SealedSystemTests
     public void Lower_Flow_Temperature_Needs_Bigger_Emitters()
     {
         var hot = CalcRunner.Run(Sealed, Defaults()).OutputSi("R1");
-        var cool = CalcRunner.Run(Sealed, Defaults().With(CalcInputValue.Quantity("t_f", 50, "degC")).With(CalcInputValue.Quantity("t_r", 40, "degC"))).OutputSi("R1");
+        var cool = CalcRunner.Run(Sealed, Defaults().With(CalcInputValue.Quantity("T_flow", 50, "degC")).With(CalcInputValue.Quantity("T_return", 40, "degC"))).OutputSi("R1");
         Assert.True(cool > 2 * hot);
     }
 
@@ -94,9 +94,9 @@ public sealed class SealedSystemTests
     [Fact]
     public void Return_At_Room_Temperature_Blocks()
     {
-        var r = CalcRunner.Run(Sealed, Defaults().With(CalcInputValue.Quantity("t_f", 40, "degC")).With(CalcInputValue.Quantity("t_r", 30, "degC")).With(CalcInputValue.Quantity("t_i", 24, "degC")));
+        var r = CalcRunner.Run(Sealed, Defaults().With(CalcInputValue.Quantity("T_flow", 40, "degC")).With(CalcInputValue.Quantity("T_return", 30, "degC")).With(CalcInputValue.Quantity("T_room", 24, "degC")));
         Assert.False(r.IsBlocked);
-        var blocked = CalcRunner.Run(Sealed, Defaults().With(CalcInputValue.Quantity("t_r", 85, "degC")));
+        var blocked = CalcRunner.Run(Sealed, Defaults().With(CalcInputValue.Quantity("T_return", 85, "degC")));
         Assert.True(blocked.IsBlocked);
     }
 
@@ -123,20 +123,20 @@ public sealed class SealedSystemTests
         Gen.Select(Gen.Double[45, 90], Gen.Double[1, 15]).Sample((tf, drop) =>
         {
             var tr = tf - drop;
-            var r = CalcRunner.Run(Sealed, Defaults().With(CalcInputValue.Quantity("t_f", tf, "degC")).With(CalcInputValue.Quantity("t_r", tr, "degC")));
+            var r = CalcRunner.Run(Sealed, Defaults().With(CalcInputValue.Quantity("T_flow", tf, "degC")).With(CalcInputValue.Quantity("T_return", tr, "degC")));
             Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
             Assert.Equal(tf - tr, r.OutputSi("dT_fr"), 1e-9);
-            Assert.Equal((tf + tr) / 2 + 273.15, r.OutputSi("t_m"), 1e-9);
+            Assert.Equal((tf + tr) / 2 + 273.15, r.OutputSi("T_m"), 1e-9);
         }, iter: 60);
 
         // At 75/65/20 the emitter mean difference is 50 K but the loop drops 10 K, and the mean water temperature is 70 °C.
         var catalogue = CalcRunner.Run(Sealed, Defaults());
         Assert.Equal(50, catalogue.OutputSi("dT"), 1e-9);
         Assert.Equal(10, catalogue.OutputSi("dT_fr"), 1e-9);
-        Assert.Equal(343.15, catalogue.OutputSi("t_m"), 1e-9);
+        Assert.Equal(343.15, catalogue.OutputSi("T_m"), 1e-9);
 
         Assert.Contains(Sealed.Template.OutputPorts!, p => p is { Symbol: "dT_fr", Unit: "K" });
-        Assert.Contains(Sealed.Template.OutputPorts!, p => p is { Symbol: "t_m", Unit: "degC" });
+        Assert.Contains(Sealed.Template.OutputPorts!, p => p is { Symbol: "T_m", Unit: "degC" });
     }
 
     [Theory]
@@ -145,18 +145,18 @@ public sealed class SealedSystemTests
     public void A_Fill_Temperature_At_Or_Above_The_Maximum_Blocks_Instead_Of_A_Negative_Vessel(double fill, double max)
     {
         // Black B-A-08(a): t_fill 40, t_max 30 gave e_x = −0.0034, V_e = −0.27 L and a FAIL with a utilisation of −0.05.
-        var r = CalcRunner.Run(Sealed, Defaults().With(Q("t_fill", fill, "degC")).With(Q("t_max", max, "degC")).With(Q("V_vessel", 5, "L")));
+        var r = CalcRunner.Run(Sealed, Defaults().With(Q("T_fill", fill, "degC")).With(Q("T_max", max, "degC")).With(Q("V_vessel", 5, "L")));
         Assert.True(r.IsBlocked);
         Assert.Equal("t-fill", r.Blocks[0].RuleId);
-        Assert.StartsWith("t_fill:", r.Blocks[0].Message, StringComparison.Ordinal);
+        Assert.StartsWith("T_fill:", r.Blocks[0].Message, StringComparison.Ordinal);
     }
 
     [Fact]
     public void The_Vessel_Is_Sized_For_The_Flow_Temperature_When_It_Is_Above_The_Maximum()
     {
         // Black B-A-08(b): t_max 30 with a 75 °C flow gave V_e = 0.32 L against 2.50 L at the actual flow temperature.
-        var low = CalcRunner.Run(Sealed, Defaults().With(Q("t_max", 30, "degC")));
-        var atFlow = CalcRunner.Run(Sealed, Defaults().With(Q("t_max", 75, "degC")));
+        var low = CalcRunner.Run(Sealed, Defaults().With(Q("T_max", 30, "degC")));
+        var atFlow = CalcRunner.Run(Sealed, Defaults().With(Q("T_max", 75, "degC")));
         Assert.Contains(low.Warnings, w => w.RuleId == "t-max");
         Assert.Equal(atFlow.OutputSi("V_e"), low.OutputSi("V_e"), 12);
         Assert.Equal(atFlow.OutputSi("e_x"), low.OutputSi("e_x"), 12);

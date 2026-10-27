@@ -27,7 +27,7 @@ public sealed class DuctSizingCalculator : ICalcCalculator
     private static readonly IReadOnlyList<CalcColumnSpec> SectionColumns =
     [
         new("name", "Section", CalcInputKind.Text, IsOptional: true),
-        new("Q", "Airflow", CalcInputKind.Quantity, "m^3/s", HardMin: 1e-6, HardMax: 1e3),
+        new("Q", "Airflow", CalcInputKind.Quantity, "m^3/h", HardMin: 0.0036, HardMax: 3.6e6),
         new("L", "Length", CalcInputKind.Quantity, "m", HardMin: 0, HardMax: 1e4),
         new("shape", "Shape", CalcInputKind.Choice, Choices: [ShapeRound, ShapeRectangular, ShapeFlatOval], IsOptional: true),
         new("a", "Fixed side a (rectangular/oval; blank = size)", CalcInputKind.Quantity, "mm", HardMin: 10, HardMax: 1e4, IsOptional: true),
@@ -38,47 +38,48 @@ public sealed class DuctSizingCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.BuildingServices, "Duct sizing",
-        "Sizes each duct section by the equal-friction method (a target friction rate) or the velocity method (a target velocity), rounds to standard sizes, and reports velocity, friction rate, friction and fitting losses per section and the total pressure drop along the index run, with warnings against user velocity and pressure-drop limits.",
+        Id, "1.2.0", CalcDiscipline.BuildingServices, "Duct sizing",
+        "Calculates duct sizes by the equal-friction or the velocity method, rounded up to standard sizes. It reports the velocity, friction rate and losses of each section and the pressure drop along the index run.",
         "Round duct diameter from the design target: D by Colebrook with the air properties at T (equal friction), or D = √(4Q/πv) (velocity), rounded up to the next standard size.\nRectangular duct of equal friction and capacity: D_e = 1.30 (ab)^0.625/(a + b)^0.25.\nFlat-oval duct of equal friction and capacity: D_e = 1.55 A^0.625/P^0.25, with A = πb²/4 + b(a − b) and P = πb + 2(a − b).\nVelocity method, rectangular or flat-oval duct with side a fixed: b from the free area A = Q/v (rectangle b = A/a; flat oval the smaller root of (1 − π/4)b² − ab + A = 0), rounded up; D_e is kept for the friction only.\nFriction loss per metre, at the velocity v_e of the equivalent round duct: Δp/L = f ρ v_e²/(2D_e).\nFitting losses, at the actual velocity: Δp = ΣC ρ v²/2.\nIndex-run totals, summed over every section of the run: Δp_run = Σ(Δp/L · L + ΣC ρ v²/2).",
         [
-            new CalcInputSpec("method", "Sizing method", CalcInputKind.Choice, Choices: [MethodEqualFriction, MethodVelocity], DefaultChoice: MethodEqualFriction, Group: "Design"),
-            new CalcInputSpec("dp_target", "Target friction rate (equal friction)", CalcInputKind.Quantity, "Pa/m", Default: 1.0, Min: 0.3, Max: 5, HardMin: 0.01, HardMax: 100, Group: "Design"),
-            new CalcInputSpec("v_target", "Target velocity (velocity method)", CalcInputKind.Quantity, "m/s", Default: 6, Min: 2, Max: 20, HardMin: 0.1, HardMax: 100, Group: "Design"),
-            new CalcInputSpec("T", "Air temperature", CalcInputKind.Quantity, "degC", Default: 20, Min: -20, Max: 60, HardMin: -50, HardMax: 200, Group: "Air"),
-            new CalcInputSpec("p_atm", "Barometric pressure", CalcInputKind.Quantity, "kPa", Default: 101.325, Min: 80, Max: 105, HardMin: 10, HardMax: 1000, Group: "Air"),
-            new CalcInputSpec("eps", "Duct roughness", CalcInputKind.Quantity, "mm", Default: 0.09, Min: 0.03, Max: 3, HardMin: 0, HardMax: 50, Group: "Air"),
-            new CalcInputSpec("sections", "Duct sections", CalcInputKind.Table, Columns: SectionColumns, MaxRows: 500, Group: "System"),
-            new CalcInputSpec("v_limit", "Velocity limit (warning and check)", CalcInputKind.Quantity, "m/s", Default: 8, Min: 2, Max: 30, HardMin: 0.1, HardMax: 100, Group: "Limits"),
-            new CalcInputSpec("dp_limit", "Total pressure-drop limit (check)", CalcInputKind.Quantity, "Pa", Default: 300, Min: 50, Max: 2000, HardMin: 1, HardMax: 1e5, Group: "Limits"),
-            new CalcInputSpec("round_to", "Round sizes up to a multiple of", CalcInputKind.Quantity, "mm", Default: 50, Min: 1, Max: 100, HardMin: 1, HardMax: 1000, Group: "Limits"),
+            new CalcInputSpec("method", "Sizing method", CalcInputKind.Choice, Choices: [MethodEqualFriction, MethodVelocity], DefaultChoice: MethodEqualFriction, Group: "Setup"),
+            new CalcInputSpec("sections", "Duct sections", CalcInputKind.Table, Columns: SectionColumns, MaxRows: 500, Group: "Setup"),
+            new CalcInputSpec("round_to", "Round sizes up to a multiple of", CalcInputKind.Quantity, "mm", Default: 50, Min: 1, Max: 100, HardMin: 1, HardMax: 1000, Group: "Geometry"),
+            new CalcInputSpec("eps_rough", "Duct roughness", CalcInputKind.Quantity, "mm", Default: 0.09, Min: 0.03, Max: 3, HardMin: 0, HardMax: 50, Group: "Material", Aliases: ["eps"]),
+            new CalcInputSpec("T_air", "Air temperature", CalcInputKind.Quantity, "degC", Default: 20, Min: -20, Max: 60, HardMin: -50, HardMax: 200, Group: "Conditions", Aliases: ["T"]),
+            new CalcInputSpec("p_atm", "Barometric pressure", CalcInputKind.Quantity, "kPa", Default: 101.325, Min: 80, Max: 105, HardMin: 10, HardMax: 1000, Group: "Conditions"),
+            new CalcInputSpec("dp_target", "Target friction rate (equal friction)", CalcInputKind.Quantity, "Pa/m", Default: 1.0, Min: 0.3, Max: 5, HardMin: 0.01, HardMax: 100, Group: "Requirements"),
+            new CalcInputSpec("v_target", "Target velocity (velocity method)", CalcInputKind.Quantity, "m/s", Default: 6, Min: 2, Max: 20, HardMin: 0.1, HardMax: 100, Group: "Requirements"),
+            new CalcInputSpec("v_limit", "Velocity limit (warning and check)", CalcInputKind.Quantity, "m/s", Default: 8, Min: 2, Max: 30, HardMin: 0.1, HardMax: 100, Group: "Requirements"),
+            new CalcInputSpec("dp_limit", "Total pressure-drop limit (check)", CalcInputKind.Quantity, "Pa", Default: 300, Min: 50, Max: 2000, HardMin: 1, HardMax: 1e5, Group: "Requirements"),
         ],
         [
-            new CalcAssumption("Air is dry at the stated temperature and pressure (ρ = p/(287.055 T)); viscosity by Sutherland's law.", "Standard air properties."),
+            new CalcAssumption("Air is dry at the stated temperature and pressure.", "Ideal gas, ρ = p/(287.055 T)."),
+            new CalcAssumption("The viscosity of air follows Sutherland's law.", "Standard air properties."),
             new CalcAssumption("Rectangular and flat-oval ducts are sized through the equivalent diameter for equal friction and capacity.", "Huebscher / Heyt–Diaz relations as given in ASHRAE Fundamentals Ch. 21."),
             new CalcAssumption("Fitting loss coefficients C are user-supplied (manufacturer or ASHRAE/CIBSE data, not embedded) and refer to the section's velocity pressure.", "Non-negotiable: no standard tables embedded."),
         ],
         [
             new CalcClauseRef("ASHRAE Handbook — Fundamentals", "Ch. 21", "Duct design (friction chart basis, equivalent diameters, loss coefficients)"),
-            new CalcClauseRef("CIBSE Guide C", "Section 4", "Flow of fluids in pipes and ducts"),
-            new CalcClauseRef("BS EN 1505", "—", "Ventilation for buildings: sheet metal air ducts and fittings with rectangular cross-section, dimensions"),
-            new CalcClauseRef("BS EN 1506", "—", "Ventilation for buildings: sheet metal air ducts and fittings with circular cross-section, dimensions"),
+            new CalcClauseRef("CIBSE Guide C", "§4", "Flow of fluids in pipes and ducts"),
+            new CalcClauseRef("BS EN 1505:1998", "—", "Ventilation for buildings: sheet metal air ducts and fittings with rectangular cross-section, dimensions"),
+            new CalcClauseRef("BS EN 1506:2007", "—", "Ventilation for buildings: sheet metal air ducts and fittings with circular cross-section, dimensions"),
         ],
         [
-            new CalcApplicabilityRule("sections", "At least one section is needed.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("geometry", "A given size must be positive; a fixed side needs the rectangular or flat-oval shape.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("sections", "At least one section is required.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("geometry", "A given size must be positive, and a fixed side needs the rectangular or flat-oval shape.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("velocity", "A section exceeds the velocity limit.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("laminar", "A section is laminar or transitional (Re < 4000): unusual for ductwork; check the airflow.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("laminar", "A section is laminar or transitional (Re < 4000), which is unusual for ductwork.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("summary-only", "More than 50 sections: per-section lines are omitted.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-round-given", "Round duct of given size, friction rate (ASHRAE friction-chart point)",
                 new CalcReferenceSource("ASHRAE Handbook — Fundamentals", "2017", "Ch. 21 friction chart: 1 m³/s in a 400 mm round duct at standard air ≈ 8 m/s, ≈ 1.6 Pa/m (ε = 0.09 mm). Values here from Colebrook with Sutherland viscosity: v = 7.958 m/s, Re = 2.12e5, f = 0.01714, Δp/L = 1.633 Pa/m"),
-                [CalcInputValue.Choice("method", MethodEqualFriction), CalcInputValue.Quantity("T", 20, "degC"), CalcInputValue.Quantity("eps", 0.09, "mm"), Sections(("main", 1.0, 10, ShapeRound, 0, 400, 0, 0, true))],
+                [CalcInputValue.Choice("method", MethodEqualFriction), CalcInputValue.Quantity("T_air", 20, "degC"), CalcInputValue.Quantity("eps_rough", 0.09, "mm"), Sections(("main", 1.0, 10, ShapeRound, 0, 400, 0, 0, true))],
                 [new CalcExpectedValue("v_s1", 7.958, "m/s", 1e-3), new CalcExpectedValue("f_s1", 0.01714, "", 5e-3), new CalcExpectedValue("dpL_s1", 1.633, "Pa/m", 5e-3), new CalcExpectedValue("dp_index", 16.33, "Pa", 5e-3)]),
             new CalcTestCase("ka-rectangular-equivalent", "Rectangular 600 × 300 equivalent diameter (ASHRAE Ch. 21 relation)",
                 new CalcReferenceSource("ASHRAE Handbook — Fundamentals", "2017", "Ch. 21 equivalent round duct for a rectangular duct: D_e = 1.30 (ab)^0.625/(a + b)^0.25; 600 × 300 → 457 mm; friction rate through D_e at v_e = 4Q/πD_e² = 4.87 m/s ≈ 0.556 Pa/m (independent recomputation)"),
-                [CalcInputValue.Choice("method", MethodEqualFriction), CalcInputValue.Quantity("T", 20, "degC"), Sections(("branch", 0.8, 12, ShapeRectangular, 600, 300, 0.5, 0, true))],
+                [CalcInputValue.Choice("method", MethodEqualFriction), CalcInputValue.Quantity("T_air", 20, "degC"), Sections(("branch", 0.8, 12, ShapeRectangular, 600, 300, 0.5, 0, true))],
                 [new CalcExpectedValue("De_s1", 457.3, "mm", 2e-3), new CalcExpectedValue("v_s1", 4.444, "m/s", 1e-3), new CalcExpectedValue("dpL_s1", 0.556, "Pa/m", 1e-2)]),
             new CalcTestCase("ka-velocity-method", "Velocity method sizes to the next standard round size (analytic)",
                 new CalcReferenceSource("Analytic", null, "Q = 0.5 m³/s at 6 m/s: D = √(4Q/πv) = 325.7 mm → 350 mm standard; actual v = 5.197 m/s"),
@@ -86,7 +87,12 @@ public sealed class DuctSizingCalculator : ICalcCalculator
                 [new CalcExpectedValue("D_s1", 350, "mm", 1e-9), new CalcExpectedValue("v_s1", 5.197, "m/s", 1e-3), new CalcExpectedValue("dp_fit_s1", 19.47, "Pa", 5e-3)]),
         ],
         DiagramKey: "duct-sizing",
-        Category: "Air");
+        Category: "Air",
+        OutputPorts:
+        [
+            new CalcOutputPort("dp_index", "Pa", "Pressure drop along the index run", "duct.pressure_drop_index"),
+            new CalcOutputPort("v_peak", "m/s", "Highest velocity of any section", "duct.velocity_peak"),
+        ]);
 
     /// <summary>Sections: (name, Q m³/s, L m, shape, a mm, D-or-b mm, ΣC, equipment loss Pa, on index run).</summary>
     public static CalcInputValue Sections(params (string Name, double Q, double L, string Shape, double A, double D, double C, double DpEq, bool Index)[] rows) =>
@@ -115,26 +121,25 @@ public sealed class DuctSizingCalculator : ICalcCalculator
     {
         c.MarkUtilisation("u_dp", "u_v");
         var method = c.InputText("method");
+        var rows = c.Rows("sections");
+        c.Input("round_to");
+        c.Input("eps_rough");
+        c.Input("T_air");
+        c.Input("p_atm");
         c.Input("dp_target");
         c.Input("v_target");
-        c.Input("T");
-        c.Input("p_atm");
-        c.Input("eps");
         c.Input("v_limit");
         c.Input("dp_limit");
-        c.Input("round_to");
-        var t = c.Si("T") - 273.15;
+        var t = c.Si("T_air") - 273.15;
         var rho = AirDensity(t, c.Si("p_atm") / 1e3);
         var mu = AirViscosity(t);
-        var eps = c.Si("eps");
+        var eps = c.Si("eps_rough");
         var dpTarget = c.Si("dp_target");
         var vTarget = c.Si("v_target");
         var vLimit = c.Si("v_limit");
         var roundTo = c.Si("round_to");
         c.Record("rho", "p / (287.055 T)", $"{F(c.Si("p_atm"))} Pa / (287.055 × {F(t + 273.15)} K)", ScalarValue.Of(rho, "kg/m^3"), "Air density");
         c.Record("mu", "Sutherland's law", $"T = {F(t + 273.15)} K", ScalarValue.Of(mu * 1e6, "uPa*s"), "Air dynamic viscosity");
-
-        var rows = c.Rows("sections");
 
         if (rows.Count == 0)
         {
@@ -145,7 +150,7 @@ public sealed class DuctSizingCalculator : ICalcCalculator
         var detailed = rows.Count <= MaxDetailed;
 
         if (!detailed)
-            c.Warn("summary-only", "sections: more than 50 sections; per-section lines are omitted.");
+            c.Warn("summary-only", "sections: there are more than 50 sections. Per-section lines are omitted.");
 
         double dpIndex = 0, dpAll = 0, vPeak = 0;
         var mm = UnitCatalog.Parse("mm");
@@ -158,7 +163,7 @@ public sealed class DuctSizingCalculator : ICalcCalculator
             var r = rows[i];
             var k = $"s{i + 1}";
             var name = r.Get("name")?.Text is { Length: > 0 } n ? n : $"section {i + 1}";
-            var q = Cell(r, "Q", "m^3/s");
+            var q = Cell(r, "Q", "m^3/h");
             var l = Cell(r, "L", "m");
             var shape = r.Get("shape")?.Text ?? ShapeRound;
             var aGiven = r.Get("a")?.Number is { } ? Cell(r, "a", "mm") : double.NaN;
@@ -175,7 +180,7 @@ public sealed class DuctSizingCalculator : ICalcCalculator
 
             if (shape == ShapeRound && !double.IsNaN(aGiven))
             {
-                c.Block("geometry", $"sections: {name} is round; a fixed side a needs a rectangular or flat-oval shape.");
+                c.Block("geometry", $"sections: {name} is round. A fixed side a needs a rectangular or flat-oval shape.");
                 return;
             }
 
@@ -259,7 +264,7 @@ public sealed class DuctSizingCalculator : ICalcCalculator
             vPeak = Math.Max(vPeak, v);
 
             if (re < Friction.TurbulentLimit)
-                c.Warn("laminar", $"sections: {name} has Re = {F(re)} (below 4000); check the airflow.");
+                c.Warn("laminar", $"sections: {name} has Re = {F(re)}, below 4000. Check the airflow.");
 
             if (v > vLimit)
                 c.Warn("velocity", $"sections: {name} runs at {F(v)} m/s, above the {F(vLimit)} m/s limit.");
@@ -302,8 +307,8 @@ public sealed class DuctSizingCalculator : ICalcCalculator
         c.Output("dp_index", "Index-run Δp");
         c.Output("dp_all", "Σ all sections");
         c.Output("v_peak", "Highest velocity");
-        c.CheckUtilisation("Index-run Δp ≤ limit", "u_dp");
-        c.CheckUtilisation("Velocity ≤ limit", "u_v");
+        c.Check("Index-run pressure drop against limit", "dp_index", "dp_limit");
+        c.Check("Highest velocity against limit", "v_peak", "v_limit");
     }
 
     private static double Equivalent(string shape, double a, double b) => shape == ShapeRectangular ? EquivalentDiameterRectangular(a, b) : EquivalentDiameterFlatOval(Math.Max(a, b), Math.Min(a, b));

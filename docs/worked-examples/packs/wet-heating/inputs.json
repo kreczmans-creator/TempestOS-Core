@@ -1,6 +1,17 @@
 {
   "b4a": [
     {
+      "Symbol": "T_int",
+      "Number": 21,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "21"
+    },
+    {
       "Symbol": "U_target",
       "Number": 0.3,
       "Unit": "W/(m^2*K)",
@@ -186,17 +197,6 @@
       "ValueText": "-3"
     },
     {
-      "Symbol": "theta_int",
-      "Number": 21,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Specification",
-        "Reference": "SPEC-HTG-01 \u00A73",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "21"
-    },
-    {
       "Symbol": "y_tb",
       "Number": 0,
       "Unit": "W/(m^2*K)",
@@ -209,6 +209,28 @@
     }
   ],
   "b4b": [
+    {
+      "Symbol": "T_int",
+      "Number": 21,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "21"
+    },
+    {
+      "Symbol": "T_supply",
+      "Number": 16,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HTG-01 \u00A73",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "16"
+    },
     {
       "Symbol": "V",
       "Number": 50,
@@ -453,28 +475,6 @@
       "ValueText": "-3"
     },
     {
-      "Symbol": "theta_int",
-      "Number": 21,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Specification",
-        "Reference": "SPEC-HTG-01 \u00A73",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "21"
-    },
-    {
-      "Symbol": "theta_supply",
-      "Number": 16,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Specification",
-        "Reference": "SPEC-HTG-01 \u00A73",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "16"
-    },
-    {
       "Symbol": "y_tb",
       "Number": 0.05,
       "Unit": "W/(m^2*K)",
@@ -487,6 +487,61 @@
     }
   ],
   "b6": [
+    {
+      "Symbol": "T_fill",
+      "Number": 10,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "T_flow",
+      "Number": 75,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "75"
+    },
+    {
+      "Symbol": "T_max",
+      "Number": 85,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "85"
+    },
+    {
+      "Symbol": "T_return",
+      "Number": 65,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "65"
+    },
+    {
+      "Symbol": "T_room",
+      "Number": 20,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "20"
+    },
     {
       "Symbol": "V_pipe",
       "Number": 3.14,
@@ -542,36 +597,36 @@
     },
     {
       "Symbol": "p_f",
-      "Number": 2.5,
-      "Unit": "bar",
+      "Number": 250,
+      "Unit": "kPa",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "2.5"
+      "ValueText": "250"
     },
     {
       "Symbol": "p_margin",
-      "Number": 0.3,
-      "Unit": "bar",
+      "Number": 30,
+      "Unit": "kPa",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "0.3"
+      "ValueText": "30"
     },
     {
       "Symbol": "p_prv",
-      "Number": 3,
-      "Unit": "bar",
+      "Number": 300,
+      "Unit": "kPa",
       "Provenance": {
         "Kind": "Assumption",
         "Reference": "Sheet default value; no project figure given.",
         "IsSufficientToIssue": true
       },
-      "ValueText": "3"
+      "ValueText": "300"
     },
     {
       "Symbol": "rooms",
@@ -582,11 +637,11 @@
               "Text": "Room A"
             },
             "Phi": {
-              "Number": 379.4440817728912,
-              "Unit": "W",
+              "Number": 0.3794440817728912,
+              "Unit": "kW",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:751b938c0bc24a61a87bf3f9111a4787#Phi_HL",
+                "Reference": "calc:a457bd33b7ee4b068ede6e3dc2c83b73#Phi_HL",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -600,7 +655,7 @@
               "Unit": "degC",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:751b938c0bc24a61a87bf3f9111a4787#theta_int",
+                "Reference": "calc:a457bd33b7ee4b068ede6e3dc2c83b73#T_int",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -613,11 +668,11 @@
               "Text": "Room B"
             },
             "Phi": {
-              "Number": 304.60769187154034,
-              "Unit": "W",
+              "Number": 0.30460769187154035,
+              "Unit": "kW",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:9897755423c14be5914a86690d58dd13#Phi_HL",
+                "Reference": "calc:a0f5d217ce6240ab924ea0143ec87fd3#Phi_HL",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -631,7 +686,7 @@
               "Unit": "degC",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:9897755423c14be5914a86690d58dd13#theta_int",
+                "Reference": "calc:a0f5d217ce6240ab924ea0143ec87fd3#T_int",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -645,61 +700,6 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "2 row(s)"
-    },
-    {
-      "Symbol": "t_f",
-      "Number": 75,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "75"
-    },
-    {
-      "Symbol": "t_fill",
-      "Number": 10,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "10"
-    },
-    {
-      "Symbol": "t_i",
-      "Number": 20,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "20"
-    },
-    {
-      "Symbol": "t_max",
-      "Number": 85,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "85"
-    },
-    {
-      "Symbol": "t_r",
-      "Number": 65,
-      "Unit": "degC",
-      "Provenance": {
-        "Kind": "Assumption",
-        "Reference": "Sheet default value; no project figure given.",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "65"
     }
   ],
   "b1": [
@@ -725,23 +725,23 @@
     },
     {
       "Symbol": "Phi_load",
-      "Number": 684.0517736444315,
-      "Unit": "W",
+      "Number": 0.6840517736444315,
+      "Unit": "kW",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e28e1a73876649049d9b726dda99c409#Phi_tot",
+        "Reference": "calc:26c66fa6769048c6a4869a7bfffb92da#Phi_tot",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
-      "ValueText": "684.052"
+      "ValueText": "0.684052"
     },
     {
-      "Symbol": "T",
+      "Symbol": "T_fluid",
       "Number": 70,
       "Unit": "degC",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e28e1a73876649049d9b726dda99c409#t_m",
+        "Reference": "calc:26c66fa6769048c6a4869a7bfffb92da#T_m",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -763,7 +763,7 @@
       "Unit": "K",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:e28e1a73876649049d9b726dda99c409#dT_fr",
+        "Reference": "calc:26c66fa6769048c6a4869a7bfffb92da#dT_fr",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -877,7 +877,7 @@
       "ValueText": "1 row(s)"
     },
     {
-      "Symbol": "v_max",
+      "Symbol": "v_limit",
       "Number": 3,
       "Unit": "m/s",
       "Provenance": {
@@ -970,7 +970,7 @@
       "Unit": "N*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:4ad4e247d1954a69ab079d3f9e2f8d5d#T_shaft",
+        "Reference": "calc:dc9d7478ab604c0982c06e47ebcd0fd2#T_shaft",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1095,7 +1095,7 @@
       "Unit": "rpm",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:4ad4e247d1954a69ab079d3f9e2f8d5d#n_shaft",
+        "Reference": "calc:dc9d7478ab604c0982c06e47ebcd0fd2#n_shaft",
         "Revision": "A",
         "IsSufficientToIssue": true
       },

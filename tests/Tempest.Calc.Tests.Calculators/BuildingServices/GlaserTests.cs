@@ -114,7 +114,7 @@ public sealed class GlaserTests
     {
         var result = Run(Sheet(InsulatedBrick(), Constant(0, 90)).With(Q("Mc_limit", 20000, "g/m^2")));
         Assert.False(result.IsBlocked);
-        Assert.Contains(result.Checks, c => c.Name.StartsWith("Annual moisture balance", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(result.Checks, c => c.Name.StartsWith("Condensate left after 12 months", StringComparison.Ordinal) && !c.Passed);
         Assert.Equal(0, result.OutputSi("pass"));
         Assert.Equal(result.OutputSi("Mc_max"), result.OutputSi("Mc_end"), 9);
 
@@ -128,7 +128,7 @@ public sealed class GlaserTests
     {
         var open = Run(Sheet(InsulatedBrick(), GlaserCalculator.Climate(Seasonal)));
         Assert.Equal(0, open.OutputSi("Mc_end"), 12);
-        Assert.Contains(open.Checks, c => c.Name.StartsWith("Annual moisture balance", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(open.Checks, c => c.Name.StartsWith("Condensate left after 12 months", StringComparison.Ordinal) && c.Passed);
 
         var limited = Run(Sheet(InsulatedBrick(), GlaserCalculator.Climate(Seasonal)).With(Q("Mc_limit", 1000, "g/m^2")));
         Assert.Contains(limited.Checks, c => c.Name.StartsWith("Peak condensate", StringComparison.Ordinal) && !c.Passed);
@@ -402,7 +402,7 @@ public sealed class GlaserTests
         Assert.StartsWith("theta_a: ", incomplete.Blocks[0].Message, StringComparison.Ordinal);
 
         var reversed = Run(inputs.With(Q("dv_a", 5, "g/m^3")).With(Q("theta_a", 20, "degC")).With(Q("dv_b", 0, "g/m^3")).With(Q("theta_b", 0, "degC")));
-        Assert.Equal("theta_b", reversed.Blocks[0].RuleId);
+        Assert.Equal("humidity-class", reversed.Blocks[0].RuleId);
 
         var wet = Run(inputs.With(Q("dv_a", 20, "g/m^3")).With(Q("theta_a", 0, "degC")).With(Q("dv_b", 20, "g/m^3")).With(Q("theta_b", 20, "degC")));
         Assert.False(wet.IsBlocked);
@@ -459,17 +459,17 @@ public sealed class GlaserTests
     {
         // The plaster and brick wall: R_T = 0.13 + 0.03 + 0.26875 + 0.04 = 0.46875 m²K/W, U = 2.133333 W/m²K (hand calculation).
         var wall = GlaserCalculator.Layers(("", "Plaster", 15, 0.5, 10), ("", "Brick", 215, 0.8, 8));
-        var plain = Run(Sheet(wall, GlaserCalculator.Climate(Seasonal)).With(Q("theta_int", 20, "degC")).With(Q("RH_int", 40, "%")));
+        var plain = Run(Sheet(wall, GlaserCalculator.Climate(Seasonal)).With(Q("T_int", 20, "degC")).With(Q("RH_int", 40, "%")));
         Assert.Equal(1 / 0.46875, plain.OutputSi("U_wall"), 12);
         Assert.Null(plain.FindOutput("dU_ref"));
         Assert.DoesNotContain(plain.Warnings, w => w.RuleId == "u-ref-mismatch");
 
         // Within 2 % the two U-values agree; 3.03 % apart the sheet warns, and the difference is reported.
-        var near = Run(Sheet(wall, GlaserCalculator.Climate(Seasonal)).With(Q("theta_int", 20, "degC")).With(Q("RH_int", 40, "%")).With(Q("U_ref", 2.14, "W/(m^2*K)")));
+        var near = Run(Sheet(wall, GlaserCalculator.Climate(Seasonal)).With(Q("T_int", 20, "degC")).With(Q("RH_int", 40, "%")).With(Q("U_ref", 2.14, "W/(m^2*K)")));
         Assert.Equal(Math.Abs(1 / 0.46875 - 2.14) / 2.14, near.OutputSi("dU_ref"), 12);
         Assert.DoesNotContain(near.Warnings, w => w.RuleId == "u-ref-mismatch");
 
-        var far = Run(Sheet(wall, GlaserCalculator.Climate(Seasonal)).With(Q("theta_int", 20, "degC")).With(Q("RH_int", 40, "%")).With(Q("U_ref", 2.2, "W/(m^2*K)")));
+        var far = Run(Sheet(wall, GlaserCalculator.Climate(Seasonal)).With(Q("T_int", 20, "degC")).With(Q("RH_int", 40, "%")).With(Q("U_ref", 2.2, "W/(m^2*K)")));
         Assert.Equal(Math.Abs(1 / 0.46875 - 2.2) / 2.2, far.OutputSi("dU_ref"), 12);
         Assert.Equal(0.030303030303030304, far.OutputSi("dU_ref"), 12);
         var warning = Assert.Single(far.Warnings, w => w.RuleId == "u-ref-mismatch");

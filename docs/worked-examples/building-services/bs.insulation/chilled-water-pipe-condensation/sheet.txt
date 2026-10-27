@@ -7,56 +7,69 @@ Checker: —    Checked: —
 Issued: —
 
 1. Scope and method
-The insulation thickness on a pipe (cylinder) or a flat surface that meets a heat-flow limit, a limit on the surface temperature of a hot surface and an anti-condensation requirement for a cold one, each solved separately and the governing one reported; and for a chosen thickness the heat flow, the surface temperature and PASS/FAIL per criterion. Steady state, one layer, no thickness table of any standard.
-Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = D_i + 2t; with the inner film and pipe wall R_oth = 1/(h_i·π·D_p) + ln(D_i/D_p)/(2π·λ_w) added in series Flat resistance per square metre: R = t/λ + 1/h_se (+ 1/h_i + t_w/λ_w) Heat flow: q = (θ_i − θ_a)/R, positive from the process to the ambient Surface temperature: θ_se = θ_a + q/(h_se·π·D_e) (pipe), θ_a + q/h_se (flat) Surface coefficient: h_se as given, or h_se = h_c + h_r with h_r = ε·σ·(T_s² + T_a²)(T_s + T_a); h_c from free convection to air (laminar or turbulent, the larger), forced convection (cross-flow cylinder or flat plate) and their cube-law blend; solved with θ_se, which it depends on Heat-loss limit: the thickness beyond which |q| ≤ q_max; surface-temperature limit (hot): θ_se ≤ θ_se,max; anti-condensation (cold): θ_se ≥ θ_dew + margin, θ_dew entered (for example from B2) or from the Magnus relation at θ_a and RH Thickness solution: each criterion's thickness by scanning t from 0 to 1 m for the last broken point and bisecting the bracket after it; governing t = max over the selected criteria Critical diameter: D_crit = 2λ/h_se; below it, insulation raises the heat flow until D_e passes D_crit
+Calculates the insulation thickness of a pipe or flat surface that meets a heat-loss limit, a hot-surface limit or an anti-condensation requirement. For a chosen thickness it gives the heat flow, surface temperature and PASS or FAIL.
+Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = D_i + 2t; with the inner film and pipe wall R_oth = 1/(h_i·π·D_p) + ln(D_i/D_p)/(2π·λ_w) added in series Flat resistance per square metre: R = t/λ + 1/h_se (+ 1/h_i + t_w/λ_w) Heat flow: q = (θ_i − θ_a)/R, positive from the process to the ambient Surface temperature: θ_se = θ_a + q/(h_se·π·D_e) (pipe), θ_a + q/h_se (flat) Surface coefficient: h_se as given, or h_se = h_c + h_r with h_r = ε·σ·(T_s² + T_a²)(T_s + T_a); h_c from free convection to air (laminar or turbulent, the larger), forced convection (cross-flow cylinder or flat plate) and their cube-law blend; solved with θ_se, which it depends on Heat-loss limit: the thickness beyond which |q| ≤ q_max; surface-temperature limit (hot): θ_se ≤ θ_se,max; anti-condensation (cold): θ_se ≥ θ_dew + allowance, θ_dew entered (for example from the psychrometrics calculation) or from the Magnus relation at θ_a and RH Thickness solution: each criterion's thickness by scanning t from 0 to 1 m for the last broken point and bisecting the bracket after it; governing t = max over the selected criteria Critical diameter: D_crit = 2λ/h_se; below it, insulation raises the heat flow until D_e passes D_crit
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   geometry | Surface | pipe (cylinder) |  | assumption: A round pipe. | any
-  D_i | Pipe outer diameter, the inside of the insulation (pipe) | 90 | mm | drawing: M-PIP-014 rev A | 10 … 1000 mm
-  theta_i | Process (fluid) temperature | 6 | °C | spec: SPEC-M-11 §3: chilled-water flow temperature | -50 … 400 °C
-  theta_a | Ambient air temperature (also the radiation sink) | 28 | °C | spec: SPEC-M-11 §2: plant-room design temperature | -20 … 50 °C
-  lambda | Thermal conductivity of the insulation | 0.035 | W/(m·K) | assumption: Closed-cell elastomeric insulation; take the maker's value at the mean temperature (W3 material) | 0.015 … 0.2 W/(m·K)
   h_mode | Where the outer surface coefficient comes from | h_se as given |  | assumption: A surface coefficient is given, not computed. | any
-  h_se | Outer surface coefficient h_se (as given; generic default of 10 W/(m²K), replace with the value for your surface; a high value is not conservative against condensation on a cold surface, use the correlation there) | 8 | W/(m²·K) | assumption: Still air in a plant room; replace with the project's own record. | 3 … 40 W/(m²·K)
-  eps | Emissivity of the outer surface (for the correlation; with h_se as given it only judges that value against condensation on a cold surface) | 0.9 |  | assumption: Painted or plastic jacket (invented for this example); with h_se given it only judges that value against condensation. | 0.05 … 1
-  v_wind | Air speed over the surface (correlation; 0 = still air) | 0 | m/s | assumption: Not used: h_se is given. | 0 … 20 m/s
+  D_i | Pipe outer diameter, the inside of the insulation (pipe) | 90 | mm | drawing: M-PIP-014 rev A | 10 … 1000 mm
   L_surf | Height or flow length of the flat surface (correlation, flat) | 1 | m | assumption: Not used: a pipe. | 0.1 … 10 m
-  q_max_m | Heat-loss limit per metre of pipe (generic default of 25 W/m, replace with your project limit; blank = not a criterion) | 12 | W/m | spec: SPEC-M-11 §5: heat gain not to exceed 12 W/m | 1 … 1000 W/m
-  dew_margin | Margin of the surface above the dew point, for a cold surface (blank = not a criterion) | 1 | K | spec: SPEC-M-11 §5: surface at least 1 K above the dew point | 0 … 5 K
+  t_chosen | Chosen insulation thickness (optional; blank = report at the required thickness, with no checks; with it, nothing blocks) | 25 | mm | spec: Pipework schedule M-SCH-014: 25 mm sleeves | 0 … 300 mm
+  lambda | Thermal conductivity of the insulation | 0.035 | W/(m·K) | assumption: Closed-cell elastomeric insulation; take the maker's value at the mean temperature (W3 material) | 0.015 … 0.2 W/(m·K)
+  T_proc | Process (fluid) temperature | 6 | °C | spec: SPEC-M-11 §3: chilled-water flow temperature | -50 … 400 °C
+  T_amb | Ambient air temperature (also the radiation sink) | 28 | °C | spec: SPEC-M-11 §2: plant-room design temperature | -20 … 50 °C
   RH_a | Relative humidity of the ambient air (anti-condensation) | 70 | % | spec: SPEC-M-11 §2: plant-room design humidity | 20 … 95 %
-  t_chosen | Chosen insulation thickness (blank = report at the required thickness, no checks; with it, nothing blocks) | 25 | mm | spec: Pipework schedule M-SCH-014: 25 mm sleeves | 0 … 300 mm
+  v_wind | Air speed over the surface (correlation; 0 = still air) | 0 | m/s | assumption: Not used: h_se is given. | 0 … 20 m/s
+  h_se | Outer surface coefficient (as given; generic default of 10 W/(m²K), replace with the value for your surface; a high value is not conservative against condensation on a cold surface, use the correlation there) | 8 | W/(m²·K) | assumption: Still air in a plant room; replace with the project's own record. | 3 … 40 W/(m²·K)
+  eps | Emissivity of the outer surface (for the correlation; with h_se as given it only judges that value against condensation on a cold surface) | 0.9 |  | assumption: Painted or plastic jacket (invented for this example); with h_se given it only judges that value against condensation. | 0.05 … 1
+  q_max_m | Heat-loss limit per metre of pipe (optional; blank = not a criterion; the generic default of 25 W/m is to be replaced with your project limit) | 12 | W/m | spec: SPEC-M-11 §5: heat gain not to exceed 12 W/m | 1 … 1000 W/m
+  dew_margin | Allowance of the surface above the dew point, for a cold surface (optional; blank = not a criterion) | 1 | K | spec: SPEC-M-11 §5: surface at least 1 K above the dew point | 0 … 5 K
 
 3. Assumptions
-  A1. Steady one-dimensional heat flow through a single homogeneous layer of constant conductivity; no thermal bridges at supports, no joints, no moisture in the insulation. λ is taken at the value entered: use the value at the mean insulation temperature shown on the sheet (optionally noted in 'Temperature the conductivity applies at'). (Formula route of the standard.)
-  A2. With the correlation, h_se = h_c + h_r. Radiation: h_r = ε·σ·(T_s² + T_a²)(T_s + T_a) to surroundings at the ambient air temperature. Free convection to air: Holman's simplified relations at atmospheric pressure, the larger of the laminar and turbulent forms (horizontal cylinder 1.32(ΔT/D)^0.25 and 1.24ΔT^(1/3); vertical surface 1.42(ΔT/L)^0.25 and 1.31ΔT^(1/3)). Forced convection: Churchill–Bernstein for a cylinder in cross-flow, the laminar/mixed flat-plate relations along a plate; air properties from fits at the film temperature, Pr = 0.71; blended with free convection as (h_nat³ + h_forced³)^(1/3). Indicative, not the standard's own correlation. (Incropera 7th ed. §7.2, §7.4, §9.6 free convection and §9.9 mixed convection (section numbers to be checked against the owner's copy); the free-convection constants are Holman's, Heat Transfer; the standard's own coefficients are not reproduced.)
-  A3. The dew point is entered (for example from B2) or is the Magnus relation at θ_a and RH, the same closed form B7 uses. Below 0 °C the relation is over ice, so RH is then taken relative to ice, whereas meteorological RH is usually relative to water: enter the dew point for sub-zero air. A margin above it is the user's. (Derived; B7 shares the function.)
-  A4. Pipes are treated as horizontal for free convection and flat surfaces as vertical; air properties are fits (conductivity within about 3 %, viscosity within about 4 % over 250–400 K), Pr = 0.71. (Stated.)
-  A5. The required thickness is the least thickness beyond which the criterion holds for every thicker layer up to 1 m, which is what matters when thin insulation on a small pipe raises the heat flow (critical diameter). (Stated.)
-  A6. No thickness table is used or shipped: not BS 5422, not the tables of any standard. The conductivity is the user's input, from a W3 material or the maker's data. (No standard's table is reproduced.)
-  A7. geometry (Surface) is taken as pipe (cylinder). (A round pipe.)
-  A8. lambda (Thermal conductivity of the insulation) is taken as 0.035 W/(m·K). (Closed-cell elastomeric insulation; take the maker's value at the mean temperature (W3 material))
-  A9. h_mode (Where the outer surface coefficient comes from) is taken as h_se as given. (A surface coefficient is given, not computed.)
-  A10. h_se (Outer surface coefficient h_se (as given; generic default of 10 W/(m²K), replace with the value for your surface; a high value is not conservative against condensation on a cold surface, use the correlation there)) is taken as 8 W/(m²·K). (Still air in a plant room; replace with the project's own record.)
-  A11. eps (Emissivity of the outer surface (for the correlation; with h_se as given it only judges that value against condensation on a cold surface)) is taken as 0.9. (Painted or plastic jacket (invented for this example); with h_se given it only judges that value against condensation.)
-  A12. v_wind (Air speed over the surface (correlation; 0 = still air)) is taken as 0 m/s. (Not used: h_se is given.)
-  A13. L_surf (Height or flow length of the flat surface (correlation, flat)) is taken as 1 m. (Not used: a pipe.)
+  A1. Heat flows in steady state, one-dimensionally, through a single homogeneous layer of constant conductivity. (Formula route of the standard.)
+  A2. The insulation has no thermal bridges at supports, no joints and no moisture. (Formula route of the standard.)
+  A3. The conductivity λ is the value entered, which should be the value at the mean insulation temperature on the sheet. (Stated.)
+  A4. With the correlation, the outer surface coefficient is h_se = h_c + h_r. (Incropera, §7.2, §7.4, §9.6 and §9.9 (section numbers to be checked against the owner's copy).)
+  A5. Radiation is h_r = ε·σ·(T_s² + T_a²)(T_s + T_a) to surroundings at the ambient air temperature. (Incropera, §1.2.)
+  A6. Free convection to air uses Holman's simplified relations at atmospheric pressure, the larger of the laminar and turbulent forms. (Holman's constants: horizontal cylinder 1.32(ΔT/D)^0.25 and 1.24ΔT^(1/3), vertical surface 1.42(ΔT/L)^0.25 and 1.31ΔT^(1/3).)
+  A7. Forced convection uses Churchill–Bernstein for a cylinder in cross-flow and the laminar or mixed flat-plate relations along a plate. (Incropera, §7.2 and §7.4.)
+  A8. Air properties are fits at the film temperature, with Pr = 0.71. (Stated.)
+  A9. Free and forced convection blend as (h_nat³ + h_forced³)^(1/3). (Stated.)
+  A10. The correlation is indicative, not the standard's own. (The standard's own coefficients are not reproduced.)
+  A11. The dew point is entered, or is the Magnus relation at the ambient temperature and humidity. (Derived; the Glaser condensation calculation shares the function.)
+  A12. Below 0 °C the Magnus relation is over ice, so the humidity is then taken relative to ice. (Stated; enter the dew point for sub-zero air, because weather humidity is usually relative to water.)
+  A13. An allowance above the dew point is the user's choice. (Stated.)
+  A14. Pipes are treated as horizontal and flat surfaces as vertical for free convection. (Stated.)
+  A15. Air conductivity is a fit within about 3 % over 250 to 400 K. (Stated.)
+  A16. Air viscosity is a fit within about 4 % over 250 to 400 K. (Stated.)
+  A17. The required thickness is the least thickness beyond which the criterion holds for every thicker layer up to 1 m. (Stated; this matters when thin insulation on a small pipe raises the heat flow (critical diameter).)
+  A18. No thickness table of any standard, including BS 5422, is used or shipped. (No standard's table is reproduced.)
+  A19. The conductivity is the user's input, from a library material or the maker's data. (No standard's table is reproduced.)
+  A20. geometry (Surface) is taken as pipe (cylinder). (A round pipe.)
+  A21. h_mode (Where the outer surface coefficient comes from) is taken as h_se as given. (A surface coefficient is given, not computed.)
+  A22. L_surf (Height or flow length of the flat surface (correlation, flat)) is taken as 1 m. (Not used: a pipe.)
+  A23. lambda (Thermal conductivity of the insulation) is taken as 0.035 W/(m·K). (Closed-cell elastomeric insulation; take the maker's value at the mean temperature (W3 material))
+  A24. v_wind (Air speed over the surface (correlation; 0 = still air)) is taken as 0 m/s. (Not used: h_se is given.)
+  A25. h_se (Outer surface coefficient (as given; generic default of 10 W/(m²K), replace with the value for your surface; a high value is not conservative against condensation on a cold surface, use the correlation there)) is taken as 8 W/(m²·K). (Still air in a plant room; replace with the project's own record.)
+  A26. eps (Emissivity of the outer surface (for the correlation; with h_se as given it only judges that value against condensation on a cold surface)) is taken as 0.9. (Painted or plastic jacket (invented for this example); with h_se given it only judges that value against condensation.)
 
 4. Working
-  [11] theta_dew = inverse Magnus of RH·p_sat(θ_a)    « ISO 13788 (Magnus form, as B7)
-      = θ_a = 28 °C, RH = 70 %
+  [11] T_dew = inverse Magnus of RH·p_sat(T_amb)    « BS EN ISO 13788 (Magnus form, as in the Glaser condensation calculation)
+      = T_amb = 28 °C, RH = 70 %
       = 22.012 degC
         Dew point of the ambient air
-  [12] t_q = t such that |q| ≤ 12 W/m for every thicker layer    « ISO 12241
+  [12] t_req_q = t such that |q| ≤ 12 W/m for every thicker layer    « ISO 12241
       = scan 0 … 1000 mm, then bisection
       = 17.814 mm
         Required thickness, heat-gain limit
-  [13] t_dew = t such that θ_se ≥ 23.012 °C for every thicker layer    « ISO 12241
+  [13] t_req_dew = t such that θ_se ≥ 23.012 °C for every thicker layer    « ISO 12241
       = scan 0 … 1000 mm, then bisection
       = 13.162 mm
-        Required thickness, anti-condensation margin
+        Required thickness, anti-condensation allowance
   [14] thickness = max over the selected criteria    « ISO 12241
-      = t_q = 17.814 mm, t_dew = 13.162 mm
+      = t_req_q = 17.814 mm, t_req_dew = 13.162 mm
       = 17.814 mm
         Governing required thickness (heat-gain limit)
   [16] D_e = D_i + 2t
@@ -71,7 +84,7 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
       = 1/(8 × π × 0.14 m)
       = 0.28421 m·K/W
         Resistance of the outer surface
-  [19] R = R_oth + R_ins + R_se    « ISO 12241
+  [19] R_tot = R_oth + R_ins + R_se    « ISO 12241
       = 0 + 2.0091 + 0.28421
       = 2.2933 m·K/W
         Total resistance per metre
@@ -79,11 +92,11 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
       = 22 K / 2.2933
       = 9.593 W/m
         Heat flow per metre of pipe (heat gain, magnitude)
-  [21] theta_se = θ_a + q/(h_se·π·D_e)    « ISO 12241
+  [21] T_se = θ_a + q/(h_se·π·D_e)    « ISO 12241
       = 28 °C − 9.593 / 3.5186
       = 25.274 degC
         Outer surface temperature
-  [22] theta_m = (θ_i + θ_se)/2
+  [22] T_m = (θ_i + θ_se)/2
       = (6 + 25.274)/2
       = 15.637 degC
         Mean temperature of the insulation: take λ at this temperature
@@ -98,37 +111,45 @@ Pipe resistance per metre: R = ln(D_e/D_i)/(2π·λ) + 1/(h_se·π·D_e), D_e = 
   [25] u_dew = (θ_a − θ_se)/(θ_a − (θ_dew + margin))
       = θ_se ≥ 23.012 °C
       = 0.54661
-        Utilisation, anti-condensation margin
+        Utilisation, anti-condensation allowance
+  [26] dT_dep = θ_a − θ_se
+      = 28 °C − 25.274 °C
+      = 2.7264 K
+        Fall of the surface below the ambient air
+  [27] dT_dep_max = θ_a − (θ_dew + allowance)
+      = 28 °C − 23.012 °C
+      = 4.9878 K
+        Largest fall of the surface below the ambient air
 
 5. Results
   thickness = 17.81 mm    Governing required thickness
-  q_per_m = 9.593 W/m    Heat flow per metre (heat gain)
-  theta_se = 25.27 °C    Outer surface temperature
-  theta_dew = 22.01 °C    Dew point of the ambient air
-  t_q = 17.81 mm    Required thickness, heat-gain limit
-  t_dew = 13.16 mm    Required thickness, anti-condensation margin
-  theta_m = 15.64 °C    Mean insulation temperature
-  R = 2.293 m·K/W    Total resistance
+  q_per_m = 9.593 W/m    Heat flow per metre (heat gain) (governing)
+  T_se = 25.27 °C    Outer surface temperature
+  T_dew = 22.01 °C    Dew point of the ambient air
+  t_req_q = 17.81 mm    Required thickness, heat-gain limit
+  t_req_dew = 13.16 mm    Required thickness, anti-condensation allowance
+  T_m = 15.64 °C    Mean insulation temperature
+  R_tot = 2.293 m·K/W    Total resistance
   D_crit = 8.750 mm    Critical diameter (at the bare-surface h_se)
   governing = "heat-gain limit"    Governing criterion
-  u_q = 0.80    Utilisation, heat-gain limit (governing)
-  u_dew = 0.55    Utilisation, anti-condensation margin
+  u_q = 0.80    Utilisation, heat-gain limit
+  u_dew = 0.55    Utilisation, anti-condensation allowance
 
 6. Checks (governing first)
-  PASS  Chosen thickness against the heat-gain limit: u_q = 0.80 vs u_q ≤ 1  utilisation 0.80  « ISO 12241
-  PASS  Chosen thickness against the anti-condensation margin: u_dew = 0.55 vs u_dew ≤ 1  utilisation 0.55  « ISO 12241
+  PASS  Chosen thickness against the heat-gain limit: 9.593 W/m vs 12 W/m  utilisation 0.80  « ISO 12241
+  PASS  Chosen thickness against the anti-condensation allowance: 2.726 K vs 4.988 K  utilisation 0.55  « ISO 12241
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are lambda (Material properties); h_se (Outer surface coefficient); eps (Surface emissivity); q_max_m, dew_margin (Insulation criteria). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: bs.insulation@1.1.3
+  Template: bs.insulation@1.2.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 14/14
   Test run: —
 
 9. References
-  1. ISO 12241 formula route (clause numbers to be checked) — Thermal insulation for building equipment and industrial installations: calculation rules
-  2. Incropera, Fundamentals of Heat and Mass Transfer 7th ed., §7.2, §7.4, §9.6, §9.9 (to be checked) — External forced, free and mixed convection correlations
-  3. ISO 13788 cl. 6 (clause number to be checked against the owner's copy) — Magnus saturation vapour pressure (shared with B7)
+  1. ISO 12241:2022 — Calculation rules for thermal insulation of equipment and installations (clause numbers to be checked)
+  2. Incropera, Fundamentals of Heat and Mass Transfer §7.2, §7.4, §9.6, §9.9, 7th ed. (section numbers to be checked) — External forced, free and mixed convection correlations
+  3. BS EN ISO 13788:2012 cl. 6 (clause number to be checked against the owner's copy) — Magnus saturation vapour pressure (shared with the Glaser condensation calculation)

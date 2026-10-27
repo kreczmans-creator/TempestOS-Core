@@ -67,7 +67,7 @@ public sealed class PipeFlowC1Tests
         // (the verification script's independent figures).
         // The side column is optional: a blank cell is the usual way a user leaves it, and means discharge.
         CalcInputValue Line(string? side) => CalcInputValue.Table("segments", [CalcRow.Of([("name", new CalcCell(Text: "line")), ("L", new CalcCell(60, "m")), ("D", new CalcCell(65, "mm")), ("eps", new CalcCell(0.045, "mm")), ("K", new CalcCell(6)), .. side is null ? Array.Empty<(string, CalcCell)>() : [("side", new CalcCell(Text: side))]])]);
-        CalcRunResult At(string? side) => Run(CalcInputValue.Quantity("T", 60, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"), Line(side),
+        CalcRunResult At(string? side) => Run(CalcInputValue.Quantity("T_fluid", 60, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"), Line(side),
             CalcInputValue.Quantity("z_s", -3, "m"), CalcInputValue.Quantity("NPSH_r", 3, "m"));
 
         var blank = At(null);
@@ -81,7 +81,7 @@ public sealed class PipeFlowC1Tests
         Assert.DoesNotContain(marked.Warnings, w => w.RuleId == "npsh-no-suction");
 
         // No NPSH_r entered: no warning.
-        Assert.DoesNotContain(Run(CalcInputValue.Quantity("T", 60, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"), Line(null), CalcInputValue.Quantity("z_s", -3, "m")).Warnings, w => w.RuleId == "npsh-no-suction");
+        Assert.DoesNotContain(Run(CalcInputValue.Quantity("T_fluid", 60, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"), Line(null), CalcInputValue.Quantity("z_s", -3, "m")).Warnings, w => w.RuleId == "npsh-no-suction");
     }
 
     [Fact]
@@ -89,7 +89,7 @@ public sealed class PipeFlowC1Tests
     {
         // chain.wet-heating-R1: 24 kW over 10 K, water 70 C, 60 m DN32 (eps 0.045, K 15, no rise), n_pump 2800 rpm, curve (0,6) (1,5) (2,3.5) (3,1) m3/h, eta 0.7.
         // Independent python: n2/n1 1 gives P 21.692 W (T 0.07398 N.m at 2800 rpm); n2/n1 1.2 gives Q_duty2 2.97699 m3/h, H 3.30903 m, P_shaft2 37.483 W at 3360 rpm, so T = 37.483/(3360 2 pi/60) = 0.10653 N.m.
-        CalcRunResult At(double nRatio) => Run(CalcInputValue.Quantity("T", 70, "degC"), CalcInputValue.Quantity("Phi_load", 24, "kW"), CalcInputValue.Quantity("dT_load", 10, "K"), PipeFlowCalculator.Segments(("loop", 60, 32, 0.045, 15, 0, 0, "discharge")),
+        CalcRunResult At(double nRatio) => Run(CalcInputValue.Quantity("T_fluid", 70, "degC"), CalcInputValue.Quantity("Phi_load", 24, "kW"), CalcInputValue.Quantity("dT_load", 10, "K"), PipeFlowCalculator.Segments(("loop", 60, 32, 0.045, 15, 0, 0, "discharge")),
             CalcInputValue.VectorOf("Q_pump", [0, 1, 2, 3], "m^3/h"), CalcInputValue.VectorOf("H_pump", [6, 5, 3.5, 1], "m"), CalcInputValue.Of("n_ratio", nRatio), CalcInputValue.Of("eta_pump", 0.7), CalcInputValue.Quantity("n_pump", 2800, "rpm"));
 
         var rated = At(1);
@@ -106,7 +106,7 @@ public sealed class PipeFlowC1Tests
     {
         var inputs = new List<CalcInputValue>
         {
-            CalcInputValue.Quantity("T", 40, "degC"), CalcInputValue.Quantity("Phi_load", 24, "kW"), CalcInputValue.Quantity("dT_load", 10, "K"),
+            CalcInputValue.Quantity("T_fluid", 40, "degC"), CalcInputValue.Quantity("Phi_load", 24, "kW"), CalcInputValue.Quantity("dT_load", 10, "K"),
             PipeFlowCalculator.Segments(("loop", 40, 28, 0.045, 6, 0, 0, "discharge")), CalcInputValue.Quantity("h_out", hOut, "m"),
         };
 
@@ -134,7 +134,7 @@ public sealed class PipeFlowC1Tests
         Assert.Contains(HeatLoad(1, 3600).Warnings, w => w.RuleId == "fluid-cp");
         Assert.DoesNotContain(HeatLoad(1, 4186).Warnings, w => w.RuleId == "fluid-cp");
         Assert.DoesNotContain(HeatLoad(1, 4200).Warnings, w => w.RuleId == "fluid-cp");
-        Assert.DoesNotContain(Run(CalcInputValue.Choice("fluid", PipeFlowCalculator.FluidCustom), CalcInputValue.Quantity("rho_custom", 1030, "kg/m^3"), CalcInputValue.Quantity("mu_custom", 3.5, "mPa*s"), CalcInputValue.Quantity("T", 40, "degC"),
+        Assert.DoesNotContain(Run(CalcInputValue.Choice("fluid", PipeFlowCalculator.FluidCustom), CalcInputValue.Quantity("rho_custom", 1030, "kg/m^3"), CalcInputValue.Quantity("mu_custom", 3.5, "mPa*s"), CalcInputValue.Quantity("T_fluid", 40, "degC"),
             CalcInputValue.Quantity("Phi_load", 24, "kW"), CalcInputValue.Quantity("dT_load", 10, "K"), CalcInputValue.Quantity("cp_load", 3600, "J/(kg*K)"), PipeFlowCalculator.Segments(("loop", 40, 28, 0.045, 6, 0, 0, "discharge")), CalcInputValue.Quantity("h_out", 1, "m")).Warnings, w => w.RuleId == "fluid-cp");
     }
 
@@ -158,14 +158,14 @@ public sealed class PipeFlowC1Tests
     {
         // bs.pipe-pump-04 (probe R): DN80 100 m (eps 0.045, K 2), rise 10 m, 30 m3/h, water 20 C, pump (0,8) (10,14) (40,18) (70,2). The curve crosses at 3.41 m3/h (the pump curve rising: unstable)
         // and 41.48 m3/h (falling: stable); the test of the two curve ends saw no crossing and failed the duty check. python3 scan: 3.4147 and 41.4835 m3/h.
-        var r = Run(CalcInputValue.Quantity("T", 20, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"), PipeFlowCalculator.Segments(("riser", 100, 80, 0.045, 2, 0, 10, "discharge")),
+        var r = Run(CalcInputValue.Quantity("T_fluid", 20, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"), PipeFlowCalculator.Segments(("riser", 100, 80, 0.045, 2, 0, 10, "discharge")),
             CalcInputValue.VectorOf("Q_pump", [0, 10, 40, 70], "m^3/h"), CalcInputValue.VectorOf("H_pump", [8, 14, 18, 2], "m"));
         Assert.DoesNotContain(r.Warnings, w => w.RuleId == "no-duty");
         Assert.Equal(41.48, r.OutputSi("Q_duty") * 3600, 1);
         var warning = Assert.Single(r.Warnings, w => w.RuleId == "multi-duty");
         Assert.Contains("3.41", warning.Message, StringComparison.Ordinal);
         Assert.Contains("unstable", warning.Message, StringComparison.Ordinal);
-        Assert.Contains(r.Checks, k => k.Name.StartsWith("Duty point exists", StringComparison.Ordinal) && k.Passed);
+        Assert.Contains(r.Checks, k => k.Name.StartsWith("Duty point against", StringComparison.Ordinal) && k.Passed);
     }
 
     [Fact]
@@ -173,7 +173,7 @@ public sealed class PipeFlowC1Tests
     {
         // F2: the same DN80 100 m line, rise 10 m, 15 m3/h, water 20 C, pump (0,8) (10,14) (20,18): the pump curve crosses the system curve once, at about 3.41 m3/h, where the pump curve
         // rises (python3 scan of the example above: 3.4147 m3/h, and the pump stays above the system curve to its end at 20 m3/h). The sheet warned that the point is unstable and passed.
-        var r = Run(CalcInputValue.Quantity("T", 20, "degC"), CalcInputValue.Quantity("Q", 15, "m^3/h"), PipeFlowCalculator.Segments(("riser", 100, 80, 0.045, 2, 0, 10, "discharge")),
+        var r = Run(CalcInputValue.Quantity("T_fluid", 20, "degC"), CalcInputValue.Quantity("Q", 15, "m^3/h"), PipeFlowCalculator.Segments(("riser", 100, 80, 0.045, 2, 0, 10, "discharge")),
             CalcInputValue.VectorOf("Q_pump", [0, 10, 20], "m^3/h"), CalcInputValue.VectorOf("H_pump", [8, 14, 18], "m"));
         Assert.Equal(3.41, r.OutputSi("Q_duty") * 3600, 1);
         Assert.Contains(r.Warnings, w => w.RuleId == "duty-unstable");
@@ -182,7 +182,7 @@ public sealed class PipeFlowC1Tests
         Assert.False(r.Passed);
 
         // A falling crossing (the other example) keeps passing: no stable-duty check is added.
-        var stable = Run(CalcInputValue.Quantity("T", 20, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"), PipeFlowCalculator.Segments(("riser", 100, 80, 0.045, 2, 0, 10, "discharge")),
+        var stable = Run(CalcInputValue.Quantity("T_fluid", 20, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"), PipeFlowCalculator.Segments(("riser", 100, 80, 0.045, 2, 0, 10, "discharge")),
             CalcInputValue.VectorOf("Q_pump", [0, 10, 40, 70], "m^3/h"), CalcInputValue.VectorOf("H_pump", [8, 14, 18, 2], "m"));
         Assert.DoesNotContain(stable.Checks, k => k.Name.StartsWith("Duty point against a stable crossing", StringComparison.Ordinal));
         Assert.Contains(Calc.Template.ApplicabilityRules, x => x.Id == "duty-unstable" && x.Effect == CalcRuleEffect.Unconservative);
@@ -207,7 +207,7 @@ public sealed class PipeFlowC1Tests
     {
         // bs.pipe-pump-R2: water 60 C, design 30 m3/h, 10 m DN65 suction (K 4), 100 m DN65 discharge (K 6), lift 3 m, pump (0,30) (20,28) (40,22) (60,10): duty 38.54 m3/h. NPSH_a at the design flow
         // 3.21 m passed against 3 m; at the duty flow the suction friction is higher: NPSH_a 1.76 m (python3, water properties from the same correlations) and the check fails.
-        CalcInputValue[] Sheet(params CalcInputValue[] more) => [CalcInputValue.Quantity("T", 60, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"),
+        CalcInputValue[] Sheet(params CalcInputValue[] more) => [CalcInputValue.Quantity("T_fluid", 60, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"),
             PipeFlowCalculator.Segments(("suction", 10, 65, 0.045, 4, 0, 0, "suction"), ("discharge", 100, 65, 0.045, 6, 0, 0, "discharge")), CalcInputValue.Quantity("z_s", -3, "m"), CalcInputValue.Quantity("NPSH_r", 3, "m"), .. more];
         var noCurve = Run(Sheet());
         Assert.Equal(3.2102, noCurve.OutputSi("NPSH_a"), 2);
@@ -215,6 +215,6 @@ public sealed class PipeFlowC1Tests
         var curve = Run(Sheet(CalcInputValue.VectorOf("Q_pump", [0, 20, 40, 60], "m^3/h"), CalcInputValue.VectorOf("H_pump", [30, 28, 22, 10], "m")));
         Assert.Equal(38.54, curve.OutputSi("Q_duty") * 3600, 1);
         Assert.Equal(1.76, curve.OutputSi("NPSH_a"), 1);
-        Assert.Contains(curve.Checks, k => k.Name.StartsWith("NPSH_r", StringComparison.Ordinal) && !k.Passed);
+        Assert.Contains(curve.Checks, k => k.Name.StartsWith("NPSH required", StringComparison.Ordinal) && !k.Passed);
     }
 }

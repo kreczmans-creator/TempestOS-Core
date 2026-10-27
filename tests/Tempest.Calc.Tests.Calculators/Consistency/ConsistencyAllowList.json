@@ -1,9 +1,5 @@
 {
   "A03-check-names": {
-    "bs.duct-sizing": 2,
-    "bs.glaser": 1,
-    "bs.pipe-expansion": 1,
-    "bs.pipe-pump": 3,
     "elec.conductor-sizing": 3,
     "elec.containment": 1,
     "elec.enclosure-heat": 2,
@@ -11,20 +7,9 @@
     "elec.motor-sizing": 5,
     "elec.motor-start": 2,
     "elec.thermal-chain": 1,
-    "elec.voltage-drop": 2,
-    "fp.accumulator": 2,
-    "fp.cylinder": 7,
-    "fp.oring-gland": 10
+    "elec.voltage-drop": 2
   },
   "A03-check-shows-physical-values": {
-    "bs.duct-sizing": 6,
-    "bs.glaser": 12,
-    "bs.heat-exchanger": 6,
-    "bs.insulation": 16,
-    "bs.pipe-expansion": 10,
-    "bs.pipe-pump": 4,
-    "bs.room-heat-loss": 3,
-    "bs.sealed-system": 2,
     "elec.conductor-sizing": 13,
     "elec.containment": 22,
     "elec.enclosure-heat": 2,
@@ -34,133 +19,81 @@
     "elec.motor-start": 8,
     "elec.pcb-trace": 4,
     "elec.thermal-chain": 4,
-    "elec.voltage-drop": 3,
-    "fp.accumulator": 7,
-    "fp.cylinder": 28
+    "elec.voltage-drop": 3
   },
   "B07-requirement-words": {
-    "bs.glaser": 1,
-    "bs.insulation": 1,
-    "bs.sealed-system": 1,
     "elec.load-budget": 1,
     "elec.motor-sizing": 1,
     "elec.motor-start": 1
   },
   "B08-description-pattern": {
-    "bs.heat-exchanger": 1,
-    "bs.insulation": 1,
-    "bs.pipe-expansion": 2,
-    "bs.pipe-pump": 1,
-    "bs.psychrometrics": 2,
     "elec.fault-protection": 2,
-    "elec.motor-sizing": 1,
-    "fp.accumulator": 3,
-    "fp.cylinder": 1,
-    "fp.oring-gland": 4
+    "elec.motor-sizing": 1
   },
   "B09-optional-hint": {
-    "bs.glaser": 4,
-    "bs.heat-exchanger": 1,
-    "bs.insulation": 8,
-    "bs.pipe-expansion": 7,
-    "bs.pipe-pump": 4,
-    "bs.psychrometrics": 3,
-    "bs.room-heat-loss": 2,
     "elec.containment": 1,
     "elec.enclosure-heat": 3,
     "elec.load-budget": 1,
     "elec.motor-sizing": 2,
-    "elec.motor-start": 2,
-    "fp.accumulator": 2,
-    "fp.cylinder": 6,
-    "fp.oring-gland": 1
+    "elec.motor-start": 2
   },
   "C10-temperature-symbols": {
-    "bs.glaser": 4,
-    "bs.insulation": 8,
-    "bs.psychrometrics": 8,
-    "bs.room-heat-loss": 5,
-    "bs.sealed-system": 7,
+    "bs.glaser": 3,
+    "bs.insulation": 2,
+    "bs.room-heat-loss": 2,
+    "bs.sealed-system": 1,
     "elec.conductor-sizing": 4,
     "elec.fault-protection": 4,
     "elec.load-budget": 1
   },
   "C11-theta-is-an-angle": {
-    "bs.glaser": 4,
-    "bs.insulation": 7,
-    "bs.room-heat-loss": 5,
+    "bs.glaser": 3,
+    "bs.insulation": 1,
+    "bs.room-heat-loss": 2,
     "elec.conductor-sizing": 4,
     "elec.fault-protection": 4,
     "elec.load-budget": 2
   },
   "C12-torque-and-time": {
-    "bs.duct-sizing": 1,
-    "bs.pipe-pump": 1,
     "bs.plane-wall": 1
   },
   "C13-no-case-only-pairs": {
-    "bs.room-heat-loss": 1,
     "elec.containment": 1
   },
   "C14-quantity-letters": {
-    "bs.heat-exchanger": 3,
-    "bs.plane-wall": 2,
     "mech.bearing-life": 1
   },
   "C15-no-bare-p": {
-    "bs.psychrometrics": 1,
-    "fp.cylinder": 2,
     "fp.oring-gland": 1
   },
   "C17-single-letters": {
-    "bs.duct-sizing": 1,
-    "bs.insulation": 1,
     "bs.pipe-pump": 1,
-    "bs.psychrometrics": 1,
     "bs.sealed-system": 1,
     "elec.containment": 1,
     "elec.enclosure-heat": 1,
     "elec.thermal-chain": 1,
-    "fp.accumulator": 1,
     "mech.fatigue-miner": 1
   },
   "C18-sibling-symbols": {
-    "bs.pipe-pump": 1,
     "elec.load-budget": 1
   },
   "D20-units-per-quantity-type": {
-    "bs.duct-sizing": 1,
-    "bs.pipe-expansion": 13,
-    "bs.pipe-pump": 2,
-    "bs.plane-wall": 1,
-    "bs.room-heat-loss": 10,
-    "bs.sealed-system": 9,
     "elec.enclosure-heat": 10,
     "elec.fault-protection": 1,
     "elec.load-budget": 2,
     "elec.motor-sizing": 2,
     "elec.thermal-chain": 1,
-    "elec.voltage-drop": 1,
-    "fp.accumulator": 1
+    "elec.voltage-drop": 1
   },
   "D28-percent": {
-    "bs.heat-exchanger": 1,
     "elec.fault-protection": 1
   },
   "F31-message-shape": {
-    "bs.heat-exchanger": 1,
-    "bs.pipe-pump": 2,
-    "bs.psychrometrics": 3,
     "elec.enclosure-heat": 1,
     "elec.load-budget": 1,
-    "elec.voltage-drop": 1,
-    "fp.accumulator": 1
+    "elec.voltage-drop": 1
   },
   "F32-missing-input-phrasing": {
-    "bs.pipe-pump": 5,
-    "bs.plane-wall": 1,
-    "bs.psychrometrics": 10,
-    "bs.room-heat-loss": 1,
     "elec.conductor-sizing": 2,
     "elec.enclosure-heat": 1,
     "elec.fault-protection": 1,
@@ -168,20 +101,9 @@
     "elec.motor-sizing": 10,
     "elec.motor-start": 1,
     "elec.thermal-chain": 1,
-    "elec.voltage-drop": 3,
-    "fp.accumulator": 1
+    "elec.voltage-drop": 3
   },
   "F33-one-idea-per-message": {
-    "bs.duct-sizing": 3,
-    "bs.glaser": 13,
-    "bs.heat-exchanger": 5,
-    "bs.insulation": 19,
-    "bs.pipe-expansion": 8,
-    "bs.pipe-pump": 13,
-    "bs.plane-wall": 1,
-    "bs.psychrometrics": 4,
-    "bs.room-heat-loss": 8,
-    "bs.sealed-system": 3,
     "elec.conductor-sizing": 11,
     "elec.containment": 8,
     "elec.enclosure-heat": 4,
@@ -190,17 +112,12 @@
     "elec.motor-sizing": 12,
     "elec.motor-start": 6,
     "elec.pcb-trace": 1,
-    "elec.thermal-chain": 1,
-    "fp.accumulator": 15,
-    "fp.cylinder": 5,
-    "fp.oring-gland": 14
+    "elec.thermal-chain": 1
   },
   "F35-emitted-severity-equals-declared": {
     "elec.conductor-sizing": 3
   },
   "F36-emitted-ids-declared": {
-    "bs.glaser": 1,
-    "bs.pipe-expansion": 1,
     "elec.conductor-sizing": 3,
     "elec.fault-protection": 1
   },
@@ -208,51 +125,26 @@
     "elec.pcb-trace": 1
   },
   "G38-groups-when-more-than-five-inputs": {
-    "bs.heat-exchanger": 3,
     "elec.load-budget": 1
   },
   "G39-setup-group-first": {
-    "bs.duct-sizing": 1,
-    "bs.heat-exchanger": 1,
-    "bs.insulation": 1,
-    "bs.pipe-pump": 1,
-    "bs.room-heat-loss": 1,
-    "bs.sealed-system": 1,
     "elec.conductor-sizing": 1,
     "elec.containment": 1,
     "elec.enclosure-heat": 1,
     "elec.load-budget": 1,
     "elec.motor-sizing": 1,
-    "elec.voltage-drop": 1,
-    "fp.accumulator": 1,
-    "fp.cylinder": 1,
-    "fp.oring-gland": 1
+    "elec.voltage-drop": 1
   },
   "G40-group-names": {
-    "bs.duct-sizing": 1,
-    "bs.plane-wall": 2,
-    "bs.psychrometrics": 2,
-    "bs.sealed-system": 1,
     "elec.conductor-sizing": 1,
     "elec.enclosure-heat": 1,
     "elec.fault-protection": 1,
     "elec.motor-sizing": 1,
     "elec.motor-start": 1,
     "elec.pcb-trace": 2,
-    "elec.voltage-drop": 2,
-    "fp.accumulator": 1,
-    "fp.cylinder": 1
+    "elec.voltage-drop": 2
   },
   "G41-group-order": {
-    "bs.glaser": 3,
-    "bs.heat-exchanger": 1,
-    "bs.insulation": 1,
-    "bs.pipe-expansion": 2,
-    "bs.pipe-pump": 2,
-    "bs.plane-wall": 1,
-    "bs.psychrometrics": 1,
-    "bs.room-heat-loss": 2,
-    "bs.sealed-system": 1,
     "elec.conductor-sizing": 1,
     "elec.containment": 2,
     "elec.enclosure-heat": 2,
@@ -260,16 +152,9 @@
     "elec.load-budget": 2,
     "elec.motor-sizing": 4,
     "elec.motor-start": 3,
-    "elec.voltage-drop": 2,
-    "fp.cylinder": 4,
-    "fp.oring-gland": 1
+    "elec.voltage-drop": 2
   },
   "G42-soft-limits": {
-    "bs.glaser": 1,
-    "bs.heat-exchanger": 6,
-    "bs.psychrometrics": 4,
-    "bs.room-heat-loss": 3,
-    "bs.sealed-system": 9,
     "elec.conductor-sizing": 14,
     "elec.containment": 6,
     "elec.enclosure-heat": 6,
@@ -277,68 +162,35 @@
     "elec.load-budget": 15,
     "elec.motor-sizing": 2,
     "elec.motor-start": 2,
-    "fp.accumulator": 15,
-    "fp.cylinder": 35,
-    "fp.oring-gland": 1,
     "mech.bolted-joint": 1
   },
   "H43-port-names": {
-    "bs.glaser": 3,
-    "bs.insulation": 4,
-    "bs.pipe-expansion": 3,
-    "bs.pipe-pump": 18,
-    "bs.room-heat-loss": 6,
     "elec.conductor-sizing": 7,
     "elec.containment": 2,
     "elec.enclosure-heat": 10,
     "elec.motor-sizing": 29,
     "elec.motor-start": 4,
-    "elec.pcb-trace": 3,
-    "fp.accumulator": 3,
-    "fp.cylinder": 12,
-    "fp.oring-gland": 4
+    "elec.pcb-trace": 3
   },
   "H44-ports-declared": {
-    "bs.duct-sizing": 1,
-    "bs.plane-wall": 1,
-    "bs.psychrometrics": 1,
     "elec.thermal-chain": 1,
     "elec.voltage-drop": 1
   },
   "H45-no-legacy-codes": {
-    "bs.pipe-pump": 5,
-    "bs.room-heat-loss": 3,
     "elec.conductor-sizing": 2,
     "elec.enclosure-heat": 4,
     "elec.motor-sizing": 9,
-    "elec.motor-start": 1,
-    "fp.cylinder": 7
+    "elec.motor-start": 1
   },
   "H46-record-kinds": {
-    "bs.heat-exchanger": 1,
-    "bs.pipe-expansion": 1,
-    "bs.room-heat-loss": 1,
-    "bs.sealed-system": 1,
     "elec.conductor-sizing": 1,
     "elec.fault-protection": 1,
     "elec.motor-start": 1,
     "elec.pcb-trace": 2,
-    "fp.cylinder": 1,
-    "fp.oring-gland": 1,
     "struct.base-plate": 1,
     "struct.ltb-interaction": 2
   },
   "I49-scope-length": {
-    "bs.duct-sizing": 2,
-    "bs.glaser": 2,
-    "bs.heat-exchanger": 2,
-    "bs.insulation": 2,
-    "bs.pipe-expansion": 2,
-    "bs.pipe-pump": 2,
-    "bs.plane-wall": 1,
-    "bs.psychrometrics": 2,
-    "bs.room-heat-loss": 2,
-    "bs.sealed-system": 2,
     "elec.conductor-sizing": 2,
     "elec.containment": 2,
     "elec.enclosure-heat": 2,
@@ -348,30 +200,16 @@
     "elec.motor-start": 2,
     "elec.pcb-trace": 2,
     "elec.thermal-chain": 2,
-    "elec.voltage-drop": 2,
-    "fp.accumulator": 2,
-    "fp.cylinder": 2,
-    "fp.oring-gland": 2
+    "elec.voltage-drop": 2
   },
   "I50-method-layout": {
-    "bs.glaser": 1,
-    "bs.pipe-expansion": 1,
-    "bs.pipe-pump": 1,
-    "bs.psychrometrics": 1,
-    "bs.room-heat-loss": 1,
     "elec.containment": 1,
     "elec.enclosure-heat": 1,
     "elec.motor-sizing": 1,
-    "elec.motor-start": 1,
-    "fp.cylinder": 1
+    "elec.motor-start": 1
   },
   "J51-standard-designation": {
-    "bs.duct-sizing": 2,
-    "bs.glaser": 2,
-    "bs.insulation": 2,
-    "bs.pipe-expansion": 2,
-    "bs.plane-wall": 1,
-    "bs.room-heat-loss": 2,
+    "bs.pipe-expansion": 1,
     "elec.conductor-sizing": 2,
     "elec.containment": 2,
     "elec.enclosure-heat": 2,
@@ -381,7 +219,6 @@
     "elec.thermal-chain": 1,
     "elec.voltage-drop": 1,
     "fp.cylinder": 1,
-    "fp.oring-gland": 2,
     "mech.bolted-joint": 1,
     "mech.lifting-lug": 1,
     "mech.thin-vessel": 1,
@@ -390,15 +227,6 @@
     "struct.lifting": 3
   },
   "J52-clause-locator": {
-    "bs.duct-sizing": 1,
-    "bs.glaser": 2,
-    "bs.heat-exchanger": 2,
-    "bs.insulation": 2,
-    "bs.pipe-expansion": 2,
-    "bs.pipe-pump": 1,
-    "bs.psychrometrics": 1,
-    "bs.room-heat-loss": 2,
-    "bs.sealed-system": 1,
     "elec.conductor-sizing": 1,
     "elec.containment": 1,
     "elec.enclosure-heat": 1,
@@ -406,15 +234,11 @@
     "elec.motor-start": 1,
     "elec.pcb-trace": 1,
     "elec.voltage-drop": 2,
-    "fp.accumulator": 1,
-    "fp.cylinder": 1,
-    "fp.oring-gland": 1,
     "struct.ltb-interaction": 1
   },
   "J53-book-citations": {
     "bs.duct-sizing": 2,
-    "bs.pipe-pump": 4,
-    "bs.plane-wall": 2,
+    "bs.pipe-pump": 3,
     "bs.psychrometrics": 3,
     "bs.room-heat-loss": 1,
     "bs.sealed-system": 1,
@@ -426,8 +250,7 @@
     "elec.pcb-trace": 1,
     "elec.thermal-chain": 2,
     "elec.voltage-drop": 1,
-    "fp.accumulator": 3,
-    "fp.cylinder": 1,
+    "fp.accumulator": 2,
     "fp.oring-gland": 2,
     "mech.snap-fit": 1,
     "struct.ltb-interaction": 1
@@ -439,22 +262,9 @@
     "fp.oring-gland": 2
   },
   "K55-no-internal-codes": {
-    "bs.heat-exchanger": 1,
-    "bs.insulation": 2,
-    "bs.pipe-expansion": 1,
-    "bs.sealed-system": 1,
     "elec.motor-start": 2
   },
   "K56-one-short-sentence": {
-    "bs.duct-sizing": 1,
-    "bs.glaser": 6,
-    "bs.insulation": 6,
-    "bs.pipe-expansion": 9,
-    "bs.pipe-pump": 4,
-    "bs.plane-wall": 1,
-    "bs.psychrometrics": 2,
-    "bs.room-heat-loss": 6,
-    "bs.sealed-system": 3,
     "elec.conductor-sizing": 7,
     "elec.containment": 7,
     "elec.enclosure-heat": 4,
@@ -463,22 +273,9 @@
     "elec.motor-sizing": 4,
     "elec.motor-start": 8,
     "elec.pcb-trace": 4,
-    "elec.voltage-drop": 2,
-    "fp.accumulator": 7,
-    "fp.cylinder": 6,
-    "fp.oring-gland": 7
+    "elec.voltage-drop": 2
   },
   "L58-spec-headings": {
-    "bs.duct-sizing": 7,
-    "bs.glaser": 8,
-    "bs.heat-exchanger": 8,
-    "bs.insulation": 8,
-    "bs.pipe-expansion": 8,
-    "bs.pipe-pump": 8,
-    "bs.plane-wall": 7,
-    "bs.psychrometrics": 7,
-    "bs.room-heat-loss": 8,
-    "bs.sealed-system": 8,
     "elec.conductor-sizing": 8,
     "elec.containment": 8,
     "elec.enclosure-heat": 8,
@@ -488,22 +285,9 @@
     "elec.motor-start": 8,
     "elec.pcb-trace": 8,
     "elec.thermal-chain": 7,
-    "elec.voltage-drop": 7,
-    "fp.accumulator": 8,
-    "fp.cylinder": 8,
-    "fp.oring-gland": 8
+    "elec.voltage-drop": 7
   },
   "L59-spec-title-line": {
-    "bs.duct-sizing": 1,
-    "bs.glaser": 1,
-    "bs.heat-exchanger": 1,
-    "bs.insulation": 1,
-    "bs.pipe-expansion": 1,
-    "bs.pipe-pump": 1,
-    "bs.plane-wall": 1,
-    "bs.psychrometrics": 1,
-    "bs.room-heat-loss": 1,
-    "bs.sealed-system": 1,
     "elec.conductor-sizing": 1,
     "elec.containment": 1,
     "elec.enclosure-heat": 1,
@@ -513,22 +297,9 @@
     "elec.motor-start": 1,
     "elec.pcb-trace": 1,
     "elec.thermal-chain": 1,
-    "elec.voltage-drop": 1,
-    "fp.accumulator": 1,
-    "fp.cylinder": 1,
-    "fp.oring-gland": 1
+    "elec.voltage-drop": 1
   },
   "L60-spec-scope-is-the-template-scope": {
-    "bs.duct-sizing": 1,
-    "bs.glaser": 1,
-    "bs.heat-exchanger": 1,
-    "bs.insulation": 1,
-    "bs.pipe-expansion": 1,
-    "bs.pipe-pump": 1,
-    "bs.plane-wall": 1,
-    "bs.psychrometrics": 1,
-    "bs.room-heat-loss": 1,
-    "bs.sealed-system": 1,
     "elec.conductor-sizing": 1,
     "elec.containment": 1,
     "elec.enclosure-heat": 1,
@@ -538,9 +309,6 @@
     "elec.motor-start": 1,
     "elec.pcb-trace": 1,
     "elec.thermal-chain": 1,
-    "elec.voltage-drop": 1,
-    "fp.accumulator": 1,
-    "fp.cylinder": 1,
-    "fp.oring-gland": 1
+    "elec.voltage-drop": 1
   }
 }

@@ -50,7 +50,7 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 | From | Output | To | Input | Value carried |
 |---|---|---|---|---|
 | Cylinder and pump circuit | `dV` | Emergency stroke accumulator | `dV` | 3.92699 L |
-| Cylinder and pump circuit | `p` | Emergency stroke accumulator | `p_2` | 160 bar |
+| Cylinder and pump circuit | `p_sys` | Emergency stroke accumulator | `p_2` | 160 bar |
 | Cylinder and pump circuit | `p_push` | Emergency stroke accumulator | `p_load` | 107.22 bar |
 | Cylinder and pump circuit | `Q_prs` | Pressure line | `Q` | 4.53765 m^3/h |
 | Cylinder and pump circuit | `rho` | Pressure line | `rho_custom` | 870 kg/m^3 |

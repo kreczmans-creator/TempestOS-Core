@@ -75,7 +75,7 @@
     "ValueText": "Energy storage"
   },
   {
-    "Symbol": "n",
+    "Symbol": "n_gas",
     "Number": 1,
     "Provenance": {
       "Kind": "Assumption",

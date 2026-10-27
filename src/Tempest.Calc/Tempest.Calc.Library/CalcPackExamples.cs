@@ -143,7 +143,7 @@ internal static class CalcPackExamples
     /// <summary>A room with an insulated cavity wall and a window, naturally ventilated (Φ about 379 W). The layer conductivities are invented, illustrative values.</summary>
     public static IReadOnlyList<CalcInputValue> WetRoomA { get; } =
     [
-        Q("theta_int", 21, "degC"), Q("theta_e", -3, "degC"), Layers(CavityLayers),
+        Q("T_int", 21, "degC"), Q("theta_e", -3, "degC"), Layers(CavityLayers),
         Table("elements",
             CalcRow.Of(Txt("name", "Cavity wall"), ("area", new CalcCell(20, "m^2"))),
             CalcRow.Of(Txt("name", "Window"), ("area", new CalcCell(3, "m^2")), ("U_user", new CalcCell(1.4, "W/(m^2*K)")))),
@@ -153,13 +153,13 @@ internal static class CalcPackExamples
     /// <summary>A room with MVHR, a partition to an 18 °C space and a ground floor with a user U (Φ about 305 W). The partition is not held to the outside target U. The envelope leaks 0.1 h⁻¹ at the outside temperature besides the MVHR rate (an invented, illustrative value; blank would drop the infiltration loss, bs.room-heat-loss-R1).</summary>
     public static IReadOnlyList<CalcInputValue> WetRoomB { get; } =
     [
-        Q("theta_int", 21, "degC"), Q("theta_e", -3, "degC"),
+        Q("T_int", 21, "degC"), Q("theta_e", -3, "degC"),
         Layers([.. CavityLayers, ("Partition", "Plasterboard", 12.5, 0.22), ("Partition", "Plasterboard", 12.5, 0.22)]),
         Table("elements",
             CalcRow.Of(Txt("name", "Cavity wall"), ("area", new CalcCell(15, "m^2"))),
             CalcRow.Of(Txt("name", "Partition"), ("area", new CalcCell(12, "m^2")), ("theta_adj", new CalcCell(18, "degC")), ("Rg", new CalcCell(0.18, "m^2*K/W"))),
             CalcRow.Of(Txt("name", "Ground floor"), ("area", new CalcCell(10, "m^2")), Num("f", 0.6), ("U_user", new CalcCell(0.25, "W/(m^2*K)")))),
-        Q("y_tb", 0.05, "W/(m^2*K)"), Q("n", 0.6, "1/h"), Q("V", 50, "m^3"), Q("theta_supply", 16, "degC"), Q("n_inf", 0.1, "1/h"),
+        Q("y_tb", 0.05, "W/(m^2*K)"), Q("n", 0.6, "1/h"), Q("V", 50, "m^3"), Q("T_supply", 16, "degC"), Q("n_inf", 0.1, "1/h"),
     ];
 
     /// <summary>
@@ -222,7 +222,7 @@ internal static class CalcPackExamples
         C("arrangement", "counterflow"), C("mode", "sizing (given duty)"),
         Q("m_h", 0.4, "kg/s"), Q("cp_h", 1006, "J/(kg*K)"),
         Q("m_c", 0.25, "kg/s"), Q("cp_c", 4180, "J/(kg*K)"), Q("T_c_in", 22, "degC"),
-        Q("U", 60, "W/(m^2*K)"), Q("R_f", 0.0001, "m^2*K/W"),
+        Q("U_clean", 60, "W/(m^2*K)"), Q("R_f", 0.0001, "m^2*K/W"),
     ];
 
     /// <summary>A closed supply-and-return loop: no static lift.</summary>
@@ -335,7 +335,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuF1 { get; } =
     [
-        C("mode", "Standard"), Q("p", 160, "bar"), Q("Q", 36, "L/min"), Q("rho", 870, "kg/m^3"), Q("F_push", 80, "kN"), Q("F_pull", 40, "kN"),
+        C("mode", "Standard"), Q("p_sys", 160, "bar"), Q("Q", 36, "L/min"), Q("rho", 870, "kg/m^3"), Q("F_push", 80, "kN"), Q("F_pull", 40, "kN"),
         Q("D", 100, "mm"), Q("d_r", 70, "mm"), Q("stroke", 500, "mm"), Q("V_g", 28, "cm^3/rev"), Q("n_p", 1450, "rpm"), Q("d_prs", 20, "mm"),
     ];
 
@@ -347,7 +347,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuF2 { get; } =
     [
-        C("mode", "Emergency stroke"), Q("p_0", 105, "bar"), Q("p_1", 120, "bar"), N("n", 1.4), N("f_rg", 1.311), Q("T_max", 50, "degC"), Q("T_min", 10, "degC"),
+        C("mode", "Emergency stroke"), Q("p_0", 105, "bar"), Q("p_1", 120, "bar"), N("n_gas", 1.4), N("f_rg", 1.311), Q("T_max", 50, "degC"), Q("T_min", 10, "degC"),
     ];
 
     /// <summary>
@@ -362,7 +362,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> HpuB1 { get; } =
     [
-        C("fluid", "custom (ρ and μ given)"), Q("T", 50, "degC"), Q("mu_custom", 30, "mPa*s"), Q("v_max", 5, "m/s"),
+        C("fluid", "custom (ρ and μ given)"), Q("T_fluid", 50, "degC"), Q("mu_custom", 30, "mPa*s"), Q("v_limit", 5, "m/s"),
         Table("segments", CalcRow.Of(Txt("name", "pressure line to cylinder"), ("L", new CalcCell(12, "m")), Mm("D", 20), Mm("eps", 0.045), Num("K", 6), ("L_eq", new CalcCell(0, "m")), ("dz", new CalcCell(0, "m")), Txt("side", "discharge"))),
     ];
 
@@ -392,7 +392,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> EnvB4 { get; } =
     [
-        Q("theta_int", 21, "degC"), Q("theta_e", -3, "degC"),
+        Q("T_int", 21, "degC"), Q("theta_e", -3, "degC"),
         Table("layers",
             CalcRow.Of(Txt("element", "External wall"), Txt("name", "Plasterboard"), Mm("d", 12.5), ("lambda", new CalcCell(0.25, "W/(m*K)"))),
             CalcRow.Of(Txt("element", "External wall"), Txt("name", "Mineral wool"), Mm("d", 80), ("lambda", new CalcCell(0.04, "W/(m*K)"))),
@@ -407,7 +407,7 @@ internal static class CalcPackExamples
     /// <summary>The room air: 21 °C dry-bulb at 50 % relative humidity, sea level, state only. Its dry-bulb and relative humidity are the Glaser step's internal conditions.</summary>
     public static IReadOnlyList<CalcInputValue> EnvB2 { get; } =
     [
-        Q("altitude", 0, "m"), Q("t_db", 21, "degC"), C("known", "relative humidity"), N("RH", 50), C("process", "none (state only)"),
+        Q("altitude", 0, "m"), Q("T_db", 21, "degC"), C("known", "relative humidity"), N("RH", 50), C("process", "none (state only)"),
     ];
 
     /// <summary>
@@ -443,14 +443,14 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> ColdB1 { get; } =
     [
-        C("fluid", "water"), Q("T", 9, "degC"), Q("T_line", 6, "degC"), Q("Q", 12, "m^3/h"), C("circuit", "closed (flow and return: the rises cancel, no static lift)"),
+        C("fluid", "water"), Q("T_fluid", 9, "degC"), Q("T_line", 6, "degC"), Q("Q", 12, "m^3/h"), C("circuit", "closed (flow and return: the rises cancel, no static lift)"),
         Table("segments", CalcRow.Of(Txt("name", "chilled water flow and return"), ("L", new CalcCell(60, "m")), Mm("D", 51.6), Mm("OD", 54), Mm("eps", 0.0015), Num("K", 10), ("L_eq", new CalcCell(0, "m")), ("dz", new CalcCell(0, "m")), Txt("side", "discharge"))),
     ];
 
     /// <summary>The plant room air around the pipe: 28 °C dry-bulb at 60 % relative humidity, sea level. Its dry-bulb is the insulation step's ambient temperature and its dew point the temperature the surface must stay above.</summary>
     public static IReadOnlyList<CalcInputValue> ColdB2 { get; } =
     [
-        Q("altitude", 0, "m"), Q("t_db", 28, "degC"), C("known", "relative humidity"), N("RH", 60), C("process", "none (state only)"),
+        Q("altitude", 0, "m"), Q("T_db", 28, "degC"), C("known", "relative humidity"), N("RH", 60), C("process", "none (state only)"),
     ];
 
     /// <summary>
@@ -698,7 +698,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> LinkF1 { get; } =
     [
-        C("mode", "Standard"), Q("p", 100, "bar"), Q("rho", 870, "kg/m^3"), Q("D", 40, "mm"), Q("d_r", 22, "mm"), Q("stroke", 200, "mm"),
+        C("mode", "Standard"), Q("p_sys", 100, "bar"), Q("rho", 870, "kg/m^3"), Q("D", 40, "mm"), Q("d_r", 22, "mm"), Q("stroke", 200, "mm"),
     ];
 
     /// <summary>
@@ -707,6 +707,6 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> LinkF2 { get; } =
     [
-        C("mode", "Emergency stroke"), Q("p_0", 50, "bar"), Q("p_1", 60, "bar"), N("n", 1.4), Q("T_max", 50, "degC"), Q("T_min", 10, "degC"),
+        C("mode", "Emergency stroke"), Q("p_0", 50, "bar"), Q("p_1", 60, "bar"), N("n_gas", 1.4), Q("T_max", 50, "degC"), Q("T_min", 10, "degC"),
     ];
 }

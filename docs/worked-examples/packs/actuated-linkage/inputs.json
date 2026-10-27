@@ -478,18 +478,6 @@
       "ValueText": "Standard"
     },
     {
-      "Symbol": "p",
-      "Number": 100,
-      "Unit": "bar",
-      "Provenance": {
-        "Kind": "Drawing",
-        "Reference": "DRG-EJT-210",
-        "Revision": "B",
-        "IsSufficientToIssue": true
-      },
-      "ValueText": "100"
-    },
-    {
       "Symbol": "p_back",
       "Number": 0,
       "Unit": "bar",
@@ -499,6 +487,18 @@
         "IsSufficientToIssue": true
       },
       "ValueText": "0"
+    },
+    {
+      "Symbol": "p_sys",
+      "Number": 100,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-EJT-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "100"
     },
     {
       "Symbol": "rho",
@@ -648,7 +648,7 @@
       "ValueText": "Emergency stroke"
     },
     {
-      "Symbol": "n",
+      "Symbol": "n_gas",
       "Number": 1.4,
       "Provenance": {
         "Kind": "Specification",

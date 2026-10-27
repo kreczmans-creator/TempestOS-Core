@@ -26,7 +26,7 @@ Every link is pinned to the upstream revision named in the issued sheet (`link: 
 | Ejector slider-crank | `follower_force` | Replacement cylinder | `F_push` | 3.05264 kN |
 | Ejector slider-crank | `follower_force` | Replacement cylinder | `F_pull` | 3.05264 kN |
 | Replacement cylinder | `dV` | Emergency stroke accumulator | `dV` | 0.251327 L |
-| Replacement cylinder | `p` | Emergency stroke accumulator | `p_2` | 100 bar |
+| Replacement cylinder | `p_sys` | Emergency stroke accumulator | `p_2` | 100 bar |
 | Replacement cylinder | `p_push` | Emergency stroke accumulator | `p_load` | 25.5707 bar |
 
 ## Inputs and provenance

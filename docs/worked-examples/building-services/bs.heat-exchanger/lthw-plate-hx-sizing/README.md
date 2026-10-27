@@ -10,7 +10,7 @@ The secondary circuit takes 120 kW from a 1.2 kg/s primary at 80 °C. ε = 0.597
 | `R_f` | 0.0001 m^2*K/W | assumption: Treated closed circuits on both sides. |
 | `T_c_in` | 40 degC | drawing: M-SCH-201 rev B |
 | `T_h_in` | 80 degC | spec: Network supply temperature |
-| `U` | 3000 W/(m^2*K) | assumption: Typical clean plate exchanger, water/water. |
+| `U_clean` | 3000 W/(m^2*K) | assumption: Typical clean plate exchanger, water/water. |
 | `arrangement` | counterflow | assumption: Plate exchanger treated as pure counterflow. |
 | `cp_c` | 4180 J/(kg*K) | assumption: Water at about 50 °C. |
 | `cp_h` | 4190 J/(kg*K) | assumption: Water at about 70 °C. |

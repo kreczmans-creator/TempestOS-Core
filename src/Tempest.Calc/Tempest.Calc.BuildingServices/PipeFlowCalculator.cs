@@ -42,55 +42,66 @@ public sealed class PipeFlowCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.9.0", CalcDiscipline.BuildingServices, "Pipe pressure drop and pump duty",
-        "Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.",
-        "Design flow from the heat carried, when a heat load is given in place of a flow: Q = Φ/(ρ c_p ΔT).\nMean velocity in the pipe: v = Q/(πD²/4).\nReynolds number, which decides laminar or turbulent flow: Re = ρvD/μ.\nFriction factor for laminar flow (Re < 2300): f = 64/Re.\nFriction factor for turbulent flow, Colebrook–White by fixed-point iteration (at most 100 steps) from the Swamee–Jain value, which also cross-checks it: 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)).\nHead lost in the pipe and its fittings: h_f = f (L + L_eq)/D · v²/2g + K v²/2g.\nSystem curve, with the friction of a turbulent or transitional segment and every fitting loss scaled from the design flow as Q², and the friction of a laminar segment (Re < 2300, h_f ∝ Q) as Q (a closed circuit has Σdz = 0, the rise in the flow being recovered in the return): H_sys(Q) = Σdz + h_out + Σh_f,lam·(Q/Q₀) + Σh_f,other·(Q/Q₀)².\nWater held in the pipes: V_pipe = Σ π/4·D²·L.\nDuty point, where the pump and system curves cross (every crossing is found by a scan and refined by bisection; the stable one, where the pump curve falls through the system curve, nearest the design flow is reported): H_pump(Q) = H_sys(Q).\nPump affinity laws for a change of speed n: Q ∝ n; H ∝ n². For a change of impeller diameter D, by the choice: a trimmed impeller of the same casing, Q ∝ D and H ∝ D² (the default, the usual practice for a trim); or a geometrically similar pump scaled in all dimensions, Q ∝ D³ and H ∝ D². Speed and diameter combine as Q ∝ n·D^a, H ∝ n²·D², a = 1 or 3.\nNet positive suction head available, to compare with what the pump requires: NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg, with p_v from the water correlation or, for a custom fluid, from the vapour pressure entered. The friction h_f,suction is that of the segments marked 'suction' only, at the larger of the design flow and the duty flow the pump runs at.\nShaft torque for the motor: T = P/ω with P the larger of the design-flow shaft power and the duty-point shaft power, at the speed n_pump; when a speed or diameter ratio shifts the duty, the shifted duty power at the shifted speed n_pump·n₂/n₁.",
+        Id, "1.10.0", CalcDiscipline.BuildingServices, "Pipe pressure drop and pump duty",
+        "Calculates the friction and fitting losses of series pipe segments at a given flow, the system curve and the duty point against a pump curve. It also gives the affinity-law shift for a speed or impeller change, and the NPSH.",
+        "Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place of a flow; v = Q/(πD²/4)\n" +
+        "Reynolds number and friction factor: Re = ρvD/μ; f = 64/Re for laminar flow (Re < 2300); Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) for turbulent flow, by fixed-point iteration (at most 100 steps) from the Swamee–Jain value, which also cross-checks it\n" +
+        "Head lost in a segment: h_f = f (L + L_eq)/D · v²/2g + K v²/2g\n" +
+        "System curve: H_sys(Q) = Σdz + h_out + Σh_f,lam·(Q/Q₀) + Σh_f,other·(Q/Q₀)², with a laminar segment's friction scaled as Q and every other friction and fitting loss as Q² (a closed circuit has Σdz = 0)\n" +
+        "Water held in the pipes: V_pipe = Σ π/4·D²·L\n" +
+        "Duty point: H_pump(Q) = H_sys(Q), every crossing found by a scan and refined by bisection, the stable one nearest the design flow reported; pump affinity laws Q ∝ n·D^a, H ∝ n²·D², with a = 1 for a trimmed impeller (the default) and a = 3 for a geometrically similar pump\n" +
+        "Net positive suction head available: NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg, with h_f,suction that of the 'suction' segments at the larger of the design flow and the duty flow\n" +
+        "Shaft torque for the motor: T = P/ω, with P the larger of the design-flow and duty-point shaft power at the speed n_pump, or the shifted duty power at the shifted speed n_pump·n₂/n₁",
         [
-            new CalcInputSpec("fluid", "Fluid", CalcInputKind.Choice, Choices: [FluidWater, FluidCustom], DefaultChoice: FluidWater, Group: "Fluid"),
-            new CalcInputSpec("T", "Fluid temperature (mean; link B6 t_m for a heating loop)", CalcInputKind.Quantity, "degC", Default: 20, Min: 0, Max: 100, HardMin: -50, HardMax: 300, Group: "Fluid"),
-            new CalcInputSpec("T_line", "Design temperature of the line for the insulation step: the coldest (cold line) or hottest (hot line) fluid temperature in it, for example the flow temperature of a 6/12 °C chilled line whose mean T is 9 °C (blank = T; offered as the port T_line only when T_line or T is entered; not used for the fluid properties)", CalcInputKind.Quantity, "degC", Min: -50, Max: 150, HardMin: -100, HardMax: 400, IsOptional: true, Group: "Fluid"),
-            new CalcInputSpec("rho_custom", "Density (custom fluid)", CalcInputKind.Quantity, "kg/m^3", Min: 500, Max: 2000, HardMin: 1, HardMax: 1e5, IsOptional: true, Group: "Fluid"),
-            new CalcInputSpec("mu_custom", "Dynamic viscosity (custom fluid)", CalcInputKind.Quantity, "mPa*s", Min: 0.1, Max: 1000, HardMin: 1e-4, HardMax: 1e6, IsOptional: true, Group: "Fluid"),
-            new CalcInputSpec("Q", "Design flow rate (blank when a heat load gives it)", CalcInputKind.Quantity, "m^3/h", Default: 20, Min: 0.01, Max: 1e5, HardMin: 1e-9, HardMax: 1e7, IsOptional: true, Group: "System"),
-            new CalcInputSpec("Phi_load", "Heat carried by the water (gives the design flow with ΔT; replaces Q)", CalcInputKind.Quantity, "W", Min: 10, Max: 1e8, HardMin: 1e-3, HardMax: 1e10, IsOptional: true, Group: "System"),
-            new CalcInputSpec("dT_load", "Flow-to-return temperature difference across the load", CalcInputKind.Quantity, "K", Min: 1, Max: 100, HardMin: 0.01, HardMax: 500, IsOptional: true, Group: "System"),
-            new CalcInputSpec("cp_load", "Specific heat of the fluid (heat-load flow; blank = 4186 J/(kg·K) assumed for water, required for a custom fluid)", CalcInputKind.Quantity, "J/(kg*K)", Min: 1000, Max: 6000, HardMin: 100, HardMax: 1e5, IsOptional: true, Group: "System"),
-            new CalcInputSpec("segments", "Pipe segments in series", CalcInputKind.Table, Columns: SegmentColumns, MaxRows: 500, Group: "System"),
-            new CalcInputSpec("circuit", "Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored)", CalcInputKind.Choice, Choices: [OpenCircuit, ClosedCircuit], DefaultChoice: OpenCircuit, Group: "System"),
-            new CalcInputSpec("h_out", "Pressure head required at the outlet", CalcInputKind.Quantity, "m", Default: 0, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e5, Group: "System"),
-            new CalcInputSpec("v_max", "Velocity limit (warning)", CalcInputKind.Quantity, "m/s", Default: 3, Min: 0.5, Max: 10, HardMin: 0.01, HardMax: 100, Group: "System"),
-            new CalcInputSpec("Q_pump", "Pump curve: flow points", CalcInputKind.Vector, "m^3/h", IsOptional: true, Group: "Pump"),
-            new CalcInputSpec("H_pump", "Pump curve: head points", CalcInputKind.Vector, "m", IsOptional: true, Group: "Pump"),
-            new CalcInputSpec("n_ratio", "Speed ratio n₂/n₁ (affinity)", CalcInputKind.Number, Default: 1, Min: 0.2, Max: 2, HardMin: 0.01, HardMax: 10, Group: "Pump"),
-            new CalcInputSpec("D_ratio", "Impeller diameter ratio D₂/D₁ (affinity; the law is chosen below)", CalcInputKind.Number, Default: 1, Min: 0.7, Max: 1.1, HardMin: 0.1, HardMax: 5, Group: "Pump"),
+            new CalcInputSpec("fluid", "Fluid", CalcInputKind.Choice, Choices: [FluidWater, FluidCustom], DefaultChoice: FluidWater, Group: "Setup"),
+            new CalcInputSpec("circuit", "Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored)", CalcInputKind.Choice, Choices: [OpenCircuit, ClosedCircuit], DefaultChoice: OpenCircuit, Group: "Setup"),
+            new CalcInputSpec("segments", "Pipe segments in series", CalcInputKind.Table, Columns: SegmentColumns, MaxRows: 500, Group: "Setup"),
+            new CalcInputSpec("rho_custom", "Density (custom fluid)", CalcInputKind.Quantity, "kg/m^3", Min: 500, Max: 2000, HardMin: 1, HardMax: 1e5, IsOptional: true, Group: "Material"),
+            new CalcInputSpec("mu_custom", "Dynamic viscosity (custom fluid)", CalcInputKind.Quantity, "mPa*s", Min: 0.1, Max: 1000, HardMin: 1e-4, HardMax: 1e6, IsOptional: true, Group: "Material"),
+            new CalcInputSpec("h_out", "Pressure head required at the outlet", CalcInputKind.Quantity, "m", Default: 0, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e5, Group: "Loads"),
+            new CalcInputSpec("Q", "Design flow rate (optional; blank = the flow comes from the heat load)", CalcInputKind.Quantity, "m^3/h", Default: 20, Min: 0.01, Max: 1e5, HardMin: 1e-9, HardMax: 1e7, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("Phi_load", "Heat carried by the water (gives the design flow with ΔT; replaces Q)", CalcInputKind.Quantity, "kW", Min: 0.01, Max: 1e5, HardMin: 1e-6, HardMax: 1e7, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("dT_load", "Flow-to-return temperature difference across the load", CalcInputKind.Quantity, "K", Min: 1, Max: 100, HardMin: 0.01, HardMax: 500, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("cp_load", "Specific heat of the fluid in the heat-load flow (optional; blank = 4186 J/(kg·K) assumed for water, and required for a custom fluid)", CalcInputKind.Quantity, "J/(kg*K)", Min: 1000, Max: 6000, HardMin: 100, HardMax: 1e5, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("T_fluid", "Fluid temperature (mean; link the mean water temperature of the sealed system for a heating loop)", CalcInputKind.Quantity, "degC", Default: 20, Min: 0, Max: 100, HardMin: -50, HardMax: 300, Group: "Conditions", Aliases: ["T"]),
+            new CalcInputSpec("p_atm", "Atmospheric pressure (NPSH)", CalcInputKind.Quantity, "kPa", Default: 101.325, Min: 50, Max: 110, HardMin: 1, HardMax: 1000, Group: "Conditions"),
+            new CalcInputSpec("z_s", "Static head at the pump suction (+ flooded, − lift)", CalcInputKind.Quantity, "m", Default: 0, Min: -10, Max: 100, HardMin: -1e3, HardMax: 1e4, Group: "Conditions"),
+            new CalcInputSpec("T_line", "Design temperature of the line for the insulation step: the coldest (cold line) or hottest (hot line) fluid temperature in it, for example the flow temperature of a 6/12 °C chilled line whose mean is 9 °C (optional; blank = the fluid temperature; offered as a port only when it or the fluid temperature is entered; not used for the fluid properties)", CalcInputKind.Quantity, "degC", Min: -50, Max: 150, HardMin: -100, HardMax: 400, IsOptional: true, Group: "Conditions"),
+            new CalcInputSpec("v_limit", "Velocity limit (warning and check)", CalcInputKind.Quantity, "m/s", Default: 3, Min: 0.5, Max: 10, HardMin: 0.01, HardMax: 100, Group: "Requirements", Aliases: ["v_max"]),
             new CalcInputSpec("D_law", "Law for the diameter ratio: a trimmed impeller of the same casing (Q ∝ D, H ∝ D²) or a geometrically similar pump (Q ∝ D³, H ∝ D²)", CalcInputKind.Choice, Choices: [DiameterTrim, DiameterSimilar], DefaultChoice: DiameterTrim, Group: "Pump"),
+            new CalcInputSpec("n_ratio", "Speed ratio n₂/n₁ (affinity)", CalcInputKind.Number, Default: 1, Min: 0.2, Max: 2, HardMin: 0.01, HardMax: 10, Group: "Pump"),
+            new CalcInputSpec("D_ratio", "Impeller diameter ratio D₂/D₁ (affinity; the law is chosen above)", CalcInputKind.Number, Default: 1, Min: 0.7, Max: 1.1, HardMin: 0.1, HardMax: 5, Group: "Pump"),
             new CalcInputSpec("eta_pump", "Pump efficiency at duty (for shaft power)", CalcInputKind.Number, Default: 0.7, Min: 0.2, Max: 0.95, HardMin: 0.01, HardMax: 1, Group: "Pump"),
-            new CalcInputSpec("n_pump", "Pump rated speed (speed of the pump curve as entered; gives the shaft torque)", CalcInputKind.Quantity, "rpm", Min: 100, Max: 6000, HardMin: 1, HardMax: 1e5, IsOptional: true, Group: "Pump"),
-            new CalcInputSpec("p_atm", "Atmospheric pressure (NPSH)", CalcInputKind.Quantity, "kPa", Default: 101.325, Min: 50, Max: 110, HardMin: 1, HardMax: 1000, Group: "NPSH"),
-            new CalcInputSpec("z_s", "Static head at the pump suction (+ flooded, − lift)", CalcInputKind.Quantity, "m", Default: 0, Min: -10, Max: 100, HardMin: -1e3, HardMax: 1e4, Group: "NPSH"),
-            new CalcInputSpec("p_v_custom", "Vapour pressure of the custom fluid at T, absolute (needed for NPSH_a of a custom fluid; blank = NPSH_a is not computed)", CalcInputKind.Quantity, "kPa", Min: 0, Max: 500, HardMin: 0, HardMax: 1e4, IsOptional: true, Group: "NPSH"),
+            new CalcInputSpec("Q_pump", "Pump curve: flow points (optional; blank = no duty point)", CalcInputKind.Vector, "m^3/h", IsOptional: true, Group: "Pump"),
+            new CalcInputSpec("H_pump", "Pump curve: head points (optional; blank = no duty point)", CalcInputKind.Vector, "m", IsOptional: true, Group: "Pump"),
+            new CalcInputSpec("n_pump", "Pump rated speed, the speed of the pump curve as entered, which gives the shaft torque (optional; blank = no shaft torque)", CalcInputKind.Quantity, "rpm", Min: 100, Max: 6000, HardMin: 1, HardMax: 1e5, IsOptional: true, Group: "Pump"),
+            new CalcInputSpec("p_v_custom", "Vapour pressure of the custom fluid at the fluid temperature, absolute (optional; blank = NPSH_a is not computed; needed for NPSH_a of a custom fluid)", CalcInputKind.Quantity, "kPa", Min: 0, Max: 500, HardMin: 0, HardMax: 1e4, IsOptional: true, Group: "NPSH"),
             new CalcInputSpec("NPSH_r", "NPSH required by the pump, at the flow NPSH_a is evaluated at: the larger of the design flow and the duty flow (optional)", CalcInputKind.Quantity, "m", Min: 0, Max: 50, HardMin: 0, HardMax: 1e3, IsOptional: true, Group: "NPSH"),
         ],
         [
-            new CalcAssumption("Steady, incompressible, fully developed flow; all segments carry the full design flow in series.", "Darcy–Weisbach."),
-            new CalcAssumption("Fitting losses scale with velocity head (K method) or add pipe length (equivalent-length method); both may be used on one segment.", "Crane TP-410 practice."),
-            new CalcAssumption("The system curve scales the friction of turbulent and transitional segments and all fitting losses with Q² from the design flow (the friction factor is held at its design-flow value); the friction of a laminar segment scales with Q; the static part is independent of flow.", "H_sys = H_static + k₁ Q + k₂ Q²."),
-            new CalcAssumption("Water properties are from published correlations at atmospheric pressure (0–100 °C); any other fluid is entered with its own density and viscosity and their provenance.", "Kell 1975; Vogel fit; Hyland & Wexler 1983."),
+            new CalcAssumption("Flow is steady, incompressible and fully developed, and all segments carry the full design flow in series.", "Darcy–Weisbach."),
+            new CalcAssumption("Fitting losses scale with velocity head (K method) or add pipe length (equivalent-length method).", "Crane TP-410 practice."),
+            new CalcAssumption("Both fitting methods may be used on one segment.", "Crane TP-410 practice."),
+            new CalcAssumption("The system curve scales turbulent and transitional friction and all fitting losses with Q² from the design flow.", "H_sys = H_static + k₁ Q + k₂ Q²."),
+            new CalcAssumption("The friction factor is held at its design-flow value on the system curve.", "H_sys = H_static + k₁ Q + k₂ Q²."),
+            new CalcAssumption("The friction of a laminar segment scales with Q, and the static part is independent of flow.", "H_sys = H_static + k₁ Q + k₂ Q²."),
+            new CalcAssumption("Water properties are from published correlations at atmospheric pressure, 0 to 100 °C.", "Kell 1975; Vogel fit; Hyland & Wexler 1983."),
+            new CalcAssumption("Any other fluid is entered with its own density and viscosity and their provenance.", "Stated."),
         ],
         [
-            new CalcClauseRef("Crane Technical Paper 410", "—", "Flow of fluids through valves, fittings and pipe"),
-            new CalcClauseRef("Çengel & Cimbala, Fluid Mechanics", "Ch. 8", "Internal flow: friction factor, minor losses, pump duty"),
-            new CalcClauseRef("CIBSE Guide C", "Section 4", "Flow of fluids in pipes and ducts (principles)"),
+            new CalcClauseRef("Crane Co., Flow of Fluids Through Valves, Fittings and Pipe (Technical Paper No. 410)", "—", "Flow of fluids through valves, fittings and pipe"),
+            new CalcClauseRef("Çengel & Cimbala, Fluid Mechanics", "Ch. 8, 4th ed.", "Internal flow: friction factor, minor losses, pump duty"),
+            new CalcClauseRef("CIBSE Guide C", "§4", "Flow of fluids in pipes and ducts (principles)"),
             new CalcClauseRef("Kell, J. Chem. Eng. Data 20(1), 1975", "—", "Density of liquid water"),
         ],
         [
-            new CalcApplicabilityRule("heat-flow", "A heat load needs its temperature difference (and the reverse); without a heat load a design flow is needed.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("heat-flow", "A heat load needs its temperature difference (and the reverse); without a heat load a design flow is required.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("heat-t", "A heat load is given without the fluid temperature: 20 °C is taken.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("cp_load", "A custom fluid needs its specific heat for the heat-load flow.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("cp_load", "A custom fluid requires its specific heat for the heat-load flow.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("heat-flow-q", "A design flow is entered as well as a heat load: the flow from the heat load is used and Q ignored.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("custom-fluid", "A custom fluid needs its density and viscosity.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("custom-fluid", "A custom fluid requires its density and viscosity.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("water-range", "Water correlations hold for 0–100 °C.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("segments", "At least one segment is needed.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("segments", "At least one segment is required.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("laminar", "Laminar flow in a segment (Re < 2300): f = 64/Re.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("transition", "Transitional flow (2300 ≤ Re < 4000): the friction factor is uncertain; Colebrook is used.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("fittings", "Fitting loss coefficients K are entered for a segment below Re 4000: K is a turbulent-flow value and rises at low Re, so the fittings term K·v²/2g is understated.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
@@ -109,47 +120,47 @@ public sealed class PipeFlowCalculator : ICalcCalculator
         [
             new CalcTestCase("ka-laminar-oil", "Laminar oil flow (analytic Hagen–Poiseuille)",
                 new CalcReferenceSource("Çengel & Cimbala, Fluid Mechanics", "4th ed.", "Ch. 8, laminar flow in a pipe: Δp = 32 μ L v / D² (Hagen–Poiseuille); ρ = 888 kg/m³, μ = 0.8 Pa·s, D = 50 mm, L = 40 m, Q = 1 m³/h: v = 0.14147 m/s, Re = 7.852, f = 8.151, h_f = f L/D v²/2g = 6.654 m, Δp = 32 μ L v / D² = 57.95 kPa"),
-                [CalcInputValue.Choice("fluid", FluidCustom), CalcInputValue.Quantity("T", 20, "degC"), CalcInputValue.Quantity("rho_custom", 888, "kg/m^3"), CalcInputValue.Quantity("mu_custom", 800, "mPa*s"), CalcInputValue.Quantity("Q", 1, "m^3/h"), Segments(("oil line", 40, 50, 0.0, 0, 0, 0, "discharge")), CalcInputValue.Quantity("h_out", 0, "m")],
+                [CalcInputValue.Choice("fluid", FluidCustom), CalcInputValue.Quantity("T_fluid", 20, "degC"), CalcInputValue.Quantity("rho_custom", 888, "kg/m^3"), CalcInputValue.Quantity("mu_custom", 800, "mPa*s"), CalcInputValue.Quantity("Q", 1, "m^3/h"), Segments(("oil line", 40, 50, 0.0, 0, 0, 0, "discharge")), CalcInputValue.Quantity("h_out", 0, "m")],
                 [new CalcExpectedValue("v_s1", 0.14147, "m/s", 1e-4), new CalcExpectedValue("Re_s1", 7.852, "", 1e-3), new CalcExpectedValue("f_s1", 8.151, "", 1e-3), new CalcExpectedValue("h_f_total", 6.654, "m", 1e-3), new CalcExpectedValue("dp_total", 57.946, "kPa", 1e-3)]),
             new CalcTestCase("ka-turbulent-water", "Turbulent water, Colebrook against an independent solution",
                 new CalcReferenceSource("Colebrook–White equation solved independently (Re = 1.0e5, ε/D = 0.001: f = 0.022175; Swamee–Jain 0.022342)", null, "Custom fluid ρ = 1000, μ = 1 mPa·s so Re is exact: D = 100 mm, v = 1 m/s ⇒ Q = 28.274 m³/h, Re = 1e5; ε = 0.1 mm; L = 100 m: h_f = f L/D v²/2g = 0.022175·1000·0.050985 = 1.1306 m"),
-                [CalcInputValue.Choice("fluid", FluidCustom), CalcInputValue.Quantity("T", 20, "degC"), CalcInputValue.Quantity("rho_custom", 1000, "kg/m^3"), CalcInputValue.Quantity("mu_custom", 1, "mPa*s"), CalcInputValue.Quantity("Q", 28.274334, "m^3/h"), Segments(("main", 100, 100, 0.1, 0, 0, 0, "discharge")), CalcInputValue.Quantity("h_out", 0, "m")],
+                [CalcInputValue.Choice("fluid", FluidCustom), CalcInputValue.Quantity("T_fluid", 20, "degC"), CalcInputValue.Quantity("rho_custom", 1000, "kg/m^3"), CalcInputValue.Quantity("mu_custom", 1, "mPa*s"), CalcInputValue.Quantity("Q", 28.274334, "m^3/h"), Segments(("main", 100, 100, 0.1, 0, 0, 0, "discharge")), CalcInputValue.Quantity("h_out", 0, "m")],
                 [new CalcExpectedValue("v_s1", 1.0, "m/s", 1e-6), new CalcExpectedValue("Re_s1", 1e5, "", 1e-6), new CalcExpectedValue("f_s1", 0.022175, "", 5e-4), new CalcExpectedValue("h_f_total", 1.1306, "m", 1e-3), new CalcExpectedValue("f_sj_s1", 0.022342, "", 1e-3)]),
             new CalcTestCase("ka-duty-point", "Duty point against a parabolic pump curve, with K fittings and a rise (analytic)",
                 new CalcReferenceSource("Analytic: pump H = 40 − 0.01 Q² (Q in m³/h), system H = 10 + k Q² ⇒ duty where 30 = (k + 0.01) Q²", null, "Water 20 °C, DN80 (D = 80 mm), L = 60 m, ε = 0.045 mm, ΣK = 8, rise 10 m: v = 1.658 m/s, Re ≈ 1.32e5, f ≈ 0.0198, h_f ≈ 3.2 m at 30 m³/h so k ≈ 0.00356 m/(m³/h)²; duty where 30 = (k + 0.01) Q² ⇒ Q ≈ 46.3 m³/h, H ≈ 17.7 m on the piecewise-linear curve through (0, 40), (20, 36), (40, 24), (60, 4); at 90 % speed Q ≈ 40.1 m³/h"),
-                [CalcInputValue.Choice("fluid", FluidWater), CalcInputValue.Quantity("T", 20, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"), Segments(("riser", 60, 80, 0.045, 8, 0, 10, "discharge")), CalcInputValue.Quantity("h_out", 0, "m"), CalcInputValue.VectorOf("Q_pump", [0, 20, 40, 60], "m^3/h"), CalcInputValue.VectorOf("H_pump", [40, 36, 24, 4], "m"), CalcInputValue.Of("n_ratio", 0.9), CalcInputValue.Of("D_ratio", 1)],
+                [CalcInputValue.Choice("fluid", FluidWater), CalcInputValue.Quantity("T_fluid", 20, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"), Segments(("riser", 60, 80, 0.045, 8, 0, 10, "discharge")), CalcInputValue.Quantity("h_out", 0, "m"), CalcInputValue.VectorOf("Q_pump", [0, 20, 40, 60], "m^3/h"), CalcInputValue.VectorOf("H_pump", [40, 36, 24, 4], "m"), CalcInputValue.Of("n_ratio", 0.9), CalcInputValue.Of("D_ratio", 1)],
                 [new CalcExpectedValue("H_static", 10, "m", 1e-9), new CalcExpectedValue("H_duty", 17.67, "m", 0.01), new CalcExpectedValue("Q_duty", 46.3, "m^3/h", 0.01), new CalcExpectedValue("Q_duty2", 40.1, "m^3/h", 0.01)]),
             new CalcTestCase("ka-closed-circuit", "The duty-point loop as a closed flow-and-return circuit: no static lift, and the water it holds",
                 new CalcReferenceSource("Analytic (closed circuit: Σdz is not a lift; V_pipe = π/4·D²·L)", null, "DN80 (D = 80 mm), L = 60 m, rise 10 m entered but ignored in a closed circuit: H_static = h_out = 0; V_pipe = π/4 × 0.08² × 60 = 0.301593 m³ = 301.593 L"),
-                [CalcInputValue.Choice("fluid", FluidWater), CalcInputValue.Quantity("T", 20, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"), Segments(("loop", 60, 80, 0.045, 8, 0, 10, "discharge")), CalcInputValue.Choice("circuit", ClosedCircuit), CalcInputValue.Quantity("h_out", 0, "m")],
+                [CalcInputValue.Choice("fluid", FluidWater), CalcInputValue.Quantity("T_fluid", 20, "degC"), CalcInputValue.Quantity("Q", 30, "m^3/h"), Segments(("loop", 60, 80, 0.045, 8, 0, 10, "discharge")), CalcInputValue.Choice("circuit", ClosedCircuit), CalcInputValue.Quantity("h_out", 0, "m")],
                 [new CalcExpectedValue("H_static", 0, "m", 1e-9), new CalcExpectedValue("V_pipe", 301.5929, "L", 1e-6)]),
             new CalcTestCase("ka-heat-load-flow", "Design flow from a heat load: 12 kW at a 20 K difference, water at 70 °C (analytic)",
                 new CalcReferenceSource("Analytic: Q = Φ / (ρ c_p ΔT)", null, "ρ(70 °C) = 977.7696 kg/m³ (Kell 1975, evaluated from the correlation); c_p = 4186 J/(kg·K) as entered; Q = 12 000 / (977.7696 × 4186 × 20) = 1.465938e-4 m³/s = 0.5277375 m³/h"),
-                [CalcInputValue.Choice("fluid", FluidWater), CalcInputValue.Quantity("T", 70, "degC"), CalcInputValue.Quantity("Phi_load", 12, "kW"), CalcInputValue.Quantity("dT_load", 20, "K"), CalcInputValue.Quantity("cp_load", 4186, "J/(kg*K)"), Segments(("loop", 40, 28, 0.045, 0, 0, 0, "discharge")), CalcInputValue.Quantity("h_out", 0, "m")],
+                [CalcInputValue.Choice("fluid", FluidWater), CalcInputValue.Quantity("T_fluid", 70, "degC"), CalcInputValue.Quantity("Phi_load", 12, "kW"), CalcInputValue.Quantity("dT_load", 20, "K"), CalcInputValue.Quantity("cp_load", 4186, "J/(kg*K)"), Segments(("loop", 40, 28, 0.045, 0, 0, 0, "discharge")), CalcInputValue.Quantity("h_out", 0, "m")],
                 [new CalcExpectedValue("Q_design", 0.5277375, "m^3/h", 1e-6)]),
         ],
         DiagramKey: "pipe-pump",
         Category: "Hydraulics",
         OutputPorts:
         [
-            new CalcOutputPort("Q_design", "m^3/h", "Design flow (as entered, or from the heat load)"),
-            new CalcOutputPort("H_static", "m", "Static head"),
-            new CalcOutputPort("V_pipe", "L", "Water held in the pipe segments (→ B6 V_pipe, where the chain order allows)"),
-            new CalcOutputPort("H_sys", "m", "System head at the design flow"),
-            new CalcOutputPort("h_f_total", "m", "Total friction and fitting loss at the design flow"),
-            new CalcOutputPort("dp_total", "kPa", "Friction pressure drop at the design flow"),
-            new CalcOutputPort("dp_sys", "kPa", "System pressure at the design flow"),
-            new CalcOutputPort("P_hyd", "kW", "Hydraulic power at the design point"),
-            new CalcOutputPort("P_shaft_design", "kW", "Pump shaft power at the design flow (needs the pump speed)"),
-            new CalcOutputPort("T_shaft", "N*m", "Pump shaft torque, for the larger of the design-flow and duty-point shaft power (→ E1 load torque)"),
-            new CalcOutputPort("n_shaft", "rpm", "Pump shaft speed (→ E1 load speed)"),
-            new CalcOutputPort("v_peak", "m/s", "Highest velocity"),
-            new CalcOutputPort("T_line", "degC", "Design temperature of the line to insulate: T_line as entered, else the fluid temperature T when entered (not offered when neither is entered; → B9 process temperature)"),
-            new CalcOutputPort("OD_1", "mm", "Outside diameter of the first pipe segment, where entered (→ B9 pipe outer diameter D_i)"),
-            new CalcOutputPort("NPSH_a", "m", "NPSH available (water, or a custom fluid with its vapour pressure)"),
-            new CalcOutputPort("Q_duty", "m^3/h", "Duty flow against the pump curve"),
-            new CalcOutputPort("H_duty", "m", "Duty head against the pump curve"),
-            new CalcOutputPort("P_shaft", "kW", "Shaft power at the duty point"),
+            new CalcOutputPort("Q_design", "m^3/h", "Design flow (as entered, or from the heat load)", "pipe.flow_design"),
+            new CalcOutputPort("H_static", "m", "Static head", "pipe.head_static"),
+            new CalcOutputPort("V_pipe", "L", "Water held in the pipe segments (→ sealed-system V_pipe, where the chain order allows)", "pipe.volume_water"),
+            new CalcOutputPort("H_sys", "m", "System head at the design flow", "pipe.head_system"),
+            new CalcOutputPort("h_f_total", "m", "Total friction and fitting loss at the design flow", "pipe.head_loss_total"),
+            new CalcOutputPort("dp_total", "kPa", "Friction pressure drop at the design flow", "pipe.pressure_drop_total"),
+            new CalcOutputPort("dp_sys", "kPa", "System pressure at the design flow", "pipe.pressure_system"),
+            new CalcOutputPort("P_hyd", "kW", "Hydraulic power at the design point", "pump.power_hydraulic"),
+            new CalcOutputPort("P_shaft_design", "kW", "Pump shaft power at the design flow (needs the pump speed)", "pump.power_shaft_design"),
+            new CalcOutputPort("T_shaft", "kN*m", "Pump shaft torque, for the larger of the design-flow and duty-point shaft power (→ motor-sizing T_L)", "pump.torque_shaft"),
+            new CalcOutputPort("n_shaft", "rpm", "Pump shaft speed (→ motor-sizing n_L)", "pump.speed_shaft"),
+            new CalcOutputPort("v_peak", "m/s", "Highest velocity", "pipe.velocity_peak"),
+            new CalcOutputPort("T_line", "degC", "Design temperature of the line to insulate: T_line as entered, else the fluid temperature when entered (not offered when neither is entered; → insulation T_proc)", "pipe.temperature_line"),
+            new CalcOutputPort("OD_1", "mm", "Outside diameter of the first pipe segment, where entered (→ insulation D_i)", "pipe.diameter_outside_first"),
+            new CalcOutputPort("NPSH_a", "m", "NPSH available (water, or a custom fluid with its vapour pressure)", "pump.npsh_available"),
+            new CalcOutputPort("Q_duty", "m^3/h", "Duty flow against the pump curve", "pump.flow_duty"),
+            new CalcOutputPort("H_duty", "m", "Duty head against the pump curve", "pump.head_duty"),
+            new CalcOutputPort("P_shaft", "kW", "Shaft power at the duty point", "pump.power_shaft_duty"),
         ]);
 
     /// <summary>Segments: (name, L m, D mm, ε mm, ΣK, L_eq m, dz m, side).</summary>
@@ -163,21 +174,21 @@ public sealed class PipeFlowCalculator : ICalcCalculator
         c.MarkUtilisation("u_npsh", "u_v");
         const double g = 9.80665;
         var fluid = c.InputText("fluid");
-        var tEntered = c.Has("T");
+        var tEntered = c.Has("T_fluid");
 
-        var t = c.InputSi("T") - 273.15;
+        var t = c.InputSi("T_fluid") - 273.15;
         double rho, mu;
 
         // A temperature left out takes the template default with the validator's own notice; with a heat load that default is
         // wrong for a heating loop, so say so specifically.
         if (!tEntered && c.Has("Phi_load"))
-            c.Warn("heat-t", "T: the fluid temperature was not entered with the heat load; 20 °C is taken, which is not a heating loop's temperature. Enter T (or link B6's t_m).");
+            c.Warn("heat-t", "T_fluid: the fluid temperature was not entered with the heat load, so 20 °C is taken. Enter it, or link the mean water temperature of the sealed system.");
 
         if (fluid == FluidCustom)
         {
             if (!c.Has("rho_custom") || !c.Has("mu_custom"))
             {
-                c.Block("custom-fluid", "rho_custom/mu_custom: a custom fluid needs its density and viscosity.");
+                c.Block("custom-fluid", c.Has("rho_custom") ? "mu_custom: enter the viscosity of the custom fluid." : "rho_custom: enter the density of the custom fluid.");
                 return;
             }
 
@@ -190,7 +201,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
         {
             if (t < Water.MinCelsius || t > Water.MaxCelsius)
             {
-                c.Block("water-range", "T: the water correlations hold for 0 to 100 °C.");
+                c.Block("water-range", "T_fluid: the water correlations hold for 0 to 100 °C.");
                 return;
             }
 
@@ -217,13 +228,13 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             c.Output("T_line", "Line design temperature");
         }
         c.Input("h_out");
-        c.Input("v_max");
+        c.Input("v_limit");
 
         if (c.Has("Phi_load") || c.Has("dT_load"))
         {
             if (!c.Has("Phi_load") || !c.Has("dT_load"))
             {
-                c.Block("heat-flow", "Phi_load: a heat load gives the flow only with the flow-to-return temperature difference dT_load, and the other way round.");
+                c.Block("heat-flow", "Phi_load: enter the heat load and its temperature difference dT_load together.");
                 return;
             }
 
@@ -237,7 +248,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             }
             else if (fluid == FluidCustom)
             {
-                c.Block("cp_load", "cp_load: a custom fluid needs its specific heat for the heat-load flow.");
+                c.Block("cp_load", "cp_load: enter the specific heat of the custom fluid for the heat-load flow.");
                 return;
             }
             else
@@ -247,21 +258,21 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             }
 
             if (c.Has("Q"))
-                c.Warn("heat-flow-q", "Q: ignored, the design flow comes from the heat load; clear Q to remove this notice.");
+                c.Warn("heat-flow-q", "Q: the design flow comes from the heat load, so Q is ignored. Clear Q to remove this notice.");
 
             c.Assign("Q_design", "Phi_load / (rho * c_p * dT_load)", "m^3/h", "Design flow from the heat carried: Φ / (ρ c_p ΔT)");
 
             if (c.Si("h_out") < 1e-9)
-                c.Warn("plant-loss", "h_out: the head required at the outlet is 0, so the pump head holds pipe friction only. The boiler or heat exchanger, coil, valves and emitters of the circuit have their own water-side pressure loss, usually larger than the pipe's; enter it in h_out (or as K or L_eq on a segment) from the manufacturers' data, otherwise the head and the torque handed to the motor are low.");
+                c.Warn("plant-loss", "h_out: the head required at the outlet is 0, so the pump head holds pipe friction only. Enter the plant's water-side loss in h_out, or as K or L_eq on a segment.");
 
             if (fluid == FluidWater && c.Has("cp_load") && Math.Abs(c.Si("cp_load") - 4186) > 0.05 * 4186)
-                c.Warn("fluid-cp", $"cp_load: {F(c.Si("cp_load"))} J/(kg·K) differs from water's by more than 5 %, so the circuit carries another fluid (a glycol mixture, say), but this sheet's fluid is water: its density and viscosity are water's, so the flow comes out too high and the friction and torque too low (a glycol loop is typically several times the friction). Choose the custom fluid and enter its density and viscosity.");
+                c.Warn("fluid-cp", $"cp_load: {F(c.Si("cp_load"))} J/(kg·K) differs from water's by more than 5 %, so the fluid is not water. Choose the custom fluid and enter its density and viscosity, or the flow, friction and torque are those of water.");
         }
         else
         {
             if (!c.Has("Q"))
             {
-                c.Block("heat-flow", "Q: give the design flow, or a heat load with its temperature difference.");
+                c.Block("heat-flow", "Q: enter the design flow, or a heat load with its temperature difference.");
                 return;
             }
 
@@ -270,7 +281,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
         }
 
         var q = c.Si("Q_design");
-        var vMax = c.Si("v_max");
+        var vMax = c.Si("v_limit");
 
         var rows = c.Rows("segments");
 
@@ -286,7 +297,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
 
         if (segments.Any(s => s.D <= 0 || s.L < 0))
         {
-            c.Block("segments", "segments: every segment needs a positive diameter and a non-negative length.");
+            c.Block("segments", "segments: enter a positive diameter and a non-negative length for every segment.");
             return;
         }
 
@@ -294,7 +305,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
         {
             if (rows[i].Get("OD")?.Number is not null && Cell(rows[i], "OD", "mm") <= segments[i].D)
             {
-                c.Block("segments", $"segments: segment {i + 1} ('{segments[i].Name}') has an outside diameter OD of {F(Cell(rows[i], "OD", "mm") * 1000)} mm that is not larger than its inner diameter D of {F(segments[i].D * 1000)} mm; the pipe wall needs a thickness. Enter the outside diameter or clear it.");
+                c.Block("segments", $"segments: segment {i + 1} ('{segments[i].Name}') has an outside diameter of {F(Cell(rows[i], "OD", "mm") * 1000)} mm, not larger than its inner diameter of {F(segments[i].D * 1000)} mm. Enter the outside diameter or clear it.");
                 return;
             }
         }
@@ -302,7 +313,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
         var detailed = segments.Count <= MaxDetailedSegments;
 
         if (!detailed)
-            c.Warn("summary-only", "segments: more than 50 segments; per-segment lines are omitted.");
+            c.Warn("summary-only", "segments: there are more than 50 segments. Per-segment lines are omitted.");
 
         double hfTotal = 0, hfSuction = 0, dzTotal = 0;
         double hfLin = 0, hfQuad = 0, suctionLin = 0, suctionQuad = 0;
@@ -324,7 +335,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             {
                 f = Friction.Laminar(re);
                 fText = "64 / Re (laminar)";
-                c.Warn("laminar", $"segments: {s.Name} is laminar (Re = {F(re)}); f = 64/Re. The system curve and the duty point scale its friction with Q (h_f ∝ Q), not Q².");
+                c.Warn("laminar", $"segments: {s.Name} is laminar (Re = {F(re)}), so f = 64/Re. The system curve and the duty point scale its friction with Q, not Q².");
             }
             else
             {
@@ -334,11 +345,11 @@ public sealed class PipeFlowCalculator : ICalcCalculator
                 fText = $"Colebrook–White, {iterations} iterations (Swamee–Jain start {F(fSj)})";
 
                 if (re < Friction.TurbulentLimit)
-                    c.Warn("transition", $"segments: {s.Name} is transitional (Re = {F(re)}); the friction factor is uncertain.");
+                    c.Warn("transition", $"segments: {s.Name} is transitional (Re = {F(re)}), so the friction factor is uncertain.");
             }
 
             if (s.K > 0 && re < Friction.TurbulentLimit)
-                c.Warn("fittings", $"segments: {s.Name} has fitting losses (K = {F(s.K)}) at Re = {F(re)}; the K values are turbulent-flow values and rise at low Reynolds number, so the fittings loss K·v²/2g is understated here.");
+                c.Warn("fittings", $"segments: {s.Name} has fitting losses (K = {F(s.K)}) at Re = {F(re)}. The K values are for turbulent flow, so the fitting loss is understated here.");
 
             var hFriction = f * (s.L + s.Leq) / s.D * v * v / (2 * g);
             var hFitting = s.K * v * v / (2 * g);
@@ -453,7 +464,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
 
             if (qp.Count < 2 || qp.Count != hp.Count || qp.Zip(qp.Skip(1), (a, b) => b <= a).Any(x => x))
             {
-                c.Block("pump-curve", "Q_pump/H_pump: give at least two points with the same count and increasing flows.");
+                c.Block("pump-curve", "Q_pump: enter at least two points, with the same count in H_pump and increasing flows.");
                 return;
             }
 
@@ -501,18 +512,18 @@ public sealed class PipeFlowCalculator : ICalcCalculator
                 // chain.wet-heating-R1: the pump runs at the shifted speed, so the motor sees the shifted duty power at the shifted speed.
                 c.Assign("P_shaft_sel", "max(P_shaft_design, P_shaft2)", "kW", "Shaft power the torque covers: the larger of the design-flow value and the shifted duty-point value");
                 c.Assign("n_shaft", "n_pump * n_ratio", "rpm", "Pump shaft speed at the shifted duty (n_pump × n₂/n₁)");
-                c.Assign("T_shaft", "P_shaft_sel / n_shaft", "N*m", "Pump shaft torque P / ω at the shifted speed, P being the larger of the design-flow and shifted duty-point shaft power");
+                c.Assign("T_shaft", "P_shaft_sel / n_shaft", "kN*m", "Pump shaft torque P / ω at the shifted speed, P being the larger of the design-flow and shifted duty-point shaft power");
                 c.Output("P_shaft_sel", "Shaft power the torque covers (larger of design flow and shifted duty point)");
             }
             else if (dutyShaft is not null)
             {
                 c.Assign("P_shaft_sel", "max(P_shaft_design, P_shaft)", "kW", "Shaft power the torque covers: the larger of the design-flow value and the duty-point value");
-                c.Assign("T_shaft", "P_shaft_sel / n_pump", "N*m", "Pump shaft torque P / ω, P being the larger of the design-flow and duty-point shaft power");
+                c.Assign("T_shaft", "P_shaft_sel / n_pump", "kN*m", "Pump shaft torque P / ω, P being the larger of the design-flow and duty-point shaft power");
                 c.Output("P_shaft_sel", "Shaft power the torque covers (larger of design flow and duty point)");
             }
             else
             {
-                c.Assign("T_shaft", "P_shaft_design / n_pump", "N*m", "Pump shaft torque P / ω at the design flow");
+                c.Assign("T_shaft", "P_shaft_design / n_pump", "kN*m", "Pump shaft torque P / ω at the design flow");
             }
 
             if (!(shifted && dutyShaft2 is not null))
@@ -530,7 +541,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             var shaftW = c.Si("P_hyd") / eta;
 
             if (Math.Abs(eta - 0.7) < 1e-9 && shaftW < 1000)
-                c.Warn("eta-default", $"eta_pump: the default 0.7 is used for a pump of only {F(shaftW)} W shaft power. A small circulator has a far lower overall efficiency (often 0.2 or less), which raises its shaft power and torque several times (at 0.2 the torque is 3.5 times the default's); enter the pump's overall efficiency at its duty point.");
+                c.Warn("eta-default", $"eta_pump: the default 0.7 is used for a pump of only {F(shaftW)} W shaft power. A small circulator often has an efficiency of 0.2 or less, so enter the efficiency at its duty point.");
         }
 
         c.Series(new CalcSeries("System curve", "Q", "m^3/h", "H", "m", Enumerable.Range(0, CurvePoints).Select(i => { var fq = qMaxCurve * i / (CurvePoints - 1); return (fq * 3600, HSys(fq)); }).ToList()));
@@ -544,12 +555,12 @@ public sealed class PipeFlowCalculator : ICalcCalculator
         // A custom fluid with an NPSH_r and no vapour pressure has no NPSH_a, so the cavitation check is not made and a pass said nothing about cavitation (it warned and passed): refused.
         if (fluid != FluidWater && c.Has("NPSH_r") && !customVapour)
         {
-            c.Block("npsh-custom", "p_v_custom: NPSH_r is entered for a custom fluid but no vapour pressure, so NPSH_a cannot be computed and NPSH_r ≤ NPSH_a cannot be checked. Enter the fluid's absolute vapour pressure at T (p_v_custom), or clear NPSH_r.");
+            c.Block("npsh-custom", "p_v_custom: enter the absolute vapour pressure of the custom fluid, or clear NPSH_r. Without it NPSH_a cannot be computed.");
             return;
         }
 
         if (c.Has("NPSH_r") && (fluid == FluidWater || customVapour) && !segments.Any(s => s.Suction))
-            c.Warn("npsh-no-suction", "segments: NPSH_r is entered but no segment has its Pump side set to 'suction' (a blank side means discharge), so NPSH_a carries no suction-line friction and is optimistic. Mark the suction segments, or accept that the suction line has no friction loss.");
+            c.Warn("npsh-no-suction", "segments: NPSH_r is entered but no segment is marked 'suction', so NPSH_a carries no suction friction. Mark the suction segments, or accept that the suction line has no friction loss.");
 
         if (fluid == FluidWater || customVapour)
         {
@@ -575,15 +586,15 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             {
                 c.Input("NPSH_r");
                 c.Assign("u_npsh", "NPSH_r / NPSH_a", null, "NPSH utilisation (required / available)");
-                c.CheckUtilisation("NPSH_r ≤ NPSH_a", "u_npsh");
+                c.Check("NPSH required against NPSH available", "NPSH_r", "NPSH_a");
             }
         }
 
         var vPeak = segments.Max(s => q / (Math.PI * s.D * s.D / 4));
         c.Record("v_peak", "highest segment velocity", $"{F(vPeak)} m/s", ScalarValue.Of(vPeak, mps), "Highest velocity");
-        c.Record("u_v", "v_peak / v_max", $"{F(vPeak)} / {F(vMax)}", new ScalarValue(vPeak / vMax), "Velocity utilisation");
+        c.Record("u_v", "v_peak / v_limit", $"{F(vPeak)} / {F(vMax)}", new ScalarValue(vPeak / vMax), "Velocity utilisation");
         c.Output("v_peak", "Highest velocity");
-        c.CheckUtilisation("Velocity ≤ limit", "u_v");
+        c.Check("Highest velocity against limit", "v_peak", "v_limit");
     }
 
     private sealed record DutyResult(double Shaft, double Flow);
@@ -621,7 +632,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
         if (crossings.Count == 0)
         {
             c.Warn("no-duty", $"Q_pump: the pump curve {label} does not cross the system curve between {F(lo * 3600)} and {F(hi * 3600)} m³/h.");
-            c.CheckCondition($"Duty point exists ({label})", false, "no crossing", "pump ≥ system somewhere", null);
+            c.CheckCondition($"Duty point against the system curve ({label})", false, "no crossing", "pump ≥ system somewhere", null);
             return null;
         }
 
@@ -629,12 +640,12 @@ public sealed class PipeFlowCalculator : ICalcCalculator
         var chosen = stable.Count > 0 ? stable.MinBy(x => Math.Abs(x.Flow - designFlow)) : crossings[^1];
 
         if (crossings.Count > 1)
-            c.Warn("multi-duty", $"Q_pump: the pump curve {label} crosses the system curve {crossings.Count} times, at {string.Join(", ", crossings.Select(x => $"{F(x.Flow * 3600)} m³/h ({(x.Stable ? "stable" : "unstable")})"))}; the stable crossing nearest the design flow, {F(chosen.Flow * 3600)} m³/h, is reported.");
+            c.Warn("multi-duty", $"Q_pump: the pump curve {label} crosses the system curve {crossings.Count} times, at {string.Join(", ", crossings.Select(x => $"{F(x.Flow * 3600)} m³/h ({(x.Stable ? "stable" : "unstable")})"))}. The stable crossing nearest the design flow, {F(chosen.Flow * 3600)} m³/h, is reported.");
 
         // The operating point on a rising part of the pump curve is unstable: the pump does not hold it. That is a failed duty, not a notice (it warned and the sheet passed).
         if (stable.Count == 0)
         {
-            c.Warn("duty-unstable", $"Q_pump: the pump curve {label} crosses the system curve only where the pump curve rises ({F(chosen.Flow * 3600)} m³/h): the operating point is unstable, so the pump will not hold it.");
+            c.Warn("duty-unstable", $"Q_pump: the pump curve {label} crosses the system curve only where it rises ({F(chosen.Flow * 3600)} m³/h). The operating point is unstable, so the pump will not hold it.");
             c.CheckCondition($"Duty point against a stable crossing ({label})", false, $"{F(chosen.Flow * 3600)} m³/h on a rising pump curve", "a crossing where the pump curve falls", null);
         }
 
@@ -646,7 +657,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
         c.Output($"Q_duty{suffix}", $"Duty flow {label}");
         c.Output($"H_duty{suffix}", $"Duty head {label}");
         c.Output($"P_shaft{suffix}", $"Shaft power {label}");
-        c.CheckCondition($"Duty point exists ({label})", true, $"{F(qd * 3600)} m³/h", $"{F(hd)} m", $"Q_duty{suffix}");
+        c.CheckCondition($"Duty point against the system curve ({label})", true, $"{F(qd * 3600)} m³/h", $"{F(hd)} m", $"Q_duty{suffix}");
         return new DutyResult(rho * g * qd * hd / c.Si("eta_pump"), qd);
     }
 

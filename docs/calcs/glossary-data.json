@@ -879,7 +879,7 @@
             "cm²"
           ],
           "descriptions": [
-            "Axial bellows effective area A_eff (manufacturer's data)"
+            "Axial bellows effective area (manufacturer's data)"
           ],
           "templates": [
             "bs.pipe-expansion"
@@ -977,7 +977,7 @@
             "m²"
           ],
           "descriptions": [
-            "Floor area, for the loss per floor area"
+            "Floor area, for the loss per floor area (optional; blank = no loss per floor area)"
           ],
           "templates": [
             "bs.room-heat-loss"
@@ -2054,7 +2054,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Impeller diameter ratio D₂/D₁ (affinity; the law is chosen below)"
+            "Impeller diameter ratio D₂/D₁ (affinity; the law is chosen above)"
           ],
           "templates": [
             "bs.pipe-pump"
@@ -2498,7 +2498,7 @@
             "GPa"
           ],
           "descriptions": [
-            "Young's modulus at the operating temperature, for the reactions on the anchors (blank = E), in GPa; do not use it for the stress check"
+            "Young's modulus at the operating temperature, for the reactions on the anchors, in GPa (optional; blank = E); do not use it for the stress check"
           ],
           "templates": [
             "bs.pipe-expansion"
@@ -2661,17 +2661,6 @@
           ],
           "templates": [
             "struct.column-buckling"
-          ]
-        },
-        {
-          "meaning": "lmtd-correction-factor",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "LMTD correction factor"
-          ],
-          "templates": [
-            "bs.heat-exchanger"
           ]
         },
         {
@@ -3049,7 +3038,7 @@
           "meaning": "",
           "quantity": "Force",
           "units": [
-            "N"
+            "kN"
           ],
           "descriptions": [
             "Anchor force component along the leg"
@@ -3067,7 +3056,7 @@
           "meaning": "",
           "quantity": "Force",
           "units": [
-            "N"
+            "kN"
           ],
           "descriptions": [
             "Anchor force component along the run"
@@ -3164,6 +3153,22 @@
           ],
           "templates": [
             "struct.column-buckling"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "F_corr",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "LMTD correction factor"
+          ],
+          "templates": [
+            "bs.heat-exchanger"
           ]
         }
       ]
@@ -3279,7 +3284,7 @@
           "meaning": "",
           "quantity": "Force",
           "units": [
-            "N"
+            "kN"
           ],
           "descriptions": [
             "Support friction on the run"
@@ -3331,7 +3336,7 @@
           "meaning": "",
           "quantity": "Force",
           "units": [
-            "N"
+            "kN"
           ],
           "descriptions": [
             "Force of the leg"
@@ -3514,7 +3519,7 @@
             "kN"
           ],
           "descriptions": [
-            "Load to push on the extend stroke (compresses the rod)"
+            "Load to push on the extend stroke, which compresses the rod"
           ],
           "templates": [
             "fp.cylinder"
@@ -3602,7 +3607,7 @@
           "meaning": "",
           "quantity": "Force",
           "units": [
-            "N"
+            "kN"
           ],
           "descriptions": [
             "Force of the runs"
@@ -3641,7 +3646,7 @@
             "kN"
           ],
           "descriptions": [
-            "Stall thrust p·A_b"
+            "Stall thrust p_sys·A_b"
           ],
           "templates": [
             "fp.cylinder"
@@ -3948,7 +3953,7 @@
             "m"
           ],
           "descriptions": [
-            "Available leg length (each leg of a U-loop; an offset leg: the leg off the run, which may be the longer of the two); no default, not needed for an axial bellows"
+            "Available leg length (each leg of a U-loop; an offset leg: the leg off the run, which may be the longer of the two); optional for an axial bellows, which has no leg; no default"
           ],
           "templates": [
             "bs.pipe-expansion"
@@ -4042,7 +4047,7 @@
             "m"
           ],
           "descriptions": [
-            "Pump curve: head points"
+            "Pump curve: head points (optional; blank = no duty point)"
           ],
           "templates": [
             "bs.pipe-pump"
@@ -5116,7 +5121,7 @@
             "mm²/m²"
           ],
           "descriptions": [
-            "Screening limit K1 for OD·Y/(L − U)², in mm²/m² (or in²/ft², …) from your piping code (no default; blank = screening not evaluated and the sheet does not pass)"
+            "Screening limit K1 for OD·Y/(L − U)², in mm²/m² (or in²/ft², …) from your piping code (optional; blank = screening not evaluated, so the sheet does not pass; no default)"
           ],
           "templates": [
             "bs.pipe-expansion"
@@ -5279,7 +5284,7 @@
             "m"
           ],
           "descriptions": [
-            "Second run of a Z-bend, on the other side of the leg (blank = L-bend; offset-leg layout only)"
+            "Second run of a Z-bend, on the other side of the leg (optional; blank = L-bend; offset-leg layout only)"
           ],
           "templates": [
             "bs.pipe-expansion"
@@ -5425,7 +5430,7 @@
             "mm"
           ],
           "descriptions": [
-            "Length of the closed cylinder beyond its stroke (body, end caps and mounting eyes), used only when L_closed is blank: the closed length is then stroke + L_add"
+            "Length of the closed cylinder beyond its stroke (body, end caps and mounting eyes), added to the stroke when the closed length is not entered"
           ],
           "templates": [
             "fp.cylinder"
@@ -5479,7 +5484,7 @@
             "mm"
           ],
           "descriptions": [
-            "Closed (retracted) pin-to-pin length of the cylinder, from the cap-end mounting to the rod-end mounting (the cylinder body is part of the buckling length); blank = estimated as stroke + L_add"
+            "Closed (retracted) pin-to-pin length of the cylinder, from the cap-end mounting to the rod-end mounting, body included (optional; blank = stroke + L_add)"
           ],
           "templates": [
             "fp.cylinder"
@@ -5732,7 +5737,7 @@
             "m"
           ],
           "descriptions": [
-            "Length of pipe on sliding supports between the anchor and the loop (blank = the anchor spacing L)"
+            "Length of pipe on sliding supports between the anchor and the loop (optional; blank = the anchor spacing L)"
           ],
           "templates": [
             "bs.pipe-expansion"
@@ -5965,7 +5970,7 @@
           "meaning": "",
           "quantity": "Moment, torque",
           "units": [
-            "N·m"
+            "kN·m"
           ],
           "descriptions": [
             "Moment at the leg root"
@@ -6115,7 +6120,7 @@
           "meaning": "",
           "quantity": "Moment, torque",
           "units": [
-            "N·m"
+            "kN·m"
           ],
           "descriptions": [
             "Moment at the first run root"
@@ -6667,7 +6672,7 @@
             "g/m²"
           ],
           "descriptions": [
-            "Limit on the condensate on any interface (blank = report only)"
+            "Limit on the condensate on any interface (optional; blank = report only)"
           ],
           "templates": [
             "bs.glaser"
@@ -7277,7 +7282,7 @@
             "bar"
           ],
           "descriptions": [
-            "Vessel maximum allowable pressure PS, bar gauge (nameplate or relief setting; not below p2 gauge; needed for the PSSR indication)"
+            "Vessel maximum allowable pressure, bar gauge, from the nameplate or relief setting (optional; blank = no PSSR indication)"
           ],
           "templates": [
             "fp.accumulator"
@@ -7380,7 +7385,7 @@
           "meaning": "bellows-governing-pressure",
           "quantity": "Stress, pressure",
           "units": [
-            "bar"
+            "kPa"
           ],
           "descriptions": [
             "Axial bellows governing pressure, gauge, at or above zero: the design or test pressure that governs the anchor sizing (a vacuum bellows is outside this sheet; compression and extension ratings can differ, enter the governing one)"
@@ -7830,14 +7835,17 @@
           "meaning": "heat-flow",
           "quantity": "Power, heat flow",
           "units": [
-            "W",
             "kW"
           ],
           "descriptions": [
             "Heat dissipated inside the enclosure",
+            "Heat duty",
+            "Heat flow",
             "Heat required"
           ],
           "templates": [
+            "bs.heat-exchanger",
+            "bs.plane-wall",
             "bs.sealed-system",
             "elec.load-budget"
           ]
@@ -7851,7 +7859,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Selected emitter output at ΔT 50 K"
@@ -7869,7 +7877,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Cavity wall: fabric loss"
@@ -7887,7 +7895,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Window: fabric loss"
@@ -7905,7 +7913,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Room design heat loss"
@@ -7955,7 +7963,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Fabric heat loss"
@@ -7973,7 +7981,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Ventilation heat loss"
@@ -7991,7 +7999,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Element fabric loss"
@@ -8009,7 +8017,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Heat carried by the water (gives the design flow with ΔT; replaces Q)"
@@ -8027,7 +8035,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Thermal-bridge allowance"
@@ -8045,7 +8053,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Total heat required"
@@ -8064,35 +8072,18 @@
           "quantity": "Volumetric flow",
           "units": [
             "L/min",
-            "m³/h",
-            "m³/s"
+            "m³/h"
           ],
           "descriptions": [
             "Airflow",
-            "Design flow rate (blank when a heat load gives it)",
+            "Design flow rate (optional; blank = the flow comes from the heat load)",
             "Flow into the cylinder",
-            "Flow into the cylinder (blank when a required extend speed gives it)"
+            "Flow into the cylinder (optional; blank = a required extend speed gives it)"
           ],
           "templates": [
             "bs.duct-sizing",
             "bs.pipe-pump",
             "fp.cylinder"
-          ]
-        },
-        {
-          "meaning": "heat-flow",
-          "quantity": "Power, heat flow",
-          "units": [
-            "W",
-            "kW"
-          ],
-          "descriptions": [
-            "Heat duty",
-            "Heat flow"
-          ],
-          "templates": [
-            "bs.heat-exchanger",
-            "bs.plane-wall"
           ]
         }
       ]
@@ -8233,7 +8224,7 @@
             "m³/h"
           ],
           "descriptions": [
-            "Pump curve: flow points"
+            "Pump curve: flow points (optional; blank = no duty point)"
           ],
           "templates": [
             "bs.pipe-pump"
@@ -8299,22 +8290,6 @@
       "symbol": "R",
       "meanings": [
         {
-          "meaning": "thermal-resistance",
-          "quantity": "Thermal resistance",
-          "units": [
-            "K/W",
-            "m·K/W"
-          ],
-          "descriptions": [
-            "Thermal resistance",
-            "Total resistance"
-          ],
-          "templates": [
-            "bs.insulation",
-            "elec.thermal-chain"
-          ]
-        },
-        {
           "meaning": "radius",
           "quantity": "Length",
           "units": [
@@ -8339,6 +8314,19 @@
           "templates": [
             "elec.voltage-drop"
           ]
+        },
+        {
+          "meaning": "thermal-resistance",
+          "quantity": "Thermal resistance",
+          "units": [
+            "K/W"
+          ],
+          "descriptions": [
+            "Thermal resistance"
+          ],
+          "templates": [
+            "elec.thermal-chain"
+          ]
         }
       ]
     },
@@ -8349,7 +8337,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Lounge: Φ50 needed"
@@ -8564,7 +8552,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "RH 1 (%)"
+            "Relative humidity, state 1, as a number from 0 to 100"
           ],
           "templates": [
             "bs.psychrometrics"
@@ -8992,12 +8980,15 @@
           "meaning": "total-thermal-resistance",
           "quantity": "Thermal resistance",
           "units": [
-            "K/W"
+            "K/W",
+            "m·K/W"
           ],
           "descriptions": [
+            "Total resistance",
             "Total thermal resistance"
           ],
           "templates": [
+            "bs.insulation",
             "bs.plane-wall",
             "elec.thermal-chain"
           ]
@@ -9161,7 +9152,7 @@
             "m²·K/W"
           ],
           "descriptions": [
-            "Internal surface resistance R_si,f for the f_Rsi check (0.25 m²K/W is the conventional value for an opaque element, a record to check against the owner's copy of ISO 13788; 0.13 for glazing)"
+            "Internal surface resistance R_si,f for the f_Rsi check (0.25 m²K/W is the conventional value for an opaque element and 0.13 for glazing; a record to check against the owner's copy of ISO 13788)"
           ],
           "templates": [
             "bs.glaser"
@@ -9830,7 +9821,7 @@
             "MPa"
           ],
           "descriptions": [
-            "Allowable displacement-stress range Sa for the legs and runs (your piping code and its formula; no default; not needed for an axial bellows)"
+            "Allowable displacement-stress range for the legs and runs (your piping code and its formula; optional for an axial bellows; no default)"
           ],
           "templates": [
             "bs.pipe-expansion"
@@ -9859,21 +9850,6 @@
             "mech.shaft",
             "mech.shaft-stress",
             "mech.weld-group"
-          ]
-        },
-        {
-          "meaning": "temperature",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Air temperature",
-            "Fluid temperature (mean; link B6 t_m for a heating loop)"
-          ],
-          "templates": [
-            "bs.duct-sizing",
-            "bs.pipe-pump"
           ]
         }
       ]
@@ -9912,6 +9888,24 @@
       ]
     },
     {
+      "symbol": "T_1_out",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Dry-bulb temperature, state 1"
+          ],
+          "templates": [
+            "bs.psychrometrics"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "T_2",
       "meanings": [
         {
@@ -9927,6 +9921,19 @@
           "templates": [
             "bs.plane-wall",
             "elec.thermal-chain"
+          ]
+        },
+        {
+          "meaning": "leaving-dry-bulb-temperature",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Leaving dry-bulb (sensible, cooling)"
+          ],
+          "templates": [
+            "bs.psychrometrics"
           ]
         }
       ]
@@ -10107,6 +10114,24 @@
       ]
     },
     {
+      "symbol": "T_air",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Air temperature"
+          ],
+          "templates": [
+            "bs.duct-sizing"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "T_alt",
       "meanings": [
         {
@@ -10134,10 +10159,12 @@
             "°C"
           ],
           "descriptions": [
+            "Ambient air temperature (also the radiation sink)",
             "Ambient temperature",
             "Ambient temperature at the board"
           ],
           "templates": [
+            "bs.insulation",
             "elec.enclosure-heat",
             "elec.pcb-trace",
             "elec.voltage-drop"
@@ -10251,6 +10278,42 @@
       ]
     },
     {
+      "symbol": "T_db",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Dry-bulb temperature"
+          ],
+          "templates": [
+            "bs.psychrometrics"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "T_db_b",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Second stream dry-bulb (mixing)"
+          ],
+          "templates": [
+            "bs.psychrometrics"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "T_dec",
       "meanings": [
         {
@@ -10290,16 +10353,108 @@
       "symbol": "T_dew",
       "meanings": [
         {
+          "meaning": "dew-point-temperature",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Dew point of the ambient air, if known, for example from the psychrometrics calculation (optional; blank = from T_amb and RH_a by the Magnus relation)",
+            "Dew point of the hot-side air, when the hot side is humid air (optional; blank = not checked, and the duty here is sensible only)"
+          ],
+          "templates": [
+            "bs.heat-exchanger",
+            "bs.insulation"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "T_dp",
+      "meanings": [
+        {
           "meaning": "",
           "quantity": "Temperature",
           "units": [
             "°C"
           ],
           "descriptions": [
-            "Dew point of the hot-side air, when the hot side is humid air (blank = not checked; the duty here is sensible only)"
+            "Dew-point temperature"
           ],
           "templates": [
-            "bs.heat-exchanger"
+            "bs.psychrometrics"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "T_dp_1",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Dew point, state 1"
+          ],
+          "templates": [
+            "bs.psychrometrics"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "T_fill",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Fill temperature"
+          ],
+          "templates": [
+            "bs.sealed-system"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "T_flow",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Flow temperature"
+          ],
+          "templates": [
+            "bs.sealed-system"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "T_fluid",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Fluid temperature (mean; link the mean water temperature of the sealed system for a heating loop)"
+          ],
+          "templates": [
+            "bs.pipe-pump"
           ]
         }
       ]
@@ -10416,7 +10571,22 @@
       "symbol": "T_int",
       "meanings": [
         {
-          "meaning": "",
+          "meaning": "internal-design-temperature",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Internal air temperature",
+            "Internal design temperature"
+          ],
+          "templates": [
+            "bs.glaser",
+            "bs.room-heat-loss"
+          ]
+        },
+        {
+          "meaning": "enclosure-internal-temperature",
           "quantity": "Temperature",
           "units": [
             "°C"
@@ -10426,6 +10596,24 @@
           ],
           "templates": [
             "elec.enclosure-heat"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "T_lambda",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Temperature the conductivity applies at, compared with the mean insulation temperature (optional; blank = no comparison)"
+          ],
+          "templates": [
+            "bs.insulation"
           ]
         }
       ]
@@ -10458,7 +10646,7 @@
             "°C"
           ],
           "descriptions": [
-            "Design temperature of the line for the insulation step: the coldest (cold line) or hottest (hot line) fluid temperature in it, for example the flow temperature of a 6/12 °C chilled line whose mean T is 9 °C (blank = T; offered as the port T_line only when T_line or T is entered; not used for the fluid properties)",
+            "Design temperature of the line for the insulation step: the coldest (cold line) or hottest (hot line) fluid temperature in it, for example the flow temperature of a 6/12 °C chilled line whose mean is 9 °C (optional; blank = the fluid temperature; offered as a port only when it or the fluid temperature is entered; not used for the fluid properties)",
             "Line design temperature"
           ],
           "templates": [
@@ -10483,6 +10671,37 @@
           "templates": [
             "elec.motor-sizing",
             "mech.mechanism"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "T_m",
+      "meanings": [
+        {
+          "meaning": "mean-insulation-temperature",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Mean insulation temperature"
+          ],
+          "templates": [
+            "bs.insulation"
+          ]
+        },
+        {
+          "meaning": "mean-water-temperature",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Mean water temperature"
+          ],
+          "templates": [
+            "bs.sealed-system"
           ]
         }
       ]
@@ -10521,6 +10740,19 @@
           ],
           "templates": [
             "elec.containment"
+          ]
+        },
+        {
+          "meaning": "maximum-system-temperature",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Maximum system temperature"
+          ],
+          "templates": [
+            "bs.sealed-system"
           ]
         }
       ]
@@ -10572,7 +10804,7 @@
           ],
           "descriptions": [
             "Lowest operating temperature (the ring sits at 20 °C when installed)",
-            "Minimum operating temperature (the gas is coldest and delivers least here; V0 is scaled by T_max/T_min)"
+            "Minimum operating temperature (the gas is coldest and delivers least here)"
           ],
           "templates": [
             "fp.accumulator",
@@ -10657,6 +10889,24 @@
       ]
     },
     {
+      "symbol": "T_proc",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Process (fluid) temperature"
+          ],
+          "templates": [
+            "bs.insulation"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "T_rated",
       "meanings": [
         {
@@ -10683,6 +10933,24 @@
           ],
           "templates": [
             "elec.motor-sizing"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "T_return",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Return temperature"
+          ],
+          "templates": [
+            "bs.sealed-system"
           ]
         }
       ]
@@ -10724,6 +10992,24 @@
       ]
     },
     {
+      "symbol": "T_room",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Room temperature"
+          ],
+          "templates": [
+            "bs.sealed-system"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "T_s0",
       "meanings": [
         {
@@ -10755,6 +11041,24 @@
           ],
           "templates": [
             "bs.plane-wall"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "T_se",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Outer surface temperature"
+          ],
+          "templates": [
+            "bs.insulation"
           ]
         }
       ]
@@ -10796,6 +11100,24 @@
       ]
     },
     {
+      "symbol": "T_supply",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "MVHR supply air temperature after heat recovery (optional; blank = natural ventilation, outside air)"
+          ],
+          "templates": [
+            "bs.room-heat-loss"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "T_use",
       "meanings": [
         {
@@ -10814,23 +11136,44 @@
       ]
     },
     {
-      "symbol": "U",
+      "symbol": "T_wb",
       "meanings": [
         {
-          "meaning": "overall-heat-transfer-coefficient",
-          "quantity": "Heat transfer coefficient, U-value",
+          "meaning": "",
+          "quantity": "Temperature",
           "units": [
-            "W/(m²·K)"
+            "°C"
           ],
           "descriptions": [
-            "Overall heat transfer coefficient",
-            "Overall heat transfer coefficient (clean)"
+            "Wet-bulb temperature"
           ],
           "templates": [
-            "bs.heat-exchanger",
-            "bs.plane-wall"
+            "bs.psychrometrics"
           ]
-        },
+        }
+      ]
+    },
+    {
+      "symbol": "T_wb_1",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Wet-bulb temperature, state 1"
+          ],
+          "templates": [
+            "bs.psychrometrics"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "U",
+      "meanings": [
         {
           "meaning": "supply-voltage",
           "quantity": "Voltage",
@@ -10869,7 +11212,7 @@
             "W/K"
           ],
           "descriptions": [
-            "UA"
+            "Overall conductance U·A"
           ],
           "templates": [
             "bs.heat-exchanger"
@@ -11040,6 +11383,24 @@
       ]
     },
     {
+      "symbol": "U_clean",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Heat transfer coefficient, U-value",
+          "units": [
+            "W/(m²·K)"
+          ],
+          "descriptions": [
+            "Overall heat transfer coefficient (clean)"
+          ],
+          "templates": [
+            "bs.heat-exchanger"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "U_eff",
       "meanings": [
         {
@@ -11103,7 +11464,7 @@
             "W/(m²·K)"
           ],
           "descriptions": [
-            "U-value of this wall from the heat-loss calculation (B4), for the consistency check against 1/R_T (blank = not checked)"
+            "U-value of this wall from the room heat loss calculation, for the consistency check against 1/R_T (optional; blank = not checked)"
           ],
           "templates": [
             "bs.glaser"
@@ -11121,7 +11482,7 @@
             "W/(m²·K)"
           ],
           "descriptions": [
-            "Target U for built-up elements without their own target"
+            "Target U for built-up elements without their own target (optional; blank = no global target)"
           ],
           "templates": [
             "bs.room-heat-loss"
@@ -11151,16 +11512,18 @@
       "symbol": "U_wall",
       "meanings": [
         {
-          "meaning": "",
+          "meaning": "wall-u-value",
           "quantity": "Heat transfer coefficient, U-value",
           "units": [
             "W/(m²·K)"
           ],
           "descriptions": [
+            "Overall heat transfer coefficient",
             "U-value of the wall"
           ],
           "templates": [
-            "bs.glaser"
+            "bs.glaser",
+            "bs.plane-wall"
           ]
         }
       ]
@@ -11347,7 +11710,7 @@
             "cm³/rev"
           ],
           "descriptions": [
-            "Pump displacement per revolution (leave blank to skip the pump delivery check)"
+            "Pump displacement per revolution (optional; blank = no pump delivery check)"
           ],
           "templates": [
             "fp.cylinder"
@@ -11365,7 +11728,7 @@
             "cm³/rev"
           ],
           "descriptions": [
-            "Hydraulic motor displacement per revolution (leave blank for no motor)"
+            "Hydraulic motor displacement per revolution (optional; blank = no motor)"
           ],
           "templates": [
             "fp.cylinder"
@@ -11603,8 +11966,8 @@
             "L"
           ],
           "descriptions": [
-            "Selected vessel volume",
-            "Vessel internal volume V (blank = the selected size; not below V0)"
+            "Selected vessel volume (optional; blank = no vessel check)",
+            "Vessel internal volume (optional; blank = the selected size)"
           ],
           "templates": [
             "bs.sealed-system",
@@ -11668,7 +12031,7 @@
             "mm"
           ],
           "descriptions": [
-            "Ring cross-section diameter W"
+            "Ring cross-section diameter"
           ],
           "templates": [
             "fp.oring-gland"
@@ -11702,7 +12065,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "W 1 (g/kg)"
+            "Humidity ratio, state 1, in grams per kilogram of dry air"
           ],
           "templates": [
             "bs.psychrometrics"
@@ -12846,7 +13209,7 @@
             "1/K"
           ],
           "descriptions": [
-            "Linear thermal expansion coefficient of the part that carries the sealing surface (the bore of a piston seal, the rod of a rod seal), if it differs from the groove metal's (leave blank to use α_m); it sets the extrusion gap over temperature"
+            "Linear thermal expansion coefficient of the part that carries the sealing surface, the bore of a piston seal or the rod of a rod seal, which sets the extrusion gap over temperature (optional; blank = the groove metal's α_m)"
           ],
           "templates": [
             "fp.oring-gland"
@@ -12932,7 +13295,7 @@
             "m"
           ],
           "descriptions": [
-            "Altitude (used when pressure is blank)",
+            "Altitude (used when no pressure is entered)",
             "Site altitude (air density)"
           ],
           "templates": [
@@ -12949,7 +13312,7 @@
           "meaning": "",
           "quantity": "Force",
           "units": [
-            "N"
+            "kN"
           ],
           "descriptions": [
             "Force on the anchors (resultant)"
@@ -12967,7 +13330,7 @@
           "meaning": "",
           "quantity": "Moment, torque",
           "units": [
-            "N·m"
+            "kN·m"
           ],
           "descriptions": [
             "Largest root moment (guided-cantilever model)"
@@ -13026,7 +13389,7 @@
           "descriptions": [
             "Column width, along the plate width B (I/H and RHS)",
             "Flange width",
-            "Groove width b",
+            "Groove width",
             "Length in the y direction (rectangular plate only, not used for a circular plate)",
             "Width at the root (cantilever); effective axial length of the ring (annular: that of a free ring, not the lip of a longer tube)",
             "Width for the shear area (optional; blank = use A_v)",
@@ -13709,7 +14072,7 @@
             "J/(kg·K)"
           ],
           "descriptions": [
-            "Specific heat of the fluid (heat-load flow; blank = 4186 J/(kg·K) assumed for water, required for a custom fluid)"
+            "Specific heat of the fluid in the heat-load flow (optional; blank = 4186 J/(kg·K) assumed for water, and required for a custom fluid)"
           ],
           "templates": [
             "bs.pipe-pump"
@@ -13962,7 +14325,7 @@
             "mm"
           ],
           "descriptions": [
-            "Rated axial movement of the bellows (manufacturer's data; blank = movement not checked)"
+            "Rated axial movement of the bellows (optional; blank = movement not checked; manufacturer's data)"
           ],
           "templates": [
             "bs.pipe-expansion"
@@ -14134,7 +14497,7 @@
             "K"
           ],
           "descriptions": [
-            "Temperature change ΔT (negative for a cold line), when entered directly"
+            "Temperature change ΔT (negative for a cold line), when entered directly (optional; blank = from the two temperatures)"
           ],
           "templates": [
             "bs.pipe-expansion"
@@ -14260,7 +14623,7 @@
             "L"
           ],
           "descriptions": [
-            "Liquid volume ΔV delivered, absorbed or (emergency stroke) needed for the stroke",
+            "Liquid volume delivered, absorbed or needed for the emergency stroke",
             "Swept volume per stroke (the larger)"
           ],
           "templates": [
@@ -14621,7 +14984,7 @@
             "mm"
           ],
           "descriptions": [
-            "Orifice diameter (optional: gives the flow it passes)"
+            "Orifice diameter, which gives the flow it passes"
           ],
           "templates": [
             "fp.cylinder"
@@ -14676,7 +15039,7 @@
           ],
           "descriptions": [
             "Pressure line inside diameter",
-            "Pressure line inside diameter (to the cylinder cap port; judged at the larger flow of the two strokes)"
+            "Pressure line inside diameter, to the cylinder cap port and judged at the larger flow of the two strokes"
           ],
           "templates": [
             "fp.cylinder"
@@ -15060,7 +15423,7 @@
             "K"
           ],
           "descriptions": [
-            "Margin of the surface above the dew point, for a cold surface (blank = not a criterion)"
+            "Allowance of the surface above the dew point, for a cold surface (optional; blank = not a criterion)"
           ],
           "templates": [
             "bs.insulation"
@@ -15076,7 +15439,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Month to draw the Glaser diagram for (blank = the month of the peak, or the coldest if nothing condenses)"
+            "Month to draw the Glaser diagram for (optional; blank = the month of the peak, or the coldest if nothing condenses)"
           ],
           "templates": [
             "bs.glaser"
@@ -15232,7 +15595,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Safety factor on the vapour-pressure difference Δp = Δv·R_v·(T_i + T_e)/2 in the moisture-excess mode (design margin, 1.10 by convention; a record, wording to be checked against the owner's copy of ISO 13788)"
+            "Safety factor on the vapour-pressure difference Δp = Δv·R_v·(T_i + T_e)/2 in the moisture-excess mode (1.10 by convention; a record, wording to be checked against the owner's copy of ISO 13788)"
           ],
           "templates": [
             "bs.glaser"
@@ -15340,7 +15703,7 @@
             "bar"
           ],
           "descriptions": [
-            "Pressure drop across the orifice (leave blank to skip the orifice screening)"
+            "Pressure drop across the orifice (optional; blank = no orifice screening)"
           ],
           "templates": [
             "fp.cylinder"
@@ -15597,7 +15960,7 @@
             "mm"
           ],
           "descriptions": [
-            "Face-seal gap between the flanges (face seal only): the extrusion gap, and it adds to the compression height h_f + e_f"
+            "Face-seal gap between the flanges (face seal only), which is the extrusion gap and adds to the compression height"
           ],
           "templates": [
             "fp.oring-gland"
@@ -15649,7 +16012,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Expansion coefficient from a glycol record (replaces water)"
+            "Expansion coefficient from a glycol record (optional; blank = water)"
           ],
           "templates": [
             "bs.sealed-system"
@@ -15802,7 +16165,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Saturation efficiency (evaporative, blank = use RH_2)"
+            "Saturation efficiency for evaporative humidification (optional; blank = use the leaving relative humidity)"
           ],
           "templates": [
             "bs.psychrometrics"
@@ -15850,21 +16213,6 @@
       "symbol": "eps",
       "meanings": [
         {
-          "meaning": "roughness",
-          "quantity": "Length",
-          "units": [
-            "mm"
-          ],
-          "descriptions": [
-            "Duct roughness",
-            "Roughness"
-          ],
-          "templates": [
-            "bs.duct-sizing",
-            "bs.pipe-pump"
-          ]
-        },
-        {
           "meaning": "effectiveness",
           "quantity": "Plain number",
           "units": [],
@@ -15884,6 +16232,19 @@
           ],
           "templates": [
             "bs.insulation"
+          ]
+        },
+        {
+          "meaning": "roughness",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Roughness"
+          ],
+          "templates": [
+            "bs.pipe-pump"
           ]
         },
         {
@@ -15963,6 +16324,24 @@
           ],
           "templates": [
             "mech.snap-fit"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "eps_rough",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Duct roughness"
+          ],
+          "templates": [
+            "bs.duct-sizing"
           ]
         }
       ]
@@ -16119,7 +16498,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Mechanical efficiency of the cylinder (seal and guide friction)"
+            "Mechanical efficiency of the cylinder, from seal and guide friction"
           ],
           "templates": [
             "fp.cylinder"
@@ -16183,7 +16562,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Volumetric efficiency of the cylinder (leakage past the piston)"
+            "Volumetric efficiency of the cylinder, from leakage past the piston"
           ],
           "templates": [
             "fp.cylinder"
@@ -16641,7 +17020,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Real-gas factor on V0 (1 = ideal gas; at least 1). It is the ratio of the real to the ideal gas volume for THIS pressure window, not the compressibility factor Z at p_2: from a gas-property source, f_rg = Z_0·(1/p_1 − 1/p_2)/(Z_1/p_1 − Z_2/p_2) for an isothermal discharge, Z at p_0, p_1 and p_2, which is larger than Z_2 for a narrow window"
+            "Real-gas factor on V0, the real over the ideal gas volume for this pressure window (1 = ideal gas, at least 1)"
           ],
           "templates": [
             "fp.accumulator"
@@ -17405,17 +17784,6 @@
           "templates": [
             "mech.snap-fit"
           ]
-        },
-        {
-          "meaning": "specific-enthalpy",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Specific enthalpy (kJ per kg dry air)"
-          ],
-          "templates": [
-            "bs.psychrometrics"
-          ]
         }
       ]
     },
@@ -17429,7 +17797,7 @@
             "W/(m²·K)"
           ],
           "descriptions": [
-            "Side 1 film coefficient (omit when T_1 is the surface temperature)"
+            "Side 1 film coefficient (optional; blank = no film, so T_1 is the surface temperature)"
           ],
           "templates": [
             "bs.plane-wall"
@@ -17440,7 +17808,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "h 1 (kJ/kg)"
+            "Enthalpy, state 1, in kilojoules per kilogram of dry air"
           ],
           "templates": [
             "bs.psychrometrics"
@@ -17458,10 +17826,26 @@
             "W/(m²·K)"
           ],
           "descriptions": [
-            "Side 2 film coefficient (omit when T_2 is the surface temperature)"
+            "Side 2 film coefficient (optional; blank = no film, so T_2 is the surface temperature)"
           ],
           "templates": [
             "bs.plane-wall"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "h_air",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Specific enthalpy (kJ per kg dry air)"
+          ],
+          "templates": [
+            "bs.psychrometrics"
           ]
         }
       ]
@@ -17476,7 +17860,7 @@
             "mm"
           ],
           "descriptions": [
-            "Face-seal groove depth (face seal only; the ring is compressed over h_f + e_f)"
+            "Face-seal groove depth (face seal only), where the ring is compressed over the depth plus the gap"
           ],
           "templates": [
             "fp.oring-gland"
@@ -17566,7 +17950,7 @@
             "W/(m²·K)"
           ],
           "descriptions": [
-            "Inner film coefficient (blank = the pipe wall is at the process temperature)"
+            "Inner film coefficient (optional; blank = the pipe wall is at the process temperature)"
           ],
           "templates": [
             "bs.insulation"
@@ -17634,7 +18018,7 @@
             "W/(m²·K)"
           ],
           "descriptions": [
-            "Outer surface coefficient h_se (as given; generic default of 10 W/(m²K), replace with the value for your surface; a high value is not conservative against condensation on a cold surface, use the correlation there)"
+            "Outer surface coefficient (as given; generic default of 10 W/(m²K), replace with the value for your surface; a high value is not conservative against condensation on a cold surface, use the correlation there)"
           ],
           "templates": [
             "bs.insulation"
@@ -18150,10 +18534,10 @@
           "meaning": "bellows-spring-rate",
           "quantity": "Line force, distributed load, stiffness",
           "units": [
-            "N/mm"
+            "kN/m"
           ],
           "descriptions": [
-            "Axial bellows spring rate (manufacturer's data; blank = no spring force)"
+            "Axial bellows spring rate (optional; blank = no spring force; manufacturer's data)"
           ],
           "templates": [
             "bs.pipe-expansion"
@@ -18946,7 +19330,7 @@
             "W/(m·K)"
           ],
           "descriptions": [
-            "Pipe wall conductivity"
+            "Pipe wall conductivity (optional; blank = not included)"
           ],
           "templates": [
             "bs.insulation"
@@ -19465,7 +19849,7 @@
             "Coefficient of friction between the two parts (record snapfit.friction; no default: the pair of materials, from your reference or a W3 friction pair)",
             "Coefficient of friction, cable sheath on containment (from your record)",
             "Friction coefficient (guide / bearing)",
-            "Friction coefficient μ of the slides and guides between the anchor and the loop (blank = friction is not in the anchor force)"
+            "Friction coefficient μ of the slides and guides between the anchor and the loop (optional; blank = friction is not in the anchor force)"
           ],
           "templates": [
             "bs.pipe-expansion",
@@ -19644,17 +20028,6 @@
           ],
           "templates": [
             "bs.sealed-system"
-          ]
-        },
-        {
-          "meaning": "gas-exponent",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Gas exponent n of the discharge (1 isothermal, slow; 1.4 adiabatic, fast); with the same exponent both ways it is also the charge exponent"
-          ],
-          "templates": [
-            "fp.accumulator"
           ]
         }
       ]
@@ -19981,6 +20354,22 @@
       ]
     },
     {
+      "symbol": "n_gas",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Gas exponent of the discharge, 1 isothermal (slow) to 1.4 adiabatic (fast), also the charge exponent when one exponent holds both ways"
+          ],
+          "templates": [
+            "fp.accumulator"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "n_gov",
       "meanings": [
         {
@@ -20025,7 +20414,7 @@
             "1/h"
           ],
           "descriptions": [
-            "Infiltration air change rate at outside temperature, with MVHR only (n is then the MVHR rate; blank = no infiltration loss, with a warning; 0 = airtight)"
+            "Infiltration air change rate at outside temperature, with MVHR only (optional; blank = no infiltration loss, with a warning; 0 = airtight; n is then the MVHR rate)"
           ],
           "templates": [
             "bs.room-heat-loss"
@@ -20197,7 +20586,7 @@
             "rpm"
           ],
           "descriptions": [
-            "Pump rated speed (speed of the pump curve as entered; gives the shaft torque)"
+            "Pump rated speed, the speed of the pump curve as entered, which gives the shaft torque (optional; blank = no shaft torque)"
           ],
           "templates": [
             "bs.pipe-pump"
@@ -20652,20 +21041,7 @@
       "symbol": "p",
       "meanings": [
         {
-          "meaning": "barometric-pressure",
-          "quantity": "Stress, pressure",
-          "units": [
-            "kPa"
-          ],
-          "descriptions": [
-            "Barometric pressure (blank = standard atmosphere at the altitude)"
-          ],
-          "templates": [
-            "bs.psychrometrics"
-          ]
-        },
-        {
-          "meaning": "pressure",
+          "meaning": "",
           "quantity": "Stress, pressure",
           "units": [
             "bar"
@@ -20675,21 +21051,6 @@
           ],
           "templates": [
             "fp.oring-gland"
-          ]
-        },
-        {
-          "meaning": "supply-pressure",
-          "quantity": "Stress, pressure",
-          "units": [
-            "bar",
-            "bar g"
-          ],
-          "descriptions": [
-            "Supply pressure",
-            "Supply pressure at the cylinder and the pump (gauge)"
-          ],
-          "templates": [
-            "fp.cylinder"
           ]
         }
       ]
@@ -20859,11 +21220,13 @@
           "descriptions": [
             "Atmospheric pressure (NPSH)",
             "Atmospheric pressure (gauge to absolute)",
-            "Barometric pressure"
+            "Barometric pressure",
+            "Barometric pressure (optional; blank = standard atmosphere at the altitude)"
           ],
           "templates": [
             "bs.duct-sizing",
             "bs.pipe-pump",
+            "bs.psychrometrics",
             "fp.accumulator"
           ]
         }
@@ -20879,7 +21242,7 @@
             "bar"
           ],
           "descriptions": [
-            "Back pressure on the discharge side (standard connection, gauge)"
+            "Back pressure on the discharge side of the standard connection, gauge"
           ],
           "templates": [
             "fp.cylinder"
@@ -20966,7 +21329,7 @@
           "meaning": "",
           "quantity": "Stress, pressure",
           "units": [
-            "bar"
+            "kPa"
           ],
           "descriptions": [
             "Final (maximum working) pressure, gauge"
@@ -21051,7 +21414,7 @@
           "meaning": "pre-charge-pressure",
           "quantity": "Stress, pressure",
           "units": [
-            "bar"
+            "kPa"
           ],
           "descriptions": [
             "Pre-charge pressure"
@@ -21090,7 +21453,7 @@
             "bar"
           ],
           "descriptions": [
-            "Lowest pressure the load still needs, bar gauge (an emergency stroke: the cylinder pressure its push load needs, linked from the cylinder circuit's p_push; p_1 must not be below it; blank = not checked)"
+            "Lowest pressure the load still needs, bar gauge, such as the push pressure p_push of the cylinder circuit (optional; blank = not checked)"
           ],
           "templates": [
             "fp.accumulator"
@@ -21105,10 +21468,10 @@
           "meaning": "",
           "quantity": "Stress, pressure",
           "units": [
-            "bar"
+            "kPa"
           ],
           "descriptions": [
-            "Pre-charge margin over static head"
+            "Pre-charge allowance over static head"
           ],
           "templates": [
             "bs.sealed-system"
@@ -21159,7 +21522,7 @@
           "meaning": "",
           "quantity": "Stress, pressure",
           "units": [
-            "bar"
+            "kPa"
           ],
           "descriptions": [
             "Safety valve setting, gauge"
@@ -21282,7 +21645,22 @@
       "symbol": "p_sys",
       "meanings": [
         {
-          "meaning": "",
+          "meaning": "supply-pressure",
+          "quantity": "Stress, pressure",
+          "units": [
+            "bar",
+            "bar g"
+          ],
+          "descriptions": [
+            "Supply pressure",
+            "Supply pressure at the cylinder and the pump, gauge"
+          ],
+          "templates": [
+            "fp.cylinder"
+          ]
+        },
+        {
+          "meaning": "system-resistance",
           "quantity": "Stress, pressure",
           "units": [
             "Pa"
@@ -21324,7 +21702,7 @@
             "kPa"
           ],
           "descriptions": [
-            "Vapour pressure of the custom fluid at T, absolute (needed for NPSH_a of a custom fluid; blank = NPSH_a is not computed)"
+            "Vapour pressure of the custom fluid at the fluid temperature, absolute (optional; blank = NPSH_a is not computed; needed for NPSH_a of a custom fluid)"
           ],
           "templates": [
             "bs.pipe-pump"
@@ -21342,7 +21720,7 @@
             "kPa"
           ],
           "descriptions": [
-            "p_w 1"
+            "Vapour pressure, state 1"
           ],
           "templates": [
             "bs.psychrometrics"
@@ -21360,7 +21738,7 @@
             "kPa"
           ],
           "descriptions": [
-            "p_ws 1"
+            "Saturation pressure, state 1"
           ],
           "templates": [
             "bs.psychrometrics"
@@ -21489,7 +21867,7 @@
             "%"
           ],
           "descriptions": [
-            "φ 1 (RH as a % quantity, for linking)"
+            "Relative humidity, state 1, as a quantity in % (for linking)"
           ],
           "templates": [
             "bs.psychrometrics"
@@ -21785,7 +22163,7 @@
             "W/m²"
           ],
           "descriptions": [
-            "Heat-loss limit per square metre of flat surface (blank = not a criterion)"
+            "Heat-loss limit per square metre of flat surface (optional; blank = not a criterion)"
           ],
           "templates": [
             "bs.insulation"
@@ -21803,7 +22181,7 @@
             "W/m"
           ],
           "descriptions": [
-            "Heat-loss limit per metre of pipe (generic default of 25 W/m, replace with your project limit; blank = not a criterion)"
+            "Heat-loss limit per metre of pipe (optional; blank = not a criterion; the generic default of 25 W/m is to be replaced with your project limit)"
           ],
           "templates": [
             "bs.insulation"
@@ -21939,7 +22317,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Pre-charge rule: p0 (at T_max) at most this fraction of p1, on absolute pressures (state whether the manufacturer's ratio is on gauge or absolute pressures)"
+            "Pre-charge rule: p0 (at T_max) at most this fraction of p1, on absolute pressures"
           ],
           "templates": [
             "fp.accumulator"
@@ -22288,7 +22666,7 @@
             "kg/m³"
           ],
           "descriptions": [
-            "ρ 1"
+            "Moist-air density, state 1"
           ],
           "templates": [
             "bs.psychrometrics"
@@ -23652,41 +24030,10 @@
       ]
     },
     {
-      "symbol": "t_1_out",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Dry-bulb 1"
-          ],
-          "templates": [
-            "bs.psychrometrics"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "t_2",
       "meanings": [
         {
-          "meaning": "leaving-dry-bulb-temperature",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Leaving dry-bulb (sensible, cooling)"
-          ],
-          "templates": [
-            "bs.psychrometrics"
-          ]
-        },
-        {
-          "meaning": "other-ply-thickness",
+          "meaning": "",
           "quantity": "Length",
           "units": [
             "mm"
@@ -23746,7 +24093,7 @@
             "mm"
           ],
           "descriptions": [
-            "Chosen insulation thickness (blank = report at the required thickness, no checks; with it, nothing blocks)"
+            "Chosen insulation thickness (optional; blank = report at the required thickness, with no checks; with it, nothing blocks)"
           ],
           "templates": [
             "bs.insulation"
@@ -23786,78 +24133,6 @@
           ],
           "templates": [
             "elec.fault-protection"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "t_db",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Dry-bulb temperature"
-          ],
-          "templates": [
-            "bs.psychrometrics"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "t_db_b",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Second stream dry-bulb (mixing)"
-          ],
-          "templates": [
-            "bs.psychrometrics"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "t_dp",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Dew-point temperature"
-          ],
-          "templates": [
-            "bs.psychrometrics"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "t_dp_1",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Dew point 1"
-          ],
-          "templates": [
-            "bs.psychrometrics"
           ]
         }
       ]
@@ -23921,37 +24196,6 @@
             "struct.ltb-interaction",
             "struct.section-properties"
           ]
-        },
-        {
-          "meaning": "flow-temperature",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Flow temperature"
-          ],
-          "templates": [
-            "bs.sealed-system"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "t_fill",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Fill temperature"
-          ],
-          "templates": [
-            "bs.sealed-system"
-          ]
         }
       ]
     },
@@ -23983,8 +24227,7 @@
             "°C"
           ],
           "descriptions": [
-            "Room design temperature (blank = the sheet's room temperature t_i)",
-            "Room temperature"
+            "Room design temperature (blank = the sheet's room temperature T_room)"
           ],
           "templates": [
             "bs.sealed-system"
@@ -24024,42 +24267,6 @@
           ],
           "templates": [
             "mech.lifting-lug"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "t_m",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Mean water temperature"
-          ],
-          "templates": [
-            "bs.sealed-system"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "t_max",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Maximum system temperature"
-          ],
-          "templates": [
-            "bs.sealed-system"
           ]
         }
       ]
@@ -24143,42 +24350,6 @@
       ]
     },
     {
-      "symbol": "t_q",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Length",
-          "units": [
-            "mm"
-          ],
-          "descriptions": [
-            "Required thickness, heat-loss limit"
-          ],
-          "templates": [
-            "bs.insulation"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "t_r",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Return temperature"
-          ],
-          "templates": [
-            "bs.sealed-system"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "t_req",
       "meanings": [
         {
@@ -24225,6 +24396,42 @@
           ],
           "templates": [
             "struct.base-plate"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "t_req_q",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Required thickness, heat-loss limit"
+          ],
+          "templates": [
+            "bs.insulation"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "t_req_se",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Required thickness, surface-temperature limit"
+          ],
+          "templates": [
+            "bs.insulation"
           ]
         }
       ]
@@ -24284,24 +24491,6 @@
       ]
     },
     {
-      "symbol": "t_se",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Length",
-          "units": [
-            "mm"
-          ],
-          "descriptions": [
-            "Required thickness, surface-temperature limit"
-          ],
-          "templates": [
-            "bs.insulation"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "t_start",
       "meanings": [
         {
@@ -24346,7 +24535,7 @@
             "mm"
           ],
           "descriptions": [
-            "Pipe wall thickness (with its conductivity; blank = not included)"
+            "Pipe wall thickness, with its conductivity (optional; blank = not included)"
           ],
           "templates": [
             "bs.insulation"
@@ -24370,42 +24559,6 @@
           "templates": [
             "bs.pipe-expansion",
             "struct.base-plate"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "t_wb",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Wet-bulb temperature"
-          ],
-          "templates": [
-            "bs.psychrometrics"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "t_wb_1",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Wet-bulb 1"
-          ],
-          "templates": [
-            "bs.psychrometrics"
           ]
         }
       ]
@@ -24874,11 +25027,9 @@
             "°C"
           ],
           "descriptions": [
-            "Ambient air temperature (also the radiation sink)",
             "Ambient temperature"
           ],
           "templates": [
-            "bs.insulation",
             "elec.conductor-sizing"
           ]
         },
@@ -24934,24 +25085,6 @@
       ]
     },
     {
-      "symbol": "theta_dew",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Dew point of the ambient air, if known, for example linked from B2 (blank = from θ_a and RH_a by the Magnus relation)"
-          ],
-          "templates": [
-            "bs.insulation"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "theta_e",
       "meanings": [
         {
@@ -24993,7 +25126,7 @@
       "symbol": "theta_i",
       "meanings": [
         {
-          "meaning": "adiabatic-initial-temperature",
+          "meaning": "",
           "quantity": "Temperature",
           "units": [
             "°C"
@@ -25003,75 +25136,6 @@
           ],
           "templates": [
             "elec.fault-protection"
-          ]
-        },
-        {
-          "meaning": "process-temperature",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Process (fluid) temperature"
-          ],
-          "templates": [
-            "bs.insulation"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "theta_int",
-      "meanings": [
-        {
-          "meaning": "internal-design-temperature",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Internal air temperature",
-            "Internal design temperature"
-          ],
-          "templates": [
-            "bs.glaser",
-            "bs.room-heat-loss"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "theta_lambda",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Temperature the conductivity applies at (a note: compared with the mean insulation temperature)"
-          ],
-          "templates": [
-            "bs.insulation"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "theta_m",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Mean insulation temperature"
-          ],
-          "templates": [
-            "bs.insulation"
           ]
         }
       ]
@@ -25167,24 +25231,6 @@
       ]
     },
     {
-      "symbol": "theta_se",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Outer surface temperature"
-          ],
-          "templates": [
-            "bs.insulation"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "theta_se_max",
       "meanings": [
         {
@@ -25194,7 +25240,7 @@
             "°C"
           ],
           "descriptions": [
-            "Highest surface temperature, for a hot surface (blank = not a criterion)"
+            "Highest surface temperature, for a hot surface (optional; blank = not a criterion)"
           ],
           "templates": [
             "bs.insulation"
@@ -25216,24 +25262,6 @@
           ],
           "templates": [
             "mech.mechanism"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "theta_supply",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "MVHR supply air temperature after heat recovery (blank = natural ventilation, outside air)"
-          ],
-          "templates": [
-            "bs.room-heat-loss"
           ]
         }
       ]
@@ -25326,22 +25354,6 @@
           ],
           "templates": [
             "struct.plate-bending"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "u_1",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Cavity wall: U against target"
-          ],
-          "templates": [
-            "bs.room-heat-loss"
           ]
         }
       ]
@@ -26557,6 +26569,22 @@
       ]
     },
     {
+      "symbol": "u_target_1",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Cavity wall: U against target"
+          ],
+          "templates": [
+            "bs.room-heat-loss"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "u_to",
       "meanings": [
         {
@@ -26684,7 +26712,7 @@
             "m³/kg"
           ],
           "descriptions": [
-            "v 1"
+            "Specific volume, state 1"
           ],
           "templates": [
             "bs.psychrometrics"
@@ -26714,7 +26742,7 @@
       "symbol": "v_limit",
       "meanings": [
         {
-          "meaning": "",
+          "meaning": "velocity-limit",
           "quantity": "Velocity",
           "units": [
             "m/s"
@@ -26723,24 +26751,7 @@
             "Velocity limit (warning and check)"
           ],
           "templates": [
-            "bs.duct-sizing"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "v_max",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Velocity",
-          "units": [
-            "m/s"
-          ],
-          "descriptions": [
-            "Velocity limit (warning)"
-          ],
-          "templates": [
+            "bs.duct-sizing",
             "bs.pipe-pump"
           ]
         }
@@ -26811,7 +26822,7 @@
             "m/s"
           ],
           "descriptions": [
-            "Pressure line velocity limit (your record; the default is a placeholder, not a code value)"
+            "Pressure line velocity limit (your record, and the default is a placeholder, not a code value)"
           ],
           "templates": [
             "fp.cylinder"
@@ -26829,7 +26840,7 @@
             "mm/s"
           ],
           "descriptions": [
-            "Required extend speed (gives the flow Q = v·A/η_vc and replaces Q; links M9 output_motion as a kinematic proxy: a cylinder-actuated linkage runs at about constant cylinder speed)"
+            "Required extend speed, which gives the flow and replaces Q, such as the output motion of a mechanism as a kinematic proxy (optional; blank = the flow Q sets the speed)"
           ],
           "templates": [
             "fp.cylinder"
@@ -26865,7 +26876,7 @@
             "m/s"
           ],
           "descriptions": [
-            "Return line velocity limit (your record; the default is a placeholder, not a code value)"
+            "Return line velocity limit (your record, and the default is a placeholder, not a code value)"
           ],
           "templates": [
             "fp.cylinder"
@@ -26939,7 +26950,7 @@
             "m/s"
           ],
           "descriptions": [
-            "Suction line velocity limit (your record; the default is a placeholder, not a code value)"
+            "Suction line velocity limit (your record, and the default is a placeholder, not a code value)"
           ],
           "templates": [
             "fp.cylinder"
