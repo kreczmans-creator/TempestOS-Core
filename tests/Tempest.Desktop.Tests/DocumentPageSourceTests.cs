@@ -312,8 +312,9 @@ public class DocumentPageSourceTests
     }
 
     // ----------------------------------------------------------------
-    // SVG (`TD-99`) — Svg.Skia (MIT), the same SKBitmap-backed page path
-    // a PDF or an image produces.
+    // SVG (`TD-99`) — the app's own SvgPictureBuilder (SkiaSharp, MIT; it
+    // replaced Svg.Skia under DB-08), the same SKBitmap-backed page path a
+    // PDF or an image produces.
     // ----------------------------------------------------------------
 
     /// <summary>A real, valid SVG: a filled red rectangle, so a genuine rasteriser proves itself exactly as <see cref="MultiPagePdf"/>'s own fixture does.</summary>
@@ -409,19 +410,20 @@ public class DocumentPageSourceTests
     }
 
     // ---- `TD-184`: rendering an SVG must never touch the network or the
-    // local disk, and must never run script — proven against Svg.Skia's own
-    // GetImageFromWeb, which calls WebRequest.Create(uri).GetResponse() for
-    // any <image> href that is not a data: URI, http(s):// and file://
-    // alike. ------------------------------------------------------------
+    // local disk, and must never run script — first proven against Svg.Skia's
+    // own GetImageFromWeb, which called WebRequest.Create(uri).GetResponse()
+    // for any <image> href that was not a data: URI, http(s):// and file://
+    // alike; the app's own reader (DB-08) has no fetch path at all, and the
+    // sanitiser stays in front of it as defence in depth. ------------------
 
     [AvaloniaFact]
     public void AnSvgReferencingAnHttpImage_RendersWithNoNetworkFetch()
     {
         // A URI nothing on this machine can resolve quickly, pointing at a
         // reserved, non-routable test address (RFC 5737): if sanitisation
-        // failed and Svg.Skia actually attempted this fetch, the render
-        // would hang or throw a WebException, not complete cleanly and
-        // promptly.
+        // failed and a renderer actually attempted this fetch (as Svg.Skia
+        // once did), the render would hang or throw a WebException, not
+        // complete cleanly and promptly.
         var svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"40\" height=\"40\">" +
             "<image xlink:href=\"http://192.0.2.1/tracker.png\" width=\"40\" height=\"40\"/>" +
             "<rect width=\"40\" height=\"40\" fill=\"#00FF00\"/></svg>";

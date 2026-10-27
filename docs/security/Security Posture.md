@@ -347,7 +347,14 @@ above (it owns the file that needs the fix):
   v0.26.0, DB-08) renders an attachment's own untrusted bytes. It follows
   no reference at all (only an embedded `data:` image is drawn, and the XML
   reader has no resolver and refuses a DTD), and `SvgMarkupSanitiser` still
-  blanks every external reference first. Confirm neither fetches or follows
+  blanks every external reference first. After the DB-08 review the reader
+  also holds every hostile-input class the review measured to a cap
+  (`SvgPictureBuilder.Limits`: nesting and node count refused before the
+  load, gradient stops, dash values, decoded pixels, path data and verbs,
+  opacity layers, style rules, font size and family lookups), every regular
+  expression has a match timeout and runs non-backtracking where it can,
+  and the viewer builds a document on a pool thread under a 15-second
+  deadline, reporting one that overruns instead of freezing. Confirm neither fetches or follows
   an external resource reference an SVG can carry
   (an `<image href="http://...">` or `file://` reference, an XML
   external entity if the underlying parser is XML-based) — an SVG is
