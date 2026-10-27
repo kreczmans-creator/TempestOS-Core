@@ -25,8 +25,17 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
         new("I", "Current", CalcInputKind.Quantity, "A", HardMin: 1e-3, HardMax: 1e6),
     ];
 
+    /// <summary>The columns of the user's table of maximum earth fault loop impedances (Track P template 03, record kind bs7671.max-zs; DC-10).</summary>
+    private static readonly IReadOnlyList<CalcColumnSpec> MaxZsColumns =
+    [
+        new("device", "Device family as the table names it", CalcInputKind.Text, IsOptional: true),
+        new("t_disc", "Disconnection time of the table column", CalcInputKind.Quantity, "s", Min: 0.1, Max: 5, HardMin: 0.01, HardMax: 100),
+        new("I_n", "Device rated current", CalcInputKind.Quantity, "A", Min: 6, Max: 630, HardMin: 1, HardMax: 1600),
+        new("Z_s_max", "Maximum earth fault loop impedance", CalcInputKind.Quantity, "ohm", Min: 0.01, Max: 3, HardMin: 0.001, HardMax: 100),
+    ];
+
     public CalcTemplate Template { get; } = new(
-        Id, "1.5.1", CalcDiscipline.Electrical, "Fault protection (BS 7671)",
+        Id, "1.6.0", CalcDiscipline.Electrical, "Fault protection (BS 7671)",
         "Calculates automatic disconnection of supply in a TN system for one circuit: loop impedance, disconnection time and the adiabatic conductor check. It also gives the prospective three-phase fault at the origin against the breaking capacity.",
         "Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/S (k_R = 1.125 takes the pure-copper ρ_20 to the cable standard's maximum conductor resistance; k enters with the pure ρ_20)\n" +
         "Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95\n" +
@@ -39,6 +48,7 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
             new CalcInputSpec("I_n", "Rated current", CalcInputKind.Quantity, "A", Default: 32, Min: 6, Max: 630, HardMin: 1, HardMax: 1600, Group: "Setup"),
             new CalcInputSpec("curve", "Time–current points (fuse or MCCB)", CalcInputKind.Table, Columns: CurveColumns, MaxRows: 40, IsOptional: true, Group: "Setup"),
             new CalcInputSpec("device_code", "Device type code carried from the cable step (1 MCB type B, 2 type C, 3 type D, 4 fuse, MCCB or MPCB); the device chosen here must match it", CalcInputKind.Number, Min: 1, Max: 4, HardMin: 0, HardMax: 9, IsOptional: true, Group: "Setup"),
+            new CalcInputSpec("Z_s_max_table", "Maximum earth fault loop impedances from your licensed table, checked against Z_s at the device rating and the required disconnection time (optional; blank = no check against a table)", CalcInputKind.Table, Columns: MaxZsColumns, MaxRows: 200, IsOptional: true, Group: "Setup"),
             new CalcInputSpec("L", "Circuit length", CalcInputKind.Quantity, "m", Default: 20, Min: 1, Max: 500, HardMin: 0.1, HardMax: 1000, Group: "Geometry"),
             new CalcInputSpec("S_line", "Line conductor cross-section", CalcInputKind.Quantity, "mm^2", Default: 2.5, Min: 1, Max: 300, HardMin: 0.5, HardMax: 630, Group: "Geometry"),
             new CalcInputSpec("S_cpc", "Protective conductor cross-section", CalcInputKind.Quantity, "mm^2", Default: 1.5, Min: 1, Max: 300, HardMin: 0.5, HardMax: 630, Group: "Geometry"),
@@ -90,6 +100,7 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
             new CalcApplicabilityRule("device_code", "The device type code carried from the cable step must be a whole number from 1 to 4.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("adiabatic", "No disconnection time: the adiabatic check is not made.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("temperatures", "The adiabatic final temperature must exceed the initial temperature.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("zs-table", "The table of maximum loop impedances holds no row, or more than one row, for the device rating and the required disconnection time.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-mcb-b32", "32 A type B MCB, 20 m of 2.5/1.5 mm² copper at 70 °C",
@@ -132,6 +143,7 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
         [
             new CalcRecordKind("conductor.material", "Conductor material constants", ["rho_20", "k_R", "alpha", "Q_c", "beta", "theta_i", "theta_f"], "Material constants (IEC 60228 / IEC 60949 values) and the insulation's initial and final temperatures, with their source."),
             new CalcRecordKind("device.characteristic", "Device characteristic (time–current points)", ["curve", "I2t_let", "I_cn"], "Read from the manufacturer's curve and datasheet for the exact device."),
+            new CalcRecordKind("bs7671.max-zs", "Maximum earth fault loop impedance", ["Z_s_max_table"], "Your own licensed table of maximum Z_s by device family, disconnection time and rating; the row for the device rating and the required time is checked against Z_s. Never shipped."),
         ],
         IndependentCheck: true);
 
@@ -141,9 +153,13 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
     public static CalcInputValue Points(params (double T, double I)[] points) =>
         CalcInputValue.Table("curve", points.Select(p => CalcRow.Of(("t", new CalcCell(p.T, "s")), ("I", new CalcCell(p.I, "A")))).ToList());
 
+    /// <summary>A table of maximum loop impedances from (device, t_disc s, I_n A, Z_s_max Ω) rows (record kind bs7671.max-zs).</summary>
+    public static CalcInputValue MaxZsTable(params (string Device, double T, double In, double Zs)[] rows) =>
+        CalcInputValue.Table("Z_s_max_table", rows.Select(r => CalcRow.Of(("device", new CalcCell(Text: r.Device)), ("t_disc", new CalcCell(r.T, "s")), ("I_n", new CalcCell(r.In, "A")), ("Z_s_max", new CalcCell(r.Zs, "ohm")))).ToList());
+
     public void Run(CalcRunContext c)
     {
-        c.MarkUtilisation("u_Icn", "u_Zs", "u_cpc", "u_line");
+        c.MarkUtilisation("u_Icn", "u_Zs", "u_Zs_tab", "u_cpc", "u_line");
         foreach (var s in new[] { "U_0", "Z_e", "C_min", "c_max", "L", "S_line", "S_cpc", "T_op", "rho_20", "k_R", "alpha", "Q_c", "beta", "theta_i", "theta_f", "I_n", "t_req" })
             c.Input(s);
 
@@ -236,6 +252,12 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
         c.Assign("u_Zs", "Z_s / Z_s_max", null, "Loop impedance utilisation");
         c.Assign("Z_test", "0.8 * Z_s_max", "ohm", "Field-test maximum at ambient (0.8 × Z_s,max, rule of thumb)");
 
+        // DC-10 (template 03): the user's own table of maximum Z_s, when given, is checked too. A table with no row for this device rating and time is refused.
+        var tabulated = TabulatedMaximum(c, amp, second);
+
+        if (tabulated is null)
+            return;
+
         if (td is { } t)
             c.Record("t_d", device == Curve ? "t(I_f), log-log between the bracketing points" : "instantaneous region (I_f ≥ I_a): t ≤ 0.1 s", $"I_f = {F(c.Si("I_f"))} A", ScalarValue.Of(t, second), "Disconnection time");
 
@@ -248,12 +270,19 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
         {
             c.Warn("adiabatic", "I_f: the device does not disconnect within the data given, so the adiabatic check cannot be made. Reduce the loop impedance or choose a faster device.");
             var outputsWithout = new List<(string, string)> { ("R_12", "R₁ + R₂"), ("Z_s", "Loop impedance"), ("I_f", "Earth fault current"), ("I_a", "Disconnection current"), ("Z_s_max", "Maximum loop impedance"), ("u_Zs", "Loop impedance utilisation"), ("Z_test", "Field-test maximum (rule of thumb)") };
+
+            if (tabulated == true)
+                outputsWithout.AddRange([("Z_s_max_tab", "Tabulated maximum loop impedance"), ("u_Zs_tab", "Loop impedance utilisation of the tabulated maximum")]);
+
             FaultLevel(c, outputsWithout);
 
             foreach (var (symbol, text) in outputsWithout)
                 c.Output(symbol, text);
 
             c.Check("Loop impedance against the maximum", "Z_s", "Z_s_max", "BS 7671 reg. 411.4.4");
+
+            if (tabulated == true)
+                c.Check("Loop impedance against the tabulated maximum", "Z_s", "Z_s_max_tab", "BS 7671 reg. 411.4.4");
             c.CheckCondition("Fault current against the disconnection current", false, device == Curve ? "fault current below the curve points" : "I_f below the instantaneous tripping current", "disconnection within t_req", null, "BS 7671 reg. 411.3.2.2");
 
             if (c.Has("I_cn") && c.Has("S_r") && c.Has("u_k"))
@@ -308,12 +337,18 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
         if (td is not null)
             outputs.Insert(4, ("t_d", "Disconnection time"));
 
+        if (tabulated == true)
+            outputs.AddRange([("Z_s_max_tab", "Tabulated maximum loop impedance"), ("u_Zs_tab", "Loop impedance utilisation of the tabulated maximum")]);
+
         FaultLevel(c, outputs);
 
         foreach (var (symbol, text) in outputs)
             c.Output(symbol, text);
 
         c.Check("Loop impedance against the maximum", "Z_s", "Z_s_max", "BS 7671 reg. 411.4.4");
+
+        if (tabulated == true)
+            c.Check("Loop impedance against the tabulated maximum", "Z_s", "Z_s_max_tab", "BS 7671 reg. 411.4.4");
 
         if (td is not null)
             c.Check("Disconnection time against the required time", "t_d", "t_req", "BS 7671 reg. 411.3.2.2");
@@ -328,6 +363,44 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
         if (c.Has("I_cn") && c.Has("S_r") && c.Has("u_k"))
             c.Check("Prospective fault against the breaking capacity", "I_k3", "I_cn");
     }
+
+    /// <summary>
+    /// DC-10 (Track P template 03): the maximum loop impedance read from the user's licensed table for the device rating and the required
+    /// disconnection time. False when no table is given; true when a row was found and recorded as <c>Z_s_max_tab</c> with its utilisation;
+    /// null when the sheet is blocked (no row, or more than one row, for the rating and the time).
+    /// </summary>
+    private static bool? TabulatedMaximum(CalcRunContext c, Unit amp, Unit second)
+    {
+        var rows = c.Rows("Z_s_max_table");
+
+        if (rows.Count == 0)
+            return false;
+
+        var ohm = UnitCatalog.Parse("ohm");
+        var rated = c.Si("I_n");
+        var time = c.Si("t_req");
+        var matches = rows.Where(r => Near(Cell(r, "I_n", amp), rated) && Near(Cell(r, "t_disc", second), time) && Cell(r, "Z_s_max", ohm) > 0).ToList();
+
+        if (matches.Count == 0)
+        {
+            c.Block("zs-table", $"Z_s_max_table: no row has I_n = {F(rated)} A and t_disc = {F(time)} s. Add the row, or clear the table.");
+            return null;
+        }
+
+        if (matches.Count > 1)
+        {
+            c.Block("zs-table", $"Z_s_max_table: {matches.Count} rows have I_n = {F(rated)} A and t_disc = {F(time)} s. Keep one device family per table.");
+            return null;
+        }
+
+        var row = matches[0];
+        var family = row.Get("device")?.Text is { Length: > 0 } text ? CalcSheetTextRenderer.Clean(text) : "the table";
+        c.Record("Z_s_max_tab", "Z_s_max of the row with I_n and t_disc in the licensed table", $"{family}: I_n = {F(rated)} A, t_disc = {F(time)} s", ScalarValue.Of(Cell(row, "Z_s_max", ohm), ohm), "Maximum earth fault loop impedance from the user's licensed table", "BS 7671 reg. 411.4.4");
+        c.Assign("u_Zs_tab", "Z_s / Z_s_max_tab", null, "Loop impedance utilisation of the tabulated maximum");
+        return true;
+    }
+
+    private static bool Near(double a, double b) => Math.Abs(a - b) <= 1e-9 * Math.Max(1, Math.Abs(b));
 
     /// <summary>The simplified prospective fault level and the breaking-capacity utilisation, when the transformer data are given.</summary>
     private static void FaultLevel(CalcRunContext c, List<(string, string)> outputs)

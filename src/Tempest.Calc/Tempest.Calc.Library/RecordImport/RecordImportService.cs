@@ -453,9 +453,10 @@ public sealed class RecordImportService
             return;
         }
 
-        // The table this template fills: the table symbol that holds the most of its columns.
+        // The table this template fills: the table symbol that holds the most of its columns. A column fills the kind symbol its template maps it to
+        // (Track P's theta_i is the calculator's T_int), or the symbol of its own name.
         var tableSymbol = schema.Tables
-            .Select(t => (Table: t, Count: bound.Keys.Count(k => t.Column(k) is not null && schema.Symbol(k) is not { IsTable: false })))
+            .Select(t => (Table: t, Count: bound.Keys.Count(k => t.Column(template.TargetSymbol(k)) is not null && schema.Symbol(template.TargetSymbol(k)) is not { IsTable: false })))
             .Where(x => x.Count > 0)
             .OrderByDescending(x => x.Count)
             .Select(x => x.Table)
@@ -463,14 +464,14 @@ public sealed class RecordImportService
 
         foreach (var column in bound.Values)
         {
-            if (schema.Symbol(column.Symbol) is { IsTable: false } scalar)
+            if (schema.Symbol(template.TargetSymbol(column.Symbol)) is { IsTable: false } scalar)
             {
                 column.Role = RecordColumnRole.Scalar;
                 column.Target = scalar.Symbol;
                 column.ScalarSymbol = scalar;
                 Expect(column, scalar.Kind, scalar.Unit);
             }
-            else if (tableSymbol?.Column(column.Symbol) is { } tableColumn)
+            else if (tableSymbol?.Column(template.TargetSymbol(column.Symbol)) is { } tableColumn)
             {
                 column.Role = RecordColumnRole.TableColumn;
                 column.Target = tableColumn.Key;

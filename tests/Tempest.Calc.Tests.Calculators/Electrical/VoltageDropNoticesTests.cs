@@ -58,4 +58,40 @@ public sealed class VoltageDropNoticesTests
 
         Assert.DoesNotContain(r.Checks, c => c.Name.StartsWith("Design current against", StringComparison.Ordinal));
     }
+
+    [Fact]
+    public void DC_10_The_mV_A_m_Table_Supplies_The_Figure_For_The_Cross_Section_And_The_System()
+    {
+        // Track P template 05 (record kind bs7671.voltage-drop): on the mV/A/m route the row with csa = A_c supplies mVAm when it is blank.
+        // Case 2 is ka-mvam (three-phase, 63 A, 50 m, mVAm 2.4 entered); the table values are invented.
+        Assert.Contains(Drop.Template.RecordKinds!, k => k.Kind == "bs7671.voltage-drop" && k.Symbols.SequenceEqual(["mVAm_table"]));
+        Assert.Equal("1.5.0", Drop.Template.Version);
+        var table = VoltageDropCalculator.MvAmTable(("copper", 10, 4.4, 3.8), ("copper", 16, 2.8, 2.4), ("copper", 25, 1.75, 1.5));
+
+        var fromTable = CalcRunner.Run(Drop, Without(2, "mVAm").With(table).With(CalcInputValue.Quantity("A_c", 16, "mm^2")));
+        Assert.False(fromTable.IsBlocked, string.Join("; ", fromTable.Blocks.Select(b => b.Message)));
+        Assert.Equal(2.4, fromTable.OutputSi("mVAm"), 9);
+        Assert.Equal(CalcRunner.Run(Drop, Case(2)).OutputSi("dV"), fromTable.OutputSi("dV"), 9);
+
+        // DC reads r_dc; a figure entered by hand wins over the table, with a warning.
+        var dc = CalcRunner.Run(Drop, Without(2, "mVAm").With(table).With(CalcInputValue.Quantity("A_c", 16, "mm^2")).With(CalcInputValue.Choice("system", VoltageDropCalculator.SystemDc)));
+        Assert.Equal(2.8, dc.OutputSi("mVAm"), 9);
+        var entered = CalcRunner.Run(Drop, Case(2, table).With(CalcInputValue.Quantity("A_c", 25, "mm^2")));
+        Assert.Equal(CalcRunner.Run(Drop, Case(2)).OutputSi("dV"), entered.OutputSi("dV"), 9);   // the entered 2.4, not the row's 1.5
+        Assert.Null(entered.FindOutput("mVAm"));
+        Assert.Contains(entered.Warnings, w => w.RuleId == "mvam-table-unused" && w.Message.StartsWith("mVAm_table:", StringComparison.Ordinal));
+
+        // No row for A_c, a blank column for the system (single-phase: z_1ph is not filled), or no A_c: refused with the reason.
+        var noRow = CalcRunner.Run(Drop, Without(2, "mVAm").With(table).With(CalcInputValue.Quantity("A_c", 35, "mm^2")));
+        var block = Assert.Single(noRow.Blocks);
+        Assert.Equal("mvam-table", block.RuleId);
+        Assert.Equal("mVAm_table: no row has csa = 35 mm². Add the row, or enter mVAm.", block.Message);
+        Assert.Empty(CalcMessageShape.Problems(block.Message));
+        var single = CalcRunner.Run(Drop, Without(2, "mVAm").With(table).With(CalcInputValue.Quantity("A_c", 16, "mm^2")).With(CalcInputValue.Choice("system", VoltageDropCalculator.SystemSingle)));
+        Assert.Contains(single.Blocks, b => b.RuleId == "mvam-table" && b.Message.Contains("no z_1ph figure", StringComparison.Ordinal));
+        var noArea = CalcRunner.Run(Drop, Without(2, "mVAm").With(table));
+        Assert.Contains(noArea.Blocks, b => b.RuleId == "mvam-table" && b.Message.StartsWith("A_c:", StringComparison.Ordinal));
+        var nothing = CalcRunner.Run(Drop, Without(2, "mVAm"));
+        Assert.Contains(nothing.Blocks, b => b.RuleId == "conductor-data" && b.Message.StartsWith("mVAm:", StringComparison.Ordinal));
+    }
 }

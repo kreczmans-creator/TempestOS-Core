@@ -660,4 +660,19 @@ public sealed class BasePlateTests
         var uncut = Q2(Q2(E1("rhs", 40), "L", 700, "mm"), "B", 600, "mm");
         Assert.DoesNotContain(CalcRunner.Run(Plate, uncut).Warnings, w => w.RuleId == "outstand-cut");
     }
+
+    [Fact]
+    public void DC_10_The_Concrete_Strength_Is_A_Declared_Record_Kind_And_Nothing_Else_Changed()
+    {
+        // Track P template 19 (record kind concrete.strengths): f_ck comes from the user's own copy of the strength-class table. The declaration
+        // changes no number: the defaults run as before, and f_ck keeps its limits.
+        var kind = Assert.Single(Plate.Template.RecordKinds!, k => k.Kind == "concrete.strengths");
+        Assert.Equal(["f_ck"], kind.Symbols);
+        Assert.Contains("strength", kind.Title, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("1.8.0", Plate.Template.Version);
+        var r = CalcRunner.Run(Plate, Defaults());
+        Assert.False(r.IsBlocked);
+        Assert.Contains(r.Notices, n => n.RuleId == "record.f_ck");
+        Assert.Equal((20.0, 50.0), (Plate.Template.FindInput("f_ck")!.HardMin, Plate.Template.FindInput("f_ck")!.HardMax));
+    }
 }

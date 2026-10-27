@@ -45,7 +45,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 47/47
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -182,7 +182,7 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   Content hash: 2cdaa6adaf7b0cf8
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -394,7 +394,7 @@ Member stiffness: three freedoms per node, Euler–Bernoulli members with axial 
   Content hash: 563dd9a0eb5dfb9f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -657,7 +657,7 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   Content hash: 09dec90614ac2f64
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -826,7 +826,7 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   Content hash: 6612491a876c3ed5
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -1017,7 +1017,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: f5c75db5b1171fa0
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -1194,7 +1194,7 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   Content hash: f5c75db5b1171fa0
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -1252,7 +1252,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   gamma_M2 | Partial factor for the anchor bolts | 1.25 |  | assumption: Sheet default value; no project figure given. | 1.1 … 1.4
   C_fd | Friction coefficient, plate to grout | 0.2 |  | assumption: Sheet default value; no project figure given. | 0 … 0.4
   alpha | Concentration factor √(A_c1/A_c0) of the foundation (1 when the foundation geometry is not known) | 1 |  | drawing: DRG-STR-315 rev B | 1 … 2.5
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 61bacd03ea52454f89c3982b858c47e7/1436100645414c4cbe67720e1463f2f6 | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 52419609b4c1497d9d54bcb7230f9a57/478b48bc5a174208b02a2c9e02860df8 | any
 
 3. Assumptions
   A1. The axial force is positive in compression, the opposite of the member check sheet. (Sign convention.)
@@ -1476,16 +1476,16 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   PASS  Anchorage designed externally (PROFIS report attached as Evidence): external report attached: PROFIS-BP1-PLACEHOLDER.txt vs bolt tension 88.599 kN and shear 0 kN per anchor designed in PROFIS
 
 7. Applicability
-  WARNING  records: tabulated values not taken from a reference record are alpha_cc, gamma_c (EN 1992-1-1 National Annex factors); gamma_M2 (EN 1993-1-8 National Annex factor); gamma_M0 (EN 1993-1-1 National Annex factor); C_fd (Friction coefficient plate to grout); f_y (Plate strength). Enter each as one so its source, edition and licence travel with it.  [record]
+  WARNING  records: tabulated values not taken from a reference record are alpha_cc, gamma_c (EN 1992-1-1 National Annex factors); gamma_M2 (EN 1993-1-8 National Annex factor); gamma_M0 (EN 1993-1-1 National Annex factor); C_fd (Friction coefficient plate to grout); f_y (Plate strength); f_ck (Concrete strength classes). Enter each as one so its source, edition and licence travel with it.  [record]
   WARNING  f_y: one strength of 275 MPa is used at every thickness, but EN 10025-2 lowers it above 16 mm. Enter the strength for the thickness in use, because t_p exceeds that step.  [f_y_thickness]
   WARNING  u_profis: the anchorage is not assessed here, and u_max covers the steel parts only. Enter the PROFIS report's governing utilisation to include the concrete failure modes of the anchors.  [anchorage-result]
 
 8. Verification
-  Template: struct.base-plate@1.7.0
-  Content hash: b3f3c18d0ee3f47a
+  Template: struct.base-plate@1.8.0
+  Content hash: a1c272121ecc4f6f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References

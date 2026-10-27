@@ -366,4 +366,48 @@ public sealed class RoomHeatLossTests
         Assert.Equal(1 / (0.13 + 0.215 / 0.8 + 0.0125 / 0.25 + 0.04), r.OutputSi("U_1"), 12);
         Assert.Contains(Room.Template.OutputPorts!, p => p.Symbol == "U_1");
     }
+
+    [Fact]
+    public void DC_10_A_Ground_Floor_Record_Fills_U_g_For_A_Floor_Without_Layers_Or_An_Override()
+    {
+        // Track P templates 42, 43 and 44: B4 declares the room temperature, the air change rate and the ground floor U-value as record kinds; 44 fills U_g.
+        Assert.Contains(Room.Template.RecordKinds!, k => k.Kind == "room.internal-temperatures" && k.Symbols.SequenceEqual(["T_int"]));
+        Assert.Contains(Room.Template.RecordKinds!, k => k.Kind == "room.air-change-rates" && k.Symbols.SequenceEqual(["n"]));
+        Assert.Contains(Room.Template.RecordKinds!, k => k.Kind == "ground.u-values" && k.Symbols.SequenceEqual(["U_g"]));
+        Assert.DoesNotContain(Room.Template.RecordKinds!, k => k.Symbols.Contains("elements"));   // Black B-A-10: the elements table is the room's geometry, not record data.
+        Assert.Equal("1.6.0", Room.Template.Version);
+
+        var inputs = new CalcInputSet().With(Q("T_int", 21, "degC")).With(Q("theta_e", -3, "degC"))
+            .With(RoomHeatLossCalculator.Layers(("Wall", "Insulation", 100, 0.05)))
+            .With(Table(("Wall", null, 20, null), ("Floor", "downward", 10, null)));
+
+        // Without U_g the floor has no layers and no override: blocked, as before.
+        var blocked = CalcRunner.Run(Room, inputs);
+        Assert.True(blocked.IsBlocked);
+        Assert.Contains(blocked.Blocks, b => b.RuleId == "layers" && b.Message.Contains("'Floor'", StringComparison.Ordinal));
+
+        // With U_g the floor takes it, as a U override would (not built up: no R step, no global target).
+        var withRecord = CalcRunner.Run(Room, inputs.With(Q("U_g", 0.25, "W/(m^2*K)")));
+        Assert.False(withRecord.IsBlocked, string.Join("; ", withRecord.Blocks.Select(b => b.Message)));
+        Assert.Equal(0.25, withRecord.OutputSi("U_2"), 12);
+        Assert.Equal(10 * 0.25 * 24, withRecord.OutputSi("Phi_2"), 9);
+        Assert.Null(withRecord.FindOutput("R_2"));
+        Assert.DoesNotContain(withRecord.Warnings, w => w.RuleId == "u-g-unused");
+
+        // A floor with layers or an override keeps its own U; U_g then warns that it is not used.
+        var unused = CalcRunner.Run(Room, inputs.With(Q("U_g", 0.25, "W/(m^2*K)")).With(RoomHeatLossCalculator.Layers(("Wall", "Insulation", 100, 0.05), ("Floor", "Screed", 50, 1.4))));
+        Assert.False(unused.IsBlocked);
+        Assert.NotEqual(0.25, unused.OutputSi("U_2"));
+        var warning = Assert.Single(unused.Warnings, w => w.RuleId == "u-g-unused");
+        Assert.StartsWith("U_g:", warning.Message, StringComparison.Ordinal);
+        Assert.Empty(CalcMessageShape.Problems(warning.Message));
+        Assert.Contains(Room.Template.ApplicabilityRules, r => r.Id == "u-g-unused" && r.Severity == CalcNoticeSeverity.Warning && r.Effect == CalcRuleEffect.Conservative);
+
+        // The cap and the default: U_g is optional (blank = none), at most 10 W/m²K and at least 0.01.
+        var spec = Room.Template.FindInput("U_g")!;
+        Assert.True(spec.IsOptional);
+        Assert.Null(spec.Default);
+        Assert.Equal((0.05, 2.0, 0.01, 10.0), (spec.Min, spec.Max, spec.HardMin, spec.HardMax));
+        Assert.Contains(CalcInputValidator.Validate(Room.Template, inputs.With(Q("U_g", 12, "W/(m^2*K)"))), n => n.Severity == CalcNoticeSeverity.Block && n.Message.StartsWith("U_g:", StringComparison.Ordinal));
+    }
 }

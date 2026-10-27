@@ -116,7 +116,7 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   WARNING  I2t_let: disconnection is below 0.1 s and no let-through I²t is entered. The check 'Conductors against let-through at the origin' fails until I2t_let is entered.  [let-through]
 
 8. Verification
-  Template: elec.fault-protection@1.5.1
+  Template: elec.fault-protection@1.6.0
   Known-answer cases passed: 6/6
 
 9. References

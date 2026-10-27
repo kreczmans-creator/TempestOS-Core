@@ -41,6 +41,9 @@ public static class RecordRequirements
         [("fp.cylinder", "cylinder.hose-sizes")] = (RecordNeed.Optional, "F1 picks the smallest bore from the list when one is given."),
         [("fp.accumulator", "accumulator.sizes")] = (RecordNeed.Optional, "F2 picks the size from the list when one is given."),
         [("elec.motor-sizing", "motor.rating")] = (RecordNeed.Optional, "A candidate motor's data; typed on the sheet when there is no record."),
+        [("elec.fault-protection", "bs7671.max-zs")] = (RecordNeed.Optional, "A check of Z_s against the tabulated maximum; the derived Z_s,max is always checked."),
+        [("elec.voltage-drop", "bs7671.voltage-drop")] = (RecordNeed.Optional, "An alternative to typing the mV/A/m figure on the mV/A/m route."),
+        [("bs.room-heat-loss", "ground.u-values")] = (RecordNeed.Optional, "Only for a ground floor element without layers or a U override."),
     };
 
     /// <summary>How the calculator <paramref name="templateId"/> stands on the record kind <paramref name="kind"/>, with the reason.</summary>

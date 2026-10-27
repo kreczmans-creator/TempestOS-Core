@@ -3,16 +3,19 @@ using static Tempest.Calc.Library.Rule;
 namespace Tempest.Calc.Library;
 
 /// <summary>
-/// Track P's 82 record templates (<c>docs/verification/record-templates</c>), keyed by their file number, each tied to the record kind a built
-/// calculator declares, with the checks its notes ask for (Addendum C, C-3). The headers are the template files' own header rows; a test reads
-/// the files and fails if either side changes. Hard limits (the ranges a calculator refuses) are not repeated here: the importer takes them from
-/// the calculator's own input specification, so a record is never accepted that the calculator would then refuse. What is listed here is what only
-/// the notes know: required cells, duplicates, orderings within a table, and the warning ranges.
+/// The record templates, keyed by their file number, each tied to the record kind a built calculator declares, with the checks its notes ask for
+/// (Addendum C, C-3). 01 to 82 are Track P's (<c>docs/verification/record-templates</c>); 83 to 90 are Track S's, written under DC-10 for the
+/// eight declared kinds Track P had no file for (<c>docs/calcs/record-templates</c>). The headers are the template files' own header rows; a test
+/// reads the files and fails if either side changes. Hard limits (the ranges a calculator refuses) are not repeated here: the importer takes them
+/// from the calculator's own input specification, so a record is never accepted that the calculator would then refuse. What is listed here is what
+/// only the notes know: required cells, duplicates, orderings within a table, the warning ranges, and (<see cref="Rule.Maps"/>) a column written
+/// under the standard's symbol where the calculator takes another.
 /// </summary>
 /// <remarks>
-/// A template whose kind no calculator declares yet (<see cref="RecordTemplateDisposition.Proposed"/>) cannot be imported: there is no record to
-/// save it as. Its checks arrive with its kind. A superseded template (<see cref="RecordTemplateDisposition.Superseded"/>) is not read by any
-/// calculator and is refused with the notes' reason.
+/// A superseded template (<see cref="RecordTemplateDisposition.Superseded"/>) is not read by any calculator and is refused with the notes' reason.
+/// A template whose kind no calculator declares (<see cref="RecordTemplateDisposition.Proposed"/>) cannot be imported: there is no record to save
+/// it as. Since DC-10 six of the seven kinds Track P proposed (03, 05, 19, 42, 43, 44) are declared by E5, E3, S6 and B4; 48 stays proposed, its
+/// note says why. The three lifting templates (88 to 90) fill kinds the lifting calculator declares, which the lifting flag hides: they import when it is on.
 /// </remarks>
 public static class RecordTemplates
 {
@@ -58,18 +61,23 @@ public static class RecordTemplates
             "One record per file: I2t_let and I_cn are read from the first data row, the other columns are the curve points.",
             Req("t", "I"), Pos("t", "I"), Uniq("I"), Rows(max: 40), Mono([], "I", "t", RecordDirection.Falling), Warn("I2t_let", 1, 1e9), Warn("I_cn", 1, 150)),
 
-        Proposed("03", "bs7671.max-zs", "Maximum earth fault loop impedance", "bs7671.max-zs",
+        T("03", "bs7671.max-zs", "Maximum earth fault loop impedance", "bs7671.max-zs",
             "device[text],t_disc[s],I_n[A],Z_s_max[ohm]",
-            "Proposed kind: E5 is built but lists no record kind for the maximum Zs table."),
+            "One record per file: the E5 table of maximum Z_s (table 'Z_s_max_table'). Enter one device family per file; the row for the device rating and the required time is checked against Z_s.",
+            Req("t_disc", "I_n", "Z_s_max"), Pos("t_disc", "I_n", "Z_s_max"), Uniq("device", "t_disc", "I_n"), Rows(max: 200), Mono(["device", "t_disc"], "I_n", "Z_s_max", RecordDirection.Falling)),
 
         T("04", "bs7671.ampacity", "Cable current-carrying capacities (installation method)", "cable.ampacity",
             "CSA[mm2],AWG[-],I_t[A]",
             "One record per file: the E4 ampacity table.",
             Req("I_t"), Pos("I_t"), Either("CSA", "AWG"), Uniq("CSA"), Uniq("AWG"), Rows(max: 60), Mono([], "CSA", "I_t", RecordDirection.Rising), Mono([], "AWG", "I_t", RecordDirection.Falling)),
 
-        Proposed("05", "bs7671.voltage-drop", "Voltage drop per ampere per metre", "bs7671.voltage-drop",
+        T("05", "bs7671.voltage-drop", "Voltage drop per ampere per metre", "bs7671.voltage-drop",
             "conductor[text],csa[mm2],r_dc[mV/A/m],r_1ph[mV/A/m],x_1ph[mV/A/m],z_1ph[mV/A/m],r_3ph[mV/A/m],x_3ph[mV/A/m],z_3ph[mV/A/m]",
-            "Proposed kind: E3 is built but lists no record kind for the voltage-drop table."),
+            "One record per file: the E3 table of mV/A/m figures by cross-section (table 'mVAm_table'). Enter one conductor material per file; where the table gives one figure, put it in the z column.",
+            Req("csa"), Pos("csa"), NonNeg("r_dc", "r_1ph", "x_1ph", "z_1ph", "r_3ph", "x_3ph", "z_3ph"), Either("r_dc", "r_1ph", "z_1ph", "r_3ph", "z_3ph"), Uniq("conductor", "csa"), Rows(max: 100),
+            Mono(["conductor"], "csa", "r_dc", RecordDirection.Falling), Mono(["conductor"], "csa", "r_1ph", RecordDirection.Falling), Mono(["conductor"], "csa", "z_1ph", RecordDirection.Falling),
+            Mono(["conductor"], "csa", "r_3ph", RecordDirection.Falling), Mono(["conductor"], "csa", "z_3ph", RecordDirection.Falling),
+            Lt("r_1ph", "z_1ph", orEqual: true, severity: RecordSeverity.Warning), Lt("r_3ph", "z_3ph", orEqual: true, severity: RecordSeverity.Warning)),
 
         T("06", "bs7671.factors-ambient", "Ambient correction factors", "cable.correction-factors",
             "medium[text],insulation[text],theta_a[degC],C_a[-]",
@@ -143,9 +151,10 @@ public static class RecordTemplates
             "One record per row (a design situation). The calculator's kind is ec2.national-annex.",
             Req("situation", "gamma_c", "alpha_cc"), Pos("gamma_c", "alpha_cc"), AtLeast(1, "gamma_c"), AtMost(1, "alpha_cc"), Uniq("situation")),
 
-        Proposed("19", "concrete.strengths", "Concrete strength classes", "concrete.strengths",
+        T("19", "concrete.strengths", "Concrete strength classes", "concrete.strengths",
             "class[text],f_ck[MPa],f_ck_cube[MPa]",
-            "Proposed kind: S6 is built but types f_ck by hand and lists no record kind for it."),
+            "One record per row (a strength class). The class cell joins the title; f_ck fills the S6 input; f_ck_cube is stored and never applied.",
+            Req("class", "f_ck", "f_ck_cube"), Pos("f_ck", "f_ck_cube"), Lt("f_ck", "f_ck_cube", orEqual: true), Uniq("class"), Hard("f_ck_cube", 0, 200)),
 
         T("20", "ec3.ltb-parameters", "Lateral-torsional buckling parameters", "ec3.ltb-factors",
             "alpha_a0[-],alpha_a[-],alpha_b[-],alpha_c[-],alpha_d[-],lambda_LT0[-],beta_LT[-]",
@@ -258,17 +267,21 @@ public static class RecordTemplates
             "One record per row (a location). The calculator's kind is climate.design-temperature.",
             Req("location", "theta_e"), Uniq("location")),
 
-        Proposed("42", "room.internal-temperatures", "Internal design temperatures", "room.internal-temperatures",
+        T("42", "room.internal-temperatures", "Internal design temperatures", "room.internal-temperatures",
             "room_type[text],theta_i[degC]",
-            "Proposed kind: B4 is built but types the room temperature by hand."),
+            "One record per row (a room type). The room_type cell joins the title; theta_i fills the B4 input T_int.",
+            Maps("theta_i", "T_int"), Req("room_type", "theta_i"), Uniq("room_type"), Warn("theta_i", 10, 28)),
 
-        Proposed("43", "room.air-change-rates", "Air change rates", "room.air-change-rates",
+        T("43", "room.air-change-rates", "Air change rates", "room.air-change-rates",
             "room_type[text],n_ach[1/h]",
-            "Proposed kind: B4 is built but types the air change rate by hand."),
+            "One record per row (a room type). The room_type cell joins the title; n_ach fills the B4 input n.",
+            Maps("n_ach", "n"), Req("room_type", "n_ach"), NonNeg("n_ach"), Uniq("room_type"), Warn("n_ach", null, 10)),
 
-        Proposed("44", "ground.u-values", "Ground floor U-value inputs", "ground.u-values",
+        T("44", "ground.u-values", "Ground floor U-value inputs", "ground.u-values",
             "construction[text],lambda_g[W/(m*K)],B_prime[m],R_f[m2*K/W],U_g[W/(m2*K)]",
-            "Proposed kind: B4 takes the ground floor U as an override."),
+            "One record per row (a construction, soil conductivity, characteristic dimension and insulation). U_g fills the B4 input U_g; the construction cell joins the title; lambda_g, B_prime and R_f are stored and never applied.",
+            Req("U_g"), NonNeg("lambda_g", "B_prime", "R_f", "U_g"), Uniq("construction", "lambda_g", "B_prime", "R_f"), Mono(["construction", "R_f"], "B_prime", "U_g", RecordDirection.Falling),
+            Hard("lambda_g", 0, 10), Hard("B_prime", 0, 1000), Hard("R_f", 0, 100)),
 
         T("45", "climate.monthly", "Monthly outside climate", "climate.monthly",
             "month[text],theta_e[degC],RH_e[%],days[d]",
@@ -288,7 +301,7 @@ public static class RecordTemplates
 
         Proposed("48", "surface.resistances", "Surface resistances and air-gap resistance", "surface.resistances",
             "Rsi[m2*K/W],Rse[m2*K/W],Rg[m2*K/W]",
-            "Proposed kind: B4 no longer lists it; the surface resistances are conventional values chosen by the flow column."),
+            "Proposed kind: the Rsi, Rse and Rg cells belong to the B4 elements table, which is the room's geometry and not record data (Black B-A-10), and a record cannot fill three columns of a table without replacing it. It waits for a column-level record binding or an owner decision (DC-10)."),
 
         T("49", "material.conductivity", "Thermal conductivity of construction layers", "material.conductivity",
             "name[text],lambda[W/(m*K)]",
@@ -462,5 +475,46 @@ public static class RecordTemplates
             "arrangement[text],w_c[-]",
             "One record per row (an arrangement).",
             Req("arrangement", "w_c"), Uniq("arrangement"), Warn("w_c", null, 3)),
+
+        // Track S templates (DC-10): the declared kinds Track P had no file for. Field names, units and the source to cite; never a value.
+        T("83", "motor.rating", "Candidate motor rating", "motor.rating",
+            "motor[text],J_motor[kg*m2],T_rated[N*m],T_peak[N*m],n_rated[rpm],n_max[rpm]",
+            "One record per row (a candidate motor from its datasheet or nameplate). The motor cell joins the title.",
+            Req("motor", "J_motor", "T_rated", "T_peak", "n_max"), Pos("J_motor", "T_rated", "T_peak", "n_rated", "n_max"), Lt("T_rated", "T_peak", orEqual: true), Lt("n_rated", "n_max", orEqual: true), Uniq("motor")),
+
+        T("84", "cable.impedance", "Cable impedance per kilometre", "cable.impedance",
+            "cable[text],R_km[ohm/km],X_km[ohm/km]",
+            "One record per row (a cable size at its stated temperature, from the datasheet or your own table). The cable cell joins the title.",
+            Req("cable", "R_km", "X_km"), Pos("R_km"), NonNeg("X_km"), Uniq("cable")),
+
+        T("85", "motor.start", "Motor starting data", "motor.start",
+            "motor[text],I_LR_r[-],cos_phi_st[-]",
+            "One record per row (a motor from its datasheet). The motor cell joins the title.",
+            Req("motor", "I_LR_r", "cos_phi_st"), Pos("I_LR_r", "cos_phi_st"), AtMost(1, "cos_phi_st"), Uniq("motor")),
+
+        T("86", "starter.limits", "Soft-starter and drive current limits", "starter.limits",
+            "starter[text],k_soft[-],k_vfd[-]",
+            "One record per row (a soft-starter or drive and its parameter setting). Fill the limit the device has; the starter cell joins the title.",
+            Req("starter"), Either("k_soft", "k_vfd"), Pos("k_soft", "k_vfd"), Uniq("starter")),
+
+        T("87", "transformer.data", "Transformer impedance data", "transformer.data",
+            "transformer[text],u_k[%],XR[-]",
+            "One record per row (a transformer from its rating plate or test certificate). The transformer cell joins the title.",
+            Req("transformer", "u_k", "XR"), Pos("u_k"), NonNeg("XR"), Uniq("transformer")),
+
+        T("88", "lifting.design-factors", "Design factor and service-class factor", "lifting.design-factors",
+            "design_category[text],service_class[text],Nd[-],k_svc[-]",
+            "One record per row (a Design Category and Service Class pair). The category and class are stored as the labels the lifting sheet prints; the kind belongs to the lifting calculator, which the lifting flag hides.",
+            Req("design_category", "service_class", "Nd", "k_svc"), Pos("Nd", "k_svc"), AtLeast(1, "Nd", "k_svc"), Uniq("design_category", "service_class")),
+
+        T("89", "lifting.allowable-stress", "Allowable-stress divisors and bearing multiple", "lifting.allowable-stress",
+            "approach[text],n_y[-],n_u[-],k_b[-]",
+            "One record per row (an approach of the code). The approach cell joins the title; the kind belongs to the lifting calculator, which the lifting flag hides.",
+            Req("approach", "n_y", "n_u", "k_b"), Pos("n_y", "n_u", "k_b"), AtLeast(1, "n_y", "n_u"), Uniq("approach")),
+
+        T("90", "lifting.limits", "Dishing limit and proof-load factor", "lifting.limits",
+            "basis[text],dish_max[-],k_proof[-]",
+            "One record per row (a basis: the code or the owner's procedure). Fill the limit the basis gives; the basis cell joins the title; the kind belongs to the lifting calculator, which the lifting flag hides.",
+            Req("basis"), Either("dish_max", "k_proof"), Pos("dish_max", "k_proof"), Uniq("basis")),
     ];
 }

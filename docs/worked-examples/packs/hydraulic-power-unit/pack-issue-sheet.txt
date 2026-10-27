@@ -45,8 +45,8 @@ Calculation pack: the calculations listed in the index, issued together under on
   Template: pack
   Content hash: —
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 49/49
-  Test run: 2026-10-27 06:48 UTC
+  Known-answer cases passed: 50/50
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -419,7 +419,7 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
   Content hash: 900cefdc454489a1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -594,7 +594,7 @@ Absolute pressures: p_a = p_gauge + p_atm, or as entered in Absolute mode Gas vo
   Content hash: 7ea8865ce36556d1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 10/10
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -755,7 +755,7 @@ Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place
   Content hash: 2df24301b0231856
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -1013,7 +1013,7 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
   Content hash: 7ccfbf19d3cec269
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -1188,7 +1188,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: c0657fdab51c927d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -1300,11 +1300,11 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   None.
 
 8. Verification
-  Template: elec.voltage-drop@1.4.0
-  Content hash: 3a115f95fa99ee42
+  Template: elec.voltage-drop@1.5.0
+  Content hash: a149837c72d9fb56
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 3/3
-  Test run: 2026-10-27 06:48 UTC
+  Known-answer cases passed: 4/4
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -1476,11 +1476,11 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   WARNING  records: tabulated values not taken from a reference record are rho_20, k_R, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let, I_cn (Device characteristic (time–current points)). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: elec.fault-protection@1.5.1
-  Content hash: 9559cda3b9c899f8
+  Template: elec.fault-protection@1.6.0
+  Content hash: 627284e2d716cdc6
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -1775,7 +1775,7 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
   Content hash: da767ce16b10e18b
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References

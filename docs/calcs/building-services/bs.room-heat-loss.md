@@ -1,4 +1,4 @@
-# U-values and room heat loss (`bs.room-heat-loss@1.5.0`)
+# U-values and room heat loss (`bs.room-heat-loss@1.6.0`)
 
 **In plain terms.** A room loses heat through its walls, floor, roof and windows and by air leaking or being ventilated out. The worksheet works out the U-value of each construction from its layers (how easily heat flows through it), the heat lost through each element and by ventilation at the design temperatures, and the total heating the room needs, with an allowance for thermal bridges. It also checks each U-value against its target.
 
@@ -8,7 +8,7 @@ Calculates the U-values of built-up elements and the steady-state design heat lo
 
 ## Method
 
-- Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing
+- Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing, or the ground floor record U_g for a floor without layers or an override
 - Element fabric loss: Φ_i = A·U·f·(T_int − θ_adj), with θ_adj = θ_e where the element faces outside
 - Thermal bridges: Φ_tb = y_tb·Σ(A·f)_ext·(T_int − θ_e) on the elements facing outside
 - Fabric total: Φ_T = ΣΦ_i + Φ_tb
@@ -45,6 +45,7 @@ Calculates the U-values of built-up elements and the steady-state design heat lo
 | `layers.lambda` | Thermal conductivity λ (column) | W/(m·K) |  | | | Setup |
 | `V` | Room volume | m³ | 40 | 5 to 1000 | 1 to 5000 | Geometry |
 | `A_floor` | Floor area, for the loss per floor area (optional; blank = no loss per floor area) | m² | optional | 1 to 200 | 0.1 to 2000 | Geometry |
+| `U_g` | Ground floor U-value from a record, applied to each element with downward heat flow that has no layers and no U override (optional; blank = none) | W/(m²·K) | optional | 0.05 to 2 | 0.01 to 10 | Material |
 | `T_int` (was `theta_int`) | Internal design temperature | °C | 21 | 16 to 23 | 16 to 24 | Conditions |
 | `theta_e` | External design temperature (location record) | °C | -3 | -15 to 3 | -15 to 5 | Conditions |
 | `T_supply` (was `theta_supply`) | MVHR supply air temperature after heat recovery (optional; blank = natural ventilation, outside air) | °C | optional | -15 to 24 | -20 to 40 | Conditions |
@@ -66,9 +67,10 @@ Calculates the U-values of built-up elements and the steady-state design heat lo
 8. Where an element faces another space, a blank Rse is the same as Rsi. Basis: Small conventional BS EN ISO 6946 set, not a table of design data.
 9. The global target U applies to built-up elements facing outside only. Basis: Scope of the target check: an internal partition or floor is checked only against a target entered on its own row.
 10. Ground-floor and glazing U-values are entered by the user as an override. Basis: Stated limit.
-11. The calculator does not model ground heat transfer. Basis: Stated limit.
-12. The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air. Basis: Derived: about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600, not read from a table.
-13. Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are the user's own records. Basis: No table from a standard or a manufacturer is shipped.
+11. A ground floor U-value record fills U_g for a floor element without layers or an override. Basis: Stated limit: the record's value is the user's, from its table.
+12. The calculator does not model ground heat transfer. Basis: Stated limit.
+13. The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air. Basis: Derived: about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600, not read from a table.
+14. Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are the user's own records. Basis: No table from a standard or a manufacturer is shipped.
 
 ## Outputs
 
@@ -137,6 +139,7 @@ Applicability rules:
 | `n-inf-ignored` | Warning | Conservative | The infiltration rate applies with an MVHR supply temperature only. |
 | `gain` | Warning | Conservative | The room gains heat from warmer neighbours (Φ_HL ≤ 0). |
 | `supply-below-external` | Warning | Conservative | The MVHR supply is colder than the outside design temperature. |
+| `u-g-unused` | Warning | Conservative | U_g is given but no element with downward heat flow lacks layers and a U override, so it is not used. |
 
 ## Limitations
 
@@ -163,6 +166,8 @@ Steady state, no gains, no thermal mass or dynamic simulation. Homogeneous layer
 - `ka-roof-upward`: A roof: upward heat flow takes R_si = 0.10, and a heated neighbour's partition is not held to the outside target (Confirmed; source: Analytic (series resistance; BS EN ISO 6946 conventional surface resistances by flow direction))
 
 ## Changes
+
+**1.6.0 (DC-10, DC-21: Track P templates 42, 43 and 44).** Three record kinds are declared: `room.internal-temperatures` on `T_int` (template 42, one record per room type; its column `theta_i` fills `T_int`), `room.air-change-rates` on `n` (template 43, one record per room type; its column `n_ach` fills `n`) and `ground.u-values` on the new optional input `U_g` (template 44, one record per construction, soil conductivity, characteristic dimension and insulation; `lambda_g`, `B_prime` and `R_f` are stored and never applied). `U_g` (W/(m²·K), usual 0.05 to 2, hard 0.01 to 10, group Material) is the ground floor U-value from the record: each element with downward heat flow that has no layers and no U override takes it as its U, as a U override would (not built up: no R step, no global target), with the step `U_n = U_g (ground floor U-value record)`; such an element was blocked before. `U_g` given with no such element warns (rule `u-g-unused`). Template 48 (`surface.resistances`) stays proposed: the Rsi, Rse and Rg cells belong to the elements table, which is the room's geometry and not record data (Black B-A-10), and a record cannot fill three columns of a table without replacing it. No number of the known-answer cases, the worked examples or the packs moves; where `T_int` and `n` are typed the "records" warning now lists them. Minor bump.
 
 **Changes in 1.5.0 (C-2 consistency, phase C).** Layout and wording; no calculated value changes. The internal design temperature `theta_int` is now `T_int` (alias kept; the port `room.temperature_internal` keeps `theta_int` as an alias) and the supply temperature `theta_supply` is now `T_supply`. The external design temperature `theta_e` and the adjacent-temperature column `theta_adj` keep their names, because the climate record and a saved element table use them. The heat losses `Phi_HL`, `Phi_T` and `Phi_V` read in kW. The element utilisations are now `u_target_N` with the `U_target_N` records, and the check compares physical values. The inputs sit in the groups Setup, Geometry, Conditions, Factors, Requirements and Ventilation; the 13 assumptions are one short sentence each, and the ports are named `room.*`.
 

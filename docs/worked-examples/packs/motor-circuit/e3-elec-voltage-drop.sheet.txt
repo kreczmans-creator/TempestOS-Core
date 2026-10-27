@@ -97,11 +97,11 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   None.
 
 8. Verification
-  Template: elec.voltage-drop@1.4.0
-  Content hash: 3a115f95fa99ee42
+  Template: elec.voltage-drop@1.5.0
+  Content hash: a149837c72d9fb56
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 3/3
-  Test run: 2026-10-27 03:56 UTC
+  Known-answer cases passed: 4/4
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References

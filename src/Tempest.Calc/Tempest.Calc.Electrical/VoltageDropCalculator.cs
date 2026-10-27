@@ -1,3 +1,4 @@
+using Tempest.Calc.Engine.Units;
 using Tempest.Calc.Engine.Values;
 using Tempest.Calc.Sheets;
 
@@ -23,12 +24,13 @@ public sealed class VoltageDropCalculator : ICalcCalculator
     public const string DataMvAm = "mV/A/m figure";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.4.0", CalcDiscipline.Electrical, "Voltage drop and I²R loss",
+        Id, "1.5.0", CalcDiscipline.Electrical, "Voltage drop and I²R loss",
         "Calculates the voltage drop, the conductor power loss and the estimated conductor temperature of a DC, single-phase or three-phase circuit. The drop limit is a user input, because the limits of BS 7671 are not embedded.",
         "Conductor resistance at its operating temperature, for n conductors in parallel: R = ρ_T L/(A n), with ρ_T = ρ_20 [1 + α (T_c − 20)].\nResistance and reactance from per-length figures instead: R = R′ L/n; X = X′ L/n.\nVoltage drop on a DC circuit: ΔV = 2 I R.\nVoltage drop on a single-phase AC circuit: ΔV = 2 I (R cos φ + X sin φ).\nVoltage drop on a three-phase AC circuit: ΔV = √3 I (R cos φ + X sin φ).\nVoltage drop from a tabulated mV/A/m figure, which already carries the 2 or √3: ΔV = (mV/A/m) I L / 1000.\nPower lost in the cable: P_loss = 2 I² R (DC and single-phase); 3 I² R (three-phase).\nEstimated conductor temperature at this current: T_c,est = T_amb + (T_rated − T_amb)(I/I_z)².",
         [
             new CalcInputSpec("system", "System", CalcInputKind.Choice, Choices: [SystemThree, SystemSingle, SystemDc], DefaultChoice: SystemThree, Group: "Setup"),
             new CalcInputSpec("data", "Conductor data from", CalcInputKind.Choice, Choices: [DataResistivity, DataPerKm, DataMvAm], DefaultChoice: DataResistivity, Group: "Setup"),
+            new CalcInputSpec("mVAm_table", "Voltage drop figures by cross-section from your licensed table, read on the mV/A/m route at csa = A_c (optional; blank = the figure is typed as mVAm)", CalcInputKind.Table, Columns: MvAmColumns, MaxRows: 100, IsOptional: true, Group: "Setup"),
             new CalcInputSpec("L", "Route length (one way)", CalcInputKind.Quantity, "m", Default: 80, Min: 0.1, Max: 5000, HardMin: 1e-3, HardMax: 1e6, Group: "Geometry"),
             new CalcInputSpec("n_par", "Parallel conductors per phase", CalcInputKind.Number, Default: 1, Min: 1, Max: 6, HardMin: 1, HardMax: 20, Group: "Geometry"),
             new CalcInputSpec("A_c", "Conductor cross-section", CalcInputKind.Quantity, "mm^2", Default: 35, Min: 1, Max: 1000, HardMin: 0.01, HardMax: 1e5, IsOptional: true, Group: "Geometry"),
@@ -65,6 +67,8 @@ public sealed class VoltageDropCalculator : ICalcCalculator
             new CalcApplicabilityRule("default-conductor", "The conductor cross-section or resistivity was left blank and the template default is used.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("overload", "The design current exceeds the stated current-carrying capacity.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("temperature", "The estimated conductor temperature is above the temperature entered for the resistance, so the resistance and the voltage drop are computed at the estimated one.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("mvam-table", "The mV/A/m table has no row for the cross-section, more than one, or no figure for the system in that row.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("mvam-table-unused", "A mV/A/m figure is entered, so the table is not used.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-dc", "DC 48 V, 20 A, 30 m, 6 mm² copper at 70 °C (analytic)",
@@ -79,6 +83,10 @@ public sealed class VoltageDropCalculator : ICalcCalculator
                 new CalcReferenceSource("Analytic (BS 7671 Appendix 4 method, formula only)", null, "ΔV = 2.4 × 63 × 50 / 1000 = 7.56 V = 1.89 % of 400 V"),
                 [CalcInputValue.Choice("system", SystemThree), CalcInputValue.Quantity("V_n", 400, "V"), CalcInputValue.Quantity("I", 63, "A"), CalcInputValue.Quantity("L", 50, "m"), CalcInputValue.Of("n_par", 1), CalcInputValue.Choice("data", DataMvAm), CalcInputValue.Of("mVAm", 2.4), CalcInputValue.Of("dv_limit", 5)],
                 [new CalcExpectedValue("dV", 7.56, "V", 1e-9), new CalcExpectedValue("dV_pct", 1.89, "", 1e-9)]),
+            new CalcTestCase("ka-mvam-table", "Three-phase from the mV/A/m table row for 16 mm², 63 A, 50 m: the same 2.4 mV/A/m figure read from the table (analytic)",
+                new CalcReferenceSource("Analytic (BS 7671 Appendix 4 method, formula only; the table rows are synthetic values invented for this test)", null, "The row csa = 16 mm² gives z_3ph = 2.4 (invented); ΔV = 2.4 × 63 × 50 / 1000 = 7.56 V = 1.89 % of 400 V, as ka-mvam"),
+                [CalcInputValue.Choice("system", SystemThree), CalcInputValue.Quantity("V_n", 400, "V"), CalcInputValue.Quantity("I", 63, "A"), CalcInputValue.Quantity("L", 50, "m"), CalcInputValue.Of("n_par", 1), CalcInputValue.Choice("data", DataMvAm), CalcInputValue.Quantity("A_c", 16, "mm^2"), MvAmTable(("copper", 10, 4.4, 3.8), ("copper", 16, 2.8, 2.4), ("copper", 25, 1.75, 1.5)), CalcInputValue.Of("dv_limit", 5)],
+                [new CalcExpectedValue("mVAm", 2.4, "", 1e-9), new CalcExpectedValue("dV", 7.56, "V", 1e-9), new CalcExpectedValue("dV_pct", 1.89, "", 1e-9)]),
         ],
         DiagramKey: "voltage-drop",
         Category: "Power",
@@ -88,7 +96,29 @@ public sealed class VoltageDropCalculator : ICalcCalculator
             new CalcOutputPort("dV_pct", "", "Voltage drop relative to the nominal voltage, in %", "circuit.voltage_drop_percent"),
             new CalcOutputPort("P_loss", "kW", "Power lost in the conductors", "circuit.power_loss"),
             new CalcOutputPort("T_c_est", "degC", "Estimated conductor temperature at the design current", "circuit.temperature_conductor_estimated"),
+        ],
+        RecordKinds:
+        [
+            new CalcRecordKind("bs7671.voltage-drop", "Voltage drop per ampere per metre", ["mVAm_table"], "Your own licensed table of mV/A/m figures by cross-section for one conductor material; on the mV/A/m route the row for A_c supplies the figure. Never shipped."),
         ]);
+
+    /// <summary>The columns of the user's mV/A/m table (Track P template 05, record kind bs7671.voltage-drop; DC-10). Where the table gives one figure it goes in the z column.</summary>
+    private static readonly IReadOnlyList<CalcColumnSpec> MvAmColumns =
+    [
+        new("conductor", "Conductor material as the table names it", CalcInputKind.Text, IsOptional: true),
+        new("csa", "Conductor cross-sectional area", CalcInputKind.Quantity, "mm^2", Min: 1, Max: 1000, HardMin: 0.01, HardMax: 1e5),
+        new("r_dc", "Two cables, DC", CalcInputKind.Quantity, "mV/A/m", Min: 0.1, Max: 100, HardMin: 0, HardMax: 1e4, IsOptional: true),
+        new("r_1ph", "Two cables, single-phase AC: resistive component", CalcInputKind.Quantity, "mV/A/m", Min: 0.1, Max: 100, HardMin: 0, HardMax: 1e4, IsOptional: true),
+        new("x_1ph", "Two cables, single-phase AC: reactive component", CalcInputKind.Quantity, "mV/A/m", Min: 0.1, Max: 100, HardMin: 0, HardMax: 1e4, IsOptional: true),
+        new("z_1ph", "Two cables, single-phase AC: impedance", CalcInputKind.Quantity, "mV/A/m", Min: 0.1, Max: 100, HardMin: 0, HardMax: 1e4, IsOptional: true),
+        new("r_3ph", "Three or four cables, three-phase AC: resistive component", CalcInputKind.Quantity, "mV/A/m", Min: 0.1, Max: 100, HardMin: 0, HardMax: 1e4, IsOptional: true),
+        new("x_3ph", "Three or four cables, three-phase AC: reactive component", CalcInputKind.Quantity, "mV/A/m", Min: 0.1, Max: 100, HardMin: 0, HardMax: 1e4, IsOptional: true),
+        new("z_3ph", "Three or four cables, three-phase AC: impedance", CalcInputKind.Quantity, "mV/A/m", Min: 0.1, Max: 100, HardMin: 0, HardMax: 1e4, IsOptional: true),
+    ];
+
+    /// <summary>A mV/A/m table from (conductor, csa mm², r_dc, z_3ph) rows; the single-phase columns are left blank (record kind bs7671.voltage-drop).</summary>
+    public static CalcInputValue MvAmTable(params (string Conductor, double Csa, double RDc, double Z3)[] rows) =>
+        CalcInputValue.Table("mVAm_table", rows.Select(r => CalcRow.Of(("conductor", new CalcCell(Text: r.Conductor)), ("csa", new CalcCell(r.Csa, "mm^2")), ("r_dc", new CalcCell(r.RDc, "mV/A/m")), ("z_3ph", new CalcCell(r.Z3, "mV/A/m")))).ToList());
 
     public void Run(CalcRunContext c)
     {
@@ -145,8 +175,18 @@ public sealed class VoltageDropCalculator : ICalcCalculator
                 break;
 
             default:
-                if (!c.Has("mVAm")) { c.Block("conductor-data", "mVAm: enter the voltage drop figure in mV/A/m."); return; }
-                c.Input("mVAm");
+                if (c.Has("mVAm"))
+                {
+                    c.Input("mVAm");
+
+                    if (c.Rows("mVAm_table").Count > 0)
+                        c.Warn("mvam-table-unused", "mVAm_table: the figure mVAm is entered, so the table is not used. Clear mVAm to read the figure from the table.");
+                }
+                else if (!TabulatedFigure(c, system))
+                {
+                    return;
+                }
+
                 c.Assign("dV", "mVAm * 1 mV/A/m * I * L / n_par", "V", "Voltage drop from the table figure", "BS 7671 App. 4 §6");
                 c.Assign("dV_pct", "100 * dV / V_n", null, "Voltage drop, per cent");
                 c.Assign("u_dv", "dV_pct / dv_limit", null, "Drop utilisation against the limit");
@@ -181,6 +221,63 @@ public sealed class VoltageDropCalculator : ICalcCalculator
     /// The overload check I ≤ I_z and the conductor temperature estimate, when the capacity is entered: on every route (elec.voltage-drop-03; the mV/A/m route used to ignore I_z). The warning that the estimate is above
     /// the temperature used for the resistance applies to the resistivity route only, the one that takes a conductor temperature.
     /// </summary>
+    /// <summary>
+    /// DC-10 (Track P template 05): the mV/A/m figure read from the user's licensed table for the cross-section A_c and the system (r_dc for DC,
+    /// z_1ph for single-phase, z_3ph for three-phase). False when the sheet is blocked: no table and no figure, no A_c, no row for A_c, more than
+    /// one row, or no figure in the column for the system.
+    /// </summary>
+    private static bool TabulatedFigure(CalcRunContext c, string system)
+    {
+        var rows = c.Rows("mVAm_table");
+
+        if (rows.Count == 0)
+        {
+            c.Block("conductor-data", "mVAm: enter the voltage drop figure in mV/A/m, or give the mV/A/m table.");
+            return false;
+        }
+
+        if (!c.Has("A_c"))
+        {
+            c.Block("mvam-table", "A_c: enter the conductor cross-section, which picks the row of the mV/A/m table.");
+            return false;
+        }
+
+        c.Input("A_c");
+        var mm2 = UnitCatalog.Parse("mm^2");
+        var figureUnit = UnitCatalog.Parse("mV/A/m");
+        var area = mm2.FromSi(c.Si("A_c"));
+        var matches = rows.Where(r => Cell(r, "csa", mm2) is { } csa && Math.Abs(mm2.FromSi(csa) - area) <= 1e-9 * Math.Max(1, area)).ToList();
+
+        if (matches.Count == 0)
+        {
+            c.Block("mvam-table", $"mVAm_table: no row has csa = {CalcValue.FormatNumber(area, 5)} mm². Add the row, or enter mVAm.");
+            return false;
+        }
+
+        if (matches.Count > 1)
+        {
+            c.Block("mvam-table", $"mVAm_table: {matches.Count} rows have csa = {CalcValue.FormatNumber(area, 5)} mm². Keep one conductor material per table.");
+            return false;
+        }
+
+        var column = system switch { SystemDc => "r_dc", SystemSingle => "z_1ph", _ => "z_3ph" };
+        var row = matches[0];
+
+        if (Cell(row, column, figureUnit) is not { } figure || !(figure > 0))
+        {
+            c.Block("mvam-table", $"mVAm_table: the row for csa = {CalcValue.FormatNumber(area, 5)} mm² has no {column} figure. Fill it in, or enter mVAm.");
+            return false;
+        }
+
+        var conductor = row.Get("conductor")?.Text is { Length: > 0 } text ? CalcSheetTextRenderer.Clean(text) : "the table";
+        c.Record("mVAm", $"{column} of the row with csa = A_c in the licensed table", $"{conductor}: csa = {CalcValue.FormatNumber(area, 5)} mm²", new ScalarValue(figureUnit.FromSi(figure)), "Voltage drop figure in mV/A/m from the user's licensed table", "BS 7671 App. 4 §6");
+        c.Output("mVAm", "Voltage drop figure from the table (mV/A/m)");
+        return true;
+    }
+
+    /// <summary>The SI value of a table cell, or null when absent; a cell without a unit is read in <paramref name="unit"/>.</summary>
+    private static double? Cell(CalcRow row, string key, Unit unit) => row.Get(key) is { Number: { } n } cell ? (cell.Unit is { Length: > 0 } u ? UnitCatalog.Parse(u) : unit).ToSi(n) : null;
+
     private static void CapacityCheck(CalcRunContext c, string data)
     {
         if (!c.Has("I_z"))

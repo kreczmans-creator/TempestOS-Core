@@ -43,8 +43,8 @@ Calculation pack: the calculations listed in the index, issued together under on
   Template: pack
   Content hash: —
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 27/27
-  Test run: 2026-10-27 06:48 UTC
+  Known-answer cases passed: 28/28
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -300,7 +300,7 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
   Content hash: 7ccfbf19d3cec269
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -479,7 +479,7 @@ Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic
   Content hash: 37b6289e618acdb2
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -659,7 +659,7 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   Content hash: c0657fdab51c927d
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -771,11 +771,11 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   None.
 
 8. Verification
-  Template: elec.voltage-drop@1.4.0
-  Content hash: 3a115f95fa99ee42
+  Template: elec.voltage-drop@1.5.0
+  Content hash: a149837c72d9fb56
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 3/3
-  Test run: 2026-10-27 06:48 UTC
+  Known-answer cases passed: 4/4
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -919,11 +919,11 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   WARNING  records: tabulated values not taken from a reference record are rho_20, k_R, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let (Device characteristic (time–current points)). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: elec.fault-protection@1.5.1
-  Content hash: 9559cda3b9c899f8
+  Template: elec.fault-protection@1.6.0
+  Content hash: 627284e2d716cdc6
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -1082,7 +1082,7 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   Content hash: c419a03dc9212448
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-27 06:48 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References

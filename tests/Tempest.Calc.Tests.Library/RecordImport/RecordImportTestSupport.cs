@@ -1,17 +1,25 @@
 using System.Text;
 using Tempest.Calc.Library;
+using Tempest.Calc.Sheets;
 
 namespace Tempest.Calc.Tests.Library.RecordImport;
 
-/// <summary>Shared pieces for the record import tests: the host over every shipped calculator, the repository's Track P folder, and file builders.</summary>
+/// <summary>Shared pieces for the record import tests: the host over every shipped calculator, the repository's template folders, and file builders.</summary>
 internal static class RecordImportTestSupport
 {
     public static LibraryTestHost Host() => new(calculators: ShippedCalculators.All);
 
+    /// <summary>The host with the lifting flag on, so the lifting calculator and its three record kinds are visible (ADR-0173).</summary>
+    public static LibraryTestHost HostWithLifting() => new(calculators: ShippedCalculators.All, features: new CalcFeatureFlags([CalcFeatures.Lifting]));
+
     /// <summary>The repository root: the nearest folder above the test binaries that holds the VERSION file.</summary>
     public static string RepositoryRoot { get; } = FindRoot();
 
+    /// <summary>Track P's templates 01 to 82 (read-only).</summary>
     public static string TemplateFolder => Path.Combine(RepositoryRoot, "docs", "verification", "record-templates");
+
+    /// <summary>Track S's templates 83 and up (DC-10).</summary>
+    public static string TrackSTemplateFolder => Path.Combine(RepositoryRoot, "docs", "calcs", "record-templates");
 
     private static string FindRoot()
     {

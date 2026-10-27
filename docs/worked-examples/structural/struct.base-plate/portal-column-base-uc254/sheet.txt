@@ -259,13 +259,13 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   PASS  Axial force against concrete bearing resistance: 210 kN vs 1888.7 kN  utilisation 0.11  « EN 1993-1-8 cl. 6.2.8.2, 6.2.5
 
 7. Applicability
-  WARNING  records: tabulated values not taken from a reference record are alpha_cc, gamma_c (EN 1992-1-1 National Annex factors); gamma_M2 (EN 1993-1-8 National Annex factor); gamma_M0 (EN 1993-1-1 National Annex factor); C_fd (Friction coefficient plate to grout); f_y (Plate strength). Enter each as one so its source, edition and licence travel with it.  [record]
+  WARNING  records: tabulated values not taken from a reference record are alpha_cc, gamma_c (EN 1992-1-1 National Annex factors); gamma_M2 (EN 1993-1-8 National Annex factor); gamma_M0 (EN 1993-1-1 National Annex factor); C_fd (Friction coefficient plate to grout); f_y (Plate strength); f_ck (Concrete strength classes). Enter each as one so its source, edition and licence travel with it.  [record]
   WARNING  f_y: one strength of 265 MPa is used at every thickness, but EN 10025-2 lowers it above 16 mm. Enter the strength for the thickness in use, because t_p exceeds that step.  [f_y_thickness]
   WARNING  u_profis: the anchorage is not assessed here, and u_max covers the steel parts only. Enter the PROFIS report's governing utilisation to include the concrete failure modes of the anchors.  [anchorage-result]
   WARNING  profis_ref: 'PROFIS-BP1 (to be filed)' is typed text, not an attached report. Attach the PROFIS report as Evidence, because the anchorage is not checked here.  [anchorage]
 
 8. Verification
-  Template: struct.base-plate@1.7.0
+  Template: struct.base-plate@1.8.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 9/9

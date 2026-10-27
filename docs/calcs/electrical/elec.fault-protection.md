@@ -1,4 +1,4 @@
-# Fault protection (BS 7671) (`elec.fault-protection@1.5.1`)
+# Fault protection (BS 7671) (`elec.fault-protection@1.6.0`)
 
 **In plain terms.** If a live conductor touches an earthed part, the protective device must open the circuit fast enough that the fault is not dangerous. The worksheet works out the loop impedance and fault current of the circuit, whether the device opens in time, whether the protective and line conductors can carry the fault current without overheating, and whether the device can break the fault level. It demands an independent check, or the preparer's own check with a recorded statement where no second person is available.
 
@@ -29,6 +29,7 @@ Calculates automatic disconnection of supply in a TN system for one circuit: loo
 | `I_n` | Rated current | A | 32 | 6 to 630 | Setup |
 | `curve` | Time–current points (fuse or MCCB) (optional) |  | table | columns: t (s), I (A) | Setup |
 | `device_code` | Device type code carried from the cable step (1 MCB type B, 2 type C, 3 type D, 4 fuse, MCCB or MPCB); the device chosen here must match it (optional) |  |  | 1 to 4 | Setup |
+| `Z_s_max_table` | Maximum earth fault loop impedances from your licensed table, checked against Z_s at the device rating and the required disconnection time (optional; blank = no check against a table) |  | table | columns: device (text), t_disc (s), I_n (A), Z_s_max (Ω) | Setup |
 | `L` | Circuit length | m | 20 | 1 to 500 | Geometry |
 | `S_line` | Line conductor cross-section | mm² | 2.5 | 1 to 300 | Geometry |
 | `S_cpc` | Protective conductor cross-section | mm² | 1.5 | 1 to 300 | Geometry |
@@ -76,6 +77,8 @@ Calculates automatic disconnection of supply in a TN system for one circuit: loo
 | `Z_s_max` | Maximum loop impedance | Ω |
 | `u_Zs` | Loop impedance utilisation |  |
 | `Z_test` | Field-test maximum (rule of thumb) | Ω |
+| `Z_s_max_tab` | Tabulated maximum loop impedance (only with `Z_s_max_table`) | Ω |
+| `u_Zs_tab` | Loop impedance utilisation of the tabulated maximum (only with `Z_s_max_table`) |  |
 | `k` | Adiabatic factor (derived) |  |
 | `S_min` | Minimum cross-section | mm² |
 | `u_cpc` | Protective conductor utilisation |  |
@@ -102,6 +105,7 @@ A port is listed under its public name, `<area>.<quantity>`. The output symbol s
 Checks the sheet makes, governing first on the printed sheet:
 
 - Loop impedance against the maximum (BS 7671 reg. 411.4.4)
+- Loop impedance against the tabulated maximum (BS 7671 reg. 411.4.4; only with `Z_s_max_table`)
 - Disconnection time against the required time (BS 7671 reg. 411.3.2.2)
 - Adiabatic minimum against the protective conductor (BS 7671 reg. 543.1.3)
 - Conductors against let-through at the origin (BS 7671 reg. 434.5.2, 543.1.3)
@@ -122,6 +126,7 @@ Applicability rules:
 | `device_code` | Block | Conservative | The device type code carried from the cable step must be a whole number from 1 to 4. |
 | `adiabatic` | Warning | Unconservative | No disconnection time: the adiabatic check is not made. |
 | `temperatures` | Block | Conservative | The adiabatic final temperature must exceed the initial temperature. |
+| `zs-table` | Block | Conservative | The table of maximum loop impedances holds no row, or more than one row, for the device rating and the required disconnection time. |
 
 ## Limitations
 
@@ -148,6 +153,8 @@ TN only; single earth fault; no motor contribution, arc fault or IT systems; no 
 - `ka-schneider-k`: Derived k for copper, PVC 70 → 160 °C and XLPE 90 → 250 °C (Schneider guide) (Unconfirmed; source: Schneider Electric, Electrical Installation Guide, "Sizing of protective earthing conductor")
 
 ## Changes
+
+**1.6.0 (DC-10, DC-21: Track P template 03).** The record kind `bs7671.max-zs` ("Maximum earth fault loop impedance") is declared on the new optional table input `Z_s_max_table` (columns `device` text, `t_disc` s, `I_n` A, `Z_s_max` Ω, at most 200 rows): the user's own licensed table of maximum Z_s by device family, disconnection time and rating, imported from template 03 or typed on the records screen. When the table is given the sheet reads the row whose `I_n` and `t_disc` equal the device rating and `t_req`, records it as `Z_s_max_tab` with the utilisation `u_Zs_tab`, and adds the check "Loop impedance against the tabulated maximum"; the derived `Z_s,max = C_min·U_0/I_a` and its check are unchanged. A table with no such row, or with more than one (two device families in one table), is refused (rule `zs-table`, a block: `Z_s_max_table: no row has I_n = 32 A and t_disc = 0.4 s. Add the row, or clear the table.`). Without the table nothing changes: no number of the known-answer cases, the worked example or the packs moves. Minor bump.
 
 **1.5.1.** Declares the unit change of 1.5.0 (ADR-0177 review): `rho_20` was in Ω·mm before 1.5.0, so a bare stored number from an earlier version is read in Ω·mm, never Ω·mm²/m. No calculated value changes.
 

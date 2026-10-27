@@ -77,6 +77,12 @@ public enum RecordCheckKind
 
     /// <summary>A text cell that contains <see cref="RecordCheck.Text"/> gets the warning <see cref="RecordCheck.Message"/>.</summary>
     TextWarning,
+
+    /// <summary>
+    /// The column fills the kind symbol named in <see cref="RecordCheck.Text"/>, not a symbol of its own name: Track P wrote the column under the
+    /// standard's symbol (<c>theta_i</c>, <c>n_ach</c>) where the calculator takes <c>T_int</c> or <c>n</c>. Not a check of the rows.
+    /// </summary>
+    MapsTo,
 }
 
 /// <summary>How a column moves down the rows of a monotonic check.</summary>
@@ -190,6 +196,9 @@ internal static class Rule
 
     public static RecordCheck TextWarn(string column, string contains, string message) =>
         new() { Kind = RecordCheckKind.TextWarning, Columns = [column], Text = contains, Message = message, Severity = RecordSeverity.Warning };
+
+    /// <summary>The template column <paramref name="column"/> fills the kind symbol <paramref name="symbol"/> (the calculator's input symbol) instead of a symbol of its own name.</summary>
+    public static RecordCheck Maps(string column, string symbol) => new() { Kind = RecordCheckKind.MapsTo, Columns = [column], Text = symbol };
 }
 
 /// <summary>One column of a record template's header: its symbol, the unit its header states, and whether it holds text.</summary>
@@ -219,9 +228,10 @@ public enum RecordTemplateDisposition
 }
 
 /// <summary>
-/// One of Track P's record templates (<c>docs/verification/record-templates/NN-name.csv</c>) as the importer knows it: which record kind it
-/// fills, its header, the checks its notes ask for, and what to do when no calculator declares the kind. The header here is checked against the
-/// file by a test, so the two cannot drift.
+/// One of the record templates as the importer knows it: which record kind it fills, its header, the checks its notes ask for, and what to do when
+/// no calculator declares the kind. Templates 01 to 82 are Track P's (<c>docs/verification/record-templates/NN-name.csv</c>, read-only); 83 and
+/// up are Track S's, written for the record kinds Track P had no file for (<c>docs/calcs/record-templates/NN-name.csv</c>, DC-10). The header
+/// here is checked against the file by a test, so the two cannot drift.
 /// </summary>
 public sealed class RecordTemplate
 {
@@ -264,6 +274,16 @@ public sealed class RecordTemplate
 
     /// <summary>The file name without its extension (<c>03-bs7671.max-zs</c>).</summary>
     public string FileName => $"{Id}-{Name}";
+
+    /// <summary>Whether the template is one of Track P's 82 files (<c>docs/verification/record-templates</c>); otherwise it is a Track S file (<c>docs/calcs/record-templates</c>).</summary>
+    public bool IsTrackP => string.CompareOrdinal(Id, "82") <= 0;
+
+    /// <summary>The repository folder the template file is published in, relative to the root.</summary>
+    public string Folder => IsTrackP ? "docs/verification/record-templates" : "docs/calcs/record-templates";
+
+    /// <summary>The kind symbol a template column fills: the symbol a <see cref="RecordCheckKind.MapsTo"/> rule names, or the column's own symbol.</summary>
+    public string TargetSymbol(string column) =>
+        Checks.FirstOrDefault(c => c.Kind == RecordCheckKind.MapsTo && c.Columns.Count == 1 && string.Equals(c.Columns[0], column, StringComparison.Ordinal))?.Text ?? column;
 
     public RecordTemplateColumn? Column(string symbol) => Columns.FirstOrDefault(c => string.Equals(c.Symbol, symbol, StringComparison.Ordinal));
 

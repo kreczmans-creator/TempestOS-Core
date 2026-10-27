@@ -84,7 +84,7 @@
     },
     {
       "id": "bs.room-heat-loss",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "kats": 6,
       "katsPassed": 6,
       "failedKats": [],
@@ -134,7 +134,7 @@
     },
     {
       "id": "elec.fault-protection",
-      "version": "1.5.1",
+      "version": "1.6.0",
       "kats": 6,
       "katsPassed": 6,
       "failedKats": [],
@@ -194,9 +194,9 @@
     },
     {
       "id": "elec.voltage-drop",
-      "version": "1.4.0",
-      "kats": 3,
-      "katsPassed": 3,
+      "version": "1.5.0",
+      "kats": 4,
+      "katsPassed": 4,
       "failedKats": [],
       "examples": 2,
       "examplesPassed": 2,
@@ -424,7 +424,7 @@
     },
     {
       "id": "struct.base-plate",
-      "version": "1.7.0",
+      "version": "1.8.0",
       "kats": 9,
       "katsPassed": 9,
       "failedKats": [],

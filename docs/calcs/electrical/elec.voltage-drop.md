@@ -1,4 +1,4 @@
-# Voltage drop and I²R loss (`elec.voltage-drop@1.4.0`)
+# Voltage drop and I²R loss (`elec.voltage-drop@1.5.0`)
 
 **In plain terms.** Current flowing through a cable's resistance and reactance loses some voltage before it reaches the load. How much depends on the current, the length, the conductor and, for alternating current, the power factor and whether the supply is single- or three-phase. The drop is compared with the allowed percentage of the supply voltage, and the same current gives the heat lost in the cable and an estimate of how warm the conductor runs.
 
@@ -13,7 +13,7 @@ Calculates the voltage drop, the conductor power loss and the estimated conducto
 - Voltage drop on a DC circuit: ΔV = 2 I R.
 - Voltage drop on a single-phase AC circuit: ΔV = 2 I (R cos φ + X sin φ).
 - Voltage drop on a three-phase AC circuit: ΔV = √3 I (R cos φ + X sin φ).
-- Voltage drop from a tabulated mV/A/m figure, which already carries the 2 or √3: ΔV = (mV/A/m) I L / 1000.
+- Voltage drop from a tabulated mV/A/m figure, which already carries the 2 or √3: ΔV = (mV/A/m) I L / 1000. The figure is typed as `mVAm`, or read from the `mVAm_table` row with csa = A_c (r_dc for DC, z_1ph single-phase, z_3ph three-phase).
 - Power lost in the cable: P_loss = 2 I² R (DC and single-phase); 3 I² R (three-phase).
 - Estimated conductor temperature at this current: T_c,est = T_amb + (T_rated − T_amb)(I/I_z)².
 
@@ -23,6 +23,7 @@ Calculates the voltage drop, the conductor power loss and the estimated conducto
 |---|---|---|---|---|---|
 | `system` | System |  | AC three-phase | AC three-phase, AC single-phase, DC | Setup |
 | `data` | Conductor data from |  | resistivity and area | resistivity and area, R and X per km, mV/A/m figure | Setup |
+| `mVAm_table` | Voltage drop figures by cross-section from your licensed table, read on the mV/A/m route at csa = A_c (optional; blank = the figure is typed as mVAm) |  | table | columns: conductor (text), csa (mm²), r_dc, r_1ph, x_1ph, z_1ph, r_3ph, x_3ph, z_3ph (mV/A/m) | Setup |
 | `L` | Route length (one way) | m | 80 | 0.1 to 5000 | Geometry |
 | `n_par` | Parallel conductors per phase |  | 1 | 1 to 6 | Geometry |
 | `A_c` | Conductor cross-section (optional) | mm² | 35 | 1 to 1000 | Geometry |
@@ -59,6 +60,7 @@ Calculates the voltage drop, the conductor power loss and the estimated conducto
 | `dV` | Voltage drop | V |
 | `dV_pct` | Voltage drop (%) |  |
 | `P_loss` | Power loss | kW |
+| `mVAm` | Voltage drop figure from the table (mV/A/m; only when read from `mVAm_table`) |  |
 | `T_c_est` | Estimated conductor temperature | °C |
 
 ## Ports
@@ -87,6 +89,8 @@ Applicability rules:
 | `default-conductor` | Warning | Conservative | The conductor cross-section or resistivity was left blank and the template default is used. |
 | `overload` | Warning | Conservative | The design current exceeds the stated current-carrying capacity. |
 | `temperature` | Warning | Conservative | The estimated conductor temperature is above the temperature entered for the resistance, so the resistance and the voltage drop are computed at the estimated one. |
+| `mvam-table` | Block | Conservative | The mV/A/m table has no row for the cross-section, more than one, or no figure for the system in that row. |
+| `mvam-table-unused` | Warning | Conservative | A mV/A/m figure is entered, so the table is not used. |
 
 ## Limitations
 
@@ -103,8 +107,11 @@ The load is balanced. The drop limits and the cable tables of BS 7671 are not em
 - `ka-dc`: DC 48 V, 20 A, 30 m, 6 mm² copper at 70 °C (analytic) (Confirmed; source: Analytic (Hughes, resistivity with temperature coefficient))
 - `ka-three-phase`: Three-phase 400 V, 100 A, 80 m, 35 mm² copper, X′ = 0.08 Ω/km, cos φ = 0.85 (analytic) (Confirmed; source: Analytic (√3 I (R cos φ + X sin φ)))
 - `ka-mvam`: Three-phase from a 2.4 mV/A/m table figure, 63 A, 50 m (analytic) (Confirmed; source: Analytic (BS 7671 Appendix 4 method, formula only))
+- `ka-mvam-table`: Three-phase from the mV/A/m table row for 16 mm², 63 A, 50 m: the same 2.4 mV/A/m figure read from the table (analytic) (Confirmed; source: Analytic (BS 7671 Appendix 4 method, formula only; the table rows are synthetic values invented for this test))
 
 ## Changes
+
+**1.5.0 (DC-10, DC-21: Track P template 05).** The record kind `bs7671.voltage-drop` ("Voltage drop per ampere per metre") is declared on the new optional table input `mVAm_table` (columns `conductor` text, `csa` mm², and `r_dc`, `r_1ph`, `x_1ph`, `z_1ph`, `r_3ph`, `x_3ph`, `z_3ph` in mV/A/m, at most 100 rows): the user's own licensed table for one conductor material, imported from template 05 or typed on the records screen. On the mV/A/m route with `mVAm` blank the sheet reads the row whose `csa` equals `A_c` and takes `r_dc` for DC, `z_1ph` for single-phase and `z_3ph` for three-phase as the figure (recorded and shown as `mVAm`); everything after is as before. No row for `A_c`, more than one, a blank column for the system, or no `A_c` is refused (rule `mvam-table`, a block: `mVAm_table: no row has csa = 35 mm². Add the row, or enter mVAm.`); a figure typed in `mVAm` wins over the table with the warning `mvam-table-unused`. New known-answer case `ka-mvam-table` (the ka-mvam numbers read from a synthetic three-row table: ΔV 7.56 V, 1.89 %). Without the table nothing changes: no number of the known-answer cases, the worked examples or the packs moves. Minor bump.
 
 **Changes in 1.4.0 (C-2 consistency, phase C).** Layout and wording only; no result changes. The drop and the design current are checked as physical values: "Voltage drop against the limit" compares `dV` with the new step `dV_max`, the drop the limit allows in V, and "Design current against the current-carrying capacity" compares `I` with `I_z`. `P_loss` is shown in kW. The inputs are grouped Setup, Geometry, Material, Loads, Conditions and Requirements, in that order. The template declares the ports `circuit.*`. The scope, the assumptions and the messages follow the sheet standard.
 

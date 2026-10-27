@@ -203,4 +203,41 @@ public sealed class FaultProtectionTests
         Assert.Equal(standard.OutputSi("I_k3") * 1.05 / 1.1, lower.OutputSi("I_k3"), 6);
         Assert.Contains(Fault.Template.OutputPorts!, p => p.Symbol == "c_k3");
     }
+
+    [Fact]
+    public void DC_10_A_Table_Of_Maximum_Loop_Impedances_Is_Checked_Against_Z_s_And_A_Missing_Row_Is_Refused()
+    {
+        // Track P template 03 (record kind bs7671.max-zs): the user's licensed table of maximum Z_s by device, time and rating. The defaults are a
+        // 32 A type B MCB at t_req 0.4 s with Z_s 0.845 Ω (derived Z_s,max 1.365625 Ω). Every table value here is invented.
+        Assert.Contains(Fault.Template.RecordKinds!, k => k.Kind == "bs7671.max-zs" && k.Symbols.SequenceEqual(["Z_s_max_table"]));
+        Assert.Equal("1.6.0", Fault.Template.Version);
+        var without = CalcRunner.Run(Fault, Defaults());
+        Assert.Null(without.FindOutput("Z_s_max_tab"));
+        Assert.DoesNotContain(without.Checks, c => c.Name.Contains("tabulated", StringComparison.Ordinal));
+
+        var pass = CalcRunner.Run(Fault, Defaults().With(FaultProtectionCalculator.MaxZsTable(("Type B", 0.4, 32, 1.1), ("Type B", 0.4, 40, 0.9), ("Type B", 5, 32, 2.0))));
+        Assert.False(pass.IsBlocked, string.Join("; ", pass.Blocks.Select(b => b.Message)));
+        Assert.Equal(1.1, pass.OutputSi("Z_s_max_tab"), 9);
+        Assert.Equal(pass.OutputSi("Z_s") / 1.1, pass.OutputSi("u_Zs_tab"), 9);
+        var check = Assert.Single(pass.Checks, c => c.Name == "Loop impedance against the tabulated maximum");
+        Assert.True(check.Passed);
+        // The derived check is still made and its numbers are untouched.
+        Assert.Equal(without.OutputSi("Z_s_max"), pass.OutputSi("Z_s_max"), 12);
+        Assert.Equal(without.OutputSi("u_Zs"), pass.OutputSi("u_Zs"), 12);
+
+        // A tabulated maximum under Z_s (0.790 Ω in this case) fails the sheet where the derived one passed.
+        var fail = CalcRunner.Run(Fault, Defaults().With(FaultProtectionCalculator.MaxZsTable(("Type B", 0.4, 32, 0.7))));
+        Assert.False(Assert.Single(fail.Checks, c => c.Name == "Loop impedance against the tabulated maximum").Passed);
+        Assert.True(Assert.Single(fail.Checks, c => c.Name == "Loop impedance against the maximum").Passed);
+
+        // No row for the rating and time, or two rows (two device families in one table): refused in one sentence naming the table.
+        var missing = CalcRunner.Run(Fault, Defaults().With(FaultProtectionCalculator.MaxZsTable(("Type B", 0.4, 20, 1.5), ("Type B", 5, 32, 2.0))));
+        var block = Assert.Single(missing.Blocks);
+        Assert.Equal("zs-table", block.RuleId);
+        Assert.Equal("Z_s_max_table: no row has I_n = 32 A and t_disc = 0.4 s. Add the row, or clear the table.", block.Message);
+        Assert.Empty(CalcMessageShape.Problems(block.Message));
+        var twice = CalcRunner.Run(Fault, Defaults().With(FaultProtectionCalculator.MaxZsTable(("Type B", 0.4, 32, 1.1), ("Type C", 0.4, 32, 0.55))));
+        Assert.Contains(twice.Blocks, b => b.RuleId == "zs-table" && b.Message.Contains("2 rows have I_n = 32 A", StringComparison.Ordinal));
+        Assert.Contains(Fault.Template.ApplicabilityRules, r => r.Id == "zs-table" && r.Severity == CalcNoticeSeverity.Block && r.Effect == CalcRuleEffect.Conservative);
+    }
 }

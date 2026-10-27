@@ -4,7 +4,7 @@
  "sources": {
   "rederivation": "3738520fd54a185312ad9441b014f89a0e52620ca01f5d3390e706fb0ae90082",
   "knownDefects": "b0e56871206f5470a9db9f3928d997f405aa5fe79d906184ebab1de2657ec2b0",
-  "katResults": "edd079cb73add11bfc10fb3965418b9594dffac5c4248c7bbce20b937a944105",
+  "katResults": "26a9171e22080658bf2a70848336217433991695a04856af1d0e8cfc40120ea0",
   "workedExamples": "70ade87cf654c504d0e07b6b2138bdd0be939e0ac2596a54400c2b1cf585f2b0",
   "generator": "44f38f035fcf5937ab168f648e6a714578568d822ffce5c1d151e261c577171e"
  },
@@ -401,7 +401,7 @@
   "bs.room-heat-loss": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.5.0",
+    "version": "1.6.0",
     "kats": 6,
     "katsPassed": 6,
     "failedKats": [],
@@ -681,7 +681,7 @@
   "elec.fault-protection": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.5.1",
+    "version": "1.6.0",
     "kats": 6,
     "katsPassed": 6,
     "failedKats": [],
@@ -1016,9 +1016,9 @@
   "elec.voltage-drop": {
    "workedExamples": 2,
    "kat": {
-    "version": "1.4.0",
-    "kats": 3,
-    "katsPassed": 3,
+    "version": "1.5.0",
+    "kats": 4,
+    "katsPassed": 4,
     "failedKats": [],
     "examplesPassed": 2,
     "failedExamples": []
@@ -2552,7 +2552,7 @@
   "struct.base-plate": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.7.0",
+    "version": "1.8.0",
     "kats": 9,
     "katsPassed": 9,
     "failedKats": [],
