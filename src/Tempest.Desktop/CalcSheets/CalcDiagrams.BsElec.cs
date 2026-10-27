@@ -25,7 +25,7 @@ public static partial class CalcDiagrams
         static List<DiagramElement> Common() =>
         [
             new DiagramCircle("section", new(70, 58), 22, Filled: true, "OD", "OD", new(70, 20)),
-            new DiagramCircle("bore", new(70, 58), 15, Filled: false, "t_wall", "t_wall", new(70, 98)),
+            new DiagramCircle("bore", new(70, 58), 15, Filled: false, "t_wall", "t_wall", new(70, 94)),
             new DiagramLabel("install-temperature", new(200, 24), "T_install", "T_install"),
             new DiagramLabel("operating-temperature", new(200, 48), "T_operate", "T_operate"),
             new DiagramLabel("temperature-change", new(200, 72), "dT_in", "ΔT"),
