@@ -197,6 +197,40 @@ The new screens mostly follow the house style: one sentence, active, naming what
 | Y-C-05 | Low | `VerificationDashboardView.cs:88` | Column headers "Unconf." and "Second." are abbreviations, and "Second." reads as a time. | Source strings. | "Unconfirmed" and "Secondary" (the PDF already writes "Unconf. / Secondary"). | Fixed (second colour round): "Unconfirmed" and "Secondary" on screen, "Unconfirmed / Secondary" in the PDF |
 | Y-C-06 | Info | Review timing | Every Addendum C item was reviewed before its merge, and each review's findings were fixed with named tests before the merge. Two integration breaks came from tests that tied themselves to another item's names or counts (`8f6fc524`, `ec11fa79`). | `LOG.md`, commits. | Keep tests off generated counts; read them from the artefact (as `ec11fa79` now does). | Closed |
 
+### 2026-10-27: C-2, DC-21 builds and DI-08
+
+Builder quality and wording, 2026-10-27. Scope: the work merged on `release/v0.26.0` after the sections above, up to `08315a20`. Sources: `LOG.md` 2026-10-26 and 2026-10-27, DC-16 to DC-27, the builders' review notes, and the messages the new paths show.
+
+#### Per branch
+
+| Branch | Content | Reviews run | Defects found by review | Defects found by tests or the gate | Re-work rounds | Warnings | Flaky tests |
+|---|---|---|---|---|---|---|---|
+| `addC-2-consistency` (phase A) | Noise rule, display figures, rounding toward the failing side (DC-16 to DC-20) | One review, fixes merged (`98656edc`) | The noise rule per flagged output; 4 to 5 significant figures, rounded toward the failing side | — | 1 | 0 | 0 |
+| `addC-2b-mech1`, `-mech2`, `-struct`, `addC-2c-bs-fp`, `-elec` (phases B, C) | The sheet standard on all 54 templates (DC-24) | Integration review (`c2-int`) | Nine fixes, each with a test that failed first: 20 undeclared unit changes, a port's change of meaning, 17 governing markers, the deep-beam check, J51 and J52, column aliases and three more | The renamed `mech.iso286-fit` ports, caught by `RenamedPortContractTests` | 1 | 0 | 1 (records screen, fixed in 3h) |
+| `od-platform` | DB-08 SVG reader, DA-12 self-check, SEC-C-06 (DC-22) | Two reviews: a review, then a re-review | F1 to F11 and I1 (reader), D1 to D4 (self-check). The re-review found 10,000 same-selector rules still at 52 s, a probe runner that never scaled up, and layers 8 deep. | This review: SEC-C-11. CI: the probe job never starts (SEC-C-12). | 2 | 0 | 0 |
+| `od-registry` | DC-14, DC-15 (ADR-0177) | One review, fixes on `od-registry-fix` | Untested re-run outcomes, the unit-only and same-text changes, `MeaningChangedAt` | — | 1 | 0 | 0 |
+| `dc21-struct` | S4, S7, S5 and the frame caps (DC-26) | One review, four mutations killed | Two items numbered 6 on a spec page, an unqualified "always saves", stale XML comments, a commit message that claims a glossary change | — | 1 (by the integrator) | 0 | 0 |
+| `dc21-elec-bs-records` | E4 `C_c`, the pipe floor, six record kinds, templates 83 to 90 (DC-27) | One review, four mutations killed | A stranded `<summary>`; the place of `C_c` against the brief's words, for the owner | — | 1 (by the integrator) | 0 | 0 |
+| `di08-mechfp`, `-structbs`, `-bselec`, `di08-all` | 27 diagrams, 100 variants (DC-25) | One review | The insulation D_i dimension, five label collisions, the mechanism captions, three paragraph shapes | — | 1 | 0 | 0 |
+
+Every non-merge commit in `45e2c2eb..08315a20` carries both trailers (96 of 96). The CI run of `08315a20` is red: the SVG probe job (SEC-C-12), one chain test and three soak tests.
+
+#### Wording read
+The new messages mostly follow the house style: a condition, then what to do. Examples:
+- "p_design: the input is given as 'P' and as 'p_design' with different values. Keep one."
+- "factor_set: apply a National Annex record to gamma_G_sup, …, or choose EN recommended."
+- "section_type: the section is welded, but λ̄_LT,0 = 0.4 and β = 0.75 are the rolled-section pair of clause 6.3.2.3. The National Annex may set another pair for welded sections, so enter lambda_LT0 and beta_LT from it."
+- The independent-check refusal names the preparer, and offers the self-check as the way out.
+- An SVG that overruns "took too long to read (more than 15 seconds), so it has not been shown".
+
+#### Findings (2026-10-27)
+
+| ID | Sev | Location | Description | Evidence | Fix / justification | Status |
+|---|---|---|---|---|---|---|
+| Y-C-07 | Low | `ConductorSizingCalculator.cs:117, 119` | Two references print a note to the author on every issued sheet. They read "App. 4 §5 (section number to be checked against the owner's copy)" and "cl. (number to be checked)". A reader of the sheet sees an unfinished citation. | Source strings. | The owner supplies both numbers (DC-27), and the notes go. | Open (owner) |
+| Y-C-08 | Low | `SvgDocumentPageSource.RenderingNote` | The page status lists SVG element names: "Some parts of this drawing are not shown: clipPath, mask, filter." An engineer does not know these names. | Source string. | Plain words: "clipping", "masks", "filter effects", "markers", "patterns", "text on a path", "embedded web content". | Open |
+| Y-C-09 | Info | Commit `14b4f9a2` | The message says the glossary gained `factor_set` and `factor_set_used`. No glossary file changed, and none needed to. | `git show --stat`. | A commit message says what the commit did. | Logged |
+
 > The sections below were written on `release/v0.27.0` (23–24 October 2026) for the legacy calculator replacement (ADR-0167). The owner decided that nothing ships as 0.27.0: the work is part of v0.26.0 and is kept here, unchanged, as a marked part of this file.
 
 ## v0.27.0 Phase 1 — foundations (2026-10-23)

@@ -234,3 +234,72 @@ Method: the Opus review fixes were read first and checked in code: ADR-0174 §11
 | SEC-C-10 | Info | Worked example `mech.iso286-fit/h7-g6-25mm` | SEC-C-02 brought this to light. The README prints es = −7 µm and c_min = 7 µm; the engine gives −7.2853 and 7.2853 µm. That is 0.29 µm more minimum clearance than the printed value, which the half-unit rule passed. It is the formula-against-table class of `mech.iso286-fit-05` (owner decision DC-05). The guided test now gives it to the tester to decide by hand. | For Track P and the owner. | — | Logged |
 
 No Critical or High finding. Two Medium and two Low findings are fixed with regression tests in 0cc88a60. The third Low (SEC-C-05) and one Info item (SEC-C-09) are fixed with regression tests in 1c67d7a8. The other four Info items are logged. The gate (no open Critical or High, every Medium fixed or justified) holds.
+
+### 2026-10-27: C-2, DC-21 builds and DI-08
+
+Scope: the work merged on `release/v0.26.0` after the sections above, up to `08315a20`.
+- **C-2 sheet standard (DC-16 to DC-20, DC-24):** aliases for renamed inputs, columns and ports (`CalcInputAliases.Canonicalise`), the `UnitChangedAt` and `MeaningChangedAt` refusals, the governing marker contract, the J51 and J52 citation rules, and rounding toward the failing side.
+- **od-platform (DC-22):** the in-house SVG reader (`SvgPictureBuilder`, `SvgMarkupSanitiser`, `SvgProbeRunner`), the DA-12 self-check and the SEC-C-06 build column.
+- **od-registry (DC-14, DC-15, ADR-0177):** superseded versions, Rerun, the Revise refusals and AA labels.
+- **DC-21 builds (DC-26, DC-27):** the S4 factor, the S7 warning, the S5 `factor_set`, the frame caps, E4 `C_c`, the pipe floor, six record kinds and eight record templates.
+- **DI-08 (DC-25):** 27 reference diagrams.
+
+Method: the builders' and integrators' reviews were the baseline (`LOG.md`, 2026-10-26 and 2026-10-27). The code of each boundary below was read. Five single probes ran through the shipped runner (`Tempest.Desktop.dll --svg-probe --page-source`). Each ran under the CI harness's limits: a 512 MB heap, 2 GiB of address space and 60 s. Every probe file was under 1 MB. The CI runs of `08315a20` and `f93c19bd` were read for the `svg-bounded-probes` job. The PoCs are in `red-team.md`, 2026-10-27.
+
+#### Trust boundaries (new or changed)
+
+| Boundary | What crosses it | Control in the delta |
+|---|---|---|
+| SVG attachment → reader → viewer | An untrusted file of up to 25 MB, drawn on screen | The sanitiser blanks external references and strips scripts. It expands only literal entities: 32 of 256 characters, 10,000 references. The reader caps size, depth, nodes, stops, dashes, images, fonts, layers, shape data, verbs and rules (DC-22). It builds off the UI thread under a 15 s deadline. **Gap:** a class named many times (SEC-C-11, fixed). |
+| Input file, CSV or link → renamed input, column or port | An old symbol beside its new name | `CalcInputAliases.Canonicalise` maps each alias to its input. Two names with different values are refused, naming both. The catalogue refuses an alias that is another input or alias. |
+| Stored calculation → Rerun on a superseded version | An issued record and the installed code | Rerun writes nothing. It says "reproduced" only when every output and check matches exactly. A version that does not replay opens read-only (DC-23). |
+| Record CSV → six new kinds → calculators | Licensed tables (`bs7671.max-zs`, `bs7671.voltage-drop`, `concrete.strengths` and three room kinds), templates 83 to 90 | The ADR-0171 primitives and ADR-0174 apply unchanged. Column maps are code, not file. A map resolves only against its own kind's symbols. A new record is licensed by default. |
+| `en1990.factors` record → `struct.load-combinations` | The owner's National Annex factors | The National Annex set needs a record pin on all five factors, or the sheet is refused. Check and Issue refuse a pin to a missing record (SEC-C-14). |
+| Checker → self-check | One person checking their own work | Only an author may tick it. The statement and `CheckRecord.SelfCheck` are stored. A pack self-check prints only on the members its checker prepared. |
+
+#### STRIDE
+
+| Threat | Where | Finding | Status |
+|---|---|---|---|
+| Spoofing | Self-check, record pins | A non-author cannot tick the self-check. A hand-typed record pin lets a draft claim a record until Check (SEC-C-14). | Logged |
+| Tampering | Aliases, re-runs, rounding | An alias never overrides its input silently. Rerun writes nothing. Results round toward the failing side (DC-20). | Closed |
+| Repudiation | Self-check | The statement, the flag on the Evidence check and an audit row are kept. A failed audit row leaves a warning. | Closed |
+| Information disclosure | New record kinds | The export lock covers the new kinds. Every new template is header-only. No export path is added. | Closed |
+| Denial of service | SVG reader | One file under 1 MB exhausted a 512 MB heap in 1.3 s (SEC-C-11). The CI probe job never starts its probes (SEC-C-12). | Fixed; open |
+| Elevation of privilege | SVG probe entry | `--svg-probe` acts only as the first argument. It reads one named file with the user's rights and starts nothing else. | No new surface |
+
+#### §7 scopes on the delta
+
+| # | Scope | Result |
+|---|---|---|
+| 1 | Input handling | Aliases resolve before validation, and a conflict is refused. The SVG reader is capped, now with a distinct class set. The new record kinds reuse the hardened primitives. |
+| 2 | Template and sheet text | J51 and J52 hold citations to one form. The S5 and S7 messages pass `CalcMessageShape`. A diagram binds inputs only, never a result. |
+| 3 | SQLite | No schema change. `CheckRecord.SelfCheck` is a new field, read as false on an old row. |
+| 4–5 | Engine and numeric DoS | The frame caps of 1,200 nodes, 2,400 members and 2,400 loads are refused at entry. The worst frame stores in 3.21 MB, 80 % of the cap. |
+| 6 | Plugins | None. |
+| 7 | Dependencies | `Svg.Skia` and its MS-PL `Svg.Custom` are removed. No package is added. |
+| 8 | Secrets and PII | None. |
+| 9 | Supply chain | The version manifest is add-only and embedded. |
+
+#### Probes
+
+| Probe (each file under 1 MB) | Result |
+|---|---|
+| 1,500 class rules; 60 rects, each with all 1,500 classes | Built in 0.51 s, peak 83 MB. The control, one class per rect, built in 0.17 s. |
+| One class named 480,000 times under a rule of 200 declarations (961 KB) | **Out of memory after 1.3 s** at a 512 MB heap, peak 427 MB (SEC-C-11). |
+| One text run of 900,000 characters | Built in 0.23 s, peak 83 MB. The draw at 4,000 and 8,000 px could not allocate its bitmap under the harness's limits. |
+
+The use fan-out and the font-family probes were not run here. CI holds `use-fanout-10M` and `use-200k-of-symbol`. A family list per run is bounded by the element cap and the deadline.
+
+#### Findings
+
+| ID | Sev | Location | Description | Proposed fix | PoC | Status |
+|---|---|---|---|---|---|---|
+| SEC-C-11 | High | `SvgPictureBuilder.cs` (`Context.RulesFor`, `Properties`) | A class list took its class's rule once per token, repeats included. The cascade then copied every declaration per copy. Nothing caps declarations per rule. The loop runs inside one element, so the deadline never sees it. A 961 KB attachment exhausted a 512 MB heap in 1.3 s. The viewer has no heap cap, so its memory had no bound. | Read the class list as a set, and test a class by lookup. | R-C-06 | Fixed in b34020c9 (`SvgHostileInputTests.A_Class_Named_Many_Times_On_One_Element_Applies_Its_Rule_Once`; bounded probe `css-class-named-4M-times`) |
+| SEC-C-12 | Medium | `.github/workflows/ci.yml` (`svg-bounded-probes`); `SvgBoundedProbeTests` | On `08315a20` and `f93c19bd` the job failed 34 of 54 probes. Each failed child aborted at start-up: "Cannot allocate memory" under the 2 GiB address-space limit. So no full-size probe has run on the release line, and the CI Gate is red. | Raise `TEMPEST_BOUNDED_PROBES_ULIMIT_KB`, or trim the runtime's reservations (`MALLOC_ARENA_MAX`, `DOTNET_EnableWriteXorExecute`), then rerun. | — | Open (integrator) |
+| SEC-C-13 | Low | `SvgPictureBuilder.DrawText`; `SvgDocumentPageSource.RenderPage` | One text run has no cap beyond the 16 M-character document. The build is linear: 0.23 s for 900,000 characters. The viewer replays the picture on the UI thread at each zoom step. A long run's draw time was not measured. | Count glyphs into the verb budget, or cap a run and name it in the page status. Give `text-5MB-run` a raster. | — | Open |
+| SEC-C-14 | Low | `LoadCombinationsCalculator.cs` (`factor-set`); `CalcInstanceService.Linking.cs` (`RecordReasons`) | The sheet checks that each factor carries a record pin, not that the record exists. A hand-typed pin lets a draft print "National Annex record". Check and Issue then refuse it as stale. Every record pin has this pattern. | Mark a pin to a missing record on the form as it is typed. | R-C-07 | Logged |
+| SEC-C-15 | Info | `SvgPictureBuilder.cs` (`_typefaces`) | Typefaces a build caches are never disposed. Their finaliser releases them. | Dispose them with the picture. | — | Logged |
+| SEC-C-16 | Info | `AttachmentViewerLauncher.CreateSourceAsync` | After the 15 s deadline a PDF or image read runs on in the background. Its source is never disposed. The 25 MB attachment cap bounds it. | Pass the token to every page source. | — | Accepted (od-platform review) |
+
+No Critical finding. The one High, SEC-C-11, is fixed with a regression test in b34020c9. The class-list scan cost of the earlier notes goes with it, because a class test is now a lookup. The Medium SEC-C-12 is open: the probe job must start before its evidence counts. The Lows and Infos are logged. The gate holds for Critical and High. It holds for Medium once SEC-C-12 is fixed or justified.

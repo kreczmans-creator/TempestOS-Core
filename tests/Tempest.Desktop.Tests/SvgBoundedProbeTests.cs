@@ -149,6 +149,10 @@ public sealed class SvgBoundedProbeTests(ITestOutputHelper output)
         new("css-200k-rules-x-100k-elements", () => Svg("<style>" + Repeat("rect{fill:#123456}", 200_000) + "</style>" + Repeat("<rect width=\"1\" height=\"1\"/>", 100_000)), OkOrRefused, 3),
         new("css-1M-selectors-x-5k-elements", () => Svg("<style>" + Repeat("a,", 1_000_000) + "b{fill:red}</style>" + Repeat("<rect width=\"1\" height=\"1\"/>", 5_000)), OkOrRefused, 2),
 
+        // Review C2 (SEC-C-11): one class named 4 million times under a rule of 200 declarations. Before the fix the cascade copied the rule
+        // once per name (800 million declarations); the 961 KB version ran a 512 MB heap out of memory in 1.3 s.
+        new("css-class-named-4M-times", () => Svg("<style>.a{fill:#123456;" + string.Concat(Enumerable.Range(0, 200).Select(i => $"p{i}:1;")) + "}</style><rect class=\"" + Repeat("a ", 4_000_000) + "\" width=\"10\" height=\"10\"/>"), Ok, 2, MaxPeakMb: 400),
+
         // --- images ---
         new("png-8000x8000-single", () => Svg(Image(SvgHostileInputTests.OneBitPng(8000, 8000))), Ok, 1, MaxPeakMb: 600),
         new("png-8001-refused", () => Svg(Image(SvgHostileInputTests.OneBitPng(8001, 10))), Ok, 1, MaxPeakMb: 150),

@@ -520,6 +520,27 @@ public sealed class SvgHostileInputTests
         Assert.Equal(new SKColor(4, 4, 4), PixelAt(picture, 1, 5));
     }
 
+    [AvaloniaFact]
+    public void A_Class_Named_Many_Times_On_One_Element_Applies_Its_Rule_Once()
+    {
+        // Review C2 (SEC-C-11): the rule of a class was taken once per token of the class list, duplicates included, and the cascade copied
+        // every declaration of it per copy, with no look at the deadline in between. 480 000 copies of one class under a rule of 200
+        // declarations (961 KB) ran a 512 MB heap out of memory in 1.3 s; with the 16 MB document cap the viewer's memory had no bound.
+        // Here 20 000 copies under a rule of 100 declarations: two million copied declarations (about 100 MB allocated) before the fix.
+        var declarations = string.Concat(Enumerable.Range(0, 100).Select(i => $"p{i}:1;"));
+        var markup = Svg($"<style>.a{{fill:#123456;{declarations}}} .b{{stroke:#ff0000;stroke-width:4}}</style>" +
+            "<rect class=\"" + Repeat("a ", 20_000) + "b\" width=\"10\" height=\"10\"/>");
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        using var picture = BuildWithin(markup, "one class named 20 000 times");
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.True(allocated < 16L * 1024 * 1024, $"building allocated {allocated / (1024 * 1024)} MB (limit 16 MB): the class's rule was applied once per copy.");
+        Assert.Equal(2, picture.Statistics.StyleRules);
+        Assert.Equal(new SKColor(0x12, 0x34, 0x56), PixelAt(picture, 5, 5));
+        Assert.Equal(new SKColor(255, 0, 0), PixelAt(picture, 0, 5));
+    }
+
     // ------------------------------------------------------------------
     // I1: nothing non-finite reaches the bounds
     // ------------------------------------------------------------------

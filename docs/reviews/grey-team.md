@@ -112,6 +112,31 @@ Findings:
 - GR-C-04 (Info): an installed demo goes out of date at the next version bump. Remove and Install again is the route; the user page could say so.
 - The removed demo project staying in the project lists was Black B-C-03, fixed in the second colour round: the lists leave deleted projects out, and a deleted project keeps its number.
 
+### 2026-10-27: C-2, DC-21 builds and DI-08
+
+Checked on `08315a20`. The scope is the work merged after the sections above. It covers C-2 phases A to C, the SVG reader and the self-check (DC-22), ADR-0177, the DC-21 builds and DI-08. Nothing is released, so a stored calculation below exists only in development and owner-test databases. The evidence is code reading, the tests named and the integration reviews. No database probe ran here.
+
+| Item | Evidence | Status |
+|---|---|---|
+| Renamed inputs and columns | The old symbols stay as aliases (DC-24 lists them). An old input file, CSV, link or pack binding is read through them. A conflict is refused, naming both names (`AliasCompatibilityTests`, `ColumnAliasTests`). | Pass |
+| Renamed ports | The old port names stay. `RenamedPortContractTests` pins 222 ports against `PortsBaseline.json`. | Pass |
+| Default units changed (20 inputs and columns) | Each declares `UnitChangedAt` and `UnitWas`. A stored value keeps its own unit, so its number does not move. `UnitChangeContractTests` holds them to the 02260766 catalogue. | Pass |
+| Meaning changed (`struct.section-properties` 1.2.0) | A link, import or pack binding from a 1.1.1 record to `W_el_y` or `W_pl_y` is refused (`SectionPropertiesAxisSwapTests`). | Pass |
+| Superseded versions (DC-14) | The add-only manifest keeps every version resolvable. About 55 % of the 106 superseded versions replay for any record, 25 % for some, and 20 % never (DC-23). A record that does not replay opens read-only. | Pass; owner decision open (DC-23) |
+| Revision labels (DC-15) | After Z come AA, AB … ZZ, AAA. Stored Z+ and Z++ read as the 27th and 28th revision (`CalcRevisionLabelTests`). | Pass |
+| New inputs on saved data | A saved set without `factor_set` runs on the EN recommended set. Without `C_c` it takes 1. `U_g`, `Z_s_max_table` and `mVAm_table` are optional. No value moves (the DC-21 builds' tests). | Pass |
+| Frame caps lowered (DC-15) | A frame stored with more than 1,200 nodes, 2,400 members or 2,400 loads is refused at entry on 1.6.0. Its own version 1.5.0 runs on today's code, which holds the same caps. | Pass with a gap (GR-C-05) |
+| SVG attachments | The in-house reader replaces `Svg.Skia`. All 14 rendering baselines still pass (`SvgRenderComparisonTests`). A nested viewport is now clipped, as the specification says. A file over 16 M characters is now refused where it opened before. | Pass with a note (GR-C-07) |
+| Self-check data | `CheckRecord.SelfCheck` is a new field, read as false on an old row. A pack self-check without `MemberIds` prints on no member. No such record exists before this release. | Pass |
+| New record kinds | Six kinds join `Calc.DataRecords`, with no schema change. Template 48 stays proposed. | Pass |
+| CI | The run of `08315a20` is red: the SVG probe job (SEC-C-12), one chain test and three soak tests. | Pending CI |
+
+Findings (2026-10-27):
+
+- GR-C-05 (Low, Open, owner-test data only): a frame stored above the new caps cannot be re-run on any version. An issued one opens read-only; a draft opens as a new sheet and is refused at entry. Proposed fix: name the caps in that sentence, so the person knows to split the frame.
+- GR-C-06 (Info): ADR-0177 answers GR-C-01, because superseded versions stay resolvable. What is left is DC-23, for the owner before the first release.
+- GR-C-07 (Info): an SVG attachment over 16 M characters that opened before is now refused. Say so in the release notes (DC-22).
+
 > The sections below were written on `release/v0.27.0` (23–24 October 2026) for the legacy calculator replacement (ADR-0167). The owner decided that nothing ships as 0.27.0: the work is part of v0.26.0 and is kept here, unchanged, as a marked part of this file.
 
 ## v0.27.0 — legacy records on real release databases (ADR-0167 §2)

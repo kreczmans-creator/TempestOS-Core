@@ -241,3 +241,45 @@ Records, dashboards, test runs and installers. This extends the sections above t
 | O-C-03 | Low | `Library/ManualTesting/ManualTestRunService.cs` (`LatestByTemplateAsync`, `ListAsync`, `PlanTrimAsync`) | Each call deserialises every run. At the 1,000-run cap that is 0.7–1.5 s, and the dashboard pays it on every refresh. `OverviewAsync` already avoids it for finished runs. | Keep a small summary document (latest counted result per example) updated in the same transaction as `RecordAsync` and `FinishAsync`, or read only finished runs of the current script. Accepted for now: "Delete older finished runs" keeps the store small (RR-C-05). | Open |
 | O-C-04 | Info | `RecordRequirementsRecordsSource`, `StoreRequiredRecordsSource` | The dashboard reads the whole record collection once per build (84–133 ms at 1,000). This is fine at desktop scale; RR-B-04 still describes the per-record cost of the export paths. | None. | Accepted |
 | O-C-05 | Info | `Desktop/WorkspaceHost.cs` | The 0.5 MB guided script is parsed at start-up (71 ms), even when the guided test is never opened. | It could be read on first use; the cost is small. | Accepted |
+
+### 2026-10-27: C-2, DC-21 builds and DI-08
+
+Lessons from the SVG reader (DC-22) and the frame caps (DC-15), merged after the sections above, up to `08315a20`.
+
+#### Read a repeatable list as a set
+1. A list in a file (a class list, a selector list, a family list) can name one item many times. Make it distinct before anything multiplies by it. The SVG reader took one class's rule once per name. 480,000 names under one rule of 200 declarations exhausted 512 MB in 1.3 s (SEC-C-11).
+2. Read the tokens as spans, and keep a string only when it is new (`HashSet<string>.GetAlternateLookup<ReadOnlySpan<char>>()`). Millions of repeats then cost one string.
+3. Test membership by lookup. Never scan the list once per candidate.
+
+#### Bound the work inside one step
+1. A deadline checked between elements bounds only the number of elements. Work inside one element needs its own bound.
+2. For each loop inside a step, name what bounds it: a cap, the input's length, or a look at the token.
+3. Prove it by allocation, not by time. `GC.GetAllocatedBytesForCurrentThread` around the call gives a stable figure: 101 MB before the fix, under 16 MB after.
+
+#### Size a stored document from its rows
+1. The frame caps come from the stored bytes of a row: 364 per node, 340 per member and 526 per load. At 1,200, 2,400 and 2,400 the worst frame stores in 3.21 MB, 80 % of the 4 MB cap.
+2. Pin the row size with the real serialiser in a test (`FrameSizeCapTests`). A wider row then fails the test before it fails a save.
+3. Count what rides on a row. Cell provenance adds about 290 bytes a cell, so a fully provenanced frame can still pass 4 MB (B-C-07).
+
+#### Measured costs (this review, Linux, 4 cores)
+The SVG figures come from the shipped runner. It ran under the CI harness's limits: a 512 MB heap and 2 GiB of address space.
+
+| What | Size | Time / peak |
+|---|---|---|
+| 1,500 class rules, 60 rects of 1,500 classes each | 505 KB | 0.51 s / 83 MB |
+| The same rules, one class per rect | 31 KB | 0.17 s / 67 MB |
+| One class named 480,000 times, 200 declarations (before the fix) | 961 KB | out of memory at 1.3 s / 427 MB |
+| One text run of 900,000 characters | 900 KB | build 0.23 s / 83 MB |
+| A frame at the caps, stored | 3.21 MB (computed) | — |
+
+#### Checklist additions
+- [ ] Every list read from a file is made distinct before it multiplies work.
+- [ ] Every loop inside one step has a named bound. A deadline between steps is not one.
+- [ ] A stored document's caps come from a row size that the real serialiser pins in a test.
+
+#### Findings (2026-10-27)
+
+| ID | Sev | Location | Description | Fix | Status |
+|---|---|---|---|---|---|
+| O-C-06 | Low | `DocumentViewerView` (render on zoom); `SvgDocumentPageSource.RenderPage` | The page is drawn again on the UI thread at each zoom step. The caps bound an SVG picture's replay, but a text run is not counted (SEC-C-13). | Draw off the UI thread, as the build is, or count glyphs into the verb budget. | Open |
+| O-C-07 | Info | `SvgBoundedProbeTests` harness | Under 2 GiB of address space a 4,000 px bitmap could not be allocated here. CI's probe children abort at start-up (SEC-C-12). So the raster probes' memory figures are unproven. | Size the limit to the runtime's reservations, then rerun. | Open |

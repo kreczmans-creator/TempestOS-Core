@@ -668,6 +668,54 @@ Assert.Null(late);   // was accepted; RemoveAsync then said "There is no demo pr
   - The guided sheet encodes `< > &` and writes through a temporary file.
 - **C-1 numeric limits.** The hard-limit sweep over all 54 templates and the hostile-input suite pass (242 cases); the slowest is `mech.tolerance-stack` at 4 s (R-25).
 
+### 2026-10-27: C-2, DC-21 builds and DI-08
+
+**Scope.** The work merged on `release/v0.26.0` after the sections above, up to `08315a20`. It covers C-2 phases A to C, the od-platform and od-registry decisions, the DC-21 builds and DI-08. `security-review.md` lists it by decision.
+
+**Method.** The new attack surface is the SVG reader. An attachment is the one input a stranger writes. Its caps (DC-22) were the baseline, and the attacks went at what they do not count. Each attack was one file under 1 MB, run once through the shipped runner (`Tempest.Desktop.dll --svg-probe --page-source`). Each ran under the CI harness's limits: a 512 MB heap, 2 GiB of address space and 60 s. The rest of the delta was attacked by reading its code paths.
+
+**Result.** Two findings: one High (R-C-06, fixed in b34020c9) and one Low (R-C-07, logged).
+
+| ID | Severity | Location | Description | Status |
+|---|---|---|---|---|
+| R-C-06 | High | `SvgPictureBuilder.cs` (`Context.RulesFor`, `Properties`) | One class named 480,000 times under a rule of 200 declarations exhausted a 512 MB heap in 1.3 s | Fixed (b34020c9) |
+| R-C-07 | Low | `LoadCombinationsCalculator.cs` (`factor-set`) | A hand-typed record pin lets a draft claim a National Annex record that does not exist | Logged |
+
+#### R-C-06 — High — one class named many times exhausts the reader's memory
+
+**PoC** (961 KB; kept as the bounded probe `css-class-named-4M-times` at full size):
+```xml
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <style>.a{fill:#123456;p0:1;p1:1; … p199:1;}</style>
+  <rect class="a a a … (480,000 times)" width="10" height="10"/>
+</svg>
+```
+Result: `build threw OutOfMemoryException after 1.322 s`, peak 427 MB, exit 2.
+
+**Why.** `RulesFor` added the rule of `.a` once for each token of the class list. The cascade then copied its 200 declarations per copy: 96 million entries. Nothing caps declarations per rule. The loop runs inside one element, so the 15 s deadline never sees it. The viewer has no heap cap, so the app grows until the system stops it.
+
+**Fix.** The class list is read as a set of distinct names. Each token is read as a span and kept only when it is new. A class test is a lookup, which also ends the classes-by-rules scan. The new test allocated 101 MB before the fix, against a limit of 16 MB. It passes now, with the other 88 SVG tests.
+
+#### R-C-07 — Low — a hand-typed record pin
+
+**PoC** (read in code): choose "National Annex record" for `factor_set`. Type the five factors, each with the provenance `record:<any id>@1`. The calculator checks only that each factor carries a pin, so the draft prints "National Annex record". `CalcInstanceService.Linking.RecordReasons` finds no such record and marks the calculation stale. Check and Issue then refuse it.
+
+**Proposed fix.** Mark a pin to a missing record on the form as it is typed. Until then only a draft carries the claim.
+
+#### Attacks that found nothing (the code held)
+
+- **Rule counts.** 1,500 class rules over 60 rects of 1,500 classes built in 0.51 s; the control took 0.17 s. Rules past 10,000 distinct selectors are ignored. Rules that repeat a selector merge.
+- **One long text run.** 900,000 characters built in 0.23 s at a peak of 83 MB. Its draw time is open (SEC-C-13).
+- **Entity smuggling.** The sanitiser expands a literal only when it holds no `&`, `<` or `%`. So no element or reference can be formed. An `href` it adds is blanked afterwards. The 10,001st reference stays, and the reader refuses the file.
+- **Regex time.** Every pattern has a 250 ms timeout. `ExternalReferencePattern` still backtracks, but a quote ends its class, so it stays linear.
+- **Deadline.** A cancelled token stops the build before the next element, stop or text run. The launcher tells a person's cancel from the deadline.
+- **Aliases.** A file that gives `P` and `p_design` with different values is refused, naming both. The catalogue refuses an alias that is another input or alias. Nothing is dropped silently.
+- **Record column maps.** The maps are code (`RecordTemplates.cs`), not file. A map resolves only against its own kind's symbols. So a record file cannot fill another kind's input.
+- **Self-check.** A second person who ticks the box is refused with the sentence. A pack self-check prints only on the members its checker prepared.
+- **Rerun.** Rerun writes nothing. It says "reproduced" only when every stored output and check matches exactly.
+- **Frame caps.** A frame over 1,200 nodes, 2,400 members or 2,400 loads is refused at entry, before the model is built.
+- **Diagrams.** `CalculationDiagramsTests` holds every bound name to a module input. So a diagram cannot show a result.
+
 > The sections below were written on `release/v0.27.0` (23–24 October 2026) for the legacy calculator replacement (ADR-0167). The owner decided that nothing ships as 0.27.0: the work is part of v0.26.0 and is kept here, unchanged, as a marked part of this file.
 
 ## v0.27.0 delta (2026-10-23)

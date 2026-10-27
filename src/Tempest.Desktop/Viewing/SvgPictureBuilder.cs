@@ -314,6 +314,7 @@ public static class SvgPictureBuilder
         public readonly CancellationToken Token;
         public readonly Limits Limits;
         private float _viewportWidth;
+        private float _viewportHeight;
 
         // F9: every rule is filed under its most specific part (id, else class, else tag, else universal), so the rules an element
         // can match are the union of four short lists rather than every rule of the sheet (rules × elements: 20 000 × 20 000 never finished).
@@ -331,10 +332,10 @@ public static class SvgPictureBuilder
         /// <summary>The position of the next declaration in the sheet, for the cascade.</summary>
         private int _order;
 
-        /// <summary>Files one parsed rule, or counts it as ignored past the cap.</summary>
         /// <summary>The one rule kept per distinct (tag, class, id) selector, so a sheet of ten thousand <c>rect{…}</c> rules is one candidate, not ten thousand.</summary>
         private readonly Dictionary<(string? Tag, string? Class, string? Id), StyleRule> _rulesBySelector = [];
 
+        /// <summary>Files one parsed rule, or counts it as ignored past the cap.</summary>
         public void AddRule(string? tag, string? cls, string? id, IReadOnlyDictionary<string, string> declarations)
         {
             var order = _order++;
@@ -374,7 +375,11 @@ public static class SvgPictureBuilder
         }
 
         /// <summary>The rules that apply to an element of <paramref name="tag"/> with <paramref name="classes"/> and <paramref name="id"/>: one per distinct selector, any order (the caller cascades by specificity and declaration order).</summary>
-        public IEnumerable<StyleRule> RulesFor(string tag, string[] classes, string? id)
+        /// <remarks>
+        /// <paramref name="classes"/> is a set (review C2, SEC-C-11): a class list that names one class many times takes its rule once, and the
+        /// class test is a lookup, not a scan of the list for every candidate.
+        /// </remarks>
+        public IEnumerable<StyleRule> RulesFor(string tag, IReadOnlySet<string> classes, string? id)
         {
             if (RuleCount == 0)
                 return [];
@@ -395,10 +400,9 @@ public static class SvgPictureBuilder
 
             return candidates
                 .Where(r => (r.Tag is null || string.Equals(r.Tag, tag, StringComparison.Ordinal))
-                    && (r.Class is null || classes.Contains(r.Class, StringComparer.Ordinal))
+                    && (r.Class is null || classes.Contains(r.Class))
                     && (r.Id is null || string.Equals(r.Id, id, StringComparison.Ordinal)));
         }
-        private float _viewportHeight;
 
         /// <summary>Sets the viewport a percentage refers to: the root's own size (the viewer has no outer container).</summary>
         public void SetViewport(SKSize? size)
@@ -575,7 +579,7 @@ public static class SvgPictureBuilder
         if (context.RuleCount > 0)
         {
             var tag = element.Name.LocalName;
-            var classes = (element.Attribute("class")?.Value ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var classes = ClassSet(element.Attribute("class")?.Value);
             var id = element.Attribute("id")?.Value;
 
             // The cascade: least specific first, and among equals the earliest declaration first, so the last applied wins.
@@ -600,6 +604,31 @@ public static class SvgPictureBuilder
         }
 
         return properties;
+    }
+
+    /// <summary>
+    /// The distinct classes of a <c>class</c> attribute, split on spaces as before. Review C2 (SEC-C-11): a token is read as a span and kept
+    /// only when it is new, so a list that names one class 8 million times costs one string and one rule, not 8 million of each.
+    /// </summary>
+    private static HashSet<string> ClassSet(string? value)
+    {
+        var classes = new HashSet<string>(StringComparer.Ordinal);
+
+        if (string.IsNullOrEmpty(value))
+            return classes;
+
+        var lookup = classes.GetAlternateLookup<ReadOnlySpan<char>>();
+        var text = value.AsSpan();
+
+        foreach (var range in text.Split(' '))
+        {
+            var token = text[range];
+
+            if (!token.IsEmpty)
+                lookup.Add(token);
+        }
+
+        return classes;
     }
 
     private static Style Resolve(Style parent, XElement element, Context context) => Resolve(parent, element, context, out _);

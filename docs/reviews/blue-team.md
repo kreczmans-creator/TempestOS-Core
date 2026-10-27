@@ -306,3 +306,36 @@ Paths: `Library/` is `src/Tempest.Calc/Tempest.Calc.Library/`. The regression te
 | RR-C-06 | Two app instances on one database could each install the demo (the gate is per process; Black B-C-06). | Very low / Low | Blue | Accepted |
 | RR-C-07 | Templates moved in C-1 cannot re-run earlier checked or issued owner-test calculations (DC-14, Grey GR-C-01). | Certain for owner-test data / Low (nothing is released) | Owner | Open: decide before the first release |
 | RR-C-08 | Two cable resistance defaults are recalled from a licensed table (DC-05, White W-C-02). | — / Low | Owner | Open |
+
+### 2026-10-27: C-2, DC-21 builds and DI-08
+
+Inputs: this round's findings in `security-review.md` (SEC-C-11 to SEC-C-16), `red-team.md` (R-C-06, R-C-07) and the colour reports' 2026-10-27 sub-sections. Scope: the work merged after the sections above, up to `08315a20`. It covers C-2 phases A to C, the SVG reader and the self-check (DC-22), ADR-0177, the DC-21 builds and DI-08.
+
+#### Mitigations shipped in this round
+
+| Finding | Mitigation | Where | Regression test | Status |
+|---|---|---|---|---|
+| SEC-C-11 / R-C-06 High: one class named many times exhausted the SVG reader's memory | The class list is a set of distinct names, read as spans. A class test is a lookup. | `src/Tempest.Desktop/Viewing/SvgPictureBuilder.cs` (`ClassSet`, `Context.RulesFor`) | `SvgHostileInputTests.A_Class_Named_Many_Times_On_One_Element_Applies_Its_Rule_Once`; bounded probe `css-class-named-4M-times` | Fixed in b34020c9 |
+
+#### Defensive controls of the new surfaces (as shipped)
+
+| Surface | Controls |
+|---|---|
+| SVG reader (DC-22) | The caps of DC-22, now with a distinct class set. A 15 s deadline off the UI thread. 250 ms regex timeouts. The sanitiser runs before the reader. No reference is followed. A part left out is named on the page. |
+| Aliases (C-2) | One canonical name per input, column and port. A conflict is refused, naming both names. The catalogue refuses an alias that clashes. |
+| Unit and meaning changes (C-2) | `UnitChangedAt` and `MeaningChangedAt` declare each change. A link, import or pack binding across a meaning change is refused. Contract tests pin the baselines. |
+| Superseded versions (ADR-0177) | Rerun writes nothing and says "reproduced" only on an exact match. Otherwise the record opens read-only, with Revise as the way on. |
+| Record kinds (DC-10) | Header-only templates. Column maps in code. Licensed by default. The export lock covers every kind. |
+| Frame caps (DC-15) | 1,200 nodes, 2,400 members and 2,400 loads, refused at entry. The worst frame stores at 80 % of the 4 MB cap. |
+| Self-check (DA-12) | Authors only, with a statement. Stored on the Evidence check. Printed only on the members its checker prepared. |
+
+#### Residual risk register (2026-10-27)
+
+| ID | Risk | Likelihood / impact | Owner | Status |
+|---|---|---|---|---|
+| RR-C-09 | The SVG probe job aborts at child start-up on CI, so only the scaled-down tests prove the caps (SEC-C-12). | Certain / Medium | Integrator | Open: make the job start, then rerun it |
+| RR-C-10 | A long text run in an SVG is replayed on the UI thread at each zoom step (SEC-C-13, O-C-06). | Low / Low | Blue | Open |
+| RR-C-11 | About 20 % of the superseded versions never replay, so their calculations open read-only (DC-23). | Certain for those versions / Low (nothing is released) | Owner | Open: decide before the first release |
+| RR-C-12 | A draft can claim a National Annex record that does not exist until Check (SEC-C-14). | Low / Low | Blue | Accepted: Check and Issue refuse it |
+| RR-C-13 | After the read deadline, a PDF or image read runs on in the background (SEC-C-16). | Low / Low | Blue | Accepted |
+| RR-C-14 | A frame whose every cell carries scan provenance can pass 4 MB at the caps. The store refuses it at save (B-C-07). | Low / Low | Blue | Accepted |
