@@ -6,6 +6,8 @@
 
 Calculates the minimum width of a printed-circuit trace for a current and an allowed temperature rise by the legacy IPC-2221 curve-fit, conservative for multilayer boards. It also gives the resistance, voltage drop and I²R loss of the trace as drawn.
 
+**Reference diagram.** The worksheet draws the trace in plan with its width, length and current, and the board in section with the copper on the layer the choice selects. Bound inputs: w_act, L, I, Cu_oz, t_oz, T_amb, dT, k_ext, k_int, n_dT and n_A. Not to scale; inputs only.
+
 ## Method
 
 - Trace cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725) with A in mil², k = 0.048 external, 0.024 internal

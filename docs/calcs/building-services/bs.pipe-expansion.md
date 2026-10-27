@@ -6,6 +6,8 @@
 
 Calculates the thermal growth of a pipe run between anchors, the leg or loop that absorbs it, and the force and moment on the anchors. It is a screening calculation, not a piping stress analysis.
 
+**Reference diagram.** The worksheet draws the layout the choice selects: an offset leg as an L-bend (L2 blank) or a Z-bend, a U-loop, or an axial bellows between two anchors. The pipe section is drawn beside it. Bound inputs: OD, t_wall, L, H, L2, alpha, mu, k_b, E, Sa, T_install, T_operate, dT_in, and for the bellows P_b, A_eff and dL_rated. Not to scale; inputs only.
+
 ## Method
 
 - Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴ − d_i⁴); Z = I/(OD/2)
