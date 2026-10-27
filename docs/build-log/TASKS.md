@@ -95,7 +95,7 @@ Track P (parallel verification on `v0.26.0/addC-parallel`) is a separate session
 - [x] C-5 guided test mode (`v0.26.0/addC-5-guided`)
 - [x] C-6 seeded demo project "Demo — Hydraulic Press Cell" (`v0.26.0/addC-6-demo`)
 - [x] C-7 performance and stability soak (`v0.26.0/addC-7-soak`)
-- [ ] C-8 final owner test pack and handover (`v0.26.0/addC-8-pack`)
+- [x] C-8 final owner test pack and handover (`v0.26.0/addC-8-pack`)
 - [ ] §C7 gates; Security + colour teams Addendum C section; STATUS final line
 
 ## Legacy calculator replacement (written on `release/v0.27.0`; ships in v0.26.0 — nothing ships as 0.27.0)
