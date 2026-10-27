@@ -1,4 +1,4 @@
-# Fault protection (BS 7671) (`elec.fault-protection@1.5.0`)
+# Fault protection (BS 7671) (`elec.fault-protection@1.5.1`)
 
 **In plain terms.** If a live conductor touches an earthed part, the protective device must open the circuit fast enough that the fault is not dangerous. The worksheet works out the loop impedance and fault current of the circuit, whether the device opens in time, whether the protective and line conductors can carry the fault current without overheating, and whether the device can break the fault level. It demands an independent check.
 
@@ -146,6 +146,8 @@ TN only; single earth fault; no motor contribution, arc fault or IT systems; no 
 - `ka-schneider-k`: Derived k for copper, PVC 70 → 160 °C and XLPE 90 → 250 °C (Schneider guide) (Unconfirmed; source: Schneider Electric, Electrical Installation Guide, "Sizing of protective earthing conductor")
 
 ## Changes
+
+**1.5.1.** Declares the unit change of 1.5.0 (ADR-0177 review): `rho_20` was in Ω·mm before 1.5.0, so a bare stored number from an earlier version is read in Ω·mm, never Ω·mm²/m. No calculated value changes.
 
 **Changes in 1.5.0 (C-2 consistency, phase C).** Layout and wording; no result changes. The conductor temperature `theta` is now `T_op`; the old symbol stays as an alias, so a saved calculation, an inputs file and the pack binding from the cable step still load. `beta`, `theta_i` and `theta_f` keep their symbols, because the record kind `conductor.material` and the record import files name them. `rho_20` is entered in Ω·mm²/m (the value is the same in SI). The checks compare physical values: `Z_s` with `Z_s,max`, `t_d` with `t_req`, `S_min` with `S_cpc` and with `S_line`, and `I_k3` with `I_cn`. The warning about a protective conductor equal to the line conductor is raised under the rule `resistance`, which already covers an understated R₁ + R₂. The new rule `device_code` declares the block on the device type code; `device_code` now has the hard limits 0 to 9 and the sheet itself blocks any value but 1 to 4. The inputs are grouped Setup, Geometry, Material, Conditions, Factors, Requirements and Device, and every usual range is inside its hard limits.
 

@@ -1,4 +1,4 @@
-# Duct sizing (`bs.duct-sizing@1.2.0`)
+# Duct sizing (`bs.duct-sizing@1.2.1`)
 
 **In plain terms.** Ducts are sized so that air does not lose too much pressure per metre or move fast enough to be noisy. The equal-friction method picks each size to give the same pressure loss per metre; the velocity method picks it to give a target speed. A rectangular duct is compared with the round duct that has the same friction, and the losses along the longest run, straight ducts plus fittings, give the pressure the fan must supply.
 
@@ -118,6 +118,8 @@ Applicability rules:
 - `ka-velocity-method`: Velocity method sizes to the next standard round size (analytic) (Confirmed; source: Analytic)
 
 ## Changes
+
+**1.2.1.** Declares the unit change of 1.2.0 (ADR-0177 review): the sections column `Q` was in m³/s before 1.2.0, so a bare stored cell from an earlier version is read in m³/s, never m³/h. No calculated value changes.
 
 **Changes in 1.2.0 (C-2 consistency, phase C).** Layout and wording; no calculated value changes. The air temperature `T` is now `T_air` and the duct roughness `eps` is now `eps_rough`; the old symbols stay as aliases, so a saved calculation, an inputs file, a CSV and a pack binding that use the old symbol still load. The airflow column `Q` of the duct table now reads m³/h by default, with hard limits 0.0036 to 3.6·10⁶ m³/h; the value in SI does not change, and a cell saved with its unit keeps its value. The inputs sit in the groups Setup, Geometry, Material, Conditions and Requirements, and every numeric input has a usual range inside its hard range. The checks read "Index-run pressure drop against limit" and "Highest velocity against limit" and show the two values. The ports are `duct.pressure_drop_index` and `duct.velocity_peak`. The scope is two sentences, each assumption is one short sentence, and the two standards carry their year (BS EN 1505:1998, BS EN 1506:2007).
 

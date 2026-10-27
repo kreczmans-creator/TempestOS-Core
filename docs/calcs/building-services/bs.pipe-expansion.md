@@ -1,4 +1,4 @@
-# Pipe expansion, loops and anchor forces (screening) (`bs.pipe-expansion@1.5.0`)
+# Pipe expansion, loops and anchor forces (screening) (`bs.pipe-expansion@1.5.1`)
 
 **In plain terms.** A hot pipe grows longer, and if its ends are held it pushes on its anchors or buckles; a cold pipe shrinks and pulls. The worksheet works out the growth between anchors from the temperature change, the force and stress if the pipe is fully restrained, and the length of an offset or loop that absorbs the growth within a stress range you allow. It is a quick screening, not a piping stress analysis.
 
@@ -197,6 +197,8 @@ Screening only. Guided-cantilever beam model: straight uniform slender leg, rigi
 - `ka-axial-bellows`: The 50 m steel line on an axial bellows: 600 kPa on 80 cm² and 120 kN/m over 42 mm anchor at 9.84 kN (Confirmed; source: Analytic (ΔL = α·L·ΔT; anchor force = P·A_eff + k·ΔL; recomputed in python3))
 
 ## Changes
+
+**1.5.1.** Declares the unit change of 1.5.0 (ADR-0177 review): `P_b` was in bar before 1.5.0, so a bare stored number from an earlier version is read in bar, never kPa. No calculated value changes.
 
 **Changes in 1.5.0 (C-2 consistency, phase C).** Layout and wording; no calculated value changes. The inputs sit in the groups Setup, Geometry, Material, Conditions, Requirements, Bellows and Support friction. The bellows pressure `P_b` now reads in kPa and the bellows stiffness `k_b` in kN/m; the forces and moments in the ports `piping.force_anchor` and `piping.moment_anchor` read in kN and kN·m (the stored SI values are unchanged). The applicability rule `H` is declared: the available leg `H` must be entered for a leg or a loop. The checks read "Available leg against the required leg" and the like, the 36 assumptions are one short sentence each, and the scope and the method are rewritten. The reference to the process piping code keeps its short designation (ASME B31.3-2022), which the sheet standard's year pattern does not accept for an ASME standard.
 

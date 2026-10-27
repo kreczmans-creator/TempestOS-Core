@@ -1,4 +1,4 @@
-# Enclosure heat dissipation and fan sizing (`elec.enclosure-heat@1.7.0`)
+# Enclosure heat dissipation and fan sizing (`elec.enclosure-heat@1.7.1`)
 
 **In plain terms.** Equipment inside a closed enclosure gives off heat, and the enclosure can only lose it through its surfaces, so the air inside warms until the heat out matches the heat in. The worksheet estimates that temperature rise from the effective surface area and a heat-transfer coefficient. If the inside would get too hot, it sizes the airflow a fan must move, corrected for the thinner air at altitude, or the capacity a cooling unit needs.
 
@@ -147,6 +147,8 @@ Wall-mounted 600 × 800 × 300 at 300 W (analytic); fan duty against a linear cu
 - `ka-sealed-relief`: The same sealed enclosure with a 10 kPa breather and a 0.3 m² cover: the relief governs (Confirmed; source: Analytic (dp_seal = min(p0·(T_int/T_seal − 1), dp_relief); F = dp_seal·A_cover; recomputed in python3))
 
 ## Changes
+
+**1.7.1.** Declares the unit changes of 1.7.0 (ADR-0177 review): `P_add` and the loads column `P` were in W before 1.7.0, so a bare stored number from an earlier version is read in W, never kW. No calculated value changes.
 
 **Changes in 1.7.0 (C-2 consistency, phase C).** Layout and wording; no result changes. `h` is `h_conv` (the old symbol stays as an alias). The powers are in kW (the values are the same in SI): `P_add`, the loads column `P`, `P_loads`, `P_solar`, `P_total`, `P_nat_max`, `P_cool` and their ports; a stored value keeps its own unit, and a loads cell with no unit is read in kW. The checks compare physical values: `dT_nat` with `dT_allow`, and `V_req` with `V_duty`. The inputs are grouped Setup, Geometry, Material, Loads, Conditions, Requirements and Fan. The ports are named `enclosure.*`, and the port descriptions name templates, not codes. The six exposure fractions keep a usual range equal to their hard range 0 to 1, because the whole range is usual. The manufacturer guides are no longer a reference.
 

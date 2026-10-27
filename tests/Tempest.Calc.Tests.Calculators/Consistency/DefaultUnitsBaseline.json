@@ -1,0 +1,1036 @@
+{
+ "bs.duct-sizing": {
+  "version": "1.1.0",
+  "units": {
+   "dp_target": "Pa/m",
+   "v_target": "m/s",
+   "T": "degC",
+   "p_atm": "kPa",
+   "eps": "mm",
+   "sections.Q": "m^3/s",
+   "sections.L": "m",
+   "sections.a": "mm",
+   "sections.D": "mm",
+   "sections.dp_eq": "Pa",
+   "v_limit": "m/s",
+   "dp_limit": "Pa",
+   "round_to": "mm"
+  }
+ },
+ "bs.glaser": {
+  "version": "1.3.0",
+  "units": {
+   "layers.d": "mm",
+   "layers.lambda": "W/(m*K)",
+   "Rsi": "m^2*K/W",
+   "Rse": "m^2*K/W",
+   "Rsi_f": "m^2*K/W",
+   "U_ref": "W/(m^2*K)",
+   "theta_int": "degC",
+   "RH_int": "%",
+   "dv_a": "g/m^3",
+   "theta_a": "degC",
+   "dv_b": "g/m^3",
+   "theta_b": "degC",
+   "climate.theta_e": "degC",
+   "climate.RH_e": "%",
+   "climate.days": "d",
+   "RH_crit": "%",
+   "Mc_limit": "g/m^2"
+  }
+ },
+ "bs.heat-exchanger": {
+  "version": "1.4.0",
+  "units": {
+   "m_h": "kg/s",
+   "cp_h": "J/(kg*K)",
+   "T_h_in": "degC",
+   "m_c": "kg/s",
+   "cp_c": "J/(kg*K)",
+   "T_c_in": "degC",
+   "T_dew": "degC",
+   "U": "W/(m^2*K)",
+   "R_f": "m^2*K/W",
+   "A": "m^2",
+   "Q_req": "kW",
+   "dT_min": "K"
+  }
+ },
+ "bs.insulation": {
+  "version": "1.1.3",
+  "units": {
+   "D_i": "mm",
+   "theta_i": "degC",
+   "theta_a": "degC",
+   "lambda": "W/(m*K)",
+   "theta_lambda": "degC",
+   "h_se": "W/(m^2*K)",
+   "v_wind": "m/s",
+   "L_surf": "m",
+   "h_i": "W/(m^2*K)",
+   "t_w": "mm",
+   "lambda_w": "W/(m*K)",
+   "q_max_m": "W/m",
+   "q_max_A": "W/m^2",
+   "theta_se_max": "degC",
+   "dew_margin": "K",
+   "theta_dew": "degC",
+   "RH_a": "%",
+   "t_chosen": "mm"
+  }
+ },
+ "bs.pipe-expansion": {
+  "version": "1.4.0",
+  "units": {
+   "E": "GPa",
+   "E_hot": "GPa",
+   "alpha": "um/(m*K)",
+   "OD": "mm",
+   "t_wall": "mm",
+   "L": "m",
+   "L2": "m",
+   "T_install": "degC",
+   "T_operate": "degC",
+   "dT_in": "K",
+   "H": "m",
+   "Sa": "MPa",
+   "K_scr": "mm^2/m^2",
+   "P_b": "bar",
+   "A_eff": "cm^2",
+   "k_b": "N/mm",
+   "dL_rated": "mm",
+   "w_pipe": "kg/m",
+   "L_slide": "m"
+  }
+ },
+ "bs.pipe-pump": {
+  "version": "1.9.0",
+  "units": {
+   "T": "degC",
+   "T_line": "degC",
+   "rho_custom": "kg/m^3",
+   "mu_custom": "mPa*s",
+   "Q": "m^3/h",
+   "Phi_load": "W",
+   "dT_load": "K",
+   "cp_load": "J/(kg*K)",
+   "segments.L": "m",
+   "segments.D": "mm",
+   "segments.OD": "mm",
+   "segments.eps": "mm",
+   "segments.L_eq": "m",
+   "segments.dz": "m",
+   "h_out": "m",
+   "v_max": "m/s",
+   "Q_pump": "m^3/h",
+   "H_pump": "m",
+   "n_pump": "rpm",
+   "p_atm": "kPa",
+   "z_s": "m",
+   "p_v_custom": "kPa",
+   "NPSH_r": "m"
+  }
+ },
+ "bs.plane-wall": {
+  "version": "1.0.1",
+  "units": {
+   "T_1": "degC",
+   "h_1": "W/(m^2*K)",
+   "layers.t": "mm",
+   "layers.k": "W/(m*K)",
+   "h_2": "W/(m^2*K)",
+   "T_2": "degC",
+   "A": "m^2"
+  }
+ },
+ "bs.psychrometrics": {
+  "version": "1.3.0",
+  "units": {
+   "altitude": "m",
+   "p": "kPa",
+   "t_db": "degC",
+   "t_wb": "degC",
+   "t_dp": "degC",
+   "m_da": "kg/s",
+   "t_2": "degC",
+   "t_db_b": "degC",
+   "m_da_b": "kg/s"
+  }
+ },
+ "bs.room-heat-loss": {
+  "version": "1.4.0",
+  "units": {
+   "theta_int": "degC",
+   "theta_e": "degC",
+   "layers.d": "mm",
+   "layers.lambda": "W/(m*K)",
+   "elements.area": "m^2",
+   "elements.theta_adj": "degC",
+   "elements.Rsi": "m^2*K/W",
+   "elements.Rse": "m^2*K/W",
+   "elements.Rg": "m^2*K/W",
+   "elements.U_user": "W/(m^2*K)",
+   "elements.U_max": "W/(m^2*K)",
+   "y_tb": "W/(m^2*K)",
+   "U_target": "W/(m^2*K)",
+   "n": "1/h",
+   "V": "m^3",
+   "theta_supply": "degC",
+   "n_inf": "1/h",
+   "A_floor": "m^2",
+   "f_add": "%"
+  }
+ },
+ "bs.sealed-system": {
+  "version": "1.4.0",
+  "units": {
+   "rooms.Phi": "W",
+   "rooms.Phi50": "W",
+   "rooms.V_em": "L",
+   "rooms.t_i": "degC",
+   "t_f": "degC",
+   "t_r": "degC",
+   "t_i": "degC",
+   "V_pipe": "L",
+   "V_plant": "L",
+   "t_fill": "degC",
+   "t_max": "degC",
+   "h_static": "m",
+   "p_margin": "bar",
+   "p_f": "bar",
+   "p_prv": "bar",
+   "V_vessel": "L"
+  }
+ },
+ "elec.conductor-sizing": {
+  "version": "1.3.0",
+  "units": {
+   "P": "kW",
+   "U": "V",
+   "I_b_in": "A",
+   "L": "m",
+   "theta_a": "degC",
+   "theta_p": "degC",
+   "I2": "A",
+   "theta_ref": "degC",
+   "ratings.I_n": "A",
+   "ampacity.CSA": "mm^2",
+   "ampacity.I_t": "A"
+  }
+ },
+ "elec.containment": {
+  "version": "1.2.0",
+  "units": {
+   "cables.od": "mm",
+   "cables.mass": "kg/m",
+   "cables.T_max": "N",
+   "D_c": "mm",
+   "W_c": "mm",
+   "H_c": "mm",
+   "route.L": "m",
+   "route.theta": "deg",
+   "route.R": "mm",
+   "T_1": "N",
+   "T_grip": "N",
+   "P_lim": "N/m"
+  }
+ },
+ "elec.enclosure-heat": {
+  "version": "1.6.0",
+  "units": {
+   "loads.P": "W",
+   "P_add": "W",
+   "I_sun": "W/m^2",
+   "A_sun": "m^2",
+   "W": "m",
+   "H": "m",
+   "D": "m",
+   "h": "W/(m^2*K)",
+   "T_amb": "degC",
+   "T_max": "degC",
+   "T_seal": "degC",
+   "dp_relief": "kPa",
+   "A_cover": "m^2",
+   "altitude": "m",
+   "V_pts": "m^3/h",
+   "p_pts": "Pa",
+   "p_sys": "Pa",
+   "V_ref": "m^3/h"
+  }
+ },
+ "elec.fault-protection": {
+  "version": "1.4.0",
+  "units": {
+   "U_0": "V",
+   "Z_e": "ohm",
+   "S_r": "kVA",
+   "u_k": "%",
+   "L": "m",
+   "S_line": "mm^2",
+   "S_cpc": "mm^2",
+   "theta": "degC",
+   "rho_20": "ohm*mm",
+   "alpha": "1/K",
+   "Q_c": "J/(K*mm^3)",
+   "beta": "K",
+   "theta_i": "degC",
+   "theta_f": "degC",
+   "I_n": "A",
+   "curve.t": "s",
+   "curve.I": "A",
+   "t_req": "s",
+   "I2t_let": "A^2*s",
+   "I_cn": "kA"
+  }
+ },
+ "elec.load-budget": {
+  "version": "1.5.1",
+  "units": {
+   "loads.P": "kW",
+   "P_add": "kW",
+   "P_rated_add": "kW",
+   "U_3ph": "V",
+   "U_1ph": "V",
+   "U_DC": "V",
+   "theta": "degC",
+   "P_PSU": "W",
+   "S_T": "kVA",
+   "t_auto": "h",
+   "U_b": "V",
+   "H_rate": "h",
+   "C_batt": "A*h"
+  }
+ },
+ "elec.motor-sizing": {
+  "version": "1.10.0",
+  "units": {
+   "p_screw": "mm",
+   "D_pulley": "mm",
+   "J_mech": "kg*m^2",
+   "m": "kg",
+   "theta": "deg",
+   "F_p": "N",
+   "J_L": "kg*m^2",
+   "T_L": "N*m",
+   "n_L": "rpm",
+   "t_start": "s",
+   "t_move": "s",
+   "t_dwell": "s",
+   "J_motor": "kg*m^2",
+   "T_rated": "N*m",
+   "T_peak": "N*m",
+   "n_rated": "rpm",
+   "T_lim": "N*m",
+   "n_max": "rpm"
+  }
+ },
+ "elec.motor-start": {
+  "version": "1.2.1",
+  "units": {
+   "U": "V",
+   "S_k": "MVA",
+   "I_k": "kA",
+   "S_n": "kVA",
+   "u_k": "%",
+   "S_kQ": "MVA",
+   "P": "kW",
+   "I_n": "A",
+   "L_cab": "m",
+   "A_c": "mm^2",
+   "rho_20": "ohm*mm^2/m",
+   "alpha": "1/K",
+   "T_c": "degC",
+   "R_km": "ohm/km",
+   "X_km": "ohm/km",
+   "dip_limit": "%",
+   "dip_limit_pcc": "%"
+  }
+ },
+ "elec.pcb-trace": {
+  "version": "1.2.0",
+  "units": {
+   "I": "A",
+   "dT": "K",
+   "T_amb": "degC",
+   "w_act": "mm",
+   "L": "mm",
+   "t_oz": "mil",
+   "rho_20": "ohm*mm^2/m",
+   "alpha": "1/K"
+  }
+ },
+ "elec.thermal-chain": {
+  "version": "1.0.1",
+  "units": {
+   "P": "W",
+   "T_a": "degC",
+   "stages.R": "K/W",
+   "T_max": "degC"
+  }
+ },
+ "elec.voltage-drop": {
+  "version": "1.3.0",
+  "units": {
+   "V_n": "V",
+   "I": "A",
+   "L": "m",
+   "rho_20": "ohm*mm^2/m",
+   "A_c": "mm^2",
+   "T_c": "degC",
+   "R_km": "ohm/km",
+   "X_km": "ohm/km",
+   "I_z": "A",
+   "T_rated": "degC",
+   "T_amb": "degC"
+  }
+ },
+ "fp.accumulator": {
+  "version": "1.6.0",
+  "units": {
+   "dV": "L",
+   "p_0": "bar",
+   "p_1": "bar",
+   "p_2": "bar",
+   "p_atm": "bar",
+   "T_max": "degC",
+   "T_min": "degC",
+   "T_c": "degC",
+   "sizes.V": "L",
+   "PS": "bar",
+   "V_vessel": "L",
+   "p_load": "bar"
+  }
+ },
+ "fp.cylinder": {
+  "version": "1.4.0",
+  "units": {
+   "p": "bar",
+   "p_back": "bar",
+   "Q": "L/min",
+   "v_req": "mm/s",
+   "rho": "kg/m^3",
+   "F_push": "kN",
+   "F_pull": "kN",
+   "D": "mm",
+   "d_r": "mm",
+   "stroke": "mm",
+   "t_dwell": "s",
+   "L_closed": "mm",
+   "L_add": "mm",
+   "E": "GPa",
+   "f_y": "MPa",
+   "V_g": "cm^3/rev",
+   "n_p": "rpm",
+   "V_gm": "cm^3/rev",
+   "dp_m": "bar",
+   "d_suc": "mm",
+   "d_prs": "mm",
+   "d_ret": "mm",
+   "v_suc_max": "m/s",
+   "v_prs_max": "m/s",
+   "v_ret_max": "m/s",
+   "hoses.ID": "mm",
+   "dp_o": "bar",
+   "d_o": "mm"
+  }
+ },
+ "fp.oring-gland": {
+  "version": "1.4.0",
+  "units": {
+   "d_r": "mm",
+   "d_r_tol": "mm",
+   "W": "mm",
+   "W_tol": "mm",
+   "D_s": "mm",
+   "D_s_u": "mm",
+   "D_s_l": "mm",
+   "D_g": "mm",
+   "D_g_u": "mm",
+   "D_g_l": "mm",
+   "D_c": "mm",
+   "D_c_u": "mm",
+   "D_c_l": "mm",
+   "h_f": "mm",
+   "h_f_u": "mm",
+   "h_f_l": "mm",
+   "e_f": "mm",
+   "e_f_u": "mm",
+   "e_f_l": "mm",
+   "b": "mm",
+   "b_u": "mm",
+   "b_l": "mm",
+   "ecc": "mm",
+   "r_g": "mm",
+   "T_min": "degC",
+   "T_max": "degC",
+   "alpha": "1/K",
+   "alpha_m": "1/K",
+   "alpha_s": "1/K",
+   "s_min": "%",
+   "s_max": "%",
+   "q_lo_s": "%",
+   "q_hi_s": "%",
+   "q_lo_d": "%",
+   "q_hi_d": "%",
+   "fill_lo": "%",
+   "fill_hi": "%",
+   "x_lo": "%",
+   "x_hi": "%",
+   "od_hi": "%",
+   "p_op": "bar",
+   "dD_p": "mm",
+   "gap_allow": "mm",
+   "ext.p": "bar",
+   "ext.gap": "mm",
+   "measured.mean": "mm",
+   "measured.sigma": "mm"
+  }
+ },
+ "mech.bearing-life": {
+  "version": "1.2.0",
+  "units": {
+   "F_r": "kN",
+   "F_a": "kN",
+   "duty.F_r": "kN",
+   "duty.F_a": "kN",
+   "n": "rpm",
+   "C": "kN",
+   "C_0": "kN",
+   "R": "%",
+   "L_req": "h"
+  }
+ },
+ "mech.bearing-life-basic": {
+  "version": "1.0.1",
+  "units": {
+   "C": "kN",
+   "F_r": "kN",
+   "F_a": "kN",
+   "n": "rpm",
+   "L_req": "h"
+  }
+ },
+ "mech.bolt-group": {
+  "version": "1.4.0",
+  "units": {
+   "bolts.x": "mm",
+   "bolts.y": "mm",
+   "bolts.A": "mm^2",
+   "F_x": "kN",
+   "F_y": "kN",
+   "e_x": "mm",
+   "e_y": "mm",
+   "T_z": "kN*m",
+   "N": "kN",
+   "M_x": "kN*m",
+   "M_y": "kN*m",
+   "V_R": "kN",
+   "T_R": "kN",
+   "a": "mm",
+   "b": "mm"
+  }
+ },
+ "mech.bolted-joint": {
+  "version": "1.2.1",
+  "units": {
+   "d": "mm",
+   "P": "mm",
+   "R_p02": "MPa",
+   "E_S": "GPa",
+   "sigma_A": "MPa",
+   "l_k": "mm",
+   "d_h": "mm",
+   "d_w": "mm",
+   "E_P": "GPa",
+   "f_Z": "µm",
+   "F_V": "kN",
+   "M_A": "N*m",
+   "F_A": "kN",
+   "F_KR_req": "kN",
+   "tau_B": "MPa",
+   "m_eff": "mm",
+   "A_s_given": "mm^2",
+   "k_S_given": "kN/mm",
+   "k_P_given": "kN/mm"
+  }
+ },
+ "mech.fatigue-miner": {
+  "version": "1.0.1",
+  "units": {
+   "S_ref": "MPa",
+   "S_e": "MPa",
+   "blocks.S": "MPa"
+  }
+ },
+ "mech.iso286-fit": {
+  "version": "1.5.1",
+  "units": {
+   "D": "mm",
+   "ES_override": "µm",
+   "EI_override": "µm",
+   "es_override": "µm",
+   "ei_override": "µm"
+  }
+ },
+ "mech.lifting-lug": {
+  "version": "1.1.0",
+  "units": {
+   "P": "kN",
+   "t": "mm",
+   "W": "mm",
+   "d_h": "mm",
+   "a": "mm",
+   "d_p": "mm",
+   "t_s": "mm",
+   "g": "mm",
+   "f_t": "MPa",
+   "f_br": "MPa",
+   "f_v": "MPa",
+   "f_b_pin": "MPa",
+   "f_v_pin": "MPa"
+  }
+ },
+ "mech.material-margin": {
+  "version": "1.0.1",
+  "units": {
+   "sigma": "MPa",
+   "f_y": "MPa",
+   "f_u": "MPa"
+  }
+ },
+ "mech.mechanism": {
+  "version": "1.2.2",
+  "units": {
+   "L1": "mm",
+   "L2": "mm",
+   "L3": "mm",
+   "L4": "mm",
+   "e_off": "mm",
+   "theta_start": "deg",
+   "theta_range": "deg",
+   "n_in": "rpm",
+   "mu_req": "deg",
+   "T_load": "N*m",
+   "J_out": "kg*m^2",
+   "m_slider": "kg",
+   "F_load": "N",
+   "Rb": "mm",
+   "R_r": "mm",
+   "phi_max": "deg",
+   "segs.beta": "deg",
+   "segs.h": "mm",
+   "m_f": "kg",
+   "k_sp": "N/mm",
+   "F_pre": "N",
+   "F_ext": "N"
+  }
+ },
+ "mech.press-fit": {
+  "version": "1.2.0",
+  "units": {
+   "d": "mm",
+   "delta": "µm",
+   "d_o": "mm",
+   "d_i": "mm",
+   "L": "mm",
+   "E_h": "GPa",
+   "E_s": "GPa",
+   "S_y_h": "MPa",
+   "S_y_s": "MPa",
+   "alpha_h": "1/K",
+   "c_a": "µm",
+   "Rz_h": "µm",
+   "Rz_s": "µm"
+  }
+ },
+ "mech.shaft": {
+  "version": "1.6.0",
+  "units": {
+   "segments.x_end": "mm",
+   "segments.d": "mm",
+   "segments.d_i": "mm",
+   "x_A": "mm",
+   "x_B": "mm",
+   "loads.x": "mm",
+   "loads.F_y": "kN",
+   "loads.F_z": "kN",
+   "loads.m": "kg",
+   "T": "kN*m",
+   "T_a": "kN*m",
+   "T_pk": "kN*m",
+   "x_T1": "mm",
+   "x_T2": "mm",
+   "n": "rpm",
+   "sections.x": "mm",
+   "S_ut": "MPa",
+   "S_y": "MPa",
+   "E": "GPa",
+   "rho": "kg/m^3",
+   "R": "%",
+   "theta_max": "rad",
+   "y_max": "mm",
+   "x_key": "mm",
+   "w": "mm",
+   "h": "mm",
+   "L_key": "mm",
+   "S_y_key": "MPa",
+   "S_y_hub": "MPa"
+  }
+ },
+ "mech.shaft-stress": {
+  "version": "1.0.1",
+  "units": {
+   "d": "mm",
+   "M": "N*m",
+   "T": "N*m",
+   "S_y": "MPa"
+  }
+ },
+ "mech.snap-fit": {
+  "version": "1.4.0",
+  "units": {
+   "l": "mm",
+   "h": "mm",
+   "b": "mm",
+   "y": "mm",
+   "D_ring": "mm",
+   "dD": "mm",
+   "r_bar": "mm",
+   "a_arm": "mm",
+   "alpha": "deg",
+   "alpha_r": "deg",
+   "Es": "MPa",
+   "Es_pts.Es": "MPa",
+   "F_req": "N",
+   "T_use": "degC"
+  }
+ },
+ "mech.spring": {
+  "version": "1.5.0",
+  "units": {
+   "d": "mm",
+   "D": "mm",
+   "d_max": "mm",
+   "L0": "mm",
+   "r_h1": "mm",
+   "r_h2": "mm",
+   "l_1": "mm",
+   "l_2": "mm",
+   "F_1": "N",
+   "F_2": "N",
+   "s_1": "mm",
+   "s_2": "mm",
+   "F_0": "N",
+   "M_1": "N*m",
+   "M_2": "N*m",
+   "phi_1": "deg",
+   "phi_2": "deg",
+   "s_work": "mm",
+   "G": "GPa",
+   "E": "GPa",
+   "rho": "kg/m^3",
+   "Rm": "MPa",
+   "Rm_A": "MPa",
+   "S_e": "MPa",
+   "S_e_b": "MPa",
+   "f_op": "Hz"
+  }
+ },
+ "mech.thermal-expansion": {
+  "version": "1.0.1",
+  "units": {
+   "L": "m",
+   "A": "mm^2",
+   "E": "GPa",
+   "alpha": "1/K",
+   "dT": "K",
+   "g": "mm",
+   "k_s": "kN/mm",
+   "sigma_allow": "MPa"
+  }
+ },
+ "mech.thick-cylinder": {
+  "version": "2.1.1",
+  "units": {
+   "a": "mm",
+   "b": "mm",
+   "p_i": "MPa",
+   "p_o": "MPa",
+   "E": "GPa",
+   "sigma_allow": "MPa"
+  }
+ },
+ "mech.thin-vessel": {
+  "version": "1.0.1",
+  "units": {
+   "P": "MPa",
+   "R": "mm",
+   "S": "MPa",
+   "c": "mm",
+   "t_p": "mm"
+  }
+ },
+ "mech.tolerance-stack": {
+  "version": "2.2.1",
+  "units": {
+   "contributors.nominal": "mm",
+   "contributors.upper": "mm",
+   "contributors.lower": "mm",
+   "contributors.bonus": "mm",
+   "contributors.shift": "mm",
+   "contributors.sigma": "mm",
+   "minimum": "mm",
+   "maximum": "mm"
+  }
+ },
+ "mech.weld-group": {
+  "version": "1.2.0",
+  "units": {
+   "welds.x1": "mm",
+   "welds.y1": "mm",
+   "welds.x2": "mm",
+   "welds.y2": "mm",
+   "s": "mm",
+   "f_w": "MPa",
+   "F_x": "kN",
+   "F_y": "kN",
+   "F_z": "kN",
+   "e_x": "mm",
+   "e_y": "mm",
+   "M_x": "kN*m",
+   "M_y": "kN*m",
+   "M_z": "kN*m"
+  }
+ },
+ "struct.base-plate": {
+  "version": "1.6.0",
+  "units": {
+   "h": "mm",
+   "b": "mm",
+   "t_f": "mm",
+   "t_w": "mm",
+   "t": "mm",
+   "D": "mm",
+   "B": "mm",
+   "L": "mm",
+   "t_p": "mm",
+   "f_y": "MPa",
+   "f_ck": "MPa",
+   "f_ck_g": "MPa",
+   "t_g": "mm",
+   "N_Ed": "kN",
+   "M_Ed": "kN*m",
+   "V_Ed": "kN",
+   "x_b": "mm",
+   "z_C_in": "mm",
+   "m": "mm",
+   "l_eff": "mm",
+   "e_min": "mm",
+   "F_t_Rd": "kN",
+   "f_ub": "MPa",
+   "f_yb": "MPa",
+   "A_s": "mm^2",
+   "F_1_vb_Rd": "kN"
+  }
+ },
+ "struct.beam-formulas": {
+  "version": "1.1.0",
+  "units": {
+   "L": "m",
+   "E": "GPa",
+   "I": "cm^4",
+   "w": "kN/m",
+   "P": "kN",
+   "M_0": "kN*m",
+   "a": "m",
+   "y_c": "mm",
+   "sigma_allow": "MPa",
+   "delta_limit": "mm"
+  }
+ },
+ "struct.column-buckling": {
+  "version": "1.0.1",
+  "units": {
+   "L_E": "m",
+   "A": "mm^2",
+   "I": "cm^4",
+   "E": "GPa",
+   "p_y": "MPa",
+   "P": "kN"
+  }
+ },
+ "struct.connection-ec3": {
+  "version": "1.7.0",
+  "units": {
+   "d_0": "mm",
+   "t": "mm",
+   "t_2": "mm",
+   "f_y": "MPa",
+   "f_u": "MPa",
+   "e_1": "mm",
+   "e_2": "mm",
+   "p_1": "mm",
+   "p_2": "mm",
+   "e_head": "mm",
+   "F_v_Ed": "kN",
+   "F_t_Ed": "kN",
+   "V_Ed": "kN",
+   "A_nt": "mm^2",
+   "A_nv": "mm^2",
+   "a": "mm",
+   "F_w_Ed": "N/mm",
+   "sigma_perp": "MPa",
+   "tau_perp": "MPa",
+   "tau_par": "MPa"
+  }
+ },
+ "struct.en1993-member": {
+  "version": "1.5.0",
+  "units": {
+   "N_Ed": "kN",
+   "M_y_Ed": "kN*m",
+   "M_z_Ed": "kN*m",
+   "V_Ed": "kN",
+   "f_y": "MPa",
+   "E": "GPa",
+   "A": "cm^2",
+   "W_pl_y": "cm^3",
+   "W_el_y": "cm^3",
+   "W_pl_z": "cm^3",
+   "W_el_z": "cm^3",
+   "I_y": "cm^4",
+   "I_z": "cm^4",
+   "A_v": "cm^2",
+   "h": "mm",
+   "b": "mm",
+   "t_w": "mm",
+   "t_f": "mm",
+   "r": "mm",
+   "L_cr_y": "m",
+   "L_cr_z": "m",
+   "A_net": "cm^2",
+   "f_u": "MPa"
+  }
+ },
+ "struct.fillet-weld": {
+  "version": "1.1.0",
+  "units": {
+   "F_par": "kN",
+   "F_tr": "kN",
+   "F_n": "kN",
+   "L": "mm",
+   "a": "mm",
+   "f_u": "MPa"
+  }
+ },
+ "struct.frame-2d": {
+  "version": "1.4.0",
+  "units": {
+   "E": "GPa",
+   "nodes.x": "m",
+   "nodes.y": "m",
+   "nodes.k_x": "kN/m",
+   "nodes.k_y": "kN/m",
+   "nodes.k_r": "kN*m",
+   "elements.A": "cm^2",
+   "elements.I": "cm^4",
+   "elements.E": "GPa",
+   "loads.a": "m",
+   "loads.b": "m",
+   "loads.w1": "kN/m",
+   "loads.w2": "kN/m",
+   "loads.F_x": "kN",
+   "loads.F_y": "kN",
+   "loads.M": "kN*m"
+  }
+ },
+ "struct.lifting": {
+  "version": "1.1.1",
+  "units": {
+   "WLL": "kN",
+   "theta": "deg",
+   "beta": "deg",
+   "t": "mm",
+   "Dh": "mm",
+   "Dp": "mm",
+   "R": "mm",
+   "be": "mm",
+   "a": "mm",
+   "h": "mm",
+   "f_y": "MPa",
+   "f_u": "MPa",
+   "A_beam": "cm^2"
+  }
+ },
+ "struct.load-combinations": {
+  "version": "1.1.0",
+  "units": {}
+ },
+ "struct.ltb-interaction": {
+  "version": "1.2.0",
+  "units": {
+   "f_y": "MPa",
+   "E": "GPa",
+   "G": "GPa",
+   "h": "mm",
+   "b": "mm",
+   "t_f": "mm",
+   "A": "cm^2",
+   "I_y": "cm^4",
+   "I_z": "cm^4",
+   "I_t": "cm^4",
+   "I_w": "dm^6",
+   "W_pl_y": "cm^3",
+   "W_el_y": "cm^3",
+   "W_pl_z": "cm^3",
+   "W_el_z": "cm^3",
+   "L": "m",
+   "z_g": "mm",
+   "N_Ed": "kN",
+   "M_y_Ed": "kN*m",
+   "M_y_A": "kN*m",
+   "M_y_B": "kN*m",
+   "M_z_Ed": "kN*m",
+   "L_cr_y": "m",
+   "L_cr_z": "m"
+  }
+ },
+ "struct.plate-bending": {
+  "version": "1.3.0",
+  "units": {
+   "a": "mm",
+   "b": "mm",
+   "t": "mm",
+   "q": "kPa",
+   "P": "kN",
+   "r0": "mm",
+   "u": "mm",
+   "v": "mm",
+   "r_ring": "mm",
+   "E": "GPa",
+   "rho": "kg/m^3",
+   "f_y": "MPa"
+  }
+ },
+ "struct.section-properties": {
+  "version": "1.1.1",
+  "units": {
+   "h": "mm",
+   "b": "mm",
+   "t": "mm",
+   "t_f": "mm",
+   "d": "mm",
+   "r": "mm",
+   "r_i": "mm",
+   "vertices.x": "mm",
+   "vertices.y": "mm",
+   "parts.b": "mm",
+   "parts.h": "mm",
+   "parts.t": "mm",
+   "parts.t_f": "mm",
+   "parts.r": "mm",
+   "parts.x0": "mm",
+   "parts.y0": "mm"
+  }
+ }
+}

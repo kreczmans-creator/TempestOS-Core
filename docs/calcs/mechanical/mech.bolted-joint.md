@@ -1,4 +1,4 @@
-# Bolted joint (simplified VDI 2230) (`mech.bolted-joint@1.3.0`)
+# Bolted joint (simplified VDI 2230) (`mech.bolted-joint@1.3.1`)
 
 **In plain terms.** Tightening a bolt stretches it and squeezes the parts it clamps, like a soft spring pulling against a stiffer one. When a working load then pulls the joint apart, most of it relaxes the squeeze on the parts and only a fraction, set by the two stiffnesses, adds to the bolt. The joint is checked five ways: the parts must not separate, enough clamp must remain, the bolt must not yield under tension plus thread torsion, the alternating stress must stay below the endurance limit, and the thread must not strip. Torque gives preload only roughly, which is why the scatter factor is applied.
 
@@ -122,6 +122,8 @@ Applicability rules:
 Concentric only. Frusta with the hole diameter inside. Torsion kept at 50 % in service. Stripping by a half-pitch shear area. No thermal or transverse-slip checks.
 
 ## Changes
+
+**1.3.1.** Declares the unit changes of 1.3.0 (ADR-0177 review): `M_A` was in N·m and `k_S_given` and `k_P_given` in kN/mm before 1.3.0, so a bare stored number from an earlier version is read in its own unit, never the new one. No calculated value changes.
 
 **1.3.0 (C-2, phase B).** Four inputs and one output are renamed, and the old symbols stay as aliases (an inputs file, a CSV, a saved draft, a pack example and a link that use them still load): `P` is `p_thread` (the thread pitch, so that `P` can keep meaning power), `sigma_A` is `sigma_a_limit` (the endurance limit of the bolt, not a stress), `n` is `n_load` (the load introduction factor) and `f_Z` is `f_embed` (the embedding loss); the output `Phi` is `Phi_K`. The inputs are grouped (`Setup`, `Bolt`, `Joint`, `Tightening`, `Loads`, `Thread`, `Given properties`) and have usual ranges. The tightening torque `M_A` is entered in kN·m (the same value as before) and the given stiffnesses in kN/m. The sheet declares ports. The checks show a value against a value. Calculated values are unchanged.
 

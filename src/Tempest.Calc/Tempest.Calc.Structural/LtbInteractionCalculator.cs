@@ -39,7 +39,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
     public const string MaterialKind = "material.properties";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.Structural, "Lateral-torsional buckling and N+M interaction (EN 1993-1-1)",
+        Id, "1.3.1", CalcDiscipline.Structural, "Lateral-torsional buckling and N+M interaction (EN 1993-1-1)",
         "Calculates the lateral-torsional buckling, flexural buckling and bending-with-compression interaction of a uniform doubly-symmetric I-section member on fork supports, to EN 1993-1-1. Class 4 sections are outside this sheet.",
         "Critical moment (NCCI SN003 form): M_cr = C₁·π²E·I_z/(kL)²·[√((k/k_w)²·I_w/I_z + (kL)²·G·I_t/(π²E·I_z) + (C₂z_g)²) − C₂z_g]; C₁ = 1.88 − 1.40ψ + 0.52ψ² ≤ 2.70 (end moments, k = 1) unless entered\n" +
         "LTB slenderness: λ̄_LT = √(W_y·f_y/M_cr), W_y = W_pl,y (class 1, 2) or W_el,y (class 3)\n" +
@@ -69,7 +69,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
             new CalcInputSpec("I_y", "Second moment of area about y-y (major axis)", CalcInputKind.Quantity, "cm^4", Default: 45728, Min: 500, Max: 1e6, HardMin: 50, HardMax: 5e6, Group: "Geometry"),
             new CalcInputSpec("I_z", "Second moment of area about z-z (minor axis)", CalcInputKind.Quantity, "cm^4", Default: 2347.0, Min: 50, Max: 1e5, HardMin: 5, HardMax: 5e5, Group: "Geometry"),
             new CalcInputSpec("I_t", "Torsion constant", CalcInputKind.Quantity, "cm^4", Default: 121.29, Min: 1, Max: 1e4, HardMin: 0.1, HardMax: 1e5, Group: "Geometry"),
-            new CalcInputSpec("I_w", "Warping constant", CalcInputKind.Quantity, "cm^6", Default: 1175500, Min: 1e3, Max: 1e9, HardMin: 10, HardMax: 1e11, Group: "Geometry"),
+            new CalcInputSpec("I_w", "Warping constant", CalcInputKind.Quantity, "cm^6", UnitChangedAt: "1.3.0", UnitWas: "dm^6", Default: 1175500, Min: 1e3, Max: 1e9, HardMin: 10, HardMax: 1e11, Group: "Geometry"),
             new CalcInputSpec("W_pl_y", "Plastic section modulus about y-y", CalcInputKind.Quantity, "cm^3", Default: 2232.5, Min: 10, Max: 2e4, HardMin: 1, HardMax: 1e5, Group: "Geometry"),
             new CalcInputSpec("W_el_y", "Elastic section modulus about y-y", CalcInputKind.Quantity, "cm^3", Default: 1957.5, Min: 10, Max: 2e4, HardMin: 1, HardMax: 1e5, Group: "Geometry"),
             new CalcInputSpec("W_pl_z", "Plastic section modulus about z-z", CalcInputKind.Quantity, "cm^3", Default: 378.9, Min: 5, Max: 1e4, HardMin: 0.5, HardMax: 5e4, Group: "Geometry"),

@@ -23,14 +23,14 @@ public sealed class ShaftStressCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Mechanical, "Shaft under combined bending and torsion",
+        Id, "1.1.1", CalcDiscipline.Mechanical, "Shaft under combined bending and torsion",
         "Calculates the bending and torsional stresses in a solid round shaft, with stress-concentration factors, and the factors of safety against yield. It covers static loading only, not fatigue or hollow shafts.",
         "Bending stress, with its stress concentration: σ = K_t·32M/(πd³).\nTorsional shear stress, with its stress concentration: τ = K_ts·16T/(πd³).\nMaximum shear stress (Tresca): τ_max = √((σ/2)² + τ²).\nvon Mises equivalent stress: σ' = √(σ² + 3τ²).\nFactors of safety against yield, the lower governing: n_T = (S_y/2)/τ_max; n_VM = S_y/σ'.",
         [
             new CalcInputSpec("d", "Shaft diameter", CalcInputKind.Quantity, "mm", Default: 40, Min: 1, Max: 2000, HardMin: 1e-6, HardMax: 1e5, Group: "Geometry"),
             new CalcInputSpec("S_y", "Yield strength", CalcInputKind.Quantity, "MPa", ReferenceLibrary: "Materials", ReferenceProperty: "YieldStrength", ReferenceDimension: "Pressure", Default: 350, Min: 50, Max: 3000, HardMin: 1e-3, HardMax: 1e5, Group: "Material"),
-            new CalcInputSpec("M", "Bending moment (magnitude)", CalcInputKind.Quantity, "kN*m", Default: 0.5, Min: 0, Max: 1e4, HardMin: 0, HardMax: 1e7, Group: "Loads"),
-            new CalcInputSpec("T", "Torque (magnitude)", CalcInputKind.Quantity, "kN*m", Default: 0.8, Min: 0, Max: 1e4, HardMin: 0, HardMax: 1e7, Group: "Loads"),
+            new CalcInputSpec("M", "Bending moment (magnitude)", CalcInputKind.Quantity, "kN*m", UnitChangedAt: "1.1.0", UnitWas: "N*m", Default: 0.5, Min: 0, Max: 1e4, HardMin: 0, HardMax: 1e7, Group: "Loads"),
+            new CalcInputSpec("T", "Torque (magnitude)", CalcInputKind.Quantity, "kN*m", UnitChangedAt: "1.1.0", UnitWas: "N*m", Default: 0.8, Min: 0, Max: 1e4, HardMin: 0, HardMax: 1e7, Group: "Loads"),
             new CalcInputSpec("K_t", "Bending stress-concentration factor (1 for none)", CalcInputKind.Number, Default: 1, Min: 1, Max: 5, HardMin: 1, HardMax: 20, Group: "Factors"),
             new CalcInputSpec("K_ts", "Torsional stress-concentration factor (1 for none)", CalcInputKind.Number, Default: 1, Min: 1, Max: 5, HardMin: 1, HardMax: 20, Group: "Factors"),
             new CalcInputSpec("n_req", "Required factor of safety", CalcInputKind.Number, Default: 2, Min: 1, Max: 10, HardMin: 1, HardMax: 100, Group: "Requirements"),

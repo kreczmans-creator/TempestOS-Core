@@ -42,7 +42,7 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
     private const string ScreeningClause = "ASME B31.3-2022 cl. 319.4.1 (screening form; number to be checked against the owner's copy)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.5.0", CalcDiscipline.BuildingServices, "Pipe expansion, loops and anchor forces (screening)",
+        Id, "1.5.1", CalcDiscipline.BuildingServices, "Pipe expansion, loops and anchor forces (screening)",
         "Calculates the thermal growth of a pipe run between anchors, the leg or loop that absorbs it, and the force and moment on the anchors. It is a screening calculation, not a piping stress analysis.",
         "Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴ − d_i⁴); Z = I/(OD/2)\n" +
         "Temperature change and growth: ΔT = T_operate − T_install, or as entered; L_tot = L, or L + L2 for a Z-bend; ΔL = α·L_tot·|ΔT|, its sign giving the direction\n" +
@@ -68,7 +68,7 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
             new CalcInputSpec("dT_in", "Temperature change ΔT (negative for a cold line), when entered directly (optional; blank = from the two temperatures)", CalcInputKind.Quantity, "K", Min: -300, Max: 500, HardMin: -300, HardMax: 1000, IsOptional: true, Group: "Conditions"),
             new CalcInputSpec("Sa", "Allowable displacement-stress range for the legs and runs (your piping code and its formula; optional for an axial bellows; no default)", CalcInputKind.Quantity, "MPa", Min: 5, Max: 500, HardMin: 0.1, HardMax: 5000, IsOptional: true, Group: "Requirements"),
             new CalcInputSpec("K_scr", "Screening limit K1 for OD·Y/(L − U)², in mm²/m² (or in²/ft², …) from your piping code (optional; blank = screening not evaluated, so the sheet does not pass; no default)", CalcInputKind.Quantity, "mm^2/m^2", Min: 1, Max: 1000, HardMin: 1e-6, HardMax: 1e9, IsOptional: true, Group: "Requirements"),
-            new CalcInputSpec("P_b", "Axial bellows governing pressure, gauge, at or above zero: the design or test pressure that governs the anchor sizing (a vacuum bellows is outside this sheet; compression and extension ratings can differ, enter the governing one)", CalcInputKind.Quantity, "kPa", Min: 10, Max: 4000, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Bellows"),
+            new CalcInputSpec("P_b", "Axial bellows governing pressure, gauge, at or above zero: the design or test pressure that governs the anchor sizing (a vacuum bellows is outside this sheet; compression and extension ratings can differ, enter the governing one)", CalcInputKind.Quantity, "kPa", UnitChangedAt: "1.5.0", UnitWas: "bar", Min: 10, Max: 4000, HardMin: 0, HardMax: 1e5, IsOptional: true, Group: "Bellows"),
             new CalcInputSpec("A_eff", "Axial bellows effective area (manufacturer's data)", CalcInputKind.Quantity, "cm^2", Min: 1, Max: 5000, HardMin: 0.01, HardMax: 1e6, IsOptional: true, Group: "Bellows"),
             new CalcInputSpec("k_b", "Axial bellows spring rate (optional; blank = no spring force; manufacturer's data)", CalcInputKind.Quantity, "kN/m", Min: 1, Max: 5000, HardMin: 0, HardMax: 1e6, IsOptional: true, Group: "Bellows"),
             new CalcInputSpec("dL_rated", "Rated axial movement of the bellows (optional; blank = movement not checked; manufacturer's data)", CalcInputKind.Quantity, "mm", Min: 1, Max: 500, HardMin: 0.01, HardMax: 10000, IsOptional: true, Group: "Bellows"),

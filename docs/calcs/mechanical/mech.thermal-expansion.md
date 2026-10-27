@@ -1,4 +1,4 @@
-# Thermal expansion of a restrained bar (`mech.thermal-expansion@1.1.0`)
+# Thermal expansion of a restrained bar (`mech.thermal-expansion@1.1.1`)
 
 **In plain terms.** A bar that is heated wants to grow by its expansion coefficient times its length times the temperature rise. If walls stop it, the growth it is denied becomes a squeeze: the force is the denied movement times the bar's stiffness, and the stress is that force over the area. A gap lets the bar grow freely until it closes; a flexible restraint gives a little, so the force is shared by the bar and the restraint in series. Cooling does the same in reverse and puts the bar in tension.
 
@@ -55,6 +55,8 @@ The sheet is ported from the legacy `calc.thermal-expansion-stress` module (ADR-
 ## Limitations
 
 The sheet assumes a constant expansion coefficient and an elastic bar. It does not check buckling of the compressed bar; use `struct.column-buckling`.
+
+**1.1.1.** Declares the unit change of 1.1.0 (ADR-0177 review): `k_s` was in kN/mm before 1.1.0, so a bare stored number from an earlier version is read in kN/mm, never kN/m. No calculated value changes.
 
 ## References
 

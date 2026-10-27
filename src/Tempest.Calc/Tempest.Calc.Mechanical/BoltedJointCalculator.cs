@@ -9,7 +9,7 @@ public sealed class BoltedJointCalculator : ICalcCalculator
     public const string Id = "mech.bolted-joint";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.0", CalcDiscipline.Mechanical, "Bolted joint (simplified VDI 2230)",
+        Id, "1.3.1", CalcDiscipline.Mechanical, "Bolted joint (simplified VDI 2230)",
         "Calculates the preload from the tightening torque, the load factor, the residual clamp, separation, yield, thread stripping and fatigue amplitude of one bolt clamping members under an axial working load. It uses a simplified VDI 2230 approach.",
         "Tensile stress area: A_s = (π/4)·((d_2 + d_3)/2)², with d_2 = d − 0.6495 p_thread and d_3 = d − 1.2269 p_thread\n" +
         "Assembly preload: F_M = M_A/(K d) by the nut factor; F_M = M_A/(0.16 p_thread + 0.58 d_2 μ_G + 0.5 D_Km μ_K) by thread and head friction; F_M = F_V when measured; F_M,min = F_M/α_A after the scatter\n" +
@@ -32,7 +32,7 @@ public sealed class BoltedJointCalculator : ICalcCalculator
             new CalcInputSpec("E_P", "Clamped members' Young's modulus", CalcInputKind.Quantity, "GPa", ReferenceLibrary: "Materials", ReferenceProperty: "YoungsModulus", ReferenceDimension: "Pressure", Default: 205, Min: 5, Max: 250, HardMin: 1, HardMax: 2000, Group: "Joint"),
             new CalcInputSpec("n_load", "Load introduction factor (0 = at the clamped faces, 1 = under the head)", CalcInputKind.Number, Default: 0.5, Min: 0, Max: 1, HardMin: 0, HardMax: 1, Group: "Joint", Aliases: ["n"]),
             new CalcInputSpec("f_embed", "Embedding (settling) loss", CalcInputKind.Quantity, "µm", Default: 11, Min: 0, Max: 100, HardMin: 0, HardMax: 1e4, Group: "Joint", Aliases: ["f_Z"]),
-            new CalcInputSpec("M_A", "Tightening torque", CalcInputKind.Quantity, "kN*m", Default: 0.08, Min: 1e-4, Max: 10, HardMin: 0, HardMax: 1e3, Group: "Tightening"),
+            new CalcInputSpec("M_A", "Tightening torque", CalcInputKind.Quantity, "kN*m", UnitChangedAt: "1.3.0", UnitWas: "N*m", Default: 0.08, Min: 1e-4, Max: 10, HardMin: 0, HardMax: 1e3, Group: "Tightening"),
             new CalcInputSpec("K", "Nut factor (nut-factor method); F_M is the maximum preload, so enter the smallest value the joint can have", CalcInputKind.Number, Default: 0.2, Min: 0.1, Max: 0.35, HardMin: 0.01, HardMax: 2, Group: "Tightening"),
             new CalcInputSpec("mu_G", "Thread friction coefficient; F_M is the maximum preload, so enter the smallest value the joint can have", CalcInputKind.Number, Default: 0.12, Min: 0.06, Max: 0.25, HardMin: 0.001, HardMax: 1, Group: "Tightening"),
             new CalcInputSpec("mu_K", "Head / nut bearing friction coefficient; F_M is the maximum preload, so enter the smallest value the joint can have", CalcInputKind.Number, Default: 0.12, Min: 0.06, Max: 0.25, HardMin: 0.001, HardMax: 1, Group: "Tightening"),
@@ -45,8 +45,8 @@ public sealed class BoltedJointCalculator : ICalcCalculator
             new CalcInputSpec("m_eff", "Thread engagement length provided", CalcInputKind.Quantity, "mm", Default: 12, Min: 1, Max: 200, HardMin: 0.1, HardMax: 1e4, Group: "Thread"),
             new CalcInputSpec("S_strip", "Safety factor on stripping", CalcInputKind.Number, Default: 1.25, Min: 1, Max: 3, HardMin: 0.5, HardMax: 10, Group: "Thread"),
             new CalcInputSpec("A_s_given", "Tensile stress area, from a fastener record (optional; blank = from d and p_thread)", CalcInputKind.Quantity, "mm^2", ReferenceLibrary: "Fasteners", ReferenceProperty: "StressArea", ReferenceDimension: "Area", Min: 1, Max: 5000, HardMin: 1e-3, HardMax: 1e6, IsOptional: true, Group: "Given properties"),
-            new CalcInputSpec("k_S_given", "Bolt stiffness, measured or from an FE model (optional; blank = from the geometry)", CalcInputKind.Quantity, "kN/m", Min: 1e3, Max: 1e8, HardMin: 1e-3, HardMax: 1e11, IsOptional: true, Group: "Given properties"),
-            new CalcInputSpec("k_P_given", "Clamped members' stiffness, measured or from an FE model (optional; blank = two frusta)", CalcInputKind.Quantity, "kN/m", Min: 1e3, Max: 1e9, HardMin: 1e-3, HardMax: 1e11, IsOptional: true, Group: "Given properties"),
+            new CalcInputSpec("k_S_given", "Bolt stiffness, measured or from an FE model (optional; blank = from the geometry)", CalcInputKind.Quantity, "kN/m", UnitChangedAt: "1.3.0", UnitWas: "kN/mm", Min: 1e3, Max: 1e8, HardMin: 1e-3, HardMax: 1e11, IsOptional: true, Group: "Given properties"),
+            new CalcInputSpec("k_P_given", "Clamped members' stiffness, measured or from an FE model (optional; blank = two frusta)", CalcInputKind.Quantity, "kN/m", UnitChangedAt: "1.3.0", UnitWas: "kN/mm", Min: 1e3, Max: 1e9, HardMin: 1e-3, HardMax: 1e11, IsOptional: true, Group: "Given properties"),
         ],
         [
             new CalcAssumption("The joint is concentrically clamped and loaded, and the members behave as two 30° frusta in series.", "Eccentric clamping and loading (VDI 2230 full procedure) are outside this sheet."),

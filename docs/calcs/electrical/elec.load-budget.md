@@ -1,4 +1,4 @@
-# Load budget, PSU, transformer and battery (`elec.load-budget@1.6.0`)
+# Load budget, PSU, transformer and battery (`elec.load-budget@1.6.1`)
 
 **In plain terms.** A supply must be sized for what is connected, not just the sum of the nameplates, because loads are not all on at once. The worksheet adds each load with its duty and diversity, gives the current on each supply, sizes the DC power supply, the transformer (including the demand when motors start) and the battery for the backup time you need, and reports the heat released inside the enclosure.
 
@@ -144,6 +144,8 @@ No harmonic or unbalance assessment; inrush only for the single largest start.
 - `ka-psu-derating`: 24 V PSU at 70 °C with the datasheet derating (manufacturer pattern) (Unconfirmed; source: Phoenix Contact QUINT4-PS/1AC/24DC/10 datasheet)
 
 ## Changes
+
+**1.6.1.** Declares the unit change of 1.6.0 (ADR-0177 review): `P_PSU` was in W before 1.6.0, so a bare stored number from an earlier version is read in W, never kW. No calculated value changes.
 
 **Changes in 1.6.0 (C-2 consistency, phase C).** Layout and wording; no result changes. `margin` is `SF` (the sizing safety factor) and `theta` is `T_amb`; the old symbols stay as aliases. `P_PSU` and `P_PSU_req` are in kW (the value is the same in SI). The checks compare physical values: the required PSU rating with `P_PSU`, the required transformer rating with `S_T`, the starting peak `S_peak` with the new step `S_T_surge` (`k_T` times `S_T`), and `C_req` with `C_batt`. The loads column `cosphi` keeps its key, because a table column has no alias mechanism. The inputs are grouped Setup, Loads, Conditions, Factors, Requirements, PSU, Transformer and Battery, and every usual range is inside its hard limits.
 

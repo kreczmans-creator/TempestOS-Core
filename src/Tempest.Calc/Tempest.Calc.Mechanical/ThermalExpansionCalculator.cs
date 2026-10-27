@@ -25,7 +25,7 @@ public sealed class ThermalExpansionCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Mechanical, "Thermal expansion of a restrained bar",
+        Id, "1.1.1", CalcDiscipline.Mechanical, "Thermal expansion of a restrained bar",
         "Calculates the free movement, restraint force, axial stress and actual movement of a bar heated or cooled between two restraints. A gap and a rigid or elastic restraint are allowed, and the stress is compared with an allowable.",
         "Free expansion of the bar: δ_free = α·L·ΔT.\nExpansion actually restrained, once any gap g has closed: δ_e = sign(δ_free)·max(|δ_free| − g, 0).\nAxial stiffness of the bar: k_bar = E·A/L.\nRestraint force, from rigid supports or an elastic restraint k_s: F = δ_e·k_bar (rigid); F = δ_e/(1/k_bar + 1/k_s) (elastic).\nThermal stress in the bar, compressive on heating: σ = −F/A.\nNet movement of the bar end: δ = δ_free − F/k_bar.",
         [
@@ -35,7 +35,7 @@ public sealed class ThermalExpansionCalculator : ICalcCalculator
             new CalcInputSpec("E", "Young's modulus", CalcInputKind.Quantity, "GPa", ReferenceLibrary: "Materials", ReferenceProperty: "YoungsModulus", ReferenceDimension: "Pressure", Default: 200, Min: 1, Max: 500, HardMin: 1e-3, HardMax: 1e4, Group: "Material"),
             new CalcInputSpec("alpha", "Coefficient of thermal expansion", CalcInputKind.Quantity, "1/K", ReferenceLibrary: "Materials", ReferenceProperty: "ThermalExpansionCoefficient", ReferenceDimension: "ThermalExpansion", Default: 12e-6, Min: 1e-7, Max: 1e-4, HardMin: 1e-12, HardMax: 1e-2, Group: "Material"),
             new CalcInputSpec("dT", "Temperature change (positive heating)", CalcInputKind.Quantity, "K", Default: 60, Min: -300, Max: 1000, HardMin: -1e4, HardMax: 1e4, Group: "Conditions"),
-            new CalcInputSpec("k_s", "Restraint stiffness (optional; blank = a rigid restraint)", CalcInputKind.Quantity, "kN/m", Min: 1, Max: 1e10, HardMin: 1e-9, HardMax: 1e15, IsOptional: true, Group: "Conditions"),
+            new CalcInputSpec("k_s", "Restraint stiffness (optional; blank = a rigid restraint)", CalcInputKind.Quantity, "kN/m", UnitChangedAt: "1.1.0", UnitWas: "kN/mm", Min: 1, Max: 1e10, HardMin: 1e-9, HardMax: 1e15, IsOptional: true, Group: "Conditions"),
             new CalcInputSpec("sigma_allow", "Allowable stress", CalcInputKind.Quantity, "MPa", Default: 150, Min: 1, Max: 2000, HardMin: 1e-3, HardMax: 1e5, Group: "Requirements"),
         ],
         [

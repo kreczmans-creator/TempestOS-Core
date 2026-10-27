@@ -27,7 +27,7 @@ public sealed class DuctSizingCalculator : ICalcCalculator
     private static readonly IReadOnlyList<CalcColumnSpec> SectionColumns =
     [
         new("name", "Section", CalcInputKind.Text, IsOptional: true),
-        new("Q", "Airflow", CalcInputKind.Quantity, "m^3/h", HardMin: 0.0036, HardMax: 3.6e6),
+        new("Q", "Airflow", CalcInputKind.Quantity, "m^3/h", UnitChangedAt: "1.2.0", UnitWas: "m^3/s", HardMin: 0.0036, HardMax: 3.6e6),
         new("L", "Length", CalcInputKind.Quantity, "m", HardMin: 0, HardMax: 1e4),
         new("shape", "Shape", CalcInputKind.Choice, Choices: [ShapeRound, ShapeRectangular, ShapeFlatOval], IsOptional: true),
         new("a", "Fixed side a (rectangular/oval; blank = size)", CalcInputKind.Quantity, "mm", HardMin: 10, HardMax: 1e4, IsOptional: true),
@@ -38,7 +38,7 @@ public sealed class DuctSizingCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.BuildingServices, "Duct sizing",
+        Id, "1.2.1", CalcDiscipline.BuildingServices, "Duct sizing",
         "Calculates duct sizes by the equal-friction or the velocity method, rounded up to standard sizes. It reports the velocity, friction rate and losses of each section and the pressure drop along the index run.",
         "Round duct diameter from the design target: D by Colebrook with the air properties at T (equal friction), or D = √(4Q/πv) (velocity), rounded up to the next standard size.\nRectangular duct of equal friction and capacity: D_e = 1.30 (ab)^0.625/(a + b)^0.25.\nFlat-oval duct of equal friction and capacity: D_e = 1.55 A^0.625/P^0.25, with A = πb²/4 + b(a − b) and P = πb + 2(a − b).\nVelocity method, rectangular or flat-oval duct with side a fixed: b from the free area A = Q/v (rectangle b = A/a; flat oval the smaller root of (1 − π/4)b² − ab + A = 0), rounded up; D_e is kept for the friction only.\nFriction loss per metre, at the velocity v_e of the equivalent round duct: Δp/L = f ρ v_e²/(2D_e).\nFitting losses, at the actual velocity: Δp = ΣC ρ v²/2.\nIndex-run totals, summed over every section of the run: Δp_run = Σ(Δp/L · L + ΣC ρ v²/2).",
         [

@@ -1,4 +1,4 @@
-# Sealed heating system (`bs.sealed-system@1.5.0`)
+# Sealed heating system (`bs.sealed-system@1.5.1`)
 
 **In plain terms.** In a closed heating circuit the water expands as it warms, and with nowhere to go it would overpressure the pipes; an expansion vessel with a cushion of gas takes the extra volume. The worksheet works out how much heat each radiator must give at your flow and return temperatures, how much the system water expands, and so the smallest vessel and its pre-charge pressure that will hold it.
 
@@ -129,6 +129,8 @@ Closed LTHW below 100 °C; no pipe-loss or emitter-position corrections; Kell de
 - `ka-vessel`: Expansion vessel for 100 L, 10 → 85 °C, 5 m static (Confirmed; source: Analytic (Kell 1975 density; vessel relation))
 
 ## Changes
+
+**1.5.1.** Declares the unit changes of 1.5.0 (ADR-0177 review): `p_f`, `p_prv` and `p_margin` were in bar and the room columns `Phi` and `Phi50` in W before 1.5.0, so a bare stored number from an earlier version is read in its own unit, never the new one. No calculated value changes.
 
 **Changes in 1.5.0 (C-2 consistency, phase C).** Layout and wording; no calculated value changes. The temperatures are now `T_flow`, `T_return`, `T_room`, `T_fill` and `T_max` (were `t_f`, `t_r`, `t_i`, `t_fill` and `t_max`), and the port mean temperature is `T_m` (alias `t_m`); the old symbols stay as aliases. The pressures `p_f`, `p_prv` and `p_margin` now read in kPa (the defaults are 250, 300 and 30 kPa, the same pressures as before), and the heat columns and `Phi_tot` read in kW. The emitter exponent `n` and the room-temperature column `t_i` of the rooms table keep their names, because the emitter record and a saved table use them. The inputs sit in the groups Setup, Geometry, Material, Conditions and Factors. The governing room heat and the emitter output are records with a check that compares physical values, and the vessel check reads "Selected vessel against minimum volume". The record kind of the emitter exponent is titled "Emitter rating (exponent)".
 

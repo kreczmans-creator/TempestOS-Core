@@ -29,7 +29,7 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.6.0", CalcDiscipline.Electrical, "Load budget, PSU, transformer and battery",
+        Id, "1.6.1", CalcDiscipline.Electrical, "Load budget, PSU, transformer and battery",
         "Calculates the demand of a set of loads per supply and the minimum DC power supply, transformer and battery for it. It also gives the heat the loads dissipate for the enclosure calculation.",
         "Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative); this duty-weighted demand sizes the transformer and the enclosure heat\n" +
         "Running load of each load while it is on: P_i·k_i, apparent P_i·k_i/cosφ_i (the duty d is the share of time on, so it is left out: a cable, a bus and a power supply carry the load while it is on)\n" +
@@ -64,7 +64,7 @@ public sealed class LoadBudgetCalculator : ICalcCalculator
             new CalcInputSpec("k_p", "Peukert exponent", CalcInputKind.Number, Min: 1, Max: 1.5, HardMin: 1, HardMax: 2, IsOptional: true, Group: "Factors"),
             new CalcInputSpec("H_rate", "Hour rate of the rated capacity (Peukert)", CalcInputKind.Quantity, "h", Min: 1, Max: 100, HardMin: 0.1, HardMax: 1000, IsOptional: true, Group: "Factors"),
             new CalcInputSpec("t_auto", "Battery autonomy", CalcInputKind.Quantity, "h", Default: 0, Min: 0, Max: 48, HardMin: 0, HardMax: 72, Group: "Requirements"),
-            new CalcInputSpec("P_PSU", "Selected PSU rating", CalcInputKind.Quantity, "kW", Min: 0.001, Max: 100, HardMin: 1e-6, HardMax: 1000, IsOptional: true, Group: "PSU"),
+            new CalcInputSpec("P_PSU", "Selected PSU rating", CalcInputKind.Quantity, "kW", UnitChangedAt: "1.6.0", UnitWas: "W", Min: 0.001, Max: 100, HardMin: 1e-6, HardMax: 1000, IsOptional: true, Group: "PSU"),
             new CalcInputSpec("S_T", "Selected transformer rating", CalcInputKind.Quantity, "kVA", Min: 0.01, Max: 1e4, HardMin: 1e-3, HardMax: 1e5, IsOptional: true, Group: "Transformer"),
             new CalcInputSpec("C_batt", "Selected battery capacity", CalcInputKind.Quantity, "A*h", Min: 0.1, Max: 1e5, HardMin: 1e-3, HardMax: 1e6, IsOptional: true, Group: "Battery"),
         ],

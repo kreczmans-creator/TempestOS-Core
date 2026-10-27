@@ -1,4 +1,4 @@
-# Shaft under combined bending and torsion (`mech.shaft-stress@1.1.0`)
+# Shaft under combined bending and torsion (`mech.shaft-stress@1.1.1`)
 
 **In plain terms.** A rotating shaft is bent by the loads it carries and twisted by the torque it transmits. The bending stress and the twisting shear stress peak together at the surface, and the two failure theories in common use combine them differently: the maximum-shear-stress theory is the more conservative, the von Mises theory the closer to test. The factor of safety is the yield strength over the combined stress, raised at a shoulder or keyway by the stress-concentration factors.
 
@@ -52,6 +52,8 @@ The sheet is ported from the legacy `calc.shaft-combined-stress` module (ADR-016
 ## Limitations
 
 The sheet checks static strength only. Fatigue is the job of `mech.fatigue-miner`. It has no hollow shafts and no axial load.
+
+**1.1.1.** Declares the unit changes of 1.1.0 (ADR-0177 review): `M` and `T` were in N·m before 1.1.0, so a bare stored number from an earlier version is read in N·m, never kN·m. No calculated value changes.
 
 ## References
 

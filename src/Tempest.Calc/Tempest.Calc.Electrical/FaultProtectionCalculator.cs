@@ -26,7 +26,7 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.5.0", CalcDiscipline.Electrical, "Fault protection (BS 7671)",
+        Id, "1.5.1", CalcDiscipline.Electrical, "Fault protection (BS 7671)",
         "Calculates automatic disconnection of supply in a TN system for one circuit: loop impedance, disconnection time and the adiabatic conductor check. It also gives the prospective three-phase fault at the origin against the breaking capacity.",
         "Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/S (k_R = 1.125 takes the pure-copper ρ_20 to the cable standard's maximum conductor resistance; k enters with the pure ρ_20)\n" +
         "Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95\n" +
@@ -42,7 +42,7 @@ public sealed class FaultProtectionCalculator : ICalcCalculator
             new CalcInputSpec("L", "Circuit length", CalcInputKind.Quantity, "m", Default: 20, Min: 1, Max: 500, HardMin: 0.1, HardMax: 1000, Group: "Geometry"),
             new CalcInputSpec("S_line", "Line conductor cross-section", CalcInputKind.Quantity, "mm^2", Default: 2.5, Min: 1, Max: 300, HardMin: 0.5, HardMax: 630, Group: "Geometry"),
             new CalcInputSpec("S_cpc", "Protective conductor cross-section", CalcInputKind.Quantity, "mm^2", Default: 1.5, Min: 1, Max: 300, HardMin: 0.5, HardMax: 630, Group: "Geometry"),
-            new CalcInputSpec("rho_20", "Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R)", CalcInputKind.Quantity, "ohm*mm^2/m", Default: CopperRho20 * 1e3, Min: 0.015, Max: 0.05, HardMin: 1e-3, HardMax: 0.1, Group: "Material"),
+            new CalcInputSpec("rho_20", "Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R)", CalcInputKind.Quantity, "ohm*mm^2/m", UnitChangedAt: "1.5.0", UnitWas: "ohm*mm", Default: CopperRho20 * 1e3, Min: 0.015, Max: 0.05, HardMin: 1e-3, HardMax: 0.1, Group: "Material"),
             new CalcInputSpec("k_R", "Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the default of 1.125 takes pure copper to the cable standard's maximum conductor resistances, so Z_s is not understated; k is not changed by it)", CalcInputKind.Number, Default: 1.125, Min: 1, Max: 1.25, HardMin: 1, HardMax: 1.5, Group: "Material"),
             new CalcInputSpec("alpha", "Temperature coefficient of resistance", CalcInputKind.Quantity, "1/K", Default: 0.00393, Min: 0.0035, Max: 0.0045, HardMin: 0.001, HardMax: 0.01, Group: "Material"),
             new CalcInputSpec("Q_c", "Volumetric heat capacity", CalcInputKind.Quantity, "J/(K*mm^3)", Default: 3.45e-3, Min: 0.002, Max: 0.005, HardMin: 1e-3, HardMax: 1e-2, Group: "Material"),

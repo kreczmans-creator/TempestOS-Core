@@ -1,4 +1,4 @@
-# Pipe pressure drop and pump duty (`bs.pipe-pump@1.10.0`)
+# Pipe pressure drop and pump duty (`bs.pipe-pump@1.10.1`)
 
 **In plain terms.** Water loses pressure as it flows, by friction along the pipe and at every bend, valve and fitting. The friction factor depends on how rough the pipe is and how turbulent the flow is, which the Colebrook equation captures. Plotting the pressure needed against flow gives the system curve; where it crosses the pump's curve is the flow the pump will actually deliver. The suction side is checked so the pressure never falls far enough for the water to boil and cavitate.
 
@@ -180,6 +180,8 @@ Heat-load flow `Q = Φ/(ρ c_p ΔT)` (analytic, 12 kW at 20 K, water at 70 °C);
 - `ka-heat-load-flow`: Design flow from a heat load: 12 kW at a 20 K difference, water at 70 °C (analytic) (Confirmed; source: Analytic: Q = Φ / (ρ c_p ΔT))
 
 ## Changes
+
+**1.10.1.** Declares the unit change of 1.10.0 (ADR-0177 review): `Phi_load` was in W before 1.10.0, so a bare stored number from an earlier version is read in W, never kW. No calculated value changes.
 
 **Changes in 1.10.0 (C-2 consistency, phase C).** Layout and wording; no calculated value changes. The fluid temperature `T` is now `T_fluid` and the velocity limit `v_max` is now `v_limit`; the old symbols stay as aliases. The heat load `Phi_load` now reads in kW, and the shaft torque `T_shaft` (output and port) in kN·m. The 18 ports are named `pipe.*` and `pump.*`. The inputs sit in the groups Setup, Material, Loads, Conditions, Requirements, Pump and NPSH. The duty-point check reads "Duty point against the system curve" with its basis in brackets, and the velocity and NPSH checks compare physical values. The messages are one or two short sentences.
 

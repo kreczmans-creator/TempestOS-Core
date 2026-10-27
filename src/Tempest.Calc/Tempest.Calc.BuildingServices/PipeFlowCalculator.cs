@@ -42,7 +42,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.10.0", CalcDiscipline.BuildingServices, "Pipe pressure drop and pump duty",
+        Id, "1.10.1", CalcDiscipline.BuildingServices, "Pipe pressure drop and pump duty",
         "Calculates the friction and fitting losses of series pipe segments at a given flow, the system curve and the duty point against a pump curve. It also gives the affinity-law shift for a speed or impeller change, and the NPSH.",
         "Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place of a flow; v = Q/(πD²/4)\n" +
         "Reynolds number and friction factor: Re = ρvD/μ; f = 64/Re for laminar flow (Re < 2300); Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) for turbulent flow, by fixed-point iteration (at most 100 steps) from the Swamee–Jain value, which also cross-checks it\n" +
@@ -60,7 +60,7 @@ public sealed class PipeFlowCalculator : ICalcCalculator
             new CalcInputSpec("mu_custom", "Dynamic viscosity (custom fluid)", CalcInputKind.Quantity, "mPa*s", Min: 0.1, Max: 1000, HardMin: 1e-4, HardMax: 1e6, IsOptional: true, Group: "Material"),
             new CalcInputSpec("h_out", "Pressure head required at the outlet", CalcInputKind.Quantity, "m", Default: 0, Min: 0, Max: 1000, HardMin: 0, HardMax: 1e5, Group: "Loads"),
             new CalcInputSpec("Q", "Design flow rate (optional; blank = the flow comes from the heat load)", CalcInputKind.Quantity, "m^3/h", Default: 20, Min: 0.01, Max: 1e5, HardMin: 1e-9, HardMax: 1e7, IsOptional: true, Group: "Loads"),
-            new CalcInputSpec("Phi_load", "Heat carried by the water (gives the design flow with ΔT; replaces Q)", CalcInputKind.Quantity, "kW", Min: 0.01, Max: 1e5, HardMin: 1e-6, HardMax: 1e7, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("Phi_load", "Heat carried by the water (gives the design flow with ΔT; replaces Q)", CalcInputKind.Quantity, "kW", UnitChangedAt: "1.10.0", UnitWas: "W", Min: 0.01, Max: 1e5, HardMin: 1e-6, HardMax: 1e7, IsOptional: true, Group: "Loads"),
             new CalcInputSpec("dT_load", "Flow-to-return temperature difference across the load", CalcInputKind.Quantity, "K", Min: 1, Max: 100, HardMin: 0.01, HardMax: 500, IsOptional: true, Group: "Loads"),
             new CalcInputSpec("cp_load", "Specific heat of the fluid in the heat-load flow (optional; blank = 4186 J/(kg·K) assumed for water, and required for a custom fluid)", CalcInputKind.Quantity, "J/(kg*K)", Min: 1000, Max: 6000, HardMin: 100, HardMax: 1e5, IsOptional: true, Group: "Loads"),
             new CalcInputSpec("T_fluid", "Fluid temperature (mean; link the mean water temperature of the sealed system for a heating loop)", CalcInputKind.Quantity, "degC", Default: 20, Min: 0, Max: 100, HardMin: -50, HardMax: 300, Group: "Conditions", Aliases: ["T"]),

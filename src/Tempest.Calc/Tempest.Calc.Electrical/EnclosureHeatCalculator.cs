@@ -20,13 +20,13 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
     private static readonly IReadOnlyList<CalcColumnSpec> LoadColumns =
     [
         new("name", "Item", CalcInputKind.Text, IsOptional: true),
-        new("P", "Heat loss per item", CalcInputKind.Quantity, "kW", HardMin: 0, HardMax: 1000),
+        new("P", "Heat loss per item", CalcInputKind.Quantity, "kW", UnitChangedAt: "1.7.0", UnitWas: "W", HardMin: 0, HardMax: 1000),
         new("qty", "Quantity", CalcInputKind.Number, HardMin: 0, HardMax: 1e4, IsOptional: true),
         new("duty", "Duty factor (0–1)", CalcInputKind.Number, HardMin: 0, HardMax: 1, IsOptional: true),
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.7.0", CalcDiscipline.Electrical, "Enclosure heat dissipation and fan sizing",
+        Id, "1.7.1", CalcDiscipline.Electrical, "Enclosure heat dissipation and fan sizing",
         "Calculates the heat load of a control enclosure, its natural temperature rise and the airflow for a target rise. It also gives the fan duty point and the cooling-unit capacity needed when the limit cannot be met.",
         "Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+ α I A_sun).\nEffective cooling surface, each face weighted by how freely it sheds heat: A_eff = Σ f_face × A_face.\nTemperature rise with natural cooling, one coefficient over the exposed faces (the IEC TR 60890 tables are not used): ΔT = P/(h_conv·A_eff).\nAir flow a fan must move to hold the target rise: V = P/(ρ c_p ΔT_target), with ρ = p(z)/(287.055 T) and c_p = 1006 J/(kg·K).\nFan duty point, where the fan curve meets the system resistance (found by bisection): p_fan(V) = p_sys (V/V_ref)².\nCooling unit capacity, when the surfaces alone cannot reject the heat: P_cool = P − h_conv·A_eff·(T_max − T_amb); with T_max at or below T_amb the term is a gain, P_cool = P + h_conv·A_eff·(T_amb − T_max), and no ventilation airflow or fan duty is given.\nSealed enclosure (sealing temperature T_seal entered, no breather): Δp = p_site·|T_int/T_seal − 1|, the pressure difference across the walls when the air warms or cools from the sealing temperature at constant volume, in absolute temperatures (a rise when T_int > T_seal, a suction when below); a breather or relief element limits it, dp_seal = min(Δp, dp_relief); the force on a cover of area A_cover is F_seal = dp_seal·A_cover",
         [
@@ -43,7 +43,7 @@ public sealed class EnclosureHeatCalculator : ICalcCalculator
             new CalcInputSpec("A_sun", "Sunlit area", CalcInputKind.Quantity, "m^2", Default: 0, Min: 0, Max: 100, HardMin: 0, HardMax: 1e4, Group: "Geometry"),
             new CalcInputSpec("alpha_sun", "Surface absorptivity", CalcInputKind.Number, Default: 0.5, Min: 0.1, Max: 1, HardMin: 0, HardMax: 1, Group: "Material"),
             new CalcInputSpec("h_conv", "Overall heat-transfer coefficient of the enclosure surface (editable reference value)", CalcInputKind.Quantity, "W/(m^2*K)", Default: 5.5, Min: 3, Max: 8, HardMin: 0.1, HardMax: 100, Group: "Material", Aliases: ["h"]),
-            new CalcInputSpec("P_add", "Additional heat load (linked from the load-budget dissipated heat or another calculation)", CalcInputKind.Quantity, "kW", Default: 0, Min: 0, Max: 100, HardMin: 0, HardMax: 1000, Group: "Loads"),
+            new CalcInputSpec("P_add", "Additional heat load (linked from the load-budget dissipated heat or another calculation)", CalcInputKind.Quantity, "kW", UnitChangedAt: "1.7.0", UnitWas: "W", Default: 0, Min: 0, Max: 100, HardMin: 0, HardMax: 1000, Group: "Loads"),
             new CalcInputSpec("I_sun", "Solar irradiance on the enclosure (0 = indoors)", CalcInputKind.Quantity, "W/m^2", Default: 0, Min: 0, Max: 1200, HardMin: 0, HardMax: 2000, Group: "Loads"),
             new CalcInputSpec("T_amb", "Ambient temperature", CalcInputKind.Quantity, "degC", Default: 35, Min: -20, Max: 55, HardMin: -60, HardMax: 100, Group: "Conditions"),
             new CalcInputSpec("altitude", "Site altitude (air density)", CalcInputKind.Quantity, "m", Default: 0, Min: 0, Max: 4000, HardMin: -500, HardMax: 10000, Group: "Conditions"),

@@ -1,4 +1,4 @@
-# Lateral-torsional buckling and N+M interaction (EN 1993-1-1) (`struct.ltb-interaction@1.3.0`)
+# Lateral-torsional buckling and N+M interaction (EN 1993-1-1) (`struct.ltb-interaction@1.3.1`)
 
 **In plain terms.** A long slender I-beam loaded in bending can twist and buckle sideways well before the steel yields, and a column can bow before it crushes; with both loads together the two effects add. The worksheet finds the moment at which the member would buckle elastically, reduces the plain strength by how close the member is to that moment, and checks the axial force and the bending moments together against the Eurocode 3 interaction rules.
 
@@ -202,6 +202,8 @@ Table B.1 applies to a member that is not susceptible to torsional deformation. 
 Four SCI P364 worked examples (3, 4, 11 and 12, UK NA) and one STAAD.Pro verification (UKB 356×171×51 S275, 5.7 m, M_b,Rd about 103.5 kN·m) are not pinned. Their inputs and answers cannot be stated from memory, so the owner enters them and compares the results with their own copies. LTBeam or the SCI/BCSA M_cr tool is the external oracle for M_cr.
 
 ### Changes by version
+
+**1.3.1.** Declares the unit change of 1.3.0 (ADR-0177 review): `I_w` was in dm⁶ before 1.3.0, so a bare stored number from an earlier version is read in dm⁶, never cm⁶. No calculated value changes.
 
 **1.3.0 (C-2 consistency).** Every check shows its demand and capacity as values with units: the bending moment against its resistance, the compression force against its resistance, and each interaction sum against the limit 1 (new steps `N_abs` and `u_limit`). The inputs are grouped Setup, Geometry, Material, Loads, Conditions and Factors, and optional inputs come last in their group. The warping constant `I_w` is entered in cm⁶ instead of dm⁶, the same unit as the section properties sheet, and the value does not change. The eight ports have public names `ltb.*`. Every numeric input has a usual range inside its hard range, and no hard range changes. For the quantities defined on a closed interval (`k`, `k_w`, `psi_y`, `psi_z`, `k_c` and `C_m_*`) the usual range is narrower at one end. The messages, descriptions, assumptions and references follow the sheet standard, and the double-curvature warning now names `M_y_B`. The record kind titles and the reference to NCCI SN003 keep their form, because the first would need a data migration and the second has no edition number. No calculated value changes.
 

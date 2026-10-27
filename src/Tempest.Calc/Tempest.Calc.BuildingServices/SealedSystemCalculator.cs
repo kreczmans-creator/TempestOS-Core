@@ -18,14 +18,14 @@ public sealed class SealedSystemCalculator : ICalcCalculator
     private static readonly IReadOnlyList<CalcColumnSpec> RoomColumns =
     [
         new("name", "Room", CalcInputKind.Text),
-        new("Phi", "Heat required", CalcInputKind.Quantity, "kW", HardMin: 0, HardMax: 1e3),
-        new("Phi50", "Selected emitter output at ΔT 50 K", CalcInputKind.Quantity, "kW", HardMin: 0, HardMax: 1e3, IsOptional: true),
+        new("Phi", "Heat required", CalcInputKind.Quantity, "kW", UnitChangedAt: "1.5.0", UnitWas: "W", HardMin: 0, HardMax: 1e3),
+        new("Phi50", "Selected emitter output at ΔT 50 K", CalcInputKind.Quantity, "kW", UnitChangedAt: "1.5.0", UnitWas: "W", HardMin: 0, HardMax: 1e3, IsOptional: true),
         new("V_em", "Emitter water content", CalcInputKind.Quantity, "L", HardMin: 0, HardMax: 1e4, IsOptional: true),
         new("t_i", "Room design temperature (blank = the sheet's room temperature T_room)", CalcInputKind.Quantity, "degC", HardMin: 10, HardMax: 30, IsOptional: true),
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.5.0", CalcDiscipline.BuildingServices, "Sealed heating system",
+        Id, "1.5.1", CalcDiscipline.BuildingServices, "Sealed heating system",
         "Calculates the catalogue output each room's emitter needs at the design flow, return and room temperatures, and checks it against the selected emitters. It also gives the minimum expansion vessel for the system volume, temperatures, static head and pressures.",
         "Emitter temperature difference: ΔT = (T_flow + T_return)/2 − T_room, or the log mean (T_flow − T_return)/ln((T_flow − T_room)/(T_return − T_room))\n" +
         "Output at design: Φ = Φ50·(ΔT/50)^n; required catalogue output Φ50 = Φ_req/(ΔT/50)^n\n" +
@@ -46,10 +46,10 @@ public sealed class SealedSystemCalculator : ICalcCalculator
             new CalcInputSpec("T_room", "Room temperature", CalcInputKind.Quantity, "degC", Default: 20, Min: 16, Max: 23, HardMin: 16, HardMax: 24, Group: "Conditions", Aliases: ["t_i"]),
             new CalcInputSpec("T_fill", "Fill temperature", CalcInputKind.Quantity, "degC", Default: 10, Min: 4, Max: 30, HardMin: 1, HardMax: 40, Group: "Conditions", Aliases: ["t_fill"]),
             new CalcInputSpec("T_max", "Maximum system temperature", CalcInputKind.Quantity, "degC", Default: 85, Min: 30, Max: 95, HardMin: 30, HardMax: 99, Group: "Conditions", Aliases: ["t_max"]),
-            new CalcInputSpec("p_f", "Final (maximum working) pressure, gauge", CalcInputKind.Quantity, "kPa", Default: 250, Min: 50, Max: 600, HardMin: 10, HardMax: 600, Group: "Conditions"),
-            new CalcInputSpec("p_prv", "Safety valve setting, gauge", CalcInputKind.Quantity, "kPa", Default: 300, Min: 200, Max: 550, HardMin: 150, HardMax: 600, Group: "Conditions"),
+            new CalcInputSpec("p_f", "Final (maximum working) pressure, gauge", CalcInputKind.Quantity, "kPa", UnitChangedAt: "1.5.0", UnitWas: "bar", Default: 250, Min: 50, Max: 600, HardMin: 10, HardMax: 600, Group: "Conditions"),
+            new CalcInputSpec("p_prv", "Safety valve setting, gauge", CalcInputKind.Quantity, "kPa", UnitChangedAt: "1.5.0", UnitWas: "bar", Default: 300, Min: 200, Max: 550, HardMin: 150, HardMax: 600, Group: "Conditions"),
             new CalcInputSpec("n", "Emitter exponent", CalcInputKind.Number, Default: 1.3, Min: 1.2, Max: 1.4, HardMin: 1.1, HardMax: 1.5, Group: "Factors"),
-            new CalcInputSpec("p_margin", "Pre-charge allowance over static head", CalcInputKind.Quantity, "kPa", Default: 30, Min: 0, Max: 100, HardMin: 0, HardMax: 200, Group: "Factors"),
+            new CalcInputSpec("p_margin", "Pre-charge allowance over static head", CalcInputKind.Quantity, "kPa", UnitChangedAt: "1.5.0", UnitWas: "bar", Default: 30, Min: 0, Max: 100, HardMin: 0, HardMax: 200, Group: "Factors"),
         ],
         [
             new CalcAssumption("The system is a closed LTHW system below 100 °C.", "Catalogue ratings at 75/65/20 °C."),

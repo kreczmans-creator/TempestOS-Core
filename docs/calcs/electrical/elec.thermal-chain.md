@@ -1,4 +1,4 @@
-# Heat sink thermal resistance chain (`elec.thermal-chain@1.1.0`)
+# Heat sink thermal resistance chain (`elec.thermal-chain@1.1.1`)
 
 **In plain terms.** The heat a component makes has to flow out to the air through a chain of resistances: from the chip to its case, from the case through the interface pad to the heat sink, and from the sink to the air. Each resistance in kelvin per watt times the power gives that stage's temperature rise. Adding the rises to the ambient gives the junction temperature. Turned round, the permitted rise divided by the power gives the largest total resistance the chain may have: the budget a heat sink is chosen against.
 
@@ -89,6 +89,8 @@ Steady state only (no thermal capacitance or transient overload); one series pat
 - `ka-legacy-on-limit`: Legacy example 4: exactly on the limit at 34 W (Confirmed; source: TempestOS calc.thermal-resistance-chain (v0.21.0) hand calculation)
 
 ## Changes
+
+**1.1.1.** Declares the unit change of 1.1.0 (ADR-0177 review): `P` was in W before 1.1.0, so a bare stored number from an earlier version is read in W, never kW. No calculated value changes.
 
 **Changes in 1.1.0 (C-2 consistency, phase C).** Layout and wording only; no result changes. `P` is entered in kW (the default is 0.025 kW, the 25 W it was); a saved value keeps its value and unit. The check compares the rise `dT_tot` with the new step `dT_allow`, the permitted rise in K. The template declares the ports `heatsink.*`. The scope, the messages and the references follow the sheet standard. The stage column `R` keeps its key, because a table column has no alias mechanism and a renamed key would break saved tables.
 

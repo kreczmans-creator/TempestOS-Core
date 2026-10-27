@@ -36,11 +36,11 @@ public sealed class ThermalChainCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.0", CalcDiscipline.Electrical, "Heat sink thermal resistance chain",
+        Id, "1.1.1", CalcDiscipline.Electrical, "Heat sink thermal resistance chain",
         "Calculates the steady-state source temperature from a series chain of thermal resistances to ambient, with the rise across each stage. It gives the margin against the permitted maximum, negative over the limit, and the largest total resistance allowed.",
         "Temperature rise across each stage: ΔT_i = P·R_i.\nTotal resistance of the chain and the total rise: R_tot = Σ R_i; ΔT_tot = P·R_tot.\nSource (hottest node) temperature, each node below it being the one above less that stage's rise: T_1 = T_a + ΔT_tot.\nMargin against the permitted maximum: margin = T_max − T_1.\nLargest total resistance the limit allows, the heat sink budget: R_max = (T_max − T_a)/P.\nUtilisation of the permitted rise: u = ΔT_tot/(T_max − T_a).",
         [
-            new CalcInputSpec("P", "Steady power dissipated (the heat flow through every stage)", CalcInputKind.Quantity, "kW", Default: 0.025, Min: 0, Max: 10, HardMin: 0, HardMax: 1e4, Group: "Source"),
+            new CalcInputSpec("P", "Steady power dissipated (the heat flow through every stage)", CalcInputKind.Quantity, "kW", UnitChangedAt: "1.1.0", UnitWas: "W", Default: 0.025, Min: 0, Max: 10, HardMin: 0, HardMax: 1e4, Group: "Source"),
             new CalcInputSpec("T_a", "Ambient the last stage rejects to", CalcInputKind.Quantity, "degC", Default: 40, Min: -40, Max: 85, HardMin: -273.15, HardMax: 1000, Group: "Conditions"),
             new CalcInputSpec("stages", "Thermal resistances in series, hottest first", CalcInputKind.Table, Columns: Columns, MaxRows: MaxStages, Group: "Chain"),
             new CalcInputSpec("T_max", "Maximum permitted temperature of the hottest node (junction or case)", CalcInputKind.Quantity, "degC", Default: 125, Min: 40, Max: 200, HardMin: -273.15, HardMax: 2000, Group: "Source"),
