@@ -18,6 +18,8 @@ Calculates the basic and modified rating life of a rolling bearing under a stead
 
 The equivalent load is `F_dyn = X_1·F_r + Y_1·F_a` when `F_a/F_r ≤ e_lim` (`X_1 = 1`, `Y_1 = 0` for a single-row radial ball bearing, the defaults; `Y_1 > 0` for double-row angular-contact and paired bearings), else `X·F_r + Y·F_a` (ISO 281:2007 cl. 6–7). `Y = 0` with an axial load above `e_lim` is refused (rule `axial-factor`): it would make the axial load count for nothing in `F_dyn`, so the sheet asks for the bearing's X and Y instead of passing on `F_dyn = F_r`. Pure thrust (`F_r = 0`) is refused the same way. `L_10h = 10⁶ L_10/(60 n)`. The reliability factor is derived (ISO 281:2007); ISO 281:1990 gave 0.62 at 95 % and 0.21 at 99 %. `P_0 = max(X_0 F_r + Y_0 F_a, F_r)` and `s_0 = C_0/P_0` follow ISO 76:2006. The factor `e` is entered as `e_lim` because `e` is the engine's constant. `kappa` has the range 0.1 to 100: below 0.1 is refused by the range, and above 4 it is treated as 4 with a warning.
 
+**Reference diagram.** The worksheet draws the bearing on its shaft in section, a ball or a roller bearing by `type`. It binds `F_r`, `F_a` and `n` to the loads and the speed and `C` to the rings. `C_0`, `e_lim`, `X`, `Y`, `R_rel`, `a_iso`, `L_req`, `s_0_req` and `duty` are labels. The drawing is not to scale (ADR-0158, DI-08).
+
 ## Inputs
 
 | Symbol | Description | Unit | Default | Usual range | Group |
