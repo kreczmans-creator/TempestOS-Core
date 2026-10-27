@@ -93,4 +93,113 @@ public sealed class WorksheetShotFixTests
         Assert.True(view.IsUtilisationBarShown);
         Assert.Null(view.GoverningVerdictMark);
     }
+    [AvaloniaFact]
+    public void Item5_A_Long_Text_Takes_A_Full_Width_Row_And_A_Swept_Vector_Is_One_Summary_Line()
+    {
+        var (view, window) = Shown(1400);
+        var notice = "This is a design calculation, not a thorough examination of the lifting accessory; the examination remains the competent person's duty under the regulations in force.";
+        var angles = Enumerable.Range(0, 73).Select(i => i * 5.0).ToList();
+        var outputs = new List<CalcOutput>
+        {
+            new("sheet_notice", "What this sheet is", new Tempest.Calc.Engine.Values.TextValue(notice)),
+            new("theta2", "Crank angle", Tempest.Calc.Engine.Values.VectorValue.Of(angles, "deg")),
+            new("short", "A short text", new Tempest.Calc.Engine.Values.TextValue("ok")),
+        };
+        view.ShowRun(new CalcRunResult([], outputs, [], [], [], []));
+        window.UpdateLayout();
+
+        // What the form reports as shown is still the sheet's own text.
+        Assert.Equal(outputs.Select(o => (o.Symbol, o.ValueText)), view.ShownResults);
+
+        var texts = view.GetLogicalDescendants().OfType<TextBlock>().ToList();
+        var wide = texts.Single(t => AutomationProperties.GetName(t) == "Result sheet_notice");
+        Assert.True(wide.Bounds.Width > 400, $"the long text is {wide.Bounds.Width} px wide");
+
+        var summary = texts.Single(t => AutomationProperties.GetName(t) == "Result theta2");
+        Assert.StartsWith("73 values, 0 to 360", SymbolText.Raw(summary), StringComparison.Ordinal);
+        var all = view.GetLogicalDescendants().OfType<Expander>().Single(e => AutomationProperties.GetName(e) == "Result theta2 all values");
+        Assert.False(all.IsExpanded);
+        Assert.Contains("355, 360", ((SelectableTextBlock)all.Content!).Text, StringComparison.Ordinal);
+
+        var small = texts.Single(t => AutomationProperties.GetName(t) == "Result short");
+        Assert.Equal("\"ok\"", SymbolText.Raw(small));
+    }
+    private static CalcSheetView Live(string templateId)
+    {
+        var catalogue = new CalcCatalogue(CalcCalculatorComposition.All());
+        var view = new CalcSheetView();
+        view.InputsChanged += inputs => view.ShowRun(CalcRunner.Run(catalogue.Get(templateId).Calculator, inputs));
+        view.ShowCatalogue(catalogue.Current());
+        view.SelectTemplate(templateId);
+        return view;
+    }
+
+    private static RecordRequirement Required(string kind, params string[] symbols) => new(kind, kind, symbols, RecordNeed.Required, "needed", Present: false, Count: 0, []);
+
+    [AvaloniaFact]
+    public void Item6_A_Required_Record_Is_Missing_Only_While_Nothing_On_The_Form_Gives_It()
+    {
+        var view = Live("mech.snap-fit");
+        view.SetRecordRequirements(view.SelectedTemplate!.Reference, [Required("snapfit.friction", "mu")]);
+
+        // On the defaults mu is empty: genuinely missing.
+        Assert.Equal(["snapfit.friction"], view.MissingRequiredKinds);
+        Assert.StartsWith("1 required record is missing", view.RequirementsSummary, StringComparison.Ordinal);
+
+        // Typed by hand: not missing, but its source is still asked for.
+        view.SetField("mu", text: "0.35");
+        Assert.Empty(view.MissingRequiredKinds);
+        Assert.StartsWith("1 required value is typed on the form without a source", view.RequirementsSummary, StringComparison.Ordinal);
+
+        // Typed with a source: met.
+        view.SetField("mu", provenance: "spec", reference: "Maker's data sheet, table 4");
+        Assert.Empty(view.MissingRequiredKinds);
+        Assert.StartsWith("All 1 required record(s) are entered, or given on the form", view.RequirementsSummary, StringComparison.Ordinal);
+        Assert.True(view.IsRequirementsShown);
+    }
+
+    [AvaloniaFact]
+    public void Item6_The_Built_In_Factor_Set_Stands_In_For_The_Factors_Record()
+    {
+        var view = Live("struct.load-combinations");
+        view.SetRecordRequirements(view.SelectedTemplate!.Reference, [Required("en1990.factors", "gamma_G_sup", "gamma_G_inf", "gamma_Q", "xi", "psi")]);
+
+        view.SetField("factor_set", choice: "EN recommended");
+        Assert.Empty(view.MissingRequiredKinds);
+        Assert.DoesNotContain("missing", view.RequirementsSummary, StringComparison.Ordinal);
+
+        view.SetField("factor_set", choice: "National Annex record");
+        Assert.StartsWith("1 required value is typed on the form without a source", view.RequirementsSummary, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Item6_Every_Built_In_Alternative_Names_A_Real_Choice_Of_Its_Template()
+    {
+        var all = CalcCalculatorComposition.All().ToDictionary(c => c.Template.Id, c => c.Template, StringComparer.Ordinal);
+
+        foreach (var (template, kind, symbol, choice) in RecordRequirements.BuiltInEntries)
+        {
+            Assert.True(all.TryGetValue(template, out var t), template);
+            Assert.Contains(t!.RecordKinds ?? [], k => k.Kind == kind);
+            Assert.Contains(choice, t.FindInput(symbol)!.Choices ?? []);
+        }
+    }
+
+    [AvaloniaFact]
+    public void Item6_An_Issued_Calculation_Shows_No_Missing_Records_Banner()
+    {
+        var view = Live("mech.snap-fit");
+        var entry = view.SelectedTemplate!;
+        var draft = Instance(entry, CalcInstanceStatus.Draft);
+        view.ShowTemplate(entry, draft);
+        view.SetRecordRequirements(entry.Reference, [Required("snapfit.friction", "mu")]);
+        Assert.True(view.IsRequirementsShown);
+
+        view.ShowInstance(draft with { Status = CalcInstanceStatus.Issued, IssuedAt = DateTimeOffset.UnixEpoch });
+        Assert.False(view.IsRequirementsShown);
+
+        view.ShowTemplate(entry, Instance(entry, CalcInstanceStatus.Issued));
+        view.SetRecordRequirements(entry.Reference, [Required("snapfit.friction", "mu")]);
+        Assert.False(view.IsRequirementsShown);
+    }
 }

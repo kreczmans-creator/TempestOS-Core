@@ -742,6 +742,7 @@ public sealed partial class CalcSheetView : UserControl
         var template = entry.Template;
         _diagram.IsVisible = true;
         _diagram.ShowReading(template.Title, () => SelectedTemplate is { } t ? CalcDiagramReader.Read(t.Template, ReadForm()) : null, symbol => template.FindInput(symbol)?.Description);
+        RenderRequirements();
         UpdateActions();
         RaiseInputsChanged();
 
@@ -859,7 +860,7 @@ public sealed partial class CalcSheetView : UserControl
 
         foreach (var o in result.Outputs)
         {
-            _results.Children.Add(Readout(o.Symbol, o.ValueText, o.Description));
+            _results.Children.Add(ResultRow(o));
             _shownResults.Add((o.Symbol, o.ValueText));
         }
 
@@ -901,6 +902,9 @@ public sealed partial class CalcSheetView : UserControl
         _exportButton.IsEnabled = SelectedTemplate is not null;
         _importButton.IsEnabled = SelectedTemplate is not null && !IsReadOnly;
         _attachButton.IsVisible = ExternalReportInput is not null && CurrentInstance is { Status: CalcInstanceStatus.Draft };
+
+        // The missing-records banner follows the form: a value typed or a built-in set picked is not a missing record.
+        RenderRequirements();
         UpdateActions();
         RunShown?.Invoke();
     }
@@ -923,6 +927,7 @@ public sealed partial class CalcSheetView : UserControl
         foreach (var picker in _referencePickers.Values)
             picker.IsEnabled = !IsReadOnly && picker.ItemCount > 0;
 
+        RenderRequirements();
         UpdateActions();
     }
 
@@ -1568,6 +1573,76 @@ public sealed partial class CalcSheetView : UserControl
         row.Children.Add(text);
         row.Children.Add(control);
         return row;
+    }
+
+    /// <summary>Text longer than this is not squeezed into the value column: it takes a row of its own across the panel.</summary>
+    public const int LongTextLength = 48;
+
+    /// <summary>A vector longer than this is shown as one summary line (count, least and greatest) with its values behind an expander.</summary>
+    public const int LongVectorLength = 6;
+
+    /// <summary>
+    /// One result. A short value sits in the value column; a long text (a notice, an advisory) takes a full-width row under its name; a swept vector
+    /// (73 angles) is summarised on one line, with every value behind an expander, so the checks stay near the top of the panel.
+    /// </summary>
+    private static Control ResultRow(CalcOutput output)
+    {
+        if (output.Value is Tempest.Calc.Engine.Values.VectorValue { Length: > LongVectorLength } vector && output.DisplayText is null)
+            return VectorReadout(output.Symbol, vector, output.Description);
+
+        var value = output.ValueText;
+        return value.Length > LongTextLength && value.Contains(' ', StringComparison.Ordinal) && !value.StartsWith('[') ? WideReadout(output.Symbol, value, output.Description) : Readout(output.Symbol, value, output.Description);
+    }
+
+    /// <summary>The one-line summary of a long vector: its count and its least and greatest values, in its display unit.</summary>
+    public static string VectorSummary(Tempest.Calc.Engine.Values.VectorValue vector)
+    {
+        ArgumentNullException.ThrowIfNull(vector);
+        var shown = vector.Displayed.Where(double.IsFinite).ToList();
+        var unit = vector.DisplayUnit.Symbol is { Length: > 0 } u && u != "1" ? " " + CalcUnitText.Pretty(u) : string.Empty;
+
+        if (shown.Count == 0)
+            return string.Create(CultureInfo.InvariantCulture, $"{vector.Length} values");
+
+        var least = Tempest.Calc.Engine.Values.CalcValue.FormatNumber(shown.Min(), 5);
+        var greatest = Tempest.Calc.Engine.Values.CalcValue.FormatNumber(shown.Max(), 5);
+        return string.Create(CultureInfo.InvariantCulture, $"{vector.Length} values, {least} to {greatest}{unit}");
+    }
+
+    private static Control VectorReadout(string label, Tempest.Calc.Engine.Values.VectorValue vector, string? note)
+    {
+        var block = new StackPanel { Spacing = 0 };
+        block.Children.Add(Readout(label, VectorSummary(vector), note));
+        var unit = vector.DisplayUnit.Symbol is { Length: > 0 } u && u != "1" ? $" ({CalcUnitText.Pretty(u)})" : string.Empty;
+        var all = new SelectableTextBlock
+        {
+            Text = string.Join(", ", vector.Displayed.Select(x => Tempest.Calc.Engine.Values.CalcValue.FormatNumber(x, 5))),
+            FontFamily = DesignTokens.MonoFont,
+            FontSize = DesignTokens.FontSizeCaption + 1,
+            TextWrapping = TextWrapping.Wrap,
+        };
+        AutomationProperties.SetName(all, $"Result {label} values");
+        var expander = new Expander { Header = $"All {vector.Length} values of {label}{unit}", IsExpanded = false, Content = all, Margin = new Thickness(120, 0, 0, DesignTokens.SpaceXs), HorizontalAlignment = HorizontalAlignment.Stretch };
+        AutomationProperties.SetName(expander, $"Result {label} all values");
+        block.Children.Add(expander);
+        return block;
+    }
+
+    /// <summary>A long text result: its name and description on one line, the text across the whole panel below.</summary>
+    private static Control WideReadout(string label, string value, string? note)
+    {
+        var block = new StackPanel { Spacing = 0, Margin = new Thickness(0, 0, 0, DesignTokens.SpaceXs) };
+        var head = new Grid { ColumnDefinitions = new ColumnDefinitions("120,*") };
+        var name = Typeset(new TextBlock { Opacity = 0.8, FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Top }, label);
+        var desc = Caption(note ?? string.Empty);
+        Grid.SetColumn(desc, 1);
+        head.Children.Add(name);
+        head.Children.Add(desc);
+        var read = Typeset(new TextBlock { FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(120, 2, 0, 0) }, value);
+        AutomationProperties.SetName(read, $"Result {label}");
+        block.Children.Add(head);
+        block.Children.Add(read);
+        return block;
     }
 
     private static Control Readout(string label, string value, string? note)
