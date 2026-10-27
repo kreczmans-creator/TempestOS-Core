@@ -127,7 +127,8 @@ public static class SvgPictureBuilder
     /// <param name="ShapesSkipped">Shapes left out because their data was over <see cref="Limits.ShapeDataCharacters"/> or they would take the document past <see cref="Limits.PathVerbs"/> (F8).</param>
     /// <param name="StyleRules">Style-sheet rules kept, one per distinct selector (F9).</param>
     /// <param name="StyleRulesIgnored">Style-sheet rules of a further selector past <see cref="Limits.StyleRules"/>, ignored (F9).</param>
-    public sealed record Statistics(int Elements, int GradientStopParses, long DecodedPixels, int ImagesSkipped, int TypefaceLookups, int FamilyLookups, int OpacityLayers, int OpacityFolds, long PathVerbs, int ShapesSkipped, int StyleRules, int StyleRulesIgnored);
+    /// <param name="GradientShaders">Gradient shaders built, each holding its own copy of the stops: one per gradient and opacity, however many shapes paint with it (SEC-C-12).</param>
+    public sealed record Statistics(int Elements, int GradientStopParses, long DecodedPixels, int ImagesSkipped, int TypefaceLookups, int FamilyLookups, int OpacityLayers, int OpacityFolds, long PathVerbs, int ShapesSkipped, int StyleRules, int StyleRulesIgnored, int GradientShaders);
 
     private const float PixelsPerInch = 96f;
     private const float DefaultFontSize = 16f;
@@ -233,6 +234,7 @@ public static class SvgPictureBuilder
         finally
         {
             renderer.ReleaseImages();
+            renderer.ReleaseShaders();
         }
 
         var picture = recorder.EndRecording();
@@ -748,10 +750,52 @@ public static class SvgPictureBuilder
         }
     }
 
+    /// <summary>One gradient at one opacity (SEC-C-12): built once, then shared by every shape that paints with it.</summary>
+    private sealed class GradientShader : IDisposable
+    {
+        /// <summary>The gradient in user space, or on the unit square when <see cref="BoundingBox"/>; <see langword="null"/> when it paints nothing.</summary>
+        public SKShader? Shader { get; set; }
+
+        /// <summary>Whether the gradient is in object-bounding-box units, so that each shape takes <see cref="Shader"/> mapped onto its bounds.</summary>
+        public bool BoundingBox { get; set; }
+
+        /// <summary>The colour of the last stop: what a shape with an empty bounding box is painted with.</summary>
+        public SKColor LastColour { get; set; }
+
+        /// <summary>The last stop's colour as a shader, made the first time a shape with an empty bounding box asks for it.</summary>
+        public SKShader? Empty { get; set; }
+
+        /// <summary>The <c>gradientTransform</c> of a gradient in object-bounding-box units, applied inside the unit square when it is mapped onto a shape.</summary>
+        public SKMatrix Transform { get; set; } = SKMatrix.Identity;
+
+        /// <summary>The bounds <see cref="Mapped"/> was made for.</summary>
+        public SKRect MappedBounds { get; set; }
+
+        /// <summary><see cref="Shader"/> mapped onto <see cref="MappedBounds"/>, taken again by the next shape of the same bounds.</summary>
+        public SKShader? Mapped { get; set; }
+
+        /// <summary>Releases <see cref="Mapped"/>, unless it is <see cref="Shader"/> itself (a mapping onto the unit square is no mapping, and Skia hands back the same shader).</summary>
+        public void ReleaseMapped()
+        {
+            if (!ReferenceEquals(Mapped, Shader))
+                Mapped?.Dispose();
+
+            Mapped = null;
+        }
+
+        public void Dispose()
+        {
+            ReleaseMapped();
+            Shader?.Dispose();
+            Empty?.Dispose();
+        }
+    }
+
     private sealed class Renderer(Context context, BoundsTracker bounds)
     {
         private int _elements;
         private int _gradientStopParses;
+        private int _gradientShaders;
         private long _decodedPixels;
         private int _imagesSkipped;
         private int _typefaceLookups;
@@ -776,7 +820,13 @@ public static class SvgPictureBuilder
         /// <summary>The parsed stops of every gradient used so far, by the id it was asked for (F2): a document with two thousand shapes on one gradient parses its stops once.</summary>
         private readonly Dictionary<string, List<(float Offset, SKColor Colour)>> _stops = new(StringComparer.Ordinal);
 
-        public Statistics Statistics => new(_elements, _gradientStopParses, _decodedPixels, _imagesSkipped, _typefaceLookups, _familyLookups, _opacityLayers, _opacityFolds, _pathVerbs, _shapesSkipped, context.RuleCount, context.RulesIgnored);
+        /// <summary>
+        /// The shader of every gradient used so far, by id and opacity (SEC-C-12). Before, every fill and stroke built a shader of its own,
+        /// each with its own copy of the stops, and the picture kept every one: 50 000 rects on one gradient held about 3 KB each.
+        /// </summary>
+        private readonly Dictionary<(string Id, byte Alpha), GradientShader> _shaders = [];
+
+        public Statistics Statistics => new(_elements, _gradientStopParses, _decodedPixels, _imagesSkipped, _typefaceLookups, _familyLookups, _opacityLayers, _opacityFolds, _pathVerbs, _shapesSkipped, context.RuleCount, context.RulesIgnored, _gradientShaders);
 
         /// <summary>Whether a shape of <paramref name="verbs"/> more verbs fits the document's budget (F8), counting it when it does.</summary>
         private bool TakeVerbs(long verbs)
@@ -789,6 +839,15 @@ public static class SvgPictureBuilder
 
             _pathVerbs += verbs;
             return true;
+        }
+
+        /// <summary>Releases the gradient shaders once the picture is recorded; the picture holds its own reference to each one it draws.</summary>
+        public void ReleaseShaders()
+        {
+            foreach (var shader in _shaders.Values)
+                shader.Dispose();
+
+            _shaders.Clear();
         }
 
         /// <summary>Releases the decoded images once the picture is recorded; the picture holds its own reference to each one it draws.</summary>
@@ -1217,6 +1276,12 @@ public static class SvgPictureBuilder
                 : null;
         }
 
+        /// <summary>
+        /// The shader of gradient <paramref name="id"/> at <paramref name="alpha"/> for a shape of <paramref name="shapeBounds"/>, or
+        /// <see langword="null"/> when there is none to paint with. The gradient's own shader is built once per opacity (SEC-C-12): a shape in
+        /// object-bounding-box units takes it mapped onto its bounds, which shares the one copy of the stops, and the next shape of the same
+        /// bounds takes the same mapped shader, so the recorded picture holds one gradient however many shapes paint with it.
+        /// </summary>
         private SKShader? Gradient(string id, SKRect shapeBounds, byte alpha)
         {
             if (!context.ById.TryGetValue(id, out var element))
@@ -1231,6 +1296,39 @@ public static class SvgPictureBuilder
             if (!(Is(element, "linearGradient") || Is(element, "radialGradient")))
                 return null;
 
+            if (!_shaders.TryGetValue((id, alpha), out var shader))
+            {
+                shader = BuildGradient(id, element, alpha);
+                _shaders[(id, alpha)] = shader;
+            }
+
+            if (shader.Shader is null || !shader.BoundingBox)
+                return shader.Shader;
+
+            if (shapeBounds.Width <= 0 || shapeBounds.Height <= 0)
+                return shader.Empty ??= SKShader.CreateColor(shader.LastColour);
+
+            if (shader.Mapped is null || shader.MappedBounds != shapeBounds)
+            {
+                // Object-bounding-box units: the gradient is defined on the unit square, mapped onto the shape's bounds (the transform applies
+                // inside that square). The whole matrix goes on the wrapper, over a gradient built with no matrix of its own, so the shape gets
+                // exactly the matrix its own shader had before; Skia applies a wrapper's matrix after the wrapped shader's, not before, so the
+                // transform cannot stay on the shared gradient. The mapped shader this replaces is released here; the picture keeps its own
+                // reference to it.
+                shader.ReleaseMapped();
+                var toBounds = SKMatrix.CreateScaleTranslation(shapeBounds.Width, shapeBounds.Height, shapeBounds.Left, shapeBounds.Top);
+                shader.Mapped = shader.Shader.WithLocalMatrix(toBounds.PreConcat(shader.Transform));
+                shader.MappedBounds = shapeBounds;
+            }
+
+            return shader.Mapped;
+        }
+
+        /// <summary>The shader of gradient <paramref name="element"/> at <paramref name="alpha"/>: in user space, or on the unit square in object-bounding-box units.</summary>
+        private GradientShader BuildGradient(string id, XElement element, byte alpha)
+        {
+            var shader = new GradientShader();
+
             if (!_stops.TryGetValue(id, out var stops))
             {
                 stops = Stops(element, 0);
@@ -1239,25 +1337,27 @@ public static class SvgPictureBuilder
             }
 
             if (stops.Count == 0)
-                return null;
+                return shader;
 
             if (stops.Count == 1)
-                return SKShader.CreateColor(stops[0].Colour.WithAlpha((byte)(stops[0].Colour.Alpha * alpha / 255)));
+            {
+                shader.Shader = SKShader.CreateColor(stops[0].Colour.WithAlpha((byte)(stops[0].Colour.Alpha * alpha / 255)));
+                return shader;
+            }
 
             var colours = stops.Select(s => s.Colour.WithAlpha((byte)(s.Colour.Alpha * alpha / 255))).ToArray();
             var positions = stops.Select(s => s.Offset).ToArray();
             var userSpace = string.Equals(Inherited(element, "gradientUnits", 0), "userSpaceOnUse", StringComparison.Ordinal);
             var tile = (Inherited(element, "spreadMethod", 0) ?? "pad") switch { "reflect" => SKShaderTileMode.Mirror, "repeat" => SKShaderTileMode.Repeat, _ => SKShaderTileMode.Clamp };
             var local = ParseTransform(Inherited(element, "gradientTransform", 0)) ?? SKMatrix.Identity;
+            shader.BoundingBox = !userSpace;
+            shader.LastColour = colours[^1];
 
             if (!userSpace)
             {
-                if (shapeBounds.Width <= 0 || shapeBounds.Height <= 0)
-                    return SKShader.CreateColor(colours[^1]);
-
-                // Object-bounding-box units: the gradient is defined on the unit square, mapped onto the shape's bounds (the transform applies inside that square).
-                var toBounds = SKMatrix.CreateScaleTranslation(shapeBounds.Width, shapeBounds.Height, shapeBounds.Left, shapeBounds.Top);
-                local = toBounds.PreConcat(local);
+                // The gradient on the unit square; each shape maps it onto its bounds, with the transform (see Gradient).
+                shader.Transform = local;
+                local = SKMatrix.Identity;
             }
 
             if (Is(element, "linearGradient"))
@@ -1266,7 +1366,9 @@ public static class SvgPictureBuilder
                 var y1 = Coordinate(Inherited(element, "y1", 0), 0f, userSpace, 1);
                 var x2 = Coordinate(Inherited(element, "x2", 0), 1f, userSpace, 0);
                 var y2 = Coordinate(Inherited(element, "y2", 0), 0f, userSpace, 1);
-                return SKShader.CreateLinearGradient(new SKPoint(x1, y1), new SKPoint(x2, y2), colours, positions, tile, local);
+                _gradientShaders++;
+                shader.Shader = SKShader.CreateLinearGradient(new SKPoint(x1, y1), new SKPoint(x2, y2), colours, positions, tile, local);
+                return shader;
             }
 
             var cx = Coordinate(Inherited(element, "cx", 0), 0.5f, userSpace, 0);
@@ -1276,11 +1378,18 @@ public static class SvgPictureBuilder
             var fy = Coordinate(Inherited(element, "fy", 0), cy, userSpace, 1);
 
             if (r <= 0)
-                return SKShader.CreateColor(colours[^1]);
+            {
+                // No radius: the last colour, whatever the shape's bounds.
+                shader.Shader = SKShader.CreateColor(colours[^1]);
+                shader.BoundingBox = false;
+                return shader;
+            }
 
-            return fx == cx && fy == cy
+            _gradientShaders++;
+            shader.Shader = fx == cx && fy == cy
                 ? SKShader.CreateRadialGradient(new SKPoint(cx, cy), r, colours, positions, tile, local)
                 : SKShader.CreateTwoPointConicalGradient(new SKPoint(fx, fy), 0, new SKPoint(cx, cy), r, colours, positions, tile, local);
+            return shader;
         }
 
         private float Coordinate(string? text, float fallback, bool userSpace, int axis)

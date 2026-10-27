@@ -168,6 +168,78 @@ public sealed class SvgHostileInputTests
         Assert.Equal(new SKColor(0, 0, 255), PixelAt(picture, 98, 75));
     }
 
+    [AvaloniaFact]
+    public void Shapes_Painted_From_One_Gradient_Share_One_Shader_And_Allocate_Little_Each()
+    {
+        // Review C2 (SEC-C-12): every fill and stroke from a gradient built a shader of its own, with its own copy of the stops, and the
+        // recorded picture kept each one. The CI probe of 50 000 rects filled and stroked from one gradient of 1 000 stops (64 kept) peaked at
+        // 271 MB against its bound of 200 MB: about 3 KB a rect held by the picture and 1.7 KB more allocated on the way. Here 5 000 rects, half
+        // on one bounding box and half each on its own: the document builds one shader, and a rect painted from the gradient allocates little
+        // more than a rect whose paint names a gradient that is not there and takes its fallback colour, so the paint text, the style and
+        // the drawing cost the same in both and the difference is the gradient's own work.
+        const int Rects = 5_000;
+
+        static string Document(string paint)
+        {
+            var body = new StringBuilder("<defs><linearGradient id=\"g\">");
+
+            // The kept stops are red up to the 63rd and blue from the 64th (at offset 0.063); the stops past the cap are green and are not drawn.
+            for (var i = 0; i < 1_000; i++)
+                body.Append(System.Globalization.CultureInfo.InvariantCulture, $"<stop offset=\"{i / 1000.0:F4}\" stop-color=\"{(i < 63 ? "#ff0000" : i < SvgPictureBuilder.MaxGradientStops ? "#0000ff" : "#00ff00")}\"/>");
+
+            body.Append($"</linearGradient></defs><style>rect{{fill:{paint};stroke:{paint}}}</style>");
+
+            for (var i = 0; i < Rects; i++)
+            {
+                if (i % 2 == 0)
+                    body.Append("<rect width=\"10\" height=\"10\"/>");
+                else
+                    body.Append(System.Globalization.CultureInfo.InvariantCulture, $"<rect x=\"{i % 90}\" y=\"{i / 90 % 90}\" width=\"10\" height=\"{5 + (i % 5)}\"/>");
+            }
+
+            // Last, on top: a rect of its own bounding box, red where the gradient is under 0.063 of its width and blue after.
+            body.Append("<rect x=\"40\" y=\"40\" width=\"50\" height=\"10\" style=\"stroke:none\"/>");
+            return Svg(body.ToString());
+        }
+
+        var gradient = Document("url(#g)");
+        var colour = Document("url(#missing) #123456");
+
+        // Warmed once each, so neither measurement carries the first call's code generation.
+        SvgPictureBuilder.Build(gradient).Dispose();
+        SvgPictureBuilder.Build(colour).Dispose();
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        using var picture = BuildWithin(gradient, "5 000 rects on one gradient of 1 000 stops");
+        var gradientBytes = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        before = GC.GetAllocatedBytesForCurrentThread();
+        using (BuildWithin(colour, "5 000 rects of a fallback colour"))
+        {
+        }
+
+        var colourBytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        var perRect = (gradientBytes - colourBytes) / (Rects + 1);
+
+        Assert.True(perRect < 256, $"a rect painted from the gradient allocated {perRect} bytes more than one painted with its fallback colour (limit 256).");
+        Assert.Equal(1, picture.Statistics.GradientStopParses);
+        Assert.Equal(1, picture.Statistics.GradientShaders);
+        Assert.Equal(new SKColor(255, 0, 0), PixelAt(picture, 41, 45));
+        Assert.Equal(new SKColor(0, 0, 255), PixelAt(picture, 88, 45));
+
+        // The shared gradient keeps its transform inside each shape's unit square: turned a quarter about the square's centre, red above
+        // the middle of each rect and blue below it, on two rects of different bounds. Applied outside the mapping instead (Skia's order for
+        // a wrapper's matrix), the first rect turns blue from row 25 and the second stays red to row 75.
+        using var turned = BuildWithin(Svg("<defs><linearGradient id=\"t\" gradientTransform=\"rotate(90 0.5 0.5)\"><stop offset=\"0.5\" stop-color=\"#ff0000\"/><stop offset=\"0.5\" stop-color=\"#0000ff\"/></linearGradient></defs>" +
+            "<rect x=\"10\" y=\"10\" width=\"30\" height=\"80\" fill=\"url(#t)\"/><rect x=\"60\" y=\"50\" width=\"30\" height=\"40\" fill=\"url(#t)\"/>"), "a turned gradient on two rects");
+
+        Assert.Equal(1, turned.Statistics.GradientShaders);
+        Assert.Equal(new SKColor(255, 0, 0), PixelAt(turned, 25, 40));
+        Assert.Equal(new SKColor(0, 0, 255), PixelAt(turned, 25, 75));
+        Assert.Equal(new SKColor(255, 0, 0), PixelAt(turned, 75, 67));
+        Assert.Equal(new SKColor(0, 0, 255), PixelAt(turned, 75, 72));
+    }
+
     // ------------------------------------------------------------------
     // F3: a dash array of more than 64 values is no dash
     // ------------------------------------------------------------------
