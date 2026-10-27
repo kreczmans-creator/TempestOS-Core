@@ -157,10 +157,12 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
             SKTextAlign[] inputAligns = [SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Right, SKTextAlign.Left, SKTextAlign.Left, SKTextAlign.Left];
             List<string[]> inputRows = [.. sheet.Inputs.Where(i => !IsElementRow(i)).Select(i => new[] { T(i.Symbol), T(i.Description), T(i.Value), T(CalcDiagramReader.Pretty(i.Unit)), T(i.Source), T(CalcDiagramReader.Pretty(i.ValidRange)) })];
 
-            // The symbol column widens to the longest symbol (up to a cap), taking the width from the description, so a
-            // long symbol ("combinations") never runs into its description (the shots review found it).
+            // The symbol and value columns widen to their longest word (up to a cap), taking the width from the
+            // description, so a long symbol ("combinations") never runs into its description (the shots review found
+            // it) and a choice ("Compression") is not broken mid-word in the value column.
             var symbolWidth = ColumnFor(measure, inputRows.Select(r => r[0]), 0.12f, 0.20f);
-            float[] inputWidths = [symbolWidth, W(0.42f) - symbolWidth, W(0.12f), W(0.08f), W(0.22f), W(0.16f)];
+            var valueWidth = ColumnFor(measure, inputRows.Select(r => r[2]), 0.12f, 0.20f, DocumentFontRole.Mono);
+            float[] inputWidths = [symbolWidth, W(0.54f) - symbolWidth - valueWidth, valueWidth, W(0.08f), W(0.22f), W(0.16f)];
 
             DocumentTemplate.AddHeading(state, measure, CalcSheetStandard.Inputs, DocumentTemplate.TableLeadHeight(measure, inputWidths, inputRows, inputAligns));
             DocumentTemplate.AddTable(state, measure, inputHeaders, inputWidths, inputRows, inputAligns, [true, true, false, false, false, false]);
@@ -396,10 +398,10 @@ public sealed class CalcSheetPdfRenderer : ICalcSheetRenderer
     /// label), but never below <paramref name="minFraction"/> or above <paramref name="maxFraction"/> of the content width.
     /// Past the cap, the table breaks the word between characters rather than print it over the next column.
     /// </summary>
-    private static float ColumnFor(SKPaint measure, IEnumerable<string> cells, float minFraction, float maxFraction)
+    private static float ColumnFor(SKPaint measure, IEnumerable<string> cells, float minFraction, float maxFraction, DocumentFontRole role = DocumentFontRole.Body)
     {
         measure.TextSize = DocumentTemplate.BodySize;
-        var widest = cells.SelectMany(c => c.Split(' ', StringSplitOptions.RemoveEmptyEntries)).Select(w => measure.MeasureText(w)).DefaultIfEmpty(0f).Max();
+        var widest = cells.SelectMany(c => c.Split(' ', StringSplitOptions.RemoveEmptyEntries)).Select(w => DocumentTemplate.MeasureInFaces(measure, w, role)).DefaultIfEmpty(0f).Max();
         return Math.Clamp(widest + DocumentTemplate.CellPaddingX * 2 + 1f, W(minFraction), W(maxFraction));
     }
 

@@ -274,6 +274,11 @@ public sealed class CalcSheetPdfLayoutTests
         var (sheet, _, _) = Build(longest.relative, longest.name);
         AssertHeaderFits(sheet, whole: true);
 
+        // Kept as a test artefact, to look at.
+        var artefacts = Path.Combine(DesktopTestHelpers.RepositoryRoot, "TestResults", "calc-sheets");
+        Directory.CreateDirectory(artefacts);
+        File.WriteAllBytes(Path.Combine(artefacts, "longest-name-header.pdf"), new CalcSheetPdfRenderer().Render(sheet).ToArray());
+
         // A name past any real one is shrunk and, as a last resort, cut short; it still never reaches the logo.
         AssertHeaderFits(sheet with { Header = sheet.Header with { CalcId = string.Join(" ", Enumerable.Repeat("Lateral-torsional buckling", 8)) } }, whole: false);
         AssertHeaderFits(sheet with { Header = sheet.Header with { CalcId = new string('W', 120) } }, whole: false);

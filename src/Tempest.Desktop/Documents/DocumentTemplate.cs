@@ -756,17 +756,27 @@ public static class DocumentTemplate
             string[]? best = null;
             var bestLongest = float.MaxValue;
 
-            for (var cut = 1; cut < parts.Length; cut++)
+            // A separator (— or ·) ends the first line rather than starting the second, where that fits.
+            foreach (var separatorFirst in new[] { false, true })
             {
-                var a = string.Join(' ', parts[..cut]);
-                var b = string.Join(' ', parts[cut..]);
-                var longest = Math.Max(Width(a, size), Width(b, size));
-
-                if (longest <= width && longest < bestLongest)
+                for (var cut = 1; cut < parts.Length; cut++)
                 {
-                    best = [a, b];
-                    bestLongest = longest;
+                    if (!separatorFirst && parts[cut] is "—" or "·" or "-")
+                        continue;
+
+                    var a = string.Join(' ', parts[..cut]);
+                    var b = string.Join(' ', parts[cut..]);
+                    var longest = Math.Max(Width(a, size), Width(b, size));
+
+                    if (longest <= width && longest < bestLongest)
+                    {
+                        best = [a, b];
+                        bestLongest = longest;
+                    }
                 }
+
+                if (best is not null)
+                    return best;
             }
 
             return best;
