@@ -38,7 +38,7 @@ public sealed class EnclosureHotAmbientTests
         Assert.Null(r.FindOutput("V_req"));
         Assert.Null(r.FindOutput("V_req_net"));
         Assert.Null(r.FindOutput("rho_air"));
-        Assert.Contains(r.Checks, c => c.Name == "Natural dissipation holds T_max" && !c.Passed);
+        Assert.Contains(r.Checks, c => c.Name == "Maximum internal temperature against the ambient" && !c.Passed);
         Assert.False(r.Passed);
     }
 
@@ -59,7 +59,7 @@ public sealed class EnclosureHotAmbientTests
 
         Assert.Equal(205.95, r.OutputSi("P_cool"), 9);
         Assert.Equal(62.48, r.OutputSi("V_req") * 3600, 2);
-        Assert.Contains(r.Checks, c => c.Name == "Natural dissipation holds T_max" && c.Utilisation > 1);
+        Assert.Contains(r.Checks, c => c.Name == "Natural temperature rise against the allowed rise" && c.Utilisation > 1);
         Assert.DoesNotContain(r.Warnings, w => w.RuleId == "limit");
     }
 }

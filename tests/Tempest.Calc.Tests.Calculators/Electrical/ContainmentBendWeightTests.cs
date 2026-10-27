@@ -15,7 +15,7 @@ public sealed class ContainmentBendWeightTests
     private static CalcRunResult Heavy(double t1, params CalcInputValue[] more) =>
         CalcRunner.Run(Contain, more.Aggregate(new CalcInputSet(
         [
-            ContainmentCalculator.Cables(("Heavy", 20, 1, 10, 5000)), CalcInputValue.Choice("cont_type", ContainmentCalculator.Conduit), CalcInputValue.Quantity("D_c", 100, "mm"), CalcInputValue.Of("f_max", 0.5),
+            ContainmentCalculator.Cables(("Heavy", 20, 1, 10, 5000)), CalcInputValue.Choice("cont_type", ContainmentCalculator.Conduit), CalcInputValue.Quantity("D_int", 100, "mm"), CalcInputValue.Of("f_max", 0.5),
             ContainmentCalculator.Route(ContainmentCalculator.RB(90, 3000)), CalcInputValue.Quantity("T_1", t1, "N"), CalcInputValue.Of("mu", 0.3),
         ]), (set, v) => set.With(v)));
 
@@ -45,8 +45,8 @@ public sealed class ContainmentBendWeightTests
         // 2 x 12 mm at 0.6 kg/m and 1 x 8 mm at 0.15 kg/m (1.35 kg/m), mu 0.4, T1 100 N, 90 degree bend R 0.5 m: 187.5923 N against 187.4456 N (python3).
         CalcRunResult Bundle(params CalcInputValue[] more) => CalcRunner.Run(Contain, more.Aggregate(new CalcInputSet(
         [
-            ContainmentCalculator.Cables(("Power", 12, 2, 0.6, 700), ("Control", 8, 1, 0.15, 150)), CalcInputValue.Choice("cont_type", ContainmentCalculator.Trunking), CalcInputValue.Quantity("W_c", 100, "mm"),
-            CalcInputValue.Quantity("H_c", 50, "mm"), CalcInputValue.Of("f_max", 0.5), ContainmentCalculator.Route(ContainmentCalculator.RB(90, 500)), CalcInputValue.Quantity("T_1", 100, "N"), CalcInputValue.Of("mu", 0.4),
+            ContainmentCalculator.Cables(("Power", 12, 2, 0.6, 700), ("Control", 8, 1, 0.15, 150)), CalcInputValue.Choice("cont_type", ContainmentCalculator.Trunking), CalcInputValue.Quantity("W_int", 100, "mm"),
+            CalcInputValue.Quantity("H_int", 50, "mm"), CalcInputValue.Of("f_max", 0.5), ContainmentCalculator.Route(ContainmentCalculator.RB(90, 500)), CalcInputValue.Quantity("T_1", 100, "N"), CalcInputValue.Of("mu", 0.4),
         ]), (set, v) => set.With(v)));
 
         Assert.Equal(187.59234330, Bundle().OutputSi("T_max_a"), 6);

@@ -1,64 +1,19 @@
 {
-  "A03-check-names": {
-    "elec.conductor-sizing": 3,
-    "elec.containment": 1,
-    "elec.enclosure-heat": 2,
-    "elec.fault-protection": 2,
-    "elec.motor-sizing": 5,
-    "elec.motor-start": 2,
-    "elec.thermal-chain": 1,
-    "elec.voltage-drop": 2
-  },
-  "A03-check-shows-physical-values": {
-    "elec.conductor-sizing": 13,
-    "elec.containment": 22,
-    "elec.enclosure-heat": 2,
-    "elec.fault-protection": 10,
-    "elec.load-budget": 2,
-    "elec.motor-sizing": 10,
-    "elec.motor-start": 8,
-    "elec.pcb-trace": 4,
-    "elec.thermal-chain": 4,
-    "elec.voltage-drop": 3
-  },
-  "B07-requirement-words": {
-    "elec.load-budget": 1,
-    "elec.motor-sizing": 1,
-    "elec.motor-start": 1
-  },
-  "B08-description-pattern": {
-    "elec.fault-protection": 2,
-    "elec.motor-sizing": 1
-  },
-  "B09-optional-hint": {
-    "elec.containment": 1,
-    "elec.enclosure-heat": 3,
-    "elec.load-budget": 1,
-    "elec.motor-sizing": 2,
-    "elec.motor-start": 2
-  },
   "C10-temperature-symbols": {
     "bs.glaser": 3,
     "bs.insulation": 2,
     "bs.room-heat-loss": 2,
     "bs.sealed-system": 1,
-    "elec.conductor-sizing": 4,
-    "elec.fault-protection": 4,
-    "elec.load-budget": 1
+    "elec.fault-protection": 3
   },
   "C11-theta-is-an-angle": {
     "bs.glaser": 3,
     "bs.insulation": 1,
     "bs.room-heat-loss": 2,
-    "elec.conductor-sizing": 4,
-    "elec.fault-protection": 4,
-    "elec.load-budget": 2
+    "elec.fault-protection": 2
   },
   "C12-torque-and-time": {
     "bs.plane-wall": 1
-  },
-  "C13-no-case-only-pairs": {
-    "elec.containment": 1
   },
   "C14-quantity-letters": {
     "mech.bearing-life": 1
@@ -70,151 +25,25 @@
     "bs.pipe-pump": 1,
     "bs.sealed-system": 1,
     "elec.containment": 1,
-    "elec.enclosure-heat": 1,
     "elec.thermal-chain": 1,
     "mech.fatigue-miner": 1
   },
   "C18-sibling-symbols": {
     "elec.load-budget": 1
   },
-  "D20-units-per-quantity-type": {
-    "elec.enclosure-heat": 10,
-    "elec.fault-protection": 1,
-    "elec.load-budget": 2,
-    "elec.motor-sizing": 2,
-    "elec.thermal-chain": 1,
-    "elec.voltage-drop": 1
-  },
-  "D28-percent": {
-    "elec.fault-protection": 1
-  },
-  "F31-message-shape": {
-    "elec.enclosure-heat": 1,
-    "elec.load-budget": 1,
-    "elec.voltage-drop": 1
-  },
-  "F32-missing-input-phrasing": {
-    "elec.conductor-sizing": 2,
-    "elec.enclosure-heat": 1,
-    "elec.fault-protection": 1,
-    "elec.load-budget": 2,
-    "elec.motor-sizing": 10,
-    "elec.motor-start": 1,
-    "elec.thermal-chain": 1,
-    "elec.voltage-drop": 3
-  },
-  "F33-one-idea-per-message": {
-    "elec.conductor-sizing": 11,
-    "elec.containment": 8,
-    "elec.enclosure-heat": 4,
-    "elec.fault-protection": 4,
-    "elec.load-budget": 6,
-    "elec.motor-sizing": 12,
-    "elec.motor-start": 6,
-    "elec.pcb-trace": 1,
-    "elec.thermal-chain": 1
-  },
-  "F35-emitted-severity-equals-declared": {
-    "elec.conductor-sizing": 3
-  },
-  "F36-emitted-ids-declared": {
-    "elec.conductor-sizing": 3,
-    "elec.fault-protection": 1
-  },
-  "F36-no-input-prefix": {
-    "elec.pcb-trace": 1
-  },
-  "G38-groups-when-more-than-five-inputs": {
-    "elec.load-budget": 1
-  },
-  "G39-setup-group-first": {
-    "elec.conductor-sizing": 1,
-    "elec.containment": 1,
-    "elec.enclosure-heat": 1,
-    "elec.load-budget": 1,
-    "elec.motor-sizing": 1,
-    "elec.voltage-drop": 1
-  },
-  "G40-group-names": {
-    "elec.conductor-sizing": 1,
-    "elec.enclosure-heat": 1,
-    "elec.fault-protection": 1,
-    "elec.motor-sizing": 1,
-    "elec.motor-start": 1,
-    "elec.pcb-trace": 2,
-    "elec.voltage-drop": 2
-  },
-  "G41-group-order": {
-    "elec.conductor-sizing": 1,
-    "elec.containment": 2,
-    "elec.enclosure-heat": 2,
-    "elec.fault-protection": 2,
-    "elec.load-budget": 2,
-    "elec.motor-sizing": 4,
-    "elec.motor-start": 3,
-    "elec.voltage-drop": 2
-  },
   "G42-soft-limits": {
-    "elec.conductor-sizing": 14,
-    "elec.containment": 6,
     "elec.enclosure-heat": 6,
-    "elec.fault-protection": 22,
-    "elec.load-budget": 15,
-    "elec.motor-sizing": 2,
-    "elec.motor-start": 2,
     "mech.bolted-joint": 1
   },
-  "H43-port-names": {
-    "elec.conductor-sizing": 7,
-    "elec.containment": 2,
-    "elec.enclosure-heat": 10,
-    "elec.motor-sizing": 29,
-    "elec.motor-start": 4,
-    "elec.pcb-trace": 3
-  },
-  "H44-ports-declared": {
-    "elec.thermal-chain": 1,
-    "elec.voltage-drop": 1
-  },
-  "H45-no-legacy-codes": {
-    "elec.conductor-sizing": 2,
-    "elec.enclosure-heat": 4,
-    "elec.motor-sizing": 9,
-    "elec.motor-start": 1
-  },
   "H46-record-kinds": {
-    "elec.conductor-sizing": 1,
-    "elec.fault-protection": 1,
-    "elec.motor-start": 1,
-    "elec.pcb-trace": 2,
     "struct.base-plate": 1,
     "struct.ltb-interaction": 2
   },
-  "I49-scope-length": {
-    "elec.conductor-sizing": 2,
-    "elec.containment": 2,
-    "elec.enclosure-heat": 2,
-    "elec.fault-protection": 2,
-    "elec.load-budget": 1,
-    "elec.motor-sizing": 2,
-    "elec.motor-start": 2,
-    "elec.pcb-trace": 2,
-    "elec.thermal-chain": 2,
-    "elec.voltage-drop": 2
-  },
-  "I50-method-layout": {
-    "elec.containment": 1,
-    "elec.enclosure-heat": 1,
-    "elec.motor-sizing": 1,
-    "elec.motor-start": 1
-  },
   "J51-standard-designation": {
     "bs.pipe-expansion": 1,
-    "elec.conductor-sizing": 2,
-    "elec.containment": 2,
-    "elec.enclosure-heat": 2,
+    "elec.conductor-sizing": 1,
+    "elec.containment": 1,
     "elec.fault-protection": 1,
-    "elec.motor-start": 2,
     "elec.pcb-trace": 1,
     "elec.thermal-chain": 1,
     "elec.voltage-drop": 1,
@@ -227,13 +56,6 @@
     "struct.lifting": 3
   },
   "J52-clause-locator": {
-    "elec.conductor-sizing": 1,
-    "elec.containment": 1,
-    "elec.enclosure-heat": 1,
-    "elec.load-budget": 1,
-    "elec.motor-start": 1,
-    "elec.pcb-trace": 1,
-    "elec.voltage-drop": 2,
     "struct.ltb-interaction": 1
   },
   "J53-book-citations": {
@@ -242,73 +64,12 @@
     "bs.psychrometrics": 3,
     "bs.room-heat-loss": 1,
     "bs.sealed-system": 1,
-    "elec.containment": 1,
-    "elec.enclosure-heat": 1,
-    "elec.load-budget": 1,
-    "elec.motor-sizing": 2,
-    "elec.motor-start": 2,
-    "elec.pcb-trace": 1,
-    "elec.thermal-chain": 2,
-    "elec.voltage-drop": 1,
     "fp.accumulator": 2,
     "fp.oring-gland": 2,
     "mech.snap-fit": 1,
     "struct.ltb-interaction": 1
   },
   "J54-no-notes-in-reference-titles": {
-    "elec.enclosure-heat": 1,
-    "elec.load-budget": 1,
-    "elec.motor-sizing": 1,
     "fp.oring-gland": 2
-  },
-  "K55-no-internal-codes": {
-    "elec.motor-start": 2
-  },
-  "K56-one-short-sentence": {
-    "elec.conductor-sizing": 7,
-    "elec.containment": 7,
-    "elec.enclosure-heat": 4,
-    "elec.fault-protection": 5,
-    "elec.load-budget": 2,
-    "elec.motor-sizing": 4,
-    "elec.motor-start": 8,
-    "elec.pcb-trace": 4,
-    "elec.voltage-drop": 2
-  },
-  "L58-spec-headings": {
-    "elec.conductor-sizing": 8,
-    "elec.containment": 8,
-    "elec.enclosure-heat": 8,
-    "elec.fault-protection": 8,
-    "elec.load-budget": 8,
-    "elec.motor-sizing": 8,
-    "elec.motor-start": 8,
-    "elec.pcb-trace": 8,
-    "elec.thermal-chain": 7,
-    "elec.voltage-drop": 7
-  },
-  "L59-spec-title-line": {
-    "elec.conductor-sizing": 1,
-    "elec.containment": 1,
-    "elec.enclosure-heat": 1,
-    "elec.fault-protection": 1,
-    "elec.load-budget": 1,
-    "elec.motor-sizing": 1,
-    "elec.motor-start": 1,
-    "elec.pcb-trace": 1,
-    "elec.thermal-chain": 1,
-    "elec.voltage-drop": 1
-  },
-  "L60-spec-scope-is-the-template-scope": {
-    "elec.conductor-sizing": 1,
-    "elec.containment": 1,
-    "elec.enclosure-heat": 1,
-    "elec.fault-protection": 1,
-    "elec.load-budget": 1,
-    "elec.motor-sizing": 1,
-    "elec.motor-start": 1,
-    "elec.pcb-trace": 1,
-    "elec.thermal-chain": 1,
-    "elec.voltage-drop": 1
   }
 }

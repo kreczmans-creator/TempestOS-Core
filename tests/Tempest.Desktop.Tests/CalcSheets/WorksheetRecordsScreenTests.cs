@@ -42,15 +42,15 @@ public sealed class WorksheetRecordsScreenTests
             Assert.Equal(["cable.ampacity", "device.ratings"], sheet.MissingRequiredKinds.Order(StringComparer.Ordinal));
             Assert.StartsWith("2 required records are missing", sheet.RequirementsSummary, StringComparison.Ordinal);
             Assert.Contains(sheet.GetLogicalDescendants().OfType<TextBlock>(), t => (t.Text ?? string.Empty).Contains("E4 cannot size a conductor", StringComparison.Ordinal));
-            Assert.Contains(sheet.GetLogicalDescendants().OfType<Button>(), b => AutomationProperties.GetName(b) == "Fill record: Cable current-carrying capacities");
+            Assert.Contains(sheet.GetLogicalDescendants().OfType<Button>(), b => AutomationProperties.GetName(b) == "Fill record: Cable ampacity (current-carrying capacities)");
 
             // The link lands on the records screen, on that record type.
-            Click(sheet, CalcSheetView.FillRecordName("Cable current-carrying capacities"));
+            Click(sheet, CalcSheetView.FillRecordName("Cable ampacity (current-carrying capacities)"));
             await Settle();
             var screen = window.GetLogicalDescendants().OfType<CalcRecordsView>().Single();
             Assert.Equal("cable.ampacity", screen.Model.SelectedKind);
             Assert.Equal("04 bs7671.ampacity (cable.ampacity)", screen.Model.Template!.Label);
-            Assert.Contains(screen.GetLogicalDescendants().OfType<ListBoxItem>(), i => AutomationProperties.GetName(i) == "Record type: Cable current-carrying capacities");
+            Assert.Contains(screen.GetLogicalDescendants().OfType<ListBoxItem>(), i => AutomationProperties.GetName(i) == "Record type: Cable ampacity (current-carrying capacities)");
             Assert.Equal("test.engineer", screen.GetLogicalDescendants().OfType<TextBox>().Single(t => AutomationProperties.GetName(t) == CalcRecordsView.EnteredByName).Text);
 
             // Provenance is required: without it the import is not offered.

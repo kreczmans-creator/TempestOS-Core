@@ -64,6 +64,28 @@
     "ValueText": "4"
   },
   {
+    "Symbol": "T_amb",
+    "Number": 40,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Machine design basis MDB-2: 40 \u00B0C inside the panel and trunking",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "T_ref",
+    "Number": 30,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Reference ambient of the licensed table; only used when C_a is derived.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "30"
+  },
+  {
     "Symbol": "U",
     "Number": 400,
     "Unit": "V",
@@ -320,27 +342,5 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "metric"
-  },
-  {
-    "Symbol": "theta_a",
-    "Number": 40,
-    "Unit": "degC",
-    "Provenance": {
-      "Kind": "Specification",
-      "Reference": "Machine design basis MDB-2: 40 \u00B0C inside the panel and trunking",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "40"
-  },
-  {
-    "Symbol": "theta_ref",
-    "Number": 30,
-    "Unit": "degC",
-    "Provenance": {
-      "Kind": "Assumption",
-      "Reference": "Reference ambient of the licensed table; only used when C_a is derived.",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "30"
   }
 ]

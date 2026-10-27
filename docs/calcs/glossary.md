@@ -123,7 +123,7 @@ A bare symbol that means one kind of quantity wherever it appears. Another quant
 | `D` | A diameter or a depth | 17 |
 | `L` | Length | 17 |
 
-## Symbols with more than one meaning today (95)
+## Symbols with more than one meaning today (94)
 
 Each of these symbols is used for different quantities in different templates. Every use of a symbol that two or more templates share declares its meaning (`symbol:meaning`, in `GlossaryMeanings.json`), so two meanings of one quantity type (an efficiency and a Perry factor, both plain numbers) are told apart. Phases B and C resolve every one: give each quantity its own symbol (keeping the old symbol as an input or port alias), or make the templates agree. Status `RESOLVE` marks the rows in the full table below.
 
@@ -131,7 +131,6 @@ Each of these symbols is used for different quantities in different templates. E
 - `A_eff`: `A_eff:bellows-effective-area` Area (pipe-expansion); `A_eff:effective-bearing-area` Area (base-plate); `A_eff:effective-surface-area` Area (enclosure-heat)
 - `C`: `C:basic-dynamic-load-rating` Force (bearing-life, bearing-life-basic); `C:fitting-loss-coefficient-sum` Plain number (duct-sizing); `C:spring-index` Plain number (spring)
 - `D`: `D:diameter` Length (duct-sizing, pipe-pump, cylinder, iso286-fit, …); `D:enclosure-depth` Length (enclosure-heat)
-- `D_c`: `D_c:conduit-internal-diameter` Length (containment); `D_c:extrusion-gap-mating-diameter` Length (oring-gland)
 - `F`: `F:force` Force (thermal-expansion, fillet-weld); `F:applied-axial-load` Force (column-buckling); `F:plate-load-total` Force (plate-bending); `F:point-load` Force (beam-formulas)
 - `F_a`: `F_a:axial-load` Force (bearing-life, bearing-life-basic); `F_a:assembly-force` Force (press-fit)
 - `F_ext`: `F_ext:extend-force` Force (cylinder); `F_ext:follower-external-load` Force (mechanism)
@@ -150,6 +149,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `R`: `R:radius` Length (containment); `R:resistance` Resistance, impedance (voltage-drop); `R:thermal-resistance` Thermal resistance (thermal-chain)
 - `R_f`: `R_f:fouling-resistance` Thermal resistance (heat-exchanger); `R_f:repetitions-to-failure` Plain number (fatigue-miner)
 - `S`: `S:allowable-stress` Stress, pressure (thin-vessel); `S:stress-range` Stress, pressure (fatigue-miner)
+- `SF`: `SF:sizing-safety-factor` Plain number (load-budget); `SF:torque-safety-factor` Plain number (motor-sizing)
 - `S_e`: `S_e:bending-endurance-limit` Stress, pressure (fatigue-miner, shaft); `S_e:spring-shear-endurance-strength` Stress, pressure (spring)
 - `T_1`: `T_1:side-1-temperature` Temperature (plane-wall, thermal-chain); `T_1:pull-start-tension` Force (containment)
 - `T_2`: `T_2:side-2-temperature` Temperature (plane-wall, thermal-chain); `T_2:leaving-dry-bulb-temperature` Temperature (psychrometrics)
@@ -182,7 +182,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `eps`: `eps:effectiveness` Plain number (heat-exchanger); `eps:emissivity` Plain number (insulation); `eps:roughness` Length (pipe-pump); `eps:strain` Plain number (snap-fit)
 - `eta`: `eta:efficiency` Plain number (conductor-sizing, load-budget, motor-sizing, motor-start); `eta:perry-factor` Plain number (column-buckling); `eta:shear-area-factor` Plain number (en1993-member)
 - `g`: `g:lug-clearance` Length (lifting-lug); `g:restraint-gap` Length (thermal-expansion)
-- `h`: `h:depth` Length (base-plate, en1993-member, ltb-interaction, section-properties); `h:film-coefficient` Heat transfer coefficient, U-value (enclosure-heat); `h:hole-to-weld-distance` Length (lifting); `h:key-height` Length (shaft); `h:lift` Length (mechanism); `h:root-thickness` Length (snap-fit)
+- `h`: `h:depth` Length (base-plate, en1993-member, ltb-interaction, section-properties); `h:hole-to-weld-distance` Length (lifting); `h:key-height` Length (shaft); `h:lift` Length (mechanism); `h:root-thickness` Length (snap-fit)
 - `h_1`: `h_1:side-1-film-coefficient` Heat transfer coefficient, U-value (plane-wall); `h_1:specific-enthalpy-1` Plain number (psychrometrics)
 - `i`: `i:gear-ratio` Plain number (motor-sizing); `i:node-index` Plain number (frame-2d)
 - `k`: `k:adiabatic-factor` Plain number (fault-protection); `k:diversity-factor` Plain number (load-budget); `k:effective-length-factor` Plain number (ltb-interaction); `k:half-band-standard-deviations` Plain number (tolerance-stack); `k:rate` Line force, distributed load, stiffness (spring); `k:thermal-conductivity` Thermal conductivity (plane-wall); `k:transmission-constant` Length (motor-sizing)
@@ -213,8 +213,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `t_req`: `t_req:required-thickness` Length (thin-vessel, base-plate); `t_req:required-disconnection-time` Time (fault-protection)
 - `t_w`: `t_w:web-thickness` Length (base-plate, en1993-member, section-properties); `t_w:pipe-wall-thickness` Length (insulation)
 - `tau`: `tau:throat-stress` Stress, pressure (weld-group); `tau:torsional-shear-stress` Stress, pressure (shaft-stress)
-- `theta`: `theta:ambient-temperature` Temperature (load-budget); `theta:bend-angle` Angle (containment); `theta:conductor-temperature` Temperature (fault-protection); `theta:incline-angle` Angle (motor-sizing); `theta:principal-axis-angle` Angle (section-properties); `theta:sling-angle` Angle (lifting)
-- `theta_a`: `theta_a:ambient-temperature` Temperature (conductor-sizing); `theta_a:cold-point-outside-temperature` Temperature (glaser)
+- `theta`: `theta:bend-angle` Angle (containment); `theta:incline-angle` Angle (motor-sizing); `theta:principal-axis-angle` Angle (section-properties); `theta:sling-angle` Angle (lifting)
 - `u`: `u:utilisation` Plain number (thermal-chain, material-margin, thermal-expansion, thick-cylinder, …); `u:patch-size-x` Length (plate-bending)
 - `u_N`: `u_N:axial-bearing-utilisation` Plain number (base-plate); `u_N:axial-utilisation` Plain number (en1993-member)
 - `u_T`: `u_T:cable-tension-utilisation` Plain number (containment); `u_T:t-stub-tension-utilisation` Plain number (base-plate)
@@ -223,7 +222,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `w`: `w:distributed-load` Line force, distributed load, stiffness (beam-formulas); `w:key-width` Length (shaft); `w:mass-per-metre` Mass per length (containment)
 - `y_c`: `y_c:centroid-y` Length (weld-group, section-properties); `y_c:extreme-fibre-distance` Length (beam-formulas)
 
-## All symbols (1424 symbols in 54 templates)
+## All symbols (1425 symbols in 54 templates)
 
 One row per symbol, declared meaning and quantity type. Status `ok` is a symbol with one meaning; `RESOLVE` a symbol with several (phases B and C).
 
@@ -235,7 +234,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `A_b` | `A_b:bearing-area` | Area | mm² | Bearing area | struct.lifting | RESOLVE (2 meanings) |
 | `A_b` | `A_b:bore-area` | Area | cm² | Bore area | fp.cylinder | RESOLVE (2 meanings) |
 | `A_beam` | — | Area | cm² | Gross cross-section area of the spreader or lifting beam, for its axi… | struct.lifting | ok |
-| `A_c` | `A_c:conductor-cross-section` | Area | mm² | Conductor cross-section; Conductor cross-section (links E4 CSA) | elec.motor-start, elec.voltage-drop | ok |
+| `A_c` | `A_c:conductor-cross-section` | Area | mm² | Conductor cross-section; Conductor cross-section (links conductor-sizing CSA) | elec.motor-start, elec.voltage-drop | ok |
 | `A_cab` | — | Area | mm² | Total cable cross-section | elec.containment | ok |
 | `A_cover` | — | Area | m² | Area of the cover or door the pressure difference acts on, for the fo… | elec.enclosure-heat | ok |
 | `A_eff` | `A_eff:bellows-effective-area` | Area | cm² | Axial bellows effective area (manufacturer's data) | bs.pipe-expansion | RESOLVE (3 meanings) |
@@ -283,7 +282,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `C_m_LT` | — | Plain number | — | Equivalent uniform moment factor for lateral-torsional buckling in An… | struct.ltb-interaction | ok |
 | `C_m_y` | — | Plain number | — | Equivalent uniform moment factor about y-y in Annex B (optional; blan… | struct.ltb-interaction | ok |
 | `C_m_z` | — | Plain number | — | Equivalent uniform moment factor about z-z in Annex B (optional; blan… | struct.ltb-interaction | ok |
-| `C_min` | — | Plain number | — | Voltage factor C_min | elec.fault-protection | ok |
+| `C_min` | — | Plain number | — | Voltage factor for the minimum fault | elec.fault-protection | ok |
 | `C_my` | — | Plain number | — | Equivalent uniform moment factor about y-y | struct.ltb-interaction | ok |
 | `C_mz` | — | Plain number | — | Equivalent uniform moment factor about z-z | struct.ltb-interaction | ok |
 | `C_r` | — | Plain number | — | Capacity ratio | bs.heat-exchanger | ok |
@@ -293,8 +292,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `D` | `D:diameter` | Length | mm | Bore; Given diameter or side b (blank = size); Inner diameter; … (6 descriptions) | bs.duct-sizing, bs.pipe-pump, fp.cylinder, mech.iso286-fit, mech.spring, struct.base-plate | RESOLVE (2 meanings) |
 | `D` | `D:enclosure-depth` | Length | m | Enclosure depth | elec.enclosure-heat | RESOLVE (2 meanings) |
 | `D_bth` | — | Force | kN | Design load on each lug | struct.lifting | ok |
-| `D_c` | `D_c:conduit-internal-diameter` | Length | mm | Conduit internal diameter (conduit) | elec.containment | RESOLVE (2 meanings) |
-| `D_c` | `D_c:extrusion-gap-mating-diameter` | Length | mm | Mating part that sets the extrusion gap: the piston outside diameter,… | fp.oring-gland | RESOLVE (2 meanings) |
+| `D_c` | — | Length | mm | Mating part that sets the extrusion gap: the piston outside diameter,… | fp.oring-gland | ok |
 | `D_c_l` | — | Length | mm | Mating part diameter, lower deviation | fp.oring-gland | ok |
 | `D_c_u` | — | Length | mm | Mating part diameter, upper deviation | fp.oring-gland | ok |
 | `D_crit` | — | Length | mm | Critical diameter (at the bare-surface h_se) | bs.insulation | ok |
@@ -305,6 +303,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `D_hole_max` | — | Length | mm | Hole maximum | mech.iso286-fit | ok |
 | `D_hole_min` | — | Length | mm | Hole minimum | mech.iso286-fit | ok |
 | `D_i` | `D_i:inside-diameter` | Length | mm | Inside diameter; Pipe outer diameter, the inside of the insulation (pipe) | bs.insulation, bs.pipe-expansion | ok |
+| `D_int` | — | Length | mm | Conduit internal diameter (conduit) | elec.containment | ok |
 | `D_pulley` | — | Length | mm | Pulley or pinion pitch diameter | elec.motor-sizing | ok |
 | `D_ratio` | — | Plain number | — | Impeller diameter ratio D₂/D₁ (affinity; the law is chosen above) | bs.pipe-pump | ok |
 | `D_ring` | — | Length | mm | Mean diameter of the ring (annular) | mech.snap-fit | ok |
@@ -416,7 +415,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `H` | `H:hardness` | Plain number | — | Hardness, Shore A | fp.oring-gland | RESOLVE (3 meanings) |
 | `HLC` | — | Thermal conductance | W/K | Heat loss coefficient | bs.room-heat-loss | ok |
 | `H_A` | — | Plain number | — | Ring hardness, Shore A (for the extrusion record) | fp.oring-gland | ok |
-| `H_c` | — | Length | mm | Trunking or tray internal depth | elec.containment | ok |
+| `H_int` | — | Length | mm | Trunking or tray internal depth | elec.containment | ok |
 | `H_pump` | — | Length | m | Pump curve: head points (optional; blank = no duty point) | bs.pipe-pump | ok |
 | `H_rate` | — | Time, rating life | h | Hour rate of the rated capacity (Peukert) | elec.load-budget | ok |
 | `H_static` | — | Length | m | Static head | bs.pipe-pump | ok |
@@ -442,7 +441,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `I_cn` | — | Current | kA | Rated breaking capacity | elec.fault-protection | ok |
 | `I_dip` | — | Current | A | Starting current at the dipped voltage | elec.motor-start | ok |
 | `I_f` | — | Current | A | Earth fault current | elec.fault-protection | ok |
-| `I_k` | — | Current | kA | Three-phase fault current at the point of supply (links E5 I_k3) | elec.motor-start | ok |
+| `I_k` | — | Current | kA | Three-phase fault current at the point of supply (links fault-protect… | elec.motor-start | ok |
 | `I_n` | `I_n:rated-current` | Current | A | Motor rated current (when given it replaces the value from P, η and c…; Rated current; Rated current of the device | elec.conductor-sizing, elec.fault-protection, elec.motor-start | ok |
 | `I_rated` | — | Current | A | Motor rated current | elec.motor-start | ok |
 | `I_run1` | — | Current | A | Running current before correction | elec.motor-start | ok |
@@ -496,7 +495,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `L_E` | — | Length | m | Effective length | struct.column-buckling | ok |
 | `L_add` | — | Length | mm | Length of the closed cylinder beyond its stroke (body, end caps and m… | fp.cylinder | ok |
 | `L_b` | — | Length | mm | Buckling length (pin to pin at full stroke) | fp.cylinder | ok |
-| `L_cab` | — | Length | m | Cable length, source to motor (links E4 L) | elec.motor-start | ok |
+| `L_cab` | — | Length | m | Cable length, source to motor (links conductor-sizing L) | elec.motor-start | ok |
 | `L_closed` | — | Length | mm | Closed (retracted) pin-to-pin length of the cylinder, from the cap-en… | fp.cylinder | ok |
 | `L_cr_y` | `L_cr_y:buckling-length-y` | Length | m | Buckling length about y-y | struct.en1993-member, struct.ltb-interaction | ok |
 | `L_cr_z` | `L_cr_z:buckling-length-z` | Length | m | Buckling length about z-z | struct.en1993-member, struct.ltb-interaction | ok |
@@ -593,40 +592,40 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `Nd` | — | Plain number | — | Design factor of the Design Category (optional; blank = BTH-1 mode is… | struct.lifting | ok |
 | `OD` | `OD:pipe-outside-diameter` | Length | mm | Outside diameter of the pipe (optional; the first segment's is offere…; Pipe outside diameter | bs.pipe-expansion, bs.pipe-pump | ok |
 | `OD_max` | — | Length | mm | Largest cable diameter | elec.containment | ok |
-| `P` | `P:motor-rated-output-power` | Power, heat flow | kW | Motor rated output (shaft) power, from the nameplate (E1 P_cont is on…; Rated output (shaft) power; η converts it to input (DC: electrical po… | elec.conductor-sizing, elec.motor-start | RESOLVE (4 meanings) |
-| `P` | `P:dissipated-power` | Power, heat flow | W | Steady power dissipated (the heat flow through every stage) | elec.thermal-chain | RESOLVE (4 meanings) |
+| `P` | `P:motor-rated-output-power` | Power, heat flow | kW | Motor rated output (shaft) power, from the nameplate (motor-sizing P_…; Rated output (shaft) power; η converts it to input (DC: electrical po… | elec.conductor-sizing, elec.motor-start | RESOLVE (4 meanings) |
+| `P` | `P:dissipated-power` | Power, heat flow | kW | Steady power dissipated (the heat flow through every stage) | elec.thermal-chain | RESOLVE (4 meanings) |
 | `P` | `P:electrical-input-power` | Power, heat flow | kW | Electrical input power | elec.load-budget | RESOLVE (4 meanings) |
-| `P` | `P:heat-loss-per-item` | Power, heat flow | W | Heat loss per item | elec.enclosure-heat | RESOLVE (4 meanings) |
+| `P` | `P:heat-loss-per-item` | Power, heat flow | kW | Heat loss per item | elec.enclosure-heat | RESOLVE (4 meanings) |
 | `PS` | — | Stress, pressure | bar | Vessel maximum allowable pressure, bar gauge, from the nameplate or r… | fp.accumulator | ok |
 | `P_0` | — | Force | kN | Equivalent static load | mech.bearing-life | ok |
-| `P_PSU` | — | Power, heat flow | W | Selected PSU rating | elec.load-budget | ok |
-| `P_PSU_req` | — | Power, heat flow | W | Minimum PSU rating | elec.load-budget | ok |
-| `P_add` | `P_add:additional-load` | Power, heat flow | W, kW | Additional heat load (linked from E6's dissipated heat or another cal…; Additional three-phase load (linked from E1's RMS power) | elec.enclosure-heat, elec.load-budget | ok |
+| `P_PSU` | — | Power, heat flow | kW | Selected PSU rating | elec.load-budget | ok |
+| `P_PSU_req` | — | Power, heat flow | kW | Minimum PSU rating | elec.load-budget | ok |
+| `P_add` | `P_add:additional-load` | Power, heat flow | kW | Additional heat load (linked from the load-budget dissipated heat or …; Additional three-phase load (linked from the motor-sizing RMS power) | elec.enclosure-heat, elec.load-budget | ok |
 | `P_b` | `P_b:bearing-force` | Force | kN | Bearing | struct.lifting | RESOLVE (2 meanings) |
 | `P_b` | `P_b:bellows-governing-pressure` | Stress, pressure | kPa | Axial bellows governing pressure, gauge, at or above zero: the design… | bs.pipe-expansion | RESOLVE (2 meanings) |
 | `P_brake` | — | Power, heat flow | kW | Peak braking power | elec.motor-sizing | ok |
 | `P_conn` | — | Power, heat flow | kW | Connected load | elec.load-budget | ok |
-| `P_cool` | — | Power, heat flow | W | Cooling unit needed | elec.enclosure-heat | ok |
+| `P_cool` | — | Power, heat flow | kW | Cooling unit needed | elec.enclosure-heat | ok |
 | `P_dem` | — | Power, heat flow | kW | Demand active power | elec.load-budget | ok |
 | `P_hyd` | — | Power, heat flow | kW | Hydraulic power | bs.pipe-pump | ok |
 | `P_in` | — | Power, heat flow | kW | Motor input power at rated load | elec.motor-start | ok |
 | `P_lim` | — | Line force, distributed load, stiffness | N/m | Sidewall pressure limit, force per metre of bend (from the cable make… | elec.containment | ok |
-| `P_loads` | — | Power, heat flow | W | Internal heat load | elec.enclosure-heat | ok |
-| `P_loss` | — | Power, heat flow | W | Power loss | elec.voltage-drop | ok |
+| `P_loads` | — | Power, heat flow | kW | Internal heat load | elec.enclosure-heat | ok |
+| `P_loss` | — | Power, heat flow | kW | Power loss | elec.voltage-drop | ok |
 | `P_max` | — | Line force, distributed load, stiffness | N/m | Maximum sidewall pressure, recommended direction | elec.containment | ok |
 | `P_max_a` | — | Line force, distributed load, stiffness | N/m | Maximum sidewall pressure, as listed | elec.containment | ok |
 | `P_max_b` | — | Line force, distributed load, stiffness | N/m | Maximum sidewall pressure, reversed | elec.containment | ok |
 | `P_mean` | — | Power, heat flow | kW | Mean input power over the swept range (negative: the mechanism return… | mech.mechanism | ok |
-| `P_nat_max` | — | Power, heat flow | W | Natural dissipation at the limit | elec.enclosure-heat | ok |
+| `P_nat_max` | — | Power, heat flow | kW | Natural dissipation at the limit | elec.enclosure-heat | ok |
 | `P_pk` | — | Power, heat flow | kW | Peak power | elec.motor-sizing | ok |
 | `P_plus_Q` | — | Length | mm | Sum of the other two links | mech.mechanism | ok |
 | `P_pump` | — | Power, heat flow | kW | Pump shaft power | fp.cylinder | ok |
 | `P_rated_add` | — | Power, heat flow | kW | Rated (nameplate) shaft power of the additional machine (linked from … | elec.load-budget | ok |
 | `P_rms` | — | Power, heat flow | kW | RMS power (continuous equivalent) | elec.motor-sizing | ok |
-| `P_solar` | — | Power, heat flow | W | Solar gain | elec.enclosure-heat | ok |
+| `P_solar` | — | Power, heat flow | kW | Solar gain | elec.enclosure-heat | ok |
 | `P_sp` | — | Force | kN | Single-plane fracture | struct.lifting | ok |
 | `P_t` | — | Force | kN | Tension beyond the hole | struct.lifting | ok |
-| `P_total` | — | Power, heat flow | W | Total heat | elec.enclosure-heat | ok |
+| `P_total` | — | Power, heat flow | kW | Total heat | elec.enclosure-heat | ok |
 | `P_v` | — | Force | kN | Double-plane shear | struct.lifting | ok |
 | `Phi` | `Phi:heat-flow` | Power, heat flow | kW | Heat dissipated inside the enclosure; Heat duty; Heat flow; … (4 descriptions) | bs.heat-exchanger, bs.plane-wall, bs.sealed-system, elec.load-budget | ok |
 | `Phi50` | — | Power, heat flow | kW | Selected emitter output at ΔT 50 K | bs.sealed-system | ok |
@@ -706,7 +705,8 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `Rz_s` | — | Length | µm | Shaft surface roughness Rz (optional; blank = the smoothing is not ap… | mech.press-fit | ok |
 | `S` | `S:allowable-stress` | Stress, pressure | MPa | Allowable stress at design temperature | mech.thin-vessel | RESOLVE (2 meanings) |
 | `S` | `S:stress-range` | Stress, pressure | MPa | Stress range | mech.fatigue-miner | RESOLVE (2 meanings) |
-| `SF` | — | Plain number | — | Safety margin on torque | elec.motor-sizing | ok |
+| `SF` | `SF:sizing-safety-factor` | Plain number | — | Sizing safety factor | elec.load-budget | RESOLVE (2 meanings) |
+| `SF` | `SF:torque-safety-factor` | Plain number | — | Safety factor on torque | elec.motor-sizing | RESOLVE (2 meanings) |
 | `SF_c` | — | Plain number | — | Service factor on the rated torque for the design torque (needed for … | elec.motor-sizing | ok |
 | `S_T` | — | Apparent and reactive power | kVA | Selected transformer rating | elec.load-budget | ok |
 | `S_T_min` | — | Apparent and reactive power | kVA | Minimum transformer rating, running and starting | elec.load-budget | ok |
@@ -749,7 +749,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `T_3` | — | Temperature | °C | Hot side of stage 3 | elec.thermal-chain | ok |
 | `T_Ed` | — | Force | kN | Tension resultant, more loaded row | struct.base-plate | ok |
 | `T_Ed_2` | — | Force | kN | Tension resultant, other row | struct.base-plate | ok |
-| `T_L` | — | Moment, torque | N·m | Constant load torque at the output (rotary; continuous duty needs it:… | elec.motor-sizing | ok |
+| `T_L` | — | Moment, torque | N·m | Constant load torque at the output (rotary; continuous duty needs it,… | elec.motor-sizing | ok |
 | `T_Rd` | — | Force | kN | Tension T-stub resistance | struct.base-plate | ok |
 | `T_Rd_1` | — | Force | kN | T-stub mode 1-2, no prying | struct.base-plate | ok |
 | `T_Rd_3` | — | Force | kN | T-stub mode 3 | struct.base-plate | ok |
@@ -758,7 +758,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `T_acc` | — | Moment, torque | N·m | Acceleration torque | elec.motor-sizing | ok |
 | `T_air` | — | Temperature | °C | Air temperature | bs.duct-sizing | ok |
 | `T_alt` | — | Moment, torque | N·m | Alternating torque amplitude | elec.motor-sizing | ok |
-| `T_amb` | `T_amb:ambient-temperature` | Temperature | °C | Ambient air temperature (also the radiation sink); Ambient temperature; Ambient temperature at the board | bs.insulation, elec.enclosure-heat, elec.pcb-trace, elec.voltage-drop | ok |
+| `T_amb` | `T_amb:ambient-temperature` | Temperature | °C | Ambient air temperature (also the radiation sink); Ambient temperature; Ambient temperature at the board | bs.insulation, elec.conductor-sizing, elec.enclosure-heat, elec.load-budget, elec.pcb-trace, elec.voltage-drop | ok |
 | `T_c` | `T_c:conductor-temperature` | Temperature | °C | Conductor operating temperature for the resistance; Conductor temperature for the resistance | elec.motor-start, elec.voltage-drop | RESOLVE (2 meanings) |
 | `T_c` | `T_c:charging-temperature` | Temperature | °C | Charging temperature | fp.accumulator | RESOLVE (2 meanings) |
 | `T_c_in` | — | Temperature | °C | Cold-side inlet temperature | bs.heat-exchanger | ok |
@@ -796,12 +796,14 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `T_max_b` | — | Force | N | Maximum tension, reversed | elec.containment | ok |
 | `T_min` | `T_min:minimum-temperature` | Temperature | °C | Lowest operating temperature (the ring sits at 20 °C when installed); Minimum operating temperature (the gas is coldest and delivers least … | fp.accumulator, fp.oring-gland | ok |
 | `T_motor` | — | Moment, torque | N·m | Hydraulic motor torque | fp.cylinder | ok |
+| `T_op` | `T_op:conductor-operating-temperature` | Temperature | °C | Conductor operating temperature for the insulation; Conductor temperature for Z_s | elec.conductor-sizing, elec.fault-protection | ok |
 | `T_operate` | — | Temperature | °C | Operating temperature (hot or cold) | bs.pipe-expansion | ok |
 | `T_peak` | — | Moment, torque | N·m | Candidate motor peak torque | elec.motor-sizing | ok |
 | `T_pk` | `T_pk:peak-torque` | Moment, torque | N·m, kN·m | Peak torque; Peak torque for the yield check and the key (optional; blank = T + T_… | elec.motor-sizing, mech.shaft | ok |
 | `T_proc` | — | Temperature | °C | Process (fluid) temperature | bs.insulation | ok |
 | `T_rated` | `T_rated:rated-temperature` | Temperature | °C | Conductor rated temperature | elec.voltage-drop | RESOLVE (2 meanings) |
 | `T_rated` | `T_rated:rated-torque` | Moment, torque | N·m | Candidate motor continuous (rated) torque | elec.motor-sizing | RESOLVE (2 meanings) |
+| `T_ref` | — | Temperature | °C | Reference ambient temperature for the derived C_a | elec.conductor-sizing | ok |
 | `T_return` | — | Temperature | °C | Return temperature | bs.sealed-system | ok |
 | `T_rms` | — | Moment, torque | N·m | RMS torque | elec.motor-sizing | ok |
 | `T_rms_in` | — | Moment, torque | N·m | RMS input torque over the swept range | mech.mechanism | ok |
@@ -813,6 +815,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `T_shaft` | — | Moment, torque | N·m | Pump shaft torque | fp.cylinder | ok |
 | `T_supply` | — | Temperature | °C | MVHR supply air temperature after heat recovery (optional; blank = na… | bs.room-heat-loss | ok |
 | `T_use` | — | Temperature | °C | Temperature of use. Recorded: Es and the permissible strain must be t… | mech.snap-fit | ok |
+| `T_user` | — | Temperature | °C | Conductor operating temperature for 'user' insulation | elec.conductor-sizing | ok |
 | `T_wb` | — | Temperature | °C | Wet-bulb temperature | bs.psychrometrics | ok |
 | `T_wb_1` | — | Temperature | °C | Wet-bulb temperature, state 1 | bs.psychrometrics | ok |
 | `U` | `U:supply-voltage` | Voltage | V | Supply and motor rated voltage (line-to-line); Supply voltage (line voltage for three-phase) | elec.conductor-sizing, elec.motor-start | RESOLVE (2 meanings) |
@@ -867,9 +870,9 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `WLL` | — | Force | kN | Rated load (working load limit) of the appliance, carried by all its … | struct.lifting | ok |
 | `W_1` | — | Plain number | — | Humidity ratio, state 1, in grams per kilogram of dry air | bs.psychrometrics | ok |
 | `W_2` | — | Plain number | — | Leaving humidity ratio, g/kg (steam) | bs.psychrometrics | ok |
-| `W_c` | — | Length | mm | Trunking or tray internal width | elec.containment | ok |
 | `W_el_y` | `W_el_y:elastic-modulus-major-axis` | Volume, section modulus | cm³ | Elastic section modulus about the y-y axis; Elastic section modulus about y-y | struct.en1993-member, struct.ltb-interaction, struct.section-properties | ok |
 | `W_el_z` | `W_el_z:elastic-modulus-minor-axis` | Volume, section modulus | cm³ | Elastic section modulus about the z-z axis; Elastic section modulus about z-z | struct.en1993-member, struct.ltb-interaction, struct.section-properties | ok |
+| `W_int` | — | Length | mm | Trunking or tray internal width | elec.containment | ok |
 | `W_pl_y` | `W_pl_y:plastic-modulus-major-axis` | Volume, section modulus | cm³ | Plastic section modulus about the y-y axis; Plastic section modulus about y-y | struct.en1993-member, struct.ltb-interaction, struct.section-properties | ok |
 | `W_pl_z` | `W_pl_z:plastic-modulus-minor-axis` | Volume, section modulus | cm³ | Plastic section modulus about the z-z axis; Plastic section modulus about z-z | struct.en1993-member, struct.ltb-interaction, struct.section-properties | ok |
 | `W_tol` | — | Length | mm | Ring cross-section tolerance, plus or minus | fp.oring-gland | ok |
@@ -967,7 +970,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `c_max` | `c_max:voltage-factor-maximum-fault` | Plain number | — | Voltage factor c for the maximum fault | elec.fault-protection | RESOLVE (2 meanings) |
 | `c_mean` | — | Length | µm | Mean clearance | mech.iso286-fit | ok |
 | `c_min` | — | Length | µm | Minimum clearance | mech.iso286-fit | ok |
-| `c_src` | — | Plain number | — | Voltage factor c for the fault-level route (blank: 1.1 for the I_k ba… | elec.motor-start | ok |
+| `c_src` | — | Plain number | — | Voltage factor c for the fault-level route, linked from the fault-pro… | elec.motor-start | ok |
 | `cap_bth` | — | Force | kN | Capacity, BTH-1 mode | struct.lifting | ok |
 | `capacity` | — | Force | kN | Rated load the lug carries in the governing mode | struct.lifting | ok |
 | `case` | — | Plain number | — | Load case | struct.frame-2d | ok |
@@ -976,8 +979,8 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `chi_y` | `chi_y:reduction-factor-y` | Plain number | — | Buckling reduction factor about y-y; χ_y | struct.en1993-member, struct.ltb-interaction | ok |
 | `chi_z` | `chi_z:reduction-factor-z` | Plain number | — | Buckling reduction factor about z-z; χ_z | struct.en1993-member, struct.ltb-interaction | ok |
 | `cos_phi` | `cos_phi:power-factor` | Plain number | — | Motor power factor at rated load; Power factor (AC); Power factor (not used for DC) | elec.conductor-sizing, elec.motor-start, elec.voltage-drop | ok |
-| `cos_phi2` | — | Plain number | — | Target power factor after correction | elec.motor-start | ok |
 | `cos_phi_st` | — | Plain number | — | Power factor at locked rotor (starting) | elec.motor-start | ok |
+| `cos_phi_target` | — | Plain number | — | Target power factor after correction | elec.motor-start | ok |
 | `cos_phi_vfd` | — | Plain number | — | Drive line displacement power factor while starting | elec.motor-start | ok |
 | `cosphi` | — | Plain number | — | Power factor | elec.load-budget | ok |
 | `cosphi_add` | — | Plain number | — | Power factor of the additional load | elec.load-budget | ok |
@@ -1194,16 +1197,16 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `gap_allow` | — | Length | mm | Largest permitted extrusion gap at this pressure and hardness, if you…; Permitted extrusion gap, diametral for a radial seal | fp.oring-gland | ok |
 | `gap_max` | — | Length | mm | Largest extrusion gap, diametral for a radial seal (over the temperat… | fp.oring-gland | ok |
 | `gap_min` | — | Length | mm | Smallest extrusion gap | fp.oring-gland | ok |
-| `h` | `h:depth` | Length | mm | Column depth, along the plate length L (I/H and RHS); Depth for the shear area (optional; blank = use A_v); Depth or vertical leg; … (5 descriptions) | struct.base-plate, struct.en1993-member, struct.ltb-interaction, struct.section-properties | RESOLVE (6 meanings) |
-| `h` | `h:film-coefficient` | Heat transfer coefficient, U-value | W/(m²·K) | Overall heat-transfer coefficient of the enclosure surface (editable … | elec.enclosure-heat | RESOLVE (6 meanings) |
-| `h` | `h:hole-to-weld-distance` | Length | mm | Distance from the hole centre to the weld or base, for the out-of-pla… | struct.lifting | RESOLVE (6 meanings) |
-| `h` | `h:key-height` | Length | mm | Key height | mech.shaft | RESOLVE (6 meanings) |
-| `h` | `h:lift` | Length | mm | Lift h (rise, return; ignored for a dwell) | mech.mechanism | RESOLVE (6 meanings) |
-| `h` | `h:root-thickness` | Length | mm | Thickness at the root (cantilever); wall thickness of the ring (annul… | mech.snap-fit | RESOLVE (6 meanings) |
+| `h` | `h:depth` | Length | mm | Column depth, along the plate length L (I/H and RHS); Depth for the shear area (optional; blank = use A_v); Depth or vertical leg; … (5 descriptions) | struct.base-plate, struct.en1993-member, struct.ltb-interaction, struct.section-properties | RESOLVE (5 meanings) |
+| `h` | `h:hole-to-weld-distance` | Length | mm | Distance from the hole centre to the weld or base, for the out-of-pla… | struct.lifting | RESOLVE (5 meanings) |
+| `h` | `h:key-height` | Length | mm | Key height | mech.shaft | RESOLVE (5 meanings) |
+| `h` | `h:lift` | Length | mm | Lift h (rise, return; ignored for a dwell) | mech.mechanism | RESOLVE (5 meanings) |
+| `h` | `h:root-thickness` | Length | mm | Thickness at the root (cantilever); wall thickness of the ring (annul… | mech.snap-fit | RESOLVE (5 meanings) |
 | `h_1` | `h_1:side-1-film-coefficient` | Heat transfer coefficient, U-value | W/(m²·K) | Side 1 film coefficient (optional; blank = no film, so T_1 is the sur… | bs.plane-wall | RESOLVE (2 meanings) |
 | `h_1` | `h_1:specific-enthalpy-1` | Plain number | — | Enthalpy, state 1, in kilojoules per kilogram of dry air | bs.psychrometrics | RESOLVE (2 meanings) |
 | `h_2` | — | Heat transfer coefficient, U-value | W/(m²·K) | Side 2 film coefficient (optional; blank = no film, so T_2 is the sur… | bs.plane-wall | ok |
 | `h_air` | — | Plain number | — | Specific enthalpy (kJ per kg dry air) | bs.psychrometrics | ok |
+| `h_conv` | — | Heat transfer coefficient, U-value | W/(m²·K) | Overall heat-transfer coefficient of the enclosure surface (editable … | elec.enclosure-heat | ok |
 | `h_f` | — | Length | mm | Face-seal groove depth (face seal only), where the ring is compressed… | fp.oring-gland | ok |
 | `h_f_l` | — | Length | mm | Face-seal groove depth, lower deviation | fp.oring-gland | ok |
 | `h_f_s1` | — | Length | m | h_f, oil line | bs.pipe-pump | ok |
@@ -1219,7 +1222,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `heat` | — | Plain number | — | Share of the input power released as heat inside the enclosure (blank… | elec.load-budget | ok |
 | `heat_add` | — | Plain number | — | Share of the additional load's input power released inside the enclos… | elec.load-budget | ok |
 | `hole_grade` | — | Plain number | — | Hole IT grade | mech.iso286-fit | ok |
-| `i` | `i:gear-ratio` | Plain number | — | Gear ratio i (motor : output, 1 = none) | elec.motor-sizing | RESOLVE (2 meanings) |
+| `i` | `i:gear-ratio` | Plain number | — | Gear ratio (motor : output, 1 = none) | elec.motor-sizing | RESOLVE (2 meanings) |
 | `i` | `i:node-index` | Plain number | — | Node i | struct.frame-2d | RESOLVE (2 meanings) |
 | `i_max` | — | Length | µm | Maximum interference | mech.iso286-fit | ok |
 | `i_min` | — | Length | µm | Minimum interference | mech.iso286-fit | ok |
@@ -1228,7 +1231,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `inrush` | — | Plain number | — | Inrush multiple | elec.load-budget | ok |
 | `inrush_add` | — | Plain number | — | Starting multiple of the additional load | elec.load-budget | ok |
 | `j` | — | Plain number | — | Node j | struct.frame-2d | ok |
-| `k` | `k:adiabatic-factor` | Plain number | — | Adiabatic k (derived) | elec.fault-protection | RESOLVE (7 meanings) |
+| `k` | `k:adiabatic-factor` | Plain number | — | Adiabatic factor (derived) | elec.fault-protection | RESOLVE (7 meanings) |
 | `k` | `k:diversity-factor` | Plain number | — | Diversity | elec.load-budget | RESOLVE (7 meanings) |
 | `k` | `k:effective-length-factor` | Plain number | — | Effective length factor for end rotation about the minor axis | struct.ltb-interaction | RESOLVE (7 meanings) |
 | `k` | `k:half-band-standard-deviations` | Plain number | — | Standard deviations per half-band (normal contributors) | mech.tolerance-stack | RESOLVE (7 meanings) |
@@ -1314,7 +1317,6 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `m_min` | `m_min:engagement-needed` | Length | mm | Engagement needed | mech.bolted-joint | RESOLVE (2 meanings) |
 | `m_min` | `m_min:worst-case-margin-to-minimum` | Length | mm | Worst-case margin to the minimum | mech.tolerance-stack | RESOLVE (2 meanings) |
 | `m_slider` | — | Mass | kg | Slider mass (slider-crank) | mech.mechanism | ok |
-| `margin` | — | Plain number | — | Sizing margin | elec.load-budget | ok |
 | `mass` | — | Mass per length | kg/m | Mass per metre, each | elec.containment | ok |
 | `max_tension` | — | Force | N | Maximum tension, recommended direction | elec.containment | ok |
 | `maximum` | — | Length | mm | Maximum acceptable result (optional; blank = no maximum) | mech.tolerance-stack | ok |
@@ -1371,7 +1373,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `n_par` | `n_par:parallel-conductors` | Plain number | — | Parallel conductors per phase | elec.motor-start, elec.voltage-drop | ok |
 | `n_pk` | — | Rotational speed, frequency | rpm | Peak speed | elec.motor-sizing | ok |
 | `n_pump` | — | Rotational speed, frequency | rpm | Pump rated speed, the speed of the pump curve as entered, which gives… | bs.pipe-pump | ok |
-| `n_rated` | — | Rotational speed, frequency | rpm | Candidate motor rated (nameplate) speed, with the rated torque the ra… | elec.motor-sizing | ok |
+| `n_rated` | — | Rotational speed, frequency | rpm | Candidate motor rated (nameplate) speed, which with the rated torque … | elec.motor-sizing | ok |
 | `n_ratio` | — | Plain number | — | Speed ratio n₂/n₁ (affinity) | bs.pipe-pump | ok |
 | `n_req` | `n_req:required-factor-of-safety` | Plain number | — | Required factor of safety; Required factor of safety on yield | mech.material-margin, mech.shaft-stress | ok |
 | `n_s` | — | Plain number | — | Shear planes | struct.connection-ec3 | ok |
@@ -1492,7 +1494,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `rho` | `rho:material-density` | Density | kg/m³ | Density; Density (for the frequency); Density (shaft self-mass in the critical speed) | mech.shaft, mech.spring, struct.plate-bending | RESOLVE (2 meanings) |
 | `rho` | `rho:fluid-density` | Density | kg/m³ | Fluid density | fp.cylinder | RESOLVE (2 meanings) |
 | `rho_1` | — | Density | kg/m³ | Moist-air density, state 1 | bs.psychrometrics | ok |
-| `rho_20` | `rho_20:resistivity-at-20c` | Resistivity | Ω·mm, Ω·mm²/m | Copper resistivity at 20 °C (annealed copper, 1.724e-8 Ω·m); Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m); Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R); … (4 descriptions) | elec.fault-protection, elec.motor-start, elec.pcb-trace, elec.voltage-drop | ok |
+| `rho_20` | `rho_20:resistivity-at-20c` | Resistivity | Ω·mm²/m | Copper resistivity at 20 °C (annealed copper, 1.724e-8 Ω·m); Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m); Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R); … (4 descriptions) | elec.fault-protection, elec.motor-start, elec.pcb-trace, elec.voltage-drop | ok |
 | `rho_air` | — | Density | kg/m³ | Air density | elec.enclosure-heat | ok |
 | `rho_custom` | — | Density | kg/m³ | Density (custom fluid) | bs.pipe-pump | ok |
 | `rho_shear` | — | Plain number | — | Shear reduction factor ρ | struct.en1993-member | ok |
@@ -1611,12 +1613,10 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `tau_perp` | — | Stress, pressure | MPa | Directional method: shear perpendicular to the weld axis (optional; b… | struct.connection-ec3 | ok |
 | `tau_to` | — | Stress, pressure | MPa | Tear-out shear | mech.lifting-lug | ok |
 | `tau_w` | — | Stress, pressure | MPa | Throat stress | struct.fillet-weld | ok |
-| `theta` | `theta:ambient-temperature` | Temperature | °C | Ambient temperature | elec.load-budget | RESOLVE (6 meanings) |
-| `theta` | `theta:bend-angle` | Angle | ° | Angle (bend) | elec.containment | RESOLVE (6 meanings) |
-| `theta` | `theta:conductor-temperature` | Temperature | °C | Conductor temperature for Z_s | elec.fault-protection | RESOLVE (6 meanings) |
-| `theta` | `theta:incline-angle` | Angle | ° | Incline from horizontal (+ moving uphill) | elec.motor-sizing | RESOLVE (6 meanings) |
-| `theta` | `theta:principal-axis-angle` | Angle | ° | Principal axis angle | struct.section-properties | RESOLVE (6 meanings) |
-| `theta` | `theta:sling-angle` | Angle | ° | Sling angle θ from the vertical, measured in the plane of the lug (th… | struct.lifting | RESOLVE (6 meanings) |
+| `theta` | `theta:bend-angle` | Angle | ° | Angle (bend) | elec.containment | RESOLVE (4 meanings) |
+| `theta` | `theta:incline-angle` | Angle | ° | Incline from horizontal (+ moving uphill) | elec.motor-sizing | RESOLVE (4 meanings) |
+| `theta` | `theta:principal-axis-angle` | Angle | ° | Principal axis angle | struct.section-properties | RESOLVE (4 meanings) |
+| `theta` | `theta:sling-angle` | Angle | ° | Sling angle θ from the vertical, measured in the plane of the lug (th… | struct.lifting | RESOLVE (4 meanings) |
 | `theta3_0` | — | Angle | ° | Coupler angle at the first input angle | mech.mechanism | ok |
 | `theta4_0` | — | Angle | ° | Rocker angle at the first input angle | mech.mechanism | ok |
 | `theta4_alt` | — | Angle | ° | Rocker angle on the other circuit at the first input angle | mech.mechanism | ok |
@@ -1624,18 +1624,14 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `theta4_min` | — | Angle | ° | Smallest rocker angle | mech.mechanism | ok |
 | `theta_A` | — | Angle (slope) | rad | Slope at A | mech.shaft | ok |
 | `theta_B` | — | Angle (slope) | rad | Slope at B | mech.shaft | ok |
-| `theta_a` | `theta_a:ambient-temperature` | Temperature | °C | Ambient temperature | elec.conductor-sizing | RESOLVE (2 meanings) |
-| `theta_a` | `theta_a:cold-point-outside-temperature` | Temperature | °C | Outside temperature of the cold point (Δv constant below it) | bs.glaser | RESOLVE (2 meanings) |
+| `theta_a` | — | Temperature | °C | Outside temperature of the cold point (Δv constant below it) | bs.glaser | ok |
 | `theta_adj` | — | Temperature | °C | Adjacent temperature (blank or θ_e = outside) | bs.room-heat-loss | ok |
 | `theta_b` | — | Temperature | °C | Outside temperature of the warm point (Δv constant above it) | bs.glaser | ok |
 | `theta_e` | `theta_e:external-design-temperature` | Temperature | °C | External design temperature (location record); Mean outside temperature θe | bs.glaser, bs.room-heat-loss | ok |
 | `theta_f` | — | Temperature | °C | Final temperature for the adiabatic check | elec.fault-protection | ok |
 | `theta_i` | — | Temperature | °C | Initial temperature for the adiabatic check | elec.fault-protection | ok |
 | `theta_max` | — | Angle (slope) | rad | Slope limit at the bearings | mech.shaft | ok |
-| `theta_op` | — | Temperature | °C | Conductor operating temperature for the insulation | elec.conductor-sizing | ok |
-| `theta_p` | — | Temperature | °C | Conductor operating temperature for 'user' insulation | elec.conductor-sizing | ok |
 | `theta_range` | — | Angle | ° | Swept range of the input angle (360° for a full turn) | mech.mechanism | ok |
-| `theta_ref` | — | Temperature | °C | Reference ambient temperature for the derived C_a | elec.conductor-sizing | ok |
 | `theta_se_max` | — | Temperature | °C | Highest surface temperature, for a hot surface (optional; blank = not… | bs.insulation | ok |
 | `theta_start` | — | Angle | ° | Input angle at the first row of the table | mech.mechanism | ok |
 | `thickness` | — | Length | mm | Governing required thickness | bs.insulation | ok |

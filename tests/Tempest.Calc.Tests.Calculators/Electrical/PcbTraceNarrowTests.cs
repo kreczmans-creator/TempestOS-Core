@@ -23,7 +23,7 @@ public sealed class PcbTraceNarrowTests
         Assert.Equal(65.392, r.OutputSi("dT_act"), 2);
         Assert.Equal(526.28, r.OutputSi("trace_R") * 1000, 1);
         var warning = Assert.Single(r.Warnings, w => w.RuleId == "narrow");
-        Assert.Contains("hotter", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("65.4 K above ambient", warning.Message, StringComparison.Ordinal);
     }
 
     [Fact]

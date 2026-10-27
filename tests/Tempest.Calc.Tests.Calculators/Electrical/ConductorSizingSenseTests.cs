@@ -38,12 +38,12 @@ public sealed class ConductorSizingSenseTests
     [Fact]
     public void The_Derived_Ambient_Factor_Names_The_Reference_It_Was_Taken_Against()
     {
-        var r = Run(Q("theta_a", 40, "degC"), CalcInputValue.Switch("derive_Ca", true));
+        var r = Run(Q("T_amb", 40, "degC"), CalcInputValue.Switch("derive_Ca", true));
 
         var warning = Assert.Single(r.Warnings, w => w.RuleId == "C_a");
-        Assert.Contains("θ_ref", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("T_ref", warning.Message, StringComparison.Ordinal);
         Assert.Contains("30", warning.Message, StringComparison.Ordinal);
-        Assert.Contains("reference ambient of the table", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("reference ambient of your capacity table", warning.Message, StringComparison.Ordinal);
         Assert.Equal(Math.Sqrt(30.0 / 40.0), r.OutputSi("C_a"), 9);
     }
 

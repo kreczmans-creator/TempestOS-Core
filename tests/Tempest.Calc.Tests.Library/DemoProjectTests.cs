@@ -23,7 +23,7 @@ internal static class DemoHost
         new(host.Service, host.Context, withTables ? [ConductorSizingCalculator.SyntheticAmpacity(), ConductorSizingCalculator.TypicalRatings()] : []);
 
     /// <summary>The check the demonstration fails on purpose: the control panel's enclosure cannot lose its heat naturally, which is why the cooling chain exists.</summary>
-    public const string DeliberateFail = "Natural dissipation holds T_max";
+    public const string DeliberateFail = "Natural temperature rise against the allowed rise";
 
     public static async Task<IReadOnlyList<CalcInstance>> InstancesAsync(LibraryTestHost host, Guid projectId) => await host.Store.ListInstancesAsync(projectId);
 }

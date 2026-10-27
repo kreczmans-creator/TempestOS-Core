@@ -7,14 +7,14 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: HPU-001    Client: Client Co
 
 PACK INDEX
-  1. Cylinder and pump circuit — Cylinder and actuator circuit — rev A — ISSUED — Circuit flow against the pump delivery PASS
-  2. Emergency stroke accumulator — Accumulator sizing (gas law) — rev A — ISSUED — Pre-charge against the p0/p1 rule PASS
-  3. Pressure line — Pipe pressure drop and pump duty — rev A — ISSUED — Highest velocity against limit PASS
+  1. Cylinder and pump circuit — Cylinder and actuator circuit — rev A — ISSUED — Pump delivery covers the circuit flow PASS
+  2. Emergency stroke accumulator — Accumulator sizing (gas law) — rev A — ISSUED — Pre-charge within the p0/p1 rule PASS
+  3. Pressure line — Pipe pressure drop and pump duty — rev A — ISSUED — Velocity ≤ limit PASS
   4. Pump drive motor — Motor and actuator sizing — rev A — ISSUED — Motor speed against the rated speed PASS
-  5. Motor supply cable — Conductor sizing and overload coordination — rev A — ISSUED — Device rating within conductor capacity (I_n ≤ I_z) PASS
-  6. Motor supply voltage drop — Voltage drop and I²R loss — rev A — ISSUED — Voltage drop ≤ limit PASS
-  7. Motor supply fault protection — Fault protection (BS 7671) — rev A — ISSUED — Breaking capacity against prospective fault PASS
-  8. Pump motor start — Motor start voltage dip and PF correction — rev A — ISSUED — Motor-terminal dip within the limit PASS
+  5. Motor supply cable — Conductor sizing and overload coordination — rev A — ISSUED — Device rating against the conductor capacity PASS
+  6. Motor supply voltage drop — Voltage drop and I²R loss — rev A — ISSUED — Voltage drop against the limit PASS
+  7. Motor supply fault protection — Fault protection (BS 7671) — rev A — ISSUED — Prospective fault against the breaking capacity PASS
+  8. Pump motor start — Motor start voltage dip and PF correction — rev A — ISSUED — Motor-terminal dip against the limit PASS
 
 REVISIONS
   A  2026-10-26  test.engineer  First issue
@@ -46,7 +46,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 48/48
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-26 22:43 UTC
   Application: TempestOS test
 
 9. References
@@ -61,95 +61,68 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: HPU-001    Client: Client Co
 
 1. Scope and method
-Calculates a hydraulic cylinder in its circuit: force, speed, swept volume, pump and motor duty, line velocities, orifice flow and a rod buckling check (screening only; ISO/TS 13725 method not implemented). It is not a design to a standard.
-Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_b/A_a Cylinder force: F_ext = (p_sys·A_b − p_back·A_a)·η_m, F_ret = (p_sys·A_a − p_back·A_b)·η_m, regenerative F_ext = p_sys·A_r·η_m Speed and time: v_ext = Q·η_vc/A_b, v_ret = Q·η_vc/A_a, t = stroke/v, t_cycle = t_ext + t_ret + t_dwell, and a required speed gives Q = v_req·A_b/η_vc (regenerative A_r) Swept volume: ΔV_ext = A_b·stroke (regenerative A_r·stroke), ΔV_ret = A_a·stroke, ΔV = the larger Pump and motor: Q_p = V_g·n_p·η_vp, P = p_sys·Q_p/η_tp, T = P/ω, motor T = Δp·V_gm/(2π)·η_hm Line velocities: v = Q_line/A_line with Q_suc = max(Q, V_g·n_p), Q_prs = Q_line·A_b/A_a (regenerative A_b/A_r if larger), Q_rtn = Q_line·A_b/A_a, Q_line = max(Q, Q_p), d_min = √(4Q/(π·v_max)) Orifice flow: Q = C_d·A_o·√(2Δp/ρ), d_o = √(4Q/(π·C_d·√(2Δp/ρ))) Rod buckling: L_eff = K_m·L_b, L_b = L_closed + stroke (blank 2·stroke + L_add), λ = L_eff/(d_r/4), λ_c = π·√(2E/f_y), F_cr by Euler π²·E·I/L_eff² above λ_c or Johnson A_r·f_y·[1 − f_y·λ²/(4π²E)], u = max(F_push, p_sys·A_b)·S_f/F_cr
+A double-acting hydraulic cylinder in its circuit: the bore, rod and annulus areas; the force and speed on the extend and the retract stroke with mechanical and volumetric efficiency and an optional back pressure, or with the regenerative extend connection; the swept volume and the cycle time; the pump delivery, shaft power, torque and speed; a hydraulic motor's torque; the velocity in the suction, pressure and return lines against your own limits and the smallest listed hose or pipe bore that meets them; a sharp orifice's flow for flow-control screening; and a screening check of the rod against buckling (Euler above the transition slenderness, Johnson parabola below it). screening only; ISO/TS 13725 method not implemented. Not a cylinder design to a standard: the limits, the hose sizes, the mounting factor and the material properties are your records.
+Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_b/A_a Cylinder force: F_ext = (p·A_b − p_back·A_a)·η_m, F_ret = (p·A_a − p_back·A_b)·η_m; regenerative extend F_ext = p·A_r·η_m Speed and time: v_ext = Q·η_vc/A_b (regenerative: A_r), v_ret = Q·η_vc/A_a; t = stroke/v; t_cycle = t_ext + t_ret + t_dwell Required speed (optional): when v_req is given it gives the flow, Q = v_req·A_b/η_vc (regenerative: A_r), and replaces the entered Q; the flow must lie within 0.1 to 2000 L/min Swept volume: ΔV_ext = A_b·stroke (regenerative: A_r·stroke), ΔV_ret = A_a·stroke; ΔV = the larger Pump flow and power: Q_p = V_g·n·η_vp; P = p·Q_p/η_tp; T = P/ω; displacement needed V_g,req = Q/(n·η_vp) Hydraulic motor: T = Δp·V_g/(2π)·η_hm (V_g per revolution) Line velocities: v = Q_line/A_line; suction Q_suc = max(Q, V_g·n) (the geometric delivery), pressure/cap-port line Q_prs = Q_line·A_b/A_a on the retract stroke (regenerative extend: Q_line·A_b/A_r if larger), return Q_rtn = Q_line·A_b/A_a, with Q_line = max(Q, Q_p); smallest bore d = √(4Q/(π·v_max)), recommended = the smallest listed size not below it Orifice flow: Q = C_d·A_o·√(2Δp/ρ); bore for the circuit flow d_o = √(4Q/(π·C_d·√(2Δp/ρ))) Rod buckling (screening): buckling length L_b = the pin-to-pin length at full stroke = L_closed + stroke (L_closed blank: estimated as 2·stroke + L_add, the body taken as long as the stroke), L_eff = K·L_b, r = d_r/4, λ = L_eff/r, λ_c = π·√(2E/f_y); Euler F_cr = π²·E·I/L_eff² for λ > λ_c, Johnson F_cr = A_r·f_y·[1 − f_y·λ²/(4π²E)] for λ ≤ λ_c; load F_b = max(F_push, F_stall) with F_stall = p·A_b (the stalled cylinder at the supply pressure: no flow, so no back pressure and no friction loss; in the regenerative extend too, since the standard connection can always be selected); utilisation u = F_b·S_f/F_cr
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   mode | Extend connection | Standard |  | spec: SPEC-HPU-05 §2 (press duty) | any
-  D | Bore | 100 | mm | spec: SPEC-HPU-05 §2 (press duty) | 20 … 400 mm
-  d_r | Rod diameter | 70 | mm | spec: SPEC-HPU-05 §2 (press duty) | 10 … 300 mm
-  stroke | Stroke | 500 | mm | spec: SPEC-HPU-05 §2 (press duty) | 10 … 3000 mm
-  d_suc | Suction line inside diameter | 40 | mm | assumption: Sheet default value; no project figure given. | 8 … 150 mm
-  d_prs | Pressure line inside diameter, to the cylinder cap port and judged at the larger flow of the two strokes | 20 | mm | spec: SPEC-HPU-05 §2 (press duty) | 8 … 150 mm
-  d_ret | Return line inside diameter | 25 | mm | assumption: Sheet default value; no project figure given. | 8 … 150 mm
-  E | Young's modulus of the rod | 210 | GPa | assumption: Sheet default value; no project figure given. | 60 … 220 GPa
-  f_y | Yield strength of the rod | 500 | MPa | assumption: Sheet default value; no project figure given. | 200 … 1200 MPa
-  F_push | Load to push on the extend stroke, which compresses the rod | 80 | kN | spec: SPEC-HPU-05 §2 (press duty) | 0 … 5000 kN
-  F_pull | Load to pull on the retract stroke | 40 | kN | spec: SPEC-HPU-05 §2 (press duty) | 0 … 5000 kN
-  p_sys | Supply pressure at the cylinder and the pump, gauge | 160 | bar g | spec: SPEC-HPU-05 §2 (press duty) | 5 … 420 bar g
-  p_back | Back pressure on the discharge side of the standard connection, gauge | 0 | bar g | assumption: Sheet default value; no project figure given. | 0 … 100 bar g
-  rho | Fluid density | 870 | kg/m³ | spec: SPEC-HPU-05 §2 (press duty) | 750 … 1100 kg/m³
-  t_dwell | Dwell time added to each cycle | 0 | s | assumption: Sheet default value; no project figure given. | 0 … 600 s
-  Q | Flow into the cylinder (optional; blank = a required extend speed gives it) | 36 | L/min | spec: SPEC-HPU-05 §2 (press duty) | 1 … 1000 L/min
-  eta_m | Mechanical efficiency of the cylinder, from seal and guide friction | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.8 … 1
-  eta_vc | Volumetric efficiency of the cylinder, from leakage past the piston | 0.98 |  | assumption: Sheet default value; no project figure given. | 0.9 … 1
-  K_m | Effective-length factor K of the mounting (L_eff = K·L) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 2
-  S_f | Safety factor on the critical load | 3.5 |  | assumption: Sheet default value; no project figure given. | 1.5 … 10
-  v_suc_max | Suction line velocity limit (your record, and the default is a placeholder, not a code value) | 1.2 | m/s | assumption: Sheet default value; no project figure given. | 0.3 … 10 m/s
-  v_prs_max | Pressure line velocity limit (your record, and the default is a placeholder, not a code value) | 5 | m/s | assumption: Sheet default value; no project figure given. | 0.3 … 10 m/s
-  v_ret_max | Return line velocity limit (your record, and the default is a placeholder, not a code value) | 3 | m/s | assumption: Sheet default value; no project figure given. | 0.3 … 10 m/s
-  L_add | Length of the closed cylinder beyond its stroke (body, end caps and mounting eyes), added to the stroke when the closed length is not entered | 100 | mm | assumption: Sheet default value; no project figure given. | 0 … 1000 mm
-  eta_vp | Volumetric efficiency of the pump | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.8 … 1
-  eta_tp | Total efficiency of the pump (volumetric × hydromechanical) | 0.88 |  | assumption: Sheet default value; no project figure given. | 0.7 … 1
-  V_g | Pump displacement per revolution (optional; blank = no pump delivery check) | 28 | cm³/rev | spec: SPEC-HPU-05 §2 (press duty) | 1 … 500 cm³/rev
-  n_p | Pump speed | 1450 | rpm | spec: SPEC-HPU-05 §2 (press duty) | 500 … 3600 rpm
-  eta_hm | Hydromechanical efficiency of the motor | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.7 … 1
-  C_d | Orifice discharge coefficient | 0.62 |  | assumption: Sheet default value; no project figure given. | 0.5 … 0.9
+  p | Supply pressure at the cylinder and the pump (gauge) | 160 | bar g | spec: SPEC-HPU-05 §2 (press duty) | 1 … 700 bar g
+  p_back | Back pressure on the discharge side (standard connection, gauge) | 0 | bar g | assumption: Sheet default value; no project figure given. | 0 … 700 bar g
+  Q | Flow into the cylinder (blank when a required extend speed gives it) | 36 | L/min | spec: SPEC-HPU-05 §2 (press duty) | 0.1 … 2000 L/min
+  rho | Fluid density | 870 | kg/m³ | spec: SPEC-HPU-05 §2 (press duty) | 700 … 1300 kg/m³
+  F_push | Load to push on the extend stroke (compresses the rod) | 80 | kN | spec: SPEC-HPU-05 §2 (press duty) | 0 … 15000 kN
+  F_pull | Load to pull on the retract stroke | 40 | kN | spec: SPEC-HPU-05 §2 (press duty) | 0 … 15000 kN
+  D | Bore | 100 | mm | spec: SPEC-HPU-05 §2 (press duty) | 10 … 500 mm
+  d_r | Rod diameter | 70 | mm | spec: SPEC-HPU-05 §2 (press duty) | 4 … 450 mm
+  stroke | Stroke | 500 | mm | spec: SPEC-HPU-05 §2 (press duty) | 1 … 5000 mm
+  eta_m | Mechanical efficiency of the cylinder (seal and guide friction) | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
+  eta_vc | Volumetric efficiency of the cylinder (leakage past the piston) | 0.98 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
+  t_dwell | Dwell time added to each cycle | 0 | s | assumption: Sheet default value; no project figure given. | 0 … 3600 s
+  K_m | Effective-length factor K of the mounting (L_eff = K·L) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 2.5
+  L_add | Length of the closed cylinder beyond its stroke (body, end caps and mounting eyes), used only when L_closed is blank: the closed length is then stroke + L_add | 100 | mm | assumption: Sheet default value; no project figure given. | 0 … 5000 mm
+  E | Young's modulus of the rod | 210 | GPa | assumption: Sheet default value; no project figure given. | 50 … 250 GPa
+  f_y | Yield strength of the rod | 500 | MPa | assumption: Sheet default value; no project figure given. | 100 … 1500 MPa
+  S_f | Safety factor on the critical load | 3.5 |  | assumption: Sheet default value; no project figure given. | 1 … 20
+  V_g | Pump displacement per revolution (leave blank to skip the pump delivery check) | 28 | cm³/rev | spec: SPEC-HPU-05 §2 (press duty) | 0.1 … 1000 cm³/rev
+  n_p | Pump speed | 1450 | rpm | spec: SPEC-HPU-05 §2 (press duty) | 50 … 6000 rpm
+  eta_vp | Volumetric efficiency of the pump | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
+  eta_tp | Total efficiency of the pump (volumetric × hydromechanical) | 0.88 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
+  eta_hm | Hydromechanical efficiency of the motor | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
+  d_suc | Suction line inside diameter | 40 | mm | assumption: Sheet default value; no project figure given. | 3 … 200 mm
+  d_prs | Pressure line inside diameter (to the cylinder cap port; judged at the larger flow of the two strokes) | 20 | mm | spec: SPEC-HPU-05 §2 (press duty) | 3 … 200 mm
+  d_ret | Return line inside diameter | 25 | mm | assumption: Sheet default value; no project figure given. | 3 … 200 mm
+  v_suc_max | Suction line velocity limit (your record; the default is a placeholder, not a code value) | 1.2 | m/s | assumption: Sheet default value; no project figure given. | 0.1 … 20 m/s
+  v_prs_max | Pressure line velocity limit (your record; the default is a placeholder, not a code value) | 5 | m/s | assumption: Sheet default value; no project figure given. | 0.1 … 20 m/s
+  v_ret_max | Return line velocity limit (your record; the default is a placeholder, not a code value) | 3 | m/s | assumption: Sheet default value; no project figure given. | 0.1 … 20 m/s
+  C_d | Orifice discharge coefficient | 0.62 |  | assumption: Sheet default value; no project figure given. | 0.2 … 1
 
 3. Assumptions
-  A1. The supply pressure p_sys is the gauge pressure at the cylinder port and at the pump outlet. (F = p·A·η_m, closed form.)
-  A2. Line losses are not subtracted, because the pipe calculation gives the losses of a pipe run. (F = p·A·η_m, closed form.)
-  A3. The force is the pressure on the area less the back pressure on the other side, times the mechanical efficiency. (F = p·A·η_m, closed form.)
-  A4. The speed is the flow into the cylinder times the volumetric efficiency over the area. (v = Q·η_vc/A.)
-  A5. The motion is steady, with no acceleration, cushioning or compressibility. (v = Q·η_vc/A.)
-  A6. The cycle time is the two strokes plus the dwell. (v = Q·η_vc/A.)
-  A7. The pump power is the supply pressure times the pump delivery over the total efficiency. (P = p·Q_p/η_tp.)
-  A8. When the pump delivers more than the circuit takes, the excess goes over the relief valve at the supply pressure. (P = p·Q_p/η_tp.)
-  A9. That is the conservative case for the drive. (P = p·Q_p/η_tp.)
-  A10. The shaft torque is the power over the angular speed. (P = p·Q_p/η_tp.)
-  A11. The line flows use the pump delivery when it is larger than the circuit flow. (Continuity.)
-  A12. The suction line carries the geometric delivery V_g·n_p. (Continuity.)
-  A13. The pressure and return lines carry the larger of the circuit flow and the pump delivery, with no volumetric efficiency. (Continuity.)
-  A14. These flows are the conservative side of the speeds, which use Q·η_vc. (Continuity.)
-  A15. The cap-port line is judged at the larger flow of the two strokes. (Continuity.)
-  A16. On the retract stroke the cap-port line carries the cap-side discharge Q_line·A_b/A_a. (Continuity.)
-  A17. In the regenerative extend it carries Q_line·A_b/A_r when that is larger. (Continuity.)
-  A18. The velocity limits are your records, and the sheet defaults are placeholders, not values from a standard. (Continuity.)
-  A19. The orifice relation is the sharp-edged turbulent one, Q = C_d·A·√(2Δp/ρ), with your discharge coefficient. (Orifice equation, closed form.)
-  A20. It ignores viscosity and cavitation. (Orifice equation, closed form.)
-  A21. It screens a flow-control orifice and is not a valve selection. (Orifice equation, closed form.)
-  A22. The rod is a solid round column of its own diameter, with the effective-length factor of the mounting. (Euler and Johnson column relations, closed form.)
-  A23. The tube, the piston and the rod-end stiffness are not modelled. (Euler and Johnson column relations, closed form.)
-  A24. The rod diameter is taken over the whole pin-to-pin length at full stroke, closed length plus stroke. (Euler and Johnson column relations, closed form.)
-  A25. A body stiffer than the rod makes this conservative. (Euler and Johnson column relations, closed form.)
-  A26. The rod is judged at the larger of the push load you enter and the stall thrust p_sys·A_b. (Euler and Johnson column relations, closed form.)
-  A27. A stalled, obstructed or relief-limited cylinder loads the rod with the full pressure force on the bore. (Euler and Johnson column relations, closed form.)
-  A28. At stall there is no flow, so there is no back pressure, and seal friction does not relieve the rod. (Euler and Johnson column relations, closed form.)
-  A29. No pressure-limiting device is credited. (Euler and Johnson column relations, closed form.)
-  A30. The regenerative extend is judged at the same stall thrust, because the standard connection can always be selected. (Euler and Johnson column relations, closed form.)
-  A31. The mounting factor K_m defaults to 1, pinned at both ends, and a fixed-free mounting is K_m = 2. (Euler and Johnson column relations, closed form.)
-  A32. The mounting factor K_m and the safety factor S_f are your records. (Euler and Johnson column relations, closed form.)
-  A33. The rod buckling check is a screening, and the ISO/TS 13725 method is not implemented. (Euler and Johnson column relations, closed form.)
-  A34. d_suc (Suction line inside diameter) is taken as 40 mm. (Sheet default value; no project figure given.)
-  A35. d_ret (Return line inside diameter) is taken as 25 mm. (Sheet default value; no project figure given.)
-  A36. E (Young's modulus of the rod) is taken as 210 GPa. (Sheet default value; no project figure given.)
-  A37. f_y (Yield strength of the rod) is taken as 500 MPa. (Sheet default value; no project figure given.)
-  A38. p_back (Back pressure on the discharge side of the standard connection, gauge) is taken as 0 bar g. (Sheet default value; no project figure given.)
-  A39. t_dwell (Dwell time added to each cycle) is taken as 0 s. (Sheet default value; no project figure given.)
-  A40. eta_m (Mechanical efficiency of the cylinder, from seal and guide friction) is taken as 0.95. (Sheet default value; no project figure given.)
-  A41. eta_vc (Volumetric efficiency of the cylinder, from leakage past the piston) is taken as 0.98. (Sheet default value; no project figure given.)
-  A42. K_m (Effective-length factor K of the mounting (L_eff = K·L)) is taken as 1. (Sheet default value; no project figure given.)
-  A43. S_f (Safety factor on the critical load) is taken as 3.5. (Sheet default value; no project figure given.)
-  A44. v_suc_max (Suction line velocity limit (your record, and the default is a placeholder, not a code value)) is taken as 1.2 m/s. (Sheet default value; no project figure given.)
-  A45. v_prs_max (Pressure line velocity limit (your record, and the default is a placeholder, not a code value)) is taken as 5 m/s. (Sheet default value; no project figure given.)
-  A46. v_ret_max (Return line velocity limit (your record, and the default is a placeholder, not a code value)) is taken as 3 m/s. (Sheet default value; no project figure given.)
-  A47. L_add (Length of the closed cylinder beyond its stroke (body, end caps and mounting eyes), added to the stroke when the closed length is not entered) is taken as 100 mm. (Sheet default value; no project figure given.)
-  A48. eta_vp (Volumetric efficiency of the pump) is taken as 0.95. (Sheet default value; no project figure given.)
-  A49. eta_tp (Total efficiency of the pump (volumetric × hydromechanical)) is taken as 0.88. (Sheet default value; no project figure given.)
-  A50. eta_hm (Hydromechanical efficiency of the motor) is taken as 0.9. (Sheet default value; no project figure given.)
-  A51. C_d (Orifice discharge coefficient) is taken as 0.62. (Sheet default value; no project figure given.)
-  A52. Standard connection: the extend force is the pressure on the bore area less the back pressure on the annulus area; the retract force the pressure on the annulus less the back pressure on the bore. (Continuity and force balance.)
+  A1. The supply pressure p is the gauge pressure at the cylinder port and, for the pump, at the pump outlet; line losses are not subtracted (the line losses of a pipe run come from the pipe calculation). The force is the pressure on the area less the back pressure on the other side, times the mechanical efficiency. (F = p·A·η_m, closed form.)
+  A2. The speed is the flow into the cylinder times the volumetric efficiency over the area, in steady motion: no acceleration, cushioning or compressibility. The cycle time is the two strokes plus the dwell. (v = Q·η_vc/A.)
+  A3. The pump power is the supply pressure times the pump's delivery over the total efficiency: when the pump delivers more than the circuit takes, the excess is taken to go over the relief valve at the supply pressure, which is the conservative case for the drive. The shaft torque is the power over the angular speed. (P = p·Q_p/η_tp.)
+  A4. The line flows use the pump delivery when it is larger than the circuit flow: the suction line the geometric delivery V_g·n, the pressure line and the return line Q_line = max(Q, Q_p), which carries no volumetric efficiency while the speeds use Q·η_vc (the flows are the conservative side of the speeds). The line to the cylinder cap port is judged at the larger flow of the two strokes: on the retract stroke it carries the cap-side discharge Q_line·A_b/A_a (the same flow as the return line), and in the regenerative extend Q_line·A_b/A_r if that is larger. The velocity limits are your records; the sheet's defaults are placeholders, not values from a standard. (Continuity.)
+  A5. The orifice relation is the sharp-edged turbulent one, Q = C_d·A·√(2Δp/ρ), with your discharge coefficient; it ignores viscosity and cavitation and is a screening of a flow-control orifice, not a valve selection. (Orifice equation, closed form.)
+  A6. The rod is treated as a solid round column of its own diameter with the effective-length factor of the mounting; the tube, the piston and the rod-end stiffness are not modelled, and the rod's diameter is taken over the whole pin-to-pin length at full stroke (closed length plus stroke, the body included; a stiffer body than the rod makes this conservative). The rod is judged at the larger of the push load you enter and the stall thrust p·A_b (a stalled, obstructed or relief-limited cylinder loads the rod with the full pressure force on the bore: no flow, so no back pressure, and the seal friction does not relieve it); no pressure-limiting device is credited, and the regenerative extend is judged at the same stall thrust because the standard connection can always be selected. The mounting factor K_m defaults to 1 (pinned at both ends): a fixed-free mounting is K_m = 2, and the factor and the safety factor S_f are your records. screening only; ISO/TS 13725 method not implemented. (Euler and Johnson column relations, closed form.)
+  A7. p_back (Back pressure on the discharge side (standard connection, gauge)) is taken as 0 bar g. (Sheet default value; no project figure given.)
+  A8. eta_m (Mechanical efficiency of the cylinder (seal and guide friction)) is taken as 0.95. (Sheet default value; no project figure given.)
+  A9. eta_vc (Volumetric efficiency of the cylinder (leakage past the piston)) is taken as 0.98. (Sheet default value; no project figure given.)
+  A10. t_dwell (Dwell time added to each cycle) is taken as 0 s. (Sheet default value; no project figure given.)
+  A11. K_m (Effective-length factor K of the mounting (L_eff = K·L)) is taken as 1. (Sheet default value; no project figure given.)
+  A12. L_add (Length of the closed cylinder beyond its stroke (body, end caps and mounting eyes), used only when L_closed is blank: the closed length is then stroke + L_add) is taken as 100 mm. (Sheet default value; no project figure given.)
+  A13. E (Young's modulus of the rod) is taken as 210 GPa. (Sheet default value; no project figure given.)
+  A14. f_y (Yield strength of the rod) is taken as 500 MPa. (Sheet default value; no project figure given.)
+  A15. S_f (Safety factor on the critical load) is taken as 3.5. (Sheet default value; no project figure given.)
+  A16. eta_vp (Volumetric efficiency of the pump) is taken as 0.95. (Sheet default value; no project figure given.)
+  A17. eta_tp (Total efficiency of the pump (volumetric × hydromechanical)) is taken as 0.88. (Sheet default value; no project figure given.)
+  A18. eta_hm (Hydromechanical efficiency of the motor) is taken as 0.9. (Sheet default value; no project figure given.)
+  A19. d_suc (Suction line inside diameter) is taken as 40 mm. (Sheet default value; no project figure given.)
+  A20. d_ret (Return line inside diameter) is taken as 25 mm. (Sheet default value; no project figure given.)
+  A21. v_suc_max (Suction line velocity limit (your record; the default is a placeholder, not a code value)) is taken as 1.2 m/s. (Sheet default value; no project figure given.)
+  A22. v_prs_max (Pressure line velocity limit (your record; the default is a placeholder, not a code value)) is taken as 5 m/s. (Sheet default value; no project figure given.)
+  A23. v_ret_max (Return line velocity limit (your record; the default is a placeholder, not a code value)) is taken as 3 m/s. (Sheet default value; no project figure given.)
+  A24. C_d (Orifice discharge coefficient) is taken as 0.62. (Sheet default value; no project figure given.)
+  A25. Standard connection: the extend force is the pressure on the bore area less the back pressure on the annulus area; the retract force the pressure on the annulus less the back pressure on the bore. (Continuity and force balance.)
 
 4. Working
   [28] A_b = pi * D^2 / 4
@@ -168,7 +141,7 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
       = 78.54 cm² / 40.055 cm²
       = 1.9608
         Area ratio A_b/A_a
-  [33] F_ext = (p_sys * A_b - p_back * A_a) * eta_m
+  [33] F_ext = (p * A_b - p_back * A_a) * eta_m
       = (160 bar g × 78.54 cm² − 0 bar g × 40.055 cm²) × 0.95
       = 119.38 kN
         Extend force
@@ -180,7 +153,7 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
       = 78.54 cm² × 500 mm
       = 3.927 L
         Liquid taken from the supply for the extend stroke
-  [36] F_ret = (p_sys * A_a - p_back * A_b) * eta_m
+  [36] F_ret = (p * A_a - p_back * A_b) * eta_m
       = (160 bar g × 40.055 cm² − 0 bar g × 78.54 cm²) × 0.95
       = 60.884 kN
         Retract force
@@ -224,7 +197,7 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
       = 38.57 L/min
       = 38.57 L/min
         Flow the pump delivers at the supply pressure
-  [47] P_hyd = p_sys * Q_pump
+  [47] P_hyd = p * Q_pump
       = 160 bar g × 38.57 L/min
       = 10.285 kW
         Hydraulic power at the pump outlet
@@ -324,14 +297,14 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
       = 1465.7 kN / 3.5
       = 418.77 kN
         Allowable push load: critical load over the safety factor
-  [72] F_stall = p_sys * A_b
+  [72] F_stall = p * A_b
       = 160 bar g × 78.54 cm²
       = 125.66 kN
         Stall thrust: the supply pressure on the bore area (no flow, so no back pressure; the friction of the seals does not relieve the rod of a stalled cylinder)
   [73] F_buck = max(F_push, F_stall)
       = max(80 kN, 125.66 kN)
       = 125.66 kN
-        Rod load for the buckling check: the larger of the push load entered and the stall thrust p_sys·A_b
+        Rod load for the buckling check: the larger of the push load entered and the stall thrust p·A_b
   [74] u_buck = F_buck / F_allow
       = 125.66 kN / 418.77 kN
       = 0.30008
@@ -350,8 +323,8 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
         Pressure at the cylinder the push load needs: (F_push/η_m + p_back·A_a)/A_b
 
 5. Results
-  Q = 36 L/min    Flow into the cylinder (governing)
-  p_sys = 160 bar g    Supply pressure
+  Q = 36 L/min    Flow into the cylinder
+  p = 160 bar g    Supply pressure
   P_pump = 11.69 kW    Pump shaft power
   u_buck = 0.30    Rod buckling utilisation (screening)
   F_ext = 119.38 kN    Extend force
@@ -391,40 +364,40 @@ Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, are
   lam_c = 91.052    Transition slenderness
   F_cr = 1465.7 kN    Critical load (screening)
   F_allow = 418.77 kN    Allowable push load (screening)
-  F_stall = 125.66 kN    Stall thrust p_sys·A_b
+  F_stall = 125.66 kN    Stall thrust p·A_b
   F_buck = 125.66 kN    Rod load judged for buckling: the larger of the push load and the stall thrust
   buckling_note = "screening only; ISO/TS 13725 method not implemented; stocky rod, Johnson parabola"    Rod buckling check
   u_push = 0.67    Push load over the extend force
   u_pull = 0.66    Pull load over the retract force
-  u_pump = 0.93    Circuit flow over the pump delivery
+  u_pump = 0.93    Circuit flow over the pump delivery (governing)
   u_suc = 0.45    Suction line velocity over its limit
   u_prs = 0.80    Pressure line velocity over its limit
   u_rtn = 0.86    Return line velocity over its limit
 
 6. Checks (governing first)
-  PASS  Circuit flow against the pump delivery: 36 L/min vs 38.57 L/min  utilisation 0.93
-  PASS  Return line velocity against its limit: 2.568 m/s vs 3 m/s  utilisation 0.86  « cylinder.line-limits record
-  PASS  Pressure line velocity against its limit, cap-port line at the larger stroke flow: 4.012 m/s vs 5 m/s  utilisation 0.80  « cylinder.line-limits record
-  PASS  Push load against the extend force: 80 kN vs 119.38 kN  utilisation 0.67
-  PASS  Pull load against the retract force: 40 kN vs 60.88 kN  utilisation 0.66
-  PASS  Suction line velocity against its limit: 0.5385 m/s vs 1.200 m/s  utilisation 0.45  « cylinder.line-limits record
-  PASS  Rod load against the allowable push load, screening only; ISO/TS 13725 method not implemented: 125.66 kN vs 418.77 kN  utilisation 0.30  « Euler / Johnson column relations
+  PASS  Pump delivery covers the circuit flow: u_pump = 0.93 vs u_pump ≤ 1  utilisation 0.93
+  PASS  Return line velocity within its limit: u_rtn = 0.86 vs u_rtn ≤ 1  utilisation 0.86  « cylinder.line-limits record
+  PASS  Pressure line velocity within its limit, cap-port line at the larger stroke flow: u_prs = 0.80 vs u_prs ≤ 1  utilisation 0.80  « cylinder.line-limits record
+  PASS  Extend force covers the push load: u_push = 0.67 vs u_push ≤ 1  utilisation 0.67
+  PASS  Retract force covers the pull load: u_pull = 0.66 vs u_pull ≤ 1  utilisation 0.66
+  PASS  Suction line velocity within its limit: u_suc = 0.45 vs u_suc ≤ 1  utilisation 0.45  « cylinder.line-limits record
+  PASS  Rod buckling at the larger of the push load and the stall thrust, screening only; ISO/TS 13725 method not implemented: u_buck = 0.30 vs u_buck ≤ 1  utilisation 0.30  « Euler / Johnson column relations
 
 7. Applicability
-  WARNING  records: tabulated values not taken from a reference record are E, f_y (Rod material properties); K_m (Mounting effective-length factor); S_f (Rod buckling safety factor); v_suc_max, v_prs_max, v_ret_max (Line velocity limits). Enter each as one so its source, edition and licence travel with it.  [record]
-  WARNING  L_closed: enter the closed pin-to-pin length from the cylinder drawing. The buckling length is estimated as 2 × stroke + L_add = 1100 mm.  [length]
+  WARNING  records: tabulated values not taken from a reference record are E, f_y (Rod material); K_m (Mounting effective-length factor); S_f (Rod buckling safety factor); v_suc_max, v_prs_max, v_ret_max (Line velocity limits). Enter each as one so its source, edition and licence travel with it.  [record]
+  WARNING  L_closed: the closed pin-to-pin length is not entered; the buckling length is estimated as 2 × the stroke + L_add = 1100 mm, the cylinder body included (a cylinder buckles over its whole pin-to-pin length at full stroke, not over the rod alone). Enter the closed length from the cylinder drawing.  [length]
 
 8. Verification
-  Template: fp.cylinder@1.5.0
-  Content hash: 900cefdc454489a1
+  Template: fp.cylinder@1.4.0
+  Content hash: e9d829e843189b74
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 7/7
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-26 22:43 UTC
   Application: TempestOS test
 
 9. References
-  1. ISO/TS 13725:2016 — Cylinder buckling load: method not implemented, screening only
-  2. Esposito, Fluid Power with Applications Ch. on cylinders and pumps, 7th ed. — Force, speed, flow and power relations, closed form
+  1. ISO/TS 13725 — Cylinder buckling load: method not implemented, screening only
+  2. Esposito, Fluid Power with Applications Cylinder and pump chapters — Force, speed, flow and power relations, closed form
 
 
 CALCULATION SHEET — ISSUED
@@ -436,63 +409,43 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: HPU-001    Client: Client Co
 
 1. Scope and method
-Calculates the pre-charge gas volume V0 of a hydraulic accumulator that delivers or absorbs a liquid volume ΔV between two working pressures, with the next listed size and the PSSR bar·litre product. It is not a pressure-vessel code check.
-Absolute pressures: p_a = p_gauge + p_atm, or as entered in Absolute mode Gas volume, one exponent both ways: V0 = ΔV / [(p0/p1)^(1/n_gas) − (p0/p2)^(1/n_gas)], n_gas = 1 isothermal to 1.4 adiabatic Gas volume, slow charge then discharge at n_gas: V0 = ΔV·(p2/p0) / [(p2/p1)^(1/n_gas) − 1], from V2 = V0·p0/p2 and V1 = V2·(p2/p1)^(1/n_gas) Temperature and gas corrections: V0 × f_rg × the cold-gas factor T_max/T_min, to the power 1/n_gas when one exponent holds both ways, in absolute temperatures Pre-charge rules: p0 ≤ r_0·p1 at T_max, and p2/p0(T_min) ≤ r_p with p0(T_min) = p0·T_min/T_max in absolute temperatures Pre-charge at the charging temperature: p0(T_c) = p0(T_max)·T_c/T_max in absolute temperatures Next size: the smallest listed size not below V0 PSSR bar-litre product: PS·V of the vessel against 250 bar·L, an indication that needs PS and a volume
+The pre-charge gas volume V0 of a hydraulic accumulator that delivers, or absorbs, a liquid volume ΔV between the lowest working pressure p1 and the highest p2, from p·Vⁿ = const with absolute pressures and an exponent n between 1 (isothermal) and 1.4 (adiabatic), the gas either charged as fast as it is discharged or (a held accumulator, the default for an emergency stroke) charged slowly and isothermally to p2 and then discharged at n; the volume scaled to the lowest operating temperature (T_max/T_min) and the pre-charge pressure at the charging temperature; the next size from your own size list; and the bar·litre product PS·V of the vessel's own maximum allowable pressure and volume against the PSSR Schedule 1 250 bar·L exception. Three modes: energy storage, shock and pulsation (screening only) and emergency stroke (ΔV is the stroke volume, linkable from the cylinder circuit). Not a pressure-vessel code check.
+Absolute pressures: p_a = p_gauge + p_atm (or as entered, in Absolute mode) Gas volume, one exponent both ways (charged as fast as it is discharged): V0 = ΔV / [(p0/p1)^(1/n) − (p0/p2)^(1/n)], n = 1 isothermal … 1.4 adiabatic Gas volume, slow charge and discharge at n (a held accumulator): charged isothermally to p2, V2 = V0·p0/p2, then discharged at n to p1, V1 = V2·(p2/p1)^(1/n), ΔV = V1 − V2, so V0 = ΔV·(p2/p0) / [(p2/p1)^(1/n) − 1] Either volume × the real-gas factor f_rg (user input, at least 1) and × the cold-gas factor, because p0 is defined at T_max and the gas delivers less when cold: (T_max + 273.15)/(T_min + 273.15) for the held accumulator, that ratio to the power 1/n for one exponent both ways Pre-charge rules (records, applied to absolute pressures): p0 ≤ r_0·p1 at T_max (default 0.9, bladder type) and p2/p0(T_min) ≤ r_p (default 4), p0(T_min) = p0·(T_min + 273.15)/(T_max + 273.15) Pre-charge at the charging temperature: p0(T_c) = p0(T_max)·(T_c + 273.15)/(T_max + 273.15) Next size: the smallest listed size not below V0 PSSR bar-litre product: PS·V, PS = the vessel's maximum allowable pressure (bar gauge, entered, not below p2 gauge), V = the vessel volume entered (default the selected size); compared with 250 bar·L (PSSR Schedule 1, indication only; not available without PS and a volume)
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   mode | Duty | Emergency stroke |  | spec: SPEC-HPU-05 §3 (accumulator) | any
-  process | Gas process (By duty: an emergency stroke is charged slowly to p_2 and discharged at n_gas, the other duties use one exponent both ways) | By duty |  | assumption: Sheet default value; no project figure given. | any
+  dV | Liquid volume ΔV delivered, absorbed or (emergency stroke) needed for the stroke | 3.92699 | L | link: Cylinder and pump circuit rev A · dV | 0.001 … 1000 L
+  process | Gas process (By duty: an emergency stroke is charged slowly to p2 and discharged at n, the other duties use one exponent both ways) | By duty |  | assumption: Sheet default value; no project figure given. | any
   p_basis | Pressures entered as | Gauge |  | assumption: Sheet default value; no project figure given. | any
-  dV | Liquid volume delivered, absorbed or needed for the emergency stroke | 3.92699 | L | link: Cylinder and pump circuit rev A · dV | 0.01 … 500 L
-  p_0 | Gas pre-charge pressure p0, at the maximum operating temperature | 105 | bar g | spec: SPEC-HPU-05 §3 (accumulator) | 1 … 400 bar g
-  p_1 | Lowest working pressure p1 | 120 | bar g | spec: SPEC-HPU-05 §3 (accumulator) | 1 … 400 bar g
-  p_2 | Highest working pressure p2 | 160 | bar g | link: Cylinder and pump circuit rev A · p_sys | 1 … 400 bar g
-  p_atm | Atmospheric pressure (gauge to absolute) | 1.01325 | bar a | assumption: Sheet default value; no project figure given. | 0.7 … 1.05 bar a
-  T_max | Maximum operating temperature (p0 applies here) | 50 | °C | spec: SPEC-HPU-05 §3 (accumulator) | -20 … 120 °C
-  T_min | Minimum operating temperature (the gas is coldest and delivers least here) | 10 | °C | spec: SPEC-HPU-05 §3 (accumulator) | -30 … 100 °C
-  T_c | Charging temperature | 20 | °C | assumption: Sheet default value; no project figure given. | -20 … 60 °C
-  n_gas | Gas exponent of the discharge, 1 isothermal (slow) to 1.4 adiabatic (fast), also the charge exponent when one exponent holds both ways | 1.4 |  | spec: SPEC-HPU-05 §3 (accumulator) | 1 … 1.4
-  f_rg | Real-gas factor on V0, the real over the ideal gas volume for this pressure window (1 = ideal gas, at least 1) | 1.311 |  | spec: SPEC-HPU-05 §3 (accumulator) | 1 … 2.1
-  r_0 | Pre-charge rule: p0 (at T_max) at most this fraction of p1, on absolute pressures | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.5 … 0.95
-  r_p | Pre-charge rule: p2/p0 (p0 at T_min) at most this ratio, on absolute pressures | 4 |  | assumption: Sheet default value; no project figure given. | 2 … 10
-  p_load | Lowest pressure the load still needs, bar gauge, such as the push pressure p_push of the cylinder circuit (optional; blank = not checked) | 107.22 | bar g | link: Cylinder and pump circuit rev A · p_push | 1 … 400 bar g
+  p_0 | Gas pre-charge pressure p0, at the maximum operating temperature | 105 | bar g | spec: SPEC-HPU-05 §3 (accumulator) | 0 … 700 bar g
+  p_1 | Lowest working pressure p1 | 120 | bar g | spec: SPEC-HPU-05 §3 (accumulator) | 0 … 700 bar g
+  p_2 | Highest working pressure p2 | 160 | bar g | link: Cylinder and pump circuit rev A · p | 0 … 700 bar g
+  p_atm | Atmospheric pressure (gauge to absolute) | 1.01325 | bar a | assumption: Sheet default value; no project figure given. | 0.5 … 1.1 bar a
+  n | Gas exponent n of the discharge (1 isothermal, slow; 1.4 adiabatic, fast); with the same exponent both ways it is also the charge exponent | 1.4 |  | spec: SPEC-HPU-05 §3 (accumulator) | 1 … 1.4
+  f_rg | Real-gas factor on V0 (1 = ideal gas; at least 1). It is the ratio of the real to the ideal gas volume for THIS pressure window, not the compressibility factor Z at p_2: from a gas-property source, f_rg = Z_0·(1/p_1 − 1/p_2)/(Z_1/p_1 − Z_2/p_2) for an isothermal discharge, Z at p_0, p_1 and p_2, which is larger than Z_2 for a narrow window | 1.311 |  | spec: SPEC-HPU-05 §3 (accumulator) | 1 … 3
+  T_max | Maximum operating temperature (p0 applies here) | 50 | °C | spec: SPEC-HPU-05 §3 (accumulator) | -40 … 150 °C
+  T_min | Minimum operating temperature (the gas is coldest and delivers least here; V0 is scaled by T_max/T_min) | 10 | °C | spec: SPEC-HPU-05 §3 (accumulator) | -40 … 150 °C
+  T_c | Charging temperature | 20 | °C | assumption: Sheet default value; no project figure given. | -40 … 100 °C
+  r_0 | Pre-charge rule: p0 (at T_max) at most this fraction of p1, on absolute pressures (state whether the manufacturer's ratio is on gauge or absolute pressures) | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
+  r_p | Pre-charge rule: p2/p0 (p0 at T_min) at most this ratio, on absolute pressures | 4 |  | assumption: Sheet default value; no project figure given. | 1 … 20
+  p_load | Lowest pressure the load still needs, bar gauge (an emergency stroke: the cylinder pressure its push load needs, linked from the cylinder circuit's p_push; p_1 must not be below it; blank = not checked) | 107.22 | bar g | link: Cylinder and pump circuit rev A · p_push | 0 … 700 bar g
 
 3. Assumptions
-  A1. All gas-law pressures are absolute. (p·Vⁿ = const on a fixed mass of gas.)
-  A2. A gauge entry is converted with the atmospheric pressure entered on the sheet. (p·Vⁿ = const on a fixed mass of gas.)
-  A3. The exponent n_gas is yours, from 1 for a slow isothermal discharge to 1.4 for a fast adiabatic one. (Gas-law exponents, closed form.)
-  A4. With one exponent both ways, a larger n_gas gives a larger volume for a given ΔV. (Gas-law exponents, closed form.)
-  A5. A held accumulator is charged slowly and isothermally to p_2, then discharged at n_gas. (Gas-law sizing of a held accumulator: slow charge, fast discharge.)
-  A6. An emergency stroke is a held accumulator by default. (Gas-law sizing of a held accumulator: slow charge, fast discharge.)
-  A7. Sizing a held accumulator with one exponent understates the volume. (Gas-law sizing of a held accumulator: slow charge, fast discharge.)
-  A8. The one-exponent form suits a gas charged as fast as it is discharged. (Gas-law sizing of a held accumulator: slow charge, fast discharge.)
-  A9. The shock and pulsation duty always uses one exponent. (Gas-law sizing of a held accumulator: slow charge, fast discharge.)
-  A10. The gas is ideal unless a real-gas factor is entered. (Real-gas correction as a user factor.)
-  A11. The real-gas factor is at least 1, because real nitrogen needs more volume than ideal gas, never less. (Real-gas correction as a user factor.)
-  A12. Above 200 bar the sheet warns that nitrogen departs from the ideal-gas law. (Real-gas correction as a user factor.)
-  A13. The pre-charge p0 is defined at the maximum operating temperature T_max, and V0 is sized there. (Manufacturer sizing practice and the gas law at constant mass.)
-  A14. At T_min the same gas delivers only the fraction T_min/T_max of ΔV in absolute temperatures. (Manufacturer sizing practice and the gas law at constant mass.)
-  A15. A held accumulator multiplies V0 by T_max/T_min. (Manufacturer sizing practice and the gas law at constant mass.)
-  A16. One exponent n_gas both ways multiplies V0 by T_max/T_min to the power 1/n_gas. (Manufacturer sizing practice and the gas law at constant mass.)
-  A17. The p2/p0 rule is checked with the pre-charge at T_min. (Manufacturer sizing practice and the gas law at constant mass.)
-  A18. With T_min equal to T_max the temperature correction is 1. (Manufacturer sizing practice and the gas law at constant mass.)
-  A19. The pre-charge rules are records for the accumulator type and make. (Rules are records, not built-in limits.)
-  A20. The rules are checked on absolute pressures, whichever basis the pressures are entered on. (Rules are records, not built-in limits.)
-  A21. The manufacturer gives the rule values and says whether its ratio is on gauge or absolute pressures. (Rules are records, not built-in limits.)
-  A22. The bar·litre product is PS times the vessel volume V. (Regulatory gating: no pressure-vessel code check.)
-  A23. PS is the vessel's maximum allowable pressure in bar gauge, never below the highest working pressure p_2. (Regulatory gating: no pressure-vessel code check.)
-  A24. The vessel volume is the selected size unless you enter it. (Regulatory gating: no pressure-vessel code check.)
-  A25. Without PS and a volume the PSSR indication is not available. (Regulatory gating: no pressure-vessel code check.)
-  A26. The indication shows whether the 250 bar·L exception can apply, and it is not a compliance statement. (Regulatory gating: no pressure-vessel code check.)
-  A27. The PED, UK PER, PSSR examination and the vessel's design code stay with the manufacturer and the competent person. (Regulatory gating: no pressure-vessel code check.)
-  A28. process (Gas process (By duty: an emergency stroke is charged slowly to p_2 and discharged at n_gas, the other duties use one exponent both ways)) is taken as By duty. (Sheet default value; no project figure given.)
-  A29. p_basis (Pressures entered as) is taken as Gauge. (Sheet default value; no project figure given.)
-  A30. p_atm (Atmospheric pressure (gauge to absolute)) is taken as 1.01325 bar a. (Sheet default value; no project figure given.)
-  A31. T_c (Charging temperature) is taken as 20 °C. (Sheet default value; no project figure given.)
-  A32. r_0 (Pre-charge rule: p0 (at T_max) at most this fraction of p1, on absolute pressures) is taken as 0.9. (Sheet default value; no project figure given.)
-  A33. r_p (Pre-charge rule: p2/p0 (p0 at T_min) at most this ratio, on absolute pressures) is taken as 4. (Sheet default value; no project figure given.)
-  A34. Emergency stroke duty: ΔV is the swept volume plus line compression, p_1 is the lowest pressure that still gives the force, and p_2 is the held pressure reached by a slow charge. (Gas-law sizing for a stored-energy stroke.)
+  A1. All gas-law pressures are absolute. A gauge entry is converted with the atmospheric pressure entered here, so the same numbers read as gauge or as absolute give different volumes. (p·Vⁿ = const on a fixed mass of gas.)
+  A2. The exponent n is the user's: 1 for a slow discharge with heat exchange (isothermal), towards 1.4 for a fast one (adiabatic). With the same exponent both ways the larger n gives the larger volume for a given ΔV. (Gas-law exponents, closed form.)
+  A3. The gas process is stated on the sheet. A held accumulator (an emergency stroke, by default) is charged slowly, so isothermally with charge exponent 1 (V2 = V0·p0/p2), and discharged at the exponent n; sizing it with one exponent from the pre-charge to both pressures understates the volume. The one-exponent form (charge exponent = n) is for a gas charged as fast as it is discharged, as in a pulsation or a fast cycle; choose it in the energy-storage duty for that case. The shock and pulsation duty always uses one exponent. (Gas-law sizing of a held accumulator: slow charge, fast discharge.)
+  A4. The gas is ideal unless a real-gas factor is entered (at least 1: nitrogen's compressibility factor exceeds 1 at high pressure, so the real gas needs more volume, never less); above 200 bar the sheet warns that nitrogen departs from the ideal-gas law and a factor from a gas-property source should be entered. (Real-gas correction as a user factor.)
+  A5. The pre-charge p0 is defined at the maximum operating temperature T_max and V0 is sized there; at the lowest operating temperature T_min the same gas delivers only the fraction T_min/T_max (absolute) of ΔV, so V0 is multiplied by T_max/T_min for a held accumulator (isothermal charge to p2) and by (T_max/T_min)^(1/n) when one exponent n holds both ways (the pre-charge at T_min is p0·T_min/T_max), and the p2/p0 rule is checked with p0 at T_min. The temperature range is the user's; with T_min = T_max the correction is 1. (Manufacturer sizing practice; the gas law at constant mass.)
+  A6. The pre-charge rules (p0 ≤ 0.9·p1 and p2/p0 ≤ 4 by default) are records for the accumulator type and make and are checked as PASS/FAIL on ABSOLUTE pressures, whichever basis the pressures are entered on; the right values, and whether the manufacturer states the ratio on gauge or absolute pressures, come from the manufacturer (the same numbers read as gauge pressures give a different ratio). (Rules are records, not built-in limits.)
+  A7. The bar·litre product is PS times V of the vessel itself: PS is the vessel's maximum allowable pressure in bar gauge (the nameplate or relief setting, never below the highest working pressure p2) and V its internal volume (the selected size unless entered). Without PS and a volume the indication is not available. It indicates whether the 250 bar·L exception of PSSR Schedule 1 can apply; it is not a compliance statement, and PED / UK PER, PSSR examination and the vessel's own design code stay with the manufacturer and the competent person. (Regulatory gating: no pressure-vessel code check.)
+  A8. process (Gas process (By duty: an emergency stroke is charged slowly to p2 and discharged at n, the other duties use one exponent both ways)) is taken as By duty. (Sheet default value; no project figure given.)
+  A9. p_basis (Pressures entered as) is taken as Gauge. (Sheet default value; no project figure given.)
+  A10. p_atm (Atmospheric pressure (gauge to absolute)) is taken as 1.01325 bar a. (Sheet default value; no project figure given.)
+  A11. T_c (Charging temperature) is taken as 20 °C. (Sheet default value; no project figure given.)
+  A12. r_0 (Pre-charge rule: p0 (at T_max) at most this fraction of p1, on absolute pressures (state whether the manufacturer's ratio is on gauge or absolute pressures)) is taken as 0.9. (Sheet default value; no project figure given.)
+  A13. r_p (Pre-charge rule: p2/p0 (p0 at T_min) at most this ratio, on absolute pressures) is taken as 4. (Sheet default value; no project figure given.)
+  A14. Emergency stroke duty: ΔV is the volume the emergency stroke needs (swept volume plus line compression; linkable from the cylinder circuit); p_1 is the lowest pressure at which the stroke still has the force it needs; p_2 is the pressure the accumulator is held at, reached by a slow charge. (Gas-law sizing for a stored-energy stroke.)
 
 4. Working
   [15] pa_0 = p_0 + p_atm
@@ -519,10 +472,10 @@ Absolute pressures: p_a = p_gauge + p_atm, or as entered in Absolute mode Gas vo
       = 107.22 bar g / 120 bar g
       = 0.8935
         Pressure the load needs over the lowest working pressure
-  [23] V0_ideal = dV · (pa_2/pa_0) / [(pa_2/pa_1)^(1/n_gas) − 1], charged isothermally to pa_2, discharged at n_gas    « p·Vⁿ = const, charge exponent 1, discharge exponent n_gas
+  [23] V0_ideal = dV · (pa_2/pa_0) / [(pa_2/pa_1)^(1/n) − 1], charged isothermally to pa_2, discharged at n    « p·Vⁿ = const, charge exponent 1, discharge exponent n
       = 3.927 L · 1.5188 / [(1.3305)^(1/1.4) − 1]
       = 26.357 L
-        Gas volume for the displacement, ideal gas, slow charge and discharge at n_gas
+        Gas volume for the displacement, ideal gas, slow charge and discharge at n
   [24] f_Tabs = (T_max / 1 K) / (T_min / 1 K)
       = 50 degC / 1 K / (10 degC / 1 K)
       = 1.1413
@@ -551,20 +504,12 @@ Absolute pressures: p_a = p_gauge + p_atm, or as entered in Absolute mode Gas vo
       = 96.171 bar a − 1.0132 bar a
       = 95.158 bar g
         Pre-charge to set at the charging temperature (gauge)
-  [31] p0_max = r_0 * pa_1
-      = 0.9 × 121.01 bar a
-      = 108.91 bar a
-        Largest pre-charge the p0/p1 rule allows
-  [32] u_r0 = pa_0 / p0_max
-      = 106.01 bar a / 108.91 bar a
+  [31] u_r0 = pa_0 / (r_0 * pa_1)
+      = 106.01 bar a / (0.9 × 121.01 bar a)
       = 0.97339
         Pre-charge against the p0/p1 rule
-  [33] p_ratio = pa_2 / p0_min
-      = 161.01 bar a / 92.891 bar a
-      = 1.7334
-        Pressure ratio p2/p0, with p0 at the minimum temperature
-  [34] u_rp = p_ratio / r_p
-      = 1.7334 / 4
+  [32] u_rp = (pa_2 / p0_min) / r_p
+      = 161.01 bar a / 92.891 bar a / 4
       = 0.43334
         Pressure ratio p2/p0 (p0 at the minimum temperature) against the rule
 
@@ -575,32 +520,32 @@ Absolute pressures: p_a = p_gauge + p_atm, or as entered in Absolute mode Gas vo
   p0_min = 92.89 bar a    Pre-charge, absolute, at the minimum operating temperature
   f_T = 1.1413    Gas volume scaling T_max/T_min
   pssr = "indication not available — enter the vessel's PS and volume (or a size list)."    PSSR Schedule 1 250 bar·L exception (indication only)
-  process = "charged slowly to p_2 (isothermal, exponent 1), discharged at n_gas = 1.4"    Gas process the volume is sized for
-  u_r0 = 0.97    Pre-charge rule utilisation (p0/p1)
+  process = "charged slowly to p_2 (isothermal, exponent 1), discharged at n = 1.4"    Gas process the volume is sized for
+  u_r0 = 0.97    Pre-charge rule utilisation (p0/p1) (governing)
   u_rp = 0.43    Pressure ratio utilisation (p2/p0 at the minimum temperature)
   u_load = 0.89    Load pressure over the lowest working pressure p_1
 
 6. Checks (governing first)
-  PASS  Pre-charge against the p0/p1 rule: 106.01 bar a vs 108.91 bar a  utilisation 0.97  « accumulator.rules record
-  PASS  Load pressure against the lowest working pressure: 107.22 bar g vs 120 bar g  utilisation 0.89
-  PASS  Pressure ratio against the p2/p0 rule: 1.7334 vs 4  utilisation 0.43  « accumulator.rules record
+  PASS  Pre-charge within the p0/p1 rule: u_r0 = 0.97 vs u_r0 ≤ 1  utilisation 0.97  « accumulator.rules record
+  PASS  Lowest working pressure p_1 carries the load: u_load = 0.89 vs u_load ≤ 1  utilisation 0.89
+  PASS  Pressure ratio within the p2/p0 rule: u_rp = 0.43 vs u_rp ≤ 1  utilisation 0.43  « accumulator.rules record
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are r_0, r_p (Pre-charge rules). Enter each as one so its source, edition and licence travel with it.  [record]
-  WARNING  n_gas: the exponent 1.4 is the ideal-gas value, and real nitrogen at 121.01 to 161.01 bar absolute is stiffer. Your f_rg = 1.311 applies on top, so it must be the factor for the discharge path.  [exponent-real]
+  WARNING  n: the exponent 1.4 is the ideal-gas value; real nitrogen at 121.01 to 161.01 bar absolute is stiffer (an effective isentropic exponent of about 1.5 to 2.1 between 60 and 350 bar). Your real-gas factor f_rg = 1.311 is applied on top: it must be the factor for the discharge path, not for an isothermal one.  [exponent-real]
 
 8. Verification
-  Template: fp.accumulator@1.7.0
-  Content hash: 7ea8865ce36556d1
+  Template: fp.accumulator@1.6.0
+  Content hash: 2cceb7afd077e942
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 10/10
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-26 22:43 UTC
   Application: TempestOS test
 
 9. References
-  1. Pressure Systems Safety Regulations 2000 (SI 2000/128) §Schedule 1 — 250 bar·litre exception, indication only
-  2. Pressure Equipment Directive 2014/68/EU and UK PER 2016 — Pressure equipment, not checked here
-  3. Esposito, Fluid Power with Applications Ch. on accumulators, 7th ed. — Gas-charged accumulator sizing, p·Vⁿ = const
+  1. Pressure Systems Safety Regulations 2000 (SI 2000/128) Schedule 1 — 250 bar·litre exception, indication only
+  2. Pressure Equipment Directive 2014/68/EU and UK PER 2016 — Pressure equipment; not checked here
+  3. Esposito, Fluid Power with Applications Ch. on accumulators — Gas-charged accumulator sizing, p·Vⁿ = const
 
 
 CALCULATION SHEET — ISSUED
@@ -612,45 +557,41 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: HPU-001    Client: Client Co
 
 1. Scope and method
-Calculates the friction and fitting losses of series pipe segments at a given flow, the system curve and the duty point against a pump curve. It also gives the affinity-law shift for a speed or impeller change, and the NPSH.
-Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place of a flow; v = Q/(πD²/4) Reynolds number and friction factor: Re = ρvD/μ; f = 64/Re for laminar flow (Re < 2300); Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) for turbulent flow, by fixed-point iteration (at most 100 steps) from the Swamee–Jain value, which also cross-checks it Head lost in a segment: h_f = f (L + L_eq)/D · v²/2g + K v²/2g System curve: H_sys(Q) = Σdz + h_out + Σh_f,lam·(Q/Q₀) + Σh_f,other·(Q/Q₀)², with a laminar segment's friction scaled as Q and every other friction and fitting loss as Q² (a closed circuit has Σdz = 0) Water held in the pipes: V_pipe = Σ π/4·D²·L Duty point: H_pump(Q) = H_sys(Q), every crossing found by a scan and refined by bisection, the stable one nearest the design flow reported; pump affinity laws Q ∝ n·D^a, H ∝ n²·D², with a = 1 for a trimmed impeller (the default) and a = 3 for a geometrically similar pump Net positive suction head available: NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg, with h_f,suction that of the 'suction' segments at the larger of the design flow and the duty flow Shaft torque for the motor: T = P/ω, with P the larger of the design-flow and duty-point shaft power at the speed n_pump, or the shifted duty power at the shifted speed n_pump·n₂/n₁
+Friction and fitting losses through series pipe segments at a given flow, the static head, the system curve, the duty point against a pump curve entered as points, the affinity-law shift for a speed or impeller change, and the NPSH available at the pump suction.
+Design flow from the heat carried, when a heat load is given in place of a flow: Q = Φ/(ρ c_p ΔT). Mean velocity in the pipe: v = Q/(πD²/4). Reynolds number, which decides laminar or turbulent flow: Re = ρvD/μ. Friction factor for laminar flow (Re < 2300): f = 64/Re. Friction factor for turbulent flow, Colebrook–White by fixed-point iteration (at most 100 steps) from the Swamee–Jain value, which also cross-checks it: 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)). Head lost in the pipe and its fittings: h_f = f (L + L_eq)/D · v²/2g + K v²/2g. System curve, with the friction of a turbulent or transitional segment and every fitting loss scaled from the design flow as Q², and the friction of a laminar segment (Re < 2300, h_f ∝ Q) as Q (a closed circuit has Σdz = 0, the rise in the flow being recovered in the return): H_sys(Q) = Σdz + h_out + Σh_f,lam·(Q/Q₀) + Σh_f,other·(Q/Q₀)². Water held in the pipes: V_pipe = Σ π/4·D²·L. Duty point, where the pump and system curves cross (every crossing is found by a scan and refined by bisection; the stable one, where the pump curve falls through the system curve, nearest the design flow is reported): H_pump(Q) = H_sys(Q). Pump affinity laws for a change of speed n: Q ∝ n; H ∝ n². For a change of impeller diameter D, by the choice: a trimmed impeller of the same casing, Q ∝ D and H ∝ D² (the default, the usual practice for a trim); or a geometrically similar pump scaled in all dimensions, Q ∝ D³ and H ∝ D². Speed and diameter combine as Q ∝ n·D^a, H ∝ n²·D², a = 1 or 3. Net positive suction head available, to compare with what the pump requires: NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg, with p_v from the water correlation or, for a custom fluid, from the vapour pressure entered. The friction h_f,suction is that of the segments marked 'suction' only, at the larger of the design flow and the duty flow the pump runs at. Shaft torque for the motor: T = P/ω with P the larger of the design-flow shaft power and the duty-point shaft power, at the speed n_pump; when a speed or diameter ratio shifts the duty, the shifted duty power at the shifted speed n_pump·n₂/n₁.
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   fluid | Fluid | custom (ρ and μ given) |  | drawing: DRG-HPU-510 rev B | any
-  circuit | Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored) | open (the pump lifts the water by the rises entered) |  | assumption: Sheet default value; no project figure given. | any
-  segments | Pipe segments in series | 1 row(s) |  | drawing: DRG-HPU-510 rev B | any
-  segments[1] |  | name = pressure line to cylinder; L = 12 m; D = 20 mm; eps = 0.045 mm; K = 6; L_eq = 0 m; dz = 0 m; side = discharge |  | D: link: Cylinder and pump circuit rev A · d_prs | 
+  T | Fluid temperature (mean; link B6 t_m for a heating loop) | 50 | °C | drawing: DRG-HPU-510 rev B | 0 … 100 °C
   rho_custom | Density (custom fluid) | 870 | kg/m³ | link: Cylinder and pump circuit rev A · rho | 500 … 2000 kg/m³
   mu_custom | Dynamic viscosity (custom fluid) | 30 | mPa·s | drawing: DRG-HPU-510 rev B | 0.1 … 1000 mPa·s
+  Q | Design flow rate (blank when a heat load gives it) | 4.53765 | m³/h | link: Cylinder and pump circuit rev A · Q_prs | 0.01 … 100000 m³/h
+  segments | Pipe segments in series | 1 row(s) |  | drawing: DRG-HPU-510 rev B | any
+  segments[1] |  | name = pressure line to cylinder; L = 12 m; D = 20 mm; eps = 0.045 mm; K = 6; L_eq = 0 m; dz = 0 m; side = discharge |  | D: link: Cylinder and pump circuit rev A · d_prs | 
+  circuit | Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored) | open (the pump lifts the water by the rises entered) |  | assumption: Sheet default value; no project figure given. | any
   h_out | Pressure head required at the outlet | 0 | m | assumption: Sheet default value; no project figure given. | 0 … 1000 m
-  Q | Design flow rate (optional; blank = the flow comes from the heat load) | 4.53765 | m³/h | link: Cylinder and pump circuit rev A · Q_prs | 0.01 … 100000 m³/h
-  T_fluid | Fluid temperature (mean; link the mean water temperature of the sealed system for a heating loop) | 50 | °C | drawing: DRG-HPU-510 rev B | 0 … 100 °C
+  v_max | Velocity limit (warning) | 5 | m/s | drawing: DRG-HPU-510 rev B | 0.5 … 10 m/s
+  n_ratio | Speed ratio n₂/n₁ (affinity) | 1 |  | assumption: Sheet default value; no project figure given. | 0.2 … 2
+  D_ratio | Impeller diameter ratio D₂/D₁ (affinity; the law is chosen below) | 1 |  | assumption: Sheet default value; no project figure given. | 0.7 … 1.1
+  D_law | Law for the diameter ratio: a trimmed impeller of the same casing (Q ∝ D, H ∝ D²) or a geometrically similar pump (Q ∝ D³, H ∝ D²) | impeller trim (Q ∝ n·D, H ∝ n²·D²) |  | assumption: Sheet default value; no project figure given. | any
+  eta_pump | Pump efficiency at duty (for shaft power) | 0.7 |  | assumption: Sheet default value; no project figure given. | 0.2 … 0.95
   p_atm | Atmospheric pressure (NPSH) | 101.325 | kPa | assumption: Sheet default value; no project figure given. | 50 … 110 kPa
   z_s | Static head at the pump suction (+ flooded, − lift) | 0 | m | assumption: Sheet default value; no project figure given. | -10 … 100 m
-  v_limit | Velocity limit (warning and check) | 5 | m/s | drawing: DRG-HPU-510 rev B | 0.5 … 10 m/s
-  D_law | Law for the diameter ratio: a trimmed impeller of the same casing (Q ∝ D, H ∝ D²) or a geometrically similar pump (Q ∝ D³, H ∝ D²) | impeller trim (Q ∝ n·D, H ∝ n²·D²) |  | assumption: Sheet default value; no project figure given. | any
-  n_ratio | Speed ratio n₂/n₁ (affinity) | 1 |  | assumption: Sheet default value; no project figure given. | 0.2 … 2
-  D_ratio | Impeller diameter ratio D₂/D₁ (affinity; the law is chosen above) | 1 |  | assumption: Sheet default value; no project figure given. | 0.7 … 1.1
-  eta_pump | Pump efficiency at duty (for shaft power) | 0.7 |  | assumption: Sheet default value; no project figure given. | 0.2 … 0.95
 
 3. Assumptions
-  A1. Flow is steady, incompressible and fully developed, and all segments carry the full design flow in series. (Darcy–Weisbach.)
-  A2. Fitting losses scale with velocity head (K method) or add pipe length (equivalent-length method). (Crane TP-410 practice.)
-  A3. Both fitting methods may be used on one segment. (Crane TP-410 practice.)
-  A4. The system curve scales turbulent and transitional friction and all fitting losses with Q² from the design flow. (H_sys = H_static + k₁ Q + k₂ Q².)
-  A5. The friction factor is held at its design-flow value on the system curve. (H_sys = H_static + k₁ Q + k₂ Q².)
-  A6. The friction of a laminar segment scales with Q, and the static part is independent of flow. (H_sys = H_static + k₁ Q + k₂ Q².)
-  A7. Water properties are from published correlations at atmospheric pressure, 0 to 100 °C. (Kell 1975; Vogel fit; Hyland & Wexler 1983.)
-  A8. Any other fluid is entered with its own density and viscosity and their provenance. (Stated.)
-  A9. circuit (Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored)) is taken as open (the pump lifts the water by the rises entered). (Sheet default value; no project figure given.)
-  A10. h_out (Pressure head required at the outlet) is taken as 0 m. (Sheet default value; no project figure given.)
+  A1. Steady, incompressible, fully developed flow; all segments carry the full design flow in series. (Darcy–Weisbach.)
+  A2. Fitting losses scale with velocity head (K method) or add pipe length (equivalent-length method); both may be used on one segment. (Crane TP-410 practice.)
+  A3. The system curve scales the friction of turbulent and transitional segments and all fitting losses with Q² from the design flow (the friction factor is held at its design-flow value); the friction of a laminar segment scales with Q; the static part is independent of flow. (H_sys = H_static + k₁ Q + k₂ Q².)
+  A4. Water properties are from published correlations at atmospheric pressure (0–100 °C); any other fluid is entered with its own density and viscosity and their provenance. (Kell 1975; Vogel fit; Hyland & Wexler 1983.)
+  A5. circuit (Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored)) is taken as open (the pump lifts the water by the rises entered). (Sheet default value; no project figure given.)
+  A6. h_out (Pressure head required at the outlet) is taken as 0 m. (Sheet default value; no project figure given.)
+  A7. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
+  A8. D_ratio (Impeller diameter ratio D₂/D₁ (affinity; the law is chosen below)) is taken as 1. (Sheet default value; no project figure given.)
+  A9. D_law (Law for the diameter ratio: a trimmed impeller of the same casing (Q ∝ D, H ∝ D²) or a geometrically similar pump (Q ∝ D³, H ∝ D²)) is taken as impeller trim (Q ∝ n·D, H ∝ n²·D²). (Sheet default value; no project figure given.)
+  A10. eta_pump (Pump efficiency at duty (for shaft power)) is taken as 0.7. (Sheet default value; no project figure given.)
   A11. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sheet default value; no project figure given.)
   A12. z_s (Static head at the pump suction (+ flooded, − lift)) is taken as 0 m. (Sheet default value; no project figure given.)
-  A13. D_law (Law for the diameter ratio: a trimmed impeller of the same casing (Q ∝ D, H ∝ D²) or a geometrically similar pump (Q ∝ D³, H ∝ D²)) is taken as impeller trim (Q ∝ n·D, H ∝ n²·D²). (Sheet default value; no project figure given.)
-  A14. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
-  A15. D_ratio (Impeller diameter ratio D₂/D₁ (affinity; the law is chosen above)) is taken as 1. (Sheet default value; no project figure given.)
-  A16. eta_pump (Pump efficiency at duty (for shaft power)) is taken as 0.7. (Sheet default value; no project figure given.)
 
 4. Working
   [5] rho = rho_custom
@@ -721,7 +662,7 @@ Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place
       = 4.0122 m/s
       = 4.0122 m/s
         Highest velocity
-  [28] u_v = v_peak / v_limit
+  [28] u_v = v_peak / v_max
       = 4.0122 / 5
       = 0.80243
         Velocity utilisation
@@ -735,7 +676,7 @@ Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place
   dp_total = 247.5 kPa    Friction Δp
   dp_sys = 247.5 kPa    System Δp
   P_hyd = 0.3120 kW    Hydraulic power
-  v_peak = 4.012 m/s    Highest velocity (governing)
+  v_peak = 4.012 m/s    Highest velocity
   T_line = 50 °C    Line design temperature
   v_s1 = 4.012 m/s    Velocity, pressure line to cylinder
   Re_s1 = 2327.1    Re, pressure line to cylinder
@@ -744,24 +685,24 @@ Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place
   h_f_s1 = 29.01 m    h_f, pressure line to cylinder
 
 6. Checks (governing first)
-  PASS  Highest velocity against limit: 4.012 m/s vs 5 m/s  utilisation 0.80
+  PASS  Velocity ≤ limit: u_v = 0.80 vs u_v ≤ 1  utilisation 0.80
 
 7. Applicability
-  WARNING  segments: pressure line to cylinder is transitional (Re = 2327.1), so the friction factor is uncertain.  [transition]
-  WARNING  segments: pressure line to cylinder has fitting losses (K = 6) at Re = 2327.1. The K values are for turbulent flow, so the fitting loss is understated here.  [fittings]
+  WARNING  segments: pressure line to cylinder is transitional (Re = 2327.1); the friction factor is uncertain.  [transition]
+  WARNING  segments: pressure line to cylinder has fitting losses (K = 6) at Re = 2327.1; the K values are turbulent-flow values and rise at low Reynolds number, so the fittings loss K·v²/2g is understated here.  [fittings]
 
 8. Verification
-  Template: bs.pipe-pump@1.10.0
-  Content hash: c67e163da77aac31
+  Template: bs.pipe-pump@1.9.0
+  Content hash: 15a0bf02d74b6e79
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-26 22:43 UTC
   Application: TempestOS test
 
 9. References
-  1. Crane Co., Flow of Fluids Through Valves, Fittings and Pipe (Technical Paper No. 410) — Flow of fluids through valves, fittings and pipe
-  2. Çengel & Cimbala, Fluid Mechanics Ch. 8, 4th ed. — Internal flow: friction factor, minor losses, pump duty
-  3. CIBSE Guide C §4 — Flow of fluids in pipes and ducts (principles)
+  1. Crane Technical Paper 410 — Flow of fluids through valves, fittings and pipe
+  2. Çengel & Cimbala, Fluid Mechanics Ch. 8 — Internal flow: friction factor, minor losses, pump duty
+  3. CIBSE Guide C Section 4 — Flow of fluids in pipes and ducts (principles)
   4. Kell, J. Chem. Eng. Data 20(1), 1975 — Density of liquid water
 
 
@@ -774,60 +715,66 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: HPU-001    Client: Client Co
 
 1. Scope and method
-Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
-Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack). Load inertia reflected to the motor through a linear mechanism: J_refl = m k²/η. Load torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p. Reflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η). Move profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc. Move profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap. Torque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load; deceleration T_dec = −T_acc + T_load; the peak check is on the larger magnitude, SF·max(|T_pk|, |T_dec|) ≤ T_peak, and the braking power is P_brake = max(0, −T_dec·ω_pk). Design torque for a coupling or any part downstream that must carry what the drive can deliver, on the basis the owner chooses (T_basis): the load peak T_design = max(|T_pk|, |T_dec|) (default; T_pk alone in continuous duty, where there is no deceleration), the motor peak T_design = T_peak, a service factor on the rated torque T_design = SF_c·T_rated, or a protective limit T_design = T_lim (a torque limiter or a drive setting). Holding torque in the dwell of a linear mechanism that is not held by a brake: T_hold = m g sin θ·k (efficiency not credited: it is a torque to stand still); it is part of the RMS torque for the whole dwell. Alternating torque amplitude of a point-to-point cycle about T_load, for a shaft's fatigue: T_alt = (T_pk − T_dec)/2 (0 in continuous duty). Torque behind the ratio on the output shaft of a rotary mechanism: T_out = T·i·η (mean, alternating and peak), n_out = n_pk/i. Peak axial thrust of a ball screw on its support bearings: F_ax_pk = F_load + m a_pk (0 for other mechanisms). RMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle), the dwell at T_hold. RMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²]. Continuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i. Continuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load. Peak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load. Continuous power: P_cont = T_load ω; P_rms = P_cont; continuous duty needs the steady load torque T_L (blank or zero is refused: it would size the motor for no load). Rated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60; check P_cont ≤ P_rated, u_power = P_cont/P_rated.
+Calculates the torque, speed and power a motor needs to move a load through a mechanism, and checks a candidate motor against them. A continuously running rotary load is sized from its steady torque, speed and run-up time.
+Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in metres per motor radian; J_refl = m k²/η; T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p Rotary mechanism through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η) Move profile: trapezoidal v_pk = s/(t_move − t_acc), a = v_pk/t_acc; S-curve (sine acceleration, same peak speed) a_pk = (π/2) a_trap Peak torque: T_acc = J_total α; T_pk = T_acc + T_load; T_dec = −T_acc + T_load; the check is SF·max(|T_pk|, |T_dec|) ≤ T_peak; braking power P_brake = max(0, −T_dec·ω_pk) Thermal duty: T_rms = √(Σ T_i² t_i / t_cycle) over the whole cycle, the dwell at T_hold = m g sin θ·k for a linear mechanism not held by a brake; P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}, and for the S-curve the acceleration term is t_acc·[(3/4) T_load² + (5/16) T_acc²] Output side and design torque: T_alt = (T_pk − T_dec)/2 (0 in continuous duty); T_out = T·i·η and n_out = n_pk/i for a rotary mechanism; F_ax_pk = F_load + m a_pk for a ball screw; T_design on the basis T_basis (load peak max(|T_pk|, |T_dec|), T_peak, SF_c·T_rated or T_lim) Continuous rotary duty: ω = 2π n_L i/60, n_pk = n_L i; T_load = T_L/(i η), T_rms = T_load; T_pk = J_total ω/t_start + T_load; P_cont = T_load ω, P_rms = P_cont Rated power of the candidate motor: P_rated = T_rated·2π n_rated/60 (without n_rated there is no P_rated); the check is P_cont ≤ P_rated, u_power = P_cont/P_rated
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   mechanism | Mechanism | direct rotary |  | spec: SPEC-HPU-05 §5 (pump drive) | any
-  i | Gear ratio i (motor : output, 1 = none) | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1000
-  eta | Mechanism efficiency (overall) | 0.99 |  | spec: SPEC-HPU-05 §5 (pump drive) | 0.3 … 1
-  p_screw | Screw lead (per revolution of the screw) | 10 | mm | assumption: Sheet default value; no project figure given. | 1 … 100 mm
-  J_mech | Transmission inertia referred to the motor shaft (screw, pulleys, gearbox, coupling) | 0.001 | kg·m² | spec: SPEC-HPU-05 §5 (pump drive) | 0 … 10 kg·m²
-  m | Moved mass (linear mechanisms) | 50 | kg | assumption: Sheet default value; no project figure given. | 0 … 100000 kg
-  mu | Friction coefficient (guide / bearing) | 0.1 |  | assumption: Sheet default value; no project figure given. | 0 … 1
-  theta | Incline from horizontal (+ moving uphill) | 0 | ° | assumption: Sheet default value; no project figure given. | -90 … 90 °
-  F_p | Process force opposing the move (linear) | 0 | N | assumption: Sheet default value; no project figure given. | 0 … 1000000 N
-  J_L | Load inertia at the output (rotary mechanisms) | 0.004 | kg·m² | spec: SPEC-HPU-05 §5 (pump drive) | 0 … 10000 kg·m²
-  brake | A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor | no |  | assumption: Sheet default value; no project figure given. | any
-  T_L | Constant load torque at the output (rotary; continuous duty needs it: blank or zero is refused) | 76.9731 | N·m | link: Cylinder and pump circuit rev A · T_shaft | 0 … 100000 N·m
   duty_mode | Duty (point-to-point move cycle, or continuous rotary running with a run-up) | continuous |  | spec: SPEC-HPU-05 §5 (pump drive) | any
-  n_L | Load speed at the output (continuous duty) | 1450 | rpm | link: Cylinder and pump circuit rev A · n_shaft | 1 … 100000 rpm
-  t_start | Run-up time to full speed (continuous duty) | 2 | s | spec: SPEC-HPU-05 §5 (pump drive) | 0.1 … 600 s
   profile | Motion profile | trapezoidal |  | assumption: Sheet default value; no project figure given. | any
+  T_basis | Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter | Load peak (T_pk) |  | assumption: Sheet default value; no project figure given. | any
+  brake | A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor | no |  | assumption: Sheet default value; no project figure given. | any
+  J_mech | Transmission inertia referred to the motor shaft (screw, pulleys, gearbox, coupling) | 0.001 | kg·m² | spec: SPEC-HPU-05 §5 (pump drive) | 0 … 10 kg·m²
+  p_screw | Screw lead (per revolution of the screw) | 10 | mm | assumption: Sheet default value; no project figure given. | 1 … 100 mm
+  theta | Incline from horizontal (+ moving uphill) | 0 | ° | assumption: Sheet default value; no project figure given. | -60 … 90 °
+  F_p | Process force opposing the move (linear) | 0 | N | assumption: Sheet default value; no project figure given. | 0 … 1000000 N
+  T_L | Constant load torque at the output (rotary; continuous duty needs it, and a zero value is refused) | 76.9731 | N·m | link: Cylinder and pump circuit rev A · T_shaft | 0 … 100000 N·m
+  m | Moved mass (linear mechanisms) | 50 | kg | assumption: Sheet default value; no project figure given. | 0 … 100000 kg
+  J_L | Load inertia at the output (rotary mechanisms) | 0.004 | kg·m² | spec: SPEC-HPU-05 §5 (pump drive) | 0 … 10000 kg·m²
+  i | Gear ratio (motor : output, 1 = none) | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 1000
+  eta | Mechanism efficiency (overall) | 0.99 |  | spec: SPEC-HPU-05 §5 (pump drive) | 0.3 … 1
+  mu | Friction coefficient (guide / bearing) | 0.1 |  | assumption: Sheet default value; no project figure given. | 0 … 1
+  SF | Safety factor on torque | 1.25 |  | assumption: Sheet default value; no project figure given. | 1 … 3
+  J_ratio_max | Inertia ratio limit (load : motor), warning | 10 |  | assumption: Sheet default value; no project figure given. | 1 … 100
   s | Move distance (linear: m; rotary: output revolutions) | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.0001 … 10000
   t_move | Move time | 0.5 | s | assumption: Sheet default value; no project figure given. | 0.01 … 3600 s
   f_acc | Acceleration (and deceleration) fraction of the move time | 0.333333 |  | assumption: Sheet default value; no project figure given. | 0.05 … 0.5
   t_dwell | Dwell between moves | 0.5 | s | assumption: Sheet default value; no project figure given. | 0 … 3600 s
+  n_L | Load speed at the output (continuous duty) | 1450 | rpm | link: Cylinder and pump circuit rev A · n_shaft | 1 … 100000 rpm
+  t_start | Run-up time to full speed (continuous duty) | 2 | s | spec: SPEC-HPU-05 §5 (pump drive) | 0.1 … 600 s
   J_motor | Candidate motor rotor inertia | 0.1 | kg·m² | spec: SPEC-HPU-05 §5 (pump drive) | 1e-7 … 10 kg·m²
   T_rated | Candidate motor continuous (rated) torque | 120 | N·m | spec: SPEC-HPU-05 §5 (pump drive) | 0.01 … 100000 N·m
   T_peak | Candidate motor peak torque | 275 | N·m | spec: SPEC-HPU-05 §5 (pump drive) | 0.01 … 100000 N·m
-  n_rated | Candidate motor rated (nameplate) speed, with the rated torque the rated power P_rated = T_rated·ω_rated (leave blank if not known: there is then no P_rated) | 1460 | rpm | spec: SPEC-HPU-05 §5 (pump drive) | 10 … 100000 rpm
-  T_basis | Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter | Load peak (T_pk) |  | assumption: Sheet default value; no project figure given. | any
   n_max | Candidate motor maximum speed | 3000 | rpm | spec: SPEC-HPU-05 §5 (pump drive) | 10 … 100000 rpm
-  SF | Safety margin on torque | 1.25 |  | assumption: Sheet default value; no project figure given. | 1 … 3
-  J_ratio_max | Inertia ratio limit (load : motor), warning | 10 |  | assumption: Sheet default value; no project figure given. | 1 … 100
+  n_rated | Candidate motor rated (nameplate) speed, which with the rated torque gives the rated power P_rated = T_rated·ω_rated (optional; blank = not known, so there is no P_rated) | 1460 | rpm | spec: SPEC-HPU-05 §5 (pump drive) | 10 … 100000 rpm
 
 3. Assumptions
-  A1. Rigid transmission; the mechanism efficiency applies to the driving direction and is also used in the deceleration phase (conservative for peak, slightly pessimistic for RMS). (Servo-sizing practice.)
-  A2. The friction force is Coulomb friction on the moved mass; viscous and breakaway friction are not modelled unless included in F_p. (Load model.)
-  A3. Continuous duty: the load torque is constant at the stated speed and the motor accelerates the whole inertia linearly to speed in t_start while carrying the full load torque (conservative); the move distance, move time, acceleration fraction, dwell and profile are ignored. (Run-up idealisation for pumps and fans.)
-  A4. The S-curve profile has sine-shaped acceleration over the same acceleration time, so its peak acceleration is π/2 times the trapezoidal value. (Jerk-limited profile idealisation.)
-  A5. i (Gear ratio i (motor : output, 1 = none)) is taken as 1. (Sheet default value; no project figure given.)
-  A6. p_screw (Screw lead (per revolution of the screw)) is taken as 10 mm. (Sheet default value; no project figure given.)
-  A7. m (Moved mass (linear mechanisms)) is taken as 50 kg. (Sheet default value; no project figure given.)
-  A8. mu (Friction coefficient (guide / bearing)) is taken as 0.1. (Sheet default value; no project figure given.)
-  A9. theta (Incline from horizontal (+ moving uphill)) is taken as 0 °. (Sheet default value; no project figure given.)
-  A10. F_p (Process force opposing the move (linear)) is taken as 0 N. (Sheet default value; no project figure given.)
-  A11. brake (A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor) is taken as no. (Sheet default value; no project figure given.)
-  A12. profile (Motion profile) is taken as trapezoidal. (Sheet default value; no project figure given.)
-  A13. s (Move distance (linear: m; rotary: output revolutions)) is taken as 0.5. (Sheet default value; no project figure given.)
-  A14. t_move (Move time) is taken as 0.5 s. (Sheet default value; no project figure given.)
-  A15. f_acc (Acceleration (and deceleration) fraction of the move time) is taken as 0.333333. (Sheet default value; no project figure given.)
-  A16. t_dwell (Dwell between moves) is taken as 0.5 s. (Sheet default value; no project figure given.)
-  A17. T_basis (Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter) is taken as Load peak (T_pk). (Sheet default value; no project figure given.)
-  A18. SF (Safety margin on torque) is taken as 1.25. (Sheet default value; no project figure given.)
-  A19. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sheet default value; no project figure given.)
+  A1. The transmission is rigid. (Servo-sizing practice.)
+  A2. The mechanism efficiency applies to the driving direction and is also used in the deceleration phase. (Servo-sizing practice.)
+  A3. This is conservative for the peak and slightly pessimistic for the RMS torque. (Servo-sizing practice.)
+  A4. The friction force is Coulomb friction on the moved mass. (Load model.)
+  A5. Viscous and breakaway friction are not modelled unless included in F_p. (Load model.)
+  A6. In continuous duty the load torque is constant at the stated speed. (Run-up idealisation for pumps and fans.)
+  A7. The motor accelerates the whole inertia linearly to speed in t_start while carrying the full load torque, which is conservative. (Run-up idealisation for pumps and fans.)
+  A8. Continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile. (Run-up idealisation for pumps and fans.)
+  A9. The S-curve profile has sine-shaped acceleration over the same acceleration time. (Jerk-limited profile idealisation.)
+  A10. The peak acceleration of the S-curve profile is π/2 times the trapezoidal value. (Jerk-limited profile idealisation.)
+  A11. profile (Motion profile) is taken as trapezoidal. (Sheet default value; no project figure given.)
+  A12. T_basis (Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter) is taken as Load peak (T_pk). (Sheet default value; no project figure given.)
+  A13. brake (A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor) is taken as no. (Sheet default value; no project figure given.)
+  A14. p_screw (Screw lead (per revolution of the screw)) is taken as 10 mm. (Sheet default value; no project figure given.)
+  A15. theta (Incline from horizontal (+ moving uphill)) is taken as 0 °. (Sheet default value; no project figure given.)
+  A16. F_p (Process force opposing the move (linear)) is taken as 0 N. (Sheet default value; no project figure given.)
+  A17. m (Moved mass (linear mechanisms)) is taken as 50 kg. (Sheet default value; no project figure given.)
+  A18. i (Gear ratio (motor : output, 1 = none)) is taken as 1. (Sheet default value; no project figure given.)
+  A19. mu (Friction coefficient (guide / bearing)) is taken as 0.1. (Sheet default value; no project figure given.)
+  A20. SF (Safety factor on torque) is taken as 1.25. (Sheet default value; no project figure given.)
+  A21. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sheet default value; no project figure given.)
+  A22. s (Move distance (linear: m; rotary: output revolutions)) is taken as 0.5. (Sheet default value; no project figure given.)
+  A23. t_move (Move time) is taken as 0.5 s. (Sheet default value; no project figure given.)
+  A24. f_acc (Acceleration (and deceleration) fraction of the move time) is taken as 0.333333. (Sheet default value; no project figure given.)
+  A25. t_dwell (Dwell between moves) is taken as 0.5 s. (Sheet default value; no project figure given.)
 
 4. Working
   [19] k = 1 / i
@@ -904,14 +851,14 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
         Output shaft speed
   [39] P_cont = T_load * omega_pk
       = 77.751 N·m × 151.84 rad/s
-      = 11806 W
+      = 11.806 kW
         Continuous shaft power at the motor
   [41] P_rated = T_rated * n_rated
       = 120 N·m × 1460 rpm
-      = 18347 W
+      = 18.347 kW
         Rated (nameplate) shaft power of the candidate motor: its rated torque times its rated speed
   [42] u_power = P_cont / P_rated
-      = 11806 W / 18347 W
+      = 11.806 kW / 18.347 kW
       = 0.64348
         Continuous shaft power against the rated power of the candidate motor
   [43] P_pk = T_pk * omega_pk
@@ -923,30 +870,38 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
       = 1450 rpm
         Mean motor speed: the steady running speed
   [45] P_rms = P_cont
-      = 11806 W
+      = 11.806 kW
       = 11.806 kW
         RMS mechanical power: the steady running power (thermal-equivalent continuous power)
   [46] J_ratio = (J_refl + J_mech) / J_motor
       = (0.0040404 kg·m² + 0.001 kg·m²) / 0.1 kg·m²
       = 0.050404
         Inertia ratio (load : motor)
-  [47] u_peak = SF * T_pk / T_peak
+  [47] T_pk_sf = SF * T_pk
+      = 1.25 × 85.725 N·m
+      = 107.16 N·m
+        Peak torque with the safety factor
+  [48] T_rms_sf = SF * T_rms
+      = 1.25 × 77.751 N·m
+      = 97.188 N·m
+        RMS torque with the safety factor
+  [49] u_peak = SF * T_pk / T_peak
       = 1.25 × 85.725 N·m / 275 N·m
       = 0.38966
-        Peak torque utilisation with safety margin
-  [48] u_rms = SF * T_rms / T_rated
+        Peak torque utilisation with safety factor
+  [50] u_rms = SF * T_rms / T_rated
       = 1.25 × 77.751 N·m / 120 N·m
       = 0.8099
-        Continuous torque utilisation with safety margin
-  [49] u_speed = n_pk / n_max
+        Continuous torque utilisation with safety factor
+  [51] u_speed = n_pk / n_max
       = 1450 rpm / 3000 rpm
       = 0.48333
         Speed utilisation
-  [50] u_rated_speed = n_pk / n_rated
+  [52] u_rated_speed = n_pk / n_rated
       = 1450 rpm / 1460 rpm
       = 0.99315
         Motor speed over the rated (nameplate) speed
-  [51] duty = T_rms / T_rated
+  [53] duty = T_rms / T_rated
       = 77.751 N·m / 120 N·m
       = 0.64792
         Thermal duty (without margin)
@@ -971,8 +926,8 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   n_mean = 1450 rpm    Mean motor speed (the steady speed)
   P_pk = 13.02 kW    Peak power
   P_brake = 0 kW    Peak braking power
-  P_cont = 11806 W    Continuous power
-  P_rated = 18347 W    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
+  P_cont = 11.81 kW    Continuous power
+  P_rated = 18.35 kW    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
   P_rms = 11.81 kW    RMS power (continuous equivalent)
   J_ratio = 0.050404    Inertia ratio
   duty = 0.64792    Thermal duty
@@ -985,26 +940,25 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
 
 6. Checks (governing first)
   PASS  Motor speed against the rated speed: 1450 rpm vs 1460 rpm  utilisation 0.99
-  PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.81 vs u_rms ≤ 1  utilisation 0.81
-  PASS  Rated power P_cont ≤ P_rated: u_power = 0.64 vs u_power ≤ 1  utilisation 0.64
-  PASS  Speed n_pk ≤ n_max: u_speed = 0.48 vs u_speed ≤ 1  utilisation 0.48
-  PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.39 vs u_peak ≤ 1  utilisation 0.39
+  PASS  RMS torque with the safety factor against the rated torque: 97.19 N·m vs 120 N·m  utilisation 0.81
+  PASS  Continuous power against the rated power: 11.81 kW vs 18.35 kW  utilisation 0.64
+  PASS  Peak speed against the maximum speed: 1450 rpm vs 3000 rpm  utilisation 0.48
+  PASS  Peak torque with the safety factor against the motor peak torque: 107.16 N·m vs 275 N·m  utilisation 0.39
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are J_motor, T_rated, T_peak, n_rated, n_max (Candidate motor rating). Enter each as one so its source, edition and licence travel with it.  [record]
   WARNING  duty_mode: continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.  [continuous-ignored]
 
 8. Verification
-  Template: elec.motor-sizing@1.10.0
-  Content hash: 3989917de380d03f
+  Template: elec.motor-sizing@1.11.0
+  Content hash: 2ef4f6484897f9f6
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-26 22:43 UTC
   Application: TempestOS test
 
 9. References
-  1. Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection — Load torque, inertia referred to the motor, duty cycles
-  2. Manufacturer servo-sizing guides (Kollmorgen, Parker) — Reflected inertia, RMS torque, inertia ratio practice
+  1. Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection, 5th ed. (edition to be checked) — Load torque, inertia referred to the motor, duty cycles
 
 
 CALCULATION SHEET — ISSUED
@@ -1016,29 +970,17 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: HPU-001    Client: Client Co
 
 1. Scope and method
-One circuit: the design current, the smallest preferred device rating that carries it, the smallest conductor whose tabulated current-carrying capacity (your own record) carries that rating once the ambient, grouping, installation and semi-enclosed-fuse factors are applied, and the overload coordination checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z. The context (machine wiring or installation) changes the clause citations and, for a gG fuse, MCCB or MPCB entered without I₂, whether the I₂ condition may be deemed satisfied (BS 7671 installation) or I₂ must be entered (machine wiring); every other number is the same in both contexts.
-Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b Protective device rating: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b Fuse factor: C_c = 0.725 for a semi-enclosed fuse (1.45/2, derived), else 1 Required tabulated capacity: I_t,req = I_n/(C_a·C_g·C_i·C_c); optional derived C_a = √[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table) Conductor cross-section: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived) Carrying capacity: I_z = I_t·C_a·C_g·C_i Device and conductor coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; I₂ = 2·I_n by default for a semi-enclosed fuse; an entered I₂ (datasheet) is always checked; in the BS 7671 installation context a gG fuse to BS 88 (and an MCCB or MPCB entered without I₂, taken as I₂ ≤ 1.45·I_n) has the I₂ condition deemed satisfied when I_n ≤ I_z; in the machine-wiring context (IEC 60269-1 gG fuses have I₂ = 1.6·I_n, not 1.45·I_n) I₂ must be entered Device code: 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB (carried to E5 so the fault check uses the device chosen here)
+Calculates the design current, the smallest preferred device rating and the smallest conductor whose tabulated capacity carries that rating. It checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z, using your own capacity and rating records.
+Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b Protective device rating: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b Fuse factor: C_c = 0.725 for a semi-enclosed fuse (1.45/2, derived), else 1 Required tabulated capacity: I_t,req = I_n/(C_a·C_g·C_i·C_c); optional derived C_a = √[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table) Conductor cross-section: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived) Carrying capacity: I_z = I_t·C_a·C_g·C_i Device and conductor coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; I₂ = 2·I_n by default for a semi-enclosed fuse; an entered I₂ (datasheet) is always checked; in the BS 7671 installation context a gG fuse to BS 88 (and an MCCB or MPCB entered without I₂, taken as I₂ ≤ 1.45·I_n) has the I₂ condition deemed satisfied when I_n ≤ I_z; in the machine-wiring context (IEC 60269-1 gG fuses have I₂ = 1.6·I_n, not 1.45·I_n) I₂ must be entered Device code: 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB (carried to fault-protection so the fault check uses the device chosen here)
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   context | Design context (changes clause citations and the scope note only) | BS EN 60204-1 machine wiring |  | assumption: Sheet default value; no project figure given. | any
   supply | Supply | three-phase |  | assumption: Sheet default value; no project figure given. | any
-  P | Rated output (shaft) power; η converts it to input (DC: electrical power drawn, η not applied) | 18.3469 | kW | link: Pump drive motor rev A · P_rated | 0.01 … 500 kW
-  U | Supply voltage (line voltage for three-phase) | 400 | V | spec: SPEC-HPU-05 §6 (power supply) | 12 … 1000 V
-  cos_phi | Power factor (not used for DC) | 0.86 |  | spec: SPEC-HPU-05 §6 (power supply) | 0.5 … 1
-  eta | Efficiency (not used for DC) | 0.92 |  | spec: SPEC-HPU-05 §6 (power supply) | 0.5 … 1
-  L | Circuit length (carried to the voltage-drop calculation) | 30 | m | spec: SPEC-HPU-05 §6 (power supply) | 0.1 … 500 m
-  theta_a | Ambient temperature | 30 | °C | assumption: Sheet default value; no project figure given. | -10 … 70 °C
-  insulation | Insulation | PVC 70 °C |  | spec: SPEC-HPU-05 §6 (power supply) | any
-  method | Installation method key (descriptive only, e.g. B2, C, E) | C |  | spec: SPEC-HPU-05 §6 (power supply) | any
-  N_g | Grouped circuits | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 20
-  system | Conductor system (AWG: geometry only, no AWG capacities are supplied) | metric |  | assumption: Sheet default value; no project figure given. | any
   device | Protective device | MCB type C |  | spec: SPEC-HPU-05 §6 (power supply) | any
-  C_a | Ambient correction factor (1 does not apply the ambient: enter the factor for θ_a from your licensed table) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1.5
-  C_g | Grouping correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
-  C_i | Thermal insulation correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
-  derive_Ca | Derive C_a from the temperatures instead of the entered factor | no |  | assumption: Sheet default value; no project figure given. | any
-  theta_ref | Reference ambient temperature for the derived C_a | 30 | °C | assumption: Sheet default value; no project figure given. | 0 … 60 °C
+  insulation | Insulation | PVC 70 °C |  | spec: SPEC-HPU-05 §6 (power supply) | any
+  system | Conductor system (AWG: geometry only, no AWG capacities are supplied) | metric |  | assumption: Sheet default value; no project figure given. | any
+  method | Installation method key (descriptive only, e.g. B2, C, E) | C |  | spec: SPEC-HPU-05 §6 (power supply) | any
   ratings | Preferred device ratings | 9 row(s) |  | record: SYNTHETIC device ratings (test values, not a manufacturer table) — Synthetic test data, not from any catalogue, n/a, invented values for the worked example rev 1 | any
   ratings[1] |  | I_n = 6 A |  |  | 
   ratings[2] |  | I_n = 10 A |  |  | 
@@ -1055,27 +997,46 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   ampacity[3] |  | CSA = 4 mm²; I_t = 24.1 A |  |  | 
   ampacity[4] |  | CSA = 6 mm²; I_t = 31.9 A |  |  | 
   ampacity[5] |  | CSA = 10 mm²; I_t = 44.6 A |  |  | 
+  L | Circuit length (carried to the voltage-drop calculation) | 30 | m | spec: SPEC-HPU-05 §6 (power supply) | 1 … 300 m
+  P | Rated output (shaft) power; η converts it to input (DC: electrical power drawn, η not applied) | 18.3469 | kW | link: Pump drive motor rev A · P_rated | 0.1 … 200 kW
+  U | Supply voltage (line voltage for three-phase) | 400 | V | spec: SPEC-HPU-05 §6 (power supply) | 12 … 690 V
+  cos_phi | Power factor (not used for DC) | 0.86 |  | spec: SPEC-HPU-05 §6 (power supply) | 0.6 … 1
+  eta | Efficiency (not used for DC) | 0.92 |  | spec: SPEC-HPU-05 §6 (power supply) | 0.6 … 1
+  T_amb | Ambient temperature | 30 | °C | assumption: Sheet default value; no project figure given. | 0 … 60 °C
+  T_ref | Reference ambient temperature for the derived C_a | 30 | °C | assumption: Sheet default value; no project figure given. | 20 … 40 °C
+  N_g | Grouped circuits | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 10
+  C_a | Ambient correction factor (1 does not apply the ambient: enter the factor for T_amb from your licensed table) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1.3
+  C_g | Grouping correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.3 … 1
+  C_i | Thermal insulation correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.3 … 1
+  derive_Ca | Derive C_a from the temperatures instead of the entered factor | no |  | assumption: Sheet default value; no project figure given. | any
 
 3. Assumptions
-  A1. Every tabulated value (the capacities, the device ratings, the correction factors) is entered from the user's own licensed copy or a manufacturer datasheet; none ships with the calculator. (No table from a standard or a manufacturer is shipped.)
-  A2. The capacities in the table are for the installation method stated; the method key is descriptive and is not interpreted. (Records carry their source and edition.)
-  A3. A gG fuse to BS 88 is deemed to meet I₂ ≤ 1.45·I_z when I_n ≤ I_z only under BS 7671 (installation context); an IEC 60269-1 gG fuse has I₂ = 1.6·I_n, so in the machine-wiring context I₂ is entered from the datasheet. (BS 7671 reg. 433.1.201; IEC 60269-1.)
-  A4. The ambient, grouping and insulation factors are applied as a product; C_g is not looked up from the number of grouped circuits. (The count is carried to the sheet and warns when C_g = 1 with more than one circuit.)
-  A5. The optional derived C_a is an approximation for the temperature difference only and is labelled as such; compare it with the licensed table. (Derived, not tabulated.)
-  A6. C_c = 0.725 applies to a semi-enclosed fuse only: 1.45 divided by an assumed fusing factor of 2. (Derived.)
-  A7. AWG areas follow the geometry d = 0.127·92^((36 − n)/39) mm; no AWG capacity is supplied. (Derived.)
-  A8. DC circuits use I_b = P/U; the power factor and efficiency are not applied. (Method.)
-  A9. context (Design context (changes clause citations and the scope note only)) is taken as BS EN 60204-1 machine wiring. (Sheet default value; no project figure given.)
-  A10. supply (Supply) is taken as three-phase. (Sheet default value; no project figure given.)
-  A11. theta_a (Ambient temperature) is taken as 30 °C. (Sheet default value; no project figure given.)
-  A12. N_g (Grouped circuits) is taken as 1. (Sheet default value; no project figure given.)
-  A13. system (Conductor system (AWG: geometry only, no AWG capacities are supplied)) is taken as metric. (Sheet default value; no project figure given.)
-  A14. C_a (Ambient correction factor (1 does not apply the ambient: enter the factor for θ_a from your licensed table)) is taken as 1. (Sheet default value; no project figure given.)
-  A15. C_g (Grouping correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
-  A16. C_i (Thermal insulation correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
-  A17. derive_Ca (Derive C_a from the temperatures instead of the entered factor) is taken as no. (Sheet default value; no project figure given.)
-  A18. theta_ref (Reference ambient temperature for the derived C_a) is taken as 30 °C. (Sheet default value; no project figure given.)
-  A19. Machine wiring context (BS EN 60204-1): the conductor is sized for the protective device rating; the capacities and factors are the user's records for the installation method stated. (The context changes citations, and whether a gG fuse, MCCB or MPCB without I₂ may be deemed to meet I₂ ≤ 1.45·I_z (installation) or must have I₂ entered (machine wiring); no other number differs.)
+  A1. Every tabulated value is entered from the user's own licensed copy or a manufacturer datasheet. (No table from a standard or a manufacturer is shipped.)
+  A2. No table from a standard or a manufacturer ships with the calculator. (No table from a standard or a manufacturer is shipped.)
+  A3. The capacities in the table are for the installation method stated. (Records carry their source and edition.)
+  A4. The method key is descriptive and is not interpreted. (Records carry their source and edition.)
+  A5. A gG fuse is deemed to meet I₂ ≤ 1.45·I_z when I_n ≤ I_z only under BS 7671. (BS 7671 reg. 433.1.201; IEC 60269-1.)
+  A6. An IEC 60269-1 gG fuse has I₂ = 1.6·I_n, so in the machine-wiring context I₂ is entered from the datasheet. (BS 7671 reg. 433.1.201; IEC 60269-1.)
+  A7. The ambient, grouping and insulation factors are applied as a product. (The count is carried to the sheet and warns when C_g = 1 with more than one circuit.)
+  A8. C_g is not looked up from the number of grouped circuits. (The count is carried to the sheet and warns when C_g = 1 with more than one circuit.)
+  A9. The optional derived C_a is an approximation for the temperature difference only. (Derived, not tabulated.)
+  A10. The derived C_a is labelled as an approximation, so compare it with the licensed table. (Derived, not tabulated.)
+  A11. C_c = 0.725 applies to a semi-enclosed fuse only: 1.45 divided by an assumed fusing factor of 2. (Derived.)
+  A12. AWG areas follow the geometry d = 0.127·92^((36 − n)/39) mm. (Derived.)
+  A13. No AWG capacity is supplied. (Derived.)
+  A14. DC circuits use I_b = P/U. (Method.)
+  A15. The power factor and the efficiency are not applied to a DC circuit. (Method.)
+  A16. context (Design context (changes clause citations and the scope note only)) is taken as BS EN 60204-1 machine wiring. (Sheet default value; no project figure given.)
+  A17. supply (Supply) is taken as three-phase. (Sheet default value; no project figure given.)
+  A18. system (Conductor system (AWG: geometry only, no AWG capacities are supplied)) is taken as metric. (Sheet default value; no project figure given.)
+  A19. T_amb (Ambient temperature) is taken as 30 °C. (Sheet default value; no project figure given.)
+  A20. T_ref (Reference ambient temperature for the derived C_a) is taken as 30 °C. (Sheet default value; no project figure given.)
+  A21. N_g (Grouped circuits) is taken as 1. (Sheet default value; no project figure given.)
+  A22. C_a (Ambient correction factor (1 does not apply the ambient: enter the factor for T_amb from your licensed table)) is taken as 1. (Sheet default value; no project figure given.)
+  A23. C_g (Grouping correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
+  A24. C_i (Thermal insulation correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
+  A25. derive_Ca (Derive C_a from the temperatures instead of the entered factor) is taken as no. (Sheet default value; no project figure given.)
+  A26. Machine wiring context (BS EN 60204-1): the conductor is sized for the protective device rating; the capacities and factors are the user's records for the installation method stated. (The context changes citations, and whether a gG fuse, MCCB or MPCB without I₂ may be deemed to meet I₂ ≤ 1.45·I_z (installation) or must have I₂ entered (machine wiring); no other number differs.)
 
 4. Working
   [14] I_b = P / (sqrt(3) * U * cos_phi * eta)
@@ -1094,9 +1055,9 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
       = MCB type C
       = 1
         Semi-enclosed fuse factor
-  [21] theta_op = 70 degC
+  [21] T_op = 70 degC
       = 70 degC
-        Conductor operating temperature for the insulation (→ E5 θ, E3 T_c)
+        Conductor operating temperature for the insulation
   [24] I_t_req = I_n / (C_a * C_g * C_i * C_c)    « BS EN 60204-1 cl. 12.4
       = 40 A / (1 × 1 × 1 × 1)
       = 40 A
@@ -1125,50 +1086,54 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
       = 1.45 × 40 A
       = 58 A
         Conventional operating current (inherent 1.45 I_n)
-  [31] u_I2 = I2 / (1.45 * I_z)    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-      = 58 A / (1.45 × 44.6 A)
+  [31] I2_lim = 1.45 * I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+      = 1.45 × 44.6 A
+      = 64.67 A
+        Largest conventional operating current the conductor allows, 1.45 I_z
+  [32] u_I2 = I2 / I2_lim    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+      = 58 A / 64.67 A
       = 0.89686
         I₂ utilisation of 1.45 I_z
 
 5. Results
   I_b = 33.47 A    Design current
-  I_n = 40 A    Rated current of the device
+  I_n = 40 A    Rated current of the device (governing)
   CSA = 10 mm²    Selected cross-section
   I_z = 44.60 A    Current-carrying capacity
   L = 30 m    Circuit length
-  theta_op = 70 °C    Conductor operating temperature for the insulation
+  T_op = 70 °C    Conductor operating temperature for the insulation
   device_code = 2    Protective device type code
   C_c = 1    Semi-enclosed fuse factor
   C_a = 1    Ambient factor
   I_t_req = 40 A    Required tabulated capacity
   I2 = 58 A    Conventional operating current
   u_Ib = 0.84    I_b / I_n
-  u_In = 0.90    I_n / I_z (governing)
+  u_In = 0.90    I_n / I_z
   u_I2 = 0.90    I₂ / (1.45 I_z)
 
 6. Checks (governing first)
-  PASS  Device rating within conductor capacity (I_n ≤ I_z): u_In = 0.90 vs u_In ≤ 1  utilisation 0.90  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-  PASS  Conventional operating current within 1.45·I_z (I₂ ≤ 1.45·I_z): u_I2 = 0.90 vs u_I2 ≤ 1  utilisation 0.90  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-  PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.84 vs u_Ib ≤ 1  utilisation 0.84  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Device rating against the conductor capacity: 40 A vs 44.60 A  utilisation 0.90  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Conventional operating current against 1.45 times the conductor capacity: 58 A vs 64.67 A  utilisation 0.90  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Design current against the device rating: 33.47 A vs 40 A  utilisation 0.84  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are C_a, C_g, C_i (Cable correction factors). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: elec.conductor-sizing@1.3.0
-  Content hash: 549b80a7a72f70a5
+  Template: elec.conductor-sizing@1.4.0
+  Content hash: f8273ca4d4809d96
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-26 22:43 UTC
   Application: TempestOS test
 
 9. References
-  1. BS 7671:2018 (as amended) reg. 433.1.1 — Co-ordination of conductors and overload protective devices
-  2. BS 7671:2018 (as amended) reg. 523.1 — Current-carrying capacity of a cable
+  1. BS 7671:2018 reg. 433.1.1 — Co-ordination of conductors and overload protective devices
+  2. BS 7671:2018 reg. 523.1 — Current-carrying capacity of a cable
   3. BS EN 60204-1:2018 cl. 12.4 — Current-carrying capacity of conductors and cables in normal service
   4. BS EN 60204-1:2018 cl. 7.2 — Overcurrent protection
-  5. BS EN 60898-1 clause number to be checked — Circuit-breakers for overcurrent protection: conventional tripping current
-  6. BS 7671:2018 (as amended) reg. 433.1.201, 433.1.202 — Overload protection by gG fuses and semi-enclosed fuses: deemed conditions
+  5. BS EN 60898-1:2019 cl. (number to be checked) — Circuit-breakers for overcurrent protection: conventional tripping current
+  6. BS 7671:2018 reg. 433.1.201, 433.1.202 — Overload protection by gG fuses and semi-enclosed fuses: deemed conditions
 
 
 CALCULATION SHEET — ISSUED
@@ -1180,38 +1145,42 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: HPU-001    Client: Client Co
 
 1. Scope and method
-Voltage drop along a circuit in volts and per cent of the nominal voltage, the conductor power loss, and an estimate of the conductor operating temperature, for DC, single-phase and three-phase AC, from resistivity and cross-section (with temperature correction), from tabulated R and X per kilometre, or from a mV/A/m figure; parallel conductors per phase; the drop limit is a user input (the regulatory limits live in BS 7671 Appendix 4 and Regulation 525 and are not embedded).
+Calculates the voltage drop, the conductor power loss and the estimated conductor temperature of a DC, single-phase or three-phase circuit. The drop limit is a user input, because the limits of BS 7671 are not embedded.
 Conductor resistance at its operating temperature, for n conductors in parallel: R = ρ_T L/(A n), with ρ_T = ρ_20 [1 + α (T_c − 20)]. Resistance and reactance from per-length figures instead: R = R′ L/n; X = X′ L/n. Voltage drop on a DC circuit: ΔV = 2 I R. Voltage drop on a single-phase AC circuit: ΔV = 2 I (R cos φ + X sin φ). Voltage drop on a three-phase AC circuit: ΔV = √3 I (R cos φ + X sin φ). Voltage drop from a tabulated mV/A/m figure, which already carries the 2 or √3: ΔV = (mV/A/m) I L / 1000. Power lost in the cable: P_loss = 2 I² R (DC and single-phase); 3 I² R (three-phase). Estimated conductor temperature at this current: T_c,est = T_amb + (T_rated − T_amb)(I/I_z)².
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   system | System | AC three-phase |  | spec: SPEC-HPU-05 §6 (power supply) | any
+  data | Conductor data from | resistivity and area |  | assumption: Sheet default value; no project figure given. | any
+  L | Route length (one way) | 30 | m | link: Motor supply cable rev A · L | 0.1 … 5000 m
+  n_par | Parallel conductors per phase | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 6
+  A_c | Conductor cross-section | 10 | mm² | link: Motor supply cable rev A · CSA | 1 … 1000 mm²
+  alpha | Temperature coefficient of resistance | 0.00393 |  | assumption: Sheet default value; no project figure given. | 0.003 … 0.0045
+  X_km | Reactance per km per conductor | 0.08 | Ω/km | assumption: Sheet default value; no project figure given. | 0 … 1 Ω/km
+  T_rated | Conductor rated temperature | 70 | °C | assumption: Sheet default value; no project figure given. | 60 … 90 °C
+  rho_20 | Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.0194 | Ω·mm²/m | assumption: Sheet default value; no project figure given. | 0.01 … 0.05 Ω·mm²/m
   V_n | Nominal voltage (line-to-line for three-phase) | 400 | V | spec: SPEC-HPU-05 §6 (power supply) | 12 … 1000 V
   I | Design current | 33.47 | A | link: Motor supply cable rev A · I_b | 0.1 … 5000 A
-  L | Route length (one way) | 30 | m | link: Motor supply cable rev A · L | 0.1 … 5000 m
   cos_phi | Power factor (AC) | 0.86 |  | spec: SPEC-HPU-05 §6 (power supply) | 0.5 … 1
-  n_par | Parallel conductors per phase | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 6
-  data | Conductor data from | resistivity and area |  | assumption: Sheet default value; no project figure given. | any
-  rho_20 | Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.0194 | Ω·mm²/m | assumption: Sheet default value; no project figure given. | 0.01 … 0.05 Ω·mm²/m
-  alpha | Temperature coefficient of resistance | 0.00393 |  | assumption: Sheet default value; no project figure given. | 0.003 … 0.0045
-  A_c | Conductor cross-section | 10 | mm² | link: Motor supply cable rev A · CSA | 1 … 1000 mm²
-  T_c | Conductor operating temperature for the resistance | 70 | °C | link: Motor supply cable rev A · theta_op | 20 … 90 °C
-  X_km | Reactance per km per conductor | 0.08 | Ω/km | assumption: Sheet default value; no project figure given. | 0 … 1 Ω/km
-  dv_limit | Voltage-drop limit | 5 |  | assumption: Sheet default value; no project figure given. | 1 … 10
-  T_rated | Conductor rated temperature | 70 | °C | assumption: Sheet default value; no project figure given. | 60 … 90 °C
+  T_c | Conductor operating temperature for the resistance | 70 | °C | link: Motor supply cable rev A · T_op | 20 … 90 °C
   T_amb | Ambient temperature | 30 | °C | spec: SPEC-HPU-05 §6 (power supply) | 0 … 60 °C
+  dv_limit | Voltage-drop limit | 5 |  | assumption: Sheet default value; no project figure given. | 1 … 10
 
 3. Assumptions
-  A1. Balanced load; conductor reactance from the stated X′ (zero when using resistivity alone unless X_km is given); the drop is the arithmetic (R cos φ + X sin φ) form. (Standard engineering approximation.)
-  A2. A mV/A/m figure is used as tabulated, with its own temperature and system convention. (Cable table convention.)
-  A3. The conductor temperature estimate scales the rated rise with (I/I_z)²; I_z is the user's tabulated value for the installation method and corrections. When the estimate is above T_c the resistance and the drop are computed at the estimate. (BS 7671 Appendix 4 approach, formula only.)
-  A4. n_par (Parallel conductors per phase) is taken as 1. (Sheet default value; no project figure given.)
-  A5. data (Conductor data from) is taken as resistivity and area. (Sheet default value; no project figure given.)
-  A6. rho_20 (Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m)) is taken as 0.0194 Ω·mm²/m. (Sheet default value; no project figure given.)
-  A7. alpha (Temperature coefficient of resistance) is taken as 0.00393. (Sheet default value; no project figure given.)
-  A8. X_km (Reactance per km per conductor) is taken as 0.08 Ω/km. (Sheet default value; no project figure given.)
-  A9. dv_limit (Voltage-drop limit) is taken as 5. (Sheet default value; no project figure given.)
-  A10. T_rated (Conductor rated temperature) is taken as 70 °C. (Sheet default value; no project figure given.)
+  A1. The load is balanced across the phases. (Standard engineering approximation.)
+  A2. The conductor reactance is the entered X′ per kilometre times the length. (Standard engineering approximation.)
+  A3. The voltage drop is the arithmetic sum R cos φ + X sin φ, not the vector difference. (Standard engineering approximation.)
+  A4. A mV/A/m figure is used as tabulated, with its own temperature and system convention. (Cable table convention.)
+  A5. The estimated conductor temperature scales the rated temperature rise with (I/I_z)². (BS 7671:2018 Appendix 4 approach, formula only.)
+  A6. I_z is the tabulated capacity for the installation method, with its correction factors applied. (BS 7671:2018 Appendix 4 approach, formula only.)
+  A7. When the estimate is above T_c, the resistance and the drop are computed at the estimate. (Keeps the drop on the safe side.)
+  A8. data (Conductor data from) is taken as resistivity and area. (Sheet default value; no project figure given.)
+  A9. n_par (Parallel conductors per phase) is taken as 1. (Sheet default value; no project figure given.)
+  A10. alpha (Temperature coefficient of resistance) is taken as 0.00393. (Sheet default value; no project figure given.)
+  A11. X_km (Reactance per km per conductor) is taken as 0.08 Ω/km. (Sheet default value; no project figure given.)
+  A12. T_rated (Conductor rated temperature) is taken as 70 °C. (Sheet default value; no project figure given.)
+  A13. rho_20 (Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m)) is taken as 0.0194 Ω·mm²/m. (Sheet default value; no project figure given.)
+  A14. dv_limit (Voltage-drop limit) is taken as 5. (Sheet default value; no project figure given.)
 
 4. Working
   [9] sin_phi = sqrt(1 - cos_phi^2)
@@ -1240,38 +1209,42 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
         Voltage drop, per cent
   [20] P_loss = 3 * I^2 * R
       = 3 × (33.47 A)^2 × 0.069636 ohm
-      = 234.03 W
+      = 0.23403 kW
         Conductor power loss
   [21] u_dv = dV_pct / dv_limit
       = 0.88569 / 5
       = 0.17714
         Drop utilisation against the limit
+  [22] dV_max = dv_limit / 100 * V_n
+      = 5 / 100 × 400 V
+      = 20 V
+        Largest voltage drop the limit allows
 
 5. Results
+  dV = 3.543 V    Voltage drop (governing)
+  dV_pct = 0.88569    Voltage drop (%)
+  P_loss = 0.2340 kW    Power loss
   R = 0.06964 Ω    Resistance
   X = 0.002400 Ω    Reactance
-  dV = 3.543 V    Voltage drop
-  dV_pct = 0.88569    Voltage drop (%)
-  P_loss = 234.0 W    Power loss
 
 6. Checks (governing first)
-  PASS  Voltage drop ≤ limit: u_dv = 0.18 vs u_dv ≤ 1  utilisation 0.18  « BS 7671 525
+  PASS  Voltage drop against the limit: 3.543 V vs 20 V  utilisation 0.18  « BS 7671:2018 reg. 525
 
 7. Applicability
   None.
 
 8. Verification
-  Template: elec.voltage-drop@1.3.0
-  Content hash: 1dc7d4b34be3c142
+  Template: elec.voltage-drop@1.4.0
+  Content hash: 3a115f95fa99ee42
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-26 22:43 UTC
   Application: TempestOS test
 
 9. References
-  1. BS 7671 525 — Voltage drop in consumers' installations
-  2. BS 7671 Appendix 4, section 6 — Voltage drop (mV/A/m tables and the temperature-correction method)
-  3. Hughes, Electrical and Electronic Technology Ch. on DC and AC circuits — Resistance, resistivity and temperature coefficient
+  1. BS 7671:2018 reg. 525 — Voltage drop in consumers' installations
+  2. BS 7671:2018 App. 4 §6 — Voltage drop (mV/A/m tables and the temperature-correction method)
+  3. Hughes, Electrical and Electronic Technology Ch. on DC and AC circuits, 12th ed. (edition to be checked) — Resistance, resistivity and temperature coefficient
 
 
 CALCULATION SHEET — ISSUED
@@ -1283,55 +1256,60 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: HPU-001    Client: Client Co
 
 1. Scope and method
-Automatic disconnection of supply in a TN system for one circuit: the earth fault loop impedance at the conductor's operating temperature against the device's maximum, the disconnection time, the protective conductor (and line conductor) against the adiabatic minimum, and the prospective three-phase fault at the origin against the device's breaking capacity.
-Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/S (k_R = 1.125 takes the pure-copper ρ_20 to the cable standard's maximum conductor resistance; k enters with the pure ρ_20) Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95 Maximum loop impedance: Z_s,max = C_min·U_0/I_a; I_a = 5, 10 or 20·I_n for MCB types B, C, D, or read from the time–current points at t_req (log-log) Adiabatic conductor check: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); I²t = I_f²·t_d from 0.1 s; below 0.1 s the device's let-through I²t at the maximum prospective fault, which bounds the protective and the line conductor at the origin where the earth-fault current is largest (reg. 434.5.2, 543.1.3); without it neither is checked at the origin, the sheet fails 'Conductors against let-through at the origin' and the protective conductor check uses I_f²·0.1 s at the end-of-line fault only Protective device check: the device chosen here must be the one carried from the cable step (device_code 1 = MCB B, 2 = C, 3 = D, 4 = fuse or MCCB), else the sheet is blocked Fault level (simplified): Z_T = u_k·U_n²/S_r, I_k3 = c·U_n/(√3·Z_T), U_n = √3·U_0
+Calculates automatic disconnection of supply in a TN system for one circuit: loop impedance, disconnection time and the adiabatic conductor check. It also gives the prospective three-phase fault at the origin against the breaking capacity.
+Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/S (k_R = 1.125 takes the pure-copper ρ_20 to the cable standard's maximum conductor resistance; k enters with the pure ρ_20) Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95 Maximum loop impedance: Z_s,max = C_min·U_0/I_a; I_a = 5, 10 or 20·I_n for MCB types B, C, D, or read from the time–current points at t_req (log-log) Adiabatic conductor check: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); I²t = I_f²·t_d from 0.1 s; below 0.1 s the device's let-through I²t at the maximum prospective fault bounds both conductors at the origin (reg. 434.5.2, 543.1.3), and without it the sheet fails 'Conductors against let-through at the origin' Protective device check: the device chosen here must be the one carried from the cable step (device_code 1 = MCB B, 2 = C, 3 = D, 4 = fuse or MCCB), else the sheet is blocked Fault level (simplified): Z_T = u_k·U_n²/S_r, I_k3 = c·U_n/(√3·Z_T), U_n = √3·U_0
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
-  U_0 | Nominal voltage to earth | 230 | V | spec: SPEC-HPU-05 §6 (earthing and protection) | 50 … 1000 V
-  Z_e | External earth fault loop impedance | 0.05 | Ω | spec: SPEC-HPU-05 §6 (earthing and protection) | 0.01 … 3 Ω
-  C_min | Voltage factor C_min | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.9 … 1
-  S_r | Supply transformer rating (for the fault level) | 400 | kVA | spec: SPEC-HPU-05 §6 (earthing and protection) | 1 … 5000 kVA
-  u_k | Transformer impedance voltage | 4 | % | spec: SPEC-HPU-05 §6 (earthing and protection) | 1 … 20 %
-  c_max | Voltage factor c for the maximum fault | 1.1 |  | assumption: Sheet default value; no project figure given. | 1 … 1.1
-  L | Circuit length | 30 | m | link: Motor supply cable rev A · L | 0.1 … 1000 m
-  S_line | Line conductor cross-section | 10 | mm² | link: Motor supply cable rev A · CSA | 0.5 … 630 mm²
-  S_cpc | Protective conductor cross-section | 10 | mm² | link: Motor supply cable rev A · CSA | 0.5 … 630 mm²
-  theta | Conductor temperature for Z_s | 70 | °C | link: Motor supply cable rev A · theta_op | 20 … 90 °C
-  rho_20 | Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R) | 0.000017241 | Ω·mm | assumption: Sheet default value; no project figure given. | 0.000001 … 0.0001 Ω·mm
-  k_R | Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the cable standard's maximum conductor resistances are 5 to 12 % above pure copper, so the default is 1.125 and Z_s is not understated; k is not changed by it) | 1.125 |  | assumption: Sheet default value; no project figure given. | 1 … 1.5
-  alpha | Temperature coefficient of resistance | 0.00393 | 1/K | assumption: Sheet default value; no project figure given. | 0.001 … 0.01 1/K
-  Q_c | Volumetric heat capacity | 0.00345 | J/(K·mm³) | assumption: Sheet default value; no project figure given. | 0.001 … 0.01 J/(K·mm³)
-  beta | Reciprocal temperature coefficient β | 234.5 | K | assumption: Sheet default value; no project figure given. | 100 … 400 K
-  theta_i | Initial temperature for the adiabatic check | 70 | °C | assumption: Sheet default value; no project figure given. | 20 … 250 °C
-  theta_f | Final temperature for the adiabatic check | 160 | °C | assumption: Sheet default value; no project figure given. | 100 … 400 °C
   device | Protective device | MCB type C (I_a = 10 I_n) |  | spec: SPEC-HPU-05 §6 (earthing and protection) | any
-  I_n | Rated current | 40 | A | link: Motor supply cable rev A · I_n | 1 … 1600 A
-  t_req | Required disconnection time | 0.4 | s | spec: SPEC-HPU-05 §6 (earthing and protection) | 0.1 … 5 s
+  I_n | Rated current | 40 | A | link: Motor supply cable rev A · I_n | 6 … 630 A
   device_code | Device type code carried from the cable step (1 MCB type B, 2 type C, 3 type D, 4 fuse, MCCB or MPCB); the device chosen here must match it | 2 |  | link: Motor supply cable rev A · device_code | 1 … 4
-  I2t_let | Device let-through energy I²t at the maximum prospective fault (disconnection below 0.1 s) | 80000 | A²·s | spec: SPEC-HPU-05 §6 (earthing and protection) | 1 … 1000000000 A²·s
-  I_cn | Rated breaking capacity | 25 | kA | spec: SPEC-HPU-05 §6 (earthing and protection) | 1 … 150 kA
+  L | Circuit length | 30 | m | link: Motor supply cable rev A · L | 1 … 500 m
+  S_line | Line conductor cross-section | 10 | mm² | link: Motor supply cable rev A · CSA | 1 … 300 mm²
+  S_cpc | Protective conductor cross-section | 10 | mm² | link: Motor supply cable rev A · CSA | 1 … 300 mm²
+  rho_20 | Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R) | 0.017241 | Ω·mm²/m | assumption: Sheet default value; no project figure given. | 0.015 … 0.05 Ω·mm²/m
+  k_R | Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the default of 1.125 takes pure copper to the cable standard's maximum conductor resistances, so Z_s is not understated; k is not changed by it) | 1.125 |  | assumption: Sheet default value; no project figure given. | 1 … 1.25
+  alpha | Temperature coefficient of resistance | 0.00393 | 1/K | assumption: Sheet default value; no project figure given. | 0.0035 … 0.0045 1/K
+  Q_c | Volumetric heat capacity | 0.00345 | J/(K·mm³) | assumption: Sheet default value; no project figure given. | 0.002 … 0.005 J/(K·mm³)
+  beta | Reciprocal temperature coefficient β | 234.5 | K | assumption: Sheet default value; no project figure given. | 200 … 260 K
+  theta_i | Initial temperature for the adiabatic check | 70 | °C | assumption: Sheet default value; no project figure given. | 40 … 120 °C
+  theta_f | Final temperature for the adiabatic check | 160 | °C | assumption: Sheet default value; no project figure given. | 140 … 300 °C
+  U_0 | Nominal voltage to earth | 230 | V | spec: SPEC-HPU-05 §6 (earthing and protection) | 100 … 600 V
+  Z_e | External earth fault loop impedance | 0.05 | Ω | spec: SPEC-HPU-05 §6 (earthing and protection) | 0.05 … 2 Ω
+  T_op | Conductor temperature for Z_s | 70 | °C | link: Motor supply cable rev A · T_op | 30 … 90 °C
+  S_r | Supply transformer rating (for the fault level) | 400 | kVA | spec: SPEC-HPU-05 §6 (earthing and protection) | 10 … 2500 kVA
+  u_k | Transformer impedance voltage | 4 | % | spec: SPEC-HPU-05 §6 (earthing and protection) | 2 … 10 %
+  C_min | Voltage factor for the minimum fault | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.93 … 1
+  c_max | Voltage factor c for the maximum fault | 1.1 |  | assumption: Sheet default value; no project figure given. | 1.05 … 1.1
+  t_req | Required disconnection time | 0.4 | s | spec: SPEC-HPU-05 §6 (earthing and protection) | 0.2 … 5 s
+  I2t_let | Device let-through energy I²t at the maximum prospective fault (disconnection below 0.1 s) | 80000 | A²·s | spec: SPEC-HPU-05 §6 (earthing and protection) | 100 … 50000000 A²·s
+  I_cn | Rated breaking capacity | 25 | kA | spec: SPEC-HPU-05 §6 (earthing and protection) | 3 … 100 kA
 
 3. Assumptions
-  A1. TN system, a single earth fault of negligible impedance; no motor contribution, arc fault or IT system. (Scope of the check.)
-  A2. Line and protective conductors are the same material at the same temperature; R = ρ₂₀·L/S corrected by α. (Conductor data from a material record.)
-  A3. k is derived from the material constants and labelled derived; it is not read from a licensed table. (Derived constants, not read from a table.)
-  A4. Fuse and MCCB characteristics are points the user reads off the manufacturer's curve (log-log interpolation; no extrapolation). (No time–current table ships.)
-  A5. Optional field-test value 0.8 × Z_s,max is a rule of thumb for measurements at ambient temperature. (Labelled on the sheet.)
-  A6. The line conductor check (reg. 434.5.2) needs the device's let-through energy at the maximum prospective fault; the end-of-line earth fault is the minimum fault and does not bound it, so the check is made only when I2t_let is entered or the disconnection time is 0.1 s or more. (Stated limitation: the end-of-line earth fault is the minimum fault, not the maximum.)
-  A7. C_min (Voltage factor C_min) is taken as 0.95. (Sheet default value; no project figure given.)
-  A8. c_max (Voltage factor c for the maximum fault) is taken as 1.1. (Sheet default value; no project figure given.)
-  A9. rho_20 (Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R)) is taken as 0.000017241 Ω·mm. (Sheet default value; no project figure given.)
-  A10. k_R (Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the cable standard's maximum conductor resistances are 5 to 12 % above pure copper, so the default is 1.125 and Z_s is not understated; k is not changed by it)) is taken as 1.125. (Sheet default value; no project figure given.)
-  A11. alpha (Temperature coefficient of resistance) is taken as 0.00393 1/K. (Sheet default value; no project figure given.)
-  A12. Q_c (Volumetric heat capacity) is taken as 0.00345 J/(K·mm³). (Sheet default value; no project figure given.)
-  A13. beta (Reciprocal temperature coefficient β) is taken as 234.5 K. (Sheet default value; no project figure given.)
-  A14. theta_i (Initial temperature for the adiabatic check) is taken as 70 °C. (Sheet default value; no project figure given.)
-  A15. theta_f (Final temperature for the adiabatic check) is taken as 160 °C. (Sheet default value; no project figure given.)
+  A1. The system is TN with a single earth fault of negligible impedance. (Scope of the check.)
+  A2. There is no motor contribution, no arc fault and no IT system. (Scope of the check.)
+  A3. The line and protective conductors are the same material at the same temperature. (Conductor data from a material record.)
+  A4. The resistance is ρ₂₀·L/S corrected by α. (Conductor data from a material record.)
+  A5. The factor k is derived from the material constants, not read from a licensed table. (Derived constants, not read from a table.)
+  A6. Fuse and MCCB characteristics are points the user reads off the manufacturer's curve. (No time–current table ships.)
+  A7. The points are interpolated log-log, with no extrapolation. (No time–current table ships.)
+  A8. The optional field-test value 0.8 × Z_s,max is a rule of thumb for measurements at ambient temperature. (Labelled on the sheet.)
+  A9. The line conductor check (BS 7671 clause 434.5.2) needs the device's let-through energy at the maximum prospective fault. (Stated limitation: the end-of-line earth fault is the minimum fault, not the maximum.)
+  A10. The end-of-line earth fault is the minimum fault and does not bound that energy. (Stated limitation: the end-of-line earth fault is the minimum fault, not the maximum.)
+  A11. The line conductor check is made only when I2t_let is entered or the disconnection time is 0.1 s or more. (Stated limitation: the end-of-line earth fault is the minimum fault, not the maximum.)
+  A12. rho_20 (Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R)) is taken as 0.017241 Ω·mm²/m. (Sheet default value; no project figure given.)
+  A13. k_R (Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the default of 1.125 takes pure copper to the cable standard's maximum conductor resistances, so Z_s is not understated; k is not changed by it)) is taken as 1.125. (Sheet default value; no project figure given.)
+  A14. alpha (Temperature coefficient of resistance) is taken as 0.00393 1/K. (Sheet default value; no project figure given.)
+  A15. Q_c (Volumetric heat capacity) is taken as 0.00345 J/(K·mm³). (Sheet default value; no project figure given.)
+  A16. beta (Reciprocal temperature coefficient β) is taken as 234.5 K. (Sheet default value; no project figure given.)
+  A17. theta_i (Initial temperature for the adiabatic check) is taken as 70 °C. (Sheet default value; no project figure given.)
+  A18. theta_f (Final temperature for the adiabatic check) is taken as 160 °C. (Sheet default value; no project figure given.)
+  A19. C_min (Voltage factor for the minimum fault) is taken as 0.95. (Sheet default value; no project figure given.)
+  A20. c_max (Voltage factor c for the maximum fault) is taken as 1.1. (Sheet default value; no project figure given.)
 
 4. Working
-  [20] R_12 = rho_20 * k_R * L * (1 / S_line + 1 / S_cpc) * (1 + alpha * (theta - 20 degC))
-      = 0.000017241 ohm·mm × 1.125 × 30 m × (1 / 10 mm² + 1 / 10 mm²) × (1 + 0.00393 1/K × (70 degC − 20 degC))
+  [20] R_12 = rho_20 * k_R * L * (1 / S_line + 1 / S_cpc) * (1 + alpha * (T_op - 20 degC))
+      = 0.017241 ohm·mm²/m × 1.125 × 30 m × (1 / 10 mm² + 1 / 10 mm²) × (1 + 0.00393 1/K × (70 degC − 20 degC))
       = 0.13924 ohm
         R₁ + R₂ at the conductor temperature
   [21] Z_s = Z_e + R_12    « BS 7671 reg. 411.4.4
@@ -1407,41 +1385,41 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   Z_s = 0.1892 Ω    Loop impedance
   I_f = 1154.6 A    Earth fault current
   S_min = 2.463 mm²    Minimum cross-section
-  I_k3 = 15.942 kA    Prospective fault current
+  I_k3 = 15.942 kA    Prospective fault current (governing)
   c_k3 = 1.1    Voltage factor of I_k3
   R_12 = 0.1392 Ω    R₁ + R₂
   I_a = 400 A    Disconnection current
   t_d = 0.1000 s    Disconnection time
   Z_s_max = 0.5462 Ω    Maximum loop impedance
   Z_test = 0.4370 Ω    Field-test maximum (rule of thumb)
-  k = 114.84    Adiabatic k (derived)
+  k = 114.84    Adiabatic factor (derived)
   Z_T = 0.01587 Ω    Transformer impedance
   u_Zs = 0.35    Loop impedance utilisation
   u_cpc = 0.25    Protective conductor utilisation
   u_line = 0.25    Line conductor utilisation
-  u_Icn = 0.64    Breaking capacity utilisation (governing)
+  u_Icn = 0.64    Breaking capacity utilisation
 
 6. Checks (governing first)
-  PASS  Breaking capacity against prospective fault: u_Icn = 0.64 vs u_Icn ≤ 1  utilisation 0.64
-  PASS  Loop impedance within maximum (disconnection in time): u_Zs = 0.35 vs u_Zs ≤ 1  utilisation 0.35  « BS 7671 reg. 411.4.4
-  PASS  Disconnection time within required: 0.1000 s vs 0.4000 s  utilisation 0.25  « BS 7671 reg. 411.3.2.2
-  PASS  Protective conductor against adiabatic minimum: u_cpc = 0.25 vs u_cpc ≤ 1  utilisation 0.25  « BS 7671 reg. 543.1.3
-  PASS  Line conductor against adiabatic minimum: u_line = 0.25 vs u_line ≤ 1  utilisation 0.25  « BS 7671 reg. 434.5.2
+  PASS  Prospective fault against the breaking capacity: 15.942 kA vs 25 kA  utilisation 0.64
+  PASS  Loop impedance against the maximum: 0.1892 Ω vs 0.5462 Ω  utilisation 0.35  « BS 7671 reg. 411.4.4
+  PASS  Disconnection time against the required time: 0.1000 s vs 0.4000 s  utilisation 0.25  « BS 7671 reg. 411.3.2.2
+  PASS  Adiabatic minimum against the protective conductor: 2.463 mm² vs 10 mm²  utilisation 0.25  « BS 7671 reg. 543.1.3
+  PASS  Adiabatic minimum against the line conductor: 2.463 mm² vs 10 mm²  utilisation 0.25  « BS 7671 reg. 434.5.2
 
 7. Applicability
-  WARNING  records: tabulated values not taken from a reference record are rho_20, k_R, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let, I_cn (Device time–current points). Enter each as one so its source, edition and licence travel with it.  [record]
+  WARNING  records: tabulated values not taken from a reference record are rho_20, k_R, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let, I_cn (Device characteristic (time–current points)). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: elec.fault-protection@1.4.0
-  Content hash: 33b657ca63c7d15d
+  Template: elec.fault-protection@1.5.0
+  Content hash: 7a65b921a6c8d035
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-26 22:43 UTC
   Application: TempestOS test
 
 9. References
-  1. BS 7671:2018 (as amended) reg. 411.3.2.2, 411.3.2.3, 411.4.4 — Automatic disconnection in TN systems: times and the loop impedance condition
-  2. BS 7671:2018 (as amended) reg. 543.1.3, 434.5.2 — Protective conductor and fault current adiabatic checks
+  1. BS 7671:2018 reg. 411.3.2.2, 411.3.2.3, 411.4.4 — Automatic disconnection in TN systems: times and the loop impedance condition
+  2. BS 7671:2018 reg. 543.1.3, 434.5.2 — Protective conductor and fault current adiabatic checks
   3. BS EN 60204-1:2018 cl. 6.3.3 — Protection by automatic disconnection of supply
   4. IEC 60909-0:2016 cl. 5.3 — Voltage factor c
 
@@ -1455,67 +1433,94 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: HPU-001    Client: Client Co
 
 1. Scope and method
-The voltage dip when a three-phase induction motor starts, at the motor terminals and at the point of common coupling, from the supply impedance (a fault level or a transformer), the cable and the motor's locked-rotor impedance for a direct-on-line or star-delta start (a passive motor impedance) or a soft-start or drive start (a regulated current), by the complex potential divider; the dip is checked against a user limit (default 10 %). Also the capacitor kvar to raise the running power factor to a target, the capacitor current and the parallel-resonance order, with a warning when harmonic loads are present. Steady-state phasor model: no motor run-up dynamics, no flicker assessment, no starting-torque adequacy check.
-Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rated voltage: DOL I_LR·I_n; star-delta I_LR·I_n/3; soft starter min(k_soft·I_n, I_LR·I_n); drive k_vfd·I_n Motor starting impedance (DOL, star-delta, and a soft starter that does not reach its limit): |Z_m| = (U/√3)/I_start, for a soft starter (U/√3)/(I_LR·I_n), at the starting power factor, Z_m = |Z_m|·(cos φ_st + j sin φ_st) Regulated current (a drive; a soft starter when its fully conducting current E/|Z_s + Z_c + Z_LR| exceeds k_soft·I_n): |I| = I_start held, lagging V_m by φ; with R + jX = Z_s + Z_c, a = |I|(R cos φ + X sin φ), b = |I|(X cos φ − R sin φ): |V_m| = √(E² − b²) − a, V_pcc = V_m + I·Z_c, and Z_m = V_m/I is the equivalent impedance Source impedance: transformer |Z_T| = u_k·U²/S_n, plus an optional upstream network |Z_Q| = U²/S_kQ in series; fault level |Z_s| = c·U²/S_k or c·U/(√3·I_k); each element Z = |Z|·(1 + j·X/R)/√(1 + (X/R)²) Supply cable impedance: R = ρ_T·L/(A·n) with ρ_T = ρ_20·[1 + α(T_c − 20)], or R′·L/n; X = X′·L/n (as E3) Phasor divider for a passive motor (phase voltage E = U/√3 at 0°): I = E/(Z_s + Z_c + Z_m); V_pcc = E·(Z_c + Z_m)/(Z_s + Z_c + Z_m); V_m = E·Z_m/(Z_s + Z_c + Z_m) Voltage dip: 100·(1 − |V|/E) at the motor terminals and at the point of common coupling; checked against the limits Cable drop along V_m: dV_cab = √3·Re[I·Z_c·V̄_m/|V_m|] = √3·I·(R cos φ_st + X sin φ_st), the E3 three-phase form at the dipped current Power-factor correction: P_in = P/η (or √3·U·I_n·cos φ when I_n is entered), Q_c = P_in·(tan φ₁ − tan φ₂) with φ₁ the motor's (a drive's displacement factor with a drive), I_c = Q_c/(√3·U), I after = P_in/(√3·U·cos φ₂) Parallel resonance: S_sc = U²/|Z_s|, parallel resonance order h ≈ √(S_sc/Q_c) (|Z_s| used for X_s, so h reads 1 to 1.4 % low)
+Calculates the voltage dip when a three-phase induction motor starts, from the source, cable and locked-rotor impedances. It also gives the capacitor kvar for a target power factor and the parallel-resonance order.
+Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rated voltage: DOL I_LR·I_n; star-delta I_LR·I_n/3; soft starter min(k_soft·I_n, I_LR·I_n); drive k_vfd·I_n Motor starting impedance (DOL, star-delta, and a soft starter that does not reach its limit): |Z_m| = (U/√3)/I_start, for a soft starter (U/√3)/(I_LR·I_n), at the starting power factor, Z_m = |Z_m|·(cos φ_st + j sin φ_st) Regulated current (a drive; a soft starter when its fully conducting current E/|Z_s + Z_c + Z_LR| exceeds k_soft·I_n): |I| = I_start held, lagging V_m by φ; with R + jX = Z_s + Z_c, a = |I|(R cos φ + X sin φ), b = |I|(X cos φ − R sin φ): |V_m| = √(E² − b²) − a, V_pcc = V_m + I·Z_c, and Z_m = V_m/I is the equivalent impedance Source and cable impedance: transformer |Z_T| = u_k·U²/S_n, plus an optional upstream network |Z_Q| = U²/S_kQ in series; fault level |Z_s| = c·U²/S_k or c·U/(√3·I_k); each element Z = |Z|·(1 + j·X/R)/√(1 + (X/R)²); cable R = ρ_T·L/(A·n) with ρ_T = ρ_20·[1 + α(T_c − 20)], or R′·L/n; X = X′·L/n Phasor divider and dip, for a passive motor (phase voltage E = U/√3 at 0°): I = E/(Z_s + Z_c + Z_m); V_pcc = E·(Z_c + Z_m)/(Z_s + Z_c + Z_m); V_m = E·Z_m/(Z_s + Z_c + Z_m); dip = 100·(1 − |V|/E) at the motor terminals and at the point of common coupling, checked against the limits; cable drop dV_cab = √3·I·(R cos φ_st + X sin φ_st) Power-factor correction: P_in = P/η (or √3·U·I_n·cos φ when I_n is entered), Q_c = P_in·(tan φ₁ − tan φ₂) with φ₁ the motor's (a drive's displacement factor with a drive), I_c = Q_c/(√3·U), I after = P_in/(√3·U·cos φ₂) Parallel resonance: S_sc = U²/|Z_s|, parallel resonance order h ≈ √(S_sc/Q_c) (|Z_s| used for X_s, so h reads 1 to 1.4 % low)
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
-  U | Supply and motor rated voltage (line-to-line) | 400 | V | spec: SPEC-HPU-05 §5 (pump drive starting) | 50 … 1000 V
   source | Source impedance from | Fault level at the supply |  | spec: SPEC-HPU-05 §5 (pump drive starting) | any
   fault_basis | Fault level given as | Fault current I_k (kA) |  | spec: SPEC-HPU-05 §5 (pump drive starting) | any
+  starter | Starter type | Star-delta |  | spec: SPEC-HPU-05 §5 (pump drive starting) | any
+  cable_data | Cable resistance from | resistivity and area |  | assumption: Sheet default value; no project figure given. | any
+  harmonics | Harmonic loads present on the supply | no |  | assumption: Sheet default value; no project figure given. | any
+  L_cab | Cable length, source to motor (links conductor-sizing L) | 30 | m | link: Motor supply cable rev A · L | 0 … 1000 m
+  n_par | Parallel conductors per phase | 1 |  | spec: SPEC-HPU-05 §5 (pump drive starting) | 1 … 6
+  A_c | Conductor cross-section (links conductor-sizing CSA) | 10 | mm² | link: Motor supply cable rev A · CSA | 1 … 1000 mm²
+  rho_20 | Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.01724 | Ω·mm²/m | assumption: Sheet default value; no project figure given. | 0.01 … 0.05 Ω·mm²/m
+  alpha | Temperature coefficient of resistance | 0.00393 | 1/K | assumption: Sheet default value; no project figure given. | 0.003 … 0.0045 1/K
+  X_km | Reactance per km per conductor | 0.08 | Ω/km | assumption: Sheet default value; no project figure given. | 0 … 1 Ω/km
+  U | Supply and motor rated voltage (line-to-line) | 400 | V | spec: SPEC-HPU-05 §5 (pump drive starting) | 50 … 690 V
+  T_c | Conductor temperature for the resistance | 70 | °C | assumption: Sheet default value; no project figure given. | 20 … 90 °C
   S_k | Three-phase fault level at the point of supply (use the minimum fault level, which gives the deepest dip) | 10 | MVA | assumption: Sheet default value; no project figure given. | 0.5 … 500 MVA
-  I_k | Three-phase fault current at the point of supply (links E5 I_k3) | 15.942 | kA | link: Motor supply fault protection rev A · I_k3 | 1 … 150 kA
-  c_src | Voltage factor c for the fault-level route (blank: 1.1 for the I_k basis, as E5 I_k3 is computed with; 1.0 for a declared S_k; links E5 c_k3, which follows E5's c_max) | 1.1 |  | link: Motor supply fault protection rev A · c_k3 | 0.95 … 1.1
+  I_k | Three-phase fault current at the point of supply (links fault-protection I_k3) | 15.942 | kA | link: Motor supply fault protection rev A · I_k3 | 1 … 150 kA
   S_n | Transformer rating | 500 | kVA | assumption: Sheet default value; no project figure given. | 25 … 5000 kVA
   u_k | Transformer impedance voltage | 4 | % | assumption: Sheet default value; no project figure given. | 1 … 12 %
-  XR_Q | Upstream network X/R ratio | 10 |  | assumption: Sheet default value; no project figure given. | 1 … 50
   XR | Source X/R ratio (of the transformer, or of the fault level) | 4.2 |  | assumption: Sheet default value; no project figure given. | 0.5 … 40
-  P | Motor rated output (shaft) power, from the nameplate (E1 P_cont is only a lower bound) | 18.3469 | kW | link: Pump drive motor rev A · P_rated | 0.1 … 2000 kW
+  XR_Q | Upstream network X/R ratio | 10 |  | assumption: Sheet default value; no project figure given. | 1 … 50
+  c_src | Voltage factor c for the fault-level route, linked from the fault-protection c_k3 (optional; blank = 1.1 for the I_k basis, as fault-protection I_k3 is computed with, and 1.0 for a declared S_k) | 1.1 |  | link: Motor supply fault protection rev A · c_k3 | 1 … 1.1
+  k_soft | Soft-starter current limit as a multiple of the rated current | 3.5 |  | assumption: Sheet default value; no project figure given. | 1 … 6
+  k_vfd | Drive line-current limit as a multiple of the rated current | 1.5 |  | assumption: Sheet default value; no project figure given. | 0.5 … 2.5
+  cos_phi_vfd | Drive line displacement power factor while starting | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
+  dip_limit | Dip limit at the motor terminals | 10 | % | assumption: Sheet default value; no project figure given. | 1 … 30 %
+  cos_phi_target | Target power factor after correction | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.8 … 1
+  P | Motor rated output (shaft) power, from the nameplate (motor-sizing P_cont is only a lower bound) | 18.3469 | kW | link: Pump drive motor rev A · P_rated | 0.1 … 2000 kW
   eta | Motor efficiency at rated load | 0.92 |  | spec: SPEC-HPU-05 §5 (pump drive starting) | 0.5 … 0.99
   cos_phi | Motor power factor at rated load | 0.86 |  | spec: SPEC-HPU-05 §5 (pump drive starting) | 0.5 … 1
   I_LR_r | Locked-rotor current ratio I_LR/I_n | 7 |  | spec: SPEC-HPU-05 §5 (pump drive starting) | 3 … 10
   cos_phi_st | Power factor at locked rotor (starting) | 0.3 |  | spec: SPEC-HPU-05 §5 (pump drive starting) | 0.1 … 0.8
-  starter | Starter type | Star-delta |  | spec: SPEC-HPU-05 §5 (pump drive starting) | any
-  k_soft | Soft-starter current limit as a multiple of the rated current | 3.5 |  | assumption: Sheet default value; no project figure given. | 1 … 6
-  k_vfd | Drive line-current limit as a multiple of the rated current | 1.5 |  | assumption: Sheet default value; no project figure given. | 0.5 … 2.5
-  cos_phi_vfd | Drive line displacement power factor while starting | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
-  cable_data | Cable resistance from | resistivity and area |  | assumption: Sheet default value; no project figure given. | any
-  L_cab | Cable length, source to motor (links E4 L) | 30 | m | link: Motor supply cable rev A · L | 0 … 1000 m
-  n_par | Parallel conductors per phase | 1 |  | spec: SPEC-HPU-05 §5 (pump drive starting) | 1 … 6
-  A_c | Conductor cross-section (links E4 CSA) | 10 | mm² | link: Motor supply cable rev A · CSA | 1 … 1000 mm²
-  rho_20 | Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.01724 | Ω·mm²/m | assumption: Sheet default value; no project figure given. | 0.01 … 0.05 Ω·mm²/m
-  alpha | Temperature coefficient of resistance | 0.00393 | 1/K | assumption: Sheet default value; no project figure given. | 0.003 … 0.0045 1/K
-  T_c | Conductor temperature for the resistance | 70 | °C | assumption: Sheet default value; no project figure given. | 20 … 90 °C
-  X_km | Reactance per km per conductor | 0.08 | Ω/km | assumption: Sheet default value; no project figure given. | 0 … 1 Ω/km
-  dip_limit | Dip limit at the motor terminals | 10 | % | assumption: Sheet default value; no project figure given. | 1 … 30 %
-  cos_phi2 | Target power factor after correction | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.8 … 1
-  harmonics | Harmonic loads present on the supply | no |  | assumption: Sheet default value; no project figure given. | any
 
 3. Assumptions
-  A1. The supply is a stiff source behind the stated impedance (voltage E = U/√3 before the start). A direct-on-line or star-delta start, and a soft starter that does not reach its current limit at the dipped voltage (full conduction), draw current through a passive winding: a constant impedance equal to the locked-rotor impedance at rated voltage and the starting power factor, so the current falls with the dipped voltage. A soft starter that reaches its limit and a drive regulate the current: they hold |I| = I_start whatever the voltage, so the dip is deeper than the passive model gives; the current phasor lags the voltage at the starter or drive input by the stated power factor. (Standard steady-state starting-dip screening model; the regulated case is solved in closed form.)
-  A2. The dip is the steady-state phasor value at the instant of locked rotor; the current falls as the motor accelerates, so the dip is the worst case. No other load is running on the supply and no run-up dynamics, flicker (Pst) or tap-changer action is assessed. (Stated limitation.)
-  A3. A star-delta start draws one third of the direct-on-line current at rated voltage (and one third of the starting torque, which is not checked here); the current spike at the star-to-delta changeover is not modelled. (Star-delta connection ratio.)
-  A4. The cable resistance follows E3: from the resistivity, area and temperature, or from R′ per kilometre; X′ per kilometre is a user or record value. No cable table is embedded. (User or record values.)
-  A5. The capacitor kvar corrects the running power factor of the motor input power P/η at rated load; the capacitor sits at the point of common coupling, and the resonance order uses the short-circuit apparent power U²/|Z_s| there (|Z_s| stands in for X_s, so h reads 1 to 1.4 % low). Capacitor switching, detuning and self-excitation on disconnection are not assessed. (Standard power-factor-correction relation.)
-  A6. Source: E5 'Z_s' and 'I_f' are earth-fault-loop quantities (line to earth through the protective conductor), not the positive-sequence source impedance a motor start sees, so they are not linked; the fault level links E5 I_k3. E5 computes I_k3 with c = 1.1 and U_n = √3·U_0 (398.4 V at 230 V), so the I_k basis defaults c to 1.1 and U should be √3·U_0 for an exact match with E5's Z_T. E6 declares no impedance port, so the transformer rating and impedance are entered. (Linking decision.)
-  A7. The source impedance should be taken at the minimum fault level (the deepest dip); a transformer alone is an infinite bus behind it, which understates the dip by a few per cent and overstates the resonance order unless the upstream network fault level S_kQ is entered. (Stated limitation.)
-  A8. With a drive, the power-factor correction starts from the drive's displacement factor, not the motor's, the drive is itself a harmonic load, and the 'torque factor' and the voltage at the starter or drive input (not the motor terminals) are reported only for what they are. (Regulated-current starters.)
-  A9. S_k (Three-phase fault level at the point of supply (use the minimum fault level, which gives the deepest dip)) is taken as 10 MVA. (Sheet default value; no project figure given.)
-  A10. S_n (Transformer rating) is taken as 500 kVA. (Sheet default value; no project figure given.)
-  A11. u_k (Transformer impedance voltage) is taken as 4 %. (Sheet default value; no project figure given.)
-  A12. XR_Q (Upstream network X/R ratio) is taken as 10. (Sheet default value; no project figure given.)
-  A13. XR (Source X/R ratio (of the transformer, or of the fault level)) is taken as 4.2. (Sheet default value; no project figure given.)
-  A14. k_soft (Soft-starter current limit as a multiple of the rated current) is taken as 3.5. (Sheet default value; no project figure given.)
-  A15. k_vfd (Drive line-current limit as a multiple of the rated current) is taken as 1.5. (Sheet default value; no project figure given.)
-  A16. cos_phi_vfd (Drive line displacement power factor while starting) is taken as 0.95. (Sheet default value; no project figure given.)
-  A17. cable_data (Cable resistance from) is taken as resistivity and area. (Sheet default value; no project figure given.)
-  A18. rho_20 (Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m)) is taken as 0.01724 Ω·mm²/m. (Sheet default value; no project figure given.)
-  A19. alpha (Temperature coefficient of resistance) is taken as 0.00393 1/K. (Sheet default value; no project figure given.)
-  A20. T_c (Conductor temperature for the resistance) is taken as 70 °C. (Sheet default value; no project figure given.)
-  A21. X_km (Reactance per km per conductor) is taken as 0.08 Ω/km. (Sheet default value; no project figure given.)
-  A22. dip_limit (Dip limit at the motor terminals) is taken as 10 %. (Sheet default value; no project figure given.)
-  A23. cos_phi2 (Target power factor after correction) is taken as 0.95. (Sheet default value; no project figure given.)
-  A24. harmonics (Harmonic loads present on the supply) is taken as no. (Sheet default value; no project figure given.)
+  A1. The supply is a stiff source behind the stated impedance, with voltage E = U/√3 before the start. (Stated limitation.)
+  A2. A direct-on-line or star-delta start draws current through a passive winding. (Stated limitation.)
+  A3. A soft starter that does not reach its current limit at the dipped voltage (full conduction) does the same. (Stated limitation.)
+  A4. The passive winding is a constant impedance equal to the locked-rotor impedance at rated voltage. (Stated limitation.)
+  A5. The impedance is taken at the starting power factor, so the current falls with the dipped voltage. (Stated limitation.)
+  A6. A soft starter that reaches its limit and a drive regulate the current. (Regulated-current starters.)
+  A7. They hold |I| = I_start whatever the voltage, so the dip is deeper than the passive model gives. (Regulated-current starters.)
+  A8. The current phasor lags the voltage at the starter or drive input by the stated power factor. (Regulated-current starters.)
+  A9. The dip is the steady-state phasor value at the instant of locked rotor. (Stated limitation.)
+  A10. The current falls as the motor accelerates, so the dip is the worst case. (Stated limitation.)
+  A11. No other load is running on the supply. (Stated limitation.)
+  A12. No run-up dynamics, flicker (Pst) or tap-changer action is assessed. (Stated limitation.)
+  A13. A star-delta start draws one third of the direct-on-line current at rated voltage. (Star-delta connection ratio.)
+  A14. A star-delta start also gives one third of the starting torque, which is not checked here. (Star-delta connection ratio.)
+  A15. The current spike at the star-to-delta changeover is not modelled. (Star-delta connection ratio.)
+  A16. The cable resistance follows the voltage-drop method: from the resistivity, area and temperature, or from R′ per kilometre. (User or record values.)
+  A17. X′ per kilometre is a user or record value. (User or record values.)
+  A18. No cable table is embedded. (User or record values.)
+  A19. The capacitor kvar corrects the running power factor of the motor input power P/η at rated load. (Standard power-factor-correction relation.)
+  A20. The capacitor sits at the point of common coupling. (Standard power-factor-correction relation.)
+  A21. The resonance order uses the short-circuit apparent power U²/|Z_s| at that point. (Standard power-factor-correction relation.)
+  A22. Using |Z_s| for X_s makes h read 1 to 1.4 % low. (Standard power-factor-correction relation.)
+  A23. Capacitor switching, detuning and self-excitation on disconnection are not assessed. (Standard power-factor-correction relation.)
+  A24. The fault-protection loop quantities Z_s and I_f are not the positive-sequence source impedance, so they are not linked. (Linking decision.)
+  A25. The fault level links the fault-protection I_k3. (Linking decision.)
+  A26. Fault-protection computes I_k3 with c = 1.1 and U_n = √3·U_0 (398.4 V at 230 V). (Linking decision.)
+  A27. So the I_k basis defaults c to 1.1, and U should be √3·U_0 for an exact match. (Linking decision.)
+  A28. Load-budget declares no impedance port, so the transformer rating and impedance are entered. (Linking decision.)
+  A29. The source impedance should be taken at the minimum fault level, which gives the deepest dip. (Stated limitation.)
+  A30. A transformer alone sits on an infinite bus, so it understates the dip and overstates the resonance order. (Stated limitation.)
+  A31. Entering the upstream network fault level S_kQ removes this understatement. (Stated limitation.)
+  A32. With a drive, the power-factor correction starts from the drive's displacement factor, not the motor's. (Regulated-current starters.)
+  A33. The drive is itself a harmonic load. (Regulated-current starters.)
+  A34. With a regulated current, the voltage V_m is at the starter or drive input, not at the motor terminals. (Regulated-current starters.)
+  A35. The torque factor k_T is reported for that voltage only. (Regulated-current starters.)
+  A36. cable_data (Cable resistance from) is taken as resistivity and area. (Sheet default value; no project figure given.)
+  A37. harmonics (Harmonic loads present on the supply) is taken as no. (Sheet default value; no project figure given.)
+  A38. rho_20 (Resistivity at 20 °C (copper 0.01724, aluminium 0.0282 Ω·mm²/m)) is taken as 0.01724 Ω·mm²/m. (Sheet default value; no project figure given.)
+  A39. alpha (Temperature coefficient of resistance) is taken as 0.00393 1/K. (Sheet default value; no project figure given.)
+  A40. X_km (Reactance per km per conductor) is taken as 0.08 Ω/km. (Sheet default value; no project figure given.)
+  A41. T_c (Conductor temperature for the resistance) is taken as 70 °C. (Sheet default value; no project figure given.)
+  A42. S_k (Three-phase fault level at the point of supply (use the minimum fault level, which gives the deepest dip)) is taken as 10 MVA. (Sheet default value; no project figure given.)
+  A43. S_n (Transformer rating) is taken as 500 kVA. (Sheet default value; no project figure given.)
+  A44. u_k (Transformer impedance voltage) is taken as 4 %. (Sheet default value; no project figure given.)
+  A45. XR (Source X/R ratio (of the transformer, or of the fault level)) is taken as 4.2. (Sheet default value; no project figure given.)
+  A46. XR_Q (Upstream network X/R ratio) is taken as 10. (Sheet default value; no project figure given.)
+  A47. k_soft (Soft-starter current limit as a multiple of the rated current) is taken as 3.5. (Sheet default value; no project figure given.)
+  A48. k_vfd (Drive line-current limit as a multiple of the rated current) is taken as 1.5. (Sheet default value; no project figure given.)
+  A49. cos_phi_vfd (Drive line displacement power factor while starting) is taken as 0.95. (Sheet default value; no project figure given.)
+  A50. dip_limit (Dip limit at the motor terminals) is taken as 10 %. (Sheet default value; no project figure given.)
+  A51. cos_phi_target (Target power factor after correction) is taken as 0.95. (Sheet default value; no project figure given.)
 
 4. Working
   [10] I_rated = P / (sqrt(3) * U * cos_phi * eta)
@@ -1642,7 +1647,7 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
       = sqrt(1 − 0.86^2) / 0.86
       = 0.59337
         tan φ₁ at the running power factor
-  [54] tan_2 = sqrt(1 - cos_phi2^2) / cos_phi2
+  [54] tan_2 = sqrt(1 - cos_phi_target^2) / cos_phi_target
       = sqrt(1 − 0.95^2) / 0.95
       = 0.32868
         tan φ₂ at the target power factor
@@ -1658,7 +1663,7 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
       = 19.942 kW / (sqrt(3) × 400 V × 0.86)
       = 33.47 A
         Running line current before correction
-  [58] I_run2 = P_in / (sqrt(3) * U * cos_phi2)
+  [58] I_run2 = P_in / (sqrt(3) * U * cos_phi_target)
       = 19.942 kW / (sqrt(3) × 400 V × 0.95)
       = 30.299 A
         Running line current after correction (when the target is reached)
@@ -1672,7 +1677,7 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
         Parallel resonance order of the capacitor bank with the supply
 
 5. Results
-  start_dip = 1.245 %    Voltage dip at the motor terminals
+  start_dip = 1.245 %    Voltage dip at the motor terminals (governing)
   kvar = 5.278 kvar    Capacitor kvar to the target power factor
   I_start = 78.10 A    Starting current at rated voltage
   I_rated = 33.47 A    Motor rated current
@@ -1691,24 +1696,24 @@ Rated current: I_n = P/(√3·U·cos φ·η), or entered Starting current at rat
   I_run2 = 30.30 A    Running current after correction
   S_sc = 10.041 MVA    Short-circuit apparent power at the bank
   h_res = 43.615    Parallel resonance order
-  u_dip = 0.12    Dip utilisation at the motor terminals (governing)
+  u_dip = 0.12    Dip utilisation at the motor terminals
 
 6. Checks (governing first)
-  PASS  Motor-terminal dip within the limit: u_dip = 0.12 vs u_dip ≤ 1  utilisation 0.12
+  PASS  Motor-terminal dip against the limit: 1.245 % vs 10 %  utilisation 0.12
 
 7. Applicability
-  WARNING  records: tabulated values not taken from a reference record are X_km (Cable resistance and reactance per kilometre); rho_20, alpha (Conductor material constants); I_LR_r, cos_phi_st (Motor starting data); k_soft, k_vfd (Soft-starter and drive limits); u_k, XR (Transformer impedance data). Enter each as one so its source, edition and licence travel with it.  [record]
+  WARNING  records: tabulated values not taken from a reference record are X_km (Cable impedance (resistance and reactance per kilometre)); rho_20, alpha (Conductor material constants); I_LR_r, cos_phi_st (Motor starting data); k_soft, k_vfd (Soft-starter and drive limits); u_k, XR (Transformer impedance data). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: elec.motor-start@1.2.1
-  Content hash: 66f32fca1f51bd3a
+  Template: elec.motor-start@1.3.0
+  Content hash: da767ce16b10e18b
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-26 22:43 UTC
   Application: TempestOS test
 
 9. References
-  1. IEC 60909-0 cl. 5.3 — Voltage factor c and the equivalent voltage source
-  2. IEC 61000-3-11 scope — Limitation of voltage changes and flicker in public low-voltage systems (limits are user inputs)
-  3. Hughes, Electrical and Electronic Technology Ch. on AC circuits — Complex impedance and the potential divider
-  4. Hughes, Electrical and Electronic Technology Ch. on power factor — Power-factor correction: Q = P (tan φ₁ − tan φ₂)
+  1. IEC 60909-0:2016 cl. 5.3 — Voltage factor c and the equivalent voltage source
+  2. IEC 61000-3-11:2017 cl. 1 — Limitation of voltage changes and flicker in public low-voltage systems (limits are user inputs)
+  3. Hughes, Electrical and Electronic Technology Ch. on AC circuits, 12th ed. (edition to be checked) — Complex impedance and the potential divider
+  4. Hughes, Electrical and Electronic Technology Ch. on power factor, 12th ed. (edition to be checked) — Power-factor correction: Q = P (tan φ₁ − tan φ₂)

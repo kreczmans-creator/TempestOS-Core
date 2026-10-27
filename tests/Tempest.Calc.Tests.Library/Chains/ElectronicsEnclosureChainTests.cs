@@ -63,8 +63,8 @@ public sealed class ElectronicsEnclosureChainTests
 
         // E6 → E2, kW into W: the board's heat is the enclosure's additional load.
         Assert.Equal(Si(e6, "Phi"), InputSi(e2, "P_add"), 9);
-        Assert.Equal(73.0081501205673, e2.Inputs.Single(i => i.Symbol == "P_add").Number!.Value, 9);
-        Assert.Equal("W", e2.Inputs.Single(i => i.Symbol == "P_add").Unit);
+        Assert.Equal(0.0730081501205673, e2.Inputs.Single(i => i.Symbol == "P_add").Number!.Value, 12);
+        Assert.Equal("kW", e2.Inputs.Single(i => i.Symbol == "P_add").Unit);
 
         // E2: 500 × 600 × 200 against a wall: A_eff = top 0.1 + front 0.3 + two sides 0.24 = 0.64 m²; P = 4 + 73.008150 = 77.008150 W; ΔT = P/(5.5 × 0.64) = 21.8773 K; 56.8773 °C inside, 60 °C limit.
         Assert.Equal(0.64, Si(e2, "A_eff"), 12);
@@ -179,7 +179,7 @@ public sealed class ElectronicsEnclosureChainTests
         Assert.Equal(limit, e7.Inputs.Single(i => i.Symbol == "T_amb").Number!.Value, 9);
 
         // The run-time guard: the enclosure step checks that natural dissipation holds T_max, so the typed values are good while it passes.
-        var holds = Assert.Single(e2.Checks, c => c.Name.StartsWith("Natural dissipation holds T_max", StringComparison.Ordinal));
+        var holds = Assert.Single(e2.Checks, c => c.Name.StartsWith("Natural temperature rise against the allowed rise", StringComparison.Ordinal));
         Assert.True(holds.Passed);
         Assert.True(Si(e2, "T_int") - 273.15 <= limit);
     }
@@ -238,7 +238,7 @@ public sealed class ElectronicsEnclosureChainTests
 
         var e2 = await Fresh(host, made, "e2");
         Assert.Equal(62.82677691940542 + 273.15, Si(e2, "T_int"), 6);
-        Assert.Contains(e2.Checks, c => !c.Passed && c.Name.StartsWith("Natural dissipation holds T_max", StringComparison.Ordinal));
+        Assert.Contains(e2.Checks, c => !c.Passed && c.Name.StartsWith("Natural temperature rise against the allowed rise", StringComparison.Ordinal));
     }
 
     [Fact]

@@ -68,8 +68,8 @@ public sealed class MotorCircuitSupplyLinksTests
         var made = await InstantiateAsync(host, CalcPackTemplates.MotorCircuit, "Conveyor motor circuit", ChainInputs.MotorCircuit(host));
         var (e4, e3, e5) = (made.Instances["e4"], made.Instances["e3"], made.Instances["e5"]);
 
-        Assert.Equal(70 + 273.15, Si(e4, "theta_op"), 9);
-        Assert.Equal(70 + 273.15, InputSi(e5, "theta"), 9);
+        Assert.Equal(70 + 273.15, Si(e4, "T_op"), 9);
+        Assert.Equal(70 + 273.15, InputSi(e5, "T_op"), 9);
         Assert.Equal(70 + 273.15, InputSi(e3, "T_c"), 9);
 
         var changed = await host.Service.UpdateInputsAsync(e4.Id, [.. e4.Inputs.Select(v => v.Symbol == "insulation" ? CalcInputValue.Choice("insulation", ConductorSizingCalculator.Xlpe) with { Provenance = v.Provenance } : v)]);
@@ -80,8 +80,8 @@ public sealed class MotorCircuitSupplyLinksTests
 
         var (e3New, e5New, e4New) = (await Fresh(host, made, "e3"), await Fresh(host, made, "e5"), await Fresh(host, made, "e4"));
 
-        Assert.Equal(90 + 273.15, Si(e4New, "theta_op"), 9);
-        Assert.Equal(90 + 273.15, InputSi(e5New, "theta"), 9);
+        Assert.Equal(90 + 273.15, Si(e4New, "T_op"), 9);
+        Assert.Equal(90 + 273.15, InputSi(e5New, "T_op"), 9);
         Assert.Equal(90 + 273.15, InputSi(e3New, "T_c"), 9);
 
         // R_12 follows (1 + 0.00393 (θ − 20)): at the same cross-sections and length, 90 °C against 70 °C is 1.27510/1.19650 = 1.06569 times the resistance.

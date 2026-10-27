@@ -824,7 +824,7 @@
           ],
           "descriptions": [
             "Conductor cross-section",
-            "Conductor cross-section (links E4 CSA)"
+            "Conductor cross-section (links conductor-sizing CSA)"
           ],
           "templates": [
             "elec.motor-start",
@@ -861,7 +861,7 @@
             "m²"
           ],
           "descriptions": [
-            "Area of the cover or door the pressure difference acts on, for the force on its fixings (blank = not worked out; needs T_seal)"
+            "Area of the cover or door the pressure difference acts on, for the force on its fixings (optional; blank = not worked out; needs T_seal)"
           ],
           "templates": [
             "elec.enclosure-heat"
@@ -1471,7 +1471,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Ambient correction factor (1 does not apply the ambient: enter the factor for θ_a from your licensed table)",
+            "Ambient correction factor (1 does not apply the ambient: enter the factor for T_amb from your licensed table)",
             "Ambient factor"
           ],
           "templates": [
@@ -1650,7 +1650,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Voltage factor C_min"
+            "Voltage factor for the minimum fault"
           ],
           "templates": [
             "elec.fault-protection"
@@ -1819,20 +1819,7 @@
       "symbol": "D_c",
       "meanings": [
         {
-          "meaning": "conduit-internal-diameter",
-          "quantity": "Length",
-          "units": [
-            "mm"
-          ],
-          "descriptions": [
-            "Conduit internal diameter (conduit)"
-          ],
-          "templates": [
-            "elec.containment"
-          ]
-        },
-        {
-          "meaning": "extrusion-gap-mating-diameter",
+          "meaning": "",
           "quantity": "Length",
           "units": [
             "mm"
@@ -2024,6 +2011,24 @@
           "templates": [
             "bs.insulation",
             "bs.pipe-expansion"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "D_int",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Conduit internal diameter (conduit)"
+          ],
+          "templates": [
+            "elec.containment"
           ]
         }
       ]
@@ -4020,7 +4025,7 @@
       ]
     },
     {
-      "symbol": "H_c",
+      "symbol": "H_int",
       "meanings": [
         {
           "meaning": "",
@@ -4494,7 +4499,7 @@
             "kA"
           ],
           "descriptions": [
-            "Three-phase fault current at the point of supply (links E5 I_k3)"
+            "Three-phase fault current at the point of supply (links fault-protection I_k3)"
           ],
           "templates": [
             "elec.motor-start"
@@ -5466,7 +5471,7 @@
             "m"
           ],
           "descriptions": [
-            "Cable length, source to motor (links E4 L)"
+            "Cable length, source to motor (links conductor-sizing L)"
           ],
           "templates": [
             "elec.motor-start"
@@ -7223,7 +7228,7 @@
             "kW"
           ],
           "descriptions": [
-            "Motor rated output (shaft) power, from the nameplate (E1 P_cont is only a lower bound)",
+            "Motor rated output (shaft) power, from the nameplate (motor-sizing P_cont is only a lower bound)",
             "Rated output (shaft) power; η converts it to input (DC: electrical power drawn, η not applied)"
           ],
           "templates": [
@@ -7235,7 +7240,7 @@
           "meaning": "dissipated-power",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Steady power dissipated (the heat flow through every stage)"
@@ -7261,7 +7266,7 @@
           "meaning": "heat-loss-per-item",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Heat loss per item"
@@ -7315,7 +7320,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Selected PSU rating"
@@ -7333,7 +7338,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Minimum PSU rating"
@@ -7351,12 +7356,11 @@
           "meaning": "additional-load",
           "quantity": "Power, heat flow",
           "units": [
-            "W",
             "kW"
           ],
           "descriptions": [
-            "Additional heat load (linked from E6's dissipated heat or another calculation)",
-            "Additional three-phase load (linked from E1's RMS power)"
+            "Additional heat load (linked from the load-budget dissipated heat or another calculation)",
+            "Additional three-phase load (linked from the motor-sizing RMS power)"
           ],
           "templates": [
             "elec.enclosure-heat",
@@ -7439,7 +7443,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Cooling unit needed"
@@ -7529,7 +7533,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Internal heat load"
@@ -7547,7 +7551,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Power loss"
@@ -7637,7 +7641,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Natural dissipation at the limit"
@@ -7712,7 +7716,7 @@
             "kW"
           ],
           "descriptions": [
-            "Rated (nameplate) shaft power of the additional machine (linked from E1's P_rated): the supply carries the larger of this and the duty power P_add; blank: the machine is sized on its duty only"
+            "Rated (nameplate) shaft power of the additional machine (linked from the motor-sizing P_rated); the supply carries the larger of this and the duty power P_add (optional; blank = the machine is sized on its duty only)"
           ],
           "templates": [
             "elec.load-budget"
@@ -7745,7 +7749,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Solar gain"
@@ -7799,7 +7803,7 @@
           "meaning": "",
           "quantity": "Power, heat flow",
           "units": [
-            "W"
+            "kW"
           ],
           "descriptions": [
             "Total heat"
@@ -9231,11 +9235,22 @@
       "symbol": "SF",
       "meanings": [
         {
-          "meaning": "",
+          "meaning": "sizing-safety-factor",
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Safety margin on torque"
+            "Sizing safety factor"
+          ],
+          "templates": [
+            "elec.load-budget"
+          ]
+        },
+        {
+          "meaning": "torque-safety-factor",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Safety factor on torque"
           ],
           "templates": [
             "elec.motor-sizing"
@@ -9498,7 +9513,7 @@
             "MVA"
           ],
           "descriptions": [
-            "Upstream network fault level at the transformer primary, in series with the transformer (minimum fault level; blank: infinite bus)"
+            "Upstream network fault level at the transformer primary, in series with the transformer, as the minimum fault level (optional; blank = infinite bus)"
           ],
           "templates": [
             "elec.motor-start"
@@ -10002,7 +10017,7 @@
             "N·m"
           ],
           "descriptions": [
-            "Constant load torque at the output (rotary; continuous duty needs it: blank or zero is refused)"
+            "Constant load torque at the output (rotary; continuous duty needs it, and a zero value is refused)"
           ],
           "templates": [
             "elec.motor-sizing"
@@ -10165,7 +10180,9 @@
           ],
           "templates": [
             "bs.insulation",
+            "elec.conductor-sizing",
             "elec.enclosure-heat",
+            "elec.load-budget",
             "elec.pcb-trace",
             "elec.voltage-drop"
           ]
@@ -10832,6 +10849,26 @@
       ]
     },
     {
+      "symbol": "T_op",
+      "meanings": [
+        {
+          "meaning": "conductor-operating-temperature",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Conductor operating temperature for the insulation",
+            "Conductor temperature for Z_s"
+          ],
+          "templates": [
+            "elec.conductor-sizing",
+            "elec.fault-protection"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "T_operate",
       "meanings": [
         {
@@ -10933,6 +10970,24 @@
           ],
           "templates": [
             "elec.motor-sizing"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "T_ref",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Reference ambient temperature for the derived C_a"
+          ],
+          "templates": [
+            "elec.conductor-sizing"
           ]
         }
       ]
@@ -11073,7 +11128,7 @@
             "°C"
           ],
           "descriptions": [
-            "Temperature at which the enclosure was closed with no breather or vent, for the pressure difference across its walls when the air warms or cools (blank = vented: no pressure difference)"
+            "Temperature at which the enclosure was closed with no breather or vent, for the pressure difference across its walls when the air warms or cools (optional; blank = vented, so no pressure difference)"
           ],
           "templates": [
             "elec.enclosure-heat"
@@ -11131,6 +11186,24 @@
           ],
           "templates": [
             "mech.snap-fit"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "T_user",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Temperature",
+          "units": [
+            "°C"
+          ],
+          "descriptions": [
+            "Conductor operating temperature for 'user' insulation"
+          ],
+          "templates": [
+            "elec.conductor-sizing"
           ]
         }
       ]
@@ -12090,24 +12163,6 @@
       ]
     },
     {
-      "symbol": "W_c",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Length",
-          "units": [
-            "mm"
-          ],
-          "descriptions": [
-            "Trunking or tray internal width"
-          ],
-          "templates": [
-            "elec.containment"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "W_el_y",
       "meanings": [
         {
@@ -12145,6 +12200,24 @@
             "struct.en1993-member",
             "struct.ltb-interaction",
             "struct.section-properties"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "W_int",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Trunking or tray internal width"
+          ],
+          "templates": [
+            "elec.containment"
           ]
         }
       ]
@@ -13782,7 +13855,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Voltage factor c for the fault-level route (blank: 1.1 for the I_k basis, as E5 I_k3 is computed with; 1.0 for a declared S_k; links E5 c_k3, which follows E5's c_max)"
+            "Voltage factor c for the fault-level route, linked from the fault-protection c_k3 (optional; blank = 1.1 for the I_k basis, as fault-protection I_k3 is computed with, and 1.0 for a declared S_k)"
           ],
           "templates": [
             "elec.motor-start"
@@ -13931,22 +14004,6 @@
       ]
     },
     {
-      "symbol": "cos_phi2",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Target power factor after correction"
-          ],
-          "templates": [
-            "elec.motor-start"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "cos_phi_st",
       "meanings": [
         {
@@ -13955,6 +14012,22 @@
           "units": [],
           "descriptions": [
             "Power factor at locked rotor (starting)"
+          ],
+          "templates": [
+            "elec.motor-start"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "cos_phi_target",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Target power factor after correction"
           ],
           "templates": [
             "elec.motor-start"
@@ -15721,7 +15794,7 @@
             "kPa"
           ],
           "descriptions": [
-            "Cracking pressure of the breather or relief element a sealed enclosure has (blank = none: the full gas-law difference acts; needs T_seal)"
+            "Cracking pressure of the breather or relief element a sealed enclosure has (optional; blank = none, so the full gas-law difference acts; needs T_seal)"
           ],
           "templates": [
             "elec.enclosure-heat"
@@ -17721,19 +17794,6 @@
           ]
         },
         {
-          "meaning": "film-coefficient",
-          "quantity": "Heat transfer coefficient, U-value",
-          "units": [
-            "W/(m²·K)"
-          ],
-          "descriptions": [
-            "Overall heat-transfer coefficient of the enclosure surface (editable reference value)"
-          ],
-          "templates": [
-            "elec.enclosure-heat"
-          ]
-        },
-        {
           "meaning": "hole-to-weld-distance",
           "quantity": "Length",
           "units": [
@@ -17846,6 +17906,24 @@
           ],
           "templates": [
             "bs.psychrometrics"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "h_conv",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Heat transfer coefficient, U-value",
+          "units": [
+            "W/(m²·K)"
+          ],
+          "descriptions": [
+            "Overall heat-transfer coefficient of the enclosure surface (editable reference value)"
+          ],
+          "templates": [
+            "elec.enclosure-heat"
           ]
         }
       ]
@@ -18116,7 +18194,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Gear ratio i (motor : output, 1 = none)"
+            "Gear ratio (motor : output, 1 = none)"
           ],
           "templates": [
             "elec.motor-sizing"
@@ -18262,7 +18340,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Adiabatic k (derived)"
+            "Adiabatic factor (derived)"
           ],
           "templates": [
             "elec.fault-protection"
@@ -18413,7 +18491,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the cable standard's maximum conductor resistances are 5 to 12 % above pure copper, so the default is 1.125 and Z_s is not understated; k is not changed by it)"
+            "Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the default of 1.125 takes pure copper to the cable standard's maximum conductor resistances, so Z_s is not understated; k is not changed by it)"
           ],
           "templates": [
             "elec.fault-protection"
@@ -19642,22 +19720,6 @@
       ]
     },
     {
-      "symbol": "margin",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Sizing margin"
-          ],
-          "templates": [
-            "elec.load-budget"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "mass",
       "meanings": [
         {
@@ -20604,7 +20666,7 @@
             "rpm"
           ],
           "descriptions": [
-            "Candidate motor rated (nameplate) speed, with the rated torque the rated power P_rated = T_rated·ω_rated (leave blank if not known: there is then no P_rated)"
+            "Candidate motor rated (nameplate) speed, which with the rated torque gives the rated power P_rated = T_rated·ω_rated (optional; blank = not known, so there is no P_rated)"
           ],
           "templates": [
             "elec.motor-sizing"
@@ -22681,7 +22743,6 @@
           "meaning": "resistivity-at-20c",
           "quantity": "Resistivity",
           "units": [
-            "Ω·mm",
             "Ω·mm²/m"
           ],
           "descriptions": [
@@ -24812,19 +24873,6 @@
       "symbol": "theta",
       "meanings": [
         {
-          "meaning": "ambient-temperature",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Ambient temperature"
-          ],
-          "templates": [
-            "elec.load-budget"
-          ]
-        },
-        {
           "meaning": "bend-angle",
           "quantity": "Angle",
           "units": [
@@ -24835,19 +24883,6 @@
           ],
           "templates": [
             "elec.containment"
-          ]
-        },
-        {
-          "meaning": "conductor-temperature",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Conductor temperature for Z_s"
-          ],
-          "templates": [
-            "elec.fault-protection"
           ]
         },
         {
@@ -25021,20 +25056,7 @@
       "symbol": "theta_a",
       "meanings": [
         {
-          "meaning": "ambient-temperature",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Ambient temperature"
-          ],
-          "templates": [
-            "elec.conductor-sizing"
-          ]
-        },
-        {
-          "meaning": "cold-point-outside-temperature",
+          "meaning": "",
           "quantity": "Temperature",
           "units": [
             "°C"
@@ -25159,42 +25181,6 @@
       ]
     },
     {
-      "symbol": "theta_op",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Conductor operating temperature for the insulation"
-          ],
-          "templates": [
-            "elec.conductor-sizing"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "theta_p",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Conductor operating temperature for 'user' insulation"
-          ],
-          "templates": [
-            "elec.conductor-sizing"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "theta_range",
       "meanings": [
         {
@@ -25208,24 +25194,6 @@
           ],
           "templates": [
             "mech.mechanism"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "theta_ref",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Temperature",
-          "units": [
-            "°C"
-          ],
-          "descriptions": [
-            "Reference ambient temperature for the derived C_a"
-          ],
-          "templates": [
-            "elec.conductor-sizing"
           ]
         }
       ]
@@ -27118,7 +27086,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Weight-correction factor on the cable weight and, by the same factor, the bend friction (blank = 1 = full weight on the containment; above 1 for cradled or triangular arrangements, from your record)"
+            "Weight-correction factor on the cable weight and, by the same factor, the bend friction (optional; blank = 1, full weight on the containment; above 1 for cradled or triangular arrangements, from your record)"
           ],
           "templates": [
             "elec.containment"

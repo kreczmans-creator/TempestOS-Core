@@ -75,14 +75,6 @@
    "elec.enclosure-heat"
   ]
  },
- "D_c": {
-  "conduit-internal-diameter": [
-   "elec.containment"
-  ],
-  "extrusion-gap-mating-diameter": [
-   "fp.oring-gland"
-  ]
- },
  "D_i": {
   "inside-diameter": [
    "bs.insulation",
@@ -584,6 +576,14 @@
    "mech.fatigue-miner"
   ]
  },
+ "SF": {
+  "sizing-safety-factor": [
+   "elec.load-budget"
+  ],
+  "torque-safety-factor": [
+   "elec.motor-sizing"
+  ]
+ },
  "S_e": {
   "bending-endurance-limit": [
    "mech.fatigue-miner",
@@ -637,7 +637,9 @@
  "T_amb": {
   "ambient-temperature": [
    "bs.insulation",
+   "elec.conductor-sizing",
    "elec.enclosure-heat",
+   "elec.load-budget",
    "elec.pcb-trace",
    "elec.voltage-drop"
   ]
@@ -698,6 +700,12 @@
   "minimum-temperature": [
    "fp.accumulator",
    "fp.oring-gland"
+  ]
+ },
+ "T_op": {
+  "conductor-operating-temperature": [
+   "elec.conductor-sizing",
+   "elec.fault-protection"
   ]
  },
  "T_pk": {
@@ -1184,9 +1192,6 @@
    "struct.ltb-interaction",
    "struct.section-properties"
   ],
-  "film-coefficient": [
-   "elec.enclosure-heat"
-  ],
   "hole-to-weld-distance": [
    "struct.lifting"
   ],
@@ -1612,14 +1617,8 @@
   ]
  },
  "theta": {
-  "ambient-temperature": [
-   "elec.load-budget"
-  ],
   "bend-angle": [
    "elec.containment"
-  ],
-  "conductor-temperature": [
-   "elec.fault-protection"
   ],
   "incline-angle": [
    "elec.motor-sizing"
@@ -1629,14 +1628,6 @@
   ],
   "sling-angle": [
    "struct.lifting"
-  ]
- },
- "theta_a": {
-  "ambient-temperature": [
-   "elec.conductor-sizing"
-  ],
-  "cold-point-outside-temperature": [
-   "bs.glaser"
   ]
  },
  "theta_e": {

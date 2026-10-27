@@ -12,7 +12,7 @@ PACK INDEX
   3. Cam shaft — Shaft design — rev A — ISSUED — Slope at the bearings against limit PASS
   4. Cam shaft bearing A — Rolling bearing life (ISO 281) — rev A — ISSUED — Static safety factor against required PASS
   5. Cam drive motor — Motor and actuator sizing — rev A — ISSUED — Motor speed against the rated speed PASS
-  6. Cam drive supply cable — Conductor sizing and overload coordination — rev A — ISSUED — Device rating within conductor capacity (I_n ≤ I_z) PASS
+  6. Cam drive supply cable — Conductor sizing and overload coordination — rev A — ISSUED — Device rating against the conductor capacity PASS
 
 REVISIONS
   A  2026-10-26  test.engineer  First issue
@@ -44,7 +44,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 41/41
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 22:43 UTC
   Application: TempestOS test
 
 9. References
@@ -312,7 +312,7 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}; ℓ = |A �
   Content hash: ec0fa964408ca211
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 16/16
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 22:43 UTC
   Application: TempestOS test
 
 9. References
@@ -621,7 +621,7 @@ Index and rate: C = D/d; k = G·d⁴/(8·D³·n_active) (compression, extension)
   Content hash: 327a985e18c79f75
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 22:43 UTC
   Application: TempestOS test
 
 9. References
@@ -829,7 +829,7 @@ Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each pl
   Content hash: 566fdcc0fad69d46
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 22:43 UTC
   Application: TempestOS test
 
 9. References
@@ -953,7 +953,7 @@ Equivalent load: P = X_1·F_r + Y_1·F_a when F_a/F_r ≤ e_lim (X_1 = 1, Y_1 = 
   Content hash: 53a676ddb446057a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 22:43 UTC
   Application: TempestOS test
 
 9. References
@@ -972,59 +972,65 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: TMP-001    Client: Client Co
 
 1. Scope and method
-Torque, speed and power a motor needs to move a load through a mechanism on a point-to-point cycle: the load reflected to the motor shaft, the acceleration from the motion profile, peak torque during acceleration, RMS torque over the cycle (thermal duty), peak speed, inertia ratio, and a check of a candidate motor's rated and peak torque and speed with a safety margin. A rotary load that runs continuously (a pump, a fan) is sized instead from its steady torque and speed and a run-up time.
-Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2π i) (screw); D/(2 i) (belt); D_p/(2 i) (rack). Load inertia reflected to the motor through a linear mechanism: J_refl = m k²/η. Load torque at the motor through a linear mechanism: T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p. Reflected inertia and torque of a rotary load through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η). Move profile, trapezoidal 1/3–1/3–1/3 (adjustable): v_pk = s/(t_move − t_acc); a = v_pk/t_acc. Move profile, S-curve (sine acceleration, same peak speed): a_pk = (π/2) a_trap. Torque to accelerate the total inertia, and the peak torque: T_acc = J_total α; T_pk = T_acc + T_load; deceleration T_dec = −T_acc + T_load; the peak check is on the larger magnitude, SF·max(|T_pk|, |T_dec|) ≤ T_peak, and the braking power is P_brake = max(0, −T_dec·ω_pk). Design torque for a coupling or any part downstream that must carry what the drive can deliver, on the basis the owner chooses (T_basis): the load peak T_design = max(|T_pk|, |T_dec|) (default; T_pk alone in continuous duty, where there is no deceleration), the motor peak T_design = T_peak, a service factor on the rated torque T_design = SF_c·T_rated, or a protective limit T_design = T_lim (a torque limiter or a drive setting). Holding torque in the dwell of a linear mechanism that is not held by a brake: T_hold = m g sin θ·k (efficiency not credited: it is a torque to stand still); it is part of the RMS torque for the whole dwell. Alternating torque amplitude of a point-to-point cycle about T_load, for a shaft's fatigue: T_alt = (T_pk − T_dec)/2 (0 in continuous duty). Torque behind the ratio on the output shaft of a rotary mechanism: T_out = T·i·η (mean, alternating and peak), n_out = n_pk/i. Peak axial thrust of a ball screw on its support bearings: F_ax_pk = F_load + m a_pk (0 for other mechanisms). RMS (thermal) torque over the whole cycle, dwell included: T_rms = √(Σ T_i² t_i / t_cycle), the dwell at T_hold. RMS mechanical power over the cycle, the thermal-equivalent continuous power a supply sees (regeneration counts as power; the instantaneous peak P_pk is not a continuous demand), trapezoidal profile: P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}; for the S-curve the acceleration term becomes t_acc·[(3/4) T_load² + (5/16) T_acc²]. Continuous rotary duty (a pump or fan), speed at the motor: ω = 2π n_L i/60; n_pk = n_L i. Continuous rotary duty, load torque and RMS torque: T_load = T_L/(i η); T_rms = T_load. Peak torque during the run-up, with full load throughout (conservative): T_pk = J_total ω/t_start + T_load. Continuous power: P_cont = T_load ω; P_rms = P_cont; continuous duty needs the steady load torque T_L (blank or zero is refused: it would size the motor for no load). Rated shaft power of the candidate motor, from its rated torque and its rated speed n_rated (not the running speed), the shaft power its supply must be sized for; without n_rated there is no P_rated and the sheet warns: P_rated = T_rated·2π n_rated/60; check P_cont ≤ P_rated, u_power = P_cont/P_rated.
+Calculates the torque, speed and power a motor needs to move a load through a mechanism, and checks a candidate motor against them. A continuously running rotary load is sized from its steady torque, speed and run-up time.
+Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in metres per motor radian; J_refl = m k²/η; T_load = F k/η, with F = m g (sin θ + μ cos θ) + F_p Rotary mechanism through a gearbox: J_refl = J_L/(i² η); T_load = T_L/(i η) Move profile: trapezoidal v_pk = s/(t_move − t_acc), a = v_pk/t_acc; S-curve (sine acceleration, same peak speed) a_pk = (π/2) a_trap Peak torque: T_acc = J_total α; T_pk = T_acc + T_load; T_dec = −T_acc + T_load; the check is SF·max(|T_pk|, |T_dec|) ≤ T_peak; braking power P_brake = max(0, −T_dec·ω_pk) Thermal duty: T_rms = √(Σ T_i² t_i / t_cycle) over the whole cycle, the dwell at T_hold = m g sin θ·k for a linear mechanism not held by a brake; P_rms = ω_pk √{[t_acc·(2/3)(T_load² + T_acc²) + T_load² t_const]/t_cycle}, and for the S-curve the acceleration term is t_acc·[(3/4) T_load² + (5/16) T_acc²] Output side and design torque: T_alt = (T_pk − T_dec)/2 (0 in continuous duty); T_out = T·i·η and n_out = n_pk/i for a rotary mechanism; F_ax_pk = F_load + m a_pk for a ball screw; T_design on the basis T_basis (load peak max(|T_pk|, |T_dec|), T_peak, SF_c·T_rated or T_lim) Continuous rotary duty: ω = 2π n_L i/60, n_pk = n_L i; T_load = T_L/(i η), T_rms = T_load; T_pk = J_total ω/t_start + T_load; P_cont = T_load ω, P_rms = P_cont Rated power of the candidate motor: P_rated = T_rated·2π n_rated/60 (without n_rated there is no P_rated); the check is P_cont ≤ P_rated, u_power = P_cont/P_rated
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   mechanism | Mechanism | gearbox rotary |  | spec: SPEC-TMP-04 §6 (cam drive) | any
-  i | Gear ratio i (motor : output, 1 = none) | 9.6 |  | spec: SPEC-TMP-04 §6 (cam drive) | 1 … 1000
-  eta | Mechanism efficiency (overall) | 0.9 |  | spec: SPEC-TMP-04 §6 (cam drive) | 0.3 … 1
-  p_screw | Screw lead (per revolution of the screw) | 10 | mm | assumption: Sheet default value; no project figure given. | 1 … 100 mm
-  J_mech | Transmission inertia referred to the motor shaft (screw, pulleys, gearbox, coupling) | 0.0002 | kg·m² | spec: SPEC-TMP-04 §6 (cam drive) | 0 … 10 kg·m²
-  m | Moved mass (linear mechanisms) | 50 | kg | assumption: Sheet default value; no project figure given. | 0 … 100000 kg
-  mu | Friction coefficient (guide / bearing) | 0.1 |  | assumption: Sheet default value; no project figure given. | 0 … 1
-  theta | Incline from horizontal (+ moving uphill) | 0 | ° | assumption: Sheet default value; no project figure given. | -90 … 90 °
-  F_p | Process force opposing the move (linear) | 0 | N | assumption: Sheet default value; no project figure given. | 0 … 1000000 N
-  J_L | Load inertia at the output (rotary mechanisms) | 0.05 | kg·m² | spec: SPEC-TMP-04 §6 (cam drive) | 0 … 10000 kg·m²
-  brake | A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor | no |  | assumption: Sheet default value; no project figure given. | any
-  T_L | Constant load torque at the output (rotary; continuous duty needs it: blank or zero is refused) | 4.81616 | N·m | link: Tamper cam rev A · T_rms_in | 0 … 100000 N·m
   duty_mode | Duty (point-to-point move cycle, or continuous rotary running with a run-up) | continuous |  | spec: SPEC-TMP-04 §6 (cam drive) | any
-  n_L | Load speed at the output (continuous duty) | 150 | rpm | link: Tamper cam rev A · n_in | 1 … 100000 rpm
-  t_start | Run-up time to full speed (continuous duty) | 2 | s | spec: SPEC-TMP-04 §6 (cam drive) | 0.1 … 600 s
   profile | Motion profile | trapezoidal |  | assumption: Sheet default value; no project figure given. | any
+  T_basis | Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter | Load peak (T_pk) |  | assumption: Sheet default value; no project figure given. | any
+  brake | A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor | no |  | assumption: Sheet default value; no project figure given. | any
+  J_mech | Transmission inertia referred to the motor shaft (screw, pulleys, gearbox, coupling) | 0.0002 | kg·m² | spec: SPEC-TMP-04 §6 (cam drive) | 0 … 10 kg·m²
+  p_screw | Screw lead (per revolution of the screw) | 10 | mm | assumption: Sheet default value; no project figure given. | 1 … 100 mm
+  theta | Incline from horizontal (+ moving uphill) | 0 | ° | assumption: Sheet default value; no project figure given. | -60 … 90 °
+  F_p | Process force opposing the move (linear) | 0 | N | assumption: Sheet default value; no project figure given. | 0 … 1000000 N
+  T_L | Constant load torque at the output (rotary; continuous duty needs it, and a zero value is refused) | 4.81616 | N·m | link: Tamper cam rev A · T_rms_in | 0 … 100000 N·m
+  m | Moved mass (linear mechanisms) | 50 | kg | assumption: Sheet default value; no project figure given. | 0 … 100000 kg
+  J_L | Load inertia at the output (rotary mechanisms) | 0.05 | kg·m² | spec: SPEC-TMP-04 §6 (cam drive) | 0 … 10000 kg·m²
+  i | Gear ratio (motor : output, 1 = none) | 9.6 |  | spec: SPEC-TMP-04 §6 (cam drive) | 1 … 1000
+  eta | Mechanism efficiency (overall) | 0.9 |  | spec: SPEC-TMP-04 §6 (cam drive) | 0.3 … 1
+  mu | Friction coefficient (guide / bearing) | 0.1 |  | assumption: Sheet default value; no project figure given. | 0 … 1
+  SF | Safety factor on torque | 1.25 |  | assumption: Sheet default value; no project figure given. | 1 … 3
+  J_ratio_max | Inertia ratio limit (load : motor), warning | 10 |  | assumption: Sheet default value; no project figure given. | 1 … 100
   s | Move distance (linear: m; rotary: output revolutions) | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.0001 … 10000
   t_move | Move time | 0.5 | s | assumption: Sheet default value; no project figure given. | 0.01 … 3600 s
   f_acc | Acceleration (and deceleration) fraction of the move time | 0.333333 |  | assumption: Sheet default value; no project figure given. | 0.05 … 0.5
   t_dwell | Dwell between moves | 0.5 | s | assumption: Sheet default value; no project figure given. | 0 … 3600 s
+  n_L | Load speed at the output (continuous duty) | 150 | rpm | link: Tamper cam rev A · n_in | 1 … 100000 rpm
+  t_start | Run-up time to full speed (continuous duty) | 2 | s | spec: SPEC-TMP-04 §6 (cam drive) | 0.1 … 600 s
   J_motor | Candidate motor rotor inertia | 0.0005 | kg·m² | spec: SPEC-TMP-04 §6 (cam drive) | 1e-7 … 10 kg·m²
   T_rated | Candidate motor continuous (rated) torque | 1 | N·m | spec: SPEC-TMP-04 §6 (cam drive) | 0.01 … 100000 N·m
   T_peak | Candidate motor peak torque | 3 | N·m | spec: SPEC-TMP-04 §6 (cam drive) | 0.01 … 100000 N·m
-  n_rated | Candidate motor rated (nameplate) speed, with the rated torque the rated power P_rated = T_rated·ω_rated (leave blank if not known: there is then no P_rated) | 1440 | rpm | spec: SPEC-TMP-04 §6 (cam drive) | 10 … 100000 rpm
-  T_basis | Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter | Load peak (T_pk) |  | assumption: Sheet default value; no project figure given. | any
   n_max | Candidate motor maximum speed | 3000 | rpm | spec: SPEC-TMP-04 §6 (cam drive) | 10 … 100000 rpm
-  SF | Safety margin on torque | 1.25 |  | assumption: Sheet default value; no project figure given. | 1 … 3
-  J_ratio_max | Inertia ratio limit (load : motor), warning | 10 |  | assumption: Sheet default value; no project figure given. | 1 … 100
+  n_rated | Candidate motor rated (nameplate) speed, which with the rated torque gives the rated power P_rated = T_rated·ω_rated (optional; blank = not known, so there is no P_rated) | 1440 | rpm | spec: SPEC-TMP-04 §6 (cam drive) | 10 … 100000 rpm
 
 3. Assumptions
-  A1. Rigid transmission; the mechanism efficiency applies to the driving direction and is also used in the deceleration phase (conservative for peak, slightly pessimistic for RMS). (Servo-sizing practice.)
-  A2. The friction force is Coulomb friction on the moved mass; viscous and breakaway friction are not modelled unless included in F_p. (Load model.)
-  A3. Continuous duty: the load torque is constant at the stated speed and the motor accelerates the whole inertia linearly to speed in t_start while carrying the full load torque (conservative); the move distance, move time, acceleration fraction, dwell and profile are ignored. (Run-up idealisation for pumps and fans.)
-  A4. The S-curve profile has sine-shaped acceleration over the same acceleration time, so its peak acceleration is π/2 times the trapezoidal value. (Jerk-limited profile idealisation.)
-  A5. p_screw (Screw lead (per revolution of the screw)) is taken as 10 mm. (Sheet default value; no project figure given.)
-  A6. m (Moved mass (linear mechanisms)) is taken as 50 kg. (Sheet default value; no project figure given.)
-  A7. mu (Friction coefficient (guide / bearing)) is taken as 0.1. (Sheet default value; no project figure given.)
-  A8. theta (Incline from horizontal (+ moving uphill)) is taken as 0 °. (Sheet default value; no project figure given.)
-  A9. F_p (Process force opposing the move (linear)) is taken as 0 N. (Sheet default value; no project figure given.)
-  A10. brake (A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor) is taken as no. (Sheet default value; no project figure given.)
+  A1. The transmission is rigid. (Servo-sizing practice.)
+  A2. The mechanism efficiency applies to the driving direction and is also used in the deceleration phase. (Servo-sizing practice.)
+  A3. This is conservative for the peak and slightly pessimistic for the RMS torque. (Servo-sizing practice.)
+  A4. The friction force is Coulomb friction on the moved mass. (Load model.)
+  A5. Viscous and breakaway friction are not modelled unless included in F_p. (Load model.)
+  A6. In continuous duty the load torque is constant at the stated speed. (Run-up idealisation for pumps and fans.)
+  A7. The motor accelerates the whole inertia linearly to speed in t_start while carrying the full load torque, which is conservative. (Run-up idealisation for pumps and fans.)
+  A8. Continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile. (Run-up idealisation for pumps and fans.)
+  A9. The S-curve profile has sine-shaped acceleration over the same acceleration time. (Jerk-limited profile idealisation.)
+  A10. The peak acceleration of the S-curve profile is π/2 times the trapezoidal value. (Jerk-limited profile idealisation.)
   A11. profile (Motion profile) is taken as trapezoidal. (Sheet default value; no project figure given.)
-  A12. s (Move distance (linear: m; rotary: output revolutions)) is taken as 0.5. (Sheet default value; no project figure given.)
-  A13. t_move (Move time) is taken as 0.5 s. (Sheet default value; no project figure given.)
-  A14. f_acc (Acceleration (and deceleration) fraction of the move time) is taken as 0.333333. (Sheet default value; no project figure given.)
-  A15. t_dwell (Dwell between moves) is taken as 0.5 s. (Sheet default value; no project figure given.)
-  A16. T_basis (Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter) is taken as Load peak (T_pk). (Sheet default value; no project figure given.)
-  A17. SF (Safety margin on torque) is taken as 1.25. (Sheet default value; no project figure given.)
-  A18. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sheet default value; no project figure given.)
+  A12. T_basis (Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter) is taken as Load peak (T_pk). (Sheet default value; no project figure given.)
+  A13. brake (A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor) is taken as no. (Sheet default value; no project figure given.)
+  A14. p_screw (Screw lead (per revolution of the screw)) is taken as 10 mm. (Sheet default value; no project figure given.)
+  A15. theta (Incline from horizontal (+ moving uphill)) is taken as 0 °. (Sheet default value; no project figure given.)
+  A16. F_p (Process force opposing the move (linear)) is taken as 0 N. (Sheet default value; no project figure given.)
+  A17. m (Moved mass (linear mechanisms)) is taken as 50 kg. (Sheet default value; no project figure given.)
+  A18. mu (Friction coefficient (guide / bearing)) is taken as 0.1. (Sheet default value; no project figure given.)
+  A19. SF (Safety factor on torque) is taken as 1.25. (Sheet default value; no project figure given.)
+  A20. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sheet default value; no project figure given.)
+  A21. s (Move distance (linear: m; rotary: output revolutions)) is taken as 0.5. (Sheet default value; no project figure given.)
+  A22. t_move (Move time) is taken as 0.5 s. (Sheet default value; no project figure given.)
+  A23. f_acc (Acceleration (and deceleration) fraction of the move time) is taken as 0.333333. (Sheet default value; no project figure given.)
+  A24. t_dwell (Dwell between moves) is taken as 0.5 s. (Sheet default value; no project figure given.)
 
 4. Working
   [19] k = 1 / i
@@ -1101,14 +1107,14 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
         Output shaft speed
   [39] P_cont = T_load * omega_pk
       = 0.55743 N·m × 150.8 rad/s
-      = 84.058 W
+      = 0.084058 kW
         Continuous shaft power at the motor
   [41] P_rated = T_rated * n_rated
       = 1 N·m × 1440 rpm
-      = 150.8 W
+      = 0.1508 kW
         Rated (nameplate) shaft power of the candidate motor: its rated torque times its rated speed
   [42] u_power = P_cont / P_rated
-      = 84.058 W / 150.8 W
+      = 0.084058 kW / 0.1508 kW
       = 0.55743
         Continuous shaft power against the rated power of the candidate motor
   [43] P_pk = T_pk * omega_pk
@@ -1120,30 +1126,38 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
       = 1440 rpm
         Mean motor speed: the steady running speed
   [45] P_rms = P_cont
-      = 84.058 W
+      = 0.084058 kW
       = 0.084058 kW
         RMS mechanical power: the steady running power (thermal-equivalent continuous power)
   [46] J_ratio = (J_refl + J_mech) / J_motor
       = (0.00060282 kg·m² + 0.0002 kg·m²) / 0.0005 kg·m²
       = 1.6056
         Inertia ratio (load : motor)
-  [47] u_peak = SF * T_pk / T_peak
+  [47] T_pk_sf = SF * T_pk
+      = 1.25 × 0.65566 N·m
+      = 0.81957 N·m
+        Peak torque with the safety factor
+  [48] T_rms_sf = SF * T_rms
+      = 1.25 × 0.55743 N·m
+      = 0.69678 N·m
+        RMS torque with the safety factor
+  [49] u_peak = SF * T_pk / T_peak
       = 1.25 × 0.65566 N·m / 3 N·m
       = 0.27319
-        Peak torque utilisation with safety margin
-  [48] u_rms = SF * T_rms / T_rated
+        Peak torque utilisation with safety factor
+  [50] u_rms = SF * T_rms / T_rated
       = 1.25 × 0.55743 N·m / 1 N·m
       = 0.69678
-        Continuous torque utilisation with safety margin
-  [49] u_speed = n_pk / n_max
+        Continuous torque utilisation with safety factor
+  [51] u_speed = n_pk / n_max
       = 1440 rpm / 3000 rpm
       = 0.48
         Speed utilisation
-  [50] u_rated_speed = n_pk / n_rated
+  [52] u_rated_speed = n_pk / n_rated
       = 1440 rpm / 1440 rpm
       = 1
         Motor speed over the rated (nameplate) speed
-  [51] duty = T_rms / T_rated
+  [53] duty = T_rms / T_rated
       = 0.55743 N·m / 1 N·m
       = 0.55743
         Thermal duty (without margin)
@@ -1168,8 +1182,8 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
   n_mean = 1440 rpm    Mean motor speed (the steady speed)
   P_pk = 0.09887 kW    Peak power
   P_brake = 0 kW    Peak braking power
-  P_cont = 84.06 W    Continuous power
-  P_rated = 150.8 W    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
+  P_cont = 0.08406 kW    Continuous power
+  P_rated = 0.1508 kW    Rated (nameplate) power of the candidate motor, T_rated·ω_rated
   P_rms = 0.08406 kW    RMS power (continuous equivalent)
   J_ratio = 1.6056    Inertia ratio
   duty = 0.55743    Thermal duty
@@ -1182,26 +1196,25 @@ Motor-to-load ratio of a linear mechanism, in metres per motor radian: k = p/(2�
 
 6. Checks (governing first)
   PASS  Motor speed against the rated speed: 1440 rpm vs 1440 rpm  utilisation 1.00
-  PASS  RMS torque SF·T_rms ≤ T_rated: u_rms = 0.70 vs u_rms ≤ 1  utilisation 0.70
-  PASS  Rated power P_cont ≤ P_rated: u_power = 0.56 vs u_power ≤ 1  utilisation 0.56
-  PASS  Speed n_pk ≤ n_max: u_speed = 0.48 vs u_speed ≤ 1  utilisation 0.48
-  PASS  Peak torque SF·T_pk ≤ T_peak: u_peak = 0.27 vs u_peak ≤ 1  utilisation 0.27
+  PASS  RMS torque with the safety factor against the rated torque: 0.6968 N·m vs 1 N·m  utilisation 0.70
+  PASS  Continuous power against the rated power: 0.08406 kW vs 0.1508 kW  utilisation 0.56
+  PASS  Peak speed against the maximum speed: 1440 rpm vs 3000 rpm  utilisation 0.48
+  PASS  Peak torque with the safety factor against the motor peak torque: 0.8196 N·m vs 3 N·m  utilisation 0.27
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are J_motor, T_rated, T_peak, n_rated, n_max (Candidate motor rating). Enter each as one so its source, edition and licence travel with it.  [record]
   WARNING  duty_mode: continuous duty ignores the move distance, move time, acceleration fraction, dwell and profile.  [continuous-ignored]
 
 8. Verification
-  Template: elec.motor-sizing@1.10.0
-  Content hash: 3989917de380d03f
+  Template: elec.motor-sizing@1.11.0
+  Content hash: 2ef4f6484897f9f6
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 22:43 UTC
   Application: TempestOS test
 
 9. References
-  1. Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection — Load torque, inertia referred to the motor, duty cycles
-  2. Manufacturer servo-sizing guides (Kollmorgen, Parker) — Reflected inertia, RMS torque, inertia ratio practice
+  1. Hughes & Drury, Electric Motors and Drives Ch. on motor and drive selection, 5th ed. (edition to be checked) — Load torque, inertia referred to the motor, duty cycles
 
 
 CALCULATION SHEET — ISSUED
@@ -1213,29 +1226,17 @@ Checker: J. Reviewer    Checked: 2026-10-26
 Issued: 2026-10-26    Issue: TMP-001    Client: Client Co
 
 1. Scope and method
-One circuit: the design current, the smallest preferred device rating that carries it, the smallest conductor whose tabulated current-carrying capacity (your own record) carries that rating once the ambient, grouping, installation and semi-enclosed-fuse factors are applied, and the overload coordination checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z. The context (machine wiring or installation) changes the clause citations and, for a gG fuse, MCCB or MPCB entered without I₂, whether the I₂ condition may be deemed satisfied (BS 7671 installation) or I₂ must be entered (machine wiring); every other number is the same in both contexts.
-Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b Protective device rating: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b Fuse factor: C_c = 0.725 for a semi-enclosed fuse (1.45/2, derived), else 1 Required tabulated capacity: I_t,req = I_n/(C_a·C_g·C_i·C_c); optional derived C_a = √[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table) Conductor cross-section: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived) Carrying capacity: I_z = I_t·C_a·C_g·C_i Device and conductor coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; I₂ = 2·I_n by default for a semi-enclosed fuse; an entered I₂ (datasheet) is always checked; in the BS 7671 installation context a gG fuse to BS 88 (and an MCCB or MPCB entered without I₂, taken as I₂ ≤ 1.45·I_n) has the I₂ condition deemed satisfied when I_n ≤ I_z; in the machine-wiring context (IEC 60269-1 gG fuses have I₂ = 1.6·I_n, not 1.45·I_n) I₂ must be entered Device code: 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB (carried to E5 so the fault check uses the device chosen here)
+Calculates the design current, the smallest preferred device rating and the smallest conductor whose tabulated capacity carries that rating. It checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z, using your own capacity and rating records.
+Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b Protective device rating: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b Fuse factor: C_c = 0.725 for a semi-enclosed fuse (1.45/2, derived), else 1 Required tabulated capacity: I_t,req = I_n/(C_a·C_g·C_i·C_c); optional derived C_a = √[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table) Conductor cross-section: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived) Carrying capacity: I_z = I_t·C_a·C_g·C_i Device and conductor coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; I₂ = 2·I_n by default for a semi-enclosed fuse; an entered I₂ (datasheet) is always checked; in the BS 7671 installation context a gG fuse to BS 88 (and an MCCB or MPCB entered without I₂, taken as I₂ ≤ 1.45·I_n) has the I₂ condition deemed satisfied when I_n ≤ I_z; in the machine-wiring context (IEC 60269-1 gG fuses have I₂ = 1.6·I_n, not 1.45·I_n) I₂ must be entered Device code: 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB (carried to fault-protection so the fault check uses the device chosen here)
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   context | Design context (changes clause citations and the scope note only) | BS EN 60204-1 machine wiring |  | assumption: Sheet default value; no project figure given. | any
   supply | Supply | three-phase |  | assumption: Sheet default value; no project figure given. | any
-  P | Rated output (shaft) power; η converts it to input (DC: electrical power drawn, η not applied) | 0.150796 | kW | link: Cam drive motor rev A · P_rated | 0.01 … 500 kW
-  U | Supply voltage (line voltage for three-phase) | 400 | V | spec: SPEC-TMP-04 §7 (power supply) | 12 … 1000 V
-  cos_phi | Power factor (not used for DC) | 0.8 |  | spec: SPEC-TMP-04 §7 (power supply) | 0.5 … 1
-  eta | Efficiency (not used for DC) | 0.8 |  | spec: SPEC-TMP-04 §7 (power supply) | 0.5 … 1
-  L | Circuit length (carried to the voltage-drop calculation) | 15 | m | spec: SPEC-TMP-04 §7 (power supply) | 0.1 … 500 m
-  theta_a | Ambient temperature | 30 | °C | assumption: Sheet default value; no project figure given. | -10 … 70 °C
-  insulation | Insulation | PVC 70 °C |  | spec: SPEC-TMP-04 §7 (power supply) | any
-  method | Installation method key (descriptive only, e.g. B2, C, E) | C |  | spec: SPEC-TMP-04 §7 (power supply) | any
-  N_g | Grouped circuits | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 20
-  system | Conductor system (AWG: geometry only, no AWG capacities are supplied) | metric |  | assumption: Sheet default value; no project figure given. | any
   device | Protective device | MCB type C |  | spec: SPEC-TMP-04 §7 (power supply) | any
-  C_a | Ambient correction factor (1 does not apply the ambient: enter the factor for θ_a from your licensed table) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1.5
-  C_g | Grouping correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
-  C_i | Thermal insulation correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
-  derive_Ca | Derive C_a from the temperatures instead of the entered factor | no |  | assumption: Sheet default value; no project figure given. | any
-  theta_ref | Reference ambient temperature for the derived C_a | 30 | °C | assumption: Sheet default value; no project figure given. | 0 … 60 °C
+  insulation | Insulation | PVC 70 °C |  | spec: SPEC-TMP-04 §7 (power supply) | any
+  system | Conductor system (AWG: geometry only, no AWG capacities are supplied) | metric |  | assumption: Sheet default value; no project figure given. | any
+  method | Installation method key (descriptive only, e.g. B2, C, E) | C |  | spec: SPEC-TMP-04 §7 (power supply) | any
   ratings | Preferred device ratings | 9 row(s) |  | record: SYNTHETIC device ratings (test values, not a manufacturer table) — Synthetic test data, not from any catalogue, n/a, invented values for the worked example rev 1 | any
   ratings[1] |  | I_n = 6 A |  |  | 
   ratings[2] |  | I_n = 10 A |  |  | 
@@ -1252,27 +1253,46 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
   ampacity[3] |  | CSA = 4 mm²; I_t = 24.1 A |  |  | 
   ampacity[4] |  | CSA = 6 mm²; I_t = 31.9 A |  |  | 
   ampacity[5] |  | CSA = 10 mm²; I_t = 44.6 A |  |  | 
+  L | Circuit length (carried to the voltage-drop calculation) | 15 | m | spec: SPEC-TMP-04 §7 (power supply) | 1 … 300 m
+  P | Rated output (shaft) power; η converts it to input (DC: electrical power drawn, η not applied) | 0.150796 | kW | link: Cam drive motor rev A · P_rated | 0.1 … 200 kW
+  U | Supply voltage (line voltage for three-phase) | 400 | V | spec: SPEC-TMP-04 §7 (power supply) | 12 … 690 V
+  cos_phi | Power factor (not used for DC) | 0.8 |  | spec: SPEC-TMP-04 §7 (power supply) | 0.6 … 1
+  eta | Efficiency (not used for DC) | 0.8 |  | spec: SPEC-TMP-04 §7 (power supply) | 0.6 … 1
+  T_amb | Ambient temperature | 30 | °C | assumption: Sheet default value; no project figure given. | 0 … 60 °C
+  T_ref | Reference ambient temperature for the derived C_a | 30 | °C | assumption: Sheet default value; no project figure given. | 20 … 40 °C
+  N_g | Grouped circuits | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 10
+  C_a | Ambient correction factor (1 does not apply the ambient: enter the factor for T_amb from your licensed table) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1.3
+  C_g | Grouping correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.3 … 1
+  C_i | Thermal insulation correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.3 … 1
+  derive_Ca | Derive C_a from the temperatures instead of the entered factor | no |  | assumption: Sheet default value; no project figure given. | any
 
 3. Assumptions
-  A1. Every tabulated value (the capacities, the device ratings, the correction factors) is entered from the user's own licensed copy or a manufacturer datasheet; none ships with the calculator. (No table from a standard or a manufacturer is shipped.)
-  A2. The capacities in the table are for the installation method stated; the method key is descriptive and is not interpreted. (Records carry their source and edition.)
-  A3. A gG fuse to BS 88 is deemed to meet I₂ ≤ 1.45·I_z when I_n ≤ I_z only under BS 7671 (installation context); an IEC 60269-1 gG fuse has I₂ = 1.6·I_n, so in the machine-wiring context I₂ is entered from the datasheet. (BS 7671 reg. 433.1.201; IEC 60269-1.)
-  A4. The ambient, grouping and insulation factors are applied as a product; C_g is not looked up from the number of grouped circuits. (The count is carried to the sheet and warns when C_g = 1 with more than one circuit.)
-  A5. The optional derived C_a is an approximation for the temperature difference only and is labelled as such; compare it with the licensed table. (Derived, not tabulated.)
-  A6. C_c = 0.725 applies to a semi-enclosed fuse only: 1.45 divided by an assumed fusing factor of 2. (Derived.)
-  A7. AWG areas follow the geometry d = 0.127·92^((36 − n)/39) mm; no AWG capacity is supplied. (Derived.)
-  A8. DC circuits use I_b = P/U; the power factor and efficiency are not applied. (Method.)
-  A9. context (Design context (changes clause citations and the scope note only)) is taken as BS EN 60204-1 machine wiring. (Sheet default value; no project figure given.)
-  A10. supply (Supply) is taken as three-phase. (Sheet default value; no project figure given.)
-  A11. theta_a (Ambient temperature) is taken as 30 °C. (Sheet default value; no project figure given.)
-  A12. N_g (Grouped circuits) is taken as 1. (Sheet default value; no project figure given.)
-  A13. system (Conductor system (AWG: geometry only, no AWG capacities are supplied)) is taken as metric. (Sheet default value; no project figure given.)
-  A14. C_a (Ambient correction factor (1 does not apply the ambient: enter the factor for θ_a from your licensed table)) is taken as 1. (Sheet default value; no project figure given.)
-  A15. C_g (Grouping correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
-  A16. C_i (Thermal insulation correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
-  A17. derive_Ca (Derive C_a from the temperatures instead of the entered factor) is taken as no. (Sheet default value; no project figure given.)
-  A18. theta_ref (Reference ambient temperature for the derived C_a) is taken as 30 °C. (Sheet default value; no project figure given.)
-  A19. Machine wiring context (BS EN 60204-1): the conductor is sized for the protective device rating; the capacities and factors are the user's records for the installation method stated. (The context changes citations, and whether a gG fuse, MCCB or MPCB without I₂ may be deemed to meet I₂ ≤ 1.45·I_z (installation) or must have I₂ entered (machine wiring); no other number differs.)
+  A1. Every tabulated value is entered from the user's own licensed copy or a manufacturer datasheet. (No table from a standard or a manufacturer is shipped.)
+  A2. No table from a standard or a manufacturer ships with the calculator. (No table from a standard or a manufacturer is shipped.)
+  A3. The capacities in the table are for the installation method stated. (Records carry their source and edition.)
+  A4. The method key is descriptive and is not interpreted. (Records carry their source and edition.)
+  A5. A gG fuse is deemed to meet I₂ ≤ 1.45·I_z when I_n ≤ I_z only under BS 7671. (BS 7671 reg. 433.1.201; IEC 60269-1.)
+  A6. An IEC 60269-1 gG fuse has I₂ = 1.6·I_n, so in the machine-wiring context I₂ is entered from the datasheet. (BS 7671 reg. 433.1.201; IEC 60269-1.)
+  A7. The ambient, grouping and insulation factors are applied as a product. (The count is carried to the sheet and warns when C_g = 1 with more than one circuit.)
+  A8. C_g is not looked up from the number of grouped circuits. (The count is carried to the sheet and warns when C_g = 1 with more than one circuit.)
+  A9. The optional derived C_a is an approximation for the temperature difference only. (Derived, not tabulated.)
+  A10. The derived C_a is labelled as an approximation, so compare it with the licensed table. (Derived, not tabulated.)
+  A11. C_c = 0.725 applies to a semi-enclosed fuse only: 1.45 divided by an assumed fusing factor of 2. (Derived.)
+  A12. AWG areas follow the geometry d = 0.127·92^((36 − n)/39) mm. (Derived.)
+  A13. No AWG capacity is supplied. (Derived.)
+  A14. DC circuits use I_b = P/U. (Method.)
+  A15. The power factor and the efficiency are not applied to a DC circuit. (Method.)
+  A16. context (Design context (changes clause citations and the scope note only)) is taken as BS EN 60204-1 machine wiring. (Sheet default value; no project figure given.)
+  A17. supply (Supply) is taken as three-phase. (Sheet default value; no project figure given.)
+  A18. system (Conductor system (AWG: geometry only, no AWG capacities are supplied)) is taken as metric. (Sheet default value; no project figure given.)
+  A19. T_amb (Ambient temperature) is taken as 30 °C. (Sheet default value; no project figure given.)
+  A20. T_ref (Reference ambient temperature for the derived C_a) is taken as 30 °C. (Sheet default value; no project figure given.)
+  A21. N_g (Grouped circuits) is taken as 1. (Sheet default value; no project figure given.)
+  A22. C_a (Ambient correction factor (1 does not apply the ambient: enter the factor for T_amb from your licensed table)) is taken as 1. (Sheet default value; no project figure given.)
+  A23. C_g (Grouping correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
+  A24. C_i (Thermal insulation correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
+  A25. derive_Ca (Derive C_a from the temperatures instead of the entered factor) is taken as no. (Sheet default value; no project figure given.)
+  A26. Machine wiring context (BS EN 60204-1): the conductor is sized for the protective device rating; the capacities and factors are the user's records for the installation method stated. (The context changes citations, and whether a gG fuse, MCCB or MPCB without I₂ may be deemed to meet I₂ ≤ 1.45·I_z (installation) or must have I₂ entered (machine wiring); no other number differs.)
 
 4. Working
   [14] I_b = P / (sqrt(3) * U * cos_phi * eta)
@@ -1291,9 +1311,9 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
       = MCB type C
       = 1
         Semi-enclosed fuse factor
-  [21] theta_op = 70 degC
+  [21] T_op = 70 degC
       = 70 degC
-        Conductor operating temperature for the insulation (→ E5 θ, E3 T_c)
+        Conductor operating temperature for the insulation
   [24] I_t_req = I_n / (C_a * C_g * C_i * C_c)    « BS EN 60204-1 cl. 12.4
       = 6 A / (1 × 1 × 1 × 1)
       = 6 A
@@ -1322,47 +1342,51 @@ Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) singl
       = 1.45 × 6 A
       = 8.7 A
         Conventional operating current (inherent 1.45 I_n)
-  [31] u_I2 = I2 / (1.45 * I_z)    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-      = 8.7 A / (1.45 × 12.3 A)
+  [31] I2_lim = 1.45 * I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+      = 1.45 × 12.3 A
+      = 17.835 A
+        Largest conventional operating current the conductor allows, 1.45 I_z
+  [32] u_I2 = I2 / I2_lim    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+      = 8.7 A / 17.835 A
       = 0.4878
         I₂ utilisation of 1.45 I_z
 
 5. Results
   I_b = 0.3401 A    Design current
-  I_n = 6 A    Rated current of the device
+  I_n = 6 A    Rated current of the device (governing)
   CSA = 1.500 mm²    Selected cross-section
   I_z = 12.30 A    Current-carrying capacity
   L = 15 m    Circuit length
-  theta_op = 70 °C    Conductor operating temperature for the insulation
+  T_op = 70 °C    Conductor operating temperature for the insulation
   device_code = 2    Protective device type code
   C_c = 1    Semi-enclosed fuse factor
   C_a = 1    Ambient factor
   I_t_req = 6 A    Required tabulated capacity
   I2 = 8.700 A    Conventional operating current
   u_Ib = 0.06    I_b / I_n
-  u_In = 0.49    I_n / I_z (governing)
+  u_In = 0.49    I_n / I_z
   u_I2 = 0.49    I₂ / (1.45 I_z)
 
 6. Checks (governing first)
-  PASS  Device rating within conductor capacity (I_n ≤ I_z): u_In = 0.49 vs u_In ≤ 1  utilisation 0.49  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-  PASS  Conventional operating current within 1.45·I_z (I₂ ≤ 1.45·I_z): u_I2 = 0.49 vs u_I2 ≤ 1  utilisation 0.49  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
-  PASS  Design current within device rating (I_b ≤ I_n): u_Ib = 0.06 vs u_Ib ≤ 1  utilisation 0.06  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Device rating against the conductor capacity: 6 A vs 12.30 A  utilisation 0.49  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Conventional operating current against 1.45 times the conductor capacity: 8.700 A vs 17.84 A  utilisation 0.49  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Design current against the device rating: 0.3401 A vs 6 A  utilisation 0.06  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
 
 7. Applicability
   WARNING  records: tabulated values not taken from a reference record are C_a, C_g, C_i (Cable correction factors). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: elec.conductor-sizing@1.3.0
-  Content hash: 549b80a7a72f70a5
+  Template: elec.conductor-sizing@1.4.0
+  Content hash: f8273ca4d4809d96
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 19:23 UTC
+  Test run: 2026-10-26 22:43 UTC
   Application: TempestOS test
 
 9. References
-  1. BS 7671:2018 (as amended) reg. 433.1.1 — Co-ordination of conductors and overload protective devices
-  2. BS 7671:2018 (as amended) reg. 523.1 — Current-carrying capacity of a cable
+  1. BS 7671:2018 reg. 433.1.1 — Co-ordination of conductors and overload protective devices
+  2. BS 7671:2018 reg. 523.1 — Current-carrying capacity of a cable
   3. BS EN 60204-1:2018 cl. 12.4 — Current-carrying capacity of conductors and cables in normal service
   4. BS EN 60204-1:2018 cl. 7.2 — Overcurrent protection
-  5. BS EN 60898-1 clause number to be checked — Circuit-breakers for overcurrent protection: conventional tripping current
-  6. BS 7671:2018 (as amended) reg. 433.1.201, 433.1.202 — Overload protection by gG fuses and semi-enclosed fuses: deemed conditions
+  5. BS EN 60898-1:2019 cl. (number to be checked) — Circuit-breakers for overcurrent protection: conventional tripping current
+  6. BS 7671:2018 reg. 433.1.201, 433.1.202 — Overload protection by gG fuses and semi-enclosed fuses: deemed conditions

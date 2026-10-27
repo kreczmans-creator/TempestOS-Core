@@ -80,6 +80,17 @@
     "ValueText": "4"
   },
   {
+    "Symbol": "T_op",
+    "Number": 70,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Thermoplastic insulation at full load.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "70"
+  },
+  {
     "Symbol": "U_0",
     "Number": 230,
     "Unit": "V",
@@ -175,17 +186,6 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "0.4"
-  },
-  {
-    "Symbol": "theta",
-    "Number": 70,
-    "Unit": "degC",
-    "Provenance": {
-      "Kind": "Assumption",
-      "Reference": "Thermoplastic insulation at full load.",
-      "IsSufficientToIssue": true
-    },
-    "ValueText": "70"
   },
   {
     "Symbol": "theta_f",

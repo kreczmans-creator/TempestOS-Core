@@ -13,6 +13,7 @@ A 40 m radial on a 16 A type C MCB. With Z_e = 0.8 Ω the loop reaches 1.403 Ω 
 | `Q_c` | 0.00345 J/(K*mm^3) | assumption: Copper volumetric heat capacity. |
 | `S_cpc` | 2.5 mm^2 | drawing: E-SCH-002 rev B |
 | `S_line` | 4 mm^2 | drawing: E-SCH-002 rev B |
+| `T_op` | 70 degC | assumption: Thermoplastic insulation at full load. |
 | `U_0` | 230 V | spec: Supply characteristics |
 | `Z_e` | 0.8 ohm | spec: DNO declared maximum for TN-S |
 | `alpha` | 0.00393 1/K | assumption: Copper temperature coefficient. |
@@ -22,7 +23,6 @@ A 40 m radial on a 16 A type C MCB. With Z_e = 0.8 Ω the loop reaches 1.403 Ω 
 | `k_R` | 1.125 | assumption: Cable standard maximum conductor resistance over the pure-copper resistivity (5 to 12 % higher); 1.125 covers the sizes used. |
 | `rho_20` | 0.000017241 ohm*mm | assumption: Annealed copper resistivity. |
 | `t_req` | 0.4 s | spec: Final circuit up to 32 A, TN system |
-| `theta` | 70 degC | assumption: Thermoplastic insulation at full load. |
 | `theta_f` | 160 degC | assumption: Thermoplastic limiting temperature. |
 | `theta_i` | 70 degC | assumption: Thermoplastic operating temperature. |
 
@@ -32,4 +32,4 @@ A 40 m radial on a 16 A type C MCB. With Z_e = 0.8 Ω the loop reaches 1.403 Ω 
 | `Z_s_max` | 1.36563 ohm | 1.36563 ohm | PASS |
 | `u_Zs` | 1.02766  | 1.02766  | PASS |
 
-Governing check: Disconnection achieved — FAIL. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Fault current against the disconnection current — FAIL. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

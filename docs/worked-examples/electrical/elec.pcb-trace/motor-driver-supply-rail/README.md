@@ -30,4 +30,4 @@ A 5 A motor supply rail on a 2 oz outer layer with 20 K allowed above 25 °C amb
 | `vdrop` | 54.0948 mV | 54.0948 mV | PASS |
 | `trace_Ploss` | 270.474 mW | 270.474 mW | PASS |
 
-Governing check: Trace width as drawn against the minimum for the rise — PASS (utilisation 0.36). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Minimum trace width against the width as drawn — PASS (utilisation 0.36). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -38,7 +38,7 @@ public sealed class ContainmentTests
         // Property: fill = Σ n_i·d_i² / D² (the π/4 cancels), for any cables and conduit.
         Gen.Select(Gen.Double[60, 120], Gen.Double[4, 12], Gen.Int[1, 4], Gen.Double[4, 12], Gen.Int[1, 4]).Sample((conduit, d1, n1, d2, n2) =>
         {
-            var r = Run(Cables(("A", d1, n1, 0.1, 100), ("B", d2, n2, 0.1, 100)), Q("D_c", conduit, "mm"), CalcInputValue.Of("f_max", 1));
+            var r = Run(Cables(("A", d1, n1, 0.1, 100), ("B", d2, n2, 0.1, 100)), Q("D_int", conduit, "mm"), CalcInputValue.Of("f_max", 1));
             var expected = (n1 * d1 * d1 + n2 * d2 * d2) / (conduit * conduit);
             return Math.Abs(r.OutputSi("fill") - expected) <= 1e-9 * expected;
         }, iter: 80);
@@ -96,11 +96,11 @@ public sealed class ContainmentTests
     {
         var tight = Run(Route(RS(5), RB(90, 100)), CalcInputValue.Of("mu", 0.3));
         Assert.Equal(1.2, tight.OutputSi("u_bend"), 12);
-        Assert.Contains(tight.Checks, k => k.Name.StartsWith("Bend radius", StringComparison.Ordinal) && !k.Passed);
+        Assert.Contains(tight.Checks, k => k.Name.StartsWith("Smallest bend radius needed", StringComparison.Ordinal) && !k.Passed);
 
         var exact = Run(Route(RS(5), RB(90, 120)), CalcInputValue.Of("mu", 0.3));
         Assert.Equal(1.0, exact.OutputSi("u_bend"), 12);
-        Assert.Contains(exact.Checks, k => k.Name.StartsWith("Bend radius", StringComparison.Ordinal) && k.Passed);
+        Assert.Contains(exact.Checks, k => k.Name.StartsWith("Smallest bend radius needed", StringComparison.Ordinal) && k.Passed);
 
         var mixed = Run(Cables(("Small", 6, 4, 0.1, 100), ("Large", 14, 1, 0.5, 300)), CalcInputValue.Of("n_bend", 10));
         Assert.Equal(0.14, mixed.OutputSi("R_min"), 12);
@@ -112,11 +112,11 @@ public sealed class ContainmentTests
         var noFriction = CalcRunner.Run(Cont, Defaults().With(new CalcInputValue("mu")));
         Assert.Contains(noFriction.Blocks, b => b.Message.StartsWith("mu: enter", StringComparison.Ordinal));
 
-        var noConduit = CalcRunner.Run(Cont, Defaults().With(new CalcInputValue("D_c")));
-        Assert.Contains(noConduit.Blocks, b => b.Message.StartsWith("D_c: enter", StringComparison.Ordinal));
+        var noConduit = CalcRunner.Run(Cont, Defaults().With(new CalcInputValue("D_int")));
+        Assert.Contains(noConduit.Blocks, b => b.Message.StartsWith("D_int: enter", StringComparison.Ordinal));
 
         var noTray = Run(CalcInputValue.Choice("cont_type", Trunking));
-        Assert.Contains(noTray.Blocks, b => b.Message.StartsWith("W_c: enter", StringComparison.Ordinal));
+        Assert.Contains(noTray.Blocks, b => b.Message.StartsWith("W_int: enter", StringComparison.Ordinal));
 
         var fractional = Run(CalcInputValue.Table("cables", [CalcRow.Of(("od", new CalcCell(10, "mm")), ("count", new CalcCell(2.5)), ("mass", new CalcCell(0.2, "kg/m")))]));
         Assert.Contains(fractional.Blocks, b => b.Message.StartsWith("cables[1].count: enter", StringComparison.Ordinal));
@@ -130,14 +130,14 @@ public sealed class ContainmentTests
     public void The_Cable_Limit_Is_N_Times_The_Weakest_Cable_Not_The_Sum_Of_The_Limits()
     {
         // H1: 2 × 700 N and 1 × 150 N cables share the pull equally; the 150 N cable carries T/3 and governs.
-        var mixed = Run(Cables(("Power", 12, 2, 0.6, 700), ("Control", 8, 1, 0.15, 150)), CalcInputValue.Choice("cont_type", Trunking), Q("W_c", 100, "mm"), Q("H_c", 50, "mm"),
+        var mixed = Run(Cables(("Power", 12, 2, 0.6, 700), ("Control", 8, 1, 0.15, 150)), CalcInputValue.Choice("cont_type", Trunking), Q("W_int", 100, "mm"), Q("H_int", 50, "mm"),
             CalcInputValue.Of("n_bend", 8), Route(RS(20), RB(90, 500), RS(30), RB(90, 600), RS(10)), Q("T_1", 100, "N"), CalcInputValue.Of("mu", 0.4));
         Assert.Equal(450, mixed.OutputSi("T_cab"), 9);
         Assert.Null(mixed.FindOutput("T_lim"));
         Assert.Equal(mixed.OutputSi("max_tension") / 450, mixed.OutputSi("u_T"), 12);
         Assert.Equal(mixed.OutputSi("max_tension") / 3 / 150, mixed.Steps.Single(st => st.Symbol == "u_Tc2").Result is ScalarValue sv ? sv.Si : double.NaN, 12);
         Assert.True(mixed.OutputSi("u_T") > 2);
-        Assert.Contains(mixed.Checks, k => k.Name.StartsWith("Pulling tension against the weakest", StringComparison.Ordinal) && !k.Passed);
+        Assert.Contains(mixed.Checks, k => k.Name.StartsWith("Pulling tension against the cable limit", StringComparison.Ordinal) && !k.Passed);
 
         // Identical cables: the same as the old sum.
         Assert.Equal(1200, Run().OutputSi("T_cab"), 9);
@@ -183,7 +183,7 @@ public sealed class ContainmentTests
     public void The_Direction_That_Passes_Every_Check_Is_Recommended_Even_With_Higher_Tension()
     {
         // As listed: 1166.9 N (lower) but 1716 N/m on the 600 mm bend against a 1500 N/m limit; reversed: 1281.1 N and 1010 N/m.
-        var r = Run(Cables(("Single", 20, 1, 1.0, 5000)), Q("D_c", 100, "mm"), CalcInputValue.Of("n_bend", 6),
+        var r = Run(Cables(("Single", 20, 1, 1.0, 5000)), Q("D_int", 100, "mm"), CalcInputValue.Of("n_bend", 6),
             Route(RS(20), RB(90, 1200), RS(40), RB(180, 600), RS(40)), CalcInputValue.Of("mu", 0.35), Q("T_1", 50, "N"), Q("P_lim", 1500, "N/m"));
         Assert.Equal(1166.9420719154186, r.OutputSi("T_max_a"), 8);
         Assert.Equal(1281.1417720539894, r.OutputSi("T_max_b"), 8);
@@ -194,7 +194,7 @@ public sealed class ContainmentTests
         Assert.All(r.Checks, k => Assert.True(k.Passed, k.Name));
 
         // With no sidewall limit, the lower tension wins again.
-        var free = Run(Cables(("Single", 20, 1, 1.0, 5000)), Q("D_c", 100, "mm"), CalcInputValue.Of("n_bend", 6),
+        var free = Run(Cables(("Single", 20, 1, 1.0, 5000)), Q("D_int", 100, "mm"), CalcInputValue.Of("n_bend", 6),
             Route(RS(20), RB(90, 1200), RS(40), RB(180, 600), RS(40)), CalcInputValue.Of("mu", 0.35), Q("T_1", 50, "N"));
         Assert.StartsWith("As listed", Direction(free), StringComparison.Ordinal);
     }
@@ -203,24 +203,24 @@ public sealed class ContainmentTests
     public void A_Cable_That_Does_Not_Fit_The_Containment_Fails_Whatever_The_Fill()
     {
         // One 25 mm cable in a 200 × 20 mm tray: fill is only 12 %, but the cable is deeper than the tray.
-        var tray = Run(Cables(("Big", 25, 1, 1.0, 1000)), CalcInputValue.Choice("cont_type", Trunking), Q("W_c", 200, "mm"), Q("H_c", 20, "mm"), CalcInputValue.Table("route", []));
+        var tray = Run(Cables(("Big", 25, 1, 1.0, 1000)), CalcInputValue.Choice("cont_type", Trunking), Q("W_int", 200, "mm"), Q("H_int", 20, "mm"), CalcInputValue.Table("route", []));
         Assert.True(tray.OutputSi("u_fill") < 1);
-        Assert.Contains(tray.Checks, k => k.Name.StartsWith("Largest cable fits", StringComparison.Ordinal) && !k.Passed);
+        Assert.Contains(tray.Checks, k => k.Name.StartsWith("Largest cable against", StringComparison.Ordinal) && !k.Passed);
         Assert.False(tray.Passed);
 
-        var conduit = Run(Cables(("Big", 25, 1, 1.0, 1000)), Q("D_c", 25, "mm"), CalcInputValue.Table("route", []));
-        Assert.Contains(conduit.Checks, k => k.Name.StartsWith("Largest cable fits", StringComparison.Ordinal) && !k.Passed);
+        var conduit = Run(Cables(("Big", 25, 1, 1.0, 1000)), Q("D_int", 25, "mm"), CalcInputValue.Table("route", []));
+        Assert.Contains(conduit.Checks, k => k.Name.StartsWith("Largest cable against", StringComparison.Ordinal) && !k.Passed);
 
-        Assert.Contains(Run().Checks, k => k.Name.StartsWith("Largest cable fits", StringComparison.Ordinal) && k.Passed);
+        Assert.Contains(Run().Checks, k => k.Name.StartsWith("Largest cable against", StringComparison.Ordinal) && k.Passed);
     }
 
     [Fact]
     public void Three_Equal_Cables_Near_The_Jam_Ratio_Warn()
     {
         // 3 × 10 mm, ratio 1.05·D/d: 3.15 in a 30 mm conduit may jam; 2.625 (25 mm) and 3.675 (35 mm) do not warn.
-        Assert.Contains(Run(Q("D_c", 30, "mm")).Notices, n => n.RuleId == "jam");
+        Assert.Contains(Run(Q("D_int", 30, "mm")).Notices, n => n.RuleId == "jam");
         Assert.DoesNotContain(Run().Notices, n => n.RuleId == "jam");
-        Assert.DoesNotContain(Run(Q("D_c", 35, "mm")).Notices, n => n.RuleId == "jam");
+        Assert.DoesNotContain(Run(Q("D_int", 35, "mm")).Notices, n => n.RuleId == "jam");
     }
 
     [Fact]

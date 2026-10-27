@@ -109,7 +109,7 @@ public sealed class PcbTraceTests
         Assert.Equal("input.I", current.RuleId);
         Assert.True(Run(CalcInputValue.Quantity("I", 40, "A")).IsBlocked);
         Assert.DoesNotContain(CalcInputValidator.Validate(Pcb.Template, With(CalcInputValue.Quantity("I", 35, "A"))), n => n.Severity == CalcNoticeSeverity.Block);
-        Assert.Contains(Pcb.Template.ApplicabilityRules, r => r.Id == "input.I" && r.Severity == CalcNoticeSeverity.Block && r.Effect == CalcRuleEffect.Unconservative);
+        Assert.Contains(Pcb.Template.ApplicabilityRules, r => r.Id == "I" && r.Severity == CalcNoticeSeverity.Block && r.Effect == CalcRuleEffect.Unconservative);
 
         // 15 A at a 10 K rise on 1 oz external copper needs w_min = [15/(0.048 x 10^0.44)]^(1/0.725)/1.378 mil = 12.585 mm (python3), beyond the 10 mm the fit was drawn for.
         var wide = Run(CalcInputValue.Quantity("I", 15, "A"), CalcInputValue.Quantity("dT", 10, "K"), CalcInputValue.Of("Cu_oz", 1), CalcInputValue.Quantity("w_act", 10, "mm"));
