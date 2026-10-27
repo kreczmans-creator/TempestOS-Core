@@ -294,10 +294,10 @@ public sealed class SealedSystemCalculator : ICalcCalculator
             c.Output(symbol, text);
 
         if (anySelected)
-            c.Check("Selected emitters against room heat (governing room)", "Phi_req_gov", "Phi_out_gov");
+            c.Check("Selected emitters against room heat (governing room)", "Phi_req_gov", "Phi_out_gov", resultSymbol: "u_emit");
 
         if (c.Has("V_vessel"))
-            c.Check("Selected vessel against minimum volume", "V_e", "V_vessel", "CIBSE Guide B1 §1.4");
+            c.Check("Selected vessel against minimum volume", "V_e", "V_vessel", "CIBSE Guide B1 §1.4", resultSymbol: "u_vessel");
     }
 
     /// <summary>

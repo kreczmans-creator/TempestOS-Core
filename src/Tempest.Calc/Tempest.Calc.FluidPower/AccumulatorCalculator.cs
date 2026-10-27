@@ -444,11 +444,11 @@ public sealed class AccumulatorCalculator : ICalcCalculator
                 ? $"{F(c.Si("bar_litres") / 100.0)} bar·L is below 250 bar·L: the exception may apply; confirm with the competent person."
                 : $"{F(c.Si("bar_litres") / 100.0)} bar·L is at or above 250 bar·L: the exception does not apply; PSSR and PED / UK PER duties follow."));
 
-        c.Check("Pre-charge against the p0/p1 rule", "pa_0", "p0_max", "accumulator.rules record");
-        c.Check("Pressure ratio against the p2/p0 rule", "p_ratio", "r_p", "accumulator.rules record");
+        c.Check("Pre-charge against the p0/p1 rule", "pa_0", "p0_max", "accumulator.rules record", resultSymbol: "u_r0");
+        c.Check("Pressure ratio against the p2/p0 rule", "p_ratio", "r_p", "accumulator.rules record", resultSymbol: "u_rp");
 
         if (hasLoad)
-            c.Check("Load pressure against the lowest working pressure", "p_load", "p1_g");
+            c.Check("Load pressure against the lowest working pressure", "p_load", "p1_g", resultSymbol: "u_load");
 
         if (sizes.Count > 0 && !sizeCovered)
             c.CheckCondition("Required volume against the largest listed size", false, $"V0 = {F(c.Si("V0") * 1e3)} L", $"largest listed {F(sizes[^1] * 1e3)} L", "V0");

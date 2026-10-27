@@ -227,11 +227,12 @@ public sealed class BeamFormulasCalculator : ICalcCalculator
             c.Assign("u_stress", "sigma_b / sigma_allow", null, "Bending stress utilisation");
             c.Output("M_abs", "Largest bending moment, either sign");
             c.Output("sigma_b", "Maximum bending stress");
-            c.Check("Bending stress against allowable stress", "sigma_b", "sigma_allow", "Roark Ch. 8");
+            c.Check("Bending stress against allowable stress", "sigma_b", "sigma_allow", "Roark Ch. 8", resultSymbol: "u_stress");
 
             // A span below ten times the section depth is a deep beam, where shear deformation adds to the deflection this sheet reports: the check fails there.
+            // It is a yes/no check with no ratio, so it never governs over the stress and deflection checks (C-2 integration): a passing geometry check is not a utilisation.
             c.Assign("L_slender", "20 * y_c", "m", "Shortest span of a beam this deep that is not a deep beam");
-            c.Check("Shortest span of a beam that is not deep against the span", "L_slender", "L", "Roark Ch. 8");
+            c.CheckCondition("Shortest span of a beam that is not deep against the span", c.Si("L") >= c.Si("L_slender"), c.Scalar("L_slender").Format(), c.Scalar("L").Format(), "L_slender", "Roark Ch. 8");
 
             if (c.Si("L") / (2 * c.Si("y_c")) < 10)
                 c.Warn("deep-beam", "y_c: L / (2·y_c) is below 10, a deep beam. Shear deformation adds to the deflection this sheet reports.");
@@ -241,7 +242,7 @@ public sealed class BeamFormulasCalculator : ICalcCalculator
         {
             c.Input("delta_limit");
             c.Assign("u_deflection", "abs(delta_max) / delta_limit", null, "Deflection utilisation");
-            c.Check("Deflection against the deflection limit", "delta_max", "delta_limit");
+            c.Check("Deflection against the deflection limit", "delta_max", "delta_limit", resultSymbol: "u_deflection");
         }
     }
 }

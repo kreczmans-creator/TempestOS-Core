@@ -424,19 +424,19 @@ public sealed class SpringCalculator : ICalcCalculator
         Surge(c);
         Fatigue(c, "tau_1", "tau_2", "S_su", shear: true);
 
-        c.Check("Shear stress at solid length against the permissible stress", "tau_c", "tau_perm", Part1);
+        c.Check("Shear stress at solid length against the permissible stress", "tau_c", "tau_perm", Part1, resultSymbol: "u_c");
 
         // A compression spring whose deflection at point 2 reaches the buckling deflection fails; one that is stable at any deflection has no buckling deflection to reach; a guided one is
         // not checked here (its assumption says so), so no pass is claimed for it.
         if (!guided && c.Session.Find("y_cr") is not null)
-            c.Check("Working deflection against the buckling deflection", "s_2", "y_cr", "Shigley 10th ed. Ch. 10, buckling");
+            c.Check("Working deflection against the buckling deflection", "s_2", "y_cr", "Shigley 10th ed. Ch. 10, buckling", resultSymbol: "u_b");
         else if (!guided)
             c.CheckCondition("Working deflection against the buckling deflection", true, "stable at any deflection", "λ_eff² < C₂′", "u_b", "Shigley 10th ed. Ch. 10, buckling");
 
-        c.Check("Working deflection against the travel to solid", "s_2", "s_c", Part1);
+        c.Check("Working deflection against the travel to solid", "s_2", "s_c", Part1, resultSymbol: "u_s");
 
         if (enSolid)
-            c.Check("Working deflection against the travel to the minimum length, keeping the coil clearance at L₂", "s_2", "s_n", Part1);
+            c.Check("Working deflection against the travel to the minimum length, keeping the coil clearance at L₂", "s_2", "s_n", Part1, resultSymbol: "u_n");
     }
 
     /// <summary>
@@ -560,9 +560,9 @@ public sealed class SpringCalculator : ICalcCalculator
 
         HookFatigue(c);
 
-        c.Check("Shear stress at working point 2 against the permissible stress", "tau_2", "tau_perm", Part2);
-        c.Check("Hook bending stress against the permissible stress", "sigma_A", "sigma_perm", Part2);
-        c.Check("Hook side-bend torsion stress against the permissible stress", "tau_B", "tau_perm", Part2);
+        c.Check("Shear stress at working point 2 against the permissible stress", "tau_2", "tau_perm", Part2, resultSymbol: "u_2");
+        c.Check("Hook bending stress against the permissible stress", "sigma_A", "sigma_perm", Part2, resultSymbol: "u_A");
+        c.Check("Hook side-bend torsion stress against the permissible stress", "tau_B", "tau_perm", Part2, resultSymbol: "u_B");
     }
 
     // ------------------------------------------------------------------
@@ -640,7 +640,7 @@ public sealed class SpringCalculator : ICalcCalculator
             c.Output(symbol, text);
 
         Fatigue(c, "sigma_1", "sigma_2", "Rm", shear: false);
-        c.Check("Bending stress at working point 2 against the permissible stress", "sigma_2", "sigma_perm", Part3);
+        c.Check("Bending stress at working point 2 against the permissible stress", "sigma_2", "sigma_perm", Part3, resultSymbol: "u_2");
     }
 
     // ------------------------------------------------------------------
@@ -745,7 +745,7 @@ public sealed class SpringCalculator : ICalcCalculator
         c.Assign("u_fat_B", "n_f_req * u_f_B", null, "Hook side-bend fatigue utilisation against the required factor");
         c.Output("u_f_B", "Goodman utilisation, hook side bend");
         c.Output("n_f_B", "Goodman safety factor, hook side bend");
-        c.Check("Goodman fatigue of the hook side-bend torsion against the required safety factor", "n_f_req", "n_f_B", "Goodman, as M4");
+        c.Check("Goodman fatigue of the hook side-bend torsion against the required safety factor", "n_f_req", "n_f_B", "Goodman, as M4", resultSymbol: "u_fat_B");
 
         if (!c.Has("S_e_b"))
         {
@@ -762,7 +762,7 @@ public sealed class SpringCalculator : ICalcCalculator
         c.Assign("u_fat_A", "n_f_req * u_f_A", null, "Hook bending fatigue utilisation against the required factor");
         c.Output("u_f_A", "Goodman utilisation, hook bending");
         c.Output("n_f_A", "Goodman safety factor, hook bending");
-        c.Check("Goodman fatigue of the hook bending against the required safety factor", "n_f_req", "n_f_A", "Goodman, as M4");
+        c.Check("Goodman fatigue of the hook bending against the required safety factor", "n_f_req", "n_f_A", "Goodman, as M4", resultSymbol: "u_fat_A");
     }
 
     /// <summary>The Goodman check on the stresses at the two working points. The endurance strength has no default: a blank one is refused before the run.</summary>
@@ -794,7 +794,7 @@ public sealed class SpringCalculator : ICalcCalculator
         c.Assign("u_fat", "n_f_req * u_f", null, "Fatigue utilisation against the required factor");
         c.Output("u_f", "Goodman utilisation");
         c.Output("n_f", "Goodman safety factor");
-        c.Check(bodyOnly ? "Goodman fatigue of the body only against the required safety factor (the hooks have their own rows)" : "Goodman fatigue against the required safety factor", "n_f_req", "n_f", "Goodman, as M4");
+        c.Check(bodyOnly ? "Goodman fatigue of the body only against the required safety factor (the hooks have their own rows)" : "Goodman fatigue against the required safety factor", "n_f_req", "n_f", "Goodman, as M4", resultSymbol: "u_fat");
     }
 
     private static string F(double v) => double.IsFinite(v) ? CalcValue.FormatNumber(v, 5) : "—";

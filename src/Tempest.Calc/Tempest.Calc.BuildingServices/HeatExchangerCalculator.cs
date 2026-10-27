@@ -253,14 +253,14 @@ public sealed class HeatExchangerCalculator : ICalcCalculator
         c.Output("dT_lm", "Log-mean temperature difference");
         c.Output("Q_lmtd", "Duty by the LMTD method");
         c.Output("F_corr", "LMTD correction factor");
-        c.Check("Approach against minimum", "dT_min", "dT_app");
+        c.Check("Approach against minimum", "dT_min", "dT_app", resultSymbol: "u_app");
 
         if (!sizing && c.Has("Q_req"))
         {
             c.Input("Q_req");
             c.Assign("u_duty", "Q_req / Phi", null, "Duty utilisation (required / achieved)");
             c.Output("u_duty", "Duty utilisation");
-            c.Check("Duty against required", "Q_req", "Phi");
+            c.Check("Duty against required", "Q_req", "Phi", resultSymbol: "u_duty");
         }
     }
 

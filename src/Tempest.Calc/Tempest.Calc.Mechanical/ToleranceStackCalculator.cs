@@ -374,7 +374,7 @@ public sealed class ToleranceStackCalculator : ICalcCalculator
                 if (cpk > 0)
                 {
                     c.Record("u_cpk", "cpk_target / cpk", $"{CalcValue.FormatNumber(cpkTarget)} / {CalcValue.FormatNumber(cpk)}", new ScalarValue(cpkTarget / cpk), "Capability utilisation");
-                    c.Check("C_pk against the requirement", "cpk_req", "cpk");
+                    c.Check("C_pk against the requirement", "cpk_req", "cpk", resultSymbol: "u_cpk");
                 }
                 else
                 {

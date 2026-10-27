@@ -125,6 +125,7 @@ public sealed class CalcRunContext
     private readonly HashSet<string> _failingCapacities = new(StringComparer.Ordinal);
     private readonly HashSet<string> _strictSymbols = new(StringComparer.Ordinal);
     private readonly Dictionary<string, bool> _utilisationVerdicts = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, (string Name, double Utilisation)> _resultSymbols = new(StringComparer.Ordinal);
 
     public CalcRunContext(ICalcSession session, CalcInputSet inputs, CalcTemplate template, CancellationToken cancellationToken)
     {
@@ -237,7 +238,9 @@ public sealed class CalcRunContext
     /// Records a utilisation check: demand/capacity, passed when utilisation ≤ 1 (within a hair of rounding). A failing check shows its demand rounded up and
     /// its capacity rounded down, so the two never print as equal or in the passing order (C2-21). <paramref name="resultSymbol"/> names the output the sheet
     /// marks as governing when this check governs (the utilisation the demand and the capacity give); it is the demand when it is not given, so a check
-    /// whose demand is an input (a required life against the life achieved) can still mark the utilisation output it belongs to.
+    /// whose demand is an input (a required life against the life achieved) can still mark the utilisation output it belongs to. A result symbol the
+    /// calculator never records as an output is emitted by the run itself, as a utilisation output holding this check's ratio (the calculator's own
+    /// value of that symbol when it computed one), so the sheet's governing line always has an output row to point to (C-2 integration).
     /// </summary>
     public CalcCheck Check(string name, string demandSymbol, string capacitySymbol, string? clause = null, double tolerance = 1e-9, string? resultSymbol = null)
     {
@@ -270,6 +273,10 @@ public sealed class CalcRunContext
         {
             _kinds.TryAdd(resultSymbol, CalcOutputKind.Utilisation);
             _utilisationVerdicts[resultSymbol] = _utilisationVerdicts.TryGetValue(resultSymbol, out var earlier) ? earlier && passed : passed;
+
+            // The first check naming the symbol gives the emitted output its name and ratio; a later one on the same symbol keeps the larger ratio.
+            if (!_resultSymbols.TryGetValue(resultSymbol, out var first) || u > first.Utilisation)
+                _resultSymbols[resultSymbol] = (name, u);
         }
 
         // The Results rows of the two quantities must not show the passing side either: the demand of a failing check is shown rounded up and its capacity rounded down (C2-21).
@@ -365,6 +372,25 @@ public sealed class CalcRunContext
             }
 
             outputs.Add(settled);
+        }
+
+        // A check's result symbol that no output carries is emitted here as a utilisation output, so the governing line of the sheet always names an
+        // output row (CalcSheet.GoverningOutputSymbol): the calculator's own value of the symbol when it computed one (the same ratio), else the check's.
+        foreach (var (symbol, (name, utilisation)) in _resultSymbols)
+        {
+            if (outputs.Any(o => string.Equals(o.Symbol, symbol, StringComparison.Ordinal)))
+                continue;
+
+            var value = Session.Find(symbol) as ScalarValue ?? (double.IsFinite(utilisation) ? new ScalarValue(utilisation) : null);
+
+            if (value is not { IsFinite: true })
+                continue;
+
+            var description = steps.LastOrDefault(t => string.Equals(t.Symbol, symbol, StringComparison.Ordinal))?.Description is { Length: > 0 } own
+                ? own
+                : "Utilisation of " + char.ToLowerInvariant(name[0]) + name[1..];
+            var verdict = !_utilisationVerdicts.TryGetValue(symbol, out var passed) || passed;
+            outputs.Add(new CalcOutput(symbol, description, value, null, null, CalcOutputKind.Utilisation, false, verdict ? CalcDisplay.Rounding.Nearest : value.Si < 0 ? CalcDisplay.Rounding.Down : CalcDisplay.Rounding.Up));
         }
 
         return new CalcRunResult(Session.Steps, outputs, _checks, _notices, _series, _assumptions);

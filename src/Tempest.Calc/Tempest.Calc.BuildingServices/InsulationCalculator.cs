@@ -545,7 +545,7 @@ public sealed class InsulationCalculator : ICalcCalculator
             foreach (var (criterion, _) in required)
             {
                 var (demandSymbol, capacitySymbol) = criterion.Key switch { "q" => (pipe ? "q_per_m" : "q_area", qLimitSymbol), "se" => ("dT_se", "dT_se_max"), _ => ("dT_dep", "dT_dep_max") };
-                c.Check($"Chosen thickness against the {criterion.Name}", demandSymbol, capacitySymbol, "ISO 12241");
+                c.Check($"Chosen thickness against the {criterion.Name}", demandSymbol, capacitySymbol, "ISO 12241", resultSymbol: criterion.UtilisationSymbol);
             }
         }
 

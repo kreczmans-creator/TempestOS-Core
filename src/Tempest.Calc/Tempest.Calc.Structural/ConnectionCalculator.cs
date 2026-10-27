@@ -362,17 +362,17 @@ public sealed class ConnectionCalculator : ICalcCalculator
 
         c.Record("u_limit", "limit", "the utilisation limit", new ScalarValue(1.0), "Utilisation limit");
         c.Assign("F_t_lim", "min(F_t_Rd, B_p_Rd)", "kN", "Governing tension or punching resistance");
-        c.Check("Shear force against bolt shear resistance", "F_v_Ed", "F_v_Rd", "EN 1993-1-8 Table 3.4");
-        c.Check("Shear force against bolt bearing resistance", "F_v_Ed", "F_b_Rd", "EN 1993-1-8 Table 3.4");
-        c.Check("Tension force against bolt tension or punching resistance", "F_t_Ed", "F_t_lim", "EN 1993-1-8 Table 3.4");
+        c.Check("Shear force against bolt shear resistance", "F_v_Ed", "F_v_Rd", "EN 1993-1-8 Table 3.4", resultSymbol: "u_v");
+        c.Check("Shear force against bolt bearing resistance", "F_v_Ed", "F_b_Rd", "EN 1993-1-8 Table 3.4", resultSymbol: "u_b");
+        c.Check("Tension force against bolt tension or punching resistance", "F_t_Ed", "F_t_lim", "EN 1993-1-8 Table 3.4", resultSymbol: "u_t");
         c.Check("Combined shear and tension against its limit", "u_vt", "u_limit", "EN 1993-1-8 Table 3.4");
         c.CheckCondition("Spacing and edge distances against the Table 3.3 minima", spacingOk, $"e₁ {F(e1)}, e₂ {F(e2)}, p₁ {(p1 is { } x ? F(x) : "—")}, p₂ {(p2 is { } y ? F(y) : "—")} mm", $"≥ {F(c.InputSi("k_e1") * d0)}, {F(c.InputSi("k_e2") * d0)}, {F(c.InputSi("k_p1") * d0)}, {F(c.InputSi("k_p2") * d0)} mm", null, "EN 1993-1-8 Table 3.3");
 
         if (c.Has("V_Ed") && c.Has("A_nt") && c.Has("A_nv"))
-            c.Check("Group force against block tearing resistance", "V_Ed", "V_eff_Rd", "EN 1993-1-8 cl. 3.10.2");
+            c.Check("Group force against block tearing resistance", "V_Ed", "V_eff_Rd", "EN 1993-1-8 cl. 3.10.2", resultSymbol: "u_block");
 
         if (weld)
-            c.Check("Weld force against simplified weld resistance", "F_w_Ed", "F_w_Rd", "EN 1993-1-8 cl. 4.5.3.3");
+            c.Check("Weld force against simplified weld resistance", "F_w_Ed", "F_w_Rd", "EN 1993-1-8 cl. 4.5.3.3", resultSymbol: "u_w");
 
         if (c.Has("sigma_perp") || c.Has("tau_perp") || c.Has("tau_par"))
         {

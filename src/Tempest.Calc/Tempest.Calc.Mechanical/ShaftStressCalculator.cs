@@ -84,6 +84,6 @@ public sealed class ShaftStressCalculator : ICalcCalculator
         foreach (var (symbol, text) in new[] { ("sigma", "Bending stress"), ("tau", "Torsional shear"), ("tau_max", "Maximum shear stress"), ("sigma_vm", "von Mises stress"), ("n_T", "Factor of safety (Tresca)"), ("n_VM", "Factor of safety (von Mises)"), ("n_min", "Governing factor of safety") })
             c.Output(symbol, text);
 
-        c.Check("Factor of safety against the required factor", "n_req", "n_min", "Shigley §7-4");
+        c.Check("Factor of safety against the required factor", "n_req", "n_min", "Shigley §7-4", resultSymbol: "u_n");
     }
 }

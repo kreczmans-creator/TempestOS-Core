@@ -118,6 +118,6 @@ public sealed class ColumnBucklingCalculator : ICalcCalculator
         foreach (var (symbol, text) in new[] { ("r", "Radius of gyration"), ("lambda", "Slenderness"), ("p_E", "Euler stress"), ("F_E", "Euler critical load"), ("lambda_0", "Limiting slenderness"), ("eta", "Perry factor"), ("p_c", "Compressive strength"), ("F_c_Rd", "Compression resistance"), ("u", "Utilisation") })
             c.Output(symbol, text);
 
-        c.Check("Axial load against compression resistance", "F", "F_c_Rd", "BS 5950-1 Annex C");
+        c.Check("Axial load against compression resistance", "F", "F_c_Rd", "BS 5950-1 Annex C", resultSymbol: "u");
     }
 }

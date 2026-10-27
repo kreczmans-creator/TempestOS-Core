@@ -505,7 +505,7 @@ public sealed class ShaftCalculator : ICalcCalculator
                 // The first critical speed must be at least r_c_min times the operating speed (2 by default): below that the shaft runs near resonance, so the check fails (it only warned before).
                 var rcMin = c.InputSi("r_c_min");
                 c.Record("n_c_req", "r_c,min·n", $"{F(rcMin)} × {F(rpm.FromSi(opSpeed))} rpm", ScalarValue.Of(rcMin * rpm.FromSi(opSpeed), rpm), "Critical speed required, r_c_min times the operating speed");
-                c.Check("Critical speed against the operating speed", "n_c_req", "n_c_D", "Shigley 10th ed. §7-6");
+                c.Check("Critical speed against the operating speed", "n_c_req", "n_c_D", "Shigley 10th ed. §7-6", resultSymbol: "u_crit");
 
                 if (ratio < rcMin)
                     c.Warn("critical-speed", $"n: the first critical speed (Dunkerley lower bound) is {CalcValue.FormatNumber(ratio, 3)} times the operating speed. Keep it at least {CalcValue.FormatNumber(rcMin, 3)} times.");
@@ -568,18 +568,18 @@ public sealed class ShaftCalculator : ICalcCalculator
         {
             c.Record("u_f", "n_target/n_f,min", $"{F(nTarget)} / {Show(worstF)}", new ScalarValue(nTarget / worstF), "Fatigue utilisation");
             c.Record("u_y", "n_target/n_y,min", $"{F(nTarget)} / {Show(worstY)}", new ScalarValue(nTarget / worstY), "Yield utilisation");
-            c.Check("Fatigue safety factor against target (DE-Goodman)", "n_target", "n_f_min", "Shigley 10th ed. §7-4");
-            c.Check("Yield safety factor against target", "n_target", "n_y_min");
+            c.Check("Fatigue safety factor against target (DE-Goodman)", "n_target", "n_f_min", "Shigley 10th ed. §7-4", resultSymbol: "u_f");
+            c.Check("Yield safety factor against target", "n_target", "n_y_min", resultSymbol: "u_y");
         }
 
         c.Record("theta_bearing", "max(θ_A, θ_B)", $"max({F(thetaA)}, {F(thetaB)})", ScalarValue.Of(Math.Max(thetaA, thetaB), "rad"), "Larger slope at a bearing");
         c.Record("u_slope", "max(θ_A, θ_B)/θ_max", $"{F(Math.Max(thetaA, thetaB))} / {F(c.Si("theta_max"))}", new ScalarValue(Math.Max(thetaA, thetaB) / c.Si("theta_max")), "Slope utilisation");
         c.Record("u_defl", "y_load/y_max", $"{F(yLoad * 1e3)} / {F(c.Si("y_max") * 1e3)} mm", new ScalarValue(yLoad / c.Si("y_max")), "Deflection utilisation");
-        c.Check("Slope at the bearings against limit", "theta_bearing", "theta_max");
-        c.Check("Deflection at the loads against limit", "y_load", "y_max");
+        c.Check("Slope at the bearings against limit", "theta_bearing", "theta_max", resultSymbol: "u_slope");
+        c.Check("Deflection at the loads against limit", "y_load", "y_max", resultSymbol: "u_defl");
 
         if (c.Has("S_y_key") && c.Has("L_key") && c.Has("w") && c.Has("h") && c.Has("x_key"))
-            c.Check("Key length against required", "L_key_req", "L_key");
+            c.Check("Key length against required", "L_key_req", "L_key", resultSymbol: "u_key");
 
         c.Series(new CalcSeries("Bending moment", "x", "mm", "M", "N·m", xs.Select(x => (x * 1e3, At(x).M)).ToList()));
         c.Series(new CalcSeries("Deflection", "x", "mm", "y", "mm", xs.Select(x => (x * 1e3, At(x).Y * 1e3)).ToList()));

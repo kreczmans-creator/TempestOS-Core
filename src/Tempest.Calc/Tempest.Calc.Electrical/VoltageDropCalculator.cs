@@ -153,7 +153,7 @@ public sealed class VoltageDropCalculator : ICalcCalculator
                 c.Assign("dV_max", "dv_limit / 100 * V_n", "V", "Largest voltage drop the limit allows");
                 c.Output("dV", "Voltage drop");
                 c.Output("dV_pct", "Voltage drop (%)");
-                c.Check("Voltage drop against the limit", "dV", "dV_max", "BS 7671:2018 reg. 525");
+                c.Check("Voltage drop against the limit", "dV", "dV_max", "BS 7671:2018 reg. 525", resultSymbol: "u_dv");
                 CapacityCheck(c, data);
                 return;
         }
@@ -172,7 +172,7 @@ public sealed class VoltageDropCalculator : ICalcCalculator
         foreach (var (symbol, text) in new[] { ("R", "Resistance"), ("X", "Reactance"), ("dV", "Voltage drop"), ("dV_pct", "Voltage drop (%)"), ("P_loss", "Power loss") })
             c.Output(symbol, text);
 
-        c.Check("Voltage drop against the limit", "dV", "dV_max", "BS 7671:2018 reg. 525");
+        c.Check("Voltage drop against the limit", "dV", "dV_max", "BS 7671:2018 reg. 525", resultSymbol: "u_dv");
 
         CapacityCheck(c, data);
     }
@@ -188,7 +188,7 @@ public sealed class VoltageDropCalculator : ICalcCalculator
 
         EstimateTemperature(c);
         c.Output("T_c_est", "Estimated conductor temperature");
-        c.Check("Design current against the current-carrying capacity", "I", "I_z", "BS 7671:2018 reg. 523");
+        c.Check("Design current against the current-carrying capacity", "I", "I_z", "BS 7671:2018 reg. 523", resultSymbol: "u_Iz");
 
         if (c.Si("u_Iz") > 1)
             c.Warn("overload", "I: the design current exceeds the current-carrying capacity.");

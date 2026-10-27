@@ -525,7 +525,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
             c.Output("T_bar", "Torque in the bar");
         }
 
-        c.Check("Strain at the critical section against the permissible strain", "eps_max", "eps_perm", Ref);
+        c.Check("Strain at the critical section against the permissible strain", "eps_max", "eps_perm", Ref, resultSymbol: "strain_util");
     }
 
     // ------------------------------------------------------------------
@@ -590,7 +590,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
                     c.Input("F_req");
                     c.Assign("u_hold", "F_req / F_hold", null, "Utilisation of the latches' holding force");
                     c.Output("u_hold", "Holding utilisation");
-                    c.Check("Required holding force against the force the latches hold", "F_req", "F_hold", Ref);
+                    c.Check("Required holding force against the force the latches hold", "F_req", "F_hold", Ref, resultSymbol: "u_hold");
                 }
             }
             else if (c.Has("F_req"))

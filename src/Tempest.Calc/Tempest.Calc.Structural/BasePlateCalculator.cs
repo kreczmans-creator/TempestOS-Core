@@ -831,14 +831,14 @@ public sealed class BasePlateCalculator : ICalcCalculator
         if (c.Si("alpha") > 1 + 1e-9 && !basis)
             c.Warn("alpha_basis", "alpha_basis: enter the foundation geometry that α above 1 rests on, A_c1/A_c0 with α at most 3.");
 
-        c.Check("Axial force against concrete bearing resistance", "N_c_Ed", "N_j_Rd", "EN 1993-1-8 cl. 6.2.8.2, 6.2.5");
+        c.Check("Axial force against concrete bearing resistance", "N_c_Ed", "N_j_Rd", "EN 1993-1-8 cl. 6.2.8.2, 6.2.5", resultSymbol: "u_N");
 
         if (checkCompression)
-            c.Check($"Compression force against {Side(column)} bearing resistance", "C_Ed", "C_Rd", "EN 1993-1-8 cl. 6.2.6.9, 6.2.6.10");
+            c.Check($"Compression force against {Side(column)} bearing resistance", "C_Ed", "C_Rd", "EN 1993-1-8 cl. 6.2.6.9, 6.2.6.10", resultSymbol: "u_C");
 
-        c.Check("Tension at the bolt row against the plate T-stub resistance", "T_Ed", "T_Rd", "EN 1993-1-8 cl. 6.2.6.11");
-        c.Check("Bolt tension against the bolt tension resistance", "F_t_Ed", "F_t_Rd", "EN 1993-1-8 cl. 6.2.6.12");
-        c.Check("Shear force against friction plus anchor bolt shear resistance", "V_Ed", "V_Rd", "EN 1993-1-8 cl. 6.2.2");
+        c.Check("Tension at the bolt row against the plate T-stub resistance", "T_Ed", "T_Rd", "EN 1993-1-8 cl. 6.2.6.11", resultSymbol: "u_T");
+        c.Check("Bolt tension against the bolt tension resistance", "F_t_Ed", "F_t_Rd", "EN 1993-1-8 cl. 6.2.6.12", resultSymbol: "u_bt");
+        c.Check("Shear force against friction plus anchor bolt shear resistance", "V_Ed", "V_Rd", "EN 1993-1-8 cl. 6.2.2", resultSymbol: "u_V");
 
         if (c.Has("u_profis"))
         {

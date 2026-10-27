@@ -684,11 +684,11 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
         c.Output("governing", "Governing check", new TextValue($"{worst.Item1} ({CalcValue.FormatNumber(worst.Item2, 3)})"));
 
         c.Record("u_limit", "limit", "the utilisation limit", new ScalarValue(1.0), "Utilisation limit");
-        c.Check("Bending moment against lateral-torsional buckling resistance", "M_y_Ed", "Mb_Rd", "cl. 6.3.2.1");
+        c.Check("Bending moment against lateral-torsional buckling resistance", "M_y_Ed", "Mb_Rd", "cl. 6.3.2.1", resultSymbol: "u_LTB");
 
         if (compression)
         {
-            c.Check("Axial force against flexural buckling resistance", "N_abs", "N_b_Rd", "cl. 6.3.1.1");
+            c.Check("Axial force against flexural buckling resistance", "N_abs", "N_b_Rd", "cl. 6.3.1.1", resultSymbol: "u_buckling");
             c.Check("Interaction equation 6.61 against its limit", "u_61", "u_limit", "cl. 6.3.3(4)");
             c.Check("Interaction equation 6.62 against its limit", "u_62", "u_limit", "cl. 6.3.3(4)");
         }

@@ -335,23 +335,23 @@ public sealed class MemberChecksCalculator : ICalcCalculator
             c.Output("k_zz_eff", "Interaction factor k_zz used (Annex upper bound)");
 
         c.Record("u_limit", "limit", "the utilisation limit", new Engine.Values.ScalarValue(1.0), "Utilisation limit");
-        c.Check(c.Si("N_Ed") >= 0 ? "Tension against plastic resistance" : "Compression against plastic resistance", "N_abs", "N_pl_Rd", "cl. 6.2.3, 6.2.4");
+        c.Check(c.Si("N_Ed") >= 0 ? "Tension against plastic resistance" : "Compression against plastic resistance", "N_abs", "N_pl_Rd", "cl. 6.2.3, 6.2.4", resultSymbol: "u_N");
 
         if (c.Si("N_Ed") > 0)
         {
             c.Output("N_u_Rd", "Net-section fracture resistance");
             c.Output("u_net", "Net-section fracture utilisation");
-            c.Check("Tension against the net-section fracture resistance", "N_Ed", "N_u_Rd", "cl. 6.2.3(2)(b)");
+            c.Check("Tension against the net-section fracture resistance", "N_Ed", "N_u_Rd", "cl. 6.2.3(2)(b)", resultSymbol: "u_net");
         }
 
-        c.Check("Bending moment y-y against bending resistance", "M_y_Ed", "M_y_c_Rd", "cl. 6.2.5");
-        c.Check("Bending moment z-z against bending resistance", "M_z_Ed", "M_z_c_Rd", "cl. 6.2.5");
-        c.Check("Shear force against plastic shear resistance", "V_Ed", "V_pl_Rd", "cl. 6.2.6");
+        c.Check("Bending moment y-y against bending resistance", "M_y_Ed", "M_y_c_Rd", "cl. 6.2.5", resultSymbol: "u_M_y");
+        c.Check("Bending moment z-z against bending resistance", "M_z_Ed", "M_z_c_Rd", "cl. 6.2.5", resultSymbol: "u_M_z");
+        c.Check("Shear force against plastic shear resistance", "V_Ed", "V_pl_Rd", "cl. 6.2.6", resultSymbol: "u_V");
         c.Check("Cross-section interaction against its limit", "u_section", "u_limit", "cl. 6.2.1(7)");
 
         if (compression)
         {
-            c.Check("Axial force against buckling resistance", "N_abs", "N_b_Rd", "cl. 6.3.1.1");
+            c.Check("Axial force against buckling resistance", "N_abs", "N_b_Rd", "cl. 6.3.1.1", resultSymbol: "u_buckling");
             c.Check("Member interaction against its limit", "u_member", "u_limit", "cl. 6.3.3");
         }
     }
