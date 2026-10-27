@@ -438,4 +438,29 @@ public sealed class SecurityReviewRegressionTests
             File.Delete(file);
         }
     }
+
+    [Fact]
+    public async Task M5_A_Cancelled_Read_Does_Not_Leave_The_File_Open_Behind_The_Caller()
+    {
+        // Windows CI, push run 703: the worker of a cancelled read still held the file, so the caller's delete failed.
+        var file = Path.Combine(Path.GetTempPath(), "w1-cancel-held-" + Guid.NewGuid().ToString("N") + ".exp");
+        await File.WriteAllTextAsync(file, "[mm]a=1\n");
+
+        try
+        {
+            for (var i = 0; i < 20; i++)
+            {
+                using var cts = new CancellationTokenSource();
+                await cts.CancelAsync();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => BoundedInputReader.ReadFileAsync(file, null, null, cts.Token));
+
+                using var exclusive = new FileStream(file, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                Assert.Equal(8, exclusive.Length);
+            }
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
 }
