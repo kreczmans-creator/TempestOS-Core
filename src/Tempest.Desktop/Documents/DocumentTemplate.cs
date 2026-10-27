@@ -707,6 +707,9 @@ public static class DocumentTemplate
     /// <summary>The clear space between the logo and the header band's reference line.</summary>
     public const float HeaderLogoGap = 12f;
 
+    /// <summary>Between the parts of a header band's reference line (the name, the revision, the date); a name is cut short before the parts after it.</summary>
+    public const string ReferenceSeparator = "  ·  ";
+
     /// <summary>The smallest size the header band's reference line shrinks to before it is cut short.</summary>
     public const float HeaderReferenceMinSize = 6f;
 
@@ -732,6 +735,13 @@ public static class DocumentTemplate
             if (TwoLines(text, size) is { } lines)
                 return (lines, size);
         }
+
+        // Last resort with a reference line of the form "name  ·  Revision r  ·  date": only the name is cut short, on the first line;
+        // the revision and date stay whole on the second (the review found a long name with no space cutting them off the sheet).
+        var separator = text.IndexOf(ReferenceSeparator, StringComparison.Ordinal);
+
+        if (separator > 0 && separator + ReferenceSeparator.Length < text.Length)
+            return ([Ellipsise(text[..separator], HeaderReferenceMinSize), Ellipsise(text[(separator + ReferenceSeparator.Length)..], HeaderReferenceMinSize)], HeaderReferenceMinSize);
 
         // Last resort: the first line as wrapped at the smallest size, the rest cut to fit with an ellipsis.
         var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -923,7 +933,8 @@ public static class DocumentTemplate
             paint.FakeBoldText = run.Bold && run.FontRole == DocumentFontRole.Body;
             var segments = Tempest.Desktop.CalcSheets.SymbolText.Parse(run.Text);
             var subSize = run.Size * (float)Tempest.Desktop.CalcSheets.SymbolText.SubscriptScale;
-            var widths = segments.Select(s => { paint.TextSize = s.Subscript ? subSize : run.Size; return paint.MeasureText(s.Text); }).ToList();
+            // A combining mark takes no width: it is drawn over its letter (PlaceCombiningMarks).
+            var widths = segments.Select(s => { paint.TextSize = s.Subscript ? subSize : run.Size; return paint.MeasureText(WithoutMarks(s.Text)); }).ToList();
             var total = widths.Sum();
             var x = run.Align switch
             {
@@ -1023,6 +1034,108 @@ public static class DocumentTemplate
         }
     }
 
+    /// <summary>
+    /// A combining mark (the bar of λ̄) is drawn over the letter before it, not after it: the PDF draws text without shaping, so a mark from
+    /// another face, or with an advance of its own, stood beside its letter (the re-shoot found "λ̄_LT" printed as "λ ̄LT"). Each mark becomes a
+    /// run of its own, centred over its letter and clear of its top, and takes no width of the line. A run without a mark is left as it is.
+    /// </summary>
+    internal static void PlaceCombiningMarks(List<TextRun> texts)
+    {
+        using var paint = new SKPaint();
+
+        for (var i = 0; i < texts.Count; i++)
+        {
+            var run = texts[i];
+
+            if (!run.Text.EnumerateRunes().Any(IsCombiningMark))
+                continue;
+
+            float Width(string s, DocumentFontRole role)
+            {
+                paint.Typeface = DocumentFonts.For(role, run.Bold);
+                paint.TextSize = run.Size;
+                paint.FakeBoldText = run.Bold && SynthesisesBold(role);
+                return paint.MeasureText(s);
+            }
+
+            SKRect Bounds(string s, DocumentFontRole role)
+            {
+                Width(s, role);
+                var bounds = default(SKRect);
+                paint.MeasureText(s, ref bounds);
+                return bounds;
+            }
+
+            paint.TextSize = run.Size;
+
+            // The line without its marks, measured as the rest of the layout measures it.
+            var runes = run.Text.EnumerateRunes().ToList();
+            var total = MeasureInFaces(paint, WithoutMarks(run.Text), run.FontRole);
+            var x = run.Align switch
+            {
+                SKTextAlign.Right => run.X - total,
+                SKTextAlign.Center => run.X - total / 2,
+                _ => run.X,
+            };
+
+            var pieces = new List<TextRun>();
+            var text = new StringBuilder();
+            Rune? last = null;
+            var lastLeft = x;
+
+            void Flush()
+            {
+                if (text.Length == 0)
+                    return;
+
+                pieces.Add(run with { X = x, Text = text.ToString(), Align = SKTextAlign.Left });
+                paint.Typeface = DocumentFonts.For(run.FontRole, run.Bold);
+                x += MeasureInFaces(paint, text.ToString(), run.FontRole);
+                text.Clear();
+            }
+
+            foreach (var rune in runes)
+            {
+                if (!IsCombiningMark(rune))
+                {
+                    text.Append(rune.ToString());
+                    last = rune;
+                    continue;
+                }
+
+                // The letter the mark sits on ends the piece before it, so its left edge and width are known.
+                Flush();
+
+                if (last is not { } letter)
+                    continue;
+
+                var letterText = letter.ToString();
+                var letterRole = DocumentFonts.FaceFor(letter, run.FontRole, run.Bold) ?? run.FontRole;
+                var letterWidth = Width(letterText, letterRole);
+                lastLeft = x - letterWidth;
+                var letterBounds = Bounds(letterText, letterRole);
+                var markText = rune.ToString();
+                var markRole = DocumentFonts.FaceFor(rune, run.FontRole, run.Bold) ?? run.FontRole;
+                var markBounds = Bounds(markText, markRole);
+                var markX = lastLeft + letterWidth / 2 - (markBounds.Left + markBounds.Right) / 2;
+                var lift = Math.Min(0f, letterBounds.Top - run.Size * 0.06f - markBounds.Bottom);
+                pieces.Add(run with { X = markX, Y = run.Y + lift, Text = markText, FontRole = markRole, Align = SKTextAlign.Left, Symbols = false });
+            }
+
+            Flush();
+            texts.RemoveAt(i);
+            texts.InsertRange(i, pieces);
+            i += pieces.Count - 1;
+        }
+    }
+
+    /// <summary><paramref name="text"/> without its combining marks.</summary>
+    internal static string WithoutMarks(string text) =>
+        text.EnumerateRunes().Any(IsCombiningMark) ? string.Concat(text.EnumerateRunes().Where(r => !IsCombiningMark(r)).Select(r => r.ToString())) : text;
+
+    /// <summary>Whether <paramref name="rune"/> is a combining mark drawn over the character before it.</summary>
+    internal static bool IsCombiningMark(Rune rune) => Rune.GetUnicodeCategory(rune) == System.Globalization.UnicodeCategory.NonSpacingMark;
+
     /// <summary>Whether a bold run in <paramref name="role"/> is set in synthetic bold: the body face and the fallback face have one weight embedded; Display and Mono have a real bold file.</summary>
     internal static bool SynthesisesBold(DocumentFontRole role) => role is DocumentFontRole.Body or DocumentFontRole.Symbol;
 
@@ -1032,6 +1145,7 @@ public static class DocumentTemplate
         foreach (var page in pages)
         {
             TypesetSymbols(page.Texts);
+            PlaceCombiningMarks(page.Texts);
             FallBackForMissingGlyphs(page.Texts);
         }
     }

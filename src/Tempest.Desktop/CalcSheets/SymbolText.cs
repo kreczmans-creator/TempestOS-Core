@@ -37,7 +37,8 @@ public static partial class SymbolText
     // a reference are left alone), its letters and digits, then an optional subscript of letters and digits joined by
     // commas or underscores, or a decimal point before a digit (R_p0.2). ⊥ and ∥ may be a subscript too (a fillet
     // weld's F_⊥ and F_∥; the shots review found them printed with the underscore).
-    [GeneratedRegex(@"(?<![A-Za-zΑ-Ωα-ω_.@])([A-Za-zΑ-Ωα-ω][A-Za-zΑ-Ωα-ω0-9]*)(?:_([A-Za-zΑ-Ωα-ω0-9⊥∥]+(?:(?:[,_]|\.(?=[0-9]))[A-Za-zΑ-Ωα-ω0-9⊥∥]+)*))?")]
+    // A combining mark (the bar of λ̄) belongs to the letter it sits on, so λ̄_LT is λ̄ with LT set low (the re-shoot found _LT printed as written).
+    [GeneratedRegex(@"(?<![A-Za-zΑ-Ωα-ω_.@])([A-Za-zΑ-Ωα-ω]\p{Mn}*[A-Za-zΑ-Ωα-ω0-9\p{Mn}]*)(?:_([A-Za-zΑ-Ωα-ω0-9⊥∥]+(?:(?:[,_]|\.(?=[0-9]))[A-Za-zΑ-Ωα-ω0-9⊥∥]+)*))?")]
     private static partial Regex SymbolPattern();
 
     /// <summary>The pieces of <paramref name="text"/>, its symbols typeset; one plain piece when there is nothing to set.</summary>
@@ -80,6 +81,46 @@ public static partial class SymbolText
         return segments;
     }
 
+    /// <summary>
+    /// The pieces the form draws: <see cref="Parse"/>, with Unicode subscript digits (h₁, W₂) set low as ordinary digits too. The monospace working
+    /// font has no glyphs for them and drew comma-like marks (the re-shoot found "h₁" reading "h,"). The PDF keeps <see cref="Parse"/>: its faces have them.
+    /// </summary>
+    public static IReadOnlyList<Segment> FormSegments(string? text)
+    {
+        var segments = new List<Segment>();
+
+        foreach (var segment in Parse(text))
+        {
+            if (segment.Subscript || !segment.Text.Any(IsSubscriptDigit))
+            {
+                segments.Add(segment);
+                continue;
+            }
+
+            var run = new StringBuilder();
+            var low = false;
+
+            foreach (var c in segment.Text)
+            {
+                if (IsSubscriptDigit(c) != low && run.Length > 0)
+                {
+                    segments.Add(new Segment(run.ToString(), low));
+                    run.Clear();
+                }
+
+                low = IsSubscriptDigit(c);
+                run.Append(low ? (char)('0' + (c - '\u2080')) : c);
+            }
+
+            if (run.Length > 0)
+                segments.Add(new Segment(run.ToString(), low));
+        }
+
+        return segments;
+    }
+
+    private static bool IsSubscriptDigit(char c) => c is >= '\u2080' and <= '\u2089';
+
     /// <summary>Whether <paramref name="text"/> has anything to typeset (a subscript or a Greek name).</summary>
     public static bool HasSymbols(string? text)
     {
@@ -96,7 +137,9 @@ public static partial class SymbolText
         ArgumentNullException.ThrowIfNull(block);
         block.SetValue(RawTextProperty, text);
 
-        if (!HasSymbols(text))
+        var segments = FormSegments(text);
+
+        if (segments.Count == 0 || segments.Count == 1 && !segments[0].Subscript && string.Equals(segments[0].Text, text, StringComparison.Ordinal))
         {
             block.Inlines = null;
             block.Text = text;
@@ -105,7 +148,7 @@ public static partial class SymbolText
 
         var inlines = new InlineCollection();
 
-        foreach (var segment in Parse(text))
+        foreach (var segment in segments)
         {
             // A subscript run's own baseline alignment barely moves it at form sizes (the showcase screenshots showed
             // "FM" rather than F with M set low), so it is a small block of its own, drawn lower by a fixed share of the size.

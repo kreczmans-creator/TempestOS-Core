@@ -52,7 +52,9 @@ public static partial class CalcDiagrams
         if (points.Count == 0)
             return null;
 
-        var map = Fit(BoltBox, points);
+        if (Fit(BoltBox, points) is not { } map)
+            return null;
+
         var drawn = points.Select(p => map(p.X, p.Y)).ToList();
         var radius = Math.Clamp(0.35 * NearestSpacing(drawn), 2, 8);
         var elements = new List<DiagramElement>();
@@ -90,7 +92,9 @@ public static partial class CalcDiagrams
         if (lines.Count == 0)
             return null;
 
-        var map = Fit(WeldBox, [.. lines.SelectMany(l => new[] { (l.X1, l.Y1), (l.X2, l.Y2) })]);
+        if (Fit(WeldBox, [.. lines.SelectMany(l => new[] { (l.X1, l.Y1), (l.X2, l.Y2) })]) is not { } map)
+            return null;
+
         var elements = new List<DiagramElement>();
         var placed = false;
 
@@ -126,7 +130,9 @@ public static partial class CalcDiagrams
         if (loops.Count == 0)
             return null;
 
-        var map = Fit(PolygonBox, [.. loops.SelectMany(l => l)]);
+        if (Fit(PolygonBox, [.. loops.SelectMany(l => l)]) is not { } map)
+            return null;
+
         var elements = new List<DiagramElement>();
 
         for (var i = 0; i < loops.Count; i++)
@@ -172,8 +178,16 @@ public static partial class CalcDiagrams
         return double.IsFinite(mm) ? mm : null;
     }
 
-    /// <summary>A map from model coordinates (x right, y up) into <paramref name="box"/> (y down), one scale for both, centred.</summary>
-    private static Func<double, double, DiagramPoint> Fit(Box box, IReadOnlyList<(double X, double Y)> points)
+    /// <summary>A span shorter than this (mm) is drawn as none: the points coincide on the drawing, and a scale over it would not be finite.</summary>
+    private const double SmallestSpanMm = 1e-9;
+
+    /// <summary>
+    /// A map from model coordinates (x right, y up) into <paramref name="box"/> (y down), one scale for both, centred; or <see langword="null"/>
+    /// when the points cannot be drawn to a finite scale (a span past the largest double), and the representative drawing stays. The centre is
+    /// taken as min + span/2, which cannot overflow, and a span below <see cref="SmallestSpanMm"/> counts as none, so every mapped point is finite
+    /// (review item 8: 1.7e308 mm gave an infinite centre, and a 1e-310 mm span an infinite scale).
+    /// </summary>
+    private static Func<double, double, DiagramPoint>? Fit(Box box, IReadOnlyList<(double X, double Y)> points)
     {
         var minX = points.Min(p => p.X);
         var maxX = points.Max(p => p.X);
@@ -181,6 +195,12 @@ public static partial class CalcDiagrams
         var maxY = points.Max(p => p.Y);
         var spanX = maxX - minX;
         var spanY = maxY - minY;
+
+        if (!double.IsFinite(spanX) || !double.IsFinite(spanY))
+            return null;
+
+        spanX = spanX < SmallestSpanMm ? 0 : spanX;
+        spanY = spanY < SmallestSpanMm ? 0 : spanY;
         var scale = (spanX > 0, spanY > 0) switch
         {
             (true, true) => Math.Min(box.Width / spanX, box.Height / spanY),
@@ -190,8 +210,12 @@ public static partial class CalcDiagrams
         };
         var cx = (box.Left + box.Right) / 2;
         var cy = (box.Top + box.Bottom) / 2;
-        var mx = (minX + maxX) / 2;
-        var my = (minY + maxY) / 2;
+        var mx = minX + spanX / 2;
+        var my = minY + spanY / 2;
+
+        if (!double.IsFinite(scale) || scale <= 0)
+            return null;
+
         return (x, y) => new DiagramPoint(cx + (x - mx) * scale, cy - (y - my) * scale);
     }
 

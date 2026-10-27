@@ -282,6 +282,11 @@ public sealed class CalcSheetPdfLayoutTests
         // A name past any real one is shrunk and, as a last resort, cut short; it still never reaches the logo.
         AssertHeaderFits(sheet with { Header = sheet.Header with { CalcId = string.Join(" ", Enumerable.Repeat("Lateral-torsional buckling", 8)) } }, whole: false);
         AssertHeaderFits(sheet with { Header = sheet.Header with { CalcId = new string('W', 120) } }, whole: false);
+
+        // Review item 7: a name of 111 to 120 characters with no space fits neither whole nor on two lines; only the name is cut short,
+        // and the revision and date are still printed whole.
+        foreach (var length in new[] { 111, 115, 120 })
+            AssertHeaderFits(sheet with { Header = sheet.Header with { CalcId = string.Concat(Enumerable.Repeat("Ab_", 40))[..length] } }, whole: false);
     }
 
     private static void AssertHeaderFits(CalcSheet sheet, bool whole)
@@ -307,7 +312,10 @@ public sealed class CalcSheetPdfLayoutTests
         if (whole)
             Assert.Equal(Collapse($"{sheet.Header.CalcId}  ·  Revision {sheet.Header.Revision}  ·  2026-10-27"), Collapse(printed));
         else
+        {
             Assert.StartsWith(sheet.Header.CalcId[..10], printed, StringComparison.Ordinal);
+            Assert.EndsWith(Collapse($"Revision {sheet.Header.Revision}  ·  2026-10-27"), Collapse(printed), StringComparison.Ordinal);
+        }
     }
 
     [Fact]

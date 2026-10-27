@@ -106,7 +106,9 @@ public sealed class WorksheetTableEditorTests
         view.ShowTemplate(entry, null, seed);
         Assert.Equal(2, view.TableRowCount("sections"));
         Assert.Same(table, view.ReadForm().Find("sections"));
-        Assert.False(view.HasUnsavedEdits());
+
+        // A new sheet that holds an imported table holds more than it opened with, as for an imported number (review item 1 compares tables by value).
+        Assert.True(view.HasUnsavedEdits());
 
         // The column shows the first row's unit; the second row's 1800 m³/h is shown in it.
         Assert.Equal("0.5", view.TableCellText("sections", 1, "Q"));
