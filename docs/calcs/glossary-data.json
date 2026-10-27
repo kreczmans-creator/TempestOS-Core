@@ -805,7 +805,7 @@
             "cm²"
           ],
           "descriptions": [
-            "Gross cross-section area of the spreader or lifting beam, for its axial utilisation (blank: lug utilisation only)"
+            "Gross cross-section area of the spreader or lifting beam, for its axial utilisation (optional; blank = lug utilisation only)"
           ],
           "templates": [
             "struct.lifting"
@@ -2209,7 +2209,7 @@
             "mm"
           ],
           "descriptions": [
-            "Hole diameter D_h"
+            "Hole diameter"
           ],
           "templates": [
             "struct.lifting"
@@ -2243,7 +2243,7 @@
             "mm"
           ],
           "descriptions": [
-            "Pin diameter D_p (not larger than the hole)"
+            "Pin diameter (not larger than the hole)"
           ],
           "templates": [
             "struct.lifting"
@@ -7063,7 +7063,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Design factor N_d of the Design Category (BTH-1 mode; user record)"
+            "Design factor of the Design Category (optional; blank = BTH-1 mode is blocked; user record)"
           ],
           "templates": [
             "struct.lifting"
@@ -8268,13 +8268,11 @@
           ],
           "descriptions": [
             "Inside radius (corroded)",
-            "Lug end radius R about the hole centre (the plate is 2R wide at the hole)",
             "Radius (bend)"
           ],
           "templates": [
             "elec.containment",
-            "mech.thin-vessel",
-            "struct.lifting"
+            "mech.thin-vessel"
           ]
         },
         {
@@ -12256,7 +12254,7 @@
             "mm"
           ],
           "descriptions": [
-            "End distance a from the hole edge to the plate edge along the load line (blank: R − D_h/2, a round-ended lug)"
+            "End distance from the hole edge to the plate edge along the load line (optional; blank = r_lug − D_h/2, the round end)"
           ],
           "templates": [
             "struct.lifting"
@@ -13143,7 +13141,7 @@
             "mm"
           ],
           "descriptions": [
-            "Edge distance b_e from the hole edge to the plate edge on each side, across the load line (limited to R − D_h/2; the effective width for tension is reduced further by 4t and f_u/f_y)"
+            "Edge distance from the hole edge to the plate edge on each side, across the load line (limited to r_lug − D_h/2; the effective width for tension is reduced further by 4t_p and by f_u/f_y)"
           ],
           "templates": [
             "struct.lifting"
@@ -15160,7 +15158,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Dishing-ratio limit on D_h/t (blank: the dishing check is not made; user record)"
+            "Dishing-ratio limit on the hole diameter over the thickness (optional; blank = the dishing check is not made; user record)"
           ],
           "templates": [
             "struct.lifting"
@@ -16785,9 +16783,9 @@
           ],
           "descriptions": [
             "Plate ultimate tensile strength",
-            "Ultimate strength f_u of the lug plate",
             "Ultimate tensile strength (optional)",
             "Ultimate tensile strength (optional; blank = the sheet is blocked when N_Ed is tension)",
+            "Ultimate tensile strength of the lug plate",
             "Ultimate tensile strength of the weaker part joined"
           ],
           "templates": [
@@ -16904,8 +16902,8 @@
           "descriptions": [
             "Plate yield strength",
             "Yield strength",
-            "Yield strength f_y of the lug plate for its thickness",
             "Yield strength for the thickness",
+            "Yield strength of the lug plate for its thickness",
             "Yield strength of the rod"
           ],
           "templates": [
@@ -17354,7 +17352,7 @@
             "mm"
           ],
           "descriptions": [
-            "Distance h from the hole centre to the weld or base, for the out-of-plane moment (blank: no moment given)"
+            "Distance from the hole centre to the weld or base, for the out-of-plane moment (optional; blank = no moment given)"
           ],
           "templates": [
             "struct.lifting"
@@ -18133,7 +18131,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Bearing multiple k_b of the allowable stress on the projected pin area (BTH-1 mode; user record)"
+            "Bearing multiple of the allowable stress on the projected pin area (optional; blank = BTH-1 mode is blocked; user record)"
           ],
           "templates": [
             "struct.lifting"
@@ -18367,7 +18365,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Proof-load factor on the rated load (blank: no proof load given; user record)"
+            "Proof-load factor on the rated load (optional; blank = no proof load given; user record)"
           ],
           "templates": [
             "struct.lifting"
@@ -18469,7 +18467,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Service-class factor on the load (blank: 1.0; user record)"
+            "Service-class factor on the load (optional; blank = 1.0; user record)"
           ],
           "templates": [
             "struct.lifting"
@@ -19854,7 +19852,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Load cycles in the life of the lug (the 2×/3× route covers up to 16,000; beyond that a fatigue assessment is needed and the sheet does not run)"
+            "Load cycles in the life of the lug (the 2×/3× route covers up to 16,000, and beyond that a fatigue assessment is needed and the sheet does not run)"
           ],
           "templates": [
             "struct.lifting"
@@ -20336,7 +20334,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Divisor n_u on f_u; the allowable stress is F_a = min(f_y/n_y, f_u/n_u) (BTH-1 mode; user record)",
+            "Divisor on the ultimate tensile strength in the allowable stress (optional; blank = BTH-1 mode is blocked; user record)",
             "Factor on ultimate"
           ],
           "templates": [
@@ -20354,7 +20352,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Divisor n_y on f_y; the allowable stress is F_a = min(f_y/n_y, f_u/n_u) (BTH-1 mode; user record)",
+            "Divisor on the yield strength in the allowable stress (optional; blank = BTH-1 mode is blocked; user record)",
             "Factor on yield"
           ],
           "templates": [
@@ -22054,6 +22052,24 @@
       ]
     },
     {
+      "symbol": "r_lug",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Lug end radius about the hole centre (the plate is twice that wide at the hole)"
+          ],
+          "templates": [
+            "struct.lifting"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "r_p",
       "meanings": [
         {
@@ -23527,14 +23543,12 @@
             "mm"
           ],
           "descriptions": [
-            "Lug plate thickness t",
             "Lug thickness",
             "Thickness"
           ],
           "templates": [
             "bs.plane-wall",
-            "mech.lifting-lug",
-            "struct.lifting"
+            "mech.lifting-lug"
           ]
         },
         {
@@ -24024,6 +24038,7 @@
             "mm"
           ],
           "descriptions": [
+            "Lug plate thickness",
             "Plate thickness",
             "Shell thickness provided (nominal, before corrosion)"
           ],
@@ -24031,6 +24046,7 @@
             "mech.thin-vessel",
             "struct.base-plate",
             "struct.connection-ec3",
+            "struct.lifting",
             "struct.plate-bending"
           ]
         }

@@ -228,4 +228,30 @@ public sealed class StructuralRenamedSymbolTests
             Assert.Equal(plate.Outputs.Single(o => o.Symbol == "D_flex").Si!.Value / 1e3, bound.Instance!.Inputs.Single(i => i.Symbol == "M_0").Number!.Value, 9);
         }
     }
+
+    [Fact]
+    public async Task The_Old_Thickness_And_Radius_Symbols_Of_The_Lifting_Lug_Are_Stored_Under_T_p_And_R_lug()
+    {
+        // The lifting sheet is behind the lifting feature flag; the flag is on in this test host only.
+        var host = new LibraryTestHost(calculators: [new LiftingLugCalculator()], features: new CalcFeatureFlags([CalcFeatures.Lifting]));
+        var project = await host.ProjectAsync();
+        var baseline = new LiftingLugCalculator().Template.TestCases[0].Inputs;
+        var current = await host.Service.CreateAsync(LiftingLugCalculator.Id, project, "Lug", baseline);
+        Assert.Empty(current.Blocks);
+
+        // The form a saved calculation had before the rename: the plate thickness is t and the end radius is R.
+        var oldForm = baseline.Select(v => v.Symbol switch
+        {
+            "t_p" => CalcInputValue.Quantity("t", 20, "mm"),
+            "r_lug" => CalcInputValue.Quantity("R", 65, "mm"),
+            _ => v,
+        }).ToList();
+        var created = await host.Service.CreateAsync(LiftingLugCalculator.Id, project, "Lug (old form)", oldForm);
+
+        Assert.Empty(created.Blocks);
+        Assert.Equal(20, created.Inputs.Single(i => i.Symbol == "t_p").Number);
+        Assert.Equal(65, created.Inputs.Single(i => i.Symbol == "r_lug").Number);
+        Assert.DoesNotContain(created.Inputs, i => i.Symbol is "t" or "R");
+        Assert.Equal(current.Outputs.Single(o => o.Symbol == "capacity").Si!.Value, created.Outputs.Single(o => o.Symbol == "capacity").Si!.Value, 9);
+    }
 }

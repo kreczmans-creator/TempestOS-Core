@@ -4,8 +4,8 @@
  "sources": {
   "rederivation": "3738520fd54a185312ad9441b014f89a0e52620ca01f5d3390e706fb0ae90082",
   "knownDefects": "f503dc243b72bd6d14a26dd72c715cf4ef74eecacdd6bcf48830d5d1c2fd8ac3",
-  "katResults": "c79dbc641e95b6fbe63956b05c7010869fd7a5f6e59900481c6cf556590a7de4",
-  "workedExamples": "66ed7dd3eda5f55a11d0b951afb4faa2ced30c6b8b5f197b399dbfe8dee0ef29",
+  "katResults": "185f86e7bcba207ec31b56f7a98f7dcd77510932692f7687ecbdaec2a2ce1274",
+  "workedExamples": "fe2262261987af27eb2f662b404de30f84d2d8fe45d3f8b4015deb8bf6a82108",
   "generator": "44f38f035fcf5937ab168f648e6a714578568d822ffce5c1d151e261c577171e"
  },
  "defectTotals": {
@@ -2889,7 +2889,7 @@
   "struct.lifting": {
    "workedExamples": 1,
    "kat": {
-    "version": "1.1.1",
+    "version": "1.2.0",
     "kats": 5,
     "katsPassed": 5,
     "failedKats": [],

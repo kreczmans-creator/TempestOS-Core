@@ -48,79 +48,80 @@ public sealed class LiftingLugCalculator : ICalcCalculator
     /// <summary>Printed on the sheet (ADR-0173): the two checks and the attestation are made by whoever is signed in; TempestOS does not check who they are.</summary>
     public const string SignatureNotice = "Signatures are not authenticated by TempestOS: the signed-in names of the author, the checkers and the competent person are as entered into this installation.";
 
-    private const string GroupLoads = "Mode and loading";
-    private const string GroupLug = "Lug geometry";
+    private const string GroupSetup = "Setup";
+    private const string GroupLug = "Geometry";
     private const string GroupMaterial = "Material";
-    private const string GroupFactors = "Design factors (user records, no defaults)";
-    private const string GroupBeam = "Spreader or lifting beam";
+    private const string GroupLoads = "Loads";
+    private const string GroupConditions = "Conditions";
+    private const string GroupFactors = "Factors";
+    private const string GroupRequirements = "Requirements";
     private const string GroupAttest = "Competent-person attestation (required to check and issue)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.1.1", CalcDiscipline.Structural, "Lifting lugs and spreader beams",
-        DesignNotice + " Pin-loaded lifting lugs and the lug loads of spreader or lifting beams, checked by the BTH-1 allowable-stress approach (clause 3-3.3), by the EN 13155 proof route (2× the rated load without permanent set, 3× without release) or both: " +
-        "sling force from the rated load, sling angle and out-of-plane angle (with the automatic 6° tilt cases for a horizontal beam); tension beyond the hole, single-plane fracture beyond the hole, shear-out on two planes, pin bearing and dishing; capacity and utilisation per mode, the governing mode, the proof load and a marking and certification checklist. " +
-        "Scope notes (LOLER and PUWER): this sheet does not replace the thorough examination and inspection of lifting equipment by a competent person (LOLER reg 9), the marking, test and certification that the regulations and the standards require, the planning of the lifting operation, the weld, bolt and beam checks of the linked sheets, or the pin, shackle and sling ratings. " +
-        "It is available only while the lifting feature is enabled; its issue needs a competent-person attestation and a second independent check. " + SignatureNotice,
+        Id, "1.2.0", CalcDiscipline.Structural, "Lifting lugs and spreader beams",
+        "Calculates the capacity and utilisation of a pin-loaded lifting lug and of a spreader beam by the BTH-1 approach, the EN 13155 proof route or both. It is a design calculation, not a thorough examination under LOLER or PUWER.",
         "Sling force: F_v = WLL/n_eff (n_eff = n_lugs, at most 3); F_s = F_v/(cos θ·cos β); F_ip = F_s·cos β; F_op = F_s·sin β; N_beam = F_v·tan θ; M_op = F_op·h\n" +
         "Horizontal beam, automatic 6° tilt: pitch (θ ± 6°, load redistributed, the sling at θ − 6° takes 2·F_v·sin(θ + 6°)/sin 2θ, and the force along the tilted beam is F_v·sin(θ + 6°)/cos θ); roll (β + 6°); the larger F_s governs, F_ip, F_op and N_beam are the envelopes\n" +
-        "Lug section geometry: side = min(b_e, R − D_h/2); b_e,eff = min(side, 4t, 0.6·(f_u/f_y)·√(D_h/side)·side); a_eff = a (default R − D_h/2); A_t = 2·t·b_e,eff; A_fr = [1.13·a_eff + 0.92·side/(1 + side/D_h)]·t; φ = 55·D_p/D_h (degrees); A_v = 2·t·[a_eff + (D_p/2)(1 − cos φ)]; A_b = D_p·t\n" +
+        "Lug section geometry: side = min(b_e, r_lug − D_h/2); b_e,eff = min(side, 4t_p, 0.6·(f_u/f_y)·√(D_h/side)·side); a_eff = a (default r_lug − D_h/2); A_t = 2·t_p·b_e,eff; A_fr = [1.13·a_eff + 0.92·side/(1 + side/D_h)]·t_p; φ = 55·D_p/D_h (degrees); A_v = 2·t_p·[a_eff + (D_p/2)(1 − cos φ)]; A_b = D_p·t_p\n" +
         "Pin clearance: C_r = 1 − 0.275·√(1 − D_p²/D_h²)\n" +
-        "BTH-1 (3-3.3): F_a = min(f_y/n_y, f_u/n_u); design load D = N_d·k_svc·F_s; P_t = C_r·F_a·A_t; P_sp = C_r·F_a·A_fr; P_v = F_a·A_v/√3; P_b = k_b·F_a·A_b; u = D/P for each; dishing D_h/t ≤ dish_max\n" +
+        "BTH-1 (3-3.3): F_a = min(f_y/n_y, f_u/n_u); design load D = N_d·k_svc·F_s; P_t = C_r·F_a·A_t; P_sp = C_r·F_a·A_fr; P_v = F_a·A_v/√3; P_b = k_b·F_a·A_b; u = D/P for each; dishing D_h/t_p ≤ dish_max\n" +
         "EN 13155 (2× elastic, 3× no release): P_EN = min(Y/2, U/3) for each section, Y with f_y and U with f_u (shear with f/√3; fracture area without C_r); u = F_s/P_EN\n" +
         "Lug capacity and proof load: WLL_cap = WLL/u_lug for the governing section of each mode (smaller of the modes used); beam: u_beam from N_beam on A_beam; proof load = k_proof·WLL",
         [
-            new CalcInputSpec("mode", "Design mode", CalcInputKind.Choice, Choices: [ModeBth1, ModeEn, ModeBoth], DefaultChoice: ModeBoth, Group: GroupLoads),
-            new CalcInputSpec("WLL", "Rated load (working load limit) of the appliance, carried by all its lugs", CalcInputKind.Quantity, "kN", Default: 150, Min: 0.5, Max: 10000, HardMin: 0.5, HardMax: 10000, Group: GroupLoads),
-            new CalcInputSpec("n_lugs", "Number of lugs sharing the load (a fourth is not relied on: three share)", CalcInputKind.Choice, Choices: ["1", "2", "3", "4"], DefaultChoice: "2", Group: GroupLoads),
-            new CalcInputSpec("theta", "Sling angle θ from the vertical, measured in the plane of the lug (the out-of-plane angle β is applied on top: F_s = F_v/(cos θ·cos β))", CalcInputKind.Quantity, "deg", Default: 30, Min: 0, Max: 60, HardMin: 0, HardMax: 60, Group: GroupLoads),
-            new CalcInputSpec("beta", "Out-of-plane angle β of the sling out of the lug plane", CalcInputKind.Quantity, "deg", Default: 0, Min: 0, Max: 30, HardMin: 0, HardMax: 30, Group: GroupLoads),
-            new CalcInputSpec("beam", "The lugs are on a horizontal spreader or lifting beam (adds the automatic 6° pitch and roll tilt cases)", CalcInputKind.Boolean, Default: 0, Group: GroupLoads),
-            new CalcInputSpec("n_cycles", "Load cycles in the life of the lug (the 2×/3× route covers up to 16,000; beyond that a fatigue assessment is needed and the sheet does not run)", CalcInputKind.Number, Default: 1000, Min: 1, Max: MaxCycles, HardMin: 1, HardMax: MaxCycles, Group: GroupLoads),
+            new CalcInputSpec("mode", "Design mode", CalcInputKind.Choice, Choices: [ModeBth1, ModeEn, ModeBoth], DefaultChoice: ModeBoth, Group: GroupSetup),
+            new CalcInputSpec("n_lugs", "Number of lugs sharing the load (a fourth is not relied on: three share)", CalcInputKind.Choice, Choices: ["1", "2", "3", "4"], DefaultChoice: "2", Group: GroupSetup),
+            new CalcInputSpec("beam", "The lugs are on a horizontal spreader or lifting beam (adds the automatic 6° pitch and roll tilt cases)", CalcInputKind.Boolean, Default: 0, Group: GroupSetup),
 
-            new CalcInputSpec("t", "Lug plate thickness t", CalcInputKind.Quantity, "mm", Default: 20, Min: 5, Max: 150, HardMin: 5, HardMax: 150, Group: GroupLug),
-            new CalcInputSpec("Dh", "Hole diameter D_h", CalcInputKind.Quantity, "mm", Default: 50, Min: 10, Max: 500, HardMin: 10, HardMax: 500, Group: GroupLug),
-            new CalcInputSpec("Dp", "Pin diameter D_p (not larger than the hole)", CalcInputKind.Quantity, "mm", Default: 45, Min: 8, Max: 500, HardMin: 8, HardMax: 500, Group: GroupLug),
-            new CalcInputSpec("R", "Lug end radius R about the hole centre (the plate is 2R wide at the hole)", CalcInputKind.Quantity, "mm", Default: 65, Min: 15, Max: 600, HardMin: 15, HardMax: 600, Group: GroupLug),
-            new CalcInputSpec("be", "Edge distance b_e from the hole edge to the plate edge on each side, across the load line (limited to R − D_h/2; the effective width for tension is reduced further by 4t and f_u/f_y)", CalcInputKind.Quantity, "mm", Default: 35, Min: 5, Max: 400, HardMin: 5, HardMax: 400, Group: GroupLug),
-            new CalcInputSpec("a", "End distance a from the hole edge to the plate edge along the load line (blank: R − D_h/2, a round-ended lug)", CalcInputKind.Quantity, "mm", Min: 5, Max: 600, HardMin: 5, HardMax: 600, IsOptional: true, Group: GroupLug),
-            new CalcInputSpec("h", "Distance h from the hole centre to the weld or base, for the out-of-plane moment (blank: no moment given)", CalcInputKind.Quantity, "mm", Min: 1, Max: 3000, HardMin: 1, HardMax: 3000, IsOptional: true, Group: GroupLug),
+            new CalcInputSpec("t_p", "Lug plate thickness", CalcInputKind.Quantity, "mm", Default: 20, Min: 8, Max: 100, HardMin: 5, HardMax: 150, Group: GroupLug, Aliases: ["t"]),
+            new CalcInputSpec("Dh", "Hole diameter", CalcInputKind.Quantity, "mm", Default: 50, Min: 16, Max: 300, HardMin: 10, HardMax: 500, Group: GroupLug),
+            new CalcInputSpec("Dp", "Pin diameter (not larger than the hole)", CalcInputKind.Quantity, "mm", Default: 45, Min: 12, Max: 300, HardMin: 8, HardMax: 500, Group: GroupLug),
+            new CalcInputSpec("r_lug", "Lug end radius about the hole centre (the plate is twice that wide at the hole)", CalcInputKind.Quantity, "mm", Default: 65, Min: 20, Max: 300, HardMin: 15, HardMax: 600, Group: GroupLug, Aliases: ["R"]),
+            new CalcInputSpec("be", "Edge distance from the hole edge to the plate edge on each side, across the load line (limited to r_lug − D_h/2; the effective width for tension is reduced further by 4t_p and by f_u/f_y)", CalcInputKind.Quantity, "mm", Default: 35, Min: 10, Max: 200, HardMin: 5, HardMax: 400, Group: GroupLug),
+            new CalcInputSpec("a", "End distance from the hole edge to the plate edge along the load line (optional; blank = r_lug − D_h/2, the round end)", CalcInputKind.Quantity, "mm", Min: 10, Max: 300, HardMin: 5, HardMax: 600, IsOptional: true, Group: GroupLug),
+            new CalcInputSpec("h", "Distance from the hole centre to the weld or base, for the out-of-plane moment (optional; blank = no moment given)", CalcInputKind.Quantity, "mm", Min: 10, Max: 1500, HardMin: 1, HardMax: 3000, IsOptional: true, Group: GroupLug),
+            new CalcInputSpec("A_beam", "Gross cross-section area of the spreader or lifting beam, for its axial utilisation (optional; blank = lug utilisation only)", CalcInputKind.Quantity, "cm^2", Min: 10, Max: 10000, HardMin: 1, HardMax: 50000, IsOptional: true, Group: GroupLug),
 
-            new CalcInputSpec("f_y", "Yield strength f_y of the lug plate for its thickness", CalcInputKind.Quantity, "MPa", Default: 355, Min: 100, Max: 1100, HardMin: 100, HardMax: 1100, Group: GroupMaterial, MaterialProperty: "f_y"),
-            new CalcInputSpec("f_u", "Ultimate strength f_u of the lug plate", CalcInputKind.Quantity, "MPa", Default: 470, Min: 150, Max: 1400, HardMin: 150, HardMax: 1400, Group: GroupMaterial, MaterialProperty: "f_u"),
+            new CalcInputSpec("f_y", "Yield strength of the lug plate for its thickness", CalcInputKind.Quantity, "MPa", Default: 355, Min: 235, Max: 960, HardMin: 100, HardMax: 1100, Group: GroupMaterial, MaterialProperty: "f_y"),
+            new CalcInputSpec("f_u", "Ultimate tensile strength of the lug plate", CalcInputKind.Quantity, "MPa", Default: 470, Min: 340, Max: 1100, HardMin: 150, HardMax: 1400, Group: GroupMaterial, MaterialProperty: "f_u"),
 
-            new CalcInputSpec("design_category", "Design Category the design factor belongs to (a label, printed on the sheet)", CalcInputKind.Text, IsOptional: true, Group: GroupFactors),
-            new CalcInputSpec("service_class", "Service Class the service factor belongs to (a label, printed on the sheet)", CalcInputKind.Text, IsOptional: true, Group: GroupFactors),
-            new CalcInputSpec("Nd", "Design factor N_d of the Design Category (BTH-1 mode; user record)", CalcInputKind.Number, Min: 1, Max: 5, HardMin: 1, HardMax: 5, IsOptional: true, Group: GroupFactors),
-            new CalcInputSpec("k_svc", "Service-class factor on the load (blank: 1.0; user record)", CalcInputKind.Number, Min: 1, Max: 3, HardMin: 1, HardMax: 3, IsOptional: true, Group: GroupFactors),
-            new CalcInputSpec("n_y", "Divisor n_y on f_y; the allowable stress is F_a = min(f_y/n_y, f_u/n_u) (BTH-1 mode; user record)", CalcInputKind.Number, Min: 1, Max: 4, HardMin: 1, HardMax: 4, IsOptional: true, Group: GroupFactors),
-            new CalcInputSpec("n_u", "Divisor n_u on f_u; the allowable stress is F_a = min(f_y/n_y, f_u/n_u) (BTH-1 mode; user record)", CalcInputKind.Number, Min: 1, Max: 6, HardMin: 1, HardMax: 6, IsOptional: true, Group: GroupFactors),
-            new CalcInputSpec("k_b", "Bearing multiple k_b of the allowable stress on the projected pin area (BTH-1 mode; user record)", CalcInputKind.Number, Min: 0.5, Max: 3, HardMin: 0.5, HardMax: 3, IsOptional: true, Group: GroupFactors),
-            new CalcInputSpec("dish_max", "Dishing-ratio limit on D_h/t (blank: the dishing check is not made; user record)", CalcInputKind.Number, Min: 1, Max: 100, HardMin: 1, HardMax: 100, IsOptional: true, Group: GroupFactors),
-            new CalcInputSpec("k_proof", "Proof-load factor on the rated load (blank: no proof load given; user record)", CalcInputKind.Number, Min: 1, Max: 3, HardMin: 1, HardMax: 3, IsOptional: true, Group: GroupFactors),
+            new CalcInputSpec("WLL", "Rated load (working load limit) of the appliance, carried by all its lugs", CalcInputKind.Quantity, "kN", Default: 150, Min: 5, Max: 5000, HardMin: 0.5, HardMax: 10000, Group: GroupLoads),
+            new CalcInputSpec("theta", "Sling angle θ from the vertical, measured in the plane of the lug (the out-of-plane angle β is applied on top: F_s = F_v/(cos θ·cos β))", CalcInputKind.Quantity, "deg", Default: 30, Min: 0, Max: 45, HardMin: 0, HardMax: 60, Group: GroupLoads),
+            new CalcInputSpec("beta", "Out-of-plane angle β of the sling out of the lug plane", CalcInputKind.Quantity, "deg", Default: 0, Min: 0, Max: 15, HardMin: 0, HardMax: 30, Group: GroupLoads),
 
-            new CalcInputSpec("A_beam", "Gross cross-section area of the spreader or lifting beam, for its axial utilisation (blank: lug utilisation only)", CalcInputKind.Quantity, "cm^2", Min: 1, Max: 50000, HardMin: 1, HardMax: 50000, IsOptional: true, Group: GroupBeam),
+            new CalcInputSpec("n_cycles", "Load cycles in the life of the lug (the 2×/3× route covers up to 16,000, and beyond that a fatigue assessment is needed and the sheet does not run)", CalcInputKind.Number, Default: 1000, Min: 1, Max: 10000, HardMin: 1, HardMax: MaxCycles, Group: GroupConditions),
+
+            new CalcInputSpec("design_category", "Design Category the design factor belongs to (optional; blank = no label printed)", CalcInputKind.Text, IsOptional: true, Group: GroupFactors),
+            new CalcInputSpec("service_class", "Service Class the service factor belongs to (optional; blank = no label printed)", CalcInputKind.Text, IsOptional: true, Group: GroupFactors),
+            new CalcInputSpec("Nd", "Design factor of the Design Category (optional; blank = BTH-1 mode is blocked; user record)", CalcInputKind.Number, Min: 1, Max: 3, HardMin: 1, HardMax: 5, IsOptional: true, Group: GroupFactors),
+            new CalcInputSpec("k_svc", "Service-class factor on the load (optional; blank = 1.0; user record)", CalcInputKind.Number, Min: 1, Max: 2, HardMin: 1, HardMax: 3, IsOptional: true, Group: GroupFactors),
+            new CalcInputSpec("n_y", "Divisor on the yield strength in the allowable stress (optional; blank = BTH-1 mode is blocked; user record)", CalcInputKind.Number, Min: 1, Max: 3, HardMin: 1, HardMax: 4, IsOptional: true, Group: GroupFactors),
+            new CalcInputSpec("n_u", "Divisor on the ultimate tensile strength in the allowable stress (optional; blank = BTH-1 mode is blocked; user record)", CalcInputKind.Number, Min: 1.5, Max: 5, HardMin: 1, HardMax: 6, IsOptional: true, Group: GroupFactors),
+            new CalcInputSpec("k_b", "Bearing multiple of the allowable stress on the projected pin area (optional; blank = BTH-1 mode is blocked; user record)", CalcInputKind.Number, Min: 1, Max: 2, HardMin: 0.5, HardMax: 3, IsOptional: true, Group: GroupFactors),
+
+            new CalcInputSpec("dish_max", "Dishing-ratio limit on the hole diameter over the thickness (optional; blank = the dishing check is not made; user record)", CalcInputKind.Number, Min: 5, Max: 60, HardMin: 1, HardMax: 100, IsOptional: true, Group: GroupRequirements),
+            new CalcInputSpec("k_proof", "Proof-load factor on the rated load (optional; blank = no proof load given; user record)", CalcInputKind.Number, Min: 1, Max: 2, HardMin: 1, HardMax: 3, IsOptional: true, Group: GroupRequirements),
 
             new CalcInputSpec(CalcAttestation.NameSymbol, "Competent person attesting the design (not the author; required to check and issue)", CalcInputKind.Text, IsOptional: true, Group: GroupAttest),
             new CalcInputSpec(CalcAttestation.QualificationSymbol, "Their qualification and standing", CalcInputKind.Text, IsOptional: true, Group: GroupAttest),
             new CalcInputSpec(CalcAttestation.StatementSymbol, "Attestation: what the competent person has reviewed (at least 20 characters)", CalcInputKind.Text, IsOptional: true, Group: GroupAttest),
         ],
         [
-            new CalcAssumption("A design calculation, not a thorough examination: it checks the lug plate at the pin hole against the user's chosen criteria and nothing else.", "LOLER reg 9 and PUWER duties are the owner's and the competent person's."),
-            new CalcAssumption("Nominal-stress screening of four sections (tension beyond the hole, single-plane fracture beyond the hole, shear-out, bearing) on a plate loaded through a pin; no stress-concentration factor, no fatigue (the cycle count is limited to 16,000), no weld, bolt or beam check, which are made on the linked sheets.", "The notch-stress route of EN 13001-3-1 is cited, not implemented."),
-            new CalcAssumption("The load on the hole is the resultant sling force F_s whatever the out-of-plane angle, which is conservative; the out-of-plane component and its moment are outputs for the weld and base checks.", "F_op = F_s·sin β."),
-            new CalcAssumption("Equal sharing between the lugs, with a fourth lug not relied on (three share). The share of a statically indeterminate set is not computed.", "Conservative convention; replace with the actual share if it is known."),
-            new CalcAssumption("A horizontal beam adds the automatic 6° tilt as two cases: pitch (sling angles θ ± 6° with the load redistributed between the lugs by statics, the slings meeting at the hook) and roll (out-of-plane angle + 6°), the larger sling force governing. N_beam is the force along the beam axis: in the pitch case each sling stays at θ to the beam's normal, so the more loaded lug sends F_v·sin(θ + 6°)/cos θ along the beam. With θ ≤ 6° the pitch case puts the whole load on one lug, with W·sin 6° along the beam; with more than two lugs the two-lug redistribution is applied to each lug's share.", "Owner's specification (6° tilt of a horizontal beam); EN 13155."),
-            new CalcAssumption("The allowable stress is the one lesser value min(f_y/n_y, f_u/n_u) for every BTH-1 section, as in the published worked example the sheet is checked against; the pin-clearance factor C_r is applied as stated from D_p/D_h < 1 with no cut-off.", "Conservative; owner checklist."),
-            new CalcAssumption("Signatures are not authenticated by TempestOS: the platform asks for no password, so the author, the two checkers and the competent person are as entered into this installation; any person can switch to another name.", "ADR-0173; the feature stays off until this is addressed."),
-            new CalcAssumption("The design factor, service-class factor, allowable-stress divisors, bearing multiple, dishing limit and proof-load factor are the user's records from their own licensed copy of the code; none is shipped and none has a default.", "ASME BTH-1 and EN 13155 text and tables are not shipped."),
-            new CalcAssumption("The equations are written out in the spec document in the author's notation (the single-plane fracture and effective-width relations and the 1.13 and 0.92 constants follow the published course example); the owner compares them with BTH-1 (2023 or later) and EN 13155+A1 before the feature is ever enabled.", "Owner test pack, S8 review checklist."),
+            new CalcAssumption("This is a design calculation, not a thorough examination.", "It checks the lug plate at the pin hole against the user's chosen criteria and nothing else. The owner and the competent person keep the LOLER reg 9 and PUWER duties."),
+            new CalcAssumption("The sheet screens four sections by nominal stress: tension beyond the hole, single-plane fracture, shear-out and bearing.", "There is no stress-concentration factor, no fatigue (at most 16,000 cycles) and no weld, bolt or beam check. The notch-stress route of EN 13001-3-1 is cited, not implemented."),
+            new CalcAssumption("The load on the hole is the resultant sling force F_s whatever the out-of-plane angle, which is conservative.", "The out-of-plane component and its moment are outputs for the weld and base checks: F_op = F_s·sin β."),
+            new CalcAssumption("The lugs share the load equally, and a fourth lug is not relied on.", "This is a conservative convention. The share of a statically indeterminate set is not computed, so replace the sharing with the actual share if it is known."),
+            new CalcAssumption("A horizontal beam adds an automatic 6° tilt as a pitch case and a roll case.", "Pitch: the sling angles are θ ± 6° with the load redistributed between the lugs by statics, and the slings meet at the hook. Roll: the out-of-plane angle grows by 6°. N_beam is the force along the beam axis, and in the pitch case the more loaded lug sends F_v·sin(θ + 6°)/cos θ along it. With θ ≤ 6° the pitch case puts the whole load on one lug. With more than two lugs the two-lug redistribution is applied to each lug's share. Owner's specification (6° tilt of a horizontal beam); EN 13155."),
+            new CalcAssumption("The allowable stress is the one lesser value min(f_y/n_y, f_u/n_u) for every BTH-1 section.", "This follows the published worked example the sheet is checked against. The pin-clearance factor C_r is applied as stated from D_p/D_h < 1 with no cut-off. Conservative; owner checklist."),
+            new CalcAssumption("TempestOS does not authenticate signatures, so any person can switch to another name.", "The platform asks for no password, so the author, the two checkers and the competent person are as entered into this installation. ADR-0173; the feature stays off until this is addressed."),
+            new CalcAssumption("The design factor, service-class factor, divisors, bearing multiple, dishing limit and proof-load factor are the user's records.", "They come from the user's own licensed copy of the code. None is shipped and none has a default, and the text and tables of ASME BTH-1 and EN 13155 are not shipped."),
+            new CalcAssumption("The owner compares the equations in the spec document with BTH-1 and EN 13155 before the feature is enabled.", "The single-plane fracture and effective-width relations and the constants 1.13 and 0.92 follow the published course example. The review checklist of the owner test pack lists the comparison."),
         ],
         [
-            new CalcClauseRef("ASME BTH-1", "3-3.3", "Pin-connected plates (design of lifting lugs)"),
-            new CalcClauseRef("BS EN 13155", "design requirements (clause to be confirmed)", "Non-fixed load lifting attachments: 2× elastic, 3× no release"),
-            new CalcClauseRef("BS EN 13001-3-1", "5", "Proof of static strength: the calculation route cited, not implemented"),
-            new CalcClauseRef("LOLER 1998", "reg 7, reg 9", "Marking of lifting equipment; thorough examination and inspection"),
-            new CalcClauseRef("PUWER 1998", "reg 4, reg 5", "Suitability and maintenance of work equipment"),
+            new CalcClauseRef("ASME BTH-1", "cl. 3-3.3", "Pin-connected plates (design of lifting lugs)"),
+            new CalcClauseRef("BS EN 13155", "—", "Non-fixed load lifting attachments: 2× elastic, 3× no release (clause to be confirmed)"),
+            new CalcClauseRef("BS EN 13001-3-1", "cl. 5", "Proof of static strength: the calculation route cited, not implemented"),
+            new CalcClauseRef("Health and Safety Executive, Safe use of lifting equipment (L113)", "reg. 7 and 9, 2nd ed.", "LOLER 1998: marking of lifting equipment; thorough examination and inspection"),
+            new CalcClauseRef("Health and Safety Executive, Safe use of work equipment (L22)", "reg. 4 and 5, 4th ed.", "PUWER 1998: suitability and maintenance of work equipment"),
         ],
         [
             new CalcApplicabilityRule("pin", "The pin cannot be larger than the hole.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
@@ -128,7 +129,8 @@ public sealed class LiftingLugCalculator : ICalcCalculator
             new CalcApplicabilityRule("strength", "f_u cannot be below f_y.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("factors", "BTH-1 mode needs the user-record factors N_d, n_y, n_u and k_b.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("clearance", "A pin much smaller than the hole reduces C_r.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("be", "b_e is limited to R − D_h/2.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("be", "b_e is limited to r_lug − D_h/2.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("be-eff", "The effective width beyond the hole is below the edge distance.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("tilt", "A horizontal beam adds the 6° tilt case.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("sharing", "Four lugs: three are taken to share the load.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("angle", "A sling angle above 60° from the vertical, with the tilt, is outside the usual range.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
@@ -210,13 +212,13 @@ public sealed class LiftingLugCalculator : ICalcCalculator
         Category: "Lifting",
         OutputPorts:
         [
-            new CalcOutputPort("capacity", "kN", "Rated load the lug carries in the governing mode (lug.capacity)"),
-            new CalcOutputPort("governing_mode", "", "The governing mode and section (lug.governing_mode)"),
-            new CalcOutputPort("util", "", "Governing utilisation of the lug and the spreader beam (spreader.util)"),
-            new CalcOutputPort("F_s", "kN", "Sling force on each lug (resultant), for the pin, shackle and sling"),
-            new CalcOutputPort("F_ip", "kN", "In-plane component of the sling force (→ M6 weld group, S4)"),
-            new CalcOutputPort("F_op", "kN", "Out-of-plane component of the sling force (→ M6 weld group, M3 bolt group)"),
-            new CalcOutputPort("N_beam", "kN", "Axial force along the spreader beam at the more loaded lug, the larger of the level and the 6° pitched case (→ S7 member check)"),
+            new CalcOutputPort("capacity", "kN", "Rated load the lug carries in the governing mode", "lifting.capacity"),
+            new CalcOutputPort("governing_mode", "", "The governing mode and section", "lifting.mode_governing"),
+            new CalcOutputPort("util", "", "Governing utilisation of the lug and the spreader beam", "lifting.utilisation"),
+            new CalcOutputPort("F_s", "kN", "Sling force on each lug (resultant), for the pin, shackle and sling", "lifting.force_sling"),
+            new CalcOutputPort("F_ip", "kN", "In-plane component of the sling force, for the weld and bolt group checks", "lifting.force_in_plane"),
+            new CalcOutputPort("F_op", "kN", "Out-of-plane component of the sling force, for the weld and bolt group checks", "lifting.force_out_of_plane"),
+            new CalcOutputPort("N_beam", "kN", "Axial force along the spreader beam at the more loaded lug, the larger of the level and the 6° pitched case", "lifting.force_beam_axial"),
         ],
         RecordKinds:
         [
@@ -237,17 +239,17 @@ public sealed class LiftingLugCalculator : ICalcCalculator
         var bth = mode is ModeBth1 or ModeBoth;
         var en = mode is ModeEn or ModeBoth;
 
-        foreach (var s in new[] { "WLL", "theta", "beta", "n_cycles", "t", "Dh", "Dp", "R", "be", "f_y", "f_u" })
+        foreach (var s in new[] { "WLL", "theta", "beta", "n_cycles", "t_p", "Dh", "Dp", "r_lug", "be", "f_y", "f_u" })
             c.Input(s);
 
         // Units in this method: N, mm, MPa, degrees at the interface.
         var wll = c.InputSi("WLL");
         var theta = c.InputSi("theta") * 180 / Math.PI;
         var beta = c.InputSi("beta") * 180 / Math.PI;
-        var t = c.InputSi("t") * 1e3;
+        var t = c.InputSi("t_p") * 1e3;
         var dh = c.InputSi("Dh") * 1e3;
         var dp = c.InputSi("Dp") * 1e3;
-        var radius = c.InputSi("R") * 1e3;
+        var radius = c.InputSi("r_lug") * 1e3;
         var be = c.InputSi("be") * 1e3;
         var fy = c.InputSi("f_y") / 1e6;
         var fu = c.InputSi("f_u") / 1e6;
@@ -256,19 +258,19 @@ public sealed class LiftingLugCalculator : ICalcCalculator
 
         if (dp > dh)
         {
-            c.Block("pin", "Dp: the pin cannot be larger than the hole; enter D_p ≤ D_h.");
+            c.Block("pin", "Dp: the pin cannot be larger than the hole. Enter D_p ≤ D_h.");
             return;
         }
 
         if (radius <= dh / 2)
         {
-            c.Block("radius", "R: the lug end radius must exceed the hole radius D_h/2; enter a larger R or a smaller D_h.");
+            c.Block("radius", "r_lug: the lug end radius must exceed the hole radius D_h/2. Enter a larger r_lug or a smaller D_h.");
             return;
         }
 
         if (fu < fy)
         {
-            c.Block("strength", "f_u: the ultimate strength cannot be below the yield strength; enter f_u ≥ f_y.");
+            c.Block("strength", "f_u: the ultimate tensile strength cannot be below the yield strength. Enter f_u ≥ f_y.");
             return;
         }
 
@@ -276,11 +278,11 @@ public sealed class LiftingLugCalculator : ICalcCalculator
 
         if (bth)
         {
-            foreach (var (symbol, text) in new[] { ("Nd", "the design factor N_d of the Design Category"), ("n_y", "the divisor n_y on f_y"), ("n_u", "the divisor n_u on f_u"), ("k_b", "the bearing multiple k_b") })
+            foreach (var (symbol, text) in new[] { ("Nd", "the design factor of the Design Category"), ("n_y", "the divisor on f_y"), ("n_u", "the divisor on f_u"), ("k_b", "the bearing multiple") })
             {
                 if (!c.Has(symbol))
                 {
-                    c.Block("factors", $"{symbol}: BTH-1 mode needs {text} from your own copy of the code (a user record, no default); enter it, or choose the EN 13155 mode.");
+                    c.Block("factors", $"{symbol}: enter {text} from your own copy of the code. Alternatively, choose the EN 13155 mode.");
                     return;
                 }
             }
@@ -296,7 +298,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
         if (bth && c.Has("k_svc"))
             kSvc = c.InputSi("k_svc");
         else if (bth)
-            c.Warn("k-svc", "k_svc: no service-class factor entered, 1.0 used; enter it from your own copy of the code if it applies.");
+            c.Warn("k-svc", "k_svc: no service-class factor is entered, so 1.0 is used. Enter it from your own copy of the code if it applies.");
 
         // ---------------------------------------------------------------- loads
         var nEff = Math.Min(nLugs, 3);
@@ -315,7 +317,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
         cases.Add(("nominal", nominal.Fs, nominal.Fip, nominal.Fop, nominal.N));
 
         if (nLugs == 4)
-            c.Warn("sharing", "n_lugs: four lugs — three are taken to share the load; replace the sharing with the actual share if it is known (owner checklist).");
+            c.Warn("sharing", "n_lugs: with four lugs, three are taken to share the load. Replace the sharing with the actual share if it is known.");
 
         c.Record("n_eff", "min(n_lugs, 3)", $"min({nLugs}, 3)", new ScalarValue(nEff), "Lugs sharing the load (a fourth is not relied on)", "spec");
         c.Record("F_v", "WLL/n_eff", $"{F(wll / 1e3)} kN / {nEff}", ScalarValue.Of(fV / 1e3, "kN"), "Vertical load on each lug", "spec");
@@ -339,14 +341,14 @@ public sealed class LiftingLugCalculator : ICalcCalculator
             {
                 pitchPlane = wll;
                 pitchN = wll * Math.Sin(tau * Math.PI / 180);
-                c.Warn("tilt", $"theta: a sling angle of {F(theta)}° is no more than the 6° tilt, so the tilted beam can put the whole load on one vertical sling; F_s is taken as the whole rated load.");
+                c.Warn("tilt", $"theta: the sling angle {F(theta)}° is within the 6° tilt, so one sling can take the whole load. F_s is taken as the whole rated load.");
                 c.Record("F_s_pitch", "WLL / cos β (θ ≤ 6°: the whole load on one sling)", $"{F(wll / 1e3)} kN / cos({F(beta)}°)", ScalarValue.Of(pitchPlane / Math.Cos(beta * Math.PI / 180) / 1e3, "kN"), "Sling force on the more loaded lug when the beam pitches 6°", "EN 13155");
             }
             else
             {
                 pitchPlane = fV / Math.Cos(theta * Math.PI / 180);
                 pitchN = fV * Math.Tan(theta * Math.PI / 180);
-                c.Warn("tilt", "n_lugs: one lug on a beam has no other lug to take load off it, so the pitch tilt changes nothing here; check the lug it hangs from.");
+                c.Warn("tilt", "n_lugs: one lug on a beam has no other lug to share the load, so the pitch tilt changes nothing. Check the lug it hangs from.");
                 c.Record("F_s_pitch", "F_v/(cos θ·cos β)", $"{F(fV / 1e3)} kN / (cos {F(theta)}° × cos {F(beta)}°)", ScalarValue.Of(pitchPlane / Math.Cos(beta * Math.PI / 180) / 1e3, "kN"), "Sling force when the beam pitches 6° (a single lug)", "EN 13155");
             }
 
@@ -357,7 +359,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
             var roll = Plain(theta, beta + tau);
             cases.Add(("roll", roll.Fs, roll.Fip, roll.Fop, roll.N));
             c.Record("F_s_roll", "F_v/(cos θ·cos(β + 6°))", $"{F(fV / 1e3)} kN / (cos {F(theta)}° × cos {F(beta + tau)}°)", ScalarValue.Of(roll.Fs / 1e3, "kN"), "Sling force when the beam rolls 6°", "EN 13155");
-            c.Warn("tilt", "beam: the automatic 6° tilt cases are applied (pitch: sling angles θ ± 6° with the load redistributed between the lugs; roll: out-of-plane angle + 6°) and the larger sling force governs.");
+            c.Warn("tilt", "beam: the 6° tilt cases are applied, a pitch of θ ± 6° and a roll of β + 6°. The larger sling force governs.");
         }
 
         var worst = cases.MaxBy(k => k.Fs);
@@ -367,7 +369,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
         var nBeam = cases.Max(k => k.N);
 
         if (theta + (beam ? tau : 0) > 60)
-            c.Warn("angle", $"theta: the sling angle with the tilt is {F(theta + (beam ? tau : 0))}° from the vertical, above the usual 60°; check the sling and the lug for the lower angle to the horizontal.");
+            c.Warn("angle", $"theta: the sling angle with the tilt is {F(theta + (beam ? tau : 0))}° from the vertical, above the usual 60°. Check the sling and the lug at the lower angle to the horizontal.");
 
         c.Record("F_s", beam ? "max(F_s,nom, F_s,pitch, F_s,roll)" : "F_s,nom", beam ? $"governing case: {worst.Name}" : "no tilt case", ScalarValue.Of(fS / 1e3, "kN"), "Sling force on each lug (resultant), governing case", "spec");
         c.Record("F_ip", beam ? "max over the cases of F_s·cos β" : "F_s·cos β", $"{F(fS / 1e3)} kN × cos β", ScalarValue.Of(fIp / 1e3, "kN"), "In-plane component of the sling force (envelope)", "spec");
@@ -386,7 +388,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
         var side = Math.Min(be, radius - dh / 2);
 
         if (be > radius - dh / 2)
-            c.Warn("be", $"be: b_e ({F(be)} mm) exceeds R − D_h/2 ({F(radius - dh / 2)} mm); the smaller is used.");
+            c.Warn("be", $"be: b_e ({F(be)} mm) exceeds r_lug − D_h/2 ({F(radius - dh / 2)} mm), so the smaller is used.");
 
         var aEff = c.Has("a") ? c.InputSi("a") * 1e3 : radius - dh / 2;
         var ratio = dp / dh;
@@ -398,21 +400,22 @@ public sealed class LiftingLugCalculator : ICalcCalculator
         var aB = dp * t;
 
         if (beEff < side)
-            c.Warn("be-eff", $"be: the effective width {F(beEff)} mm is below the edge distance {F(side)} mm (limited to 4t and by f_u/f_y), so the tension area uses the smaller.");
+            c.Warn("be-eff", $"be: the effective width {F(beEff)} mm is below the edge distance {F(side)} mm, so the tension area uses the smaller.");
 
         if (ratio < 0.9)
-            c.Warn("clearance", $"Dp: the pin is {F(ratio * 100)} % of the hole diameter; the pin-clearance factor C_r falls as the pin gets smaller, and a close-fitting pin is the usual practice.");
+            c.Warn("clearance", $"Dp: the pin is {F(ratio * 100)} % of the hole diameter, so the pin-clearance factor C_r falls. A close-fitting pin is the usual practice.");
 
-        c.Record("side", "min(b_e, R − D_h/2)", $"min({F(be)}, {F(radius)} − {F(dh)}/2) mm", ScalarValue.Of(side, "mm"), "Edge distance on each side of the hole", "spec");
-        c.Record("a_eff", "a, or R − D_h/2", c.Has("a") ? $"a = {F(aEff)} mm" : $"{F(radius)} − {F(dh)}/2 mm", ScalarValue.Of(aEff, "mm"), "End distance along the load line", "spec");
+        c.Record("side", "min(b_e, r_lug − D_h/2)", $"min({F(be)}, {F(radius)} − {F(dh)}/2) mm", ScalarValue.Of(side, "mm"), "Edge distance on each side of the hole", "spec");
+        c.Record("a_eff", "a, or r_lug − D_h/2", c.Has("a") ? $"a = {F(aEff)} mm" : $"{F(radius)} − {F(dh)}/2 mm", ScalarValue.Of(aEff, "mm"), "End distance along the load line", "spec");
         c.Record("phi", "55·D_p/D_h (degrees)", $"55 × {F(dp)} / {F(dh)}", ScalarValue.Of(phi, "deg"), "Angle of the shear planes", "BTH-1 3-3.3");
-        c.Record("be_eff", "min(b_e,eff, 4t, 0.6·(f_u/f_y)·√(D_h/b_e,eff)·b_e,eff)", $"min({F(side)}, {F(4 * t)}, {F(0.6 * (fu / fy) * Math.Sqrt(dh / side) * side)}) mm", ScalarValue.Of(beEff, "mm"), "Effective width beyond the hole in tension", "BTH-1 3-3.3");
-        c.Record("A_t", "2·t·b_e,eff", $"2 × {F(t)} × {F(beEff)} mm", ScalarValue.Of(aT, "mm^2"), "Area beyond the hole in tension", "BTH-1 3-3.3");
-        c.Record("A_fr", "(1.13·a + 0.92·b_e/(1 + b_e/D_h))·t", $"(1.13 × {F(aEff)} + 0.92 × {F(side)} / (1 + {F(side)}/{F(dh)})) × {F(t)} mm", ScalarValue.Of(aFr, "mm^2"), "Single-plane fracture area beyond the hole (before C_r)", "BTH-1 3-3.3");
-        c.Record("A_v", "2·t·[a + (D_p/2)(1 − cos φ)]", $"2 × {F(t)} × [{F(aEff)} + ({F(dp)}/2) × (1 − cos {F(phi)}°)] mm", ScalarValue.Of(aV, "mm^2"), "Shear area of the two shear-out planes", "BTH-1 3-3.3");
-        c.Record("A_b", "D_p·t", $"{F(dp)} × {F(t)} mm", ScalarValue.Of(aB, "mm^2"), "Projected bearing area of the pin", "spec");
+        c.Record("be_eff", "min(b_e,eff, 4t_p, 0.6·(f_u/f_y)·√(D_h/b_e,eff)·b_e,eff)", $"min({F(side)}, {F(4 * t)}, {F(0.6 * (fu / fy) * Math.Sqrt(dh / side) * side)}) mm", ScalarValue.Of(beEff, "mm"), "Effective width beyond the hole in tension", "BTH-1 3-3.3");
+        c.Record("A_t", "2·t_p·b_e,eff", $"2 × {F(t)} × {F(beEff)} mm", ScalarValue.Of(aT, "mm^2"), "Area beyond the hole in tension", "BTH-1 3-3.3");
+        c.Record("A_fr", "(1.13·a + 0.92·b_e/(1 + b_e/D_h))·t_p", $"(1.13 × {F(aEff)} + 0.92 × {F(side)} / (1 + {F(side)}/{F(dh)})) × {F(t)} mm", ScalarValue.Of(aFr, "mm^2"), "Single-plane fracture area beyond the hole (before C_r)", "BTH-1 3-3.3");
+        c.Record("A_v", "2·t_p·[a + (D_p/2)(1 − cos φ)]", $"2 × {F(t)} × [{F(aEff)} + ({F(dp)}/2) × (1 − cos {F(phi)}°)] mm", ScalarValue.Of(aV, "mm^2"), "Shear area of the two shear-out planes", "BTH-1 3-3.3");
+        c.Record("A_b", "D_p·t_p", $"{F(dp)} × {F(t)} mm", ScalarValue.Of(aB, "mm^2"), "Projected bearing area of the pin", "spec");
 
         var modes = new List<(string Label, string Symbol, double U)>();
+        var checks = new List<(string Name, string Demand, string Capacity, string Clause)>();
         string? dishFailure = null;
         double uDish = 0;
         double uBth = 0;
@@ -437,13 +440,14 @@ public sealed class LiftingLugCalculator : ICalcCalculator
             c.Record("P_v", "F_a·A_v/√3", $"{F(fa)} MPa × {F(aV)} mm² / √3", ScalarValue.Of(pV / 1e3, "kN"), "Double-plane shear-out", "BTH-1 3-3.3");
             c.Record("P_b", "k_b·F_a·A_b", $"{F(kb)} × {F(fa)} MPa × {F(aB)} mm²", ScalarValue.Of(pB / 1e3, "kN"), "Pin bearing", "BTH-1 3-3.3");
 
-            var parts = new[] { ("tension beyond the hole", "u_t", pT), ("single-plane fracture", "u_sp", pSp), ("double-plane shear", "u_v", pV), ("bearing", "u_b", pB) };
+            var parts = new[] { ("tension beyond the hole", "tension resistance beyond the hole", "u_t", "P_t", pT), ("single-plane fracture", "single-plane fracture resistance", "u_sp", "P_sp", pSp), ("double-plane shear", "double-plane shear resistance", "u_v", "P_v", pV), ("bearing", "bearing resistance", "u_b", "P_b", pB) };
 
-            foreach (var (label, symbol, capacity) in parts)
+            foreach (var (label, resistance, symbol, capacitySymbol, capacity) in parts)
             {
                 var u = design / capacity;
                 c.Record(symbol, "D/P", $"{F(design / 1e3)} kN / {F(capacity / 1e3)} kN", new ScalarValue(u), $"Utilisation, {label}", "BTH-1 3-3.3");
                 modes.Add(($"BTH-1: {label}", symbol, u));
+                checks.Add(($"Design load against the {resistance} (BTH-1)", "D_bth", capacitySymbol, "BTH-1 3-3.3"));
                 uBth = Math.Max(uBth, u);
             }
 
@@ -453,33 +457,36 @@ public sealed class LiftingLugCalculator : ICalcCalculator
 
             if (c.Has("dish_max"))
             {
+                c.Input("dish_max");
                 var dishMax = c.InputSi("dish_max");
                 var dish = dh / t;
                 uDish = dish / dishMax;
-                c.Record("dish", "D_h/t", $"{F(dh)} / {F(t)}", new ScalarValue(dish), "Dishing ratio", "spec");
+                c.Record("dish", "D_h/t_p", $"{F(dh)} / {F(t)}", new ScalarValue(dish), "Dishing ratio", "spec");
                 c.Record("u_dish", "(D_h/t)/dish_max", $"{F(dish)} / {F(dishMax)}", new ScalarValue(uDish), "Dishing-ratio utilisation", "spec");
+
+                checks.Add(("Dishing ratio against its limit (BTH-1)", "dish", "dish_max", "spec"));
 
                 if (uDish > 1)
                     dishFailure = $"dishing ratio {F(dish)} above the limit {F(dishMax)}";
             }
             else
             {
-                c.Warn("dishing", "dish_max: no dishing-ratio limit entered, so the dishing check is not made; enter it from your own copy of the code.");
+                c.Warn("dishing", "dish_max: no dishing-ratio limit is entered, so the dishing check is not made. Enter it from your own copy of the code.");
             }
         }
 
         // ---------------------------------------------------------------- EN 13155
         if (en)
         {
-            var sections = new (string Label, string Symbol, double Y, double U)[]
+            var sections = new (string Label, string Resistance, string Symbol, double Y, double U)[]
             {
-                ("tension beyond the hole", "t", fy * aT, fu * aT),
-                ("single-plane fracture", "sp", fy * aFr, fu * aFr),
-                ("double-plane shear", "v", fy / Math.Sqrt(3) * aV, fu / Math.Sqrt(3) * aV),
-                ("bearing", "b", fy * aB, fu * aB),
+                ("tension beyond the hole", "tension resistance beyond the hole", "t", fy * aT, fu * aT),
+                ("single-plane fracture", "single-plane fracture resistance", "sp", fy * aFr, fu * aFr),
+                ("double-plane shear", "double-plane shear resistance", "v", fy / Math.Sqrt(3) * aV, fu / Math.Sqrt(3) * aV),
+                ("bearing", "bearing resistance", "b", fy * aB, fu * aB),
             };
 
-            foreach (var (label, symbol, y, u3) in sections)
+            foreach (var (label, resistance, symbol, y, u3) in sections)
             {
                 var elastic = y / 2;
                 var release = u3 / 3;
@@ -489,6 +496,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
                 c.Record($"u_en_{symbol}", "F_s/P_EN", $"{F(fS / 1e3)} kN / {F(p / 1e3)} kN", new ScalarValue(u), $"EN 13155 utilisation, {label}", "EN 13155");
                 var route = elastic <= release ? "2×WLL elastic" : "3×WLL no release";
                 modes.Add(($"EN 13155 ({route}): {label}", $"u_en_{symbol}", u));
+                checks.Add(($"Sling force against the {resistance} ({route})", "F_s", $"P_en_{symbol}", "EN 13155"));
                 uEn = Math.Max(uEn, u);
             }
 
@@ -515,12 +523,13 @@ public sealed class LiftingLugCalculator : ICalcCalculator
                 var uBb = bth ? nd * kSvc * nBeam / (area * fa) : 0.0;
                 var uBe = en ? Math.Max(2 * nBeam / (area * fy), 3 * nBeam / (area * fu)) : 0.0;
                 uBeam = Math.Max(uBb, uBe);
+                checks.Add(("Beam axial utilisation against its limit", "u_beam", "u_limit", "spec"));
                 c.Record("u_beam", bth && en ? "max(N_d·k_svc·N_beam/(A·F_a), max(2N/(A·f_y), 3N/(A·f_u)))" : bth ? "N_d·k_svc·N_beam/(A·F_a)" : "max(2N_beam/(A·f_y), 3N_beam/(A·f_u))",
                     $"N_beam = {F(nBeam / 1e3)} kN on {F(area / 100)} cm²", new ScalarValue(uBeam), "Axial yield utilisation of the beam (buckling: S7)", "spec");
             }
             else
             {
-                c.Warn("beam-area", "A_beam: no beam area entered, so the spreader utilisation is the lug utilisation only; link N_beam to the S7 member check for the beam.");
+                c.Warn("beam-area", "A_beam: no beam area is entered, so the spreader utilisation is the lug utilisation only. Link N_beam to the member check sheet for the beam.");
             }
         }
 
@@ -587,7 +596,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
         }
         else
         {
-            c.Warn("proof", "k_proof: no proof-load factor entered, so no proof load is given; enter it from your own copy of the code or procedure.");
+            c.Warn("proof", "k_proof: no proof-load factor is entered, so no proof load is given. Enter it from your own copy of the code or procedure.");
             proofText = "proof load not set (enter k_proof)";
         }
 
@@ -602,14 +611,10 @@ public sealed class LiftingLugCalculator : ICalcCalculator
             "(7) keep the report of the thorough examination with the appliance."));
 
         // ---------------------------------------------------------------- checks
-        foreach (var (label, symbol, _) in modes)
-            c.CheckUtilisation(label, symbol, label.StartsWith("BTH-1", StringComparison.Ordinal) ? "BTH-1 3-3.3" : "EN 13155");
+        c.Record("u_limit", "limit", "the utilisation limit", new ScalarValue(1.0), "Utilisation limit");
 
-        if (bth && c.Session.Find("u_dish") is not null)
-            c.CheckUtilisation("BTH-1: dishing ratio", "u_dish", "spec");
-
-        if (beam && c.Session.Find("u_beam") is not null)
-            c.CheckUtilisation("Spreader beam axial yield", "u_beam", "spec");
+        foreach (var (name, demand, capacity, clause) in checks)
+            c.Check(name, demand, capacity, clause);
     }
 
     private static CalcExpectedValue Ex(string symbol, double value, string unit) => new(symbol, value, unit, 1e-9);
@@ -626,19 +631,19 @@ public sealed class LiftingLugCalculator : ICalcCalculator
     private static CalcInputValue[] LugA() =>
     [
         Choice("mode", ModeBth1), Q("WLL", 150, "kN"), Choice("n_lugs", "2"), Q("theta", 30, "deg"), Q("beta", 5, "deg"), CalcInputValue.Switch("beam", false), N("n_cycles", 1000),
-        Q("t", 20, "mm"), Q("Dh", 50, "mm"), Q("Dp", 45, "mm"), Q("R", 65, "mm"), Q("be", 35, "mm"), Q("h", 150, "mm"), Q("f_y", 355, "MPa"), Q("f_u", 470, "MPa"), .. Factors(),
+        Q("t_p", 20, "mm"), Q("Dh", 50, "mm"), Q("Dp", 45, "mm"), Q("r_lug", 65, "mm"), Q("be", 35, "mm"), Q("h", 150, "mm"), Q("f_y", 355, "MPa"), Q("f_u", 470, "MPa"), .. Factors(),
     ];
 
     private static CalcInputValue[] LugB() =>
     [
         Choice("mode", ModeEn), Q("WLL", 100, "kN"), Choice("n_lugs", "2"), Q("theta", 20, "deg"), Q("beta", 0, "deg"), CalcInputValue.Switch("beam", false), N("n_cycles", 1000),
-        Q("t", 30, "mm"), Q("Dh", 40, "mm"), Q("Dp", 38, "mm"), Q("R", 40, "mm"), Q("be", 30, "mm"), Q("f_y", 235, "MPa"), Q("f_u", 360, "MPa"),
+        Q("t_p", 30, "mm"), Q("Dh", 40, "mm"), Q("Dp", 38, "mm"), Q("r_lug", 40, "mm"), Q("be", 30, "mm"), Q("f_y", 235, "MPa"), Q("f_u", 360, "MPa"),
     ];
 
     private static CalcInputValue[] LugC() =>
     [
         Choice("mode", ModeBoth), Q("WLL", 400, "kN"), Choice("n_lugs", "4"), Q("theta", 25, "deg"), Q("beta", 3, "deg"), CalcInputValue.Switch("beam", true), N("n_cycles", 1000),
-        Q("t", 30, "mm"), Q("Dh", 70, "mm"), Q("Dp", 66, "mm"), Q("R", 90, "mm"), Q("be", 50, "mm"), Q("a", 60, "mm"), Q("h", 200, "mm"), Q("f_y", 355, "MPa"), Q("f_u", 470, "MPa"), Q("A_beam", 120, "cm^2"), .. Factors(),
+        Q("t_p", 30, "mm"), Q("Dh", 70, "mm"), Q("Dp", 66, "mm"), Q("r_lug", 90, "mm"), Q("be", 50, "mm"), Q("a", 60, "mm"), Q("h", 200, "mm"), Q("f_y", 355, "MPa"), Q("f_u", 470, "MPa"), Q("A_beam", 120, "cm^2"), .. Factors(),
     ];
 
     private static CalcInputValue[] LugE() => [.. LugB().Select(v => v.Symbol == "mode" ? Choice("mode", ModeBoth) : v), .. Factors()];
@@ -647,7 +652,7 @@ public sealed class LiftingLugCalculator : ICalcCalculator
     private static CalcInputValue[] S106() =>
     [
         Choice("mode", ModeBth1), Q("WLL", 5, "kip"), Choice("n_lugs", "1"), Q("theta", 0, "deg"), Q("beta", 0, "deg"), CalcInputValue.Switch("beam", false), N("n_cycles", 1000),
-        Q("t", 1.25, "in"), Q("Dh", 1.25, "in"), Q("Dp", 0.75, "in"), Q("R", 1.75, "in"), Q("be", 1.125, "in"), Q("a", 1.125, "in"), Q("f_y", 36, "ksi"), Q("f_u", 58, "ksi"),
+        Q("t_p", 1.25, "in"), Q("Dh", 1.25, "in"), Q("Dp", 0.75, "in"), Q("r_lug", 1.75, "in"), Q("be", 1.125, "in"), Q("a", 1.125, "in"), Q("f_y", 36, "ksi"), Q("f_u", 58, "ksi"),
         N("Nd", 1), N("n_y", 3), N("n_u", 5), N("k_b", 1),
     ];
 

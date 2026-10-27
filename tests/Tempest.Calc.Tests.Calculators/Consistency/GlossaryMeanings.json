@@ -513,8 +513,7 @@
  "R": {
   "radius": [
    "elec.containment",
-   "mech.thin-vessel",
-   "struct.lifting"
+   "mech.thin-vessel"
   ],
   "reliability": [
    "mech.bearing-life",
@@ -1557,8 +1556,7 @@
  "t": {
   "thickness": [
    "bs.plane-wall",
-   "mech.lifting-lug",
-   "struct.lifting"
+   "mech.lifting-lug"
   ],
   "time": [
    "elec.fault-protection"
@@ -1602,6 +1600,7 @@
    "mech.thin-vessel",
    "struct.base-plate",
    "struct.connection-ec3",
+   "struct.lifting",
    "struct.plate-bending"
   ]
  },

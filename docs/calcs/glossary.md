@@ -149,7 +149,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `P_b`: `P_b:bearing-force` Force (lifting); `P_b:bellows-governing-pressure` Stress, pressure (pipe-expansion)
 - `Phi`: `Phi:heat-flow` Power, heat flow (sealed-system, load-budget); `Phi:load-factor` Plain number (bolted-joint)
 - `Q`: `Q:volumetric-flow` Volumetric flow (duct-sizing, pipe-pump, cylinder); `Q:heat-flow` Power, heat flow (heat-exchanger, plane-wall)
-- `R`: `R:radius` Length (containment, thin-vessel, lifting); `R:reliability` Percent quantity (bearing-life, shaft); `R:thermal-resistance` Thermal resistance (insulation, thermal-chain); `R:resistance` Resistance, impedance (voltage-drop)
+- `R`: `R:radius` Length (containment, thin-vessel); `R:reliability` Percent quantity (bearing-life, shaft); `R:thermal-resistance` Thermal resistance (insulation, thermal-chain); `R:resistance` Resistance, impedance (voltage-drop)
 - `R_f`: `R_f:fouling-resistance` Thermal resistance (heat-exchanger); `R_f:repetitions-to-failure` Plain number (fatigue-miner)
 - `S`: `S:allowable-stress` Stress, pressure (thin-vessel); `S:stress-range` Stress, pressure (fatigue-miner)
 - `S_e`: `S_e:bending-endurance-limit` Stress, pressure (fatigue-miner, shaft); `S_e:spring-shear-endurance-strength` Stress, pressure (spring)
@@ -209,7 +209,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `rho`: `rho:material-density` Density (shaft, spring, plate-bending); `rho:fluid-density` Density (cylinder)
 - `s`: `s:fillet-leg` Length (weld-group); `s:move-distance` Plain number (motor-sizing)
 - `sigma`: `sigma:stress` Stress, pressure (material-margin, shaft-stress, thermal-expansion); `sigma:standard-deviation` Length (oring-gland, tolerance-stack)
-- `t`: `t:thickness` Length (plane-wall, lifting-lug, lifting); `t:time` Time (fault-protection)
+- `t`: `t:thickness` Length (plane-wall, lifting-lug); `t:time` Time (fault-protection)
 - `t_2`: `t_2:leaving-dry-bulb-temperature` Temperature (psychrometrics); `t_2:other-ply-thickness` Length (connection-ec3)
 - `t_f`: `t_f:flange-thickness` Length (base-plate, en1993-member, ltb-interaction, section-properties); `t_f:flow-temperature` Temperature (sealed-system)
 - `t_max`: `t_max:maximum-bolt-tension` Force (bolt-group); `t_max:maximum-system-temperature` Temperature (sealed-system)
@@ -228,7 +228,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `w`: `w:distributed-load` Line force, distributed load, stiffness (beam-formulas); `w:key-width` Length (shaft); `w:mass-per-metre` Mass per length (containment)
 - `y_c`: `y_c:centroid-y` Length (weld-group, section-properties); `y_c:extreme-fibre-distance` Length (beam-formulas)
 
-## All symbols (1402 symbols in 54 templates)
+## All symbols (1403 symbols in 54 templates)
 
 One row per symbol, declared meaning and quantity type. Status `ok` is a symbol with one meaning; `RESOLVE` a symbol with several (phases B and C).
 
@@ -320,9 +320,9 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `D_s_u` | — | Length | mm | Sealing-surface diameter, upper deviation | fp.oring-gland | ok |
 | `Delta` | — | Length | mm | Movement absorbed by each leg | bs.pipe-expansion | ok |
 | `Delta_run` | — | Length | mm | Leg growth absorbed by the run or runs | bs.pipe-expansion | ok |
-| `Dh` | — | Length | mm | Hole diameter D_h | struct.lifting | ok |
+| `Dh` | — | Length | mm | Hole diameter | struct.lifting | ok |
 | `DoD` | — | Plain number | — | Allowed depth of discharge | elec.load-budget | ok |
-| `Dp` | — | Length | mm | Pin diameter D_p (not larger than the hole) | struct.lifting | ok |
+| `Dp` | — | Length | mm | Pin diameter (not larger than the hole) | struct.lifting | ok |
 | `E` | `E:youngs-modulus` | Stress, pressure | GPa | Default Young's modulus; Modulus of elasticity; Young's modulus; … (7 descriptions) | bs.pipe-expansion, fp.cylinder, mech.shaft, mech.spring, mech.thermal-expansion, mech.thick-cylinder, struct.beam-formulas, struct.column-buckling, struct.en1993-member, struct.frame-2d, struct.ltb-interaction, struct.plate-bending | ok |
 | `EI` | — | Length | µm | Hole lower deviation | mech.iso286-fit | ok |
 | `EI_override` | — | Length | µm | Hole lower deviation override | mech.iso286-fit | ok |
@@ -590,7 +590,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `N_min` | — | Force | kN | N min (compression) | struct.frame-2d | ok |
 | `N_pl_Rd` | — | Force | kN | Plastic axial resistance | struct.en1993-member | ok |
 | `N_ref` | — | Plain number | — | Cycles at the reference stress range | mech.fatigue-miner | ok |
-| `Nd` | — | Plain number | — | Design factor N_d of the Design Category (BTH-1 mode; user record) | struct.lifting | ok |
+| `Nd` | — | Plain number | — | Design factor of the Design Category (optional; blank = BTH-1 mode is… | struct.lifting | ok |
 | `OD` | `OD:pipe-outside-diameter` | Length | mm | Outside diameter of the pipe (optional; the first segment's is offere…; Pipe outside diameter | bs.pipe-expansion, bs.pipe-pump | ok |
 | `OD_max` | — | Length | mm | Largest cable diameter | elec.containment | ok |
 | `P` | `P:equivalent-dynamic-load` | Force | kN | Equivalent dynamic load | mech.bearing-life, mech.bearing-life-basic | RESOLVE (9 meanings) |
@@ -659,7 +659,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `Q_req` | — | Power, heat flow | kW | Required duty | bs.heat-exchanger | ok |
 | `Q_rtn` | — | Volumetric flow | L/min | Flow in the return line | fp.cylinder | ok |
 | `Q_suc` | — | Volumetric flow | L/min | Flow in the suction line | fp.cylinder | ok |
-| `R` | `R:radius` | Length | mm | Inside radius (corroded); Lug end radius R about the hole centre (the plate is 2R wide at the h…; Radius (bend) | elec.containment, mech.thin-vessel, struct.lifting | RESOLVE (4 meanings) |
+| `R` | `R:radius` | Length | mm | Inside radius (corroded); Radius (bend) | elec.containment, mech.thin-vessel | RESOLVE (4 meanings) |
 | `R` | `R:reliability` | Percent quantity | % | Reliability | mech.bearing-life, mech.shaft | RESOLVE (4 meanings) |
 | `R` | `R:thermal-resistance` | Thermal resistance | K/W, m·K/W | Thermal resistance; Total resistance | bs.insulation, elec.thermal-chain | RESOLVE (4 meanings) |
 | `R` | `R:resistance` | Resistance, impedance | Ω | Resistance | elec.voltage-drop | RESOLVE (4 meanings) |
@@ -884,7 +884,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `a` | `a:load-position` | Length | m | Load position from the left end (optional; blank = not used by the di…; a from end i | struct.beam-formulas, struct.frame-2d | RESOLVE (8 meanings) |
 | `a` | `a:duct-side` | Length | mm | Fixed side a (rectangular/oval; blank = size) | bs.duct-sizing | RESOLVE (8 meanings) |
 | `a` | `a:edge-distance` | Length | mm | Edge distance, hole edge to lug end (load direction) | mech.lifting-lug | RESOLVE (8 meanings) |
-| `a` | `a:end-distance` | Length | mm | End distance a from the hole edge to the plate edge along the load li… | struct.lifting | RESOLVE (8 meanings) |
+| `a` | `a:end-distance` | Length | mm | End distance from the hole edge to the plate edge along the load line… | struct.lifting | RESOLVE (8 meanings) |
 | `a` | `a:inner-radius` | Length | mm | Inner radius | mech.thick-cylinder | RESOLVE (8 meanings) |
 | `a` | `a:plate-radius-or-side` | Length | mm | Plate radius (circular) or length in the x direction (rectangular) | struct.plate-bending | RESOLVE (8 meanings) |
 | `a` | `a:prying-lever` | Length | mm | Prying lever: bolt to flange edge | mech.bolt-group | RESOLVE (8 meanings) |
@@ -937,7 +937,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `b_l` | — | Length | mm | Groove width, lower deviation | fp.oring-gland | ok |
 | `b_ratio` | — | Plain number | — | Tip width / root width (tapered width) | mech.snap-fit | ok |
 | `b_u` | — | Length | mm | Groove width, upper deviation | fp.oring-gland | ok |
-| `be` | — | Length | mm | Edge distance b_e from the hole edge to the plate edge on each side, … | struct.lifting | ok |
+| `be` | — | Length | mm | Edge distance from the hole edge to the plate edge on each side, acro… | struct.lifting | ok |
 | `be_eff` | — | Length | mm | Effective width beyond the hole | struct.lifting | ok |
 | `beta` | `beta:cam-angle` | Angle | ° | Cam angle β | mech.mechanism | RESOLVE (3 meanings) |
 | `beta` | `beta:reciprocal-temperature-coefficient` | Temperature, temperature difference | K | Reciprocal temperature coefficient β | elec.fault-protection | RESOLVE (3 meanings) |
@@ -1054,7 +1054,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `dip_limit_pcc` | — | Percent quantity | % | Dip limit at the point of common coupling (when the network operator … | elec.motor-start | ok |
 | `dip_pcc` | — | Percent quantity | % | Voltage dip at the point of common coupling | elec.motor-start | ok |
 | `dish` | — | Plain number | — | Dishing ratio | struct.lifting | ok |
-| `dish_max` | — | Plain number | — | Dishing-ratio limit on D_h/t (blank: the dishing check is not made; u… | struct.lifting | ok |
+| `dish_max` | — | Plain number | — | Dishing-ratio limit on the hole diameter over the thickness (optional… | struct.lifting | ok |
 | `dpL_s1` | — | Friction rate | Pa/m | Δp/L, main | bs.duct-sizing | ok |
 | `dp_all` | — | Stress, pressure | Pa | Σ all sections | bs.duct-sizing | ok |
 | `dp_eq` | — | Stress, pressure | Pa | Equipment / terminal loss | bs.duct-sizing | ok |
@@ -1151,13 +1151,13 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `f_t` | — | Stress, pressure | MPa | Allowable tensile stress, lug | mech.lifting-lug | ok |
 | `f_tau` | — | Plain number | — | Permissible shear stress as a fraction of R_m (generic textbook defau… | mech.spring | ok |
 | `f_top` | — | Plain number | — | Top exposure (1 free, 0 covered) | elec.enclosure-heat | ok |
-| `f_u` | `f_u:ultimate-strength` | Stress, pressure | MPa | Plate ultimate tensile strength; Ultimate strength f_u of the lug plate; Ultimate tensile strength (optional); … (5 descriptions) | mech.material-margin, struct.connection-ec3, struct.en1993-member, struct.fillet-weld, struct.lifting | ok |
+| `f_u` | `f_u:ultimate-strength` | Stress, pressure | MPa | Plate ultimate tensile strength; Ultimate tensile strength (optional); Ultimate tensile strength (optional; blank = the sheet is blocked whe…; … (5 descriptions) | mech.material-margin, struct.connection-ec3, struct.en1993-member, struct.fillet-weld, struct.lifting | ok |
 | `f_ub` | `f_ub:bolt-ultimate-strength` | Stress, pressure | MPa | Anchor bolt ultimate tensile strength; Bolt ultimate tensile strength | struct.base-plate, struct.connection-ec3 | ok |
 | `f_v` | — | Stress, pressure | MPa | Allowable shear stress, lug | mech.lifting-lug | ok |
 | `f_v_pin` | — | Stress, pressure | MPa | Allowable shear stress, pin | mech.lifting-lug | ok |
 | `f_vw_d` | — | Stress, pressure | MPa | Design shear strength | struct.fillet-weld | ok |
 | `f_w` | — | Stress, pressure | MPa | Design strength of the throat | mech.weld-group | ok |
-| `f_y` | `f_y:yield-strength` | Stress, pressure | MPa | Plate yield strength; Yield strength; Yield strength f_y of the lug plate for its thickness; … (5 descriptions) | fp.cylinder, mech.material-margin, struct.base-plate, struct.connection-ec3, struct.en1993-member, struct.lifting, struct.ltb-interaction, struct.plate-bending | ok |
+| `f_y` | `f_y:yield-strength` | Stress, pressure | MPa | Plate yield strength; Yield strength; Yield strength for the thickness; … (5 descriptions) | fp.cylinder, mech.material-margin, struct.base-plate, struct.connection-ec3, struct.en1993-member, struct.lifting, struct.ltb-interaction, struct.plate-bending | ok |
 | `f_yb` | `f_yb:bolt-yield-strength` | Stress, pressure | MPa | Anchor bolt yield strength (α_bc is valid for 235–640 MPa); Bolt yield strength | struct.base-plate, struct.connection-ec3 | ok |
 | `f_yd` | — | Stress, pressure | MPa | Design yield strength | struct.plate-bending | ok |
 | `factor` | — | Plain number | — | Factor | struct.frame-2d | ok |
@@ -1182,7 +1182,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `gap_min` | — | Length | mm | Smallest extrusion gap | fp.oring-gland | ok |
 | `h` | `h:depth` | Length | mm | Column depth, along the plate length L (I/H and RHS); Depth for the shear area (optional; blank = use A_v); Depth or vertical leg; … (5 descriptions) | struct.base-plate, struct.en1993-member, struct.ltb-interaction, struct.section-properties | RESOLVE (7 meanings) |
 | `h` | `h:film-coefficient` | Heat transfer coefficient, U-value | W/(m²·K) | Overall heat-transfer coefficient of the enclosure surface (editable … | elec.enclosure-heat | RESOLVE (7 meanings) |
-| `h` | `h:hole-to-weld-distance` | Length | mm | Distance h from the hole centre to the weld or base, for the out-of-p… | struct.lifting | RESOLVE (7 meanings) |
+| `h` | `h:hole-to-weld-distance` | Length | mm | Distance from the hole centre to the weld or base, for the out-of-pla… | struct.lifting | RESOLVE (7 meanings) |
 | `h` | `h:key-height` | Length | mm | Key height | mech.shaft | RESOLVE (7 meanings) |
 | `h` | `h:lift` | Length | mm | Lift h (rise, return; ignored for a dwell) | mech.mechanism | RESOLVE (7 meanings) |
 | `h` | `h:root-thickness` | Length | mm | Thickness at the root (cantilever); wall thickness of the ring (annul… | mech.snap-fit | RESOLVE (7 meanings) |
@@ -1232,7 +1232,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `k_T` | `k_T:transformer-overload-factor` | Plain number | — | Transformer short-time overload allowed for inrush | elec.load-budget | RESOLVE (2 meanings) |
 | `k_a` | — | Plain number | — | Surface factor override (blank: k_a = a·S_ut^b, Shigley 10th ed. Tabl… | mech.shaft | ok |
 | `k_age` | — | Plain number | — | Ageing (end-of-life) factor | elec.load-budget | ok |
-| `k_b` | `k_b:bearing-multiple` | Plain number | — | Bearing multiple k_b of the allowable stress on the projected pin are… | struct.lifting | RESOLVE (2 meanings) |
+| `k_b` | `k_b:bearing-multiple` | Plain number | — | Bearing multiple of the allowable stress on the projected pin area (o… | struct.lifting | RESOLVE (2 meanings) |
 | `k_b` | `k_b:bellows-spring-rate` | Line force, distributed load, stiffness | N/mm | Axial bellows spring rate (manufacturer's data; blank = no spring for… | bs.pipe-expansion | RESOLVE (2 meanings) |
 | `k_bar` | — | Line force, distributed load, stiffness | kN/mm | Bar stiffness | mech.thermal-expansion | ok |
 | `k_c` | `k_c:f-modification-factor` | Plain number | — | Correction factor for the f modification (optional; blank = 1/(1.33 −… | struct.ltb-interaction | RESOLVE (2 meanings) |
@@ -1247,13 +1247,13 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `k_p` | — | Plain number | — | Peukert exponent | elec.load-budget | ok |
 | `k_p1` | — | Plain number | — | Minimum p₁/d₀ | struct.connection-ec3 | ok |
 | `k_p2` | — | Plain number | — | Minimum p₂/d₀ | struct.connection-ec3 | ok |
-| `k_proof` | — | Plain number | — | Proof-load factor on the rated load (blank: no proof load given; user… | struct.lifting | ok |
+| `k_proof` | — | Plain number | — | Proof-load factor on the rated load (optional; blank = no proof load … | struct.lifting | ok |
 | `k_r` | — | Moment, torque | kN·m | Spring k_r (per radian) | struct.frame-2d | ok |
 | `k_s` | — | Line force, distributed load, stiffness | kN/mm | Restraint stiffness (leave empty for a rigid restraint) | mech.thermal-expansion | ok |
 | `k_sigma` | — | Plain number | — | Standard deviations per half-band (normal tolerances and measured nor… | fp.oring-gland | ok |
 | `k_soft` | — | Plain number | — | Soft-starter current limit as a multiple of the rated current | elec.motor-start | ok |
 | `k_sp` | — | Line force, distributed load, stiffness | N/mm | Return spring rate (link M7 rate k) | mech.mechanism | ok |
-| `k_svc` | — | Plain number | — | Service-class factor on the load (blank: 1.0; user record) | struct.lifting | ok |
+| `k_svc` | — | Plain number | — | Service-class factor on the load (optional; blank = 1.0; user record) | struct.lifting | ok |
 | `k_temp` | — | Plain number | — | Temperature capacity factor | elec.load-budget | ok |
 | `k_u` | — | Plain number | — | Ratio of the ultimate to the yield safety factor required | mech.material-margin | ok |
 | `k_vfd` | — | Plain number | — | Drive line-current limit as a multiple of the rated current | elec.motor-start | ok |
@@ -1366,8 +1366,8 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `n_t` | `n_t:holding-down-bolts-per-row` | Plain number | — | Holding-down bolts in each bolt row (one row each side) | struct.base-plate | RESOLVE (2 meanings) |
 | `n_t` | `n_t:total-coils` | Plain number | — | Total coils | mech.spring | RESOLVE (2 meanings) |
 | `n_target` | — | Plain number | — | Target safety factor | mech.shaft | ok |
-| `n_u` | `n_u:factor-on-ultimate` | Plain number | — | Divisor n_u on f_u; the allowable stress is F_a = min(f_y/n_y, f_u/n_…; Factor on ultimate | mech.material-margin, struct.lifting | ok |
-| `n_y` | `n_y:factor-on-yield` | Plain number | — | Divisor n_y on f_y; the allowable stress is F_a = min(f_y/n_y, f_u/n_…; Factor on yield | mech.material-margin, struct.lifting | ok |
+| `n_u` | `n_u:factor-on-ultimate` | Plain number | — | Divisor on the ultimate tensile strength in the allowable stress (opt…; Factor on ultimate | mech.material-margin, struct.lifting | ok |
+| `n_y` | `n_y:factor-on-yield` | Plain number | — | Divisor on the yield strength in the allowable stress (optional; blan…; Factor on yield | mech.material-margin, struct.lifting | ok |
 | `n_y_min` | — | Plain number | — | Lowest yield safety factor | mech.shaft | ok |
 | `nominal` | — | Length | mm | Nominal | mech.tolerance-stack | ok |
 | `nu` | `nu:poissons-ratio` | Plain number | — | Poisson ratio of the ring, for the linear relation; Poisson's ratio; Poisson's ratio (the elastic collapse pressure under external pressur…; … (4 descriptions) | fp.oring-gland, mech.snap-fit, mech.thick-cylinder, struct.plate-bending | ok |
@@ -1467,6 +1467,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `r_h1` | — | Length | mm | Hook mean radius, bending (extension) | mech.spring | ok |
 | `r_h2` | — | Length | mm | Hook side-bend mean radius, torsion (extension) | mech.spring | ok |
 | `r_i` | — | Length | mm | Inner corner radius of a hollow rectangle (optional; blank = 1.0 t_w,… | struct.section-properties | ok |
+| `r_lug` | — | Length | mm | Lug end radius about the hole centre (the plate is twice that wide at… | struct.lifting | ok |
 | `r_p` | — | Plain number | — | Pre-charge rule: p2/p0 (p0 at T_min) at most this ratio, on absolute … | fp.accumulator | ok |
 | `r_ring` | — | Length | mm | Ring radius (circular plate, ring load) | struct.plate-bending | ok |
 | `red_nom` | — | Percent quantity | % | Cross-section reduction at the mean stretch | fp.oring-gland | ok |
@@ -1549,7 +1550,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `sum_R_x` | — | Force | kN | Σ R_x | struct.frame-2d | ok |
 | `sum_R_y` | — | Force | kN | Σ R_y | struct.frame-2d | ok |
 | `swing` | — | Angle | ° | Rocker swing over the sweep | mech.mechanism | ok |
-| `t` | `t:thickness` | Length | mm | Lug plate thickness t; Lug thickness; Thickness | bs.plane-wall, mech.lifting-lug, struct.lifting | RESOLVE (2 meanings) |
+| `t` | `t:thickness` | Length | mm | Lug thickness; Thickness | bs.plane-wall, mech.lifting-lug | RESOLVE (2 meanings) |
 | `t` | `t:time` | Time | s | Time | elec.fault-protection | RESOLVE (2 meanings) |
 | `t_1_out` | — | Temperature | °C | Dry-bulb 1 | bs.psychrometrics | ok |
 | `t_2` | `t_2:leaving-dry-bulb-temperature` | Temperature | °C | Leaving dry-bulb (sensible, cooling) | bs.psychrometrics | RESOLVE (2 meanings) |
@@ -1577,7 +1578,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `t_move` | — | Time | s | Move time | elec.motor-sizing | ok |
 | `t_mrss` | — | Length | in | Modified RSS tolerance (±) | mech.tolerance-stack | ok |
 | `t_oz` | — | Length | mil | Copper thickness per oz/ft² (35 µm = 1.378 mil, derived) | elec.pcb-trace | ok |
-| `t_p` | `t_p:plate-thickness` | Length | mm | Plate thickness; Shell thickness provided (nominal, before corrosion) | mech.thin-vessel, struct.base-plate, struct.connection-ec3, struct.plate-bending | ok |
+| `t_p` | `t_p:plate-thickness` | Length | mm | Lug plate thickness; Plate thickness; Shell thickness provided (nominal, before corrosion) | mech.thin-vessel, struct.base-plate, struct.connection-ec3, struct.lifting, struct.plate-bending | ok |
 | `t_q` | — | Length | mm | Required thickness, heat-loss limit | bs.insulation | ok |
 | `t_r` | — | Temperature | °C | Return temperature | bs.sealed-system | ok |
 | `t_req` | `t_req:required-thickness` | Length | mm | Plate thickness required (bearing, compression and tension T-stubs); Required nominal thickness | mech.thin-vessel, struct.base-plate | RESOLVE (2 meanings) |

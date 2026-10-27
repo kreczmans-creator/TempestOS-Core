@@ -154,6 +154,7 @@
   "struct.frame-2d@1.4.0": "a6389d664ba5a5eb2adf8a9719870559543cf384d0eec34d3a737f073a083504",
   "struct.frame-2d@1.5.0": "563dd9a0eb5dfb9f4aba291a1be084de907760651e6fb46b250ddc161a5f6f94",
   "struct.lifting@1.1.1": "2d4633b8b90f303665cd8d3edaee7a406a106fe71d3ee91c2af6a734e8982e2a",
+  "struct.lifting@1.2.0": "249b820c0d253d6bd1a9d07d3a8edff4fecc1e5361ae3edb20a8a49a5b7e2be1",
   "struct.load-combinations@1.0.0": "60a0615ba7745102251e77d717f5163ee51d17270a63eb7ab4279119fa7f95e4",
   "struct.load-combinations@1.1.0": "28f3ed111e112df1ff6039f67d876e5644be893e8532c978fc23d5aeef71e230",
   "struct.load-combinations@1.2.0": "2cdaa6adaf7b0cf8f103818ce9b74790d3706740b883543960b2945fa661df04",

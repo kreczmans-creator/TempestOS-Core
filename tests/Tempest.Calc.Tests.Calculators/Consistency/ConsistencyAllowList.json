@@ -24,8 +24,7 @@
     "mech.press-fit": 2,
     "mech.snap-fit": 2,
     "mech.spring": 7,
-    "mech.tolerance-stack": 1,
-    "struct.lifting": 14
+    "mech.tolerance-stack": 1
   },
   "A03-check-shows-physical-values": {
     "bs.duct-sizing": 6,
@@ -64,14 +63,10 @@
     "mech.thick-cylinder": 2,
     "mech.thin-vessel": 2,
     "mech.tolerance-stack": 4,
-    "mech.weld-group": 4,
-    "struct.lifting": 26
+    "mech.weld-group": 4
   },
   "B05-youngs-modulus": {
     "mech.thermal-expansion": 1
-  },
-  "B06-strength-words": {
-    "struct.lifting": 1
   },
   "B07-requirement-words": {
     "bs.glaser": 1,
@@ -98,8 +93,7 @@
     "mech.mechanism": 1,
     "mech.shaft": 4,
     "mech.snap-fit": 2,
-    "mech.spring": 3,
-    "struct.lifting": 9
+    "mech.spring": 3
   },
   "B09-optional-hint": {
     "bs.glaser": 4,
@@ -122,8 +116,7 @@
     "mech.press-fit": 2,
     "mech.shaft": 5,
     "mech.snap-fit": 3,
-    "mech.spring": 1,
-    "struct.lifting": 6
+    "mech.spring": 1
   },
   "C10-temperature-symbols": {
     "bs.glaser": 4,
@@ -147,8 +140,7 @@
     "bs.duct-sizing": 1,
     "bs.pipe-pump": 1,
     "bs.plane-wall": 1,
-    "mech.lifting-lug": 1,
-    "struct.lifting": 1
+    "mech.lifting-lug": 1
   },
   "C13-no-case-only-pairs": {
     "bs.room-heat-loss": 1,
@@ -190,8 +182,7 @@
     "mech.shaft": 1,
     "mech.snap-fit": 1,
     "mech.spring": 1,
-    "mech.thin-vessel": 2,
-    "struct.lifting": 1
+    "mech.thin-vessel": 2
   },
   "C18-sibling-symbols": {
     "bs.pipe-pump": 1,
@@ -301,8 +292,7 @@
     "mech.thick-cylinder": 2,
     "mech.thin-vessel": 2,
     "mech.tolerance-stack": 2,
-    "mech.weld-group": 1,
-    "struct.lifting": 21
+    "mech.weld-group": 1
   },
   "F35-emitted-severity-equals-declared": {
     "elec.conductor-sizing": 3
@@ -315,8 +305,7 @@
     "mech.iso286-fit": 2,
     "mech.mechanism": 1,
     "mech.snap-fit": 1,
-    "mech.tolerance-stack": 1,
-    "struct.lifting": 1
+    "mech.tolerance-stack": 1
   },
   "F36-no-input-prefix": {
     "elec.pcb-trace": 1,
@@ -362,8 +351,7 @@
     "mech.snap-fit": 1,
     "mech.spring": 1,
     "mech.tolerance-stack": 1,
-    "mech.weld-group": 1,
-    "struct.lifting": 1
+    "mech.weld-group": 1
   },
   "G40-group-names": {
     "bs.duct-sizing": 1,
@@ -432,8 +420,7 @@
     "mech.mechanism": 1,
     "mech.shaft": 13,
     "mech.tolerance-stack": 3,
-    "mech.weld-group": 9,
-    "struct.lifting": 21
+    "mech.weld-group": 9
   },
   "H43-port-names": {
     "bs.glaser": 3,
@@ -452,8 +439,7 @@
     "fp.oring-gland": 4,
     "mech.mechanism": 11,
     "mech.snap-fit": 4,
-    "mech.spring": 5,
-    "struct.lifting": 7
+    "mech.spring": 5
   },
   "H44-ports-declared": {
     "bs.duct-sizing": 1,
@@ -484,8 +470,7 @@
     "elec.motor-start": 1,
     "fp.cylinder": 7,
     "mech.mechanism": 9,
-    "mech.spring": 3,
-    "struct.lifting": 3
+    "mech.spring": 3
   },
   "H46-record-kinds": {
     "bs.heat-exchanger": 1,
@@ -545,8 +530,7 @@
     "mech.thick-cylinder": 1,
     "mech.thin-vessel": 2,
     "mech.tolerance-stack": 1,
-    "mech.weld-group": 2,
-    "struct.lifting": 2
+    "mech.weld-group": 2
   },
   "I50-method-layout": {
     "bs.glaser": 1,
@@ -619,7 +603,6 @@
     "mech.spring": 4,
     "mech.thin-vessel": 2,
     "mech.weld-group": 2,
-    "struct.lifting": 5,
     "struct.ltb-interaction": 1
   },
   "J53-book-citations": {
@@ -656,7 +639,6 @@
     "mech.thermal-expansion": 2,
     "mech.thick-cylinder": 2,
     "mech.weld-group": 2,
-    "struct.lifting": 2,
     "struct.ltb-interaction": 1
   },
   "J54-no-notes-in-reference-titles": {
@@ -675,8 +657,7 @@
     "mech.mechanism": 2,
     "mech.snap-fit": 1,
     "mech.spring": 1,
-    "mech.weld-group": 1,
-    "struct.lifting": 1
+    "mech.weld-group": 1
   },
   "K56-one-short-sentence": {
     "bs.duct-sizing": 1,
@@ -717,8 +698,7 @@
     "mech.thick-cylinder": 1,
     "mech.thin-vessel": 1,
     "mech.tolerance-stack": 1,
-    "mech.weld-group": 2,
-    "struct.lifting": 9
+    "mech.weld-group": 2
   },
   "L58-spec-headings": {
     "bs.duct-sizing": 7,
@@ -762,8 +742,7 @@
     "mech.thick-cylinder": 7,
     "mech.thin-vessel": 7,
     "mech.tolerance-stack": 7,
-    "mech.weld-group": 8,
-    "struct.lifting": 8
+    "mech.weld-group": 8
   },
   "L59-spec-title-line": {
     "bs.duct-sizing": 1,
@@ -807,8 +786,7 @@
     "mech.thick-cylinder": 1,
     "mech.thin-vessel": 1,
     "mech.tolerance-stack": 1,
-    "mech.weld-group": 1,
-    "struct.lifting": 1
+    "mech.weld-group": 1
   },
   "L60-spec-scope-is-the-template-scope": {
     "bs.duct-sizing": 1,
@@ -852,7 +830,6 @@
     "mech.thick-cylinder": 1,
     "mech.thin-vessel": 1,
     "mech.tolerance-stack": 1,
-    "mech.weld-group": 1,
-    "struct.lifting": 1
+    "mech.weld-group": 1
   }
 }
