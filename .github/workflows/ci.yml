@@ -110,8 +110,15 @@ on:
 # A pull request's intermediate heads are not release candidates, so a
 # superseded PR run is still cancelled and the runner minutes go to the
 # head that will be merged.
+#
+# The group is per commit for every event but a pull request. With one
+# group per ref and cancellation off, GitHub still keeps only one pending
+# run per group: a third push while a run was in progress cancelled the
+# second push's queued run, so that head was never gated after all. A
+# group per SHA queues nothing; a pull request keeps one group per ref so
+# its superseded run is cancelled as above.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
