@@ -20,7 +20,7 @@ namespace Tempest.Desktop.CalcSheets;
 /// diagram per registered template and every bound name to be one of its
 /// inputs.
 /// </remarks>
-public static class CalcDiagrams
+public static partial class CalcDiagrams
 {
     private static readonly IReadOnlyDictionary<string, string> Always = new Dictionary<string, string>();
 
@@ -34,6 +34,16 @@ public static class CalcDiagrams
         SectionProperties(), Frame2D(), BeamFormulas(), MemberChecks(), ColumnBuckling(), FilletWeld(),
         PipePump(), Psychrometrics(), DuctSizing(), PlaneWall(),
         MotorSizing(), EnclosureHeat(), VoltageDrop(), ThermalChain(),
+        // ---- StructBs ----
+        BasePlate(),
+        ConnectionEc3(),
+        Lifting(),
+        LoadCombinations(),
+        LtbInteraction(),
+        PlateBending(),
+        Glaser(),
+        HeatExchanger(),
+        Insulation(),
     ];
 
     /// <summary>The diagram of the template <paramref name="templateId"/>, or <see langword="null"/>.</summary>

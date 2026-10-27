@@ -27,9 +27,6 @@ public sealed class CalcDiagramsTests
     /// </summary>
     public static readonly IReadOnlyList<string> WithoutDiagramYet =
     [
-        "bs.glaser",
-        "bs.heat-exchanger",
-        "bs.insulation",
         "bs.pipe-expansion",
         "bs.room-heat-loss",
         "bs.sealed-system",
@@ -48,12 +45,6 @@ public sealed class CalcDiagramsTests
         "mech.snap-fit",
         "mech.spring",
         "mech.weld-group",
-        "struct.base-plate",
-        "struct.connection-ec3",
-        "struct.lifting",
-        "struct.load-combinations",
-        "struct.ltb-interaction",
-        "struct.plate-bending",
     ];
 
     public static TheoryData<string> TemplateIds => [.. Templates.Where(t => !WithoutDiagramYet.Contains(t.Id)).Select(t => t.Id)];
