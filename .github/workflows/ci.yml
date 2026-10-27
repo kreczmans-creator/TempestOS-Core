@@ -483,6 +483,7 @@ jobs:
       # in one pass. The Debug step leaves it unset (screenshots stay under
       # the test output folder and are not uploaded).
       - name: Test Desktop shard 2 (E-P) (Release)
+        id: test-desktop-2-release
         if: matrix.configuration == 'Release' && matrix.shard == 'desktop-2'
         timeout-minutes: 25
         shell: pwsh
@@ -580,11 +581,15 @@ jobs:
       - name: Upload layout verification screenshots (Release)
         if: always() && matrix.configuration == 'Release' && matrix.shard == 'desktop-2'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        # Not advisory: a walk that wrote no screenshots is a broken walk.
+        # Not advisory when the tests passed: a walk that passed and wrote
+        # no screenshots is a broken walk. When the build or the test step
+        # failed (or never ran), the walk may never have started; the job
+        # is already red for that, and a second "no files" failure here
+        # only hid the first in the summary, so it is a warning then.
         with:
           name: layout-screenshots
           path: TestResults/layout/**
-          if-no-files-found: error
+          if-no-files-found: ${{ steps.test-desktop-2-release.outcome == 'success' && 'error' || 'warn' }}
           retention-days: ${{ github.event_name == 'pull_request' && 3 || 14 }}
 
       # Runs even if Build or Test failed above (if: always()), so a
