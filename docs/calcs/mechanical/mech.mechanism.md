@@ -33,6 +33,8 @@ Notes on the method, from the first spec:
 - **Self-consistency.** The loop residual `|a·e^{jθ₂} + b·e^{jθ₃} − c·e^{jθ₄} − d|` (slider: `|r·e^{jθ} + l·e^{jθ₃} − (x + j·e)|`) is computed at every table row and every scan angle, reported as `res_max` (mm), and asserted below `10⁻⁹` mm by a check ("Loop-closure residual against its limit") and a warning if it fails.
 - **Peaks** are those of the continuous motion over the swept range: a dense scan (about 4 points per degree of sweep, at least 720) refined by golden section between the neighbours of the best sample, so they do not depend on the table's step count `N` (`steps`, 2 … 3600, N + 1 rows). A sweep that passes a toggle or leaves the assembly range uses only the rows that exist.
 
+**Reference diagram.** The worksheet draws the mechanism that `mode` selects. A four-bar binds `L1`, `L2`, `L3`, `L4`, `n_in`, `T_load` and `J_out`. A slider-crank binds `L2`, `L3`, `e_off`, `m_slider`, `F_load` and `n_in`. A cam, with the `follower` chosen, binds `Rb`, `R_r`, `e_off`, `m_f`, `k_sp`, `F_pre`, `F_ext`, `phi_max` and `segs`. The sweep and the requirement inputs are labels. The drawing is not to scale (ADR-0158, DI-08).
+
 ## Inputs
 
 | Symbol | Description | Unit | Default | Usual range | Group |
