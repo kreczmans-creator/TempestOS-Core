@@ -10,8 +10,9 @@ namespace Tempest.Desktop.Tests.CalcSheets;
 /// Red team (offensive review): hostile strings and oversized text reaching
 /// the PDF renderer. Every test asserts the secure behaviour: no exception,
 /// no control character in the extracted text, a bounded file, and a
-/// bounded render time.
+/// bounded render time. The render times are wall-clock budgets, so the class runs alone (<see cref="TimingCollection"/>).
 /// </summary>
+[Collection(TimingCollection.Name)]
 public sealed class Red_PdfRendererAttacks
 {
     /// <summary>The CI runners scale every deadline by <c>TEMPEST_TEST_TIMEOUT_FACTOR</c> (3 on the Windows matrix); the budgets here scale the same way.</summary>

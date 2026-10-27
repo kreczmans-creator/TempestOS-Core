@@ -14,8 +14,10 @@ namespace Tempest.Core.Tests.Invoicing.Xero.Sync.Stores;
 /// that succeeded in the organisation connected now; open writes queued for
 /// another organisation are superseded on a switch; finished entries are
 /// pruned after the retention, keeping what de-duplication and idempotency
-/// keys need; and enqueue, claim and the badge's list never read every entry.
+/// keys need; and enqueue, claim and the badge's list never read every entry. The growth test times its calls, so the class runs alone
+/// (<see cref="TimingCollection"/>).
 /// </summary>
+[Collection(TimingCollection.Name)]
 public sealed class PersistenceXeroOutboxOrganisationAndGrowthTests
 {
     private readonly CountingStore _persistence = new();
