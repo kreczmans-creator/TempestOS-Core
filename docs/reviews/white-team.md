@@ -98,3 +98,26 @@ Findings:
 - W-C-02 (Low, Open, owner, DC-05): `k_R` 1.125 and the E3 `rho_20` default of 0.0194 Ω·mm²/m are "the cable standard's maximum conductor resistance as recalled". They reproduce no row of a table, but the input text describes them as the standard's own figure. Proposed fix: confirm both against the owner's copy, or reword them as a stated conservative envelope ("about 12 % above pure copper") that cites no table.
 - W-C-03 (Low, Fixed in the second colour round): CHANGELOG had no entry for C-1, C-4, C-5 or C-6. One line each was added under v0.26.0, in the C-3 form.
 - W-C-04 (Info): Addendum B's W-B-04 and W-B-05 still apply to the C-1 known answers. The seven new C-1 cases are analytic, and Green recomputed all seven independently (`green-team.md`, Addendum C).
+
+### 2026-10-27: C-2, DC-21 builds and DI-08
+
+Checked on `08315a20`. The scope is the work merged after the sections above. It covers C-2 phases A to C, the SVG reader and the self-check (DC-22), ADR-0177, the DC-21 builds and DI-08. Security and Red report separately.
+
+| Item | Evidence | Status |
+|---|---|---|
+| No prohibited table data | A grep of `45e2c2eb..08315a20` and `f93c19bd..08315a20` for National Annex and table values found none typed in `src/` or `tests/`. The S7 warning names 0.4 and 0.75, the EN 1993-1-1 recommended pair. The S5 test factors are declared invented. One test types ξ 0.925, a value DC-07 already records in an existing example. | Pass |
+| Licensed factors come from the owner | `struct.load-combinations` 1.3.0 ships no National Annex value. The owner's set arrives as a licensed `en1990.factors` record, withheld from every export. | Pass |
+| Record templates 83 to 90 and the new kinds | Header-only. The notes cite "the clauses on …" with no numbers or values. Each header string matches its CSV's first line byte for byte. | Pass |
+| New defaults and limits | `C_c` 1 is a neutral factor. The pipe floor of 0.05 GPa is a plausibility floor. The S4 factor 0.85 is a coefficient of the clause. None reproduces a table row. | Pass |
+| Diagrams (DI-08) | The 27 diagrams bind inputs only. No result and no table value is drawn. | Pass |
+| Licence: dependencies | `Svg.Skia` 2.0.0.8 and its MS-PL `Svg.Custom` are removed (DB-08). No `PackageReference` is added. `THIRD-PARTY-NOTICES.md` says so. | Pass |
+| ADRs and register | ADR-0177 is in `docs/adr/` with a register row: 177 files, 177 rows. | Pass |
+| DECISIONS | DC-16 to DC-27 are in order with no gaps, each with its reason. DC-23, DC-26 and DC-27 name the owner checks. | Pass |
+| CHANGELOG | No line for C-2, the SVG reader, the self-check, ADR-0177, the DC-21 builds or DI-08. Line 79 still says the Addenda A and B templates have no diagrams (W-C-05). | Gap |
+| Branch naming | `v0.26.0/addC-2-consistency`, `addC-2b-mech1`, `-mech2`, `-struct`, `addC-2c-bs-fp`, `-elec`, `od-platform`, `od-registry`, `dc21-struct`, `dc21-elec-bs-records`, `di08-mechfp`, `-structbs`, `-bselec` and `-all`. | Pass |
+| Commit trailers | 96 of 96 non-merge commits in `45e2c2eb..08315a20` carry both trailers. | Pass |
+
+Findings (2026-10-27):
+
+- W-C-05 (Low, Open): CHANGELOG has no entry for the work since the sections above, and its line 79 contradicts DI-08. Proposed fix: one line each for C-2, DB-08, DA-12, DC-14 and DC-15, the DC-21 builds and DI-08, in the C-3 form. Correct line 79.
+- W-C-06 (Info, owner, DC-26 and DC-27): three citations are quoted from memory. They are the M12 note's place in EN 1993-1-8, the BS 7671 App. 4 §5 locator and the BS EN 60898-1 clause. Confirm them against the owner's copies.

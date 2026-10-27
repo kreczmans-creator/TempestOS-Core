@@ -863,6 +863,34 @@ S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lift
 
 C-1 itself: no new defect. Every new or changed known answer I recomputed agrees, and the owner items stay as recorded in DC-03 … DC-09.
 
+### 2026-10-27: C-2, DC-21 builds and DI-08
+
+**Scope.**
+- The new known answers of the DC-21 builds (DC-26, DC-27) and the stored-size arithmetic of the frame caps (DC-15).
+- Code quality of the SVG reader, where this round's fix landed.
+- C-2 (DC-16 to DC-20, DC-24) changes display, units and names, not values. The C-2 integration review covered its 26 goldens and 119 example sheets. DI-08 draws inputs only.
+
+**Method.** Each value was recomputed in python3 from the relation, in my own notation, not ported. The pass criterion is the repository's own tolerance. The script was scratch and is not in the repository.
+
+**Result.** 13 of 13 recomputed values agree, and the size arithmetic agrees exactly.
+
+| Calculator | Case | Values | Worst rel. diff |
+|---|---|---|---|
+| `struct.connection-ec3` 1.9.0 | `ka-m12-88-clearance-shear` | A_s 84.26654 mm² (from the mean of the pitch and minor diameters, P 1.75), k_v12 0.85, F_v,Rd 27.5046 kN, u_v 1.090727 (0.9271 without the factor) | 3e-7 (u_v printed to 7 figures) |
+| `bs.pipe-expansion` 1.5.2 | `ka-soft-plastic-offset-leg` | ΔL 120 mm, σ_r 1.2 MPa, A_m 3141.593 mm², F_r 3.769911 kN, L_req 0.8899438 m, u_leg 0.4449719, F_leg 142.7854 N, M_leg 142.7854 N·m, σ_leg 1.98 MPa | 1e-16 |
+| `struct.frame-2d` 1.6.0 | Stored size at the caps (DC-15) | 1,200 × 364 + 2,400 × 340 + 2,400 × 526 = 2,515,200 B. With the combinations, warnings and outputs: 3,209,580 B, 80.2 % of 4,000,000 | 0 |
+
+The pipe case uses the guided-cantilever relations of its own reference: L = √(3·E·D·Δ/S_a), F = 12·E·I·Δ/L³ and M = 6·E·I·Δ/L². In the S4 case the factor turns a shear pass of 0.927 into a fail of 1.09.
+
+#### Findings (2026-10-27)
+
+| ID | Severity | Location | Description | Evidence | Fix or justification | Status |
+|---|---|---|---|---|---|---|
+| G-C-05 | Info | `src/Tempest.Desktop/Viewing/SvgPictureBuilder.cs` | Two `<summary>` blocks sat on the selector dictionary, and `_viewportHeight` was declared in the middle of the class. | Code reading. | Tidied in b34020c9, with SEC-C-11. | Fixed |
+| G-C-06 | Info | `src/Tempest.Desktop/Viewing/SvgPictureBuilder.cs` (about 1,900 lines) | One file holds the pre-pass, the cascade, the renderer and every parser. | `wc -l`. | Split it into partial files by concern, as G-C-02 asks of the record import. | Open |
+
+DC-21 itself: no new defect. Every new known answer I recomputed agrees.
+
 > The sections below were written on `release/v0.27.0` (23–24 October 2026) for the legacy calculator replacement (ADR-0167). The owner decided that nothing ships as 0.27.0: the work is part of v0.26.0 and is kept here, unchanged, as a marked part of this file.
 
 ## v0.27.0 Phase 5 — legacy vectors recomputed (2026-10-23)

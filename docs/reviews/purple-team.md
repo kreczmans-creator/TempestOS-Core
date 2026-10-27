@@ -306,3 +306,45 @@ One contrived decimal-point shape still only warns (P-B-04, Info), and it is acc
 | P-C-01 | Low | `RecordImportService.MaxFileRows` (1,001 lines), `MaxColumns` 64 | No test exercised the record import's row or column cap. A probe showed both bite: 1,000 data rows commit in 0.13 s, and 1,001 are refused whole. | Test added. | `AddendumCColourRegressionTests.Purple_P_C_01_A_Record_File_At_The_Row_And_Column_Caps_Is_Read_And_One_Over_Either_Is_Refused_Whole` | Fixed |
 | P-C-02 | Low | `ManualTestRun.MaxResults` (1,000), `VerificationDashboardViewModel.MaxExportBytes` (8 MB) | Neither cap is exercised. Neither can be reached through the services today: results are at most one per script step (110 steps), and a 500-row export is far under 8 MB. Each guards a damaged record or a future change. | Add a test that stores a run document with 1,001 results and shows that recording in it is refused, and one that drives the export guard with a stub renderer. | — | Open |
 | P-C-03 | Info | `ManualTestRunService` readers | The "unreadable document is left out" control was tested for a whole document, not for a damaged part of one (Black B-C-01). | Fixed with B-C-01. | `AddendumCColourRegressionTests.Black_B_C_01_…` | Fixed |
+
+### 2026-10-27: C-2, DC-21 builds and DI-08
+
+**Summary.**
+- Scope: the defensive controls merged after the sections above, up to `08315a20`. For each, I asked whether a permanent test exercises it.
+- Every control has a test that fails without it, with three gaps:
+  - No test held an SVG class list with repeated names. Such a list exhausted memory (SEC-C-11, fixed with a test).
+  - The full-size SVG probes never start on CI (P-C-04).
+  - No round trip of a new record kind exports a licensed record (P-C-05).
+
+**Method.**
+- For each control I read the code path and named the test that fails without it.
+- Where a builder's review mutated the control, I cite the mutation it killed.
+- Runs here (Linux, warnings as errors, one at a time): Desktop `~Svg` 89/89 and `~DocumentPageSource|~DocumentViewer` 95/95 after the fix.
+
+| Control | Test that fails without it | Result |
+|---|---|---|
+| SVG reader caps (DC-22) | `SvgHostileInputTests`, one or more per cap, scaled under 1 MB; od-platform review mutants A and B killed | Exercised |
+| An SVG class taken once per name | `SvgHostileInputTests.A_Class_Named_Many_Times_On_One_Element_Applies_Its_Rule_Once` (101 MB allocated before the fix; limit 16 MB) | Exercised (new) |
+| Full-size SVG probes | `SvgBoundedProbeTests` in the `svg-bounded-probes` job | **Not exercised**: every failure aborts at start-up (P-C-04) |
+| Read deadline | `The_Reader_Stops_At_A_Cancelled_Token_Before_Drawing_An_Element`, `A_Document_That_Takes_Too_Long_To_Read_Is_Reported_Rather_Than_Freezing_The_Window` | Exercised |
+| Aliases and their conflict | `AliasCompatibilityTests`, `RenamedPortContractTests` (222 ports), `ColumnAliasTests` | Exercised |
+| Unit and meaning changes | `UnitChangeContractTests` with `DefaultUnitsBaseline.json`, `SectionPropertiesAxisSwapTests` | Exercised |
+| Governing marker | `GoverningMarkerContractTests` | Exercised |
+| Superseded versions, Rerun, AA labels | `SupersededVersionTests`, `WorksheetSupersededVersionTests`, `CalcRevisionLabelTests` | Exercised |
+| Self-check | `SelfCheckTests` (od-platform mutants C and D killed), Core `SelfCheckFlagTests`, `WorksheetSelfCheckTests` | Exercised |
+| S4 0.85 factor | `ConnectionTests` (Group A mutation 1 killed) | Exercised |
+| S7 welded warning and the ceiling of 73 | `LtbInteractionTests` (mutation 2), `UnconservativeRuleTests` | Exercised |
+| S5 refusal without a record | `LoadCombinationsFactorSetTests` (mutation 3) | Exercised |
+| Frame caps and stored size | `FrameSizeCapTests`, `FrameTests` (mutation 4) | Exercised |
+| E4 `C_c` limits | `ConductorSizingTests`, the DC-05 test (Group B mutation 1) | Exercised |
+| Pipe floor 0.05 GPa | `PipeExpansionTests` (Group B mutation 4) | Exercised |
+| Export lock on records | `RecordTests`, `RecordImportTests` (Group B mutation 3); `RecordKindRoundTripTests` exports unlicensed records only | Exercised, generically (P-C-05) |
+| Diagrams bind inputs only | `CalculationDiagramsTests`; the coverage test, whose exemption list is empty | Exercised |
+
+#### Purple findings (2026-10-27)
+
+| ID | Sev | Location | Description | Fix | Regression test | Status |
+|---|---|---|---|---|---|---|
+| P-C-04 | Medium | `.github/workflows/ci.yml` (`svg-bounded-probes`) | DC-22 names this job as the gate for the reader's caps. It failed 34 of 54 probes on `08315a20` and `f93c19bd`. Every failure is a start-up abort, "Cannot allocate memory", under the 2 GiB limit. So the full-size control is not exercised. The same limit stopped a 4,000 px bitmap here. | Let the child start: raise the address-space limit or trim the runtime's reservations. Then rerun the job. | `SvgBoundedProbeTests` (55 probes with `css-class-named-4M-times`) | Open (integrator; SEC-C-12) |
+| P-C-05 | Low | `RecordKindRoundTripTests` | The round trips of the new kinds export unlicensed records only. The generic tests hold the lock (Group B mutation 3). | Add one licensed round trip on a new kind. | — | Open |
+| P-C-06 | Info | `SvgPictureBuilder` class list | No test held a class list with repeated names. | Fixed with SEC-C-11. | `SvgHostileInputTests.A_Class_Named_Many_Times_…` | Fixed |

@@ -274,6 +274,34 @@ S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lift
 ### Summary
 Counts: **Medium 2** (B-C-01, B-C-03), **Low 3** (B-C-02, B-C-04, B-C-05), **Info 1**. Every Medium and Low is fixed with a regression test (B-C-01 in the first colour round, the others in the second); B-C-06 is accepted. The features fail safe where it matters: every write path is all or nothing, an issued record is never deleted, and an old database opens empty. What the review found were rough edges after a removal (B-C-02, B-C-03) and three places where the person was told less than the code knew (B-C-01, B-C-04, B-C-05).
 
+### 2026-10-27: C-2, DC-21 builds and DI-08
+
+> Failure-mode and misuse review of the work merged after the sections above, up to `08315a20`. It covers C-2 phases A to C, the SVG reader and the self-check (DC-22), ADR-0177, the DC-21 builds and DI-08. I read the paths a hurried user takes, the tests that pin them and the builders' reviews. Three SVG files under 1 MB were opened through the shipped runner (`security-review.md`, 2026-10-27). No other probe ran.
+
+#### Misuse that is caught
+- An input file that gives an old and a new name with different values: refused, naming both ("p_design: the input is given as 'P' and as 'p_design' with different values. Keep one.").
+- An old input file, CSV, link or pack binding that uses a renamed input, column or port: read through the alias.
+- A link from a 1.1.1 section-properties record to `W_el_y`: refused, because the port changed meaning at 1.2.0 (`SectionPropertiesAxisSwapTests`).
+- A frame over the caps: refused at entry with the row count, before the model is built.
+- The National Annex factor set with no record applied: refused, naming each factor that lacks one.
+- A saved input set without `factor_set` or `C_c`: runs as before (EN recommended, `C_c` = 1), and no value moves.
+- A soft plastic pipe at 0.2 GPa: runs now. A modulus under 0.05 GPa is still refused.
+- A twenty-seventh revision: labelled AA. Stored Z+ and Z++ read as the 27th and 28th.
+- An issued calculation on a superseded version: opens read-only, with the re-run's verdict and Revise as the way on.
+- A second person who ticks "Self-check": refused with the sentence.
+- An SVG attachment that takes over 15 s: reported as "took too long to read", never a frozen window.
+
+One input escaped, and it was hostile, not hurried. An SVG that names one class 480,000 times exhausted memory (SEC-C-11, fixed in b34020c9).
+
+#### Findings
+
+| ID | Sev | Where | What I did | What happened | What should happen | Status |
+|---|---|---|---|---|---|---|
+| B-C-07 | Low | `struct.frame-2d` 1.6.0 caps; `CalcInstanceStore` 4 MB cap | Followed a scan-imported frame at the caps with a provenance on every cell, by the size arithmetic. | Each cell adds about 290 bytes, so the frame passes 4 MB. Entry accepts it, and the store refuses it at save. | Say at entry that cell provenance counts toward the size, or refuse it there. | Logged; the spec page now says so |
+
+#### Summary
+Counts: **Low 1** (B-C-07). The new paths fail safe where it matters. A renamed input never takes a value silently. A cap is refused at entry. An old record opens read-only rather than wrong.
+
 > The sections below were written on `release/v0.27.0` (23–24 October 2026) for the legacy calculator replacement (ADR-0167). The owner decided that nothing ships as 0.27.0: the work is part of v0.26.0 and is kept here, unchanged, as a marked part of this file.
 
 ## v0.27.0 — clean clone (2026-10-23)
