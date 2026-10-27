@@ -275,7 +275,7 @@ Member stiffness: three freedoms per node, Euler–Bernoulli members with axial 
   None.
 
 8. Verification
-  Template: struct.frame-2d@1.5.0
+  Template: struct.frame-2d@1.6.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 6/6

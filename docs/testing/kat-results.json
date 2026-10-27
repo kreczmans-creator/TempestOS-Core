@@ -484,7 +484,7 @@
     },
     {
       "id": "struct.frame-2d",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "kats": 6,
       "katsPassed": 6,
       "failedKats": [],

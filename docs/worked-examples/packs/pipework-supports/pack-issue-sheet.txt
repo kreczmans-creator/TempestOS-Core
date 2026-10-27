@@ -41,7 +41,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 20/20
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:03 UTC
   Application: TempestOS test
 
 9. References
@@ -317,7 +317,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   Content hash: 29443308b79dc6fc
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:03 UTC
   Application: TempestOS test
 
 9. References
@@ -491,11 +491,11 @@ Member stiffness: three freedoms per node, Euler–Bernoulli members with axial 
   None.
 
 8. Verification
-  Template: struct.frame-2d@1.5.0
-  Content hash: 563dd9a0eb5dfb9f
+  Template: struct.frame-2d@1.6.0
+  Content hash: 228c165050cec261
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:03 UTC
   Application: TempestOS test
 
 9. References
@@ -551,7 +551,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   gamma_M2 | Partial factor for the anchor bolts | 1.25 |  | assumption: Sheet default value; no project figure given. | 1.1 … 1.4
   C_fd | Friction coefficient, plate to grout | 0.2 |  | assumption: Sheet default value; no project figure given. | 0 … 0.4
   alpha | Concentration factor √(A_c1/A_c0) of the foundation (1 when the foundation geometry is not known) | 1 |  | drawing: DRG-PIP-611 rev B | 1 … 2.5
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 76bab50a79ab407aaef0c672767a6c3e/c66cc91fc18d4b62aa9928b427c3f631 | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 1323f0964e5e4d84b56ac4ed17366686/00c530bfe5a543bc969a383694d4efdd | any
 
 3. Assumptions
   A1. The axial force is positive in compression, the opposite of the member check sheet. (Sign convention.)
@@ -784,7 +784,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   Content hash: b3f3c18d0ee3f47a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:03 UTC
   Application: TempestOS test
 
 9. References

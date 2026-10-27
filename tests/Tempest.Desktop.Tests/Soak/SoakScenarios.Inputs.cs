@@ -65,7 +65,7 @@ internal static partial class SoakScenarios
     }
 
     /// <summary>
-    /// A two-dimensional frame with its three tables at their row caps (2,000 nodes, 4,000 elements, 20,000 loads), run through the calculator and then saved.
+    /// A two-dimensional frame with its three tables at their row caps (1,200 nodes, 2,400 elements, 2,400 loads since DC-15 and DC-21; 2,000, 4,000 and 20,000 before), run through the calculator and then saved.
     /// It need not be small or fast: it must finish inside the engine's own limits with an answer or a sentence, and saving it must be a saved calculation
     /// or a refusal that says why, never an exception.
     /// </summary>
@@ -77,7 +77,7 @@ internal static partial class SoakScenarios
         var elementCap = spec.FindInput("elements")!.MaxRows;
         var loadCap = spec.FindInput("loads")!.MaxRows;
 
-        // A grid of 40 × 50 nodes (2,000), joined by 3,910 members, pinned along the bottom row, with ten load cases of one nodal load on every node.
+        // A grid of 40 columns by MaxNodes/40 rows (40 × 30 = 1,200 nodes, joined by 2,330 members), pinned along the bottom row, with as many load cases of one nodal load on every node as the load cap allows (two).
         var columns = 40;
         var gridRows = nodeCap / columns;
         var scaleDown = scale.ImportFraction;

@@ -38,14 +38,20 @@ public sealed record FrameLoad(int Case, FrameLoadKind Kind, int Target, double 
 /// <summary>A named combination: Σ factor × load case.</summary>
 public sealed record FrameCombination(string Name, IReadOnlyList<(int Case, double Factor)> Terms);
 
-/// <summary>Caps (§3.2 S2): 2,000 nodes, 4,000 elements, 50 load cases.</summary>
+/// <summary>
+/// Caps (§3.2 S2; lowered by owner decision DC-15 and DC-21): 1,200 nodes, 2,400 elements, 2,400 load rows, 50 load cases. The three table caps are what the
+/// 4 MB document cap of the store holds with margin: at the longest number the serialiser writes (24 characters) and every column filled, a node row stores
+/// in 364 bytes, an element row in 340 and a load row in 526, so 1,200 × 364 + 2,400 × 340 + 2,400 × 526 = 2,515,200 bytes of tables; with the combinations
+/// table (1,000 rows × 159), a large-deflection warning on every member (2,400 × 190) and the detailed outputs (567 × 140) the document is about 3.21 MB, 80 % of
+/// the cap (<c>FrameSizeCapTests</c> in the Library tests holds it). The sheet refuses a table past its cap at entry (<c>CalcInputValidator</c>, naming the input and the cap).
+/// </summary>
 public static class FrameLimits
 {
-    public const int MaxNodes = 2_000;
-    public const int MaxElements = 4_000;
+    public const int MaxNodes = 1_200;
+    public const int MaxElements = 2_400;
     public const int MaxCases = 50;
     public const int MaxCombinations = 50;
-    public const int MaxLoads = 20_000;
+    public const int MaxLoads = 2_400;
     public const int MaxLoadsPerMember = 200;
     public const long MaxFactorWork = 1_500_000_000;
     public const int MaxStations = 100;

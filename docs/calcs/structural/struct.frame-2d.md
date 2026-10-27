@@ -1,4 +1,4 @@
-# Beam and 2D frame analysis (`struct.frame-2d@1.5.0`)
+# Beam and 2D frame analysis (`struct.frame-2d@1.6.0`)
 
 **In plain terms.** A frame is treated as members joined at nodes, each member a spring that resists stretching and bending. The stiffness method assembles those springs into one set of equations relating the forces at the nodes to how far they move, solves for the movements under each load case, and works back to the forces and moments along every member. Load combinations add the cases with their factors, and the envelope keeps the worst value at each point.
 
@@ -153,19 +153,24 @@ Applicability rules:
 | `model` | Block | Conservative | The model is incomplete or inconsistent (a missing node, a zero-length member, a load off the member). |
 | `report-name` | Warning | Conservative | The combination named in report does not exist: the first combination is reported instead. |
 | `mechanism` | Block | Conservative | The structure is a mechanism: a non-positive stiffness pivot. |
-| `size` | Block | Conservative | The model exceeds a cap (2,000 nodes, 4,000 elements, 50 cases, 200 load rows per member, factorisation work). |
+| `size` | Block | Conservative | The model exceeds a cap (1,200 nodes, 2,400 elements, 2,400 load rows, 50 cases, 200 load rows per member, factorisation work); a table past its row cap is refused at entry. |
 | `summary-only` | Warning | Conservative | More than 50 members or supports: per-member and per-support lines are omitted from the sheet; the extremes and envelope remain. |
 | `large-deflection` | Warning | Unconservative | A deflection exceeds 1/50 of its member length: the small-displacement assumption is doubtful. |
 
 ## Limitations
 
-The caps are 2,000 nodes, 4,000 elements, 50 cases, 50 combinations, 20,000 load rows, 100 stations and 20 million banded entries. With more than 50 members or supports the sheet omits the per-member and per-support lines (rule `summary-only`).
+The caps are 1,200 nodes, 2,400 elements, 2,400 load rows, 50 cases, 50 combinations (1,000 combination rows), 100 stations and 20 million banded entries. A table past its row cap is refused at entry by the input validator, in a sentence that names the table and the cap (`nodes: enter at most 1200 rows; 1201 were given.`), before the model is built. With more than 50 members or supports the sheet omits the per-member and per-support lines (rule `summary-only`).
+
+**Why these caps (DC-15, DC-21).** A calculation is stored as one document of at most 4 MB (`CalcInstanceStore.MaxDocumentBytes`, 4,000,000 bytes), and the frame at the old caps (2,000 nodes, 4,000 elements, 20,000 loads) could not be saved: the C-7 soak's grid frame at those caps was refused at about 7.3 MB. The caps are now what the document holds with margin, computed from the stored size of a row. The store writes a table row as JSON with every filled cell as `{"Number":…,"Unit":"…"}`, `{"Text":"…"}` or `{"Flag":…}`; the longest number the serialiser writes is 24 characters (17 significant figures, a sign, a point and an exponent). With every column filled a node row (`id`, `x`, `y`, `support`, `k_x`, `k_y`, `k_r`) stores in 364 bytes, an element row (`id`, `i`, `j`, `A`, `I`, `E`, `rel_i`, `rel_j`) in 340 and a load row (`case`, `kind`, `target`, `a`, `b`, `w1`, `w2`, `F_x`, `F_y`, `M`, `gravity`) in 526. Tables at the caps: 1,200 × 364 + 2,400 × 340 + 2,400 × 526 = 436,800 + 816,000 + 1,262,400 = 2,515,200 bytes; the combinations table at its 1,000 rows adds 159,000; a `large-deflection` warning on every member adds 2,400 × 190 = 456,000; the detailed outputs (50 members and 50 supports) add 567 × 140 = 79,380; the header, the provenance and the checks a few kilobytes. Total about 3.21 MB, 80 % of the cap, so a frame within the caps always saves, with a fifth of the cap to spare for links and notes; a frame of ordinary numbers (`12.5`) is about 1.4 MB. The Library test `FrameSizeCapTests` serialises that worst-case frame and holds it under 85 % of the cap; `FrameTests` holds the caps and the refusal at entry.
+
 
 A point or couple load row needs its position `a`: a blank `a` blocks (rule `model`) instead of placing the load at the start of the member. Type 0 for the start.
 
 The magnitude outputs are set to zero below 1e-9 of the largest reaction, so solver noise on an unloaded support does not print as 3e-14. They exist because the design checks downstream take shear and moment unsigned, and a reaction's sign follows the load direction. A load-table cell can be linked to another calculation's output (a table-cell link), for example the governing effect of the load combinations sheet in the steel-support pack.
 
 ### Changes by version
+
+**1.6.0 (DC-15 frame caps, owner decision DC-21).** The table caps are lowered from 2,000 nodes, 4,000 elements and 20,000 load rows to 1,200, 2,400 and 2,400, so that the largest frame within the caps stores under the 4 MB document cap with margin (the arithmetic is under Limitations), and a table past its cap is refused at entry by the input validator, naming the table and the cap. The other caps (50 cases, 50 combinations, 200 load rows per member, 100 stations, the factorisation work and the banded entries) do not change. Every shipped example, known-answer case and test frame is within the new caps. No calculated value changes.
 
 **1.5.0 (C-2 consistency).** The sheet gives its ports public names `frame.<quantity>`; the output symbols are unchanged, so links and pack bindings that name them keep working. Port descriptions name their target sheets by template id and input. The inputs are grouped (the model tables and the analysis settings in Setup, the default Young's modulus in Material). The new rule `report-name` carries the warning for an unknown combination in `report`, which used the blocking rule `model`. The scope, method, assumptions and references follow the sheet standard. No calculated value changes.
 
