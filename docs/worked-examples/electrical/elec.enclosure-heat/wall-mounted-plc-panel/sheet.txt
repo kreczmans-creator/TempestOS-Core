@@ -122,7 +122,7 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
       = 42.893 m³/h
         Airflow crediting natural dissipation
   [36] V_duty = p_fan(V) = p_sys (V/V_ref)², bisection
-      = 
+      = p_fan(V) = 20 × (V/100)², V from 0 to 200 m³/h
       = 113.75 m³/h
         Fan duty airflow
   [37] p_duty = p_sys (V_duty/V_ref)²
