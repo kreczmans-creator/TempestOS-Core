@@ -77,6 +77,12 @@ public static class SvgPictureBuilder
     /// <summary>The most group-opacity layers in one document (F7); each is a page-sized clear and composite at draw.</summary>
     public const int MaxOpacityLayers = 1_000;
 
+    /// <summary>The longest <c>d</c> or <c>points</c> attribute a shape may have (F8); a longer shape is left out, since its path alone would be tens of MB.</summary>
+    public const int MaxShapeDataCharacters = 2_000_000;
+
+    /// <summary>The most path verbs one document draws, all its shapes together (F8): Skia's edge list at draw grows with them, and four million segments of an even-odd fill exhausted it.</summary>
+    public const long MaxPathVerbs = 4_000_000;
+
     /// <summary>
     /// The caps a document is held to. The defaults are the constants above and are what the viewer uses; a test passes smaller
     /// ones so each cap is exercised on a small document, in the normal suite, instead of on the multi-megabyte file that found it.
@@ -97,6 +103,8 @@ public static class SvgPictureBuilder
         public int FontFamilies { get; init; } = MaxFontFamilies;
         public int OpacityLayerDepth { get; init; } = MaxOpacityLayerDepth;
         public int OpacityLayers { get; init; } = MaxOpacityLayers;
+        public int ShapeDataCharacters { get; init; } = MaxShapeDataCharacters;
+        public long PathVerbs { get; init; } = MaxPathVerbs;
     }
 
     /// <summary>What the reader counted while recording a document: the figures the caps are tested on, and what was left out.</summary>
@@ -108,7 +116,9 @@ public static class SvgPictureBuilder
     /// <param name="FamilyLookups">Family names asked of the platform's font manager, at most <see cref="Limits.FontFamilies"/> per typeface lookup (F6).</param>
     /// <param name="OpacityLayers">Group-opacity layers recorded (F7).</param>
     /// <param name="OpacityFolds">Elements whose group opacity was folded into their fill and stroke opacity instead, because a layer cap was reached (F7).</param>
-    public sealed record Statistics(int Elements, int GradientStopParses, long DecodedPixels, int ImagesSkipped, int TypefaceLookups, int FamilyLookups, int OpacityLayers, int OpacityFolds);
+    /// <param name="PathVerbs">Path verbs drawn, every shape together (F8).</param>
+    /// <param name="ShapesSkipped">Shapes left out because their data was over <see cref="Limits.ShapeDataCharacters"/> or they would take the document past <see cref="Limits.PathVerbs"/> (F8).</param>
+    public sealed record Statistics(int Elements, int GradientStopParses, long DecodedPixels, int ImagesSkipped, int TypefaceLookups, int FamilyLookups, int OpacityLayers, int OpacityFolds, long PathVerbs, int ShapesSkipped);
 
     private const float PixelsPerInch = 96f;
     private const float DefaultFontSize = 16f;
@@ -610,6 +620,8 @@ public static class SvgPictureBuilder
         private int _opacityLayers;
         private int _opacityLayerDepth;
         private int _opacityFolds;
+        private long _pathVerbs;
+        private int _shapesSkipped;
         private readonly Stack<XElement> _useStack = new();
 
         /// <summary>The typeface each (family list, bold, italic) resolved to (F6): one font-configuration query per combination, not per text run.</summary>
@@ -621,7 +633,20 @@ public static class SvgPictureBuilder
         /// <summary>The parsed stops of every gradient used so far, by the id it was asked for (F2): a document with two thousand shapes on one gradient parses its stops once.</summary>
         private readonly Dictionary<string, List<(float Offset, SKColor Colour)>> _stops = new(StringComparer.Ordinal);
 
-        public Statistics Statistics => new(_elements, _gradientStopParses, _decodedPixels, _imagesSkipped, _typefaceLookups, _familyLookups, _opacityLayers, _opacityFolds);
+        public Statistics Statistics => new(_elements, _gradientStopParses, _decodedPixels, _imagesSkipped, _typefaceLookups, _familyLookups, _opacityLayers, _opacityFolds, _pathVerbs, _shapesSkipped);
+
+        /// <summary>Whether a shape of <paramref name="verbs"/> more verbs fits the document's budget (F8), counting it when it does.</summary>
+        private bool TakeVerbs(long verbs)
+        {
+            if (_pathVerbs + verbs > context.Limits.PathVerbs)
+            {
+                _shapesSkipped++;
+                return false;
+            }
+
+            _pathVerbs += verbs;
+            return true;
+        }
 
         /// <summary>Releases the decoded images once the picture is recorded; the picture holds its own reference to each one it draws.</summary>
         public void ReleaseImages()
@@ -885,9 +910,17 @@ public static class SvgPictureBuilder
                 case "polyline":
                 case "polygon":
                 {
-                    var numbers = Numbers(element.Attribute("points")?.Value);
+                    var text = element.Attribute("points")?.Value;
 
-                    if (numbers.Count < 4)
+                    if (text is { Length: var length } && length > context.Limits.ShapeDataCharacters)
+                    {
+                        _shapesSkipped++;
+                        break;
+                    }
+
+                    var numbers = Numbers(text);
+
+                    if (numbers.Count < 4 || !TakeVerbs(numbers.Count / 2))
                         break;
 
                     var points = new SKPoint[numbers.Count / 2];
@@ -906,10 +939,22 @@ public static class SvgPictureBuilder
                     if (string.IsNullOrWhiteSpace(data))
                         break;
 
+                    if (data.Length > context.Limits.ShapeDataCharacters)
+                    {
+                        _shapesSkipped++;
+                        break;
+                    }
+
                     var parsed = SKPath.ParseSvgPathData(data);
 
                     if (parsed is null)
                         break;
+
+                    if (!TakeVerbs(parsed.VerbCount))
+                    {
+                        parsed.Dispose();
+                        break;
+                    }
 
                     parsed.FillType = path.FillType;
                     path.Dispose();
@@ -1375,23 +1420,77 @@ public static class SvgPictureBuilder
     // Values: numbers, lengths, colours, transforms
     // ------------------------------------------------------------------
 
-    private static readonly Regex NumberPattern = new(@"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?", RegexOptions.NonBacktracking, MatchTimeout);
-
     private static float? Number(string? text) =>
         text is not null && float.TryParse(text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value) && float.IsFinite(value) ? value : null;
 
-    /// <summary>Every number in <paramref name="text"/> (a <c>points</c> or <c>viewBox</c> list).</summary>
-    private static List<float> Numbers(string? text)
+    /// <summary>
+    /// Every number in <paramref name="text"/> (a <c>points</c>, <c>viewBox</c> or transform argument list): an optional sign, digits with an
+    /// optional point (or a point and digits), and an exponent only when digits follow it — the shape <c>[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?</c>,
+    /// scanned over the text without a match object per number (F8: five million numbers made as many allocations).
+    /// </summary>
+    internal static List<float> Numbers(string? text)
     {
         var numbers = new List<float>();
 
         if (text is null)
             return numbers;
 
-        foreach (Match m in NumberPattern.Matches(text))
+        var span = text.AsSpan();
+        var i = 0;
+
+        while (i < span.Length)
         {
-            if (Number(m.Value) is { } n)
-                numbers.Add(n);
+            var start = i;
+
+            if (span[i] is '+' or '-')
+                i++;
+
+            var before = 0;
+
+            while (i < span.Length && char.IsAsciiDigit(span[i]))
+            {
+                i++;
+                before++;
+            }
+
+            var after = 0;
+
+            if (i < span.Length && span[i] == '.')
+            {
+                i++;
+
+                while (i < span.Length && char.IsAsciiDigit(span[i]))
+                {
+                    i++;
+                    after++;
+                }
+            }
+
+            if (before == 0 && after == 0)
+            {
+                // No number starts here: look again one character on, as the pattern would.
+                i = start + 1;
+                continue;
+            }
+
+            if (i < span.Length && span[i] is 'e' or 'E')
+            {
+                var exponent = i + 1;
+
+                if (exponent < span.Length && span[exponent] is '+' or '-')
+                    exponent++;
+
+                if (exponent < span.Length && char.IsAsciiDigit(span[exponent]))
+                {
+                    i = exponent;
+
+                    while (i < span.Length && char.IsAsciiDigit(span[i]))
+                        i++;
+                }
+            }
+
+            if (float.TryParse(span[start..i], NumberStyles.Float, CultureInfo.InvariantCulture, out var value) && float.IsFinite(value))
+                numbers.Add(value);
         }
 
         return numbers;

@@ -348,6 +348,66 @@ public sealed class SvgHostileInputTests
     }
 
     // ------------------------------------------------------------------
+    // F8: path data — a size cap per shape, a verb budget per document, no allocation per number
+    // ------------------------------------------------------------------
+
+    [AvaloniaFact]
+    public void A_Shape_Whose_Data_Is_Over_The_Cap_Is_Left_Out()
+    {
+        Assert.Equal(2_000_000, SvgPictureBuilder.MaxShapeDataCharacters);
+        var limits = SvgPictureBuilder.Limits.Default with { ShapeDataCharacters = 200 };
+        var longPath = "M0 0 " + string.Concat(Enumerable.Repeat("l1 0 ", 50)) + "L100 0 L100 100 L0 100 Z";
+        var longPoints = string.Join(' ', Enumerable.Range(0, 60).Select(i => $"{i},0")) + " 100,100 0,100";
+        Assert.True(longPath.Length > 200 && longPoints.Length > 200);
+
+        using var path = SvgPictureBuilder.Build(Svg($"<path d=\"{longPath}\"/>"), CancellationToken.None, limits);
+        Assert.Equal(1, path.Statistics.ShapesSkipped);
+        Assert.Equal(0, PixelAt(path, 50, 50).Alpha);
+
+        using var polygon = SvgPictureBuilder.Build(Svg($"<polygon points=\"{longPoints}\"/>"), CancellationToken.None, limits);
+        Assert.Equal(1, polygon.Statistics.ShapesSkipped);
+        Assert.Equal(0, PixelAt(polygon, 50, 50).Alpha);
+
+        // Under the default cap both draw.
+        using var drawn = SvgPictureBuilder.Build(Svg($"<path d=\"{longPath}\"/><polygon points=\"{longPoints}\"/>"));
+        Assert.Equal(0, drawn.Statistics.ShapesSkipped);
+        Assert.Equal(255, PixelAt(drawn, 50, 50).Alpha);
+    }
+
+    [AvaloniaFact]
+    public void Shapes_Past_The_Documents_Verb_Budget_Are_Left_Out()
+    {
+        Assert.Equal(4_000_000, SvgPictureBuilder.MaxPathVerbs);
+        var limits = SvgPictureBuilder.Limits.Default with { PathVerbs = 10 };
+
+        // Three squares of five verbs each: the third would take the document past ten and is left out.
+        var markup = Svg("<path d=\"M0 0 h30 v100 h-30 z\"/><path d=\"M35 0 h30 v100 h-30 z\"/><path d=\"M70 0 h30 v100 h-30 z\"/>");
+        using var picture = SvgPictureBuilder.Build(markup, CancellationToken.None, limits);
+
+        Assert.Equal(10, picture.Statistics.PathVerbs);
+        Assert.Equal(1, picture.Statistics.ShapesSkipped);
+        Assert.Equal(255, PixelAt(picture, 15, 50).Alpha);
+        Assert.Equal(255, PixelAt(picture, 50, 50).Alpha);
+        Assert.Equal(0, PixelAt(picture, 85, 50).Alpha);
+
+        // A polygon's points count as one verb per point.
+        using var polygon = SvgPictureBuilder.Build(Svg("<polygon points=\"0,0 100,0 100,100 0,100\"/>"), CancellationToken.None, limits);
+        Assert.Equal(4, polygon.Statistics.PathVerbs);
+    }
+
+    [AvaloniaFact]
+    public void The_Number_Scanner_Reads_Every_Form_The_Pattern_Did()
+    {
+        // The regular expression it replaces: [-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)? — a bare "e" is not an exponent, "+-4" is -4, "1.5.5" is 1.5 and .5.
+        Assert.Equal([1.5f, -2000f, 0.5f, 0.5f, -0.05f, 1f, 3f, -4f, 1.5f, 0.5f], SvgPictureBuilder.Numbers("1.5-2e3.5,.5 -.5e-1 1e 3 +-4 1.5.5"));
+        Assert.Empty(SvgPictureBuilder.Numbers(" . - e +"));
+        Assert.Empty(SvgPictureBuilder.Numbers(null));
+
+        // A value past the range of a float is not a number, as before.
+        Assert.Equal([1f], SvgPictureBuilder.Numbers("1e40 1"));
+    }
+
+    // ------------------------------------------------------------------
     // F10: a deadline, honoured by the reader and applied by the viewer
     // ------------------------------------------------------------------
 
