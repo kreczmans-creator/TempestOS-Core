@@ -50,8 +50,45 @@ public static class SvgPictureBuilder
     public const int MaxUseDepth = 16;
     public const int MaxNesting = 256;
     public const int MaxImageBytes = 16 * 1024 * 1024;
-    public const int MaxImageEdge = 8000;
+    public const int MaxImageEdge = 4096;
     public const long MaxDocumentCharacters = 64L * 1024 * 1024;
+
+    /// <summary>The most stops a gradient contributes (F2): no drawn gradient has more, and a stop list is parsed into every shader that uses it.</summary>
+    public const int MaxGradientStops = 64;
+
+    /// <summary>The most values a <c>stroke-dasharray</c> may hold (F3); a longer list is treated as no dash, since the list is copied into every stroke that uses it.</summary>
+    public const int MaxDashes = 64;
+
+    /// <summary>The most pixels one document decodes from its embedded images, all of them together (F4): 64 megapixels is 256 MB of bitmap, which no drawing needs and a crafted one would multiply.</summary>
+    public const long MaxDecodedPixels = 64_000_000;
+
+    /// <summary>The most elements and attributes a document may hold, counted before it is loaded (F11): the DOM takes about twenty times the file's bytes, so this holds the load to a few hundred MB.</summary>
+    public const long MaxNodes = 2_000_000;
+
+    /// <summary>
+    /// The caps a document is held to. The defaults are the constants above and are what the viewer uses; a test passes smaller
+    /// ones so each cap is exercised on a small document, in the normal suite, instead of on the multi-megabyte file that found it.
+    /// </summary>
+    public sealed record Limits
+    {
+        public static readonly Limits Default = new();
+
+        public int Elements { get; init; } = MaxElements;
+        public int Nesting { get; init; } = MaxNesting;
+        public long Nodes { get; init; } = MaxNodes;
+        public int GradientStops { get; init; } = MaxGradientStops;
+        public int Dashes { get; init; } = MaxDashes;
+        public int ImageEdge { get; init; } = MaxImageEdge;
+        public int ImageBytes { get; init; } = MaxImageBytes;
+        public long DecodedPixels { get; init; } = MaxDecodedPixels;
+    }
+
+    /// <summary>What the reader counted while recording a document: the figures the caps are tested on, and what was left out.</summary>
+    /// <param name="Elements">Elements drawn (or passed over by a cap), <c>use</c> targets included.</param>
+    /// <param name="GradientStopParses">Stop lists parsed; every further use of the same gradient takes the parsed list (F2).</param>
+    /// <param name="DecodedPixels">Pixels decoded from embedded images, each distinct image once (F4).</param>
+    /// <param name="ImagesSkipped">Embedded images not decoded because the document's pixel budget was spent (F4).</param>
+    public sealed record Statistics(int Elements, int GradientStopParses, long DecodedPixels, int ImagesSkipped);
 
     private const float PixelsPerInch = 96f;
     private const float DefaultFontSize = 16f;
@@ -59,7 +96,8 @@ public static class SvgPictureBuilder
     private static readonly XNamespace Xlink = "http://www.w3.org/1999/xlink";
 
     /// <summary>The recorded picture and its natural size in user units (the stated width and height, else the viewBox, else the drawn content's bounds).</summary>
-    public sealed record SvgPicture(SKPicture Picture, SKSize Size) : IDisposable
+    /// <param name="Statistics">What the reader counted on the way, for the tests of its caps.</param>
+    public sealed record SvgPicture(SKPicture Picture, SKSize Size, Statistics Statistics) : IDisposable
     {
         public void Dispose() => Picture.Dispose();
     }
@@ -80,9 +118,13 @@ public static class SvgPictureBuilder
     /// <exception cref="XmlException">The markup is not well-formed XML.</exception>
     /// <exception cref="InvalidOperationException">The root element is not <c>svg</c>.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was cancelled before the picture was recorded.</exception>
-    public static SvgPicture Build(string markup, CancellationToken cancellationToken)
+    public static SvgPicture Build(string markup, CancellationToken cancellationToken) => Build(markup, cancellationToken, Limits.Default);
+
+    /// <summary>As <see cref="Build(string, CancellationToken)"/>, holding the document to <paramref name="limits"/> instead of the defaults.</summary>
+    public static SvgPicture Build(string markup, CancellationToken cancellationToken, Limits limits)
     {
         ArgumentNullException.ThrowIfNull(markup);
+        ArgumentNullException.ThrowIfNull(limits);
         cancellationToken.ThrowIfCancellationRequested();
 
         var settings = new XmlReaderSettings
@@ -96,6 +138,28 @@ public static class SvgPictureBuilder
             MaxCharactersFromEntities = 0,
         };
 
+        // F5/F11: a linear pass over the markup before the tree is built. XDocument.Load is quadratic in nesting depth (100 000
+        // levels, 683 KB: 110 s) and the tree takes about twenty times the file's bytes, so the depth and the node count are
+        // refused here, where the raw reader measures them in milliseconds, rather than after the load that they make expensive.
+        using (var probe = XmlReader.Create(new StringReader(markup), settings))
+        {
+            long nodes = 0;
+
+            while (probe.Read())
+            {
+                if (probe.Depth > limits.Nesting)
+                    throw new InvalidOperationException($"the file nests elements deeper than {limits.Nesting} levels.");
+
+                nodes += 1 + probe.AttributeCount;
+
+                if (nodes > limits.Nodes)
+                    throw new InvalidOperationException($"the file has more than {limits.Nodes:N0} elements and attributes.");
+
+                if ((nodes & 4095) == 0)
+                    cancellationToken.ThrowIfCancellationRequested();
+            }
+        }
+
         XDocument document;
         using (var reader = XmlReader.Create(new StringReader(markup), settings))
             document = XDocument.Load(reader, LoadOptions.None);
@@ -106,7 +170,7 @@ public static class SvgPictureBuilder
             throw new InvalidOperationException("the file has no readable SVG content.");
 
         cancellationToken.ThrowIfCancellationRequested();
-        var context = new Context(root, cancellationToken);
+        var context = new Context(root, cancellationToken, limits);
         var declared = DeclaredSize(root, context);
         context.SetViewport(declared);
 
@@ -115,24 +179,35 @@ public static class SvgPictureBuilder
         var bounds = new BoundsTracker();
         var cull = declared is { } d ? new SKRect(0, 0, d.Width, d.Height) : new SKRect(-1e6f, -1e6f, 1e6f, 1e6f);
         var canvas = recorder.BeginRecording(cull);
-        new Renderer(context, bounds).DrawRoot(canvas, root, declared);
+        var renderer = new Renderer(context, bounds);
+
+        try
+        {
+            renderer.DrawRoot(canvas, root, declared);
+        }
+        finally
+        {
+            renderer.ReleaseImages();
+        }
+
         var picture = recorder.EndRecording();
+        var statistics = renderer.Statistics;
 
         if (declared is { } size)
-            return new SvgPicture(picture, size);
+            return new SvgPicture(picture, size, statistics);
 
         // No stated size and no viewBox: the picture is the drawn content, shifted to the origin.
         var content = bounds.Rect;
 
         if (content.Width <= 0 || content.Height <= 0)
-            return new SvgPicture(picture, SKSize.Empty);
+            return new SvgPicture(picture, SKSize.Empty, statistics);
 
         using var shifted = new SKPictureRecorder();
         var shiftedCanvas = shifted.BeginRecording(new SKRect(0, 0, content.Width, content.Height));
         shiftedCanvas.Translate(-content.Left, -content.Top);
         shiftedCanvas.DrawPicture(picture);
         picture.Dispose();
-        return new SvgPicture(shifted.EndRecording(), new SKSize(content.Width, content.Height));
+        return new SvgPicture(shifted.EndRecording(), new SKSize(content.Width, content.Height), statistics);
     }
 
     /// <summary>The root's own size: absolute width and height, else the viewBox's, else <see langword="null"/>.</summary>
@@ -192,6 +267,7 @@ public static class SvgPictureBuilder
         public readonly Dictionary<string, XElement> ById = new(StringComparer.Ordinal);
         public readonly List<StyleRule> Rules = [];
         public readonly CancellationToken Token;
+        public readonly Limits Limits;
         private float _viewportWidth;
         private float _viewportHeight;
 
@@ -210,9 +286,10 @@ public static class SvgPictureBuilder
             _ => (float)(Math.Sqrt((_viewportWidth * _viewportWidth) + (_viewportHeight * _viewportHeight)) / Math.Sqrt(2)),
         };
 
-        public Context(XElement root, CancellationToken token)
+        public Context(XElement root, CancellationToken token, Limits limits)
         {
             Token = token;
+            Limits = limits;
             var seen = 0;
 
             foreach (var element in root.DescendantsAndSelf())
@@ -467,7 +544,8 @@ public static class SvgPictureBuilder
             .Select(v => Length(v, context, 0, fontSize))
             .ToList();
 
-        if (values.Count == 0 || values.Any(v => v is null or < 0) || values.All(v => v == 0))
+        // F3: a list past the cap is no dash at all; the array is copied into a path effect for every stroke that uses it.
+        if (values.Count == 0 || values.Count > context.Limits.Dashes || values.Any(v => v is null or < 0) || values.All(v => v == 0))
             return null;
 
         var dashes = values.Select(v => v!.Value).ToList();
@@ -504,7 +582,27 @@ public static class SvgPictureBuilder
     private sealed class Renderer(Context context, BoundsTracker bounds)
     {
         private int _elements;
+        private int _gradientStopParses;
+        private long _decodedPixels;
+        private int _imagesSkipped;
         private readonly Stack<XElement> _useStack = new();
+
+        /// <summary>Every embedded image decoded so far, by its <c>href</c> (F4): a <c>use</c> of one image sixteen times decodes it once, and the picture shares the one copy.</summary>
+        private readonly Dictionary<string, SKImage?> _images = new(StringComparer.Ordinal);
+
+        /// <summary>The parsed stops of every gradient used so far, by the id it was asked for (F2): a document with two thousand shapes on one gradient parses its stops once.</summary>
+        private readonly Dictionary<string, List<(float Offset, SKColor Colour)>> _stops = new(StringComparer.Ordinal);
+
+        public Statistics Statistics => new(_elements, _gradientStopParses, _decodedPixels, _imagesSkipped);
+
+        /// <summary>Releases the decoded images once the picture is recorded; the picture holds its own reference to each one it draws.</summary>
+        public void ReleaseImages()
+        {
+            foreach (var image in _images.Values)
+                image?.Dispose();
+
+            _images.Clear();
+        }
 
         public void DrawRoot(SKCanvas canvas, XElement root, SKSize? declared)
         {
@@ -529,7 +627,7 @@ public static class SvgPictureBuilder
         {
             context.Token.ThrowIfCancellationRequested();
 
-            if (++_elements > MaxElements || depth > MaxNesting)
+            if (++_elements > context.Limits.Elements || depth > context.Limits.Nesting)
                 return;
 
             if (element.Name.Namespace != Svg && element.Name.Namespace != XNamespace.None)
@@ -841,7 +939,12 @@ public static class SvgPictureBuilder
             if (!context.ById.TryGetValue(id, out var element) || !(Is(element, "linearGradient") || Is(element, "radialGradient")))
                 return null;
 
-            var stops = Stops(element, 0);
+            if (!_stops.TryGetValue(id, out var stops))
+            {
+                stops = Stops(element, 0);
+                _stops[id] = stops;
+                _gradientStopParses++;
+            }
 
             if (stops.Count == 0)
                 return null;
@@ -921,6 +1024,11 @@ public static class SvgPictureBuilder
             foreach (var stop in gradient.Elements().Where(e => Is(e, "stop")))
             {
                 context.Token.ThrowIfCancellationRequested();
+
+                // F2: a stop list past the cap is cut, not refused: the shader takes the first stops, which is the gradient to the eye.
+                if (stops.Count >= context.Limits.GradientStops)
+                    break;
+
                 var p = Properties(stop, context);
                 var offsetText = (stop.Attribute("offset")?.Value ?? "0").Trim();
                 var offset = offsetText.EndsWith('%') ? (Number(offsetText[..^1]) ?? 0) / 100f : Number(offsetText) ?? 0;
@@ -1019,7 +1127,7 @@ public static class SvgPictureBuilder
 
         private void Collect(XElement element, Style style, List<(string, Style, float?, float?, float, float)> runs, int depth)
         {
-            if (depth > MaxNesting)
+            if (depth > context.Limits.Nesting)
                 return;
 
             foreach (var node in element.Nodes())
@@ -1091,15 +1199,48 @@ public static class SvgPictureBuilder
             if (href is null || !href.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
                 return;
 
+            if (!_images.TryGetValue(href, out var decoded))
+            {
+                decoded = Decode(href);
+                _images[href] = decoded;
+            }
+
+            if (decoded is null)
+                return;
+
+            var x = Length(image.Attribute("x")?.Value, context, 0, style.FontSize) ?? 0;
+            var y = Length(image.Attribute("y")?.Value, context, 1, style.FontSize) ?? 0;
+            var width = Length(image.Attribute("width")?.Value, context, 0, style.FontSize) ?? decoded.Width;
+            var height = Length(image.Attribute("height")?.Value, context, 1, style.FontSize) ?? decoded.Height;
+
+            if (width <= 0 || height <= 0)
+                return;
+
+            var dest = Fit(SKRect.Create(0, 0, decoded.Width, decoded.Height), SKRect.Create(x, y, width, height), image.Attribute("preserveAspectRatio")?.Value)
+                .MapRect(SKRect.Create(0, 0, decoded.Width, decoded.Height));
+            using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.Medium };
+
+            // An immutable image is shared by the picture; a bitmap would be copied into it at every draw (F4).
+            canvas.DrawImage(decoded, dest, paint);
+            bounds.Add(canvas.TotalMatrix.MapRect(dest));
+        }
+
+        /// <summary>
+        /// The decoded form of an embedded <c>data:</c> image, or <see langword="null"/> when it is not one this reader draws: not base64, over
+        /// <see cref="Limits.ImageBytes"/>, not an image Skia decodes, an edge over <see cref="Limits.ImageEdge"/>, or more pixels than the
+        /// document has left of <see cref="Limits.DecodedPixels"/> (F4).
+        /// </summary>
+        private SKImage? Decode(string href)
+        {
             var comma = href.IndexOf(',', StringComparison.Ordinal);
 
             if (comma < 0 || !href[..comma].Contains(";base64", StringComparison.OrdinalIgnoreCase))
-                return;
+                return null;
 
             var payload = href[(comma + 1)..].Trim();
 
-            if (payload.Length == 0 || payload.Length > MaxImageBytes * 4 / 3 + 4)
-                return;
+            if (payload.Length == 0 || payload.Length > context.Limits.ImageBytes * 4L / 3 + 4)
+                return null;
 
             byte[] bytes;
 
@@ -1109,32 +1250,30 @@ public static class SvgPictureBuilder
             }
             catch (FormatException)
             {
-                return;
+                return null;
             }
 
             using var codec = SKCodec.Create(new MemoryStream(bytes));
 
-            if (codec is null || codec.Info.Width <= 0 || codec.Info.Height <= 0 || codec.Info.Width > MaxImageEdge || codec.Info.Height > MaxImageEdge)
-                return;
+            if (codec is null || codec.Info.Width <= 0 || codec.Info.Height <= 0 || codec.Info.Width > context.Limits.ImageEdge || codec.Info.Height > context.Limits.ImageEdge)
+                return null;
+
+            var pixels = (long)codec.Info.Width * codec.Info.Height;
+
+            if (_decodedPixels + pixels > context.Limits.DecodedPixels)
+            {
+                _imagesSkipped++;
+                return null;
+            }
 
             using var bitmap = SKBitmap.Decode(codec);
 
             if (bitmap is null)
-                return;
+                return null;
 
-            var x = Length(image.Attribute("x")?.Value, context, 0, style.FontSize) ?? 0;
-            var y = Length(image.Attribute("y")?.Value, context, 1, style.FontSize) ?? 0;
-            var width = Length(image.Attribute("width")?.Value, context, 0, style.FontSize) ?? bitmap.Width;
-            var height = Length(image.Attribute("height")?.Value, context, 1, style.FontSize) ?? bitmap.Height;
-
-            if (width <= 0 || height <= 0)
-                return;
-
-            var dest = Fit(SKRect.Create(0, 0, bitmap.Width, bitmap.Height), SKRect.Create(x, y, width, height), image.Attribute("preserveAspectRatio")?.Value)
-                .MapRect(SKRect.Create(0, 0, bitmap.Width, bitmap.Height));
-            using var paint = new SKPaint { IsAntialias = true, FilterQuality = SKFilterQuality.Medium };
-            canvas.DrawBitmap(bitmap, dest, paint);
-            bounds.Add(canvas.TotalMatrix.MapRect(dest));
+            _decodedPixels += pixels;
+            bitmap.SetImmutable();
+            return SKImage.FromBitmap(bitmap);
         }
     }
 
