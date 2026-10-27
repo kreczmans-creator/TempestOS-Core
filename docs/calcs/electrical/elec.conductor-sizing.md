@@ -6,8 +6,6 @@
 
 Calculates the design current, the smallest preferred device rating and the smallest conductor whose tabulated capacity carries that rating. It checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z, using your own capacity and rating records.
 
-**Reference diagram.** The worksheet draws the circuit the supply choice selects: the supply, the protective device, three or two conductors of the circuit length, and the load. Bound inputs: U, device, insulation, L, P, cos_phi, eta, T_amb, N_g, C_a, C_g, C_i, system and ratings. Not to scale; inputs only.
-
 ## Method
 
 - Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b
@@ -28,6 +26,8 @@ Calculates the design current, the smallest preferred device rating and the smal
 - `CSA` = smallest cross-section in the `ampacity` record with `I_t ≥ I_t,req` (row order does not matter). With the AWG system the row carries the gauge n and the area is the derived geometry `d = 0.127·92^((36 − n)/39) mm`, `A = π d²/4`; no AWG capacity is supplied.
 - `I_z = I_t·C_a·C_g·C_i` (the factors actually applied; C_c is not part of it).
 - Checks (BS 7671 reg. 433.1.1; BS EN 60204-1 cl. 12.4 and 7.2 in the machine context): `I_b ≤ I_n`, `I_n ≤ I_z`, `I₂ ≤ 1.45·I_z`. For MCB types B, C, D `I₂ = 1.45·I_n` is inherent. An entered `I2` (datasheet) is always checked. For a semi-enclosed fuse `I₂ = 2·I_n` by default (reg. 433.1.202). In the **BS 7671 installation context** a gG fuse to BS 88 without `I2` shows no `I₂`: the condition is deemed satisfied when `I_n ≤ I_z` (reg. 433.1.201, cited by number; shown as a check with its real ratio `I_n/I_z`), and an MCCB or MPCB without `I2` is treated the same with a warning that this presumes `I₂` not above 1.45·`I_n`. In the **machine-wiring context** a gG fuse, MCCB or MPCB without `I2` is **blocked** (`I2:`): an IEC 60269-1 gG fuse has `I₂ = 1.6·I_n`, not 1.45·`I_n`, so the BS 88 deeming rule is not carried over (Green G-B-02, G-B-13). The two regulation numbers 433.1.201 and 433.1.202 are cited as given to me and are to be checked against the owner's copy.
+
+**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram (ADR-0158, DI-08). It is not to scale and shows inputs only, never a result. It draws the circuit: the supply, the protective device, the conductors of the circuit length, and the load. One variant per `supply`: three line conductors, or line and neutral, or two DC conductors. It binds `U`, `device`, `P`, `L`, `system`, `cos_phi`, `eta`, `T_amb`, `N_g`, `C_a`, `C_g`, `C_i`, `ratings`, `insulation` and `supply`.
 
 ## Inputs
 

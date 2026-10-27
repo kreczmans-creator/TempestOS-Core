@@ -6,8 +6,6 @@
 
 Calculates the fill of a conduit, trunking or tray, the bend radius and the pull of the cables through a route. The space factor, bend multiple, friction coefficient and pulling limits are your own records.
 
-**Reference diagram.** The worksheet draws the containment in section, round or rectangular as the choice selects, with three cables for the cables as listed, and the pull route in plan beside it with the start tension. Bound inputs: cables, D_int, W_int, H_int, route, T_1, mu, w_c, k_n, f_max, n_bend, T_grip and P_lim. Not to scale; inputs only.
-
 ## Method
 
 - Cable area: A_cab = Σ n_i·π·d_i²/4 (n_i cables of overall diameter d_i)
@@ -22,6 +20,8 @@ Calculates the fill of a conduit, trunking or tray, the bend radius and the pull
 ### Notes on the method
 
 Fill is geometric: `A_cab = Σ nᵢ·π·dᵢ²/4`, `A_int = π·D²/4` (conduit) or `W·H` (trunking or tray, internal width × depth), `fill = A_cab/A_int`, utilisation `u_fill = fill/f_max`. Bend radius: `R_min = n_bend·d_max` with `d_max` the largest cable diameter; each bend `u_b = R_min/R`, the check is the tightest bend. Weight `w = Σ nᵢ·mᵢ` (kg/m), force per metre `w·g·w_c` (`w_c` your weight-correction factor, default 1), `g = 9.80665 m/s²`. Pulling, in pull order from a start tension `T₁`: straight length `T₂ = T₁ + w·g·w_c·μ·L` (w in kg/m times g gives N/m); bend `T₂ = T₁·e^(w_c·μ·θ)` (capstan equation, friction scaled by `w_c`, θ in radians); sidewall pressure at a bend `SWP = T₂/R` (N/m). The route is run as listed (direction a) and reversed (direction b), with the same start tension; tension never falls along a pull, so the maximum is the end tension. The recommended direction is the only one that passes every tension and SWP check, if exactly one does; otherwise the one with the lower maximum tension (equal tension: the lower SWP; equal both: either). Cable limit, load shared equally so each cable carries `T/N` and the weakest governs: `T_cab = k_n·N·min(T_max,ᵢ)` (`k_n` your derating for more than 3 cables, 1 if none entered), `u_T = max_i (T/N)/(k_n·T_max,ᵢ) = max_tension/T_cab`, with one working line per cable. Grip or pulling-eye limit `T_grip` (separate, optional): `u_grip = max_tension/T_grip`. `u_P = P_max/P_lim`. The largest cable must also fit: diameter below the conduit ID, or not above the smaller side of the trunking or tray.
+
+**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram (ADR-0158, DI-08). It is not to scale and shows inputs only, never a result. It draws the containment in section, with three cables for the cables as listed. The pull route is drawn in plan beside it with the start tension. One variant per `cont_type`: round or rectangular. It binds `D_int`, `cables`, `route`, `T_1`, `w_c`, `k_n`, `n_bend`, `mu`, `f_max`, `T_grip`, `P_lim`, `cont_type`, `W_int` and `H_int`.
 
 ## Inputs
 

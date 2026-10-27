@@ -34,7 +34,7 @@ Formulas in the author's notation (the template method text carries them). Angle
 - *Governing.* `util = max(lug_util, u_beam, u_dish)` (the port `lifting.utilisation`); `capacity = WLL/lug_util` in kN (`lifting.capacity`); `governing_mode` text, e.g. "BTH-1: bearing" or "EN 13155 (2×WLL elastic): double-plane shear"; a failed dishing limit is named in it. The capacity does not depend on `WLL` (it is the rated load the lug would carry); utilisation is proportional to it.
 - *Proof load.* `proof_load = k_proof·WLL`.
 
-**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram: not to scale, inputs only, no result (ADR-0158, DI-08). It draws the hook lifting the rated load through the lugs, on the load or on a spreader beam, each sling at θ from the vertical, and each lug as a plate with its hole and pin. One variant per number of lugs and per beam setting. It binds `WLL`, `theta`, `beta`, `n_lugs`, `beam`, `mode`, `t_p`, `Dh`, `Dp`, `r_lug`, `be`, `h`, `A_beam`, `f_y`, `f_u` and `n_cycles`.
+**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram (ADR-0158, DI-08). It is not to scale and shows inputs only, never a result. It draws the hook lifting the rated load through the lugs, each sling at θ from the vertical. Each lug is a plate with its hole and pin, on the load or on a spreader beam. One variant per `n_lugs` and per `beam` setting. It binds `WLL`, `theta`, `t_p`, `Dh`, `Dp`, `A_beam`, `n_lugs`, `mode`, `beam`, `beta`, `f_y`, `f_u`, `n_cycles`, `r_lug`, `be` and `h`.
 
 ## Inputs
 

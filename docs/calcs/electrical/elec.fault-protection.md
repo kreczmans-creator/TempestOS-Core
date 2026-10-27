@@ -6,8 +6,6 @@
 
 Calculates automatic disconnection of supply in a TN system for one circuit: loop impedance, disconnection time and the adiabatic conductor check. It also gives the prospective three-phase fault at the origin against the breaking capacity.
 
-**Reference diagram.** The worksheet draws the earth-fault loop: the supply behind the external impedance, the device, the line conductor to the fault and the protective conductor back. The fuse or MCCB choice adds its time–current points. Bound inputs: U_0, Z_e, I_n, S_line, S_cpc, L, curve, S_r, u_k, T_op, t_req, C_min, c_max, theta_i and theta_f. Not to scale; inputs only.
-
 ## Method
 
 - Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/S (k_R = 1.125 takes the pure-copper ρ_20 to the cable standard's maximum conductor resistance; k enters with the pure ρ_20)
@@ -20,6 +18,8 @@ Calculates automatic disconnection of supply in a TN system for one circuit: loo
 ### Notes on the method
 
 `Z_s = Z_e + ρ₂₀ L (1/S_line + 1/S_cpc)[1 + α(θ − 20)]`; `I_f = C_min U₀/Z_s`, C_min = 0.95. MCB B/C/D: `I_a = 5/10/20 I_n`; fuse or MCCB: `I_a` at t_req by log-log interpolation of the user's time–current points (no extrapolation). `Z_s,max = C_min U₀/I_a` (BS 7671 reg. 411.4.4; times reg. 411.3.2.2/411.3.2.3; BS EN 60204-1 cl. 6.3.3). `S_min = √(I²t)/k` (reg. 543.1.3, 434.5.2), I²t from the curve time at 0.1 s and above; below 0.1 s the device's let-through at the **maximum prospective fault** (`I2t_let`). Without `I2t_let` the protective conductor check uses I_f²·0.1 s at the end-of-line fault only (labelled so, with a warning) and the **line conductor check (reg. 434.5.2) is not made**: the end-of-line earth fault is the minimum fault and does not bound the energy of the maximum one (Green G-B-03). `k = √[Q_c(β + 20)/ρ₂₀ · ln(1 + (θ_f − θ_i)/(β + θ_i))]`, labelled derived. `Z_T = u_k U_n²/S_r`, `I_k3 = c U_n/(√3 Z_T)` (IEC 60909-0 cl. 5.3). Optional 0.8 × Z_s,max field-test value, labelled rule of thumb. **Device agreement:** with the optional `device_code` (1 MCB type B, 2 type C, 3 type D, 4 fuse or MCCB, linked from conductor-sizing) the `device` chosen here must be the matching one, else the sheet is blocked (`device:`); in the motor-circuit pack the cable step's device therefore cannot silently differ from the one checked here (Green G-B-01, Black B-A-03).
+
+**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram (ADR-0158, DI-08). It is not to scale and shows inputs only, never a result. It draws the earth-fault loop: the supply behind the external impedance, the device, the line conductor and the protective conductor. One variant per `device`; the fuse or MCCB variant adds its time–current points. It binds `U_0`, `Z_e`, `I_n`, `S_line`, `S_cpc`, `L`, `S_r`, `u_k`, `T_op`, `t_req`, `C_min`, `theta_i`, `theta_f`, `c_max`, `device` and `curve`.
 
 ## Inputs
 

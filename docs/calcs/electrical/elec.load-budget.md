@@ -6,8 +6,6 @@
 
 Calculates the demand of a set of loads per supply and the minimum DC power supply, transformer and battery for it. It also gives the heat the loads dissipate for the enclosure calculation.
 
-**Reference diagram.** The worksheet draws the three buses with one load on each for the loads as listed, the additional load, the DC power supply fed from the bus the choice selects, the transformer and the battery. Bound inputs: loads, psu_bus, U_3ph, U_1ph, U_DC, P_add, eta_psu, k_T, U_b, t_auto, T_amb, SF, DoD and k_age. Not to scale; inputs only.
-
 ## Method
 
 - Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative); this duty-weighted demand sizes the transformer and the enclosure heat
@@ -21,6 +19,8 @@ Calculates the demand of a set of loads per supply and the minimum DC power supp
 ### Notes on the method
 
 Per load `P·d·k` and `P·d·k/cosφ` (arithmetic sum, conservative) for the demand, the transformer, the heat and the battery energy; the bus currents and the PSU rating use the running load `P·k` (duty not applied): `I_3φ = S_3φ,run/(√3 U)`, `I_1φ = S_1φ,run/U`, `I_DC = P_DC,run/U_DC`, `P_PSU ≥ margin·P_DC,run/f_derate`; with `psu_bus` set, the DC power supply's input `P_DC/η_PSU` (power factor 1) is added to that AC bus, the DC loads count at `P/η_PSU` in `S` and the supply's loss `P_DC(1/η_PSU − 1)` is added to `Φ` (default: not counted, with a warning when DC loads exist: G-B-12). `Φ = Σ h P d k` with `h` the load's `heat` share (blank: the loss `1 − η` of a drive or supply; 1 for electronics inside the panel; 0 for a machine outside it), so a linked motor adds no panel heat (`heat_add` = 0) (G-B-04). `P_PSU ≥ margin·P_DC/f_derate`. `S_T_req = margin·S` for the running load; `S_peak = S + max(m P/cosφ − S_i) ≤ k_T·S_T` (the starting load undiversified; loads with no demand do not start), so `S_T_req_start = S_peak/k_T`; `S_T_min` is the larger of the two and is the rating that satisfies both of the sheet's transformer checks (B-A-09). Battery `C = I_b t/(DoD η_b k_temp k_age)`, `I_b = Σ backed P d k/(U_b η_conv)`; optional Peukert `I_b H (t/H)^(1/k_p)` (Linden 5th ed.), not below `I_b t` beyond the rated hour rate.
+
+**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram (ADR-0158, DI-08). It is not to scale and shows inputs only, never a result. It draws the three buses with one load on each for the loads as listed. It also draws the additional load, the DC power supply, the transformer and the battery. One variant per `psu_bus`: the bus that feeds the power supply. It binds `k_T`, `U_3ph`, `U_1ph`, `U_DC`, `loads`, `P_add`, `eta_psu`, `U_b`, `t_auto`, `T_amb`, `SF`, `DoD`, `k_age` and `psu_bus`.
 
 ## Inputs
 

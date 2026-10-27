@@ -17,7 +17,7 @@ Calculates the design values of one action effect under every EN 1990 Annex A1 c
 
 Each combination is shown as formula → substitution → result (`C1…` for the maximum, `D1…` for the minimum). A permanent action takes γ_G,sup (×ξ in 6.10b) when it adds to the effect sought and γ_G,inf when it opposes it; a variable action enters only when it adds (EN 1990 cl. 6.4.3.2, 6.4.3.3, 6.5.3; Annex A1 Table A1.2(B)). K_FI multiplies the partial factors of unfavourable actions (γ_G,sup, ξ·γ_G,sup and γ_Q; EN 1990 Annex B, B3.3), never γ_G,inf.
 
-**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram: not to scale, inputs only, no result (ADR-0158, DI-08). It draws one member under the actions as listed: a permanent action as a distributed load, a variable action and a snow load as point loads, and wind across the member. The factors are labels. One variant per ULS expression; `xi` is labelled only for 6.10a and 6.10b. It binds `actions`, `gamma_G_sup`, `gamma_G_inf`, `gamma_Q`, `K_FI`, `psi`, `xi`, `unit` and `method`.
+**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram (ADR-0158, DI-08). It is not to scale and shows inputs only, never a result. It draws one member under the actions as listed. The permanent action is a distributed load; the variable and snow actions are point loads. The wind acts across the member. One variant per `method`; `xi` is labelled only for 6.10a and 6.10b. It binds `actions`, `gamma_G_inf`, `K_FI`, `gamma_G_sup`, `gamma_Q`, `psi`, `unit`, `method` and `xi`.
 
 ## Inputs
 

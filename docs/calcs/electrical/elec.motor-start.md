@@ -6,8 +6,6 @@
 
 Calculates the voltage dip when a three-phase induction motor starts, from the source, cable and locked-rotor impedances. It also gives the capacitor kvar for a target power factor and the parallel-resonance order.
 
-**Reference diagram.** The worksheet draws the source, the starter the choice selects, the cable run and the motor, with the source data across the top. Bound inputs: S_n, u_k, S_k, I_k, XR, A_c, L_cab, n_par, T_c, P, U, eta, cos_phi, I_LR_r, cos_phi_st, dip_limit, and for the limited starters k_soft, k_vfd and cos_phi_vfd. Not to scale; inputs only.
-
 ## Method
 
 - Rated current: I_n = P/(√3·U·cos φ·η), or entered
@@ -28,6 +26,8 @@ Calculates the voltage dip when a three-phase induction motor starts, from the s
 - **Regulated start** (a drive; a soft starter only when it reaches its limit): a soft starter cannot pass more than the locked-rotor current at the dipped voltage, so the passive locked-rotor divider is solved first, `|I_pas| = E/|Z_s + Z_c + Z_LR|`; if `|I_pas| ≤ k_soft·I_n` the sheet reports "Full conduction, limit not reached" (`start_mode`) and the passive result stands, otherwise the current is held, `|I| = I_start`, lagging `V_m` by φ (the starting power factor, or the drive's displacement factor). With `R + jX = Z_s + Z_c`, `a = |I|(R cos φ + X sin φ)`, `b = |I|(X cos φ − R sin φ)`: `|V_m| = √(E² − b²) − a`, `V_pcc = V_m + I·Z_c`, and `Z_m = V_m/I` is the equivalent impedance. A drive whose current the supply cannot hold blocks the sheet (`current-limit`, naming `k_vfd` to lower); a soft starter never asks for more than the passive current, so it does not block. A passive impedance would let the current fall and understate this dip (about 9 % of the dip on the soft-start case, which can turn a fail into a pass near the limit).
 - Dip `= 100·(1 − |V|/E)`. `dV_cab = √3·Re[I·Z_c·V̄_m/|V_m|]` is the cable drop along the starting voltage; it equals voltage-drop's `√3·I·(R cos φ + X sin φ)` at the dipped current `I_dip` and the starting power factor (proved in a test by running voltage-drop). `k_T = (|V_m|/E)²` is the torque factor of a passive start (not given for a regulated start, where torque follows current).
 - PF correction: `P_in = P/η` (or `√3·U·I_n·cos φ` when `I_n` is entered, with a warning if the two differ by more than 5 %), `Q_c = P_in(tan φ₁ − tan φ₂)` where φ₁ is the motor's (a drive's displacement factor with a drive; zero, with a warning, when the target is not above it), `I_c = Q_c/(√3·U)`, running current before and after. Resonance: `S_sc = U²/|Z_s|`, `h ≈ √(S_sc/Q_c)`; `|Z_s|` stands in for `X_s`, so h reads 1 to 1.4 % low.
+
+**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram (ADR-0158, DI-08). It is not to scale and shows inputs only, never a result. It draws the source, the starter, the cable run and the motor, with the source data across the top. One variant per `starter`; the soft starter and the drive label their current limits. It binds `u_k`, `S_k`, `I_k`, `XR`, `S_n`, `A_c`, `P`, `L_cab`, `cos_phi_st`, `U`, `eta`, `cos_phi`, `I_LR_r`, `T_c`, `n_par`, `dip_limit`, `starter`, `k_soft`, `k_vfd` and `cos_phi_vfd`.
 
 ## Inputs
 

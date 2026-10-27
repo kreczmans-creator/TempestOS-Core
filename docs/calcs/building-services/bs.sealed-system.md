@@ -6,8 +6,6 @@
 
 Calculates the catalogue output each room's emitter needs at the design flow, return and room temperatures, and checks it against the selected emitters. It also gives the minimum expansion vessel for the system volume, temperatures, static head and pressures.
 
-**Reference diagram.** The worksheet draws the sealed circuit: the boiler, the flow and return pipework, three emitters for the rooms as listed, and the expansion vessel below the static height. Bound inputs: V_plant, V_pipe, V_vessel, rooms, h_static, T_flow, T_return, T_room, T_fill, T_max, p_f, p_prv, p_margin and n. Not to scale; inputs only.
-
 ## Method
 
 - Emitter temperature difference: ΔT = (T_flow + T_return)/2 − T_room, or the log mean (T_flow − T_return)/ln((T_flow − T_room)/(T_return − T_room))
@@ -20,6 +18,8 @@ Calculates the catalogue output each room's emitter needs at the design flow, re
 ### Notes on the method
 
 `ΔT = (T_flow + T_return)/2 − t_i` or the log mean (BS EN 442-2 cl. 5). `Φ = Φ50 (ΔT/50)^n`; `Φ50,req = Φ_req/(ΔT/50)^n`. `V_s = ΣV_em + V_pipe + V_plant`. `e_x = ρ(T_fill)/ρ(T_max) − 1` (Kell 1975, within about 0.01 % of IAPWS-95 at 1 atm), or a glycol record. `p_i = ρ g h + margin`. `V_e = e_x V_s/[1 − (p_i + 1)/(p_f + 1)]` (bar g; + 1 bar as usually written). The vessel is sized for the higher of `T_max` and `T_flow` (a warning when `T_max < T_flow`), and `T_fill` must be below `T_max` (blocked otherwise, instead of a negative vessel). **`V_e` is the expansion volume only:** it contains no water reserve for system losses and no margin between the final pressure and the safety valve setting beyond `p_f < p_prv`; the sheet states this as an assumption and cites CIBSE Guide B1 only (it no longer cites BS EN 12828 for what it does not implement). A selected emitter output of 0 W is refused (leave `Phi50` empty for none).
+
+**Reference diagram.** The worksheet form and the issued sheet (Figure 1) show a reference diagram (ADR-0158, DI-08). It is not to scale and shows inputs only, never a result. It draws the sealed circuit: the boiler, the flow and return pipework, and the expansion vessel below the static height. Three emitters stand for the rooms as listed. It binds `V_plant`, `V_pipe`, `rooms`, `T_flow`, `T_return`, `T_room`, `V_vessel`, `h_static`, `T_fill`, `T_max`, `p_f`, `p_prv`, `p_margin` and `n`.
 
 ## Inputs
 
