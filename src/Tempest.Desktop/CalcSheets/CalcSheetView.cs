@@ -701,6 +701,7 @@ public sealed partial class CalcSheetView : UserControl
         _watermark.Foreground = instance?.Status == CalcInstanceStatus.Issued ? Brushes.SeaGreen : instance?.Status == CalcInstanceStatus.Superseded ? Brushes.Gray : Brushes.DarkOrange;
         _form.Children.Clear();
         _fields.Clear();
+        _tables.Clear();
         _referencePickers.Clear();
 
         if (_referenceLabelsFor != entry.Reference)
@@ -721,7 +722,7 @@ public sealed partial class CalcSheetView : UserControl
         _updateLinksButton.IsVisible = false;
         _linkPanel.IsVisible = false;
         _carriedInputs.Clear();
-        _carriedInputs.AddRange(entry.Template.Inputs.Where(s => s.Kind is CalcInputKind.Table or CalcInputKind.Vector).Select(s => seed.Find(s.Symbol)).OfType<CalcInputValue>());
+        _carriedInputs.AddRange(entry.Template.Inputs.Where(s => s.Kind is CalcInputKind.Table or CalcInputKind.Vector && !HasEditor(s)).Select(s => seed.Find(s.Symbol)).OfType<CalcInputValue>());
         string? lastGroup = null;
 
         foreach (var library in CalcReferenceFill.LibrariesOf(entry.Template))
@@ -749,13 +750,20 @@ public sealed partial class CalcSheetView : UserControl
 
         foreach (var spec in entry.Template.Inputs)
         {
-            if (spec.Kind is CalcInputKind.Table or CalcInputKind.Vector)
+            if (spec.Kind is CalcInputKind.Table or CalcInputKind.Vector && !HasEditor(spec))
                 continue;
 
             if (spec.Group is { Length: > 0 } g && g != lastGroup)
             {
                 _form.Children.Add(new TextBlock { Text = g, FontWeight = DesignTokens.WeightHeading, FontSize = DesignTokens.FontSizeBody, Margin = DesignTokens.SectionMargin });
                 lastGroup = g;
+            }
+
+            // Item 12: a table or vector input has its own editor on the form, seeded with what the sheet was given.
+            if (spec.Kind is CalcInputKind.Table or CalcInputKind.Vector)
+            {
+                _form.Children.Add(BuildTableEditor(spec, seed.Find(spec.Symbol)));
+                continue;
             }
 
             // A saved instance or an import states its inputs in full: an optional input it leaves out stays blank rather than
@@ -851,6 +859,10 @@ public sealed partial class CalcSheetView : UserControl
                 field.Problem.Text = notice.Message;
                 field.Problem.Foreground = notice.Severity == CalcNoticeSeverity.Block ? Brushes.IndianRed : Brushes.DarkOrange;
                 field.Problem.IsVisible = true;
+            }
+            else
+            {
+                ShowTableProblem(key, notice);
             }
         }
 
@@ -963,6 +975,9 @@ public sealed partial class CalcSheetView : UserControl
         foreach (var f in _fields.Values)
             SetEnabled(f, !IsReadOnly);
 
+        foreach (var t in _tables.Values)
+            SetTableEnabled(t, !IsReadOnly);
+
         // A reference picker fills fields, so it is read-only with them (an issued form showed it still enabled).
         foreach (var picker in _referencePickers.Values)
             picker.IsEnabled = !IsReadOnly && picker.ItemCount > 0;
@@ -1031,6 +1046,12 @@ public sealed partial class CalcSheetView : UserControl
                     set.Set(new CalcInputValue(symbol, Flag: f.Flag!.IsChecked == true, Provenance: provenance));
                     break;
             }
+        }
+
+        foreach (var table in _tables.Values)
+        {
+            if (ReadTable(table) is { } value)
+                set.Set(value);
         }
 
         foreach (var carried in _carriedInputs)
@@ -1136,6 +1157,9 @@ public sealed partial class CalcSheetView : UserControl
         foreach (var f in _fields.Values)
             f.Problem.IsVisible = false;
 
+        foreach (var t in _tables.Values)
+            t.Problem.IsVisible = false;
+
         _stale.IsVisible = true;
         _diagram.Refresh();
         InputsChanged?.Invoke(ReadForm());
@@ -1206,6 +1230,7 @@ public sealed partial class CalcSheetView : UserControl
         _linkPanel.IsVisible = false;
         _form.Children.Clear();
         _fields.Clear();
+        _tables.Clear();
         _referencePickers.Clear();
         _carriedInputs.Clear();
         _problems.Text = string.Empty;
