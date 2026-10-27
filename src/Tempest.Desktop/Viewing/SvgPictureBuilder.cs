@@ -65,6 +65,12 @@ public static class SvgPictureBuilder
     /// <summary>The most elements and attributes a document may hold, counted before it is loaded (F11): the DOM takes about twenty times the file's bytes, so this holds the load to a few hundred MB.</summary>
     public const long MaxNodes = 2_000_000;
 
+    /// <summary>The largest font size in user units (F6): text is measured at its size, and a size of a million made measuring 20 000 runs take 48 s.</summary>
+    public const float MaxFontSize = 16_384f;
+
+    /// <summary>The most family names of a <c>font-family</c> list that are looked up (F6); each is a query to the platform's font configuration.</summary>
+    public const int MaxFontFamilies = 8;
+
     /// <summary>
     /// The caps a document is held to. The defaults are the constants above and are what the viewer uses; a test passes smaller
     /// ones so each cap is exercised on a small document, in the normal suite, instead of on the multi-megabyte file that found it.
@@ -81,6 +87,8 @@ public static class SvgPictureBuilder
         public int ImageEdge { get; init; } = MaxImageEdge;
         public int ImageBytes { get; init; } = MaxImageBytes;
         public long DecodedPixels { get; init; } = MaxDecodedPixels;
+        public float FontSize { get; init; } = MaxFontSize;
+        public int FontFamilies { get; init; } = MaxFontFamilies;
     }
 
     /// <summary>What the reader counted while recording a document: the figures the caps are tested on, and what was left out.</summary>
@@ -88,7 +96,9 @@ public static class SvgPictureBuilder
     /// <param name="GradientStopParses">Stop lists parsed; every further use of the same gradient takes the parsed list (F2).</param>
     /// <param name="DecodedPixels">Pixels decoded from embedded images, each distinct image once (F4).</param>
     /// <param name="ImagesSkipped">Embedded images not decoded because the document's pixel budget was spent (F4).</param>
-    public sealed record Statistics(int Elements, int GradientStopParses, long DecodedPixels, int ImagesSkipped);
+    /// <param name="TypefaceLookups">Distinct (family list, weight, slant) combinations resolved to a typeface; every further run with the same takes the cached face (F6).</param>
+    /// <param name="FamilyLookups">Family names asked of the platform's font manager, at most <see cref="Limits.FontFamilies"/> per typeface lookup (F6).</param>
+    public sealed record Statistics(int Elements, int GradientStopParses, long DecodedPixels, int ImagesSkipped, int TypefaceLookups, int FamilyLookups);
 
     private const float PixelsPerInch = 96f;
     private const float DefaultFontSize = 16f;
@@ -476,7 +486,7 @@ public static class SvgPictureBuilder
             style = style with { CurrentColor = current };
 
         if (p.TryGetValue("font-size", out var fontSize) && Length(fontSize, context, 0, parent.FontSize) is { } size && size > 0)
-            style = style with { FontSize = size };
+            style = style with { FontSize = Math.Min(size, context.Limits.FontSize) };
 
         if (p.TryGetValue("fill", out var fill))
             style = style with { Fill = ParsePaint(fill, style.CurrentColor, style.Fill) };
@@ -585,7 +595,12 @@ public static class SvgPictureBuilder
         private int _gradientStopParses;
         private long _decodedPixels;
         private int _imagesSkipped;
+        private int _typefaceLookups;
+        private int _familyLookups;
         private readonly Stack<XElement> _useStack = new();
+
+        /// <summary>The typeface each (family list, bold, italic) resolved to (F6): one font-configuration query per combination, not per text run.</summary>
+        private readonly Dictionary<(string Family, bool Bold, bool Italic), SKTypeface> _typefaces = [];
 
         /// <summary>Every embedded image decoded so far, by its <c>href</c> (F4): a <c>use</c> of one image sixteen times decodes it once, and the picture shares the one copy.</summary>
         private readonly Dictionary<string, SKImage?> _images = new(StringComparer.Ordinal);
@@ -593,7 +608,7 @@ public static class SvgPictureBuilder
         /// <summary>The parsed stops of every gradient used so far, by the id it was asked for (F2): a document with two thousand shapes on one gradient parses its stops once.</summary>
         private readonly Dictionary<string, List<(float Offset, SKColor Colour)>> _stops = new(StringComparer.Ordinal);
 
-        public Statistics Statistics => new(_elements, _gradientStopParses, _decodedPixels, _imagesSkipped);
+        public Statistics Statistics => new(_elements, _gradientStopParses, _decodedPixels, _imagesSkipped, _typefaceLookups, _familyLookups);
 
         /// <summary>Releases the decoded images once the picture is recorded; the picture holds its own reference to each one it draws.</summary>
         public void ReleaseImages()
@@ -1177,18 +1192,32 @@ public static class SvgPictureBuilder
 
         private static string Collapse(string text) => Whitespace.Replace(text, " ");
 
-        /// <summary>The first installed face the style's family list names, else the platform's default face in that weight and slant.</summary>
-        private static SKTypeface Typeface(Style style)
+        /// <summary>The first installed face the style's family list names (of at most <see cref="Limits.FontFamilies"/>), else the platform's default face in that weight and slant; remembered per combination (F6).</summary>
+        private SKTypeface Typeface(Style style)
         {
-            var fontStyle = new SKFontStyle(style.Bold ? SKFontStyleWeight.Bold : SKFontStyleWeight.Normal, SKFontStyleWidth.Normal, style.Italic ? SKFontStyleSlant.Italic : SKFontStyleSlant.Upright);
+            var key = (style.FontFamily, style.Bold, style.Italic);
 
-            foreach (var family in style.FontFamily.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            if (_typefaces.TryGetValue(key, out var cached))
+                return cached;
+
+            _typefaceLookups++;
+            var fontStyle = new SKFontStyle(style.Bold ? SKFontStyleWeight.Bold : SKFontStyleWeight.Normal, SKFontStyleWidth.Normal, style.Italic ? SKFontStyleSlant.Italic : SKFontStyleSlant.Upright);
+            SKTypeface? found = null;
+
+            foreach (var family in style.FontFamily.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(context.Limits.FontFamilies))
             {
+                _familyLookups++;
+
                 if (SKFontManager.Default.MatchFamily(family.Trim('"', '\''), fontStyle) is { } match)
-                    return match;
+                {
+                    found = match;
+                    break;
+                }
             }
 
-            return SKTypeface.FromFamilyName(null, fontStyle) ?? SKTypeface.Default;
+            found ??= SKTypeface.FromFamilyName(null, fontStyle) ?? SKTypeface.Default;
+            _typefaces[key] = found;
+            return found;
         }
 
         private void DrawImage(SKCanvas canvas, XElement image, Style style)

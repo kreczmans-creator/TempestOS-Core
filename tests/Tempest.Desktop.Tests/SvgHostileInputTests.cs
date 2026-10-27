@@ -283,6 +283,39 @@ public sealed class SvgHostileInputTests
     }
 
     // ------------------------------------------------------------------
+    // F6: text — one typeface lookup per family and style, at most 8 names, a size cap
+    // ------------------------------------------------------------------
+
+    [AvaloniaFact]
+    public void A_Typeface_Is_Looked_Up_Once_Per_Family_List_And_At_Most_8_Names_Are_Tried()
+    {
+        // 200 runs naming 20 missing families: before, 4 000 font-configuration queries (20 000 runs of 10 names ran past 120 s).
+        var families = string.Join(',', Enumerable.Range(1, 20).Select(i => $"NoSuchFace{i}"));
+        var markup = Svg(string.Concat(Enumerable.Range(0, 200).Select(i => $"<text font-family=\"{families}\" x=\"0\" y=\"50\">W</text>")));
+
+        using var picture = BuildWithin(markup, "200 texts naming 20 missing families");
+
+        Assert.Equal(1, picture.Statistics.TypefaceLookups);
+        Assert.Equal(SvgPictureBuilder.MaxFontFamilies, picture.Statistics.FamilyLookups);
+        Assert.Equal(8, SvgPictureBuilder.MaxFontFamilies);
+
+        // Bold and upright are different faces of the same list: two lookups, not two hundred.
+        using var two = SvgPictureBuilder.Build(Svg(string.Concat(Enumerable.Range(0, 100).Select(i => $"<text font-family=\"serif\" font-weight=\"{(i % 2 == 0 ? "bold" : "normal")}\" y=\"50\">W</text>"))));
+        Assert.Equal(2, two.Statistics.TypefaceLookups);
+    }
+
+    [AvaloniaFact]
+    public void A_Font_Size_Is_Clamped_At_16384_User_Units()
+    {
+        Assert.Equal(16_384f, SvgPictureBuilder.MaxFontSize);
+
+        // No stated size: the picture is the size of what it draws, and at a million units the text would be a million units tall.
+        using var picture = BuildWithin($"<svg {Ns}><text font-size=\"1e6\" x=\"0\" y=\"20000\">W</text></svg>", "font-size 1e6");
+        Assert.True(picture.Size.Height > 1_000, $"the text is drawn ({picture.Size})");
+        Assert.True(picture.Size.Height < 25_000, $"the text is clamped ({picture.Size})");
+    }
+
+    // ------------------------------------------------------------------
     // F10: a deadline, honoured by the reader and applied by the viewer
     // ------------------------------------------------------------------
 
