@@ -458,6 +458,25 @@ public sealed class SvgHostileInputTests
     }
 
     // ------------------------------------------------------------------
+    // I1: nothing non-finite reaches the bounds
+    // ------------------------------------------------------------------
+
+    [AvaloniaFact]
+    public void A_Length_Past_The_Range_Of_A_Float_Is_No_Length_And_A_Sizeless_Document_Stays_Finite()
+    {
+        // -1e38 inches is -9.6e39 pixels, past a float: the attribute falls back to 0 rather than starting the line at minus infinity,
+        // and the sizeless document is the size of what it draws (a 5 by 5 line with a 1-unit stroke), not infinite or empty.
+        using var picture = SvgPictureBuilder.Build($"<svg {Ns}><line x1=\"-1e38in\" y1=\"0\" x2=\"5\" y2=\"5\" stroke=\"#000\"/></svg>");
+        Assert.True(float.IsFinite(picture.Size.Width) && float.IsFinite(picture.Size.Height), $"the size is {picture.Size}");
+        Assert.InRange(picture.Size.Width, 5, 8);
+        Assert.InRange(picture.Size.Height, 5, 8);
+
+        // The same through an em chain, and a percentage of nothing.
+        using var chain = SvgPictureBuilder.Build($"<svg {Ns}><g font-size=\"1e30em\"><rect x=\"1e38em\" width=\"10\" height=\"10\"/></g></svg>");
+        Assert.Equal(new SKSize(10, 10), chain.Size);
+    }
+
+    // ------------------------------------------------------------------
     // F10: a deadline, honoured by the reader and applied by the viewer
     // ------------------------------------------------------------------
 

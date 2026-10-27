@@ -664,7 +664,8 @@ public static class SvgPictureBuilder
 
         public void Add(SKRect rect)
         {
-            if (rect.Width < 0 || rect.Height < 0 || float.IsNaN(rect.Left) || float.IsNaN(rect.Top) || float.IsInfinity(rect.Right) || float.IsInfinity(rect.Bottom))
+            // I1: every edge finite, not only the two that happened to be checked; a sizeless document is never reported infinite.
+            if (!float.IsFinite(rect.Left) || !float.IsFinite(rect.Top) || !float.IsFinite(rect.Right) || !float.IsFinite(rect.Bottom) || rect.Width < 0 || rect.Height < 0)
                 return;
 
             Rect = _any ? SKRect.Union(Rect, rect) : rect;
@@ -1575,7 +1576,7 @@ public static class SvgPictureBuilder
             return null;
 
         var unit = text[i..].ToLowerInvariant();
-        return unit switch
+        float? length = unit switch
         {
             "" or "px" => value,
             "pt" => value * PixelsPerInch / 72f,
@@ -1588,6 +1589,9 @@ public static class SvgPictureBuilder
             "%" => value / 100f * context.Viewport(axis),
             _ => null,
         };
+
+        // I1: a value that the unit takes past a float (-1e38in, an em chain) is no length, so the attribute falls back rather than placing a point at infinity.
+        return length is { } l && float.IsFinite(l) ? l : null;
     }
 
     private static readonly Regex UrlPattern = new(@"^url\(\s*['""]?#([^'""\)\s]+)['""]?\s*\)\s*(.*)$", RegexOptions.NonBacktracking, MatchTimeout);
