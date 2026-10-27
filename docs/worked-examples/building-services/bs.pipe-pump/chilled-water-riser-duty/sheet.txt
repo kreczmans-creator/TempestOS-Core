@@ -13,7 +13,7 @@ Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   fluid | Fluid | water |  | spec: SPEC-M-04 §3: chilled water, no glycol | any
-  circuit | Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored) | open (the pump lifts the water by the rises entered) |  | default | any
+  circuit | Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored) | open (the pump lifts the water by the rises entered) |  | assumption: Open: the example counts the 12 m rise as static head, as its analytic source does. A sealed flow-and-return loop has no static lift; choose closed for one. | any
   segments | Pipe segments in series | 3 row(s) |  | drawing: DRG-M-110 rev C | any
   segments[1] |  | name = plantroom suction; L = 8 m; D = 100 mm; eps = 0.045 mm; K = 3; L_eq = 0 m; dz = 0 m; side = suction |  |  | 
   segments[2] |  | name = riser DN80; L = 60 m; D = 80 mm; eps = 0.045 mm; K = 8; L_eq = 0 m; dz = 10 m; side = discharge |  |  | 
@@ -24,7 +24,7 @@ Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place
   p_atm | Atmospheric pressure (NPSH) | 101.325 | kPa | assumption: Sea level. | 50 … 110 kPa
   z_s | Static head at the pump suction (+ flooded, − lift) | 2 | m | drawing: DRG-M-110 rev C | -10 … 100 m
   v_limit | Velocity limit (warning and check) | 2.5 | m/s | spec: CIBSE Guide C practice limit, assumed | 0.5 … 10 m/s
-  D_law | Law for the diameter ratio: a trimmed impeller of the same casing (Q ∝ D, H ∝ D²) or a geometrically similar pump (Q ∝ D³, H ∝ D²) | impeller trim (Q ∝ n·D, H ∝ n²·D²) |  | default | any
+  D_law | Law for the diameter ratio: a trimmed impeller of the same casing (Q ∝ D, H ∝ D²) or a geometrically similar pump (Q ∝ D³, H ∝ D²) | impeller trim (Q ∝ n·D, H ∝ n²·D²) |  | assumption: The impeller is unchanged (D_ratio = 1), so the law has no effect; template default kept. | any
   n_ratio | Speed ratio n₂/n₁ (affinity) | 0.9 |  | assumption: Inverter turn-down to 90 % speed. | 0.2 … 2
   D_ratio | Impeller diameter ratio D₂/D₁ (affinity; the law is chosen above) | 1 |  | assumption: Impeller unchanged. | 0.7 … 1.1
   eta_pump | Pump efficiency at duty (for shaft power) | 0.68 |  | spec: Pump datasheet P-01 rev 2 | 0.2 … 0.95
@@ -41,9 +41,11 @@ Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place
   A6. The friction of a laminar segment scales with Q, and the static part is independent of flow. (H_sys = H_static + k₁ Q + k₂ Q².)
   A7. Water properties are from published correlations at atmospheric pressure, 0 to 100 °C. (Kell 1975; Vogel fit; Hyland & Wexler 1983.)
   A8. Any other fluid is entered with its own density and viscosity and their provenance. (Stated.)
-  A9. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sea level.)
-  A10. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 0.9. (Inverter turn-down to 90 % speed.)
-  A11. D_ratio (Impeller diameter ratio D₂/D₁ (affinity; the law is chosen above)) is taken as 1. (Impeller unchanged.)
+  A9. circuit (Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored)) is taken as open (the pump lifts the water by the rises entered). (Open: the example counts the 12 m rise as static head, as its analytic source does. A sealed flow-and-return loop has no static lift; choose closed for one.)
+  A10. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sea level.)
+  A11. D_law (Law for the diameter ratio: a trimmed impeller of the same casing (Q ∝ D, H ∝ D²) or a geometrically similar pump (Q ∝ D³, H ∝ D²)) is taken as impeller trim (Q ∝ n·D, H ∝ n²·D²). (The impeller is unchanged (D_ratio = 1), so the law has no effect; template default kept.)
+  A12. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 0.9. (Inverter turn-down to 90 % speed.)
+  A13. D_ratio (Impeller diameter ratio D₂/D₁ (affinity; the law is chosen above)) is taken as 1. (Impeller unchanged.)
 
 4. Working
   [3] rho = Kell (1975) density of water at T    « Kell 1975
@@ -245,9 +247,6 @@ Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place
 
 7. Applicability
   WARNING  segments: index run DN65 runs at 2.5113 m/s, above the 2.5 m/s limit.  [velocity]
-  Defaults used (inputs left empty):
-    circuit: not entered, so the default of 'open (the pump lifts the water by the rises entered)' is used.
-    D_law: not entered, so the default of 'impeller trim (Q ∝ n·D, H ∝ n²·D²)' is used.
 
 8. Verification
   Template: bs.pipe-pump@1.10.1

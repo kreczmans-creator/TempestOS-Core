@@ -18,9 +18,9 @@ Four bolts in two rows 200 mm apart under a 20 kN·m moment: the tension row see
 | `e_x` | 0 mm | drawing: DRG-BRK-09 rev B |
 | `e_y` | 0 mm | drawing: DRG-BRK-09 rev B |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `F_t_Ed_max` | 50 kN | 50 kN | PASS |
-| `u_max` | 0.83333  | 0.833333  | PASS |
+| `F_t_Ed_max` | 50 kN | 50 kN | yes |
+| `u_max` | 0.83333  | 0.833333  | yes |
 
 Governing check: Circular shear–tension interaction against its limit (governing bolt) — PASS (utilisation 0.83). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

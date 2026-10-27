@@ -16,10 +16,10 @@ A 35.1 kN-rated ball bearing at 4 kN and 1,500 rev/min. Its basic rating life is
 | `n` | 1500 rpm | spec: LOAD-SCHEDULE-01 |
 | `type` | ball | drawing: DRG-GB-210 rev A |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `F_dyn` | 4 kN | 4 kN | PASS |
-| `L_10` | 675.68  | 675.68  | PASS |
-| `L_10h` | 7507.6 h | 7507.56 h | PASS |
+| `F_dyn` | 4 kN | 4 kN | yes |
+| `L_10` | 675.68  | 675.68  | yes |
+| `L_10h` | 7507.6 h | 7507.56 h | yes |
 
 Governing check: Required life against modified life — PASS (utilisation 0.67). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

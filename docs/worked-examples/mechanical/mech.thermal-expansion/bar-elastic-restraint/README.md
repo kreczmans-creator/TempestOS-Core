@@ -15,10 +15,10 @@ A 100 kN/mm restraint in series with the bar's own 50 kN/mm takes a third of the
 | `k_s` | 100 kN/mm | spec: SPEC-MECH-03 design criteria |
 | `sigma_allow` | 150 MPa | spec: SPEC-MECH-03 design criteria |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `F` | 48 kN | 48 kN | PASS |
-| `sigma` | -96 MPa | -96 MPa | PASS |
-| `delta` | 0.48 mm | 0.48 mm | PASS |
+| `F` | 48 kN | 48 kN | yes |
+| `sigma` | -96 MPa | -96 MPa | yes |
+| `delta` | 0.48 mm | 0.48 mm | yes |
 
 Governing check: Thermal stress against allowable — PASS (utilisation 0.64). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -22,6 +22,16 @@
     "ValueText": "55"
   },
   {
+    "Symbol": "block_load",
+    "Text": "Concentric loading (V_eff,1)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Shear through the bolt group centroid: concentric block tearing.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Concentric loading (V_eff,1)"
+  },
+  {
     "Symbol": "e_1",
     "Number": 40,
     "Unit": "mm",
@@ -99,6 +109,17 @@
     "ValueText": "8.8"
   },
   {
+    "Symbol": "hole_type",
+    "Text": "Normal clearance",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "SPL-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Normal clearance"
+  },
+  {
     "Symbol": "k_e1",
     "Number": 1.2,
     "Provenance": {
@@ -160,6 +181,17 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "70"
+  },
+  {
+    "Symbol": "single_lap",
+    "Flag": false,
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "SPL-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "no"
   },
   {
     "Symbol": "size",

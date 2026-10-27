@@ -46,6 +46,16 @@
     "ValueText": "40"
   },
   {
+    "Symbol": "circuit",
+    "Text": "Open",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Four-bar and slider-crank only; the cam does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Open"
+  },
+  {
     "Symbol": "e_off",
     "Number": 10,
     "Unit": "mm",
@@ -78,6 +88,16 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "5"
+  },
+  {
+    "Symbol": "load_dir",
+    "Text": "Opposes motion",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "The follower carries no external load (F_ext = 0), so the direction has no effect; template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Opposes motion"
   },
   {
     "Symbol": "m_f",

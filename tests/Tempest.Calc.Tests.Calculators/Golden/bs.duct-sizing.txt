@@ -77,7 +77,7 @@ Round duct diameter from the design target: D by Colebrook with the air properti
       = 16.333 Pa
         Sum over every section (not a path)
   [22] v_peak = highest section velocity
-      = 
+      = v of main, the highest of 1 section(s)
       = 7.9577 m/s
         Highest velocity
   [23] u_dp = dp_index / dp_limit

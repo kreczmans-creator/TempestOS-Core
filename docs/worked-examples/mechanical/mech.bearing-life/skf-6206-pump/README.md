@@ -14,20 +14,22 @@ A 6206 deep groove ball bearing carries 2.5 kN radial at 1500 rpm. The basic lif
 | `R_rel` | 95 % | assumption: Client reliability target. |
 | `X` | 0.56 | spec: Manufacturer factor for single-row deep groove bearings |
 | `X_0` | 0.6 | spec: Manufacturer static factor |
+| `X_1` | 1 | spec: Manufacturer factor for single-row deep groove bearings: X = 1 while F_a/F_r is at most e |
 | `Y` | 2 | spec: Manufacturer factor for single-row deep groove bearings |
 | `Y_0` | 0.5 | spec: Manufacturer static factor |
+| `Y_1` | 0 | spec: Manufacturer factor for single-row deep groove bearings: Y = 0 while F_a/F_r is at most e |
 | `a_iso` | 2 | assumption: Read from the manufacturer's life tool for clean ISO VG 68 oil. |
 | `e_lim` | 0.22 | spec: Manufacturer factor for single-row deep groove bearings |
 | `n` | 1500 rpm | spec: Pump datasheet, rated speed |
 | `s_0_req` | 1 | assumption: Normal running, smooth loads. |
 | `type` | ball (p = 3) | assumption: Deep groove ball bearing. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `L_10` | 535.387  | 535.387  | PASS |
-| `L_10h` | 5948.75 h | 5948.75 h | PASS |
-| `a_1` | 0.637912  | 0.637912  | PASS |
-| `L_nmh` | 7589.6 h | 7589.55 h | PASS |
-| `s_0` | 4.48  | 4.48  | PASS |
+| `L_10` | 535.387  | 535.387  | yes |
+| `L_10h` | 5948.75 h | 5948.75 h | yes |
+| `a_1` | 0.637912  | 0.637912  | yes |
+| `L_nmh` | 7589.6 h | 7589.55 h | yes |
+| `s_0` | 4.48  | 4.48  | yes |
 
 Governing check: Required life against modified life — PASS (utilisation 0.66). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

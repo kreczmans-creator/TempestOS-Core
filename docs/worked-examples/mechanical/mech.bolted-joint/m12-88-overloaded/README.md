@@ -25,14 +25,15 @@ With a 60 kN working load the relieved member load exceeds the minimum preload: 
 | `mu_G` | 0.12 | assumption: Lightly oiled zinc-plated thread. |
 | `mu_K` | 0.12 | assumption: Lightly oiled head bearing. |
 | `n_load` | 0.5 | assumption: Load introduced at mid-thickness. |
+| `nu_perm` | 1 | assumption: Assembly utilisation up to 1.0, where the bolt reaches yield in tightening (VDI 2230 R7 limit); a 0.9 target is usual and can be entered instead. |
 | `p_thread` | 1.75 mm | spec: ISO 261 coarse pitch |
 | `sigma_a_limit` | 50 MPa | assumption: Rolled-before-heat-treatment M12, VDI 2230 order of magnitude. |
 | `tau_B` | 400 MPa | assumption: Nut material shear strength. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `F_M` | 40.69 kN | 40.6899 kN | PASS |
-| `F_KR` | 0 kN | 0 kN | PASS |
-| `F_S_max` | 60 kN | 60 kN | PASS |
+| `F_M` | 40.69 kN | 40.6899 kN | yes |
+| `F_KR` | 0 kN | 0 kN | yes |
+| `F_S_max` | 60 kN | 60 kN | yes |
 
 Governing check: Residual clamp force against separation — FAIL. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

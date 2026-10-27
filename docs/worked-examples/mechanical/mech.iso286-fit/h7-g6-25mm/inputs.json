@@ -22,6 +22,16 @@
     "ValueText": "7"
   },
   {
+    "Symbol": "hole_kind",
+    "Text": "ISO 286 hole class",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "DRG-SHAFT-12 note 3: the hole is an ISO 286 class (H7), not a bearing bore",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "ISO 286 hole class"
+  },
+  {
     "Symbol": "hole_letter",
     "Text": "H",
     "Provenance": {

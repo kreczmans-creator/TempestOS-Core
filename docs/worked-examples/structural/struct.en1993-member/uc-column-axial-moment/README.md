@@ -27,6 +27,7 @@ A 4 m pinned UC column carrying 900 kN with a 40 kN·m major-axis moment from th
 | `f_y` | 355 MPa | spec: BS EN 10025-2 S355, t ≤ 16 mm |
 | `gamma_M0` | 1 | spec: UK NA to BS EN 1993-1-1 NA.2.15 |
 | `gamma_M1` | 1 | spec: UK NA to BS EN 1993-1-1 NA.2.15 |
+| `gamma_M2` | 1.1 | spec: UK NA to BS EN 1993-1-1 NA.2.15 |
 | `h` | 203.2 mm | spec: BS EN 10365 UC 203×203×46 |
 | `k_yy` | 1 | assumption: Simplified interaction: k_yy = 1.0. |
 | `k_zz` | 1 | assumption: Simplified interaction: k_zz = 1.0. |
@@ -36,10 +37,10 @@ A 4 m pinned UC column carrying 900 kN with a 40 kN·m major-axis moment from th
 | `t_f` | 11 mm | spec: BS EN 10365 UC 203×203×46 |
 | `t_w` | 7.2 mm | spec: BS EN 10365 UC 203×203×46 |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `N_b_z_Rd` | 1101.9 kN | 1101.85 kN | PASS |
-| `M_y_c_Rd` | 176.435 kN*m | 176.435 kN*m | PASS |
-| `u_member` | 1.0435  | 1.04352  | PASS |
+| `N_b_z_Rd` | 1101.9 kN | 1101.85 kN | yes |
+| `M_y_c_Rd` | 176.435 kN*m | 176.435 kN*m | yes |
+| `u_member` | 1.0435  | 1.04352  | yes |
 
 Governing check: Member interaction against its limit — FAIL (utilisation 1.05). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -166,6 +166,16 @@
     "ValueText": "0.45"
   },
   {
+    "Symbol": "guided",
+    "Flag": false,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not guided: the free-buckling check is made, the safe-side reading. Tick it only if the assembly drawing shows a mandrel or a bore round the spring.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "no"
+  },
+  {
     "Symbol": "mode",
     "Text": "Compression",
     "Provenance": {
@@ -237,6 +247,16 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "EN 13906-1 (d_max, coil clearance)"
+  },
+  {
+    "Symbol": "tors_factor",
+    "Text": "EN 13906-3 (q)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Torsion springs only; this compression spring does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "EN 13906-3 (q)"
   },
   {
     "Symbol": "work",

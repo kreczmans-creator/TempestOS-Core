@@ -18,13 +18,13 @@ A C-shaped fillet weld (80 + 200 + 80 mm) carries 30 kN at 250 mm. The centroid 
 | `s` | 8 mm | drawing: BRK-010 rev A |
 | `welds` | 3 row(s) | drawing: BRK-010 rev A |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `x_c` | 17.7778 mm | 17.7778 mm | PASS |
-| `J_u` | 2.49422E+06 mm^3 | 2.49422E+06 mm^3 | PASS |
-| `T` | -6.96667 kN*m | -6.96667 kN*m | PASS |
-| `f_r_max` | 379.644 N/mm | 379.644 N/mm | PASS |
-| `tau` | 67.1224 MPa | 67.1224 MPa | PASS |
-| `s_req` | 2.44082 mm | 2.44082 mm | PASS |
+| `x_c` | 17.7778 mm | 17.7778 mm | yes |
+| `J_u` | 2.49422E+06 mm^3 | 2.49422E+06 mm^3 | yes |
+| `T` | -6.96667 kN*m | -6.96667 kN*m | yes |
+| `f_r_max` | 379.644 N/mm | 379.644 N/mm | yes |
+| `tau` | 67.1224 MPa | 67.1224 MPa | yes |
+| `s_req` | 2.44082 mm | 2.44082 mm | yes |
 
 Governing check: Throat stress against design strength — PASS (utilisation 0.31). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

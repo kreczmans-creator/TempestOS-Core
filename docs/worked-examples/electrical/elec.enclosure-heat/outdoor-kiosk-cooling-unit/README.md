@@ -10,8 +10,10 @@ With 192 W of solar gain on top of 300 W internal load and only 5 K allowed abov
 | `D` | 0.3 m | spec: Enclosure datasheet AE-1380 |
 | `H` | 0.8 m | spec: Enclosure datasheet AE-1380 |
 | `I_sun` | 800 W/m^2 | spec: Site conditions SC-5: 800 W/m² on the sunlit side |
+| `P_add` | 0 kW | assumption: No further heat load linked into this kiosk. |
 | `T_amb` | 40 degC | spec: Site conditions SC-5 |
 | `T_max` | 45 degC | spec: Site conditions SC-5 |
+| `V_ref` | 100 m^3/h | assumption: No filter fan on this kiosk (it is cooled by a cooling unit); template default kept. |
 | `W` | 0.6 m | spec: Enclosure datasheet AE-1380 |
 | `alpha_sun` | 0.5 | assumption: Light-grey paint. |
 | `altitude` | 0 m | assumption: Free-standing kiosk, bottom on a plinth. |
@@ -23,9 +25,10 @@ With 192 W of solar gain on top of 300 W internal load and only 5 K allowed abov
 | `f_top` | 1 | assumption: Free-standing kiosk, bottom on a plinth. |
 | `h_conv` | 5.5 W/(m^2*K) | reference: Reference record: painted steel enclosure, still air, 5.5 W/m²K |
 | `loads` | 2 row(s) | spec: Panel schedule PNL-09 |
+| `p_sys` | 20 Pa | assumption: No filter fan on this kiosk (it is cooled by a cooling unit); template default kept. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `P_total` | 0.492 kW | 0.492 kW | PASS |
+| `P_total` | 0.492 kW | 0.492 kW | yes |
 
 Governing check: Natural temperature rise against the allowed rise — FAIL (utilisation 11.05). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

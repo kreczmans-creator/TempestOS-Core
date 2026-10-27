@@ -86,6 +86,16 @@
     "ValueText": "0.6"
   },
   {
+    "Symbol": "X_1",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Manufacturer factor for single-row deep groove bearings: X = 1 while F_a/F_r is at most e",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
     "Symbol": "Y",
     "Number": 2,
     "Provenance": {
@@ -104,6 +114,16 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "0.5"
+  },
+  {
+    "Symbol": "Y_1",
+    "Number": 0,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Manufacturer factor for single-row deep groove bearings: Y = 0 while F_a/F_r is at most e",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
   },
   {
     "Symbol": "a_iso",

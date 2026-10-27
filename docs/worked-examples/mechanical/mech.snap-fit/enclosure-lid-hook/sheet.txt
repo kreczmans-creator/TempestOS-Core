@@ -13,6 +13,7 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   mode | Form of snap-fit | Cantilever, tapered thickness |  | drawing: ENC-310-07 rev C | any
+  bar_support | How the torsion bar is held: at one end, or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length) | Held at one end |  | assumption: Torsion-bar snap-fits only; this cantilever hook does not use it, so the template default is kept. | any
   l | Length of the beam (cantilever); of the torsion bar: its free length when held at one end, or its whole length between the two supports when held at both ends with the lever in the middle | 18 | mm | drawing: ENC-310-07 rev C | 2 … 100 mm
   h | Thickness at the root (cantilever); wall thickness of the ring (annular) | 2.2 | mm | drawing: ENC-310-07 rev C | 0.3 … 10 mm
   b | Width at the root (cantilever); effective axial length of the ring (annular: that of a free ring, not the lip of a longer tube) | 7 | mm | drawing: ENC-310-07 rev C | 1 … 50 mm
@@ -41,11 +42,12 @@ Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (cons
   A11. The permissible shear strain is ε_perm·(1 + ν), and the equivalent tensile strain is γ/(1 + ν). (G = Es/(2(1 + ν)) uses the secant modulus at that strain.)
   A12. The mating part is rigid, with Coulomb friction μ on the inclined face (α for assembly, α′ for separation). (Friction on an inclined plane, with the friction coefficient the user's record.)
   A13. The deflection force is taken at the design deflection, with no creep, stress relaxation or impact effect in service. (A static joint model.)
-  A14. Es_source (Where the secant modulus comes from: typed at the design strain, or interpolated from the Es(ε) points of a material record) is taken as Typed secant modulus. (Secant modulus typed for this example; a W3 material with its Es(ε) points can be applied instead.)
-  A15. Es (Secant modulus at the design strain and temperature (annular: at the nominal hoop strain ΔD/D) (typed; no default: the plastic's stress–strain data)) is taken as 2000 MPa. (Example secant modulus at the design strain and temperature. Enter Es for your plastic from its stress–strain data or a W3 material; no plastics data are shipped.)
-  A16. eps_perm_once (Permissible strain for one-time joining, as a fraction, for example 0.04, at the temperature of use (no default: from the plastic's data)) is taken as 0.04. (Example permissible strain for one-time joining. Enter it for your plastic at the temperature of use from its data or a W3 material; no plastics data are shipped.)
-  A17. mu (Coefficient of friction between the two parts (record snapfit.friction; no default: the pair of materials, from your reference or a W3 friction pair)) is taken as 0.35. (Example friction coefficient for a plastic-on-plastic pair. Enter μ for your pair of materials and surfaces from your reference or a test (record snapfit.friction).)
-  A18. Es and the permissible strain are the plastic's values at 23 °C, the temperature of use. The sheet cannot check them, or the moisture state of the part. (Recorded temperature of use.)
+  A14. bar_support (How the torsion bar is held: at one end, or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length)) is taken as Held at one end. (Torsion-bar snap-fits only; this cantilever hook does not use it, so the template default is kept.)
+  A15. Es_source (Where the secant modulus comes from: typed at the design strain, or interpolated from the Es(ε) points of a material record) is taken as Typed secant modulus. (Secant modulus typed for this example; a W3 material with its Es(ε) points can be applied instead.)
+  A16. Es (Secant modulus at the design strain and temperature (annular: at the nominal hoop strain ΔD/D) (typed; no default: the plastic's stress–strain data)) is taken as 2000 MPa. (Example secant modulus at the design strain and temperature. Enter Es for your plastic from its stress–strain data or a W3 material; no plastics data are shipped.)
+  A17. eps_perm_once (Permissible strain for one-time joining, as a fraction, for example 0.04, at the temperature of use (no default: from the plastic's data)) is taken as 0.04. (Example permissible strain for one-time joining. Enter it for your plastic at the temperature of use from its data or a W3 material; no plastics data are shipped.)
+  A18. mu (Coefficient of friction between the two parts (record snapfit.friction; no default: the pair of materials, from your reference or a W3 friction pair)) is taken as 0.35. (Example friction coefficient for a plastic-on-plastic pair. Enter μ for your pair of materials and surfaces from your reference or a test (record snapfit.friction).)
+  A19. Es and the permissible strain are the plastic's values at 23 °C, the temperature of use. The sheet cannot check them, or the moisture state of the part. (Recorded temperature of use.)
 
 4. Working
   [10] l_h = l / h

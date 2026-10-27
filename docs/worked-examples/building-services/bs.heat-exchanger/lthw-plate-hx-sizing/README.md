@@ -12,6 +12,7 @@ The secondary circuit takes 120 kW from a 1.2 kg/s primary at 80 °C. ε = 0.597
 | `T_h_in` | 80 degC | spec: Network supply temperature |
 | `U_clean` | 3000 W/(m^2*K) | assumption: Typical clean plate exchanger, water/water. |
 | `arrangement` | counterflow | assumption: Plate exchanger treated as pure counterflow. |
+| `const_side` | hot side at constant temperature (e.g. condensing vapour) | assumption: Used only when one side is at constant temperature (C_r = 0); both streams change temperature here, so the template default is kept. |
 | `cp_c` | 4180 J/(kg*K) | assumption: Water at about 50 °C. |
 | `cp_h` | 4190 J/(kg*K) | assumption: Water at about 70 °C. |
 | `dT_min` | 3 K | assumption: Practical approach for a plate exchanger. |
@@ -19,13 +20,13 @@ The secondary circuit takes 120 kW from a 1.2 kg/s primary at 80 °C. ε = 0.597
 | `m_h` | 1.2 kg/s | spec: Network connection agreement, primary flow |
 | `mode` | sizing (given duty) | assumption: Sizing a new exchanger. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `eps` | 0.596659  | 0.596659  | PASS |
-| `NTU` | 1.29734  | 1.29734  | PASS |
-| `A_req` | 2.82665 m^2 | 2.82665 m^2 | PASS |
-| `T_h_out` | 56.1337 degC | 56.1337 degC | PASS |
-| `T_c_out` | 59.1388 degC | 59.1388 degC | PASS |
-| `dT_app` | 16.1336 K | 16.1337 K | PASS |
+| `eps` | 0.596659  | 0.596659  | yes |
+| `NTU` | 1.29734  | 1.29734  | yes |
+| `A_req` | 2.82665 m^2 | 2.82665 m^2 | yes |
+| `T_h_out` | 56.1337 degC | 56.1337 degC | yes |
+| `T_c_out` | 59.1388 degC | 59.1388 degC | yes |
+| `dT_app` | 16.1336 K | 16.1337 K | yes |
 
 Governing check: Approach against minimum — PASS (utilisation 0.19). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

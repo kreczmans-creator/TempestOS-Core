@@ -1,5 +1,16 @@
 [
   {
+    "Symbol": "E",
+    "Number": 207,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Generic steel; used only for the elastic collapse pressure under external pressure, so it does not enter this internal-pressure case.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "207"
+  },
+  {
     "Symbol": "a",
     "Number": 50,
     "Unit": "mm",
@@ -33,6 +44,16 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "yes"
+  },
+  {
+    "Symbol": "nu",
+    "Number": 0.3,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Generic steel; used only for the elastic collapse pressure under external pressure, so it does not enter this internal-pressure case.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.3"
   },
   {
     "Symbol": "p_i",

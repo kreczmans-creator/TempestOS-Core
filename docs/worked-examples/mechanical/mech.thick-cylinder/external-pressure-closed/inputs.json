@@ -1,5 +1,16 @@
 [
   {
+    "Symbol": "E",
+    "Number": 207,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Generic steel Young modulus for the elastic collapse pressure; take it from the material record of the tube.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "207"
+  },
+  {
     "Symbol": "a",
     "Number": 40,
     "Unit": "mm",
@@ -33,6 +44,16 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "yes"
+  },
+  {
+    "Symbol": "nu",
+    "Number": 0.3,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Generic steel Poisson ratio for the elastic collapse pressure; take it from the material record of the tube.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.3"
   },
   {
     "Symbol": "p_i",

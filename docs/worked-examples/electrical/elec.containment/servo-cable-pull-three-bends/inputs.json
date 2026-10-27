@@ -34,6 +34,16 @@
     "ValueText": "150"
   },
   {
+    "Symbol": "bend_model",
+    "Text": "Horizontal bend, cable on the containment floor (weight term)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Horizontal bends with the cable weight on the conduit floor, as the analytic source computes them.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Horizontal bend, cable on the containment floor (weight term)"
+  },
+  {
     "Symbol": "cables",
     "Rows": [
       {

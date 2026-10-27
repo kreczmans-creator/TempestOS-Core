@@ -14,10 +14,10 @@ A plain 40 mm shaft. Tresca gives the lower factor, 2.33, against 2 required.
 | `d` | 40 mm | drawing: DRG-SH-401 rev A |
 | `n_req` | 2 | spec: SPEC-MECH-03 design criteria |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `sigma_vm` | 135.98 MPa | 135.982 MPa | PASS |
-| `n_T` | 2.3311  | 2.33106  | PASS |
-| `n_VM` | 2.5739  | 2.57387  | PASS |
+| `sigma_vm` | 135.98 MPa | 135.982 MPa | yes |
+| `n_T` | 2.3311  | 2.33106  | yes |
+| `n_VM` | 2.5739  | 2.57387  | yes |
 
 Governing check: Factor of safety against the required factor — PASS (utilisation 0.86). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

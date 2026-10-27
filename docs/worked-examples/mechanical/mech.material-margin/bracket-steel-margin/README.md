@@ -12,10 +12,10 @@ A 120 MPa working stress on a 300/450 MPa steel. Yield and ultimate margins agre
 | `n_req` | 1.5 | spec: SPEC-MECH-03 design criteria |
 | `sigma` | 120 MPa | spec: LOAD-SCHEDULE-01 |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `n_y` | 2.5  | 2.5  | PASS |
-| `n_gov` | 2.5  | 2.5  | PASS |
-| `u` | 0.6  | 0.6  | PASS |
+| `n_y` | 2.5  | 2.5  | yes |
+| `n_gov` | 2.5  | 2.5  | yes |
+| `u` | 0.6  | 0.6  | yes |
 
 Governing check: Required factor of safety against the governing factor — PASS (utilisation 0.60). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

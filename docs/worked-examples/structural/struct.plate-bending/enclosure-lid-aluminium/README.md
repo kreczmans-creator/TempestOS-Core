@@ -7,6 +7,7 @@ A 300 × 200 × 4 mm aluminium lid under 20 kPa. The plate is thin (span/t = 50)
 | Input | Value | Source |
 |---|---|---|
 | `E` | 70 GPa | reference: record:5eed0001-0000-4000-8000-000000000003@1 W3 generic seed 'Aluminium alloy (generic)', E: indicative, not from a standard; replace with the material record for the alloy on the drawing |
+| `F` | 5 kN | assumption: Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept. |
 | `a` | 300 mm | drawing: ENC-LID-01 rev A |
 | `b` | 200 mm | drawing: ENC-LID-01 rev A |
 | `defl_ratio` | 250 | spec: Project specification: lid deflection limited to span/250 so the gasket stays seated |
@@ -16,20 +17,24 @@ A 300 × 200 × 4 mm aluminium lid under 20 kPa. The plate is thin (span/t = 50)
 | `load_type` | uniform | spec: Enclosure datasheet ENC-DS-07: internal pressure rise in a sealed enclosure on thermal cycling |
 | `nu` | 0.33 | reference: record:5eed0001-0000-4000-8000-000000000003@1 W3 generic seed 'Aluminium alloy (generic)', nu: indicative |
 | `q` | 20 kPa | spec: Enclosure datasheet ENC-DS-07: 0.2 bar differential |
+| `r0` | 50 mm | assumption: Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept. |
+| `r_ring` | 150 mm | assumption: Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept. |
 | `rho` | 2700 kg/m^3 | reference: record:5eed0001-0000-4000-8000-000000000003@1 W3 generic seed 'Aluminium alloy (generic)', rho: indicative |
 | `shape` | rectangular | drawing: ENC-LID-01 rev A |
 | `support` | simply supported | assumption: The lid sits on a gasket land and is bolted at close pitch: treated as simply supported, which is the safe side for deflection and the central stress. |
 | `t_p` | 4 mm | drawing: ENC-LID-01 rev A |
+| `u` | 100 mm | assumption: Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept. |
+| `v` | 100 mm | assumption: Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `D_flex` | 0.418958 kN*m | 0.418958 kN*m | PASS |
-| `w_max` | 0.589961 mm | 0.589961 mm | PASS |
-| `M_x_c` | 0.0416203 kN*m/m | 0.0416203 kN*m/m | PASS |
-| `M_y_c` | 0.0656005 kN*m/m | 0.0656005 kN*m/m | PASS |
-| `M_xy_k` | 0.0328736 kN*m/m | 0.0328736 kN*m/m | PASS |
-| `sigma_max` | 21.5596 MPa | 21.5596 MPa | PASS |
-| `f1` | 353.292 Hz | 353.292 Hz | PASS |
-| `u_defl` | 0.737451  | 0.737451  | PASS |
+| `D_flex` | 0.418958 kN*m | 0.418958 kN*m | yes |
+| `w_max` | 0.589961 mm | 0.589961 mm | yes |
+| `M_x_c` | 0.0416203 kN*m/m | 0.0416203 kN*m/m | yes |
+| `M_y_c` | 0.0656005 kN*m/m | 0.0656005 kN*m/m | yes |
+| `M_xy_k` | 0.0328736 kN*m/m | 0.0328736 kN*m/m | yes |
+| `sigma_max` | 21.5596 MPa | 21.5596 MPa | yes |
+| `f1` | 353.292 Hz | 353.292 Hz | yes |
+| `u_defl` | 0.737451  | 0.737451  | yes |
 
 Governing check: Deflection against the deflection limit — PASS (utilisation 0.74). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

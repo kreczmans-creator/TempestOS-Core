@@ -15,9 +15,10 @@ Five sections sized at 1 Pa/m with the AHU main and floor main rectangular on fi
 | `round_to` | 50 mm | spec: BS EN 1505 / 1506 preferred sizes, 50 mm steps |
 | `sections` | 5 row(s) | drawing: DRG-M-205 rev B |
 | `v_limit` | 8 m/s | spec: SPEC-M-07 §5: 8 m/s in risers |
+| `v_target` | 6 m/s | assumption: Velocity method only; equal friction does not use it, so the template default is kept. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `dp_fit_s4` | 0 Pa | 9.36574 Pa | PASS |
+| `dp_fit_s4` | 0 Pa | 9.36574 Pa | yes |
 
 Governing check: Highest velocity against limit — PASS (utilisation 0.88). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -53,6 +53,27 @@
     "ValueText": "1.25"
   },
   {
+    "Symbol": "T_L",
+    "Number": 0,
+    "Unit": "N*m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Continuous rotary duty only; this point-to-point linear axis does not use it.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "T_basis",
+    "Text": "Load peak (T_pk)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design torque for the coupling taken at the load peak; template default.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Load peak (T_pk)"
+  },
+  {
     "Symbol": "T_peak",
     "Number": 6,
     "Unit": "N*m",
@@ -73,6 +94,26 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "2"
+  },
+  {
+    "Symbol": "brake",
+    "Flag": false,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "No brake: the axis is horizontal, so the dwell needs no holding torque.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "no"
+  },
+  {
+    "Symbol": "duty_mode",
+    "Text": "point-to-point",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Cycle specification CS-3: point-to-point moves with a dwell",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "point-to-point"
   },
   {
     "Symbol": "eta",

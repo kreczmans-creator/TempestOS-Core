@@ -11,9 +11,9 @@ Three stress-range blocks on a category-71 detail. Each block's share of the dam
 | `blocks` | 3 row(s) | spec: LOAD-SCHEDULE-01 |
 | `m` | 3 | spec: SPEC-MECH-03 design criteria |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `D_tot` | 0.46939  | 0.46939  | PASS |
-| `R_f` | 2.1304  | 2.13042  | PASS |
+| `D_tot` | 0.46939  | 0.46939  | yes |
+| `R_f` | 2.1304  | 2.13042  | yes |
 
 Governing check: Total damage against the damage limit — PASS (utilisation 0.47). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

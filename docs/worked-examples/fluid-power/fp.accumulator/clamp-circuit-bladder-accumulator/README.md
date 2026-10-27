@@ -19,18 +19,19 @@ Delivering 14 L between 100 and 210 bar from a gas pre-charge of 90 bar (all abs
 | `p_2` | 210 bar | spec: Hydraulic specification HS-12: pump cut-out 210 bar |
 | `p_atm` | 1.01325 bar | assumption: Standard atmosphere, derived constant. |
 | `p_basis` | Absolute | assumption: Pressures entered as absolute bar, as the source numbers are quoted. |
+| `process` | By duty | assumption: By duty: a stored-energy duty uses the one exponent n_gas both ways, isothermal here. |
 | `r_0` | 0.9 | reference: record: accumulator pre-charge rules (bladder type), to be taken from the manufacturer's guide |
 | `r_p` | 4 | reference: record: accumulator pre-charge rules (bladder type), to be taken from the manufacturer's guide |
 | `sizes` | 4 row(s) | reference: record: illustrative size list invented for this example, to be replaced by the manufacturer's range |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `V0` | 31.6562 L | 31.6562 L | PASS |
-| `V_sel` | 32 L | 32 L | PASS |
-| `u_V` | 0.989256  | 0.989256  | PASS |
-| `p0` | 81.6447 bar | 81.6447 bar | PASS |
-| `u_r0` | 1  | 1  | PASS |
-| `u_rp` | 0.621818  | 0.621818  | PASS |
-| `bar_litres` | 7360 bar*L | 7360 bar*L | PASS |
+| `V0` | 31.6562 L | 31.6562 L | yes |
+| `V_sel` | 32 L | 32 L | yes |
+| `u_V` | 0.989256  | 0.989256  | yes |
+| `p0` | 81.6447 bar | 81.6447 bar | yes |
+| `u_r0` | 1  | 1  | yes |
+| `u_rp` | 0.621818  | 0.621818  | yes |
+| `bar_litres` | 7360 bar*L | 7360 bar*L | yes |
 
 Governing check: Pre-charge against the p0/p1 rule — PASS (utilisation 1.00). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

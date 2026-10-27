@@ -13,15 +13,15 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   mechanism | Mechanism | lead / ball screw |  | assumption: Sizing convention. | any
-  duty_mode | Duty (point-to-point move cycle, or continuous rotary running with a run-up) | point-to-point |  | default | any
+  duty_mode | Duty (point-to-point move cycle, or continuous rotary running with a run-up) | point-to-point |  | spec: Cycle specification CS-3: point-to-point moves with a dwell | any
   profile | Motion profile | trapezoidal |  | assumption: Sizing convention. | any
-  T_basis | Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter | Load peak (T_pk) |  | default | any
-  brake | A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor | no |  | default | any
+  T_basis | Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter | Load peak (T_pk) |  | assumption: Design torque for the coupling taken at the load peak; template default. | any
+  brake | A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor | no |  | assumption: No brake: the axis is horizontal, so the dwell needs no holding torque. | any
   J_mech | Transmission inertia referred to the motor shaft (screw, pulleys, gearbox, coupling) | 0.0001 | kg·m² | spec: Screw datasheet BS-1610 + coupling: 1.0e-4 kg·m² | 0 … 10 kg·m²
   p_screw | Screw lead (per revolution of the screw) | 10 | mm | spec: Screw datasheet BS-1610: 10 mm lead | 1 … 100 mm
   theta | Incline from horizontal (+ moving uphill) | 0 | ° | assumption: Sizing convention. | -60 … 90 °
   F_p | Process force opposing the move (linear) | 0 | N | assumption: Sizing convention. | 0 … 1000000 N
-  T_L | Constant load torque at the output (rotary; continuous duty needs it, and a zero value is refused) | 0 | N·m | default | 0 … 100000 N·m
+  T_L | Constant load torque at the output (rotary; continuous duty needs it, and a zero value is refused) | 0 | N·m | assumption: Continuous rotary duty only; this point-to-point linear axis does not use it. | 0 … 100000 N·m
   m | Moved mass (linear mechanisms) | 50 | kg | spec: Mechanical layout ML-12: carriage + gripper 50 kg | 0 … 100000 kg
   i | Gear ratio (motor : output, 1 = none) | 1 |  | assumption: Sizing convention. | 1 … 1000
   eta | Mechanism efficiency (overall) | 0.9 |  | spec: Screw datasheet BS-1610: 90 % | 0.3 … 1
@@ -50,12 +50,15 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
   A10. The peak acceleration of the S-curve profile is π/2 times the trapezoidal value. (Jerk-limited profile idealisation.)
   A11. mechanism (Mechanism) is taken as lead / ball screw. (Sizing convention.)
   A12. profile (Motion profile) is taken as trapezoidal. (Sizing convention.)
-  A13. theta (Incline from horizontal (+ moving uphill)) is taken as 0 °. (Sizing convention.)
-  A14. F_p (Process force opposing the move (linear)) is taken as 0 N. (Sizing convention.)
-  A15. i (Gear ratio (motor : output, 1 = none)) is taken as 1. (Sizing convention.)
-  A16. mu (Friction coefficient (guide / bearing)) is taken as 0.1. (Linear guides with seals: μ = 0.1.)
-  A17. SF (Safety factor on torque) is taken as 1.25. (Sizing convention.)
-  A18. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sizing convention.)
+  A13. T_basis (Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter) is taken as Load peak (T_pk). (Design torque for the coupling taken at the load peak; template default.)
+  A14. brake (A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor) is taken as no. (No brake: the axis is horizontal, so the dwell needs no holding torque.)
+  A15. theta (Incline from horizontal (+ moving uphill)) is taken as 0 °. (Sizing convention.)
+  A16. F_p (Process force opposing the move (linear)) is taken as 0 N. (Sizing convention.)
+  A17. T_L (Constant load torque at the output (rotary; continuous duty needs it, and a zero value is refused)) is taken as 0 N·m. (Continuous rotary duty only; this point-to-point linear axis does not use it.)
+  A18. i (Gear ratio (motor : output, 1 = none)) is taken as 1. (Sizing convention.)
+  A19. mu (Friction coefficient (guide / bearing)) is taken as 0.1. (Linear guides with seals: μ = 0.1.)
+  A20. SF (Safety factor on torque) is taken as 1.25. (Sizing convention.)
+  A21. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sizing convention.)
 
 4. Working
   [22] k = p_screw / (2 * pi * i)
@@ -227,10 +230,6 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
   WARNING  records: tabulated values not taken from a reference record are J_motor, T_rated, T_peak, n_max (Candidate motor rating). Enter each as one so its source, edition and licence travel with it.  [record]
   WARNING  n_pk: the peak speed is 90 % of n_max, and T_peak is compared as the stall peak torque. A servo's peak torque falls toward its top speed, so check its torque-speed curve at n_pk.  [peak-at-speed]
   WARNING  T_dec: the motor brakes during deceleration (negative torque). The drive must absorb the regenerated energy.  [overhauling]
-  Defaults used (inputs left empty):
-    duty_mode: not entered, so the default of 'point-to-point' is used.
-    T_basis: not entered, so the default of 'Load peak (T_pk)' is used.
-    T_L: not entered, so the default of 0 N·m is used.
 
 8. Verification
   Template: elec.motor-sizing@1.11.1

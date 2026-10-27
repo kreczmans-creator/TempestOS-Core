@@ -20,6 +20,7 @@ The pinion sits mid-way between the bearings, so each bearing carries √(2.2² 
 | `loads` | 1 row(s) | spec: Gear mesh forces from the gear calculation |
 | `n` | 1450 rpm | spec: Motor nameplate |
 | `n_target` | 1.5 | spec: Company design standard |
+| `r_c_min` | 2 | spec: Company design standard: first critical speed at least twice the running speed |
 | `rho` | 7850 kg/m^3 | assumption: Steel. |
 | `sections` | 4 row(s) | assumption: Shoulders r/d ≈ 0.05; keyseat at the pinion (K_t 2.14, K_ts 3.0); q from the Neuber fit. |
 | `segments` | 5 row(s) | drawing: GBX-SH-01 rev C |
@@ -33,12 +34,12 @@ The pinion sits mid-way between the bearings, so each bearing carries √(2.2² 
 | `x_key` | 150 mm | drawing: GBX-SH-01 rev C |
 | `y_max` | 0.13 mm | assumption: Spur gear deflection limit. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `R_A` | 3.19531 kN | 3.19531 kN | PASS |
-| `M_max` | 0.41539 kN*m | 0.41539 kN*m | PASS |
-| `n_f_min` | 1.6909  | 1.69087  | PASS |
-| `n_y_min` | 4.1532  | 4.15317  | PASS |
-| `tau_key` | 23.8095 MPa | 23.8095 MPa | PASS |
+| `R_A` | 3.19531 kN | 3.19531 kN | yes |
+| `M_max` | 0.41539 kN*m | 0.41539 kN*m | yes |
+| `n_f_min` | 1.6909  | 1.69087  | yes |
+| `n_y_min` | 4.1532  | 4.15317  | yes |
+| `tau_key` | 23.8095 MPa | 23.8095 MPa | yes |
 
 Governing check: Slope at the bearings against limit — PASS (utilisation 0.90). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

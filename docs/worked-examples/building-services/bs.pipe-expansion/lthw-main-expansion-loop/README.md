@@ -19,18 +19,18 @@ The 50 m main grows 42 mm; fully restrained it would carry 176 MPa and push 152 
 | `t_wall` | 3.2 mm | drawing: DRG-M-210 rev B |
 | `temp_mode` | install and operating temperatures | assumption: Install and operating temperatures are both known. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `dL` | 42 mm | 42 mm | PASS |
-| `Delta` | 21 mm | 21 mm | PASS |
-| `L_req` | 3.4295 m | 3.4295 m | PASS |
-| `u_leg` | 0.857375  | 0.857375  | PASS |
-| `anchor_force` | 0.654934 kN | 0.654934 kN | PASS |
-| `anchor_moment` | 1.30987 kN*m | 1.30987 kN*m | PASS |
-| `sigma_leg` | 73.5092 MPa | 73.5092 MPa | PASS |
-| `Y_scr` | 42 mm | 42 mm | PASS |
-| `scr` | 58.3406 mm^2/m^2 | 58.3406 mm^2/m^2 | PASS |
-| `u_scr` | 0.486172  | 0.486172  | PASS |
-| `pass` | 1  | 1  | PASS |
+| `dL` | 42 mm | 42 mm | yes |
+| `Delta` | 21 mm | 21 mm | yes |
+| `L_req` | 3.4295 m | 3.4295 m | yes |
+| `u_leg` | 0.857375  | 0.857375  | yes |
+| `anchor_force` | 0.654934 kN | 0.654934 kN | yes |
+| `anchor_moment` | 1.30987 kN*m | 1.30987 kN*m | yes |
+| `sigma_leg` | 73.5092 MPa | 73.5092 MPa | yes |
+| `Y_scr` | 42 mm | 42 mm | yes |
+| `scr` | 58.3406 mm^2/m^2 | 58.3406 mm^2/m^2 | yes |
+| `u_scr` | 0.486172  | 0.486172  | yes |
+| `pass` | 1  | 1  | yes |
 
 Governing check: Available leg against the required leg — PASS (utilisation 0.86). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

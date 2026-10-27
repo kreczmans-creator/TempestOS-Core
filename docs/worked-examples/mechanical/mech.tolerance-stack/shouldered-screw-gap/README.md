@@ -15,11 +15,11 @@ Four inch-dimensioned parts on a shouldered screw, with the results in mm (0.005
 | `notation` | ASME Y14.5 | assumption: Inch drawing. |
 | `seed` | 1 | assumption: Fixed seed for reproducibility. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `x_nom` | 0.127 mm | 0.127 mm | PASS |
-| `t_wc` | 0.254 mm | 0.254 mm | PASS |
-| `t_rss` | 0.1524 mm | 0.1524 mm | PASS |
-| `x_wc_min` | -0.127 mm | -0.127 mm | PASS |
+| `x_nom` | 0.127 mm | 0.127 mm | yes |
+| `t_wc` | 0.254 mm | 0.254 mm | yes |
+| `t_rss` | 0.1524 mm | 0.1524 mm | yes |
+| `x_wc_min` | -0.127 mm | -0.127 mm | yes |
 
 Governing check: Worst-case range against the requirement — FAIL. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

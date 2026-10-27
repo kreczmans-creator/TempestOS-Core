@@ -10,9 +10,11 @@ A 20 mm index stroke with a cycloidal rise over 120° and a 3-4-5 return over 12
 | `F_pre` | 20 N | assumption: Example preload at the base circle; link a force of the spring sheet. |
 | `R_r` | 8 mm | drawing: IDX-12-CAM rev A |
 | `Rb` | 40 mm | drawing: IDX-12-CAM rev A |
+| `circuit` | Open | assumption: Four-bar and slider-crank only; the cam does not use it, so the template default is kept. |
 | `e_off` | 10 mm | drawing: IDX-12-CAM rev A |
 | `follower` | Roller | drawing: IDX-12-CAM rev A |
 | `k_sp` | 5 kN/m | assumption: Example return-spring rate; link the rate k of the spring sheet. |
+| `load_dir` | Opposes motion | assumption: The follower carries no external load (F_ext = 0), so the direction has no effect; template default kept. |
 | `m_f` | 0.2 kg | assumption: Example: follower arm, roller and tooling; take it from the CAD mass properties. |
 | `mode` | Cam | spec: Indexing station IDX-12 §2 rev A |
 | `n_in` | 120 rpm | spec: Indexing station IDX-12 §2: 120 index cycles/min rev A |
@@ -20,17 +22,17 @@ A 20 mm index stroke with a cycloidal rise over 120° and a 3-4-5 return over 12
 | `segs` | 4 row(s) | spec: Indexing station IDX-12 §2.3 motion table rev A |
 | `steps` | 72 | assumption: 5° table step. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `lift` | 20 mm | 20 mm | PASS |
-| `output_motion` | 0.24 m/s | 0.24 m/s | PASS |
-| `peak_accel` | 4.52389 m/s^2 | 4.52389 m/s^2 | PASS |
-| `j_pk` | 259.2 m/s^3 | 259.2 m/s^3 | PASS |
-| `F_min` | 20 N | 20 N | PASS |
-| `follower_force` | 120 N | 120 N | PASS |
-| `input_torque` | 1.53449 N*m | 1.53449 N*m | PASS |
-| `phi_max_pk` | 26.5958 deg | 26.5958 deg | PASS |
-| `rho_min` | 44.6811 mm | 44.6811 mm | PASS |
-| `Rb_min_phi` | 32.9632 mm | 32.9632 mm | PASS |
+| `lift` | 20 mm | 20 mm | yes |
+| `output_motion` | 0.24 m/s | 0.24 m/s | yes |
+| `peak_accel` | 4.52389 m/s^2 | 4.52389 m/s^2 | yes |
+| `j_pk` | 259.2 m/s^3 | 259.2 m/s^3 | yes |
+| `F_min` | 20 N | 20 N | yes |
+| `follower_force` | 120 N | 120 N | yes |
+| `input_torque` | 1.53449 N*m | 1.53449 N*m | yes |
+| `phi_max_pk` | 26.5958 deg | 26.5958 deg | yes |
+| `rho_min` | 44.6811 mm | 44.6811 mm | yes |
+| `Rb_min_phi` | 32.9632 mm | 32.9632 mm | yes |
 
 Governing check: Largest pressure angle against the allowed pressure angle — PASS (utilisation 0.89). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -226,6 +226,16 @@
     "ValueText": "1"
   },
   {
+    "Symbol": "gamma_M2",
+    "Number": 1.1,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA to BS EN 1993-1-1 NA.2.15",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.1"
+  },
+  {
     "Symbol": "h",
     "Number": 203.2,
     "Unit": "mm",

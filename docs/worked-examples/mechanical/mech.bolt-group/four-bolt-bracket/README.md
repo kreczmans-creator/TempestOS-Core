@@ -18,9 +18,9 @@ A 100 mm square pattern carrying 50 kN downward 150 mm from its centroid: 12.5 k
 | `e_x` | 200 mm | drawing: DRG-BRK-09 rev B |
 | `e_y` | 50 mm | drawing: DRG-BRK-09 rev B |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `F_v_Ed_max` | 36.443 kN | 36.4434 kN | PASS |
-| `u_max` | 0.91109  | 0.911086  | PASS |
+| `F_v_Ed_max` | 36.443 kN | 36.4434 kN | yes |
+| `u_max` | 0.91109  | 0.911086  | yes |
 
 Governing check: Circular shear–tension interaction against its limit (governing bolt) — PASS (utilisation 0.91). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

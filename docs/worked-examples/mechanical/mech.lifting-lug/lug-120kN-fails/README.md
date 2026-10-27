@@ -20,11 +20,11 @@ The same detail scaled down and loaded to 120 kN. Bearing (1.60), tear-out (1.48
 | `t_lug` | 15 mm | drawing: DRG-LL-102 rev A |
 | `t_s` | 10 mm | drawing: DRG-LL-102 rev A |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `sigma_br` | 320 MPa | 320 MPa | PASS |
-| `tau_to` | 133.33 MPa | 133.333 MPa | PASS |
-| `sigma_b` | 381.36 MPa | 381.361 MPa | PASS |
-| `u_br` | 1.6  | 1.6  | PASS |
+| `sigma_br` | 320 MPa | 320 MPa | yes |
+| `tau_to` | 133.33 MPa | 133.333 MPa | yes |
+| `sigma_b` | 381.36 MPa | 381.361 MPa | yes |
+| `u_br` | 1.6  | 1.6  | yes |
 
 Governing check: Pin bearing against the allowable bearing stress — FAIL (utilisation 1.60). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

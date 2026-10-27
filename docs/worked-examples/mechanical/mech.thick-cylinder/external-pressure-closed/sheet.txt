@@ -15,8 +15,8 @@ Lamé constants from the bore and outside pressures: A = (a² p_i − b² p_o)/(
   closed | Closed ends (axial stress carried by the wall) | yes |  | drawing: DRG-CYL-02 rev B | any
   a | Inner radius | 40 | mm | drawing: DRG-CYL-02 rev B | 0.1 … 5000 mm
   b | Outer radius | 60 | mm | drawing: DRG-CYL-02 rev B | 0.1 … 5000 mm
-  E | Young's modulus (the elastic collapse pressure under external pressure only) | 207 | GPa | default | 1 … 500 GPa
-  nu | Poisson's ratio (the elastic collapse pressure under external pressure only) | 0.3 |  | default | 0.1 … 0.49
+  E | Young's modulus (the elastic collapse pressure under external pressure only) | 207 | GPa | assumption: Generic steel Young modulus for the elastic collapse pressure; take it from the material record of the tube. | 1 … 500 GPa
+  nu | Poisson's ratio (the elastic collapse pressure under external pressure only) | 0.3 |  | assumption: Generic steel Poisson ratio for the elastic collapse pressure; take it from the material record of the tube. | 0.1 … 0.49
   p_i | Internal pressure | 0 | MPa | assumption: Vented bore. | 0 … 1000 MPa
   p_o | External pressure | 20 | MPa | spec: SPEC-SUB-1 §2 external pressure | 0 … 1000 MPa
   sigma_allow | Allowable stress | 100 | MPa | spec: SPEC-SUB-1 §4 | 1 … 3000 MPa
@@ -24,7 +24,9 @@ Lamé constants from the bore and outside pressures: A = (a² p_i − b² p_o)/(
 3. Assumptions
   A1. The cylinder is long, elastic and isotropic, and its stresses vary with radius only. (Lamé solution, with end effects neglected.)
   A2. Closed ends carry the pressure end load as a uniform axial stress. (σ_z = A.)
-  A3. p_i (Internal pressure) is taken as 0 MPa. (Vented bore.)
+  A3. E (Young's modulus (the elastic collapse pressure under external pressure only)) is taken as 207 GPa. (Generic steel Young modulus for the elastic collapse pressure; take it from the material record of the tube.)
+  A4. nu (Poisson's ratio (the elastic collapse pressure under external pressure only)) is taken as 0.3. (Generic steel Poisson ratio for the elastic collapse pressure; take it from the material record of the tube.)
+  A5. p_i (Internal pressure) is taken as 0 MPa. (Vented bore.)
 
 4. Working
   [9] A = (a^2 * p_i - b^2 * p_o) / (b^2 - a^2)    « Roark Table 13.5
@@ -108,9 +110,6 @@ Lamé constants from the bore and outside pressures: A = (a² p_i − b² p_o)/(
 
 7. Applicability
   None.
-  Defaults used (inputs left empty):
-    E: not entered, so the default of 207 GPa is used.
-    nu: not entered, so the default of 0.3 is used.
 
 8. Verification
   Template: mech.thick-cylinder@2.2.1

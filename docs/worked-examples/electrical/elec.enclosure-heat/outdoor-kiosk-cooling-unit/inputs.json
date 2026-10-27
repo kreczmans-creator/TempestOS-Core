@@ -44,6 +44,17 @@
     "ValueText": "800"
   },
   {
+    "Symbol": "P_add",
+    "Number": 0,
+    "Unit": "kW",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "No further heat load linked into this kiosk.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
     "Symbol": "T_amb",
     "Number": 40,
     "Unit": "degC",
@@ -64,6 +75,17 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "45"
+  },
+  {
+    "Symbol": "V_ref",
+    "Number": 100,
+    "Unit": "m^3/h",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "No filter fan on this kiosk (it is cooled by a cooling unit); template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100"
   },
   {
     "Symbol": "W",
@@ -212,5 +234,16 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "2 row(s)"
+  },
+  {
+    "Symbol": "p_sys",
+    "Number": 20,
+    "Unit": "Pa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "No filter fan on this kiosk (it is cooled by a cooling unit); template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20"
   }
 ]

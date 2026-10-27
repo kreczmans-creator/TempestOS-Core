@@ -11,26 +11,27 @@ The cavity wall has U = 0.241 W/m²K (R = 4.158 m²K/W) and passes the 0.30 targ
 | `U_target` | 0.3 W/(m^2*K) | spec: SPEC-A-02 §4.2: external wall U-value target |
 | `V` | 38.88 m^3 | drawing: A-101 rev C |
 | `elements` | 5 row(s) | drawing: A-101 rev C |
+| `f_add` | 0 % | assumption: CIBSE DHDG method only; the EN 12831 elemental method does not use it, so no allowance is entered. |
 | `layers` | 8 row(s) | drawing: A-210 rev C |
 | `method` | BS EN 12831-1 elemental | assumption: Elemental method; the design-team default. |
 | `n` | 0.8 1/h | assumption: Natural ventilation allowance for a living room. |
 | `theta_e` | -3 degC | assumption: Illustrative location design temperature; take the project's own from its design-temperature record. |
 | `y_tb` | 0.1 W/(m^2*K) | assumption: Illustrative thermal-bridge allowance; replace with the project's bridging record. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `U_1` | 0.240508 W/(m^2*K) | 0.240509 W/(m^2*K) | PASS |
-| `Phi_1` | 0.0502182 kW | 0.0502182 kW | PASS |
-| `Phi_2` | 0.07056 kW | 0.07056 kW | PASS |
-| `Phi_3` | 0.0498718 kW | 0.0498718 kW | PASS |
-| `U_4` | 1.19284 W/(m^2*K) | 1.19284 W/(m^2*K) | PASS |
-| `Phi_4` | 0.0309185 kW | 0.0309185 kW | PASS |
-| `Phi_5` | 0.0972 kW | 0.0972 kW | PASS |
-| `Phi_tb` | 0.085536 kW | 0.085536 kW | PASS |
-| `Phi_T` | 0.384304 kW | 0.384305 kW | PASS |
-| `Phi_V` | 0.253809 kW | 0.253809 kW | PASS |
-| `Phi_HL` | 0.638113 kW | 0.638113 kW | PASS |
-| `HLC` | 26.588 W/K | 26.588 W/K | PASS |
-| `Phi_A` | 39.3897 W/m^2 | 39.3897 W/m^2 | PASS |
+| `U_1` | 0.240508 W/(m^2*K) | 0.240509 W/(m^2*K) | yes |
+| `Phi_1` | 0.0502182 kW | 0.0502182 kW | yes |
+| `Phi_2` | 0.07056 kW | 0.07056 kW | yes |
+| `Phi_3` | 0.0498718 kW | 0.0498718 kW | yes |
+| `U_4` | 1.19284 W/(m^2*K) | 1.19284 W/(m^2*K) | yes |
+| `Phi_4` | 0.0309185 kW | 0.0309185 kW | yes |
+| `Phi_5` | 0.0972 kW | 0.0972 kW | yes |
+| `Phi_tb` | 0.085536 kW | 0.085536 kW | yes |
+| `Phi_T` | 0.384304 kW | 0.384305 kW | yes |
+| `Phi_V` | 0.253809 kW | 0.253809 kW | yes |
+| `Phi_HL` | 0.638113 kW | 0.638113 kW | yes |
+| `HLC` | 26.588 W/K | 26.588 W/K | yes |
+| `Phi_A` | 39.3897 W/m^2 | 39.3897 W/m^2 | yes |
 
 Governing check: U-value of Party wall against its target — PASS (utilisation 0.99). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

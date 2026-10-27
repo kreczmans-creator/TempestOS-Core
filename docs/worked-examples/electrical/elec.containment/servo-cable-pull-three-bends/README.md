@@ -9,6 +9,7 @@ Two 14 mm servo power cables and four 9 mm encoder cables fill 44.75 % of a 40 m
 | `D_int` | 40 mm | drawing: CND-ROUTE-07 rev C |
 | `P_lim` | 3000 N/m | reference: record: sidewall pressure limit (a value invented for this example; enter the cable maker's figure) |
 | `T_1` | 150 N | spec: Pulling method statement PMS-4: 150 N rope and pulling-head tension at the start of the pull |
+| `bend_model` | Horizontal bend, cable on the containment floor (weight term) | assumption: Horizontal bends with the cable weight on the conduit floor, as the analytic source computes them. |
 | `cables` | 2 row(s) | spec: Cable data sheets CDS-21 (servo power) and CDS-22 (encoder): overall diameter, mass and maximum pulling tension |
 | `cont_type` | Conduit (round) | drawing: CND-ROUTE-07 rev C |
 | `f_max` | 0.5 | reference: record: space factor for this arrangement (a value invented for this example; enter your own from your installation standard or company rule) |
@@ -16,20 +17,20 @@ Two 14 mm servo power cables and four 9 mm encoder cables fill 44.75 % of a 40 m
 | `n_bend` | 10 | reference: record: minimum bend radius multiple (a value invented for this example; enter the largest multiple from the cable data sheets) |
 | `route` | 6 row(s) | drawing: CND-ROUTE-07 rev C |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `A_cab` | 562.345 mm^2 | 562.345 mm^2 | PASS |
-| `A_int` | 1256.64 mm^2 | 1256.64 mm^2 | PASS |
-| `fill` | 44.75 % | 44.75 % | PASS |
-| `u_fill` | 0.895  | 0.895  | PASS |
-| `R_min` | 140 mm | 140 mm | PASS |
-| `u_bend` | 0.35  | 0.35  | PASS |
-| `T_max_a` | 693.105 N | 693.105 N | PASS |
-| `T_max_b` | 666.255 N | 666.255 N | PASS |
-| `max_tension` | 666.255 N | 666.255 N | PASS |
-| `P_max` | 1290.85 N/m | 1290.85 N/m | PASS |
-| `T_cab` | 1200 N | 1200 N | PASS |
-| `u_T` | 0.555213  | 0.555213  | PASS |
-| `u_P` | 0.430284  | 0.430284  | PASS |
+| `A_cab` | 562.345 mm^2 | 562.345 mm^2 | yes |
+| `A_int` | 1256.64 mm^2 | 1256.64 mm^2 | yes |
+| `fill` | 44.75 % | 44.75 % | yes |
+| `u_fill` | 0.895  | 0.895  | yes |
+| `R_min` | 140 mm | 140 mm | yes |
+| `u_bend` | 0.35  | 0.35  | yes |
+| `T_max_a` | 693.105 N | 693.105 N | yes |
+| `T_max_b` | 666.255 N | 666.255 N | yes |
+| `max_tension` | 666.255 N | 666.255 N | yes |
+| `P_max` | 1290.85 N/m | 1290.85 N/m | yes |
+| `T_cab` | 1200 N | 1200 N | yes |
+| `u_T` | 0.555213  | 0.555213  | yes |
+| `u_P` | 0.430284  | 0.430284  | yes |
 
 Governing check: Fill against the space factor limit — PASS (utilisation 0.90). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

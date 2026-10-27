@@ -14,11 +14,11 @@ A column of intermediate slenderness. The Perry factor reduces the strength from
 | `curve` | c | spec: BS 5950-1 Table 23: welded box, curve c |
 | `p_y` | 275 MPa | spec: SPEC-ST-02: S275, t ≤ 16 mm |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `lambda` | 94.868  | 94.8683  | PASS |
-| `p_c` | 133.78 MPa | 133.781 MPa | PASS |
-| `F_c_Rd` | 267.56 kN | 267.562 kN | PASS |
-| `u` | 0.56062  | 0.560619  | PASS |
+| `lambda` | 94.868  | 94.8683  | yes |
+| `p_c` | 133.78 MPa | 133.781 MPa | yes |
+| `F_c_Rd` | 267.56 kN | 267.562 kN | yes |
+| `u` | 0.56062  | 0.560619  | yes |
 
 Governing check: Axial load against compression resistance — PASS (utilisation 0.56). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

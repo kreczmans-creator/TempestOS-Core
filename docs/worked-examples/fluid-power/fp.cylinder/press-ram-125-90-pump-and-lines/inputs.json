@@ -1,5 +1,15 @@
 [
   {
+    "Symbol": "C_d",
+    "Number": 0.62,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Orifice only; this circuit has none, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.62"
+  },
+  {
     "Symbol": "D",
     "Number": 125,
     "Unit": "mm",
@@ -157,6 +167,16 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "50"
+  },
+  {
+    "Symbol": "eta_hm",
+    "Number": 0.9,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Hydraulic motor only; this circuit has none, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.9"
   },
   {
     "Symbol": "eta_m",

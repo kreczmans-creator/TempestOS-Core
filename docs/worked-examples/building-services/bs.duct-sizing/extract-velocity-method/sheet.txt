@@ -21,7 +21,7 @@ Round duct diameter from the design target: D by Colebrook with the air properti
   eps_rough | Duct roughness | 0.15 | mm | assumption: Spiral-wound galvanised duct with joints. | 0.03 … 3 mm
   T_air | Air temperature | 25 | °C | assumption: Workshop air 25 °C. | -20 … 60 °C
   p_atm | Barometric pressure | 100.5 | kPa | assumption: Site 70 m AOD, ≈ 100.5 kPa. | 80 … 105 kPa
-  dp_target | Target friction rate (equal friction) | 1 | Pa/m | default | 0.3 … 5 Pa/m
+  dp_target | Target friction rate (equal friction) | 1 | Pa/m | assumption: Equal-friction method only; the velocity method does not use it, so the template default is kept. | 0.3 … 5 Pa/m
   v_target | Target velocity (velocity method) | 10 | m/s | spec: Dust-carrying extract: 10 m/s minimum transport velocity, SPEC-M-09 | 2 … 20 m/s
   v_limit | Velocity limit (warning and check) | 15 | m/s | spec: SPEC-M-09 noise limit | 2 … 30 m/s
   dp_limit | Total pressure-drop limit (check) | 600 | Pa | spec: Extract fan external static 600 Pa | 50 … 2000 Pa
@@ -35,6 +35,7 @@ Round duct diameter from the design target: D by Colebrook with the air properti
   A6. eps_rough (Duct roughness) is taken as 0.15 mm. (Spiral-wound galvanised duct with joints.)
   A7. T_air (Air temperature) is taken as 25 °C. (Workshop air 25 °C.)
   A8. p_atm (Barometric pressure) is taken as 100.5 kPa. (Site 70 m AOD, ≈ 100.5 kPa.)
+  A9. dp_target (Target friction rate (equal friction)) is taken as 1 Pa/m. (Equal-friction method only; the velocity method does not use it, so the template default is kept.)
 
 4. Working
   [10] rho = p / (287.055 T)
@@ -150,7 +151,7 @@ Round duct diameter from the design target: D by Colebrook with the air properti
       = 326.71 Pa
         Sum over every section (not a path)
   [38] v_peak = highest section velocity
-      = 
+      = v of main, the highest of 3 section(s)
       = 8.3556 m/s
         Highest velocity
   [39] u_dp = dp_index / dp_limit
@@ -197,8 +198,6 @@ Round duct diameter from the design target: D by Colebrook with the air properti
 
 7. Applicability
   None.
-  Defaults used (inputs left empty):
-    dp_target: not entered, so the default of 1 Pa/m is used.
 
 8. Verification
   Template: bs.duct-sizing@1.2.1

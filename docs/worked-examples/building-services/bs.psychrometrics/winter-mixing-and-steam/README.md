@@ -11,13 +11,14 @@ Three parts return air at 22 °C / 40 % mixed with one part outdoor air at −3 
 | `T_db` | 22 degC | spec: Return air 22 °C / 40 % |
 | `T_db_b` | -3 degC | spec: CIBSE Guide A winter design −3 °C / 90 %, assumed |
 | `altitude` | 120 m | drawing: Site survey SRV-01: 120 m AOD |
+| `h_steam` | 2676 | assumption: Dry saturated steam at atmospheric pressure, about 2676 kJ/kg from steam tables; used by the steam-humidification run only. |
 | `known` | relative humidity | assumption: RH given. |
 | `m_da` | 3 kg/s | spec: AHU-02 return 3 kg/s |
 | `m_da_b` | 1 kg/s | spec: AHU-02 minimum outdoor air 1 kg/s |
 | `process` | adiabatic mixing | assumption: Mixing box. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `m_da_3` | 4 kg/s | 4 kg/s | PASS |
+| `m_da_3` | 4 kg/s | 4 kg/s | yes |
 
 Governing check: none. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -12,7 +12,7 @@ Resultant force on the weld: F = √(F_∥² + F_⊥² + F_n²). Design shear st
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
-  joint | Joint type: a lap joint is reduced beyond 150 throats, and Other is for a weld whose stress follows the base metal | Lap joint |  | default | any
+  joint | Joint type: a lap joint is reduced beyond 150 throats, and Other is for a weld whose stress follows the base metal | Lap joint |  | drawing: DRG-WD-701 rev A | any
   L | Effective weld length | 200 | mm | drawing: DRG-WD-701 rev A | 30 … 10000 mm
   a | Throat thickness | 5 | mm | drawing: DRG-WD-701 rev A | 3 … 50 mm
   f_u | Ultimate tensile strength of the weaker part joined | 490 | MPa | spec: SPEC-STR-02 design criteria | 300 … 1000 MPa
@@ -82,8 +82,6 @@ Resultant force on the weld: F = √(F_∥² + F_⊥² + F_n²). Design shear st
 
 7. Applicability
   None.
-  Defaults used (inputs left empty):
-    joint: not entered, so the default of 'Lap joint' is used.
 
 8. Verification
   Template: struct.fillet-weld@1.2.0

@@ -81,6 +81,16 @@
     "ValueText": "Open"
   },
   {
+    "Symbol": "follower",
+    "Text": "Roller",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Cam mode only; this four-bar linkage does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Roller"
+  },
+  {
     "Symbol": "load_dir",
     "Text": "Opposes motion",
     "Provenance": {

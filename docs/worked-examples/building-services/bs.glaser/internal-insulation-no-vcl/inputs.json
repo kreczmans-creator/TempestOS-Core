@@ -278,6 +278,16 @@
     "ValueText": "12 row(s)"
   },
   {
+    "Symbol": "dp_f",
+    "Number": 1.1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Moisture-excess mode only; this example holds a constant internal humidity, so the conventional 1.10 is kept unused.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.1"
+  },
+  {
     "Symbol": "humidity_mode",
     "Text": "constant internal relative humidity",
     "Provenance": {

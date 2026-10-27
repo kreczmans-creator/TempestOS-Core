@@ -11,6 +11,17 @@
     "ValueText": "70"
   },
   {
+    "Symbol": "F",
+    "Number": 5,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "5"
+  },
+  {
     "Symbol": "a",
     "Number": 300,
     "Unit": "mm",
@@ -107,6 +118,28 @@
     "ValueText": "20"
   },
   {
+    "Symbol": "r0",
+    "Number": 50,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "50"
+  },
+  {
+    "Symbol": "r_ring",
+    "Number": 150,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "150"
+  },
+  {
     "Symbol": "rho",
     "Number": 2700,
     "Unit": "kg/m^3",
@@ -149,5 +182,27 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "4"
+  },
+  {
+    "Symbol": "u",
+    "Number": 100,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100"
+  },
+  {
+    "Symbol": "v",
+    "Number": 100,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used: the lid carries a uniform pressure, not a force, patch or ring load; template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100"
   }
 ]

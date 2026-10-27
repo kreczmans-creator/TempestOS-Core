@@ -18,17 +18,17 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   W | Enclosure width | 0.6 | m | spec: Enclosure datasheet AE-1380: 600 × 800 × 300 | 0.1 … 5 m
   H | Enclosure height | 0.8 | m | spec: Enclosure datasheet AE-1380: 600 × 800 × 300 | 0.1 … 5 m
   D | Enclosure depth | 0.3 | m | spec: Enclosure datasheet AE-1380: 600 × 800 × 300 | 0.1 … 5 m
-  f_top | Top exposure (1 free, 0 covered) | 1 |  | default | 0 … 1
-  f_front | Front exposure | 1 |  | default | 0 … 1
-  f_rear | Rear exposure (0 = wall-mounted) | 0 |  | default | 0 … 1
-  f_left | Left side exposure | 1 |  | default | 0 … 1
-  f_right | Right side exposure | 1 |  | default | 0 … 1
-  f_bottom | Bottom exposure (0 = on the floor) | 0 |  | default | 0 … 1
-  A_sun | Sunlit area | 0 | m² | default | 0 … 100 m²
-  alpha_sun | Surface absorptivity | 0.5 |  | default | 0.1 … 1
-  h_conv | Overall heat-transfer coefficient of the enclosure surface (editable reference value) | 5.5 | W/(m²·K) | default | 3 … 8 W/(m²·K)
-  P_add | Additional heat load (linked from the load-budget dissipated heat or another calculation) | 0 | kW | default | 0 … 100 kW
-  I_sun | Solar irradiance on the enclosure (0 = indoors) | 0 | W/m² | default | 0 … 1200 W/m²
+  f_top | Top exposure (1 free, 0 covered) | 1 |  | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 1
+  f_front | Front exposure | 1 |  | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 1
+  f_rear | Rear exposure (0 = wall-mounted) | 0 |  | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 1
+  f_left | Left side exposure | 1 |  | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 1
+  f_right | Right side exposure | 1 |  | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 1
+  f_bottom | Bottom exposure (0 = on the floor) | 0 |  | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 1
+  A_sun | Sunlit area | 0 | m² | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 100 m²
+  alpha_sun | Surface absorptivity | 0.5 |  | assumption: Not used indoors (no sun); template default kept. | 0.1 … 1
+  h_conv | Overall heat-transfer coefficient of the enclosure surface (editable reference value) | 5.5 | W/(m²·K) | reference: Reference record: painted steel enclosure, still air, 5.5 W/m²K (manufacturer guide) | 3 … 8 W/(m²·K)
+  P_add | Additional heat load (linked from the load-budget dissipated heat or another calculation) | 0 | kW | assumption: No further heat load linked into this panel. | 0 … 100 kW
+  I_sun | Solar irradiance on the enclosure (0 = indoors) | 0 | W/m² | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 1200 W/m²
   T_amb | Ambient temperature | 35 | °C | spec: Site conditions SC-2: 35 °C plant room; 50 °C inside limit for the drives | -20 … 55 °C
   altitude | Site altitude (air density) | 0 | m | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 4000 m
   T_max | Maximum internal temperature | 50 | °C | spec: Site conditions SC-2: 35 °C plant room; 50 °C inside limit for the drives | 20 … 80 °C
@@ -51,8 +51,18 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
   A11. The site pressure is the standard atmosphere at the altitude. (Ideal gas at constant volume (derived).)
   A12. The fan curve is linear between the entered points. (Duty-point idealisation.)
   A13. The system resistance scales with airflow squared. (Duty-point idealisation.)
-  A14. altitude (Site altitude (air density)) is taken as 0 m. (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
-  A15. The effective surface is the plain exposed-area method of manufacturer practice: each face area weighted by how freely it sheds heat, one overall coefficient h. This is not a verification of temperature rise to IEC TR 60890 or BS EN 61439-1 cl. 10.10 (neither the surface factors nor the standard's temperature-rise correlation is used). (Stated on every run so the result is not read as an assembly verification.)
+  A14. f_top (Top exposure (1 free, 0 covered)) is taken as 1. (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A15. f_front (Front exposure) is taken as 1. (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A16. f_rear (Rear exposure (0 = wall-mounted)) is taken as 0. (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A17. f_left (Left side exposure) is taken as 1. (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A18. f_right (Right side exposure) is taken as 1. (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A19. f_bottom (Bottom exposure (0 = on the floor)) is taken as 0. (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A20. A_sun (Sunlit area) is taken as 0 m². (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A21. alpha_sun (Surface absorptivity) is taken as 0.5. (Not used indoors (no sun); template default kept.)
+  A22. P_add (Additional heat load (linked from the load-budget dissipated heat or another calculation)) is taken as 0 kW. (No further heat load linked into this panel.)
+  A23. I_sun (Solar irradiance on the enclosure (0 = indoors)) is taken as 0 W/m². (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A24. altitude (Site altitude (air density)) is taken as 0 m. (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A25. The effective surface is the plain exposed-area method of manufacturer practice: each face area weighted by how freely it sheds heat, one overall coefficient h. This is not a verification of temperature rise to IEC TR 60890 or BS EN 61439-1 cl. 10.10 (neither the surface factors nor the standard's temperature-rise correlation is used). (Stated on every run so the result is not read as an assembly verification.)
 
 4. Working
   [18] P_loads = Σ P_i × n_i × d_i
@@ -147,18 +157,6 @@ Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+
 
 7. Applicability
   WARNING  T_max: natural dissipation holds 94.05 W of 300 W. Ventilate, or fit a 206 W cooling unit.  [cooling-unit]
-  Defaults used (inputs left empty):
-    f_top: not entered, so the default of 1 is used.
-    f_front: not entered, so the default of 1 is used.
-    f_rear: not entered, so the default of 0 is used.
-    f_left: not entered, so the default of 1 is used.
-    f_right: not entered, so the default of 1 is used.
-    f_bottom: not entered, so the default of 0 is used.
-    A_sun: not entered, so the default of 0 m² is used.
-    alpha_sun: not entered, so the default of 0.5 is used.
-    h_conv: not entered, so the default of 5.5 W/(m²·K) is used.
-    P_add: not entered, so the default of 0 kW is used.
-    I_sun: not entered, so the default of 0 W/m² is used.
 
 8. Verification
   Template: elec.enclosure-heat@1.7.1

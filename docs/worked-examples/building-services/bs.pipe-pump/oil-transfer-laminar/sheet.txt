@@ -13,7 +13,7 @@ Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   fluid | Fluid | custom (ρ and μ given) |  | spec: Oil datasheet ISO VG 680 at 20 °C | any
-  circuit | Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored) | open (the pump lifts the water by the rises entered) |  | default | any
+  circuit | Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored) | open (the pump lifts the water by the rises entered) |  | assumption: Open transfer line to an open discharge. | any
   segments | Pipe segments in series | 1 row(s) |  | drawing: DRG-L-020 rev A | any
   segments[1] |  | name = transfer line; L = 40 m; D = 50 mm; eps = 0 mm; K = 0; L_eq = 0 m; dz = 0 m; side = discharge |  |  | 
   rho_custom | Density (custom fluid) | 888 | kg/m³ | spec: Oil datasheet ISO VG 680 | 500 … 2000 kg/m³
@@ -21,13 +21,13 @@ Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place
   h_out | Pressure head required at the outlet | 0 | m | assumption: Open discharge. | 0 … 1000 m
   Q | Design flow rate (optional; blank = the flow comes from the heat load) | 1 | m³/h | spec: Transfer pump duty | 0.01 … 100000 m³/h
   T_fluid | Fluid temperature (mean; link the mean water temperature of the sealed system for a heating loop) | 20 | °C | assumption: Ambient 20 °C. | 0 … 100 °C
-  p_atm | Atmospheric pressure (NPSH) | 101.325 | kPa | default | 50 … 110 kPa
-  z_s | Static head at the pump suction (+ flooded, − lift) | 0 | m | default | -10 … 100 m
+  p_atm | Atmospheric pressure (NPSH) | 101.325 | kPa | assumption: Sea level. | 50 … 110 kPa
+  z_s | Static head at the pump suction (+ flooded, − lift) | 0 | m | assumption: Pump suction level with the tank outlet. | -10 … 100 m
   v_limit | Velocity limit (warning and check) | 3 | m/s | assumption: Practice limit. | 0.5 … 10 m/s
-  D_law | Law for the diameter ratio: a trimmed impeller of the same casing (Q ∝ D, H ∝ D²) or a geometrically similar pump (Q ∝ D³, H ∝ D²) | impeller trim (Q ∝ n·D, H ∝ n²·D²) |  | default | any
-  n_ratio | Speed ratio n₂/n₁ (affinity) | 1 |  | default | 0.2 … 2
-  D_ratio | Impeller diameter ratio D₂/D₁ (affinity; the law is chosen above) | 1 |  | default | 0.7 … 1.1
-  eta_pump | Pump efficiency at duty (for shaft power) | 0.7 |  | default | 0.2 … 0.95
+  D_law | Law for the diameter ratio: a trimmed impeller of the same casing (Q ∝ D, H ∝ D²) or a geometrically similar pump (Q ∝ D³, H ∝ D²) | impeller trim (Q ∝ n·D, H ∝ n²·D²) |  | assumption: The impeller is unchanged (D_ratio = 1), so the law has no effect; template default kept. | any
+  n_ratio | Speed ratio n₂/n₁ (affinity) | 1 |  | assumption: No speed change. | 0.2 … 2
+  D_ratio | Impeller diameter ratio D₂/D₁ (affinity; the law is chosen above) | 1 |  | assumption: Impeller unchanged. | 0.7 … 1.1
+  eta_pump | Pump efficiency at duty (for shaft power) | 0.7 |  | assumption: Illustrative pump efficiency for the shaft power; take it from the pump datasheet. | 0.2 … 0.95
 
 3. Assumptions
   A1. Flow is steady, incompressible and fully developed, and all segments carry the full design flow in series. (Darcy–Weisbach.)
@@ -38,9 +38,16 @@ Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place
   A6. The friction of a laminar segment scales with Q, and the static part is independent of flow. (H_sys = H_static + k₁ Q + k₂ Q².)
   A7. Water properties are from published correlations at atmospheric pressure, 0 to 100 °C. (Kell 1975; Vogel fit; Hyland & Wexler 1983.)
   A8. Any other fluid is entered with its own density and viscosity and their provenance. (Stated.)
-  A9. h_out (Pressure head required at the outlet) is taken as 0 m. (Open discharge.)
-  A10. T_fluid (Fluid temperature (mean; link the mean water temperature of the sealed system for a heating loop)) is taken as 20 °C. (Ambient 20 °C.)
-  A11. v_limit (Velocity limit (warning and check)) is taken as 3 m/s. (Practice limit.)
+  A9. circuit (Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored)) is taken as open (the pump lifts the water by the rises entered). (Open transfer line to an open discharge.)
+  A10. h_out (Pressure head required at the outlet) is taken as 0 m. (Open discharge.)
+  A11. T_fluid (Fluid temperature (mean; link the mean water temperature of the sealed system for a heating loop)) is taken as 20 °C. (Ambient 20 °C.)
+  A12. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sea level.)
+  A13. z_s (Static head at the pump suction (+ flooded, − lift)) is taken as 0 m. (Pump suction level with the tank outlet.)
+  A14. v_limit (Velocity limit (warning and check)) is taken as 3 m/s. (Practice limit.)
+  A15. D_law (Law for the diameter ratio: a trimmed impeller of the same casing (Q ∝ D, H ∝ D²) or a geometrically similar pump (Q ∝ D³, H ∝ D²)) is taken as impeller trim (Q ∝ n·D, H ∝ n²·D²). (The impeller is unchanged (D_ratio = 1), so the law has no effect; template default kept.)
+  A16. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 1. (No speed change.)
+  A17. D_ratio (Impeller diameter ratio D₂/D₁ (affinity; the law is chosen above)) is taken as 1. (Impeller unchanged.)
+  A18. eta_pump (Pump efficiency at duty (for shaft power)) is taken as 0.7. (Illustrative pump efficiency for the shaft power; take it from the pump datasheet.)
 
 4. Working
   [5] rho = rho_custom
@@ -133,14 +140,6 @@ Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place
 
 7. Applicability
   WARNING  segments: transfer line is laminar (Re = 7.8516), so f = 64/Re. The system curve and the duty point scale its friction with Q, not Q².  [laminar]
-  Defaults used (inputs left empty):
-    circuit: not entered, so the default of 'open (the pump lifts the water by the rises entered)' is used.
-    p_atm: not entered, so the default of 101.3 kPa is used.
-    z_s: not entered, so the default of 0 m is used.
-    D_law: not entered, so the default of 'impeller trim (Q ∝ n·D, H ∝ n²·D²)' is used.
-    n_ratio: not entered, so the default of 1 is used.
-    D_ratio: not entered, so the default of 1 is used.
-    eta_pump: not entered, so the default of 0.7 is used.
 
 8. Verification
   Template: bs.pipe-pump@1.10.1

@@ -8,13 +8,14 @@ An interference fit: the formula value p = IT7 = 25.0 µm sits 1 µm under the t
 |---|---|---|
 | `D` | 50 mm | drawing: DRG-HUB-04 rev C |
 | `hole_grade` | 7 | spec: DRG-HUB-04: H7/p6 |
+| `hole_kind` | ISO 286 hole class | spec: DRG-HUB-04: the hole is an ISO 286 class (H7), not a bearing bore |
 | `hole_letter` | H | spec: DRG-HUB-04: H7/p6 |
 | `shaft_grade` | 6 | spec: DRG-HUB-04: H7/p6 |
 | `shaft_letter` | p | spec: DRG-HUB-04: H7/p6 |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `IT_hole` | 25 µm | 24.9799 µm | PASS |
-| `i_max` | 42 µm | 40.5923 µm | PASS |
+| `IT_hole` | 25 µm | 24.9799 µm | yes |
+| `i_max` | 42 µm | 40.5923 µm | yes |
 
 Governing check: Fit classes against the fit kind — PASS. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

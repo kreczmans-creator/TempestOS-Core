@@ -20,14 +20,14 @@ With the bellows in the run there is no leg to check and no screening. The ancho
 | `t_wall` | 1.5 mm | drawing: DRG-M-212 rev B |
 | `temp_mode` | install and operating temperatures | assumption: Install and operating temperatures are both known. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `dL` | 24.48 mm | 24.48 mm | PASS |
-| `F_thrust` | 2.4 kN | 2.4 kN | PASS |
-| `F_spring` | 1.9584 kN | 1.9584 kN | PASS |
-| `anchor_force` | 4.3584 kN | 4.3584 kN | PASS |
-| `anchor_moment` | 0 kN*m | 0 kN*m | PASS |
-| `u_bellows` | 0.612  | 0.612  | PASS |
-| `pass` | 1  | 1  | PASS |
+| `dL` | 24.48 mm | 24.48 mm | yes |
+| `F_thrust` | 2.4 kN | 2.4 kN | yes |
+| `F_spring` | 1.9584 kN | 1.9584 kN | yes |
+| `anchor_force` | 4.3584 kN | 4.3584 kN | yes |
+| `anchor_moment` | 0 kN*m | 0 kN*m | yes |
+| `u_bellows` | 0.612  | 0.612  | yes |
+| `pass` | 1  | 1  | yes |
 
 Governing check: Movement against the rated axial movement of the bellows — PASS (utilisation 0.61). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

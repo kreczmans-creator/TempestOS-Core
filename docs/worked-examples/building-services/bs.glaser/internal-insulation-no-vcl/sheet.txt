@@ -36,7 +36,7 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
   Rsi | Internal surface resistance R_si | 0.13 | m²·K/W | spec: Project surface-resistance record (internal, horizontal flow), assumed | 0.04 … 0.25 m²·K/W
   Rse | External surface resistance R_se | 0.04 | m²·K/W | spec: Project surface-resistance record (external), assumed | 0.02 … 0.25 m²·K/W
   Rsi_f | Internal surface resistance R_si,f for the f_Rsi check (0.25 m²K/W is the conventional value for an opaque element and 0.13 for glazing; a record to check against the owner's copy of ISO 13788) | 0.25 | m²·K/W | spec: Conventional R_si,f = 0.25 m²K/W for the surface-condensation check of an opaque element (a record, to be checked against the owner's copy of ISO 13788), assumed | 0.04 … 0.5 m²·K/W
-  dp_f | Safety factor on the vapour-pressure difference Δp = Δv·R_v·(T_i + T_e)/2 in the moisture-excess mode (1.10 by convention; a record, wording to be checked against the owner's copy of ISO 13788) | 1.1 |  | default | 1 … 1.5
+  dp_f | Safety factor on the vapour-pressure difference Δp = Δv·R_v·(T_i + T_e)/2 in the moisture-excess mode (1.10 by convention; a record, wording to be checked against the owner's copy of ISO 13788) | 1.1 |  | assumption: Moisture-excess mode only; this example holds a constant internal humidity, so the conventional 1.10 is kept unused. | 1 … 1.5
   RH_crit | Critical surface relative humidity | 80 | % | spec: SPEC-A-02 §4.4: critical surface humidity | 50 … 100 %
   Mc_limit | Limit on the condensate on any interface (optional; blank = report only) | 500 | g/m² | spec: SPEC-A-02 §4.4: limit on the condensate per interface | 1 … 5000 g/m²
 
@@ -58,7 +58,8 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
   A15. climate (Twelve monthly outside conditions (the user's climate record, in the order the year is run)) is taken as 12 row(s). (Invented illustrative maritime year; replace with the project's own monthly climate record (take it from your licensed source).)
   A16. humidity_mode (Internal humidity from) is taken as constant internal relative humidity. (Constant internal humidity; no humidity-class record is held for this project.)
   A17. breathable (The build-up is timber or breathable (hygroscopic layers, capillary transport)) is taken as no. (Mineral wool and brick: no timber or hygroscopic layers.)
-  A18. Month length: 12 row(s) of the climate gave no days, so the calendar days of the month are used with the rows taken as January to December (February 28 days). If the record starts in another month, enter the days of each row. (Calendar months.)
+  A18. dp_f (Safety factor on the vapour-pressure difference Δp = Δv·R_v·(T_i + T_e)/2 in the moisture-excess mode (1.10 by convention; a record, wording to be checked against the owner's copy of ISO 13788)) is taken as 1.1. (Moisture-excess mode only; this example holds a constant internal humidity, so the conventional 1.10 is kept unused.)
+  A19. Month length: 12 row(s) of the climate gave no days, so the calendar days of the month are used with the rows taken as January to December (February 28 days). If the record starts in another month, enter the days of each row. (Calendar months.)
 
 4. Working
   [8] R_1 = d / λ    « BS EN ISO 13788 cl. 6
@@ -289,9 +290,7 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
   PASS  Condensate left after 12 months against zero: 0 g/m² as entered, 0 g/m² in 20 sub-layers per layer vs 0 g/m² (the wall dries out within the year)  « BS EN ISO 13788 cl. 6
 
 7. Applicability
-  WARNING  records: tabulated values not taken from a reference record are layers (Layer conductivity and vapour resistance); Rsi, Rse, Rsi_f (Surface resistances); climate (Monthly outside climate); RH_crit, Mc_limit (Condensation criteria). Enter each as one so its source, edition and licence travel with it.  [record]
-  Defaults used (inputs left empty):
-    dp_f: not entered, so the default of 1.1 is used.
+  WARNING  records: tabulated values not taken from a reference record are layers (Layer conductivity and vapour resistance); Rsi, Rse, Rsi_f (Surface resistances); climate (Monthly outside climate); dp_f (Internal humidity class); RH_crit, Mc_limit (Condensation criteria). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
   Template: bs.glaser@1.4.0

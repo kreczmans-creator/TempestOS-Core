@@ -13,10 +13,10 @@ A 50 kN plant load 4 m along a 6 m span: R_A = F b/L = 16.67 kN, M under the loa
 | `a` | 4 m | drawing: DRG-FL-201 rev A |
 | `case` | simply supported, point load at a | assumption: Single span, pin–roller. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `R_A` | 16.6667 kN | 16.6667 kN | PASS |
-| `M_max` | 66.6667 kN*m | 66.6667 kN*m | PASS |
-| `delta_max` | 10.839 mm | 10.8387 mm | PASS |
+| `R_A` | 16.6667 kN | 16.6667 kN | yes |
+| `M_max` | 66.6667 kN*m | 66.6667 kN*m | yes |
+| `delta_max` | 10.839 mm | 10.8387 mm | yes |
 
 Governing check: none. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

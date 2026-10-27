@@ -12,6 +12,7 @@ The 2.2 mm thick lug is 18 mm long (l/h = 8.2) and tapers to half its thickness 
 | `alpha` | 30 deg | drawing: ENC-310-07 rev C |
 | `alpha_r` | 65 deg | drawing: ENC-310-07 rev C |
 | `b` | 7 mm | drawing: ENC-310-07 rev C |
+| `bar_support` | Held at one end | assumption: Torsion-bar snap-fits only; this cantilever hook does not use it, so the template default is kept. |
 | `eps_perm_once` | 0.04 | assumption: Example permissible strain for one-time joining. Enter it for your plastic at the temperature of use from its data or a W3 material; no plastics data are shipped. |
 | `h` | 2.2 mm | drawing: ENC-310-07 rev C |
 | `h_ratio` | 0.5 | drawing: ENC-310-07 rev C |
@@ -21,15 +22,15 @@ The 2.2 mm thick lug is 18 mm long (l/h = 8.2) and tapers to half its thickness 
 | `mu` | 0.35 | assumption: Example friction coefficient for a plastic-on-plastic pair. Enter μ for your pair of materials and surfaces from your reference or a test (record snapfit.friction). |
 | `y` | 1.2 mm | drawing: ENC-310-07 rev C |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `K_y` | 1.09035  | 1.09035  | PASS |
-| `eps_max` | 0.747293 % | 0.747293 % | PASS |
-| `F_defl` | 4.68857 N | 4.68857 N | PASS |
-| `strain_util` | 0.186823  | 0.186823  | PASS |
-| `y_perm` | 6.42318 mm | 6.42318 mm | PASS |
-| `assembly_force` | 5.44905 N | 5.44905 N | PASS |
-| `alpha_lock` | 70.71 deg | 70.71 deg | PASS |
-| `retention_force` | 46.891 N | 46.891 N | PASS |
+| `K_y` | 1.09035  | 1.09035  | yes |
+| `eps_max` | 0.747293 % | 0.747293 % | yes |
+| `F_defl` | 4.68857 N | 4.68857 N | yes |
+| `strain_util` | 0.186823  | 0.186823  | yes |
+| `y_perm` | 6.42318 mm | 6.42318 mm | yes |
+| `assembly_force` | 5.44905 N | 5.44905 N | yes |
+| `alpha_lock` | 70.71 deg | 70.71 deg | yes |
+| `retention_force` | 46.891 N | 46.891 N | yes |
 
 Governing check: Strain at the critical section against the permissible strain — PASS (utilisation 0.19). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -1,5 +1,25 @@
 [
   {
+    "Symbol": "D_law",
+    "Text": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "The impeller is unchanged (D_ratio = 1), so the law has no effect; template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)"
+  },
+  {
+    "Symbol": "D_ratio",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Impeller unchanged.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
     "Symbol": "Q",
     "Number": 1,
     "Unit": "m^3/h",
@@ -20,6 +40,26 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "20"
+  },
+  {
+    "Symbol": "circuit",
+    "Text": "open (the pump lifts the water by the rises entered)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Open transfer line to an open discharge.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "open (the pump lifts the water by the rises entered)"
+  },
+  {
+    "Symbol": "eta_pump",
+    "Number": 0.7,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Illustrative pump efficiency for the shaft power; take it from the pump datasheet.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.7"
   },
   {
     "Symbol": "fluid",
@@ -52,6 +92,27 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "800"
+  },
+  {
+    "Symbol": "n_ratio",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "No speed change.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "p_atm",
+    "Number": 101.325,
+    "Unit": "kPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Sea level.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "101.325"
   },
   {
     "Symbol": "rho_custom",
@@ -119,5 +180,16 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "3"
+  },
+  {
+    "Symbol": "z_s",
+    "Number": 0,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Pump suction level with the tank outlet.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
   }
 ]

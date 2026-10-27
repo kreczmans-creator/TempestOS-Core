@@ -19,19 +19,19 @@ The 24 m riser grows 24.5 mm. The 2.5 m offset leg would have to be 2.82 m to ke
 | `t_wall` | 1.5 mm | drawing: DRG-M-212 rev A |
 | `temp_mode` | install and operating temperatures | assumption: Install and operating temperatures are both known. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `dL` | 24.48 mm | 24.48 mm | PASS |
-| `sigma_res` | 122.4 MPa | 122.4 MPa | PASS |
-| `F_res` | 30.2818 kN | 30.2818 kN | PASS |
-| `L_req` | 2.8163 m | 2.8163 m | PASS |
-| `u_leg` | 1.12652  | 1.12652  | PASS |
-| `u_run` | 0.0378731  | 0.0378731  | PASS |
-| `anchor_force` | 0.192459 kN | 0.192459 kN | PASS |
-| `anchor_moment` | 0.240573 kN*m | 0.240573 kN*m | PASS |
-| `Y_scr` | 24.6125 mm | 24.6125 mm | PASS |
-| `scr` | 236.592 mm^2/m^2 | 236.592 mm^2/m^2 | PASS |
-| `u_scr` | 2.36592  | 2.36592  | PASS |
-| `pass` | 0  | 0  | PASS |
+| `dL` | 24.48 mm | 24.48 mm | yes |
+| `sigma_res` | 122.4 MPa | 122.4 MPa | yes |
+| `F_res` | 30.2818 kN | 30.2818 kN | yes |
+| `L_req` | 2.8163 m | 2.8163 m | yes |
+| `u_leg` | 1.12652  | 1.12652  | yes |
+| `u_run` | 0.0378731  | 0.0378731  | yes |
+| `anchor_force` | 0.192459 kN | 0.192459 kN | yes |
+| `anchor_moment` | 0.240573 kN*m | 0.240573 kN*m | yes |
+| `Y_scr` | 24.6125 mm | 24.6125 mm | yes |
+| `scr` | 236.592 mm^2/m^2 | 236.592 mm^2/m^2 | yes |
+| `u_scr` | 2.36592  | 2.36592  | yes |
+| `pass` | 0  | 0  | yes |
 
 Governing check: Screening ratio against the limit K1 (not met: the line needs a formal stress analysis) — FAIL (utilisation 2.37). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

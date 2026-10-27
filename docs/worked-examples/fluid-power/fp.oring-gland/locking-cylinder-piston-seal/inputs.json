@@ -220,6 +220,17 @@
     "ValueText": "0.1"
   },
   {
+    "Symbol": "dD_p",
+    "Number": 0,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Bore growth under pressure not known for this example, so none is added to the gap; take it from the cylinder calculation.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
     "Symbol": "d_r",
     "Number": 56,
     "Unit": "mm",
@@ -262,6 +273,60 @@
     "ValueText": "Static"
   },
   {
+    "Symbol": "e_f",
+    "Number": 0.05,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Face seals only; this piston seal does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.05"
+  },
+  {
+    "Symbol": "e_f_l",
+    "Number": 0,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Face seals only; this piston seal does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "e_f_u",
+    "Number": 0.05,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Face seals only; this piston seal does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.05"
+  },
+  {
+    "Symbol": "ecc",
+    "Number": 0,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Gland taken as concentric (no run-out) for this example; enter the run-out from the drawing when it is known.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "face_p",
+    "Text": "External (ring ID seated on the groove)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Face seals only; this piston seal does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "External (ring ID seated on the groove)"
+  },
+  {
     "Symbol": "fill_hi",
     "Number": 85,
     "Unit": "%",
@@ -295,6 +360,39 @@
     "ValueText": "0.2"
   },
   {
+    "Symbol": "h_f",
+    "Number": 2.7,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Face seals only; this piston seal does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2.7"
+  },
+  {
+    "Symbol": "h_f_l",
+    "Number": 0,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Face seals only; this piston seal does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "h_f_u",
+    "Number": 0.05,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Face seals only; this piston seal does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.05"
+  },
+  {
     "Symbol": "k_sigma",
     "Number": 3,
     "Provenance": {
@@ -315,6 +413,27 @@
     "ValueText": "20000"
   },
   {
+    "Symbol": "nu",
+    "Number": 0.49,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Rubber taken as nearly incompressible, \u03BD = 0.49; take it from the compound data.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.49"
+  },
+  {
+    "Symbol": "od_hi",
+    "Number": 6,
+    "Unit": "%",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Rod seals and internal-pressure face seals only; this piston seal does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "6"
+  },
+  {
     "Symbol": "p_op",
     "Number": 160,
     "Unit": "bar",
@@ -326,6 +445,17 @@
     "ValueText": "160"
   },
   {
+    "Symbol": "q_hi_d",
+    "Number": 25,
+    "Unit": "%",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Dynamic duty only; this static seal does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "25"
+  },
+  {
     "Symbol": "q_hi_s",
     "Number": 30,
     "Unit": "%",
@@ -335,6 +465,17 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "30"
+  },
+  {
+    "Symbol": "q_lo_d",
+    "Number": 10,
+    "Unit": "%",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Dynamic duty only; this static seal does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10"
   },
   {
     "Symbol": "q_lo_s",

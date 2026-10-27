@@ -173,6 +173,16 @@
     "ValueText": "1.5"
   },
   {
+    "Symbol": "r_c_min",
+    "Number": 2,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Company design standard: first critical speed at least twice the running speed",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2"
+  },
+  {
     "Symbol": "rho",
     "Number": 7850,
     "Unit": "kg/m^3",

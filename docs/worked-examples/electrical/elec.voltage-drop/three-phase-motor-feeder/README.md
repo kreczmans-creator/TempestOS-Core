@@ -23,9 +23,9 @@ A 35 mm² copper feeder carrying 100 A over 80 m drops 7.5 V (1.9 %) against the
 | `rho_20` | 0.01724 ohm*mm^2/m | reference: Reference record: annealed copper 0.01724 Ω·mm²/m, 0.00393/K (Hughes) |
 | `system` | AC three-phase | assumption: Design convention. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `dV_pct` | 1.8815  | 1.88135  | PASS |
-| `T_c_est` | 58.25 degC | 58.2466 degC | PASS |
+| `dV_pct` | 1.8815  | 1.88135  | yes |
+| `T_c_est` | 58.25 degC | 58.2466 degC | yes |
 
 Governing check: Design current against the current-carrying capacity — PASS (utilisation 0.84). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -1,5 +1,16 @@
 [
   {
+    "Symbol": "F_p",
+    "Number": 0,
+    "Unit": "N",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Linear axes only; the rotary table does not use it.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
     "Symbol": "J_L",
     "Number": 0.5,
     "Unit": "kg*m^2",
@@ -64,6 +75,16 @@
     "ValueText": "0"
   },
   {
+    "Symbol": "T_basis",
+    "Text": "Load peak (T_pk)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design torque for the coupling taken at the load peak; template default.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Load peak (T_pk)"
+  },
+  {
     "Symbol": "T_peak",
     "Number": 9,
     "Unit": "N*m",
@@ -84,6 +105,26 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "3"
+  },
+  {
+    "Symbol": "brake",
+    "Flag": false,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Linear axes only; the rotary table does not use it.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "no"
+  },
+  {
+    "Symbol": "duty_mode",
+    "Text": "point-to-point",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Cycle specification CS-7: 90\u00B0 index then dwell",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "point-to-point"
   },
   {
     "Symbol": "eta",
@@ -124,6 +165,16 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "gearbox rotary"
+  },
+  {
+    "Symbol": "mu",
+    "Number": 0.1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Linear axes only; the rotary table does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.1"
   },
   {
     "Symbol": "n_max",
@@ -177,5 +228,16 @@
       "IsSufficientToIssue": true
     },
     "ValueText": "0.3"
+  },
+  {
+    "Symbol": "theta",
+    "Number": 0,
+    "Unit": "deg",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Linear axes only; the rotary table does not use it.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
   }
 ]

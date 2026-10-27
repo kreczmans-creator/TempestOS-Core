@@ -38,7 +38,7 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   L_cr_z | Buckling length about z-z | 4 | m | assumption: Pinned both ends: L_cr = L = 4 m. | 0.1 … 100 m
   gamma_M0 | Partial factor for cross-section resistance | 1 |  | spec: UK NA to BS EN 1993-1-1 NA.2.15 | 1 … 1.25
   gamma_M1 | Partial factor for member buckling | 1 |  | spec: UK NA to BS EN 1993-1-1 NA.2.15 | 1 … 1.25
-  gamma_M2 | Partial factor for net-section fracture | 1.1 |  | default | 1 … 1.35
+  gamma_M2 | Partial factor for net-section fracture | 1.1 |  | spec: UK NA to BS EN 1993-1-1 NA.2.15 | 1 … 1.35
   eta | Shear-area factor | 1 |  | spec: UK NA to BS EN 1993-1-5 NA.2.4 | 1 … 1.2
   k_yy | Interaction factor for bending about y-y in the member check | 1 |  | assumption: Simplified interaction: k_yy = 1.0. | 0.5 … 2
   k_zz | Interaction factor for bending about z-z in the member check | 1 |  | assumption: Simplified interaction: k_zz = 1.0. | 0.5 … 2
@@ -235,8 +235,6 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
 
 7. Applicability
   WARNING  k_yy: entered as 1.0, but Annex A or B give k up to 1.411 here. With it the interaction would be 1.137 against 1.044 shown.  [k-default]
-  Defaults used (inputs left empty):
-    gamma_M2: not entered, so the default of 1.1 is used.
 
 8. Verification
   Template: struct.en1993-member@1.6.0

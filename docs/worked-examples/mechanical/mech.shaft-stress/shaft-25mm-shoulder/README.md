@@ -14,10 +14,10 @@ The shoulder fillet's concentration factors raise the bending stress by 60 %. Th
 | `d` | 25 mm | drawing: DRG-SH-402 rev A |
 | `n_req` | 1.5 | spec: SPEC-MECH-03 design criteria |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `sigma` | 125.16 MPa | 125.165 MPa | PASS |
-| `n_T` | 1.8505  | 1.8505  | PASS |
-| `n_VM` | 1.8842  | 1.88416  | PASS |
+| `sigma` | 125.16 MPa | 125.165 MPa | yes |
+| `n_T` | 1.8505  | 1.8505  | yes |
+| `n_VM` | 1.8842  | 1.88416  | yes |
 
 Governing check: Factor of safety against the required factor — PASS (utilisation 0.81). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

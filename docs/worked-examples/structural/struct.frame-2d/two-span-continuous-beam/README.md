@@ -14,12 +14,12 @@ Two equal 6 m spans on UB 305×165×40 under permanent 8 kN/m and imposed 12 kN/
 | `nodes` | 3 row(s) | drawing: DRG-FL-201 rev A |
 | `report` | ULS | assumption: ULS reported in detail; SLS in the envelope. |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `R2_y` | 216 kN | 216 kN | PASS |
-| `R1_y` | 64.8 kN | 64.8 kN | PASS |
-| `M_min` | -129.6 kN*m | -129.6 kN*m | PASS |
-| `M_max` | 72.9 kN*m | 72.9 kN*m | PASS |
-| `d_max_env` | 11.322 mm | 11.3213 mm | PASS |
+| `R2_y` | 216 kN | 216 kN | yes |
+| `R1_y` | 64.8 kN | 64.8 kN | yes |
+| `M_min` | -129.6 kN*m | -129.6 kN*m | yes |
+| `M_max` | 72.9 kN*m | 72.9 kN*m | yes |
+| `d_max_env` | 11.322 mm | 11.3213 mm | yes |
 
 Governing check: none. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

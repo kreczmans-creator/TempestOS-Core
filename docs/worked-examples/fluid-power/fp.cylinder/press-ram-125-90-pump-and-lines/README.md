@@ -6,6 +6,7 @@ The ram makes 209.8 kN on the press stroke and 101.1 kN on the return, against l
 
 | Input | Value | Source |
 |---|---|---|
+| `C_d` | 0.62 | assumption: Orifice only; this circuit has none, so the template default is kept. |
 | `D` | 125 mm | drawing: DWG-4310 rev B |
 | `E` | 210 GPa | reference: record: rod material (chromed carbon steel), to be taken from the material library |
 | `F_pull` | 60 kN | spec: Hydraulic specification HS-31: return stroke load 60 kN |
@@ -20,6 +21,7 @@ The ram makes 209.8 kN on the press stroke and 101.1 kN on the return, against l
 | `d_r` | 90 mm | drawing: DWG-4310 rev B |
 | `d_ret` | 32 mm | drawing: DWG-4311 rev A |
 | `d_suc` | 50 mm | drawing: DWG-4311 rev A |
+| `eta_hm` | 0.9 | assumption: Hydraulic motor only; this circuit has none, so the template default is kept. |
 | `eta_m` | 0.95 | assumption: Typical seal and guide friction for a new cylinder; to be confirmed against the cylinder maker's figure. |
 | `eta_tp` | 0.88 | assumption: Pump total efficiency at 180 bar; to be taken from the pump data sheet. |
 | `eta_vc` | 0.98 | assumption: Allowance for leakage past the piston; to be confirmed against the cylinder maker's figure. |
@@ -37,24 +39,24 @@ The ram makes 209.8 kN on the press stroke and 101.1 kN on the return, against l
 | `v_ret_max` | 3 m/s | reference: record: line velocity limits, a placeholder to be replaced from the design reference |
 | `v_suc_max` | 1.2 m/s | reference: record: line velocity limits, a placeholder to be replaced from the design reference |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `F_ext` | 209.849 kN | 209.849 kN | PASS |
-| `F_ret` | 101.063 kN | 101.063 kN | PASS |
-| `v_ext` | 79.8576 mm/s | 79.8576 mm/s | PASS |
-| `t_cycle` | 14.8424 s | 14.8424 s | PASS |
-| `dV` | 9.81748 L | 9.81748 L | PASS |
-| `Q_p` | 61.9875 L/min | 61.9875 L/min | PASS |
-| `u_pump` | 0.967937  | 0.967937  | PASS |
-| `P_pump` | 21.1321 kW | 21.1321 kW | PASS |
-| `T_shaft` | 139.17 N*m | 139.17 N*m | PASS |
-| `v_rtn` | 2.66733 m/s | 2.66733 m/s | PASS |
-| `u_rtn` | 0.88911  | 0.88911  | PASS |
-| `d_rec_suc` | 38 mm | 38 mm | PASS |
-| `v_prs` | 4.37015 m/s | 4.37015 m/s | PASS |
-| `u_prs` | 0.87403  | 0.87403  | PASS |
-| `F_cr` | 2020.36 kN | 2020.36 kN | PASS |
-| `F_buck` | 220.893 kN | 220.893 kN | PASS |
-| `u_buck` | 0.382668  | 0.382668  | PASS |
+| `F_ext` | 209.849 kN | 209.849 kN | yes |
+| `F_ret` | 101.063 kN | 101.063 kN | yes |
+| `v_ext` | 79.8576 mm/s | 79.8576 mm/s | yes |
+| `t_cycle` | 14.8424 s | 14.8424 s | yes |
+| `dV` | 9.81748 L | 9.81748 L | yes |
+| `Q_p` | 61.9875 L/min | 61.9875 L/min | yes |
+| `u_pump` | 0.967937  | 0.967937  | yes |
+| `P_pump` | 21.1321 kW | 21.1321 kW | yes |
+| `T_shaft` | 139.17 N*m | 139.17 N*m | yes |
+| `v_rtn` | 2.66733 m/s | 2.66733 m/s | yes |
+| `u_rtn` | 0.88911  | 0.88911  | yes |
+| `d_rec_suc` | 38 mm | 38 mm | yes |
+| `v_prs` | 4.37015 m/s | 4.37015 m/s | yes |
+| `u_prs` | 0.87403  | 0.87403  | yes |
+| `F_cr` | 2020.36 kN | 2020.36 kN | yes |
+| `F_buck` | 220.893 kN | 220.893 kN | yes |
+| `u_buck` | 0.382668  | 0.382668  | yes |
 
 Governing check: Circuit flow against the pump delivery — PASS (utilisation 0.97). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

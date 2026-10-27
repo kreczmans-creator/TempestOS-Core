@@ -139,6 +139,17 @@
     "ValueText": "5 row(s)"
   },
   {
+    "Symbol": "f_add",
+    "Number": 0,
+    "Unit": "%",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "CIBSE DHDG method only; the EN 12831 elemental method does not use it, so no allowance is entered.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
     "Symbol": "layers",
     "Rows": [
       {

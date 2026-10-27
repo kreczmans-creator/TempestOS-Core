@@ -26,6 +26,7 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}, with ℓ =
   T_load | External load torque on the output link (four-bar). Positive acts in the −θ₄ direction, resisting positive ω₄; with 'Opposes motion' its sign is applied against the actual direction of ω₄ (a negative value then assists) | 4 | N·m | assumption: Example flap-folding torque at the rocker shaft; measure it on the station. | -10000 … 10000 N·m
   J_out | Moment of inertia of the output link about its pivot (four-bar) | 0.012 | kg·m² | assumption: Example: rocker arm and blade about the rocker pivot; take it from the CAD mass properties. | 0 … 1000 kg·m²
   mu_req | Minimum transmission angle required (linkages) | 40 | ° | assumption: Default minimum transmission angle; set it from your design rule. | 10 … 80 °
+  follower | Follower type: roller (translating, pressure angle and undercut checked) or flat-faced (in-line) | Roller |  | assumption: Cam mode only; this four-bar linkage does not use it, so the template default is kept. | any
 
 3. Assumptions
   A1. The mechanism is rigid and planar, has one degree of freedom, and has no joint clearance or friction. (Scope limits of the model.)
@@ -48,6 +49,7 @@ Four-bar position: a·e^{jθ₂} + b·e^{jθ₃} = d + c·e^{jθ₄}, with ℓ =
   A18. T_load (External load torque on the output link (four-bar). Positive acts in the −θ₄ direction, resisting positive ω₄; with 'Opposes motion' its sign is applied against the actual direction of ω₄ (a negative value then assists)) is taken as 4 N·m. (Example flap-folding torque at the rocker shaft; measure it on the station.)
   A19. J_out (Moment of inertia of the output link about its pivot (four-bar)) is taken as 0.012 kg·m². (Example: rocker arm and blade about the rocker pivot; take it from the CAD mass properties.)
   A20. mu_req (Minimum transmission angle required (linkages)) is taken as 40 °. (Default minimum transmission angle; set it from your design rule.)
+  A21. follower (Follower type: roller (translating, pressure angle and undercut checked) or flat-faced (in-line)) is taken as Roller. (Cam mode only; this four-bar linkage does not use it, so the template default is kept.)
 
 4. Working
   [10] f_in = n_in / 60

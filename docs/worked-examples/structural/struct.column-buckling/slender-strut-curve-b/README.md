@@ -14,11 +14,11 @@ A slender strut at λ = 150. Its strength is governed by buckling, not by the hi
 | `curve` | b | spec: BS 5950-1 Table 23: hot-finished tube, curve b |
 | `p_y` | 355 MPa | spec: SPEC-ST-02: S355 |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `lambda` | 150  | 150  | PASS |
-| `p_c` | 77.973 MPa | 77.9728 MPa | PASS |
-| `F_c_Rd` | 93.567 kN | 93.5674 kN | PASS |
-| `u` | 1.0688  | 1.06875  | PASS |
+| `lambda` | 150  | 150  | yes |
+| `p_c` | 77.973 MPa | 77.9728 MPa | yes |
+| `F_c_Rd` | 93.567 kN | 93.5674 kN | yes |
+| `u` | 1.0688  | 1.06875  | yes |
 
 Governing check: Axial load against compression resistance — FAIL (utilisation 1.07). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

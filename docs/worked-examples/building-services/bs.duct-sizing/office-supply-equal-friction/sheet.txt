@@ -24,7 +24,7 @@ Round duct diameter from the design target: D by Colebrook with the air properti
   T_air | Air temperature | 20 | °C | assumption: Supply air 20 °C. | -20 … 60 °C
   p_atm | Barometric pressure | 101.325 | kPa | assumption: Sea level. | 80 … 105 kPa
   dp_target | Target friction rate (equal friction) | 1 | Pa/m | spec: SPEC-M-07 §5: 1 Pa/m design friction rate | 0.3 … 5 Pa/m
-  v_target | Target velocity (velocity method) | 6 | m/s | default | 2 … 20 m/s
+  v_target | Target velocity (velocity method) | 6 | m/s | assumption: Velocity method only; equal friction does not use it, so the template default is kept. | 2 … 20 m/s
   v_limit | Velocity limit (warning and check) | 8 | m/s | spec: SPEC-M-07 §5: 8 m/s in risers | 2 … 30 m/s
   dp_limit | Total pressure-drop limit (check) | 250 | Pa | spec: Fan external static allowance 250 Pa | 50 … 2000 Pa
 
@@ -36,6 +36,7 @@ Round duct diameter from the design target: D by Colebrook with the air properti
   A5. method (Sizing method) is taken as equal friction. (Equal friction for a low-pressure system.)
   A6. T_air (Air temperature) is taken as 20 °C. (Supply air 20 °C.)
   A7. p_atm (Barometric pressure) is taken as 101.325 kPa. (Sea level.)
+  A8. v_target (Target velocity (velocity method)) is taken as 6 m/s. (Velocity method only; equal friction does not use it, so the template default is kept.)
 
 4. Working
   [10] rho = p / (287.055 T)
@@ -231,7 +232,7 @@ Round duct diameter from the design target: D by Colebrook with the air properti
       = 255.12 Pa
         Sum over every section (not a path)
   [58] v_peak = highest section velocity
-      = 
+      = v of riser, the highest of 5 section(s)
       = 7.0736 m/s
         Highest velocity
   [59] u_dp = dp_index / dp_limit
@@ -298,8 +299,6 @@ Round duct diameter from the design target: D by Colebrook with the air properti
 
 7. Applicability
   None.
-  Defaults used (inputs left empty):
-    v_target: not entered, so the default of 6 m/s is used.
 
 8. Verification
   Template: bs.duct-sizing@1.2.1

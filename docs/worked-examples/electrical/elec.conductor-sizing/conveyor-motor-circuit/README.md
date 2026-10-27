@@ -7,6 +7,7 @@ A 4 kW (rated output) conveyor motor, design current 8.28 A, behind a 10 A type 
 | Input | Value | Source |
 |---|---|---|
 | `C_a` | 0.91 | reference: record: owner's licensed table (not shipped); 0.91 is a synthetic value invented for this example |
+| `C_c` | 1 | reference: record: owner's licensed table (not shipped); 1 is the neutral value, as the cable runs in trunking, not buried or in ducts |
 | `C_g` | 0.77 | reference: record: owner's licensed table (not shipped); 0.77 is a synthetic value invented for this example |
 | `C_i` | 1 | reference: record: owner's licensed table (not shipped); 1 is a neutral value for this example |
 | `L` | 35 m | drawing: E-LAY-021 rev B |
@@ -27,13 +28,13 @@ A 4 kW (rated output) conveyor motor, design current 8.28 A, behind a 10 A type 
 | `supply` | three-phase | drawing: E-SCH-021 rev A |
 | `system` | metric | spec: Cable schedule CS-21: metric cross-sections |
 
-| Output | Expected | Computed | Result |
+| Output | Expected | Computed | Matches expected |
 |---|---|---|---|
-| `I_b` | 8.28336 A | 8.28336 A | PASS |
-| `I_n` | 10 A | 10 A | PASS |
-| `I_t_req` | 14.2714 A | 14.2714 A | PASS |
-| `CSA` | 2.5 mm^2 | 2.5 mm^2 | PASS |
-| `I_z` | 12.4024 A | 12.4024 A | PASS |
-| `u_In` | 0.806296  | 0.806296  | PASS |
+| `I_b` | 8.28336 A | 8.28336 A | yes |
+| `I_n` | 10 A | 10 A | yes |
+| `I_t_req` | 14.2714 A | 14.2714 A | yes |
+| `CSA` | 2.5 mm^2 | 2.5 mm^2 | yes |
+| `I_z` | 12.4024 A | 12.4024 A | yes |
+| `u_In` | 0.806296  | 0.806296  | yes |
 
 Governing check: Design current against the device rating — PASS (utilisation 0.83). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

@@ -13,18 +13,18 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
   mechanism | Mechanism | gearbox rotary |  | assumption: Sizing convention. | any
-  duty_mode | Duty (point-to-point move cycle, or continuous rotary running with a run-up) | point-to-point |  | default | any
+  duty_mode | Duty (point-to-point move cycle, or continuous rotary running with a run-up) | point-to-point |  | spec: Cycle specification CS-7: 90° index then dwell | any
   profile | Motion profile | trapezoidal |  | assumption: Sizing convention. | any
-  T_basis | Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter | Load peak (T_pk) |  | default | any
-  brake | A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor | no |  | default | any
+  T_basis | Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter | Load peak (T_pk) |  | assumption: Design torque for the coupling taken at the load peak; template default. | any
+  brake | A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor | no |  | assumption: Linear axes only; the rotary table does not use it. | any
   J_mech | Transmission inertia referred to the motor shaft (screw, pulleys, gearbox, coupling) | 0 | kg·m² | assumption: Sizing convention. | 0 … 10 kg·m²
-  theta | Incline from horizontal (+ moving uphill) | 0 | ° | default | -60 … 90 °
-  F_p | Process force opposing the move (linear) | 0 | N | default | 0 … 1000000 N
+  theta | Incline from horizontal (+ moving uphill) | 0 | ° | assumption: Linear axes only; the rotary table does not use it. | -60 … 90 °
+  F_p | Process force opposing the move (linear) | 0 | N | assumption: Linear axes only; the rotary table does not use it. | 0 … 1000000 N
   T_L | Constant load torque at the output (rotary; continuous duty needs it, and a zero value is refused) | 0 | N·m | assumption: Sizing convention. | 0 … 100000 N·m
   J_L | Load inertia at the output (rotary mechanisms) | 0.5 | kg·m² | spec: S1-style inertia calc of the 600 mm table with fixtures: 0.5 kg·m² | 0 … 10000 kg·m²
   i | Gear ratio (motor : output, 1 = none) | 10 |  | spec: Gearbox datasheet PG-10: 10:1, 85 % | 1 … 1000
   eta | Mechanism efficiency (overall) | 0.85 |  | spec: Gearbox datasheet PG-10: 10:1, 85 % | 0.3 … 1
-  mu | Friction coefficient (guide / bearing) | 0.1 |  | default | 0 … 1
+  mu | Friction coefficient (guide / bearing) | 0.1 |  | assumption: Linear axes only; the rotary table does not use it, so the template default is kept. | 0 … 1
   SF | Safety factor on torque | 1.25 |  | assumption: Sizing convention. | 1 … 3
   J_ratio_max | Inertia ratio limit (load : motor), warning | 10 |  | assumption: Sizing convention. | 1 … 100
   s | Move distance (linear: m; rotary: output revolutions) | 0.25 |  | spec: Cycle specification CS-7: 90° index in 0.3 s, 0.7 s dwell | 0.0001 … 10000
@@ -49,10 +49,15 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
   A10. The peak acceleration of the S-curve profile is π/2 times the trapezoidal value. (Jerk-limited profile idealisation.)
   A11. mechanism (Mechanism) is taken as gearbox rotary. (Sizing convention.)
   A12. profile (Motion profile) is taken as trapezoidal. (Sizing convention.)
-  A13. J_mech (Transmission inertia referred to the motor shaft (screw, pulleys, gearbox, coupling)) is taken as 0 kg·m². (Sizing convention.)
-  A14. T_L (Constant load torque at the output (rotary; continuous duty needs it, and a zero value is refused)) is taken as 0 N·m. (Sizing convention.)
-  A15. SF (Safety factor on torque) is taken as 1.25. (Sizing convention.)
-  A16. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sizing convention.)
+  A13. T_basis (Design torque basis for downstream couplings (T_design): the load's peak (the larger of the accelerating and the braking torque, in magnitude), the motor's typed peak torque, a service factor on the rated torque, or a protective limit such as a torque limiter) is taken as Load peak (T_pk). (Design torque for the coupling taken at the load peak; template default.)
+  A14. brake (A brake or a self-locking drive holds a linear axis during the dwell (no holding torque); unticked, a vertical or inclined axis is held by the motor) is taken as no. (Linear axes only; the rotary table does not use it.)
+  A15. J_mech (Transmission inertia referred to the motor shaft (screw, pulleys, gearbox, coupling)) is taken as 0 kg·m². (Sizing convention.)
+  A16. theta (Incline from horizontal (+ moving uphill)) is taken as 0 °. (Linear axes only; the rotary table does not use it.)
+  A17. F_p (Process force opposing the move (linear)) is taken as 0 N. (Linear axes only; the rotary table does not use it.)
+  A18. T_L (Constant load torque at the output (rotary; continuous duty needs it, and a zero value is refused)) is taken as 0 N·m. (Sizing convention.)
+  A19. mu (Friction coefficient (guide / bearing)) is taken as 0.1. (Linear axes only; the rotary table does not use it, so the template default is kept.)
+  A20. SF (Safety factor on torque) is taken as 1.25. (Sizing convention.)
+  A21. J_ratio_max (Inertia ratio limit (load : motor), warning) is taken as 10. (Sizing convention.)
 
 4. Working
   [21] k = 1 / i
@@ -238,12 +243,6 @@ Linear mechanism: k = p/(2π i) (screw), D/(2 i) (belt), D_p/(2 i) (rack), in me
   WARNING  records: tabulated values not taken from a reference record are J_motor, T_rated, T_peak, n_max (Candidate motor rating). Enter each as one so its source, edition and licence travel with it.  [record]
   WARNING  J_motor: the inertia ratio 11.8 exceeds 10.  [inertia-ratio]
   WARNING  T_dec: the motor brakes during deceleration (negative torque). The drive must absorb the regenerated energy.  [overhauling]
-  Defaults used (inputs left empty):
-    duty_mode: not entered, so the default of 'point-to-point' is used.
-    T_basis: not entered, so the default of 'Load peak (T_pk)' is used.
-    theta: not entered, so the default of 0 ° is used.
-    F_p: not entered, so the default of 0 N is used.
-    mu: not entered, so the default of 0.1 is used.
 
 8. Verification
   Template: elec.motor-sizing@1.11.1
