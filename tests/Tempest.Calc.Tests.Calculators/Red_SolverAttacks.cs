@@ -83,7 +83,7 @@ public sealed class Red_SolverAttacks
     // Frame solver
     // ------------------------------------------------------------------
 
-    /// <summary>R-12: every load row adds a station to its member, and every station evaluates every load, so 20,000 point loads on one member (the row cap) cost O(n²) per combination.</summary>
+    /// <summary>R-12: every load row adds a station to its member, and every station evaluates every load, so 2,400 point loads on one member (the row cap, FrameLimits.MaxLoads) cost O(n²) per combination.</summary>
     [Fact]
     public void Frame_With_Maximal_Load_Rows_On_One_Member_Finishes_In_Budget()
     {
@@ -102,7 +102,7 @@ public sealed class Red_SolverAttacks
         Assert.True(finished, $"a frame with {count} load rows on one member ran for {elapsed.TotalSeconds:F1} s (budget {Budget.TotalSeconds} s)");
     }
 
-    /// <summary>R-13: the banded-entry cap (20 M) admits a 2,000-node random mesh whose bandwidth is O(n); the LDLᵀ factor is then O(n·b²) ≈ 10¹⁰ flops.</summary>
+    /// <summary>R-13: the banded-entry cap (20 M) admits a 1,200-node random mesh (FrameLimits.MaxNodes) whose bandwidth is O(n); the LDLᵀ factor is then O(n·b²) ≈ 10¹⁰ flops.</summary>
     [Fact]
     public void Frame_Random_Mesh_At_The_Node_Cap_Finishes_In_Budget()
     {
@@ -235,7 +235,7 @@ public sealed class Red_SolverAttacks
         }
     }
 
-    /// <summary>R-20: the validator writes one block per offending cell, so a 20,000-row load table with every cell out of range yields ~200,000 notices and a multi-megabyte draft sheet.</summary>
+    /// <summary>R-20: the validator writes one block per offending cell, so a load table at its row cap (2,400 rows, FrameLimits.MaxLoads) with every cell out of range would yield ~24,000 notices and a multi-megabyte draft sheet.</summary>
     [Fact]
     public void Validator_Notice_Count_Is_Bounded()
     {

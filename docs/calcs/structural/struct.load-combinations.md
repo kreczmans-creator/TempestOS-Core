@@ -59,8 +59,8 @@ Columns of `psi`:
 4. Without a ψ record the recommended values of EN 1990 Annex A1 are used and labelled on the sheet. Basis: No National Annex table is shipped.
 5. UK National Annex values of ψ and γ come from a user record. Basis: No National Annex table is shipped.
 6. The factor set says whether the factors are the EN recommended values or come from a National Annex record. Basis: No National Annex value is shipped; a record carries its source, edition and table or clause, and the sheet prints them.
-6. Each permanent action takes γ_G,sup when it adds to the effect sought and γ_G,inf when it opposes it. Basis: EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions.
-7. For an equilibrium check with one source, the source's permanent actions are entered as one row. Basis: EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions.
+7. Each permanent action takes γ_G,sup when it adds to the effect sought and γ_G,inf when it opposes it. Basis: EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions.
+8. For an equilibrium check with one source, the source's permanent actions are entered as one row. Basis: EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions.
 
 ## Outputs
 
