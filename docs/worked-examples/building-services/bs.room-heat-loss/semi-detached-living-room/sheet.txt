@@ -8,7 +8,7 @@ Issued: —
 
 1. Scope and method
 Calculates the U-values of built-up elements and the steady-state design heat loss of one room. It gives the fabric and ventilation loss, the room load for sizing emitters, the heat loss coefficient and an optional check against target U-values.
-Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing Element fabric loss: Φ_i = A·U·f·(T_int − θ_adj), with θ_adj = θ_e where the element faces outside Thermal bridges: Φ_tb = y_tb·Σ(A·f)_ext·(T_int − θ_e) on the elements facing outside Fabric total: Φ_T = ΣΦ_i + Φ_tb Ventilation loss: q_v = n·V; Φ_V = 0.34·q_v·(T_int − θ_e), or (T_int − T_supply) through an MVHR supply, plus 0.34·n_inf·V·(T_int − θ_e) infiltration with MVHR Room load: Φ_HL = Φ_T + Φ_V (CIBSE DHDG method: × (1 + additional allowance)) Heat loss coefficient: HLC = Φ_HL/(T_int − θ_e); loss per floor area Φ_HL/A_floor U-value check: U against the target U of each element (the global target applies to built-up elements facing outside only; an element's own target applies wherever it faces)
+Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing, or the ground floor record U_g for a floor without layers or an override Element fabric loss: Φ_i = A·U·f·(T_int − θ_adj), with θ_adj = θ_e where the element faces outside Thermal bridges: Φ_tb = y_tb·Σ(A·f)_ext·(T_int − θ_e) on the elements facing outside Fabric total: Φ_T = ΣΦ_i + Φ_tb Ventilation loss: q_v = n·V; Φ_V = 0.34·q_v·(T_int − θ_e), or (T_int − T_supply) through an MVHR supply, plus 0.34·n_inf·V·(T_int − θ_e) infiltration with MVHR Room load: Φ_HL = Φ_T + Φ_V (CIBSE DHDG method: × (1 + additional allowance)) Heat loss coefficient: HLC = Φ_HL/(T_int − θ_e); loss per floor area Φ_HL/A_floor U-value check: U against the target U of each element (the global target applies to built-up elements facing outside only; an element's own target applies wherever it faces)
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
@@ -48,14 +48,15 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   A8. Where an element faces another space, a blank Rse is the same as Rsi. (Small conventional BS EN ISO 6946 set, not a table of design data.)
   A9. The global target U applies to built-up elements facing outside only. (Scope of the target check: an internal partition or floor is checked only against a target entered on its own row.)
   A10. Ground-floor and glazing U-values are entered by the user as an override. (Stated limit.)
-  A11. The calculator does not model ground heat transfer. (Stated limit.)
-  A12. The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air. (Derived: about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600, not read from a table.)
-  A13. Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are the user's own records. (No table from a standard or a manufacturer is shipped.)
-  A14. method (Calculation method (changes the citations; the DHDG option adds the allowance below)) is taken as BS EN 12831-1 elemental. (Elemental method; the design-team default.)
-  A15. theta_e (External design temperature (location record)) is taken as -3 °C. (Illustrative location design temperature; take the project's own from its design-temperature record.)
-  A16. y_tb (Thermal-bridge allowance on the area facing outside) is taken as 0.1 W/(m²·K). (Illustrative thermal-bridge allowance; replace with the project's bridging record.)
-  A17. n (Air change rate) is taken as 0.8 1/h. (Natural ventilation allowance for a living room.)
-  A18. Conventional BS EN ISO 6946 surface resistances (R_si 0.13 horizontal, 0.10 upward, 0.17 downward; R_se 0.04 outside, or the same as R_si where the element faces another space; m²K/W) are used where blank, for: Front wall, Gable wall, Party wall. (Small conventional set; enter your own where the construction needs other values.)
+  A11. A ground floor U-value record fills U_g for a floor element without layers or an override. (Stated limit: the record's value is the user's, from its table.)
+  A12. The calculator does not model ground heat transfer. (Stated limit.)
+  A13. The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air. (Derived: about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600, not read from a table.)
+  A14. Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are the user's own records. (No table from a standard or a manufacturer is shipped.)
+  A15. method (Calculation method (changes the citations; the DHDG option adds the allowance below)) is taken as BS EN 12831-1 elemental. (Elemental method; the design-team default.)
+  A16. theta_e (External design temperature (location record)) is taken as -3 °C. (Illustrative location design temperature; take the project's own from its design-temperature record.)
+  A17. y_tb (Thermal-bridge allowance on the area facing outside) is taken as 0.1 W/(m²·K). (Illustrative thermal-bridge allowance; replace with the project's bridging record.)
+  A18. n (Air change rate) is taken as 0.8 1/h. (Natural ventilation allowance for a living room.)
+  A19. Conventional BS EN ISO 6946 surface resistances (R_si 0.13 horizontal, 0.10 upward, 0.17 downward; R_se 0.04 outside, or the same as R_si where the element faces another space; m²K/W) are used where blank, for: Front wall, Gable wall, Party wall. (Small conventional set; enter your own where the construction needs other values.)
 
 4. Working
   [8] R_1 = R_si + Σ d/λ + R_g + R_se    « BS EN ISO 6946
@@ -234,12 +235,12 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   PASS  U-value of Gable wall against its target: 0.2405 W/(m²·K) vs 0.3000 W/(m²·K)  utilisation 0.80
 
 7. Applicability
-  WARNING  records: tabulated values not taken from a reference record are theta_e (External design temperature); layers (Layer thermal conductivity); y_tb (Thermal bridging allowance). Enter each as one so its source, edition and licence travel with it.  [record]
+  WARNING  records: tabulated values not taken from a reference record are theta_e (External design temperature); layers (Layer thermal conductivity); y_tb (Thermal bridging allowance); T_int (Internal design temperatures); n (Air change rates). Enter each as one so its source, edition and licence travel with it.  [record]
   Defaults used (inputs left empty):
     f_add: not entered, so the default of 0 % is used.
 
 8. Verification
-  Template: bs.room-heat-loss@1.5.0
+  Template: bs.room-heat-loss@1.6.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 6/6

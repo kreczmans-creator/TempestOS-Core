@@ -2,9 +2,9 @@ CALCULATION SHEET — ISSUED
 Project: Studio 3 external wall
 Calc ID: Internally insulated wall moisture calc pack    Revision: A
 Title: Calculation pack
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: ENV-MOI-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: ENV-MOI-001    Client: Client Co
 
 PACK INDEX
   1. Room heat loss — U-values and room heat loss — rev A — ISSUED — U-value of External wall against its target PASS
@@ -12,7 +12,7 @@ PACK INDEX
   3. Wall condensation — Glaser condensation (interstitial and surface) — rev A — ISSUED — Minimum surface temperature factor against the factor of the wall at 80 % critical humidity PASS
 
 REVISIONS
-  A  2026-10-26  test.engineer  First issue
+  A  2026-10-27  test.engineer  First issue
 
 1. Scope and method
 Calculation pack: the calculations listed in the index, issued together under one issue sheet.
@@ -41,7 +41,7 @@ Calculation pack: the calculations listed in the index, issued together under on
   Content hash: —
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 18/18
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -51,13 +51,13 @@ CALCULATION SHEET — ISSUED
 Project: Studio 3 external wall
 Calc ID: Room heat loss    Revision: A
 Title: U-values and room heat loss
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: ENV-MOI-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: ENV-MOI-001    Client: Client Co
 
 1. Scope and method
 Calculates the U-values of built-up elements and the steady-state design heat loss of one room. It gives the fabric and ventilation loss, the room load for sizing emitters, the heat loss coefficient and an optional check against target U-values.
-Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing Element fabric loss: Φ_i = A·U·f·(T_int − θ_adj), with θ_adj = θ_e where the element faces outside Thermal bridges: Φ_tb = y_tb·Σ(A·f)_ext·(T_int − θ_e) on the elements facing outside Fabric total: Φ_T = ΣΦ_i + Φ_tb Ventilation loss: q_v = n·V; Φ_V = 0.34·q_v·(T_int − θ_e), or (T_int − T_supply) through an MVHR supply, plus 0.34·n_inf·V·(T_int − θ_e) infiltration with MVHR Room load: Φ_HL = Φ_T + Φ_V (CIBSE DHDG method: × (1 + additional allowance)) Heat loss coefficient: HLC = Φ_HL/(T_int − θ_e); loss per floor area Φ_HL/A_floor U-value check: U against the target U of each element (the global target applies to built-up elements facing outside only; an element's own target applies wherever it faces)
+Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing, or the ground floor record U_g for a floor without layers or an override Element fabric loss: Φ_i = A·U·f·(T_int − θ_adj), with θ_adj = θ_e where the element faces outside Thermal bridges: Φ_tb = y_tb·Σ(A·f)_ext·(T_int − θ_e) on the elements facing outside Fabric total: Φ_T = ΣΦ_i + Φ_tb Ventilation loss: q_v = n·V; Φ_V = 0.34·q_v·(T_int − θ_e), or (T_int − T_supply) through an MVHR supply, plus 0.34·n_inf·V·(T_int − θ_e) infiltration with MVHR Room load: Φ_HL = Φ_T + Φ_V (CIBSE DHDG method: × (1 + additional allowance)) Heat loss coefficient: HLC = Φ_HL/(T_int − θ_e); loss per floor area Φ_HL/A_floor U-value check: U against the target U of each element (the global target applies to built-up elements facing outside only; an element's own target applies wherever it faces)
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
@@ -90,13 +90,14 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   A8. Where an element faces another space, a blank Rse is the same as Rsi. (Small conventional BS EN ISO 6946 set, not a table of design data.)
   A9. The global target U applies to built-up elements facing outside only. (Scope of the target check: an internal partition or floor is checked only against a target entered on its own row.)
   A10. Ground-floor and glazing U-values are entered by the user as an override. (Stated limit.)
-  A11. The calculator does not model ground heat transfer. (Stated limit.)
-  A12. The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air. (Derived: about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600, not read from a table.)
-  A13. Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are the user's own records. (No table from a standard or a manufacturer is shipped.)
-  A14. method (Calculation method (changes the citations; the DHDG option adds the allowance below)) is taken as BS EN 12831-1 elemental. (Sheet default value; no project figure given.)
-  A15. y_tb (Thermal-bridge allowance on the area facing outside) is taken as 0 W/(m²·K). (Sheet default value; no project figure given.)
-  A16. f_add (Additional allowance on the room load (CIBSE DHDG method only)) is taken as 0 %. (Sheet default value; no project figure given.)
-  A17. Conventional BS EN ISO 6946 surface resistances (R_si 0.13 horizontal, 0.10 upward, 0.17 downward; R_se 0.04 outside, or the same as R_si where the element faces another space; m²K/W) are used where blank, for: External wall. (Small conventional set; enter your own where the construction needs other values.)
+  A11. A ground floor U-value record fills U_g for a floor element without layers or an override. (Stated limit: the record's value is the user's, from its table.)
+  A12. The calculator does not model ground heat transfer. (Stated limit.)
+  A13. The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air. (Derived: about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600, not read from a table.)
+  A14. Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are the user's own records. (No table from a standard or a manufacturer is shipped.)
+  A15. method (Calculation method (changes the citations; the DHDG option adds the allowance below)) is taken as BS EN 12831-1 elemental. (Sheet default value; no project figure given.)
+  A16. y_tb (Thermal-bridge allowance on the area facing outside) is taken as 0 W/(m²·K). (Sheet default value; no project figure given.)
+  A17. f_add (Additional allowance on the room load (CIBSE DHDG method only)) is taken as 0 %. (Sheet default value; no project figure given.)
+  A18. Conventional BS EN ISO 6946 surface resistances (R_si 0.13 horizontal, 0.10 upward, 0.17 downward; R_se 0.04 outside, or the same as R_si where the element faces another space; m²K/W) are used where blank, for: External wall. (Small conventional set; enter your own where the construction needs other values.)
 
 4. Working
   [8] R_1 = R_si + Σ d/λ + R_g + R_se    « BS EN ISO 6946
@@ -215,14 +216,14 @@ Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override f
   PASS  U-value of External wall against its target: 0.3991 W/(m²·K) vs 0.4500 W/(m²·K)  utilisation 0.89
 
 7. Applicability
-  WARNING  records: tabulated values not taken from a reference record are theta_e (External design temperature); layers (Layer thermal conductivity); y_tb (Thermal bridging allowance). Enter each as one so its source, edition and licence travel with it.  [record]
+  WARNING  records: tabulated values not taken from a reference record are theta_e (External design temperature); layers (Layer thermal conductivity); y_tb (Thermal bridging allowance); T_int (Internal design temperatures); n (Air change rates). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: bs.room-heat-loss@1.5.0
-  Content hash: 7410a8a04515b091
+  Template: bs.room-heat-loss@1.6.0
+  Content hash: 3868dcf1a33269a1
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -236,9 +237,9 @@ CALCULATION SHEET — ISSUED
 Project: Studio 3 external wall
 Calc ID: Room air state    Revision: A
 Title: Psychrometrics
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: ENV-MOI-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: ENV-MOI-001    Client: Client Co
 
 1. Scope and method
 Calculates the state of moist air from dry-bulb and one other property at a stated pressure or altitude. It then applies one air-handling process with its heat and moisture balance: sensible heating or cooling, dehumidification, humidification or mixing.
@@ -337,7 +338,7 @@ Saturation and humidity: p_ws(T) by Hyland–Wexler over water at or above 0 °C
   Content hash: 9ffd235faa1c3dae
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 4/4
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References
@@ -350,9 +351,9 @@ CALCULATION SHEET — ISSUED
 Project: Studio 3 external wall
 Calc ID: Wall condensation    Revision: A
 Title: Glaser condensation (interstitial and surface)
-Author: unknown    Authored: 2026-10-26
-Checker: J. Reviewer    Checked: 2026-10-26
-Issued: 2026-10-26    Issue: ENV-MOI-001    Client: Client Co
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: ENV-MOI-001    Client: Client Co
 
 1. Scope and method
 Calculates interstitial condensation in a layered wall by the Glaser method over twelve monthly climate steps. It gives the condensate on each interface, the annual balance, the peak against the limit and the surface temperature factor.
@@ -679,7 +680,7 @@ Layer resistance and diffusion thickness: R_j = d_j/λ_j; s_d,j = μ_j·d_j Tota
   Content hash: a1230d60eae9a8db
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-26 22:27 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References

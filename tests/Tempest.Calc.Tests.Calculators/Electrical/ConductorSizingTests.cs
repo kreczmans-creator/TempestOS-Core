@@ -114,14 +114,55 @@ public sealed class ConductorSizingTests
     }
 
     [Fact]
-    public void A_Semi_Enclosed_Fuse_Applies_C_c()
+    public void A_Semi_Enclosed_Fuse_Applies_C_f()
     {
         var gg = Run(Installation, Choice("device", ConductorSizingCalculator.GgFuse));
         var semi = Run(Choice("device", ConductorSizingCalculator.SemiEnclosed));
-        Assert.Equal(1, gg.OutputSi("C_c"), 12);
-        Assert.Equal(0.725, semi.OutputSi("C_c"), 12);
+        Assert.Equal(1, gg.OutputSi("C_f"), 12);
+        Assert.Equal(0.725, semi.OutputSi("C_f"), 12);
         Assert.Equal(gg.OutputSi("I_t_req") / 0.725, semi.OutputSi("I_t_req"), 9);
         Assert.True(semi.OutputSi("CSA") >= gg.OutputSi("CSA"));
+    }
+
+    [Fact]
+    public void DC_05_The_Buried_Or_Ducted_Factor_C_c_Divides_The_Required_Capacity_And_Is_Not_Part_Of_I_z()
+    {
+        // elec.conductor-sizing-R1 (Track P manual test row 30): the synthetic tables, every factor 1, 7.5 kW three-phase on a type C MCB pick
+        // 2.5 mm² (I_t 17.7 A); with C_c = 0.9 the required capacity is 16/0.9 = 17.778 A, so 4 mm² is needed and I_z is the row's 24.1 A.
+        CalcInputValue[] factorsOne = [Choice("device", ConductorSizingCalculator.McbC), CalcInputValue.Of("C_a", 1), CalcInputValue.Of("C_g", 1), CalcInputValue.Of("C_i", 1), CalcInputValue.Of("N_g", 1), Q("T_amb", 30, "degC")];
+        var plain = Run(factorsOne);
+        var buried = Run([.. factorsOne, CalcInputValue.Of("C_c", 0.9)]);
+        Assert.Equal(1, plain.OutputSi("C_c"), 12);
+        Assert.Equal(16, plain.OutputSi("I_t_req"), 9);
+        Assert.Equal(2.5e-6, plain.OutputSi("CSA"), 12);
+        Assert.Equal(0.9, buried.OutputSi("C_c"), 12);
+        Assert.Equal(16 / 0.9, buried.OutputSi("I_t_req"), 9);
+        Assert.Equal(4e-6, buried.OutputSi("CSA"), 12);
+        Assert.Equal(24.1, buried.OutputSi("I_z"), 9);
+        Assert.Equal(16, buried.OutputSi("I_n"), 9);
+
+        // The sheet discloses the factor: the input, the step that divides by it, and the note on whether it is applied.
+        Assert.Contains(buried.Steps, s => s.Symbol == "I_t_req" && s.Formula.Contains("C_f * C_c", StringComparison.Ordinal));
+        Assert.Contains(buried.RunAssumptions, a => a.Statement.Contains("C_c = 0.9", StringComparison.Ordinal));
+        Assert.Contains(plain.RunAssumptions, a => a.Statement.Contains("(C_c = 1)", StringComparison.Ordinal));
+
+        // It combines with the semi-enclosed fuse factor as a product.
+        var semiBuried = Run([.. factorsOne, Choice("device", ConductorSizingCalculator.SemiEnclosed), Q("I_b_in", 18, "A"), CalcInputValue.Of("C_c", 0.9)]);
+        Assert.Equal(0.725, semiBuried.OutputSi("C_f"), 12);
+        Assert.Equal(20 / (0.725 * 0.9), semiBuried.OutputSi("I_t_req"), 9);
+
+        // The cap: at most 1 and never below 0.1 (hard), with the usual range 0.5 to 1; a saved calculation without C_c reads 1.
+        var spec = Sizing.Template.FindInput("C_c")!;
+        Assert.Equal(1, spec.Default);
+        Assert.Equal((0.5, 1.0, 0.1, 1.0), (spec.Min, spec.Max, spec.HardMin, spec.HardMax));
+        Assert.Contains(CalcInputValidator.Validate(Sizing.Template, Defaults().With(CalcInputValue.Of("C_c", 1.2))), n => n.Severity == CalcNoticeSeverity.Block && n.Message.StartsWith("C_c:", StringComparison.Ordinal));
+        Assert.Contains(CalcInputValidator.Validate(Sizing.Template, Defaults().With(CalcInputValue.Of("C_c", 0.05))), n => n.Severity == CalcNoticeSeverity.Block && n.Message.StartsWith("C_c:", StringComparison.Ordinal));
+        Assert.Contains(CalcInputValidator.Validate(Sizing.Template, Defaults().With(CalcInputValue.Of("C_c", 0.4))), n => n.Severity == CalcNoticeSeverity.Warning && n.Message.StartsWith("C_c:", StringComparison.Ordinal));
+        var old = CalcRunner.Run(Sizing, new CalcInputSet(factorsOne.Aggregate(Defaults(), (set, v) => set.With(v)).Values.Where(v => v.Symbol != "C_c")));
+        Assert.Equal(plain.OutputSi("I_t_req"), old.OutputSi("I_t_req"), 12);
+        Assert.Equal(plain.OutputSi("CSA"), old.OutputSi("CSA"), 12);
+        Assert.Contains(old.DefaultNotices, n => n.Message.StartsWith("C_c: not entered", StringComparison.Ordinal));
+        Assert.Equal("1.5.0", Sizing.Template.Version);
     }
 
     [Fact]

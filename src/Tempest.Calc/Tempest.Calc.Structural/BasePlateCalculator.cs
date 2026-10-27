@@ -52,7 +52,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
     public readonly record struct Required(double? Value, string? Text);
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.7.0", CalcDiscipline.Structural, "Column base plate (EN 1993-1-8)",
+        Id, "1.8.0", CalcDiscipline.Structural, "Column base plate (EN 1993-1-8)",
         "Calculates the bearing, bolt tension, T-stub and shear utilisations of a base plate under an I/H, RHS or CHS column on grout, and the plate thickness that satisfies them. The anchorage is designed outside this sheet.",
         "Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3; c = t_p·√[f_y/(3·f_jd·γ_M0)]\n" +
         "Axial (cl. 6.2.8.2): N_j,Rd = f_jd·A_eff, A_eff the bearing strips of width c round the column footprint (full rectangle when they overlap); u_N = N_c,Ed/N_j,Rd\n" +
@@ -209,6 +209,7 @@ public sealed class BasePlateCalculator : ICalcCalculator
             new CalcRecordKind("ec3-1-1.national-annex", "EN 1993-1-1 National Annex factor", ["gamma_M0"], "From the National Annex to EN 1993-1-1 in use, with its edition."),
             new CalcRecordKind("joint.friction", "Friction coefficient plate to grout", ["C_fd"], "The value for the grout used, from EN 1993-1-8 cl. 6.2.2 or the grout manufacturer, with its source."),
             new CalcRecordKind("steel.strengths", "Plate strength", ["f_y"], "From the product standard for the grade and thickness (EN 10025-2)."),
+            new CalcRecordKind("concrete.strengths", "Concrete strength classes", ["f_ck"], "The characteristic cylinder strength of the strength class, from the user's own copy of the concrete design standard's strength table (EN 1992-1-1 Table 3.1), with its edition."),
         ],
         IndependentCheck: true);
 

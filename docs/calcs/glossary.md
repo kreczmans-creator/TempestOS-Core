@@ -223,7 +223,7 @@ Each of these symbols is used for different quantities in different templates. E
 - `w`: `w:distributed-load` Line force, distributed load, stiffness (beam-formulas); `w:key-width` Length (shaft); `w:mass-per-metre` Mass per length (containment)
 - `y_c`: `y_c:centroid-y` Length (weld-group, section-properties); `y_c:extreme-fibre-distance` Length (beam-formulas)
 
-## All symbols (1436 symbols in 54 templates)
+## All symbols (1447 symbols in 54 templates)
 
 One row per symbol, declared meaning and quantity type. Status `ok` is a symbol with one meaning; `RESOLVE` a symbol with several (phases B and C).
 
@@ -274,8 +274,9 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `C_Rd` | — | Force | kN | Compression-side resistance | struct.base-plate | ok |
 | `C_a` | — | Plain number | — | Ambient correction factor (1 does not apply the ambient: enter the fa…; Ambient factor | elec.conductor-sizing | ok |
 | `C_batt` | — | Charge | A·h | Selected battery capacity | elec.load-budget | ok |
-| `C_c` | — | Plain number | — | Semi-enclosed fuse factor | elec.conductor-sizing | ok |
+| `C_c` | — | Plain number | — | Buried or ducted installation factor; Buried or ducted installation factor, at most 1 (1 does not apply it:… | elec.conductor-sizing | ok |
 | `C_d` | — | Plain number | — | Orifice discharge coefficient | fp.cylinder | ok |
+| `C_f` | — | Plain number | — | Semi-enclosed fuse factor | elec.conductor-sizing | ok |
 | `C_fd` | — | Plain number | — | Friction coefficient, plate to grout | struct.base-plate | ok |
 | `C_g` | — | Plain number | — | Grouping correction factor (at most 1) | elec.conductor-sizing | ok |
 | `C_i` | — | Plain number | — | Thermal insulation correction factor (at most 1) | elec.conductor-sizing | ok |
@@ -443,7 +444,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `I_dip` | — | Current | A | Starting current at the dipped voltage | elec.motor-start | ok |
 | `I_f` | — | Current | A | Earth fault current | elec.fault-protection | ok |
 | `I_k` | — | Current | kA | Three-phase fault current at the point of supply (links fault-protect… | elec.motor-start | ok |
-| `I_n` | `I_n:rated-current` | Current | A | Motor rated current (when given it replaces the value from P, η and c…; Rated current; Rated current of the device | elec.conductor-sizing, elec.fault-protection, elec.motor-start | ok |
+| `I_n` | `I_n:rated-current` | Current | A | Device rated current; Motor rated current (when given it replaces the value from P, η and c…; Rated current; … (4 descriptions) | elec.conductor-sizing, elec.fault-protection, elec.motor-start | ok |
 | `I_rated` | — | Current | A | Motor rated current | elec.motor-start | ok |
 | `I_run1` | — | Current | A | Running current before correction | elec.motor-start | ok |
 | `I_run2` | — | Current | A | Running current after correction | elec.motor-start | ok |
@@ -833,6 +834,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `U_b` | — | Voltage | V | Battery nominal voltage | elec.load-budget | ok |
 | `U_clean` | — | Heat transfer coefficient, U-value | W/(m²·K) | Overall heat transfer coefficient (clean) | bs.heat-exchanger | ok |
 | `U_eff` | — | Heat transfer coefficient, U-value | W/(m²·K) | Heat-loss weighted fabric U-value (with f) | bs.room-heat-loss | ok |
+| `U_g` | — | Heat transfer coefficient, U-value | W/(m²·K) | Ground floor U-value from a record, applied to each element with down… | bs.room-heat-loss | ok |
 | `U_m` | — | Heat transfer coefficient, U-value | W/(m²·K) | Mean fabric U-value (area-weighted) | bs.room-heat-loss | ok |
 | `U_max` | — | Heat transfer coefficient, U-value | W/(m²·K) | Target U for this element | bs.room-heat-loss | ok |
 | `U_ref` | — | Heat transfer coefficient, U-value | W/(m²·K) | U-value of this wall from the room heat loss calculation, for the con… | bs.glaser | ok |
@@ -893,7 +895,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `Z_e` | — | Resistance, impedance | Ω | External earth fault loop impedance | elec.fault-protection | ok |
 | `Z_m` | — | Resistance, impedance | Ω | Motor starting impedance (magnitude) | elec.motor-start | ok |
 | `Z_s` | — | Resistance, impedance | Ω | Loop impedance | elec.fault-protection | ok |
-| `Z_s_max` | — | Resistance, impedance | Ω | Maximum loop impedance | elec.fault-protection | ok |
+| `Z_s_max` | — | Resistance, impedance | Ω | Maximum earth fault loop impedance; Maximum loop impedance | elec.fault-protection | ok |
 | `Z_src` | — | Resistance, impedance | Ω | Source impedance (magnitude) | elec.motor-start | ok |
 | `Z_test` | — | Resistance, impedance | Ω | Field-test maximum (rule of thumb) | elec.fault-protection | ok |
 | `Z_x` | — | Volume, section modulus | cm³ | Section modulus | bs.pipe-expansion | ok |
@@ -997,6 +999,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `cpk_sq_max` | — | Plain number | — | C_pk: squeeze above the upper limit (hot end) | fp.oring-gland | ok |
 | `cpk_sq_min` | — | Plain number | — | C_pk: squeeze below the lower limit (cold end) | fp.oring-gland | ok |
 | `cpk_stretch` | — | Plain number | — | C_pk: installed stretch outside its limits | fp.oring-gland | ok |
+| `csa` | — | Area | mm² | Conductor cross-sectional area | elec.voltage-drop | ok |
 | `d` | `d:diameter` | Length | mm | Diameter; Diameter of a circle or tube; Interface (nominal) diameter; … (6 descriptions) | mech.bolted-joint, mech.press-fit, mech.shaft, mech.shaft-stress, mech.spring, struct.section-properties | RESOLVE (3 meanings) |
 | `d` | `d:thickness` | Length | mm | Thickness | bs.glaser, bs.room-heat-loss | RESOLVE (3 meanings) |
 | `d` | `d:duty-share` | Plain number | — | Duty (share of time on) | elec.load-budget | RESOLVE (3 meanings) |
@@ -1475,9 +1478,12 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `r` | `r:radius-of-gyration` | Length | mm | Radius of gyration | struct.column-buckling | RESOLVE (2 meanings) |
 | `r0` | — | Length | mm | Patch radius (circular plate, central patch) | struct.plate-bending | ok |
 | `r_0` | — | Plain number | — | Pre-charge rule: p0 (at T_max) at most this fraction of p1, on absolu… | fp.accumulator | ok |
+| `r_1ph` | — | m·kg/(s³·A²) | mV/A/m | Two cables, single-phase AC: resistive component | elec.voltage-drop | ok |
+| `r_3ph` | — | m·kg/(s³·A²) | mV/A/m | Three or four cables, three-phase AC: resistive component | elec.voltage-drop | ok |
 | `r_bar` | — | Length | mm | Radius of the torsion bar | mech.snap-fit | ok |
 | `r_c` | — | Plain number | — | Critical-speed ratio | mech.shaft | ok |
 | `r_c_min` | — | Plain number | — | Smallest ratio of the first critical speed to the operating speed | mech.shaft | ok |
+| `r_dc` | — | m·kg/(s³·A²) | mV/A/m | Two cables, DC | elec.voltage-drop | ok |
 | `r_f` | — | Plain number | — | Surge ratio f_n/f_op | mech.spring | ok |
 | `r_g` | — | Length | mm | Groove bottom corner radius | fp.oring-gland | ok |
 | `r_g_y` | — | Length | mm | Radius of gyration about the y-y axis | struct.section-properties | ok |
@@ -1577,6 +1583,7 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `t_chosen` | — | Length | mm | Chosen insulation thickness (optional; blank = report at the required… | bs.insulation | ok |
 | `t_cycle` | — | Time | s | Cycle time | fp.cylinder | ok |
 | `t_d` | — | Time | s | Disconnection time | elec.fault-protection | ok |
+| `t_disc` | — | Time | s | Disconnection time of the table column | elec.fault-protection | ok |
 | `t_dwell` | `t_dwell:dwell-time` | Time | s | Dwell between moves; Dwell time added to each cycle | elec.motor-sizing, fp.cylinder | ok |
 | `t_ext` | — | Time | s | Extend time | fp.cylinder | ok |
 | `t_f` | `t_f:flange-thickness` | Length | mm | Flange thickness; Flange thickness (I/H); Flange thickness for the shear area (optional; blank = use A_v); … (4 descriptions) | struct.base-plate, struct.en1993-member, struct.ltb-interaction, struct.section-properties | ok |
@@ -1768,6 +1775,8 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `x0` | — | Length | mm | Centroid x | struct.section-properties | ok |
 | `x1` | — | Length | mm | Start x | mech.weld-group | ok |
 | `x2` | — | Length | mm | End x | mech.weld-group | ok |
+| `x_1ph` | — | m·kg/(s³·A²) | mV/A/m | Two cables, single-phase AC: reactive component | elec.voltage-drop | ok |
+| `x_3ph` | — | m·kg/(s³·A²) | mV/A/m | Three or four cables, three-phase AC: reactive component | elec.voltage-drop | ok |
 | `x_A` | — | Length | mm | Bearing A position | mech.shaft | ok |
 | `x_B` | — | Length | mm | Bearing B position | mech.shaft | ok |
 | `x_M` | — | Length | m | Position of M_max | struct.beam-formulas | ok |
@@ -1798,6 +1807,8 @@ One row per symbol, declared meaning and quantity type. Status `ok` is a symbol 
 | `y_tb` | — | Heat transfer coefficient, U-value | W/(m²·K) | Thermal-bridge allowance on the area facing outside | bs.room-heat-loss | ok |
 | `yield` | — | Percent quantity | % | Yield (predicted) | mech.tolerance-stack | ok |
 | `z` | — | Length | mm | Lever arm between the compression resultant and the bolt row | struct.base-plate | ok |
+| `z_1ph` | — | m·kg/(s³·A²) | mV/A/m | Two cables, single-phase AC: impedance | elec.voltage-drop | ok |
+| `z_3ph` | — | m·kg/(s³·A²) | mV/A/m | Three or four cables, three-phase AC: impedance | elec.voltage-drop | ok |
 | `z_C` | — | Length | mm | Distance from the column axis to the compression resultant | struct.base-plate | ok |
 | `z_C_in` | — | Length | mm | Compression resultant distance from the column axis (optional; blank … | struct.base-plate | ok |
 | `z_g` | — | Length | mm | Load height above the shear centre, positive towards the compression … | struct.ltb-interaction | ok |

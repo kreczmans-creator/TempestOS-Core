@@ -302,6 +302,10 @@ internal static class RecordTemplateChecks
                     }
 
                     break;
+
+                case RecordCheckKind.MapsTo:
+                    // Not a check: the column's target symbol, read when the roles are bound.
+                    break;
             }
         }
     }

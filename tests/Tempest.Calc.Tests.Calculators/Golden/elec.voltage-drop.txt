@@ -86,8 +86,8 @@ Conductor resistance at its operating temperature, for n conductors in parallel:
   None.
 
 8. Verification
-  Template: elec.voltage-drop@1.4.0
-  Known-answer cases passed: 3/3
+  Template: elec.voltage-drop@1.5.0
+  Known-answer cases passed: 4/4
 
 9. References
   1. BS 7671:2018 reg. 525 — Voltage drop in consumers' installations

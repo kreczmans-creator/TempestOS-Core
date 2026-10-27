@@ -352,13 +352,16 @@ public sealed class PipeExpansionTests
     [Fact]
     public void Black_B_B_03_A_Pipe_Modulus_Typed_In_MPa_Is_Refused_And_A_Plastic_Pipe_Stays_Valid()
     {
-        // Copper 120 GPa typed with the unit MPa is 0.12 GPa: the leg looked 1000 times more flexible, a failing leg
-        // passed and the anchor force fell 1000-fold, silently.
-        var good = Run(Q("E", 120, "GPa"), Q("H", 2.5, "m"));
-        var slip = Run(Q("E", 120, "MPa"), Q("H", 2.5, "m"));
+        // A modulus typed with the unit MPa lands 1000 times low: the leg looked 1000 times more flexible, a failing leg
+        // passed and the anchor force fell 1000-fold, silently. The floor is 0.05 GPa (DC-18): a slip that lands under it (40 MPa
+        // read as 0.04 GPa) is refused; copper typed as 120 MPa reads 0.12 GPa, a soft-plastic value, and runs since the owner
+        // lowered the floor so that a real 0.2 GPa plastic is not refused.
+        var good = Run(Q("E", 40, "GPa"), Q("H", 2.5, "m"));
+        var slip = Run(Q("E", 40, "MPa"), Q("H", 2.5, "m"));
         // F2: it warned and the sheet passed 1000 times too flexible; it is now refused.
         Assert.False(good.IsBlocked);
         Assert.True(slip.IsBlocked);
+        Assert.False(Run(Q("E", 120, "MPa"), Q("H", 2.5, "m")).IsBlocked);
         var block = Assert.Single(slip.Blocks);
         Assert.Equal("modulus-low", block.RuleId);
         Assert.StartsWith("E:", block.Message, StringComparison.Ordinal);
@@ -366,22 +369,58 @@ public sealed class PipeExpansionTests
         Assert.Contains("MPa", block.Message, StringComparison.Ordinal);
         Assert.Empty(CalcMessageShape.Problems(block.Message));
         Assert.Null(slip.FindOutput("anchor_force"));
-        Assert.Equal(0.5, Pipe.Template.FindInput("E")!.Min);
+        Assert.Equal(PipeExpansionCalculator.PlausibleMinModulusGPa, Pipe.Template.FindInput("E")!.Min);
 
         // The same slip of the hot modulus, which sets the anchor reactions.
-        var hot = Run(Q("E_hot", 120, "MPa"));
+        var hot = Run(Q("E_hot", 40, "MPa"));
         Assert.Contains(hot.Blocks, b => b.RuleId == "modulus-low" && b.Message.StartsWith("E_hot:", StringComparison.Ordinal));
 
-        // Below the plausible floor the input is refused (a ×1000 slip of aluminium, copper or steel in MPa to GPa is above it,
-        // so the warning above carries those; 10 MPa is no pipe).
-        var absurd = CalcInputValidator.Validate(Pipe.Template, Sheet(Q("E", 10, "MPa")));
+        // Below the hard limit the input is refused outright (5 MPa is no pipe); between the hard limit and the floor the sheet is blocked with the value named.
+        var absurd = CalcInputValidator.Validate(Pipe.Template, Sheet(Q("E", 5, "MPa")));
         Assert.Contains(absurd, n => n.Severity == CalcNoticeSeverity.Block && n.Message.StartsWith("E:", StringComparison.Ordinal));
+        var tenMpa = Run(Q("E", 10, "MPa"), Q("H", 6, "m"));
+        Assert.Contains(tenMpa.Blocks, b => b.RuleId == "modulus-low" && b.Message.Contains("0.01 GPa is below the 0.05 GPa floor", StringComparison.Ordinal));
 
-        // Plastic pipe (PE 100, PP-R, PVC-U and the soft end of PEX) and every metal run without the warning.
-        foreach (var gpa in new[] { 0.6, 0.8, 1.0, 1.5, 3.0, 70, 120, 210 })
+        // Plastic pipe (LDPE and the long-term modulus of PE and PP from 0.05 GPa, PE 100, PP-R, PVC-U and the soft end of PEX) and every metal run without the warning.
+        foreach (var gpa in new[] { 0.05, 0.1, 0.2, 0.3, 0.6, 0.8, 1.0, 1.5, 3.0, 70, 120, 210 })
             Assert.DoesNotContain(Run(Q("E", gpa, "GPa"), Q("H", 6, "m")).Notices, n => n.RuleId == "modulus-low");
 
         Assert.Contains(Pipe.Template.ApplicabilityRules, r => r.Id == "modulus-low" && r.Severity == CalcNoticeSeverity.Block && r.Effect == CalcRuleEffect.Unconservative);
+    }
+
+    [Fact]
+    public void DC_18_The_Modulus_Floor_Is_0_05_GPa_So_A_Low_Modulus_Plastic_Runs_And_A_Value_Under_The_Floor_Is_Still_Refused()
+    {
+        // The 0.5 GPa floor refused a real low-modulus plastic (LDPE about 0.2 GPa) with no way past it; the owner lowered it to 0.05 GPa (DC-18, DC-21).
+        Assert.Equal(0.05, PipeExpansionCalculator.PlausibleMinModulusGPa);
+        Assert.Equal(0.01, PipeExpansionCalculator.HardMinModulusGPa);
+
+        foreach (var symbol in new[] { "E", "E_hot" })
+        {
+            var spec = Pipe.Template.FindInput(symbol)!;
+            Assert.Equal(0.05, spec.Min);
+            Assert.Equal(0.01, spec.HardMin);
+        }
+
+        // LDPE at 0.2 GPa: the leg model runs and gives its result (the known-answer case ka-soft-plastic-offset-leg holds the numbers).
+        var ldpe = Run(Q("E", 0.2, "GPa"), Q("alpha", 200, "um/(m*K)"), Q("OD", 110, "mm"), Q("t_wall", 10, "mm"), Q("L", 20, "m"), Q("H", 2, "m"), Q("Sa", 10, "MPa"), Q("T_operate", 40, "degC"));
+        Assert.False(ldpe.IsBlocked, string.Join(" | ", ldpe.Blocks.Select(b => b.Message)));
+        Assert.Equal(0.8899438184514796, ldpe.OutputSi("L_req"), 9);
+        Assert.NotNull(ldpe.FindOutput("anchor_force"));
+
+        // Exactly the floor runs; just under it is refused with the floor named, in the one-sentence shape, for E and for E_hot.
+        Assert.DoesNotContain(Run(Q("E", 0.05, "GPa"), Q("H", 6, "m")).Notices, n => n.RuleId == "modulus-low");
+        var under = Run(Q("E", 0.04, "GPa"), Q("H", 6, "m"));
+        var block = Assert.Single(under.Blocks);
+        Assert.Equal("modulus-low", block.RuleId);
+        Assert.Equal("E: 0.04 GPa is below the 0.05 GPa floor for a pipe material. Enter E in GPa, not MPa, or take it from a material.", block.Message);
+        Assert.Empty(CalcMessageShape.Problems(block.Message));
+        var hot = Run(Q("E_hot", 0.04, "GPa"), Q("H", 6, "m"));
+        Assert.Contains(hot.Blocks, b => b.RuleId == "modulus-low" && b.Message.StartsWith("E_hot: 0.04 GPa is below the 0.05 GPa floor", StringComparison.Ordinal));
+
+        // The declared effect is unchanged: a block, unconservative when it would be let through.
+        Assert.Contains(Pipe.Template.ApplicabilityRules, r => r.Id == "modulus-low" && r.Severity == CalcNoticeSeverity.Block && r.Effect == CalcRuleEffect.Unconservative);
+        Assert.Equal("1.5.2", Pipe.Template.Version);
     }
 
     [Fact]

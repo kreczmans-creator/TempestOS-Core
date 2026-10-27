@@ -133,11 +133,11 @@ Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/
   WARNING  records: tabulated values not taken from a reference record are rho_20, k_R, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants); I2t_let (Device characteristic (time–current points)). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: elec.fault-protection@1.5.1
-  Content hash: 9559cda3b9c899f8
+  Template: elec.fault-protection@1.6.0
+  Content hash: 627284e2d716cdc6
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:21 UTC
   Application: TempestOS test
 
 9. References

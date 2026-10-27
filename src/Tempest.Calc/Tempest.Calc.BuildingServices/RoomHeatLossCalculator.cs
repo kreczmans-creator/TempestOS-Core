@@ -54,9 +54,9 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.5.0", CalcDiscipline.BuildingServices, "U-values and room heat loss",
+        Id, "1.6.0", CalcDiscipline.BuildingServices, "U-values and room heat loss",
         "Calculates the U-values of built-up elements and the steady-state design heat loss of one room. It gives the fabric and ventilation loss, the room load for sizing emitters, the heat loss coefficient and an optional check against target U-values.",
-        "Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing\n" +
+        "Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing, or the ground floor record U_g for a floor without layers or an override\n" +
         "Element fabric loss: Φ_i = A·U·f·(T_int − θ_adj), with θ_adj = θ_e where the element faces outside\n" +
         "Thermal bridges: Φ_tb = y_tb·Σ(A·f)_ext·(T_int − θ_e) on the elements facing outside\n" +
         "Fabric total: Φ_T = ΣΦ_i + Φ_tb\n" +
@@ -70,6 +70,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
             new CalcInputSpec("layers", "Construction layers (several elements share the table, keyed by element name)", CalcInputKind.Table, Columns: LayerColumns, MaxRows: 200, IsOptional: true, Group: "Setup"),
             new CalcInputSpec("V", "Room volume", CalcInputKind.Quantity, "m^3", Default: 40, Min: 5, Max: 1000, HardMin: 1, HardMax: 5000, Group: "Geometry"),
             new CalcInputSpec("A_floor", "Floor area, for the loss per floor area (optional; blank = no loss per floor area)", CalcInputKind.Quantity, "m^2", Min: 1, Max: 200, HardMin: 0.1, HardMax: 2000, IsOptional: true, Group: "Geometry"),
+            new CalcInputSpec("U_g", "Ground floor U-value from a record, applied to each element with downward heat flow that has no layers and no U override (optional; blank = none)", CalcInputKind.Quantity, "W/(m^2*K)", Min: 0.05, Max: 2, HardMin: 0.01, HardMax: 10, IsOptional: true, Group: "Material"),
             new CalcInputSpec("T_int", "Internal design temperature", CalcInputKind.Quantity, "degC", Default: 21, Min: 16, Max: 23, HardMin: 16, HardMax: 24, Group: "Conditions", Aliases: ["theta_int"]),
             new CalcInputSpec("theta_e", "External design temperature (location record)", CalcInputKind.Quantity, "degC", Default: -3, Min: -15, Max: 3, HardMin: -15, HardMax: 5, Group: "Conditions"),
             new CalcInputSpec("T_supply", "MVHR supply air temperature after heat recovery (optional; blank = natural ventilation, outside air)", CalcInputKind.Quantity, "degC", Min: -15, Max: 24, HardMin: -20, HardMax: 40, IsOptional: true, Group: "Conditions", Aliases: ["theta_supply"]),
@@ -90,6 +91,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
             new CalcAssumption("Where an element faces another space, a blank Rse is the same as Rsi.", "Small conventional BS EN ISO 6946 set, not a table of design data."),
             new CalcAssumption("The global target U applies to built-up elements facing outside only.", "Scope of the target check: an internal partition or floor is checked only against a target entered on its own row."),
             new CalcAssumption("Ground-floor and glazing U-values are entered by the user as an override.", "Stated limit."),
+            new CalcAssumption("A ground floor U-value record fills U_g for a floor element without layers or an override.", "Stated limit: the record's value is the user's, from its table."),
             new CalcAssumption("The calculator does not model ground heat transfer.", "Stated limit."),
             new CalcAssumption("The air constant 0.34 Wh/(m³·K) is the conventional rounded ρ·c_p of air.", "Derived: about 1.2 kg/m³ × 1005 J/(kg·K) ÷ 3600, not read from a table."),
             new CalcAssumption("Design temperatures, conductivities, surface resistances and the thermal-bridge allowance are the user's own records.", "No table from a standard or a manufacturer is shipped."),
@@ -113,6 +115,7 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
             new CalcApplicabilityRule("n-inf-ignored", "The infiltration rate applies with an MVHR supply temperature only.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("gain", "The room gains heat from warmer neighbours (Φ_HL ≤ 0).", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("supply-below-external", "The MVHR supply is colder than the outside design temperature.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("u-g-unused", "U_g is given but no element with downward heat flow lacks layers and a U override, so it is not used.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-cavity-wall", "Insulated cavity wall, a window and natural ventilation",
@@ -155,6 +158,9 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
             new CalcRecordKind("climate.design-temperature", "External design temperature", ["theta_e"], "The location's external design temperature from the user's own licensed or published source, with its edition."),
             new CalcRecordKind("material.conductivity", "Layer thermal conductivity", ["layers"], "The λ column of the layers table: manufacturer's declared value or the user's own licensed reference."),
             new CalcRecordKind("thermal.bridging", "Thermal bridging allowance", ["y_tb"], "From the user's own source or a bridging calculation for the construction."),
+            new CalcRecordKind("room.internal-temperatures", "Internal design temperatures", ["T_int"], "The internal design temperature for the room type, from the user's own licensed or published source (a design guide or the heat-load standard's national annex), with its edition and table."),
+            new CalcRecordKind("room.air-change-rates", "Air change rates", ["n"], "The design air change rate for the room type, from the user's own licensed or published source, with its edition and table."),
+            new CalcRecordKind("ground.u-values", "Ground floor U-values", ["U_g"], "The ground floor U-value for the floor construction, soil conductivity, characteristic dimension and insulation, from the user's own licensed or published table; it fills U_g, which a floor element without layers or a U override takes."),
         ]);
 
     private static CalcInputValue Q(string symbol, double value, string unit) => CalcInputValue.Quantity(symbol, value, unit);
@@ -302,6 +308,13 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
         var hasTarget = c.Has("U_target");
         var globalTarget = hasTarget ? c.InputSi("U_target") : 0;
 
+        // DC-10 (template 44): a ground floor U-value record fills U_g, which a floor element (downward flow) without layers and without a U override takes.
+        var hasGroundU = c.Has("U_g");
+        var groundApplied = 0;
+
+        if (hasGroundU)
+            c.Input("U_g");
+
         for (var i = 0; i < rows.Count; i++)
         {
             var row = rows[i];
@@ -342,6 +355,13 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
                     c.Warn("u-override-layers", $"layers: element '{name}' has a U override, so its {mine.Count} layer(s) are ignored.");
 
                 c.Record($"U_{no}", "U override (user-entered)", $"{name}: {F(u)} W/m²K", ScalarValue.Of(u, uUnit), $"{name}: U-value as entered (ground floor or glazing)");
+            }
+            else if (mine.Count == 0 && hasGroundU && flow == Downward)
+            {
+                u = c.InputSi("U_g");
+                builtUp = false;
+                groundApplied++;
+                c.Record($"U_{no}", "U_g (ground floor U-value record)", $"{name}: {F(u)} W/m²K", ScalarValue.Of(u, uUnit), $"{name}: U-value from the ground floor record U_g");
             }
             else
             {
@@ -395,6 +415,9 @@ public sealed class RoomHeatLossCalculator : ICalcCalculator
 
         if (orphans > 0)
             c.Warn("orphan-layers", $"layers: {orphans} layer row(s) name an element that is not in the elements table and are ignored.");
+
+        if (hasGroundU && groundApplied == 0)
+            c.Warn("u-g-unused", "U_g: no element with downward heat flow lacks layers and a U override, so U_g is not used. Set the floor's flow to 'downward' with no layers, or clear U_g.");
 
         if (defaulted.Count > 0)
             c.Assume($"Conventional BS EN ISO 6946 surface resistances (R_si 0.13 horizontal, 0.10 upward, 0.17 downward; R_se 0.04 outside, or the same as R_si where the element faces another space; m²K/W) are used where blank, for: {string.Join(", ", defaulted)}.", "Small conventional set; enter your own where the construction needs other values.");

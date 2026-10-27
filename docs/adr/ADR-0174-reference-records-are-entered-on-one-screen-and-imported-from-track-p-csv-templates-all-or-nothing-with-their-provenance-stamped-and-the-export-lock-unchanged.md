@@ -101,6 +101,10 @@ No change was made to `ExportRecordAsync`, `WithholdLicensedAsync`, the sheet's 
 - **Mark required kinds on `CalcRecordKind`.** Rejected: it changes every template's content hash and version; the table in the Library is reviewed by a test.
 - **A save per record.** Rejected: a file with one bad row would leave a half-entered table that a calculator would then apply.
 
+## Amendment (DC-10, DC-21, 2026-10-27)
+
+The owner chose to build the gaps now. Six of the seven proposed kinds are declared: `bs7671.max-zs` by E5 on a new table input `Z_s_max_table` (template 03), `bs7671.voltage-drop` by E3 on a new table input `mVAm_table` (template 05), `concrete.strengths` by S6 on `f_ck` (template 19), and `room.internal-temperatures` on `T_int`, `room.air-change-rates` on `n` and `ground.u-values` on a new input `U_g` by B4 (templates 42 to 44). Template 48 (`surface.resistances`) stays proposed: its cells belong to the B4 elements table, which Black B-A-10 took out of record data, and a record binds to a whole input. Where Track P wrote a column under the standard's symbol and the calculator takes another (`theta_i` for `T_int`, `n_ach` for `n`), the template carries a column map (`Rule.Maps`), the only place a column fills a symbol of another name. The eight declared kinds that had no template have Track S templates 83 to 90 under `docs/calcs/record-templates` (five motor kinds for E1 and E9; the three lifting kinds, importable while the lifting flag is on). Superseded templates 09, 35, 36 and 37 stay not imported, and provenance pairing by title label stays not built. The table below is the state at the time of writing of this ADR; `RecordTemplates` and the contract tests hold the current one.
+
 ## Appendix: the 82 templates against the record kinds in code
 
 Generated from `RecordTemplates` and the calculators' `RecordKinds` at the time of writing; the contract tests hold it. "Declared by" names the calculators that list the kind.
