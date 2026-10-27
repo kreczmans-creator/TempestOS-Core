@@ -44,9 +44,9 @@
     },
     {
       "id": "bs.pipe-expansion",
-      "version": "1.5.1",
-      "kats": 5,
-      "katsPassed": 5,
+      "version": "1.5.2",
+      "kats": 6,
+      "katsPassed": 6,
       "failedKats": [],
       "examples": 3,
       "examplesPassed": 3,

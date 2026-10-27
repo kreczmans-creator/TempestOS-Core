@@ -40,8 +40,8 @@ Calculation pack: the calculations listed in the index, issued together under on
   Template: pack
   Content hash: —
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 20/20
-  Test run: 2026-10-27 03:56 UTC
+  Known-answer cases passed: 21/21
+  Test run: 2026-10-27 06:40 UTC
   Application: TempestOS test
 
 9. References
@@ -67,7 +67,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   t_wall | Pipe wall thickness | 6.3 | mm | spec: SPEC-PIP-11 §4 (thermal movement) | 0.5 … 60 mm
   L | Anchor spacing: the straight length that grows (an offset leg or Z-bend: the first run, which also bends for the leg's growth) | 60 | m | spec: SPEC-PIP-11 §4 (thermal movement) | 1 … 500 m
   H | Available leg length (each leg of a U-loop; an offset leg: the leg off the run, which may be the longer of the two); optional for an axial bellows, which has no leg; no default | 9.5 | m | spec: SPEC-PIP-11 §4 (thermal movement) | 0.5 … 50 m
-  E | Young's modulus of the pipe material at the installation (reference) temperature, for the stress check, in GPa (steel 210, copper 120, PE and PP about 1; not MPa) | 210 | GPa | spec: SPEC-PIP-11 §4 (thermal movement) | 0.5 … 500 GPa
+  E | Young's modulus of the pipe material at the installation (reference) temperature, for the stress check, in GPa (steel 210, copper 120, PE and PP about 1; not MPa) | 210 | GPa | spec: SPEC-PIP-11 §4 (thermal movement) | 0.05 … 500 GPa
   alpha | Mean coefficient of thermal expansion between the install and operating temperatures | 12 | um/(m·K) | spec: SPEC-PIP-11 §4 (thermal movement) | 1 … 250 um/(m·K)
   T_install | Temperature at installation (when the run is anchored) | 10 | °C | spec: SPEC-PIP-11 §4 (thermal movement) | -50 … 50 °C
   T_operate | Operating temperature (hot or cold) | 150 | °C | spec: SPEC-PIP-11 §4 (thermal movement) | -50 … 500 °C
@@ -313,11 +313,11 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   WARNING  mu: the anchor force holds no support friction. Enter μ and the weight per metre, with the length on slides, to include it.  [friction]
 
 8. Verification
-  Template: bs.pipe-expansion@1.5.1
-  Content hash: 29443308b79dc6fc
+  Template: bs.pipe-expansion@1.5.2
+  Content hash: 037fa1e46b3af76f
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 5/5
-  Test run: 2026-10-27 03:56 UTC
+  Known-answer cases passed: 6/6
+  Test run: 2026-10-27 06:40 UTC
   Application: TempestOS test
 
 9. References
@@ -495,7 +495,7 @@ Member stiffness: three freedoms per node, Euler–Bernoulli members with axial 
   Content hash: 563dd9a0eb5dfb9f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 06:40 UTC
   Application: TempestOS test
 
 9. References
@@ -551,7 +551,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   gamma_M2 | Partial factor for the anchor bolts | 1.25 |  | assumption: Sheet default value; no project figure given. | 1.1 … 1.4
   C_fd | Friction coefficient, plate to grout | 0.2 |  | assumption: Sheet default value; no project figure given. | 0 … 0.4
   alpha | Concentration factor √(A_c1/A_c0) of the foundation (1 when the foundation geometry is not known) | 1 |  | drawing: DRG-PIP-611 rev B | 1 … 2.5
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 76bab50a79ab407aaef0c672767a6c3e/c66cc91fc18d4b62aa9928b427c3f631 | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 2a03e525c6764b2b9e0e73dc1add1d2a/95ed4b152c2849c6b46a24d886833402 | any
 
 3. Assumptions
   A1. The axial force is positive in compression, the opposite of the member check sheet. (Sign convention.)
@@ -784,7 +784,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   Content hash: b3f3c18d0ee3f47a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 06:40 UTC
   Application: TempestOS test
 
 9. References

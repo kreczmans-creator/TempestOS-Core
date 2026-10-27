@@ -15,7 +15,7 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   t_wall | Pipe wall thickness | 3.2 | mm | manual | 0.5 … 60 mm
   L | Anchor spacing: the straight length that grows (an offset leg or Z-bend: the first run, which also bends for the leg's growth) | 50 | m | manual | 1 … 500 m
   H | Available leg length (each leg of a U-loop; an offset leg: the leg off the run, which may be the longer of the two); optional for an axial bellows, which has no leg; no default | 6 | m | manual | 0.5 … 50 m
-  E | Young's modulus of the pipe material at the installation (reference) temperature, for the stress check, in GPa (steel 210, copper 120, PE and PP about 1; not MPa) | 210 | GPa | manual | 0.5 … 500 GPa
+  E | Young's modulus of the pipe material at the installation (reference) temperature, for the stress check, in GPa (steel 210, copper 120, PE and PP about 1; not MPa) | 210 | GPa | manual | 0.05 … 500 GPa
   alpha | Mean coefficient of thermal expansion between the install and operating temperatures | 12 | um/(m·K) | manual | 1 … 250 um/(m·K)
   T_install | Temperature at installation (when the run is anchored) | 10 | °C | manual | -50 … 50 °C
   T_operate | Operating temperature (hot or cold) | 80 | °C | manual | -50 … 500 °C
@@ -261,8 +261,8 @@ Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴
   WARNING  mu: the anchor force holds no support friction. Enter μ and the weight per metre, with the length on slides, to include it.  [friction]
 
 8. Verification
-  Template: bs.pipe-expansion@1.5.1
-  Known-answer cases passed: 5/5
+  Template: bs.pipe-expansion@1.5.2
+  Known-answer cases passed: 6/6
 
 9. References
   1. ASME B31.3-2022 cl. 319.4.1 (screening relation; number to be checked against the owner's copy) — Process piping — flexibility analysis, exemption from formal analysis

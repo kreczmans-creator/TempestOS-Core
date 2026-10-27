@@ -4,7 +4,7 @@
  "sources": {
   "rederivation": "3738520fd54a185312ad9441b014f89a0e52620ca01f5d3390e706fb0ae90082",
   "knownDefects": "f503dc243b72bd6d14a26dd72c715cf4ef74eecacdd6bcf48830d5d1c2fd8ac3",
-  "katResults": "177147b89f04c775d7cec30e361e99241b074b314e2449081079bdc26e14422d",
+  "katResults": "da3cdaee9f8c3c1d4e9dd8c2a92e3077dc4c2edaa2282a30b30a43e82eee95ac",
   "workedExamples": "70ade87cf654c504d0e07b6b2138bdd0be939e0ac2596a54400c2b1cf585f2b0",
   "generator": "44f38f035fcf5937ab168f648e6a714578568d822ffce5c1d151e261c577171e"
  },
@@ -199,9 +199,9 @@
   "bs.pipe-expansion": {
    "workedExamples": 3,
    "kat": {
-    "version": "1.5.1",
-    "kats": 5,
-    "katsPassed": 5,
+    "version": "1.5.2",
+    "kats": 6,
+    "katsPassed": 6,
     "failedKats": [],
     "examplesPassed": 3,
     "failedExamples": []

@@ -30,19 +30,20 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
     public const double ShortLegDiameters = 10;
 
     /// <summary>
-    /// The smallest modulus (GPa) a pipe material is expected to have: PE, PP and PEX are about 0.5 to 1.5 GPa short-term. Below it the
-    /// sheet warns that E may have been typed in MPa (steel 210 GPa is 210 000 MPa, so a metal typed in MPa lands at 0.07 to 0.21 GPa and
-    /// turns a failing leg into a passing one with an anchor force 1000 times low, Black B-B-03).
+    /// The floor (GPa) under which a pipe modulus is refused (rule <c>modulus-low</c>, a block): a value below it has almost certainly been typed in
+    /// MPa (a leg then looks 1000 times more flexible and a failing leg passes with an anchor force 1000 times low, Black B-B-03). The floor was
+    /// 0.5 GPa, which refused a real low-modulus plastic (LDPE is about 0.2 GPa; the long-term or hot modulus of PE and PP is 0.1 to 0.3 GPa);
+    /// the owner lowered it to 0.05 GPa (DC-18, DC-21). The usual-range lower limit of <c>E</c> and <c>E_hot</c> is this floor.
     /// </summary>
-    public const double PlausibleMinModulusGPa = 0.5;
+    public const double PlausibleMinModulusGPa = 0.05;
 
-    /// <summary>The smallest modulus (GPa) accepted at all: long-term or hot values of the softest plastic pipe are about 0.1 to 0.3 GPa.</summary>
-    public const double HardMinModulusGPa = 0.1;
+    /// <summary>The smallest modulus (GPa) the input accepts at all, below the floor so that the block can name the value entered.</summary>
+    public const double HardMinModulusGPa = 0.01;
 
     private const string ScreeningClause = "ASME B31.3-2022 cl. 319.4.1 (screening form; number to be checked against the owner's copy)";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.5.1", CalcDiscipline.BuildingServices, "Pipe expansion, loops and anchor forces (screening)",
+        Id, "1.5.2", CalcDiscipline.BuildingServices, "Pipe expansion, loops and anchor forces (screening)",
         "Calculates the thermal growth of a pipe run between anchors, the leg or loop that absorbs it, and the force and moment on the anchors. It is a screening calculation, not a piping stress analysis.",
         "Pipe section: d_i = OD − 2·t; A_m = π/4·(OD² − d_i²); I = π/64·(OD⁴ − d_i⁴); Z = I/(OD/2)\n" +
         "Temperature change and growth: ΔT = T_operate − T_install, or as entered; L_tot = L, or L + L2 for a Z-bend; ΔL = α·L_tot·|ΔT|, its sign giving the direction\n" +
@@ -126,7 +127,7 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
             new CalcApplicabilityRule("dT-zero", "Install and operating temperatures are equal: there is no movement to absorb.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("H", "Enter the available leg H for a leg or a loop; it has no default.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("bellows", "An axial bellows needs both the pressure P_b and the effective area A_eff.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("modulus-low", "E (or E_hot) is below 0.5 GPa, lower than any usual pipe material: it may have been typed in MPa, which makes a leg look 1000 times more flexible and passes a leg that fails, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
+            new CalcApplicabilityRule("modulus-low", "E (or E_hot) is below the 0.05 GPa floor for a pipe material: it may have been typed in MPa, which makes a leg look 1000 times more flexible and passes a leg that fails, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("short-leg", "The available leg (or, for an offset leg or Z-bend, a run) is shorter than ten pipe diameters: the guided-cantilever beam model is not valid, so the sheet is refused.", CalcNoticeSeverity.Block, CalcRuleEffect.Unconservative),
             new CalcApplicabilityRule("bellows-unused", "Bellows inputs are given with a leg or loop layout and are not used; choose the axial bellows layout.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("k1-unused", "K1 is given with the axial bellows layout, which has no screening; it is not used.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
@@ -155,6 +156,10 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
                 new CalcReferenceSource("Analytic (ΔL = α·L·ΔT; anchor force = P·A_eff + k·ΔL; recomputed in python3)", null, "88.9 × 3.2 mm steel, 12 µm/(m·K), 10 → 80 °C over 50 m: ΔL = 42 mm; a bellows at 6 bar gauge with A_eff 80 cm² thrusts 6e5·80e-4 = 4800 N and its spring of 120 N/mm gives 120e3·0.042 = 5040 N, so the anchors take 9840 N; against a rated movement of 50 mm the utilisation is 0.84 (met). No leg, no Sa, no screening. The bellows data are illustrative inputs, not a datasheet"),
                 [Q("E", 210, "GPa"), Q("alpha", 12, "um/(m*K)"), Q("OD", 88.9, "mm"), Q("t_wall", 3.2, "mm"), Q("L", 50, "m"), Choice("temp_mode", TwoTemperatures), Q("T_install", 10, "degC"), Q("T_operate", 80, "degC"), Choice("layout", AxialBellows), Q("P_b", 600, "kPa"), Q("A_eff", 80, "cm^2"), Q("k_b", 120, "kN/m"), Q("dL_rated", 50, "mm")],
                 [new CalcExpectedValue("dL", 42, "mm", 1e-9), new CalcExpectedValue("F_thrust", 4.8, "kN", 1e-9), new CalcExpectedValue("F_spring", 5040, "N", 1e-9), new CalcExpectedValue("anchor_force", 9840, "N", 1e-9), new CalcExpectedValue("anchor_moment", 0, "N*m", 1e-9), new CalcExpectedValue("u_bellows", 0.84, "", 1e-9), new CalcExpectedValue("pass", 1, "", 1e-9)]),
+            new CalcTestCase("ka-soft-plastic-offset-leg", "A soft plastic pipe (E 0.2 GPa, under the old 0.5 GPa floor) with a 2 m offset leg: 120 mm of growth, leg and run met",
+                new CalcReferenceSource("Analytic (ΔL = α·L·ΔT; guided cantilever L = √(3·E·D·Δ/Sa), F = 12·E·I·Δ/L³, M = 6·E·I·Δ/L²; screening Y = α·ΔT·U; recomputed in python3)", null, "110 × 10 mm plastic pipe, E 0.2 GPa (a long-term low-density polyethylene value, refused by the 0.5 GPa floor before DC-18), α 200 µm/(m·K), 10 → 40 °C over 20 m: ΔL = 200e-6·20·30 = 120 mm; fully restrained σ_r = 0.2e3·200e-6·30 = 1.2 MPa and F_r = 1.2·3141.59 = 3.76991 kN on A_m = π/4·(110² − 90²) = 3141.59 mm²; an invented Sa of 10 MPa gives L_req = √(3·0.2e9·0.110·0.120/10e6) = 0.889944 m, so the 2 m offset leg passes (u 0.444972) with F = 12·0.2e9·3.96626e-6·0.120/2³ = 142.785 N and M = 142.785 N·m (σ_leg 1.98 MPa); the run bends for the leg's 12 mm and needs 0.281425 m (u 0.0140712) with 0.0142785 N along the leg, so the anchors take the resultant 142.785 N; the anchors are 20.0998 m apart (L_dev 22 m), Y = 200e-6·30·20.0998 = 120.599 mm, so the screening ratio is 3673.78 mm²/m² against an invented K1 of 5000 mm²/m² (u 0.734757). Sa and K1 are illustrative inputs, not code values"),
+                [Q("E", 0.2, "GPa"), Q("alpha", 200, "um/(m*K)"), Q("OD", 110, "mm"), Q("t_wall", 10, "mm"), Q("L", 20, "m"), Choice("temp_mode", TwoTemperatures), Q("T_install", 10, "degC"), Q("T_operate", 40, "degC"), Choice("layout", OffsetLeg), Q("H", 2, "m"), Q("Sa", 10, "MPa"), Q("K_scr", 5000, "mm^2/m^2")],
+                [new CalcExpectedValue("dL", 120, "mm", 1e-9), new CalcExpectedValue("dT", 30, "K", 1e-9), new CalcExpectedValue("sigma_res", 1.2, "MPa", 1e-9), new CalcExpectedValue("A_m", 3141.5926535897934, "mm^2", 1e-9), new CalcExpectedValue("F_res", 3.769911184307752, "kN", 1e-9), new CalcExpectedValue("L_req", 0.8899438184514796, "m", 1e-9), new CalcExpectedValue("u_leg", 0.4449719092257398, "", 1e-9), new CalcExpectedValue("F_leg", 142.78538610565613, "N", 1e-9), new CalcExpectedValue("M_leg", 142.78538610565613, "N*m", 1e-9), new CalcExpectedValue("sigma_leg", 1.98, "MPa", 1e-9), new CalcExpectedValue("Delta_run", 12, "mm", 1e-9), new CalcExpectedValue("F_run", 0.014278538610565614, "N", 1e-9), new CalcExpectedValue("u_run", 0.014071247279470287, "", 1e-9), new CalcExpectedValue("L_req_run", 0.28142494558940573, "m", 1e-9), new CalcExpectedValue("anchor_force", 142.78538681958307, "N", 1e-9), new CalcExpectedValue("anchor_moment", 142.78538610565613, "N*m", 1e-9), new CalcExpectedValue("L_dev", 22, "m", 1e-9), new CalcExpectedValue("U_a", 20.09975124224178, "m", 1e-9), new CalcExpectedValue("Y_scr", 120.5985074534507, "mm", 1e-9), new CalcExpectedValue("scr", 3673.784720008289, "mm^2/m^2", 1e-9), new CalcExpectedValue("u_scr", 0.7347569440016578, "", 1e-9), new CalcExpectedValue("pass", 1, "", 1e-9)]),
         ],
         Category: "Thermal",
         OutputPorts:
@@ -241,10 +246,11 @@ public sealed class PipeExpansionCalculator : ICalcCalculator
             {
                 var gpa = c.Si(symbol) / 1e9;
 
-                // A metal's modulus typed in MPa lands near 0.1 to 0.2 GPa: the leg looked 1000 times more flexible, a failing leg passed and the anchor force was 1000 times low (it warned and passed).
+                // A modulus under the floor has almost certainly been typed in MPa: the leg looked 1000 times more flexible, a failing leg passed and the anchor force was 1000 times low (it warned and passed).
+                // The floor is 0.05 GPa (DC-18): LDPE at about 0.2 GPa and the long-term modulus of PE and PP run.
                 if (gpa < PlausibleMinModulusGPa)
                 {
-                    c.Block("modulus-low", $"{symbol}: {F(gpa)} GPa is below any usual pipe material. Enter {symbol} in GPa, not MPa, or take it from a material.");
+                    c.Block("modulus-low", $"{symbol}: {F(gpa)} GPa is below the {F(PlausibleMinModulusGPa)} GPa floor for a pipe material. Enter {symbol} in GPa, not MPa, or take it from a material.");
                     return;
                 }
             }
