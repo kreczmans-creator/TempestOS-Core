@@ -300,12 +300,17 @@ jobs:
           }
 
       # `v0.26.0` (ADR-0165): the Tempest.Calc test assemblies run as their
-      # own shard, in series, the same shape as Core's leg.
+      # own shard, in series, the same shape as Core's leg. Every project
+      # runs even when an earlier one fails, and the step fails at the end
+      # naming each failed project: it used to stop at the first, so from
+      # run 652 a red Library run hid whether Calculators, FluidPower and
+      # Import passed at all.
       - name: Test Calc (Release)
         if: matrix.configuration == 'Release' && matrix.shard == 'calc'
         timeout-minutes: 25
         shell: pwsh
         run: |
+          $failed = @()
           foreach ($project in @("tests/Tempest.Calc.Tests.Engine", "tests/Tempest.Calc.Tests.Sheets", "tests/Tempest.Calc.Tests.Library", "tests/Tempest.Calc.Tests.Calculators", "tests/Tempest.Calc.Tests.FluidPower", "tests/Tempest.Calc.Tests.Import")) {
             if (-not (Test-Path $project)) { continue }
             dotnet test $project `
@@ -318,16 +323,21 @@ jobs:
               --blame-hang `
               --blame-hang-timeout 5m
             if ($LASTEXITCODE -ne 0) {
-              Write-Error "One or more Calc tests failed in '$project' for configuration 'Release' (exit code $LASTEXITCODE)."
-              exit $LASTEXITCODE
+              Write-Host "Calc tests failed in '$project' for configuration 'Release' (exit code $LASTEXITCODE)."
+              $failed += $project
             }
+          }
+          if ($failed.Count -gt 0) {
+            Write-Error "One or more Calc tests failed for configuration 'Release' in: $($failed -join ', ')."
+            exit 1
           }
 
       # Addendum C, C-4: the verification dashboard shows an embedded snapshot of the Track P reports, the known-defects document, the KAT and
       # chain results and the worked examples (and of the script that reads them). The stale-snapshot tests above fail on a stale one; this
       # step says the same from the script's own side, and runs the script's own tests (its two readers of the known-defects document).
+      # It runs whatever the tests above did (it reads files, not the build).
       - name: Check the verification snapshot is current (Release)
-        if: matrix.configuration == 'Release' && matrix.shard == 'calc'
+        if: ${{ !cancelled() && matrix.configuration == 'Release' && matrix.shard == 'calc' }}
         timeout-minutes: 5
         shell: pwsh
         run: |
@@ -348,6 +358,7 @@ jobs:
         timeout-minutes: 25
         shell: pwsh
         run: |
+          $failed = @()
           foreach ($project in @("tests/Tempest.Calc.Tests.Engine", "tests/Tempest.Calc.Tests.Sheets", "tests/Tempest.Calc.Tests.Library", "tests/Tempest.Calc.Tests.Calculators", "tests/Tempest.Calc.Tests.FluidPower", "tests/Tempest.Calc.Tests.Import")) {
             if (-not (Test-Path $project)) { continue }
             dotnet test $project `
@@ -359,9 +370,13 @@ jobs:
               --blame-hang `
               --blame-hang-timeout 5m
             if ($LASTEXITCODE -ne 0) {
-              Write-Error "One or more Calc tests failed in '$project' for configuration 'Debug' (exit code $LASTEXITCODE)."
-              exit $LASTEXITCODE
+              Write-Host "Calc tests failed in '$project' for configuration 'Debug' (exit code $LASTEXITCODE)."
+              $failed += $project
             }
+          }
+          if ($failed.Count -gt 0) {
+            Write-Error "One or more Calc tests failed for configuration 'Debug' in: $($failed -join ', ')."
+            exit 1
           }
 
       - name: Test Core (Debug)
