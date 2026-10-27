@@ -351,6 +351,88 @@ public class DocumentPageSourceTests
         Assert.Null(pdf.RenderingNote);
     }
 
+    /// <summary>The head of an Adobe Illustrator export, as the application writes it: namespaces declared as entities in the DOCTYPE's internal subset and referred to from the root.</summary>
+    internal const string IllustratorHeader =
+        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
+        "<!-- Generator: Adobe Illustrator 27.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->\n" +
+        "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\" [\n" +
+        "\t<!ENTITY ns_extend \"http://ns.adobe.com/Extensibility/1.0/\">\n" +
+        "\t<!ENTITY ns_ai \"http://ns.adobe.com/AdobeIllustrator/10.0/\">\n" +
+        "\t<!ENTITY ns_graphs \"http://ns.adobe.com/Graphs/1.0/\">\n" +
+        "\t<!ENTITY ns_vars \"http://ns.adobe.com/Variables/1.0/\">\n" +
+        "\t<!ENTITY ns_imrep \"http://ns.adobe.com/ImageReplacement/1.0/\">\n" +
+        "\t<!ENTITY ns_sfw \"http://ns.adobe.com/SaveForWeb/1.0/\">\n" +
+        "\t<!ENTITY ns_custom \"http://ns.adobe.com/GenericCustomNamespace/1.0/\">\n" +
+        "\t<!ENTITY ns_adobe_xpath \"http://ns.adobe.com/XPath/1.0/\">\n" +
+        "]>\n" +
+        "<svg version=\"1.1\" id=\"Layer_1\" xmlns:x=\"&ns_extend;\" xmlns:i=\"&ns_ai;\" xmlns:graph=\"&ns_graphs;\"\n" +
+        "\t xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" x=\"0px\" y=\"0px\" width=\"100px\" height=\"100px\"\n" +
+        "\t viewBox=\"0 0 100 100\" style=\"enable-background:new 0 0 100 100;\" xml:space=\"preserve\">\n";
+
+    [AvaloniaFact]
+    public void AnIllustratorExport_WhoseNamespacesAreDoctypeEntities_Opens()
+    {
+        // Before: the sanitiser removed the DOCTYPE and the reader refused the file over the then-undeclared &ns_extend;.
+        var illustrator = IllustratorHeader +
+            "<switch>\n\t<foreignObject requiredExtensions=\"&ns_ai;\" x=\"0\" y=\"0\" width=\"1\" height=\"1\">\n\t</foreignObject>\n" +
+            "\t<g i:extraneous=\"self\">\n\t\t<rect width=\"100\" height=\"100\" fill=\"#1C2D97\"/>\n\t</g>\n</switch>\n</svg>\n";
+
+        var sanitised = SvgMarkupSanitiser.Sanitise(illustrator);
+        Assert.DoesNotContain("<!DOCTYPE", sanitised, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("xmlns:x=\"http://ns.adobe.com/Extensibility/1.0/\"", sanitised, StringComparison.Ordinal);
+        Assert.Contains("requiredExtensions=\"http://ns.adobe.com/AdobeIllustrator/10.0/\"", sanitised, StringComparison.Ordinal);
+
+        using var source = DocumentPageSourceFactory.Create(ViewableDocumentFormat.Svg, Encoding.UTF8.GetBytes(illustrator))!;
+        Assert.Null(source.RenderingNote);
+        Assert.Equal(100, source.PageSize(0).Width, 0.5);
+        using var page = source.RenderPage(0, 1.0);
+        Assert.True(CountNonWhitePixels(page) > 100, "the drawing inside the switch is shown");
+    }
+
+    [AvaloniaTheory]
+    [InlineData("<!ENTITY xxe SYSTEM \"file:///etc/hostname\">", "&xxe;")]
+    [InlineData("<!ENTITY pub PUBLIC \"-//X//EN\" \"http://x/y.dtd\">", "&pub;")]
+    [InlineData("<!ENTITY % p \"<!ENTITY q 'x'>\">", "&p;&q;")]
+    [InlineData("<!ENTITY b \"y\"><!ENTITY a \"&b;&b;\">", "&a;")]
+    [InlineData("<!ENTITY m \"<rect width='10' height='10'/>\">", "&m;")]
+    public void OnlyAHarmlessLiteralEntity_IsExpanded_EveryOtherKindStaysUndeclaredAndTheFileIsRefused(string declaration, string reference)
+    {
+        var markup = "<!DOCTYPE svg [" + declaration + "<!ENTITY ok \"fine\">]><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\"><title>&ok;" + reference + "</title><rect width=\"10\" height=\"10\"/></svg>";
+
+        var entities = SvgMarkupSanitiser.InternalEntities(markup);
+        Assert.Equal("fine", entities["ok"]);
+        Assert.True(entities.Count <= 2, string.Join(", ", entities.Keys));
+        Assert.DoesNotContain(entities.Keys, k => k is "xxe" or "pub" or "p" or "a" or "m" or "lt");
+
+        // &ok; is expanded; the other reference stays, undeclared, and the reader refuses the file as it always did.
+        var sanitised = SvgMarkupSanitiser.Sanitise(markup);
+        Assert.Contains("<title>fine", sanitised, StringComparison.Ordinal);
+        Assert.Throws<DocumentRenderException>(() => DocumentPageSourceFactory.Create(ViewableDocumentFormat.Svg, Encoding.UTF8.GetBytes(markup)));
+    }
+
+    [AvaloniaFact]
+    public void EntityExpansion_IsCappedInCountValueLengthAndReferences()
+    {
+        Assert.Equal(32, SvgMarkupSanitiser.MaxInternalEntities);
+        Assert.Equal(256, SvgMarkupSanitiser.MaxEntityValueLength);
+        Assert.Equal(10_000, SvgMarkupSanitiser.MaxEntityReferences);
+
+        var declarations = string.Concat(Enumerable.Range(0, 40).Select(i => $"<!ENTITY e{i} \"v{i}\">")) + "<!ENTITY big \"" + new string('x', 257) + "\">";
+        var entities = SvgMarkupSanitiser.InternalEntities("<!DOCTYPE svg [" + declarations + "]><svg/>");
+        Assert.Equal(32, entities.Count);
+        Assert.DoesNotContain("big", entities.Keys);
+
+        // XML's own five entities cannot be redeclared.
+        Assert.Empty(SvgMarkupSanitiser.InternalEntities("<!DOCTYPE svg [<!ENTITY lt \"ZZZ\"><!ENTITY amp \"ZZZ\">]><svg/>"));
+
+        // 10 001 references to one entity: the first 10 000 are replaced, the last stays and the file is refused rather than grown without limit.
+        var many = "<!DOCTYPE svg [<!ENTITY e \"v\">]><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\"><title>" + string.Concat(Enumerable.Repeat("&e;", 10_001)) + "</title></svg>";
+        var sanitised = SvgMarkupSanitiser.Sanitise(many);
+        Assert.EndsWith("&e;</title></svg>", sanitised, StringComparison.Ordinal);
+        Assert.Equal(1, sanitised.Split("&e;").Length - 1);
+        Assert.Throws<DocumentRenderException>(() => DocumentPageSourceFactory.Create(ViewableDocumentFormat.Svg, Encoding.UTF8.GetBytes(many)));
+    }
+
     [AvaloniaFact]
     public void AnSvgPage_RasterisesAtTheRequestedScale()
     {

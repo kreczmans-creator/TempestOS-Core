@@ -785,10 +785,30 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
 /// cheap, unambiguous defence in depth against a future rendering path (or a
 /// future library upgrade) that does.
 /// </para>
+/// <para>
+/// <b>Illustrator's entities.</b> Adobe Illustrator's SVG export declares
+/// its namespaces as entities in the DOCTYPE's internal subset
+/// (<c>&lt;!ENTITY ns_extend "http://ns.adobe.com/Extensibility/1.0/"&gt;</c>)
+/// and refers to them from the root (<c>xmlns:x="&amp;ns_extend;"</c>), so
+/// removing the DOCTYPE alone left the reference undeclared and the whole
+/// file refused — the most common exporter in an engineering office. Before
+/// the DOCTYPE goes, the internal subset's <em>harmless</em> entities are
+/// read and their references in the markup replaced by their text: only a
+/// general entity with a literal value (never <c>SYSTEM</c>, <c>PUBLIC</c>
+/// or a parameter entity), only a value with no <c>&amp;</c>, <c>&lt;</c>
+/// or <c>%</c> in it (so nothing is expanded into a reference, markup or
+/// another declaration), at most <see cref="MaxInternalEntities"/> of them
+/// of at most <see cref="MaxEntityValueLength"/> characters, replaced at
+/// most <see cref="MaxEntityReferences"/> times. The XML reader itself keeps
+/// its DTD prohibited and its entity-expansion cap at zero: it never sees a
+/// declaration at all, and anything this sanitiser does not expand stays an
+/// undeclared reference the reader refuses.
+/// </para>
 /// </remarks>
 internal static class SvgMarkupSanitiser
 {
     /// <summary>
+    /// Declared first, since static fields initialise in textual order and every pattern below takes it.
     /// Every pattern here gives up after this long (F1): a document is
     /// untrusted input, and a regular expression that can be made to run
     /// for minutes on a crafted attribute is a hang of the viewer. The two
@@ -798,6 +818,24 @@ internal static class SvgMarkupSanitiser
     /// the backtracking engine and relies on the timeout.
     /// </summary>
     private static readonly TimeSpan MatchTimeout = TimeSpan.FromMilliseconds(250);
+
+    /// <summary>The most internal-subset entities read from a DOCTYPE (Illustrator declares eight).</summary>
+    public const int MaxInternalEntities = 32;
+
+    /// <summary>The longest entity value expanded.</summary>
+    public const int MaxEntityValueLength = 256;
+
+    /// <summary>The most entity references replaced in one document; the rest stay undeclared and the reader refuses the file.</summary>
+    public const int MaxEntityReferences = 10_000;
+
+    /// <summary>The five entities XML itself defines, which no declaration may replace.</summary>
+    private static readonly HashSet<string> BuiltInEntities = new(StringComparer.Ordinal) { "amp", "lt", "gt", "quot", "apos" };
+
+    /// <summary>A general entity declared with a literal value that holds no reference, markup or parameter-entity character.</summary>
+    private static readonly Regex InternalEntityPattern = new(
+        @"<!ENTITY\s+([A-Za-z_][\w.\-]*)\s+(?:""([^""&<%]*)""|'([^'&<%]*)')\s*>", RegexOptions.NonBacktracking, MatchTimeout);
+
+    private static readonly Regex EntityReferencePattern = new(@"&([A-Za-z_][\w.\-]*);", RegexOptions.NonBacktracking, MatchTimeout);
 
     private static readonly Regex DoctypePattern = new(
         @"<!DOCTYPE[^>[]*(\[[^\]]*\])?[^>]*>", RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.NonBacktracking, MatchTimeout);
@@ -829,10 +867,45 @@ internal static class SvgMarkupSanitiser
     {
         ArgumentNullException.ThrowIfNull(markup);
 
+        var entities = InternalEntities(markup);
         var sanitised = DoctypePattern.Replace(markup, string.Empty);
+
+        if (entities.Count > 0)
+        {
+            var replaced = 0;
+            sanitised = EntityReferencePattern.Replace(sanitised, m =>
+                entities.TryGetValue(m.Groups[1].Value, out var value) && ++replaced <= MaxEntityReferences ? value : m.Value);
+        }
+
         sanitised = ScriptElementPattern.Replace(sanitised, string.Empty);
         sanitised = ExternalReferencePattern.Replace(sanitised, m => $"{m.Groups["attr"].Value}=\"{InertReferenceValue}\"");
         return sanitised;
+    }
+
+    /// <summary>The harmless entities of the DOCTYPE's internal subset, by name (see the remarks); empty when there is no DOCTYPE or no subset.</summary>
+    internal static Dictionary<string, string> InternalEntities(string markup)
+    {
+        var entities = new Dictionary<string, string>(StringComparer.Ordinal);
+        var doctype = DoctypePattern.Match(markup);
+
+        if (!doctype.Success || !doctype.Groups[1].Success)
+            return entities;
+
+        foreach (Match declaration in InternalEntityPattern.Matches(doctype.Groups[1].Value))
+        {
+            if (entities.Count >= MaxInternalEntities)
+                break;
+
+            var name = declaration.Groups[1].Value;
+            var value = declaration.Groups[2].Success ? declaration.Groups[2].Value : declaration.Groups[3].Value;
+
+            if (BuiltInEntities.Contains(name) || value.Length > MaxEntityValueLength)
+                continue;
+
+            entities.TryAdd(name, value);
+        }
+
+        return entities;
     }
 }
 
