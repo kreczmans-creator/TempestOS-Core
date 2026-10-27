@@ -205,6 +205,35 @@ public sealed class RecordKindRoundTripTests
     }
 
     [Fact]
+    public async Task A_Licensed_Table_Record_Of_A_New_Kind_Fills_The_Sheet_And_Its_Values_Never_Leave_Through_An_Export()
+    {
+        // The same loop as the unlicensed round trips, on a record imported as licensed (the default): the sheet reads the table, the export
+        // refuses the record, and the withheld input set carries no row and says why. The values are invented.
+        var host = Host();
+        var template = RecordTemplates.Find("03")!;
+        var outcome = await host.Service.RecordImport.CommitAsync(Request("03", Csv(template.Header, "Type B,0.4,32,1.37", "Type B,0.4,40,1.1"), Provenance("Max Zs (licensed test)")));
+        Assert.True(outcome.Committed, outcome.Refusal + " " + Describe(outcome.Preview));
+        var record = Assert.Single(outcome.Records);
+        Assert.True(record.LicensedSource);
+
+        var project = await host.ProjectAsync();
+        var calc = await host.Service.CreateAsync("elec.fault-protection", project, "Licensed round trip 03");
+        var applied = await host.Service.ApplyRecordAsync(calc.Id, record.Id);
+        Assert.True(applied.Succeeded, applied.Reason);
+        var run = await host.Service.RunAsync(applied.Instance!);
+        Assert.Equal(1.37, run.Result.OutputSi("Z_s_max_tab"), 9);
+
+        var (csv, refusal) = await host.Service.ExportRecordAsync(record.Id);
+        Assert.Null(csv);
+        Assert.Contains("never exported", refusal, StringComparison.Ordinal);
+
+        var withheld = await host.Service.WithholdLicensedAsync(new CalcInputSet(applied.Instance!.Inputs));
+        var table = withheld.Find("Z_s_max_table")!;
+        Assert.Null(table.Rows);
+        Assert.Contains("licensed value withheld", table.Provenance!.Reference, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void The_Schemas_Of_The_New_Kinds_Carry_The_Units_And_Columns_The_Calculators_Take()
     {
         var schemas = HostWithLifting().Service.RecordImport.Schemas();

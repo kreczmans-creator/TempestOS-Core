@@ -218,10 +218,6 @@ public sealed class VoltageDropCalculator : ICalcCalculator
     }
 
     /// <summary>
-    /// The overload check I ≤ I_z and the conductor temperature estimate, when the capacity is entered: on every route (elec.voltage-drop-03; the mV/A/m route used to ignore I_z). The warning that the estimate is above
-    /// the temperature used for the resistance applies to the resistivity route only, the one that takes a conductor temperature.
-    /// </summary>
-    /// <summary>
     /// DC-10 (Track P template 05): the mV/A/m figure read from the user's licensed table for the cross-section A_c and the system (r_dc for DC,
     /// z_1ph for single-phase, z_3ph for three-phase). False when the sheet is blocked: no table and no figure, no A_c, no row for A_c, more than
     /// one row, or no figure in the column for the system.
@@ -278,6 +274,10 @@ public sealed class VoltageDropCalculator : ICalcCalculator
     /// <summary>The SI value of a table cell, or null when absent; a cell without a unit is read in <paramref name="unit"/>.</summary>
     private static double? Cell(CalcRow row, string key, Unit unit) => row.Get(key) is { Number: { } n } cell ? (cell.Unit is { Length: > 0 } u ? UnitCatalog.Parse(u) : unit).ToSi(n) : null;
 
+    /// <summary>
+    /// The overload check I ≤ I_z and the conductor temperature estimate, when the capacity is entered: on every route (elec.voltage-drop-03; the mV/A/m route used to ignore I_z). The warning that the estimate is above
+    /// the temperature used for the resistance applies to the resistivity route only, the one that takes a conductor temperature.
+    /// </summary>
     private static void CapacityCheck(CalcRunContext c, string data)
     {
         if (!c.Has("I_z"))
