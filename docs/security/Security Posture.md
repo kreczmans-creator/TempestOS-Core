@@ -343,8 +343,12 @@ package's files — see the Kill switch):
 **`WP 21.4A` (the viewer — SVG, markup, tiling).** Beyond fixing `TD-184`
 above (it owns the file that needs the fix):
 
-- `Svg.Skia` renders an attachment's own untrusted bytes. Confirm it does
-  not fetch or follow an external resource reference an SVG can carry
+- The app's own `SvgPictureBuilder` (SkiaSharp; it replaced `Svg.Skia` in
+  v0.26.0, DB-08) renders an attachment's own untrusted bytes. It follows
+  no reference at all (only an embedded `data:` image is drawn, and the XML
+  reader has no resolver and refuses a DTD), and `SvgMarkupSanitiser` still
+  blanks every external reference first. Confirm neither fetches or follows
+  an external resource reference an SVG can carry
   (an `<image href="http://...">` or `file://` reference, an XML
   external entity if the underlying parser is XML-based) — an SVG is
   exactly the "attacker hands the operator a file" case this document's

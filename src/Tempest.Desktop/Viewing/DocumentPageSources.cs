@@ -7,7 +7,6 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using PDFtoImage;
 using SkiaSharp;
-using Svg.Skia;
 using Tempest.Workspace.Viewing;
 
 namespace Tempest.Desktop.Viewing;
@@ -594,8 +593,9 @@ public sealed class TextDocumentPageSource : IDocumentPageSource
 }
 
 /// <summary>
-/// An SVG, rasterised through <c>Svg.Skia</c> (MIT-licensed; version pinned
-/// in <c>Tempest.Desktop.csproj</c>'s own remarks) to the same
+/// An SVG, rasterised through the app's own <see cref="SvgPictureBuilder"/>
+/// (SkiaSharp, MIT; it replaced <c>Svg.Skia</c> and its MS-PL transitive
+/// <c>Svg.Custom</c> under owner decision DB-08) to the same
 /// <see cref="SKBitmap"/>-backed page a PDF produces (`TD-99`).
 /// </summary>
 /// <remarks>
@@ -614,7 +614,7 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
     /// <summary>The largest edge, in pixels, any single rasterised page may have — the same ceiling <see cref="PdfDocumentPageSource.MaxRasterEdge"/> applies, and for the same reason: an SVG's own <c>viewBox</c> can claim any size at all, and a deep zoom must not ask Skia for a bitmap of hundreds of megapixels.</summary>
     public const int MaxRasterEdge = 8000;
 
-    private readonly SKSvg _svg;
+    private readonly SvgPictureBuilder.SvgPicture _svg;
     private readonly Size _pageSize;
 
     /// <summary>Loads <paramref name="content"/> as an SVG.</summary>
@@ -625,14 +625,14 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
 
         using var stream = new MemoryStream(content, writable: false);
         _svg = Load(stream);
-        _pageSize = NaturalSize(_svg);
+        _pageSize = new Size(_svg.Size.Width, _svg.Size.Height);
     }
 
     /// <summary>
     /// Loads an SVG from <paramref name="content"/> without requiring a
     /// <c>byte[]</c> up front (`TD-96`'s own established convention for
-    /// every page source) — <see cref="SKSvg.Load(Stream)"/> reads the
-    /// stream directly.
+    /// every page source): the stream is read as text straight into the
+    /// builder.
     /// </summary>
     /// <exception cref="DocumentRenderException">The bytes are not an SVG this platform can read.</exception>
     public SvgDocumentPageSource(Stream content)
@@ -642,7 +642,7 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
         try
         {
             _svg = Load(content);
-            _pageSize = NaturalSize(_svg);
+            _pageSize = new Size(_svg.Size.Width, _svg.Size.Height);
         }
         finally
         {
@@ -684,9 +684,9 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
     /// <inheritdoc />
     public void Dispose() => _svg.Dispose();
 
-    private static SKSvg Load(Stream stream)
+    private static SvgPictureBuilder.SvgPicture Load(Stream stream)
     {
-        SKSvg svg;
+        SvgPictureBuilder.SvgPicture svg;
 
         try
         {
@@ -694,20 +694,9 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
             using (var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, leaveOpen: true))
                 markup = reader.ReadToEnd();
 
-            var sanitised = SvgMarkupSanitiser.Sanitise(markup);
+            svg = SvgPictureBuilder.Build(SvgMarkupSanitiser.Sanitise(markup));
 
-            svg = new SKSvg();
-            SKPicture? picture;
-            using (var sanitisedStream = new MemoryStream(Encoding.UTF8.GetBytes(sanitised)))
-                picture = svg.Load(sanitisedStream);
-
-            if (picture is null)
-            {
-                svg.Dispose();
-                throw new DocumentRenderException("This SVG could not be read: the file has no readable SVG content.");
-            }
-
-            if (picture.CullRect.Width <= 0 || picture.CullRect.Height <= 0)
+            if (svg.Size.Width <= 0 || svg.Size.Height <= 0)
             {
                 svg.Dispose();
                 throw new DocumentRenderException("This SVG could not be read: it has no visible size.");
@@ -719,7 +708,7 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
         }
         catch (Exception ex)
         {
-            // Svg.Skia reports a malformed document by throwing (an
+            // The builder reports a malformed document by throwing (an
             // XmlException over broken markup, most commonly) — translated
             // here, at the boundary, into this platform's own type, exactly
             // as PdfDocumentPageSource does for PDFium.
@@ -727,12 +716,6 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
         }
 
         return svg;
-    }
-
-    private static Size NaturalSize(SKSvg svg)
-    {
-        var bounds = svg.Picture!.CullRect;
-        return new Size(bounds.Width, bounds.Height);
     }
 
     private static double EffectiveScale(Size page, double scale)
@@ -757,10 +740,9 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Why this exists, specifically:</b> <c>Svg.Skia</c>'s own image
-/// resolution (<c>Svg.Model.SvgExtensions.GetImageFromWeb</c>) calls
-/// <c>System.Net.WebRequest.Create(uri).GetResponse()</c> for any
-/// <c>&lt;image&gt;</c> reference that is not a <c>data:</c> URI —
+/// <b>Why this exists, specifically:</b> the renderer this platform used
+/// until DB-08, <c>Svg.Skia</c>, resolved any <c>&lt;image&gt;</c> reference
+/// that was not a <c>data:</c> URI through <c>System.Net.WebRequest</c> —
 /// <c>http://</c>, <c>https://</c> <b>and</b> <c>file://</c> alike, the last
 /// of which reads an arbitrary local file and folds its bytes into the
 /// rendered picture. An SVG is untrusted, attacker-controlled input the
@@ -770,8 +752,11 @@ public sealed class SvgDocumentPageSource : IDocumentPageSource
 /// content is even shown, with no further action from the user. Every
 /// <c>href</c>/<c>xlink:href</c> that is not a same-document fragment
 /// (<c>#id</c>) or an embedded <c>data:</c> URI is blanked by
-/// <see cref="Sanitise"/>, before the bytes ever reach <c>SKSvg.Load</c>, so
-/// the vulnerable call is never given anything to resolve.
+/// <see cref="Sanitise"/> before the bytes reach the renderer. The app's own
+/// <see cref="SvgPictureBuilder"/> has no fetch path at all (it draws only an
+/// embedded <c>data:</c> image and reads XML with no resolver), so this is
+/// now defence in depth rather than the one barrier; it stays because it is
+/// cheap and keeps the guarantee independent of the renderer.
 /// </para>
 /// <para>
 /// A <c>&lt;!DOCTYPE&gt;</c> declaration is removed outright — the XXE
@@ -803,11 +788,9 @@ internal static class SvgMarkupSanitiser
     /// base URI regardless of the value being empty; a document loaded
     /// from a bare stream (every attachment this platform opens) carries
     /// no base URI at all, and resolving a relative reference against a
-    /// null one throws. A <c>data:</c> URI is absolute — Svg.Skia's own
-    /// image resolution (<c>Svg.Model.SvgExtensions.GetImageUri</c>)
-    /// returns it immediately, before any base-URI resolution is even
-    /// attempted — so this is the one substitution that is both inert and
-    /// never touches that code path at all.
+    /// null one throws. A <c>data:</c> URI is absolute, so no reader resolves
+    /// it against a base URI, and an empty one carries nothing to decode:
+    /// <see cref="SvgPictureBuilder"/> draws no image for it.
     /// </summary>
     private const string InertReferenceValue = "data:,";
 
