@@ -1,4 +1,5 @@
 using CsCheck;
+using Tempest.Calc.Engine.Values;
 using Tempest.Calc.Sheets;
 using Tempest.Calc.Structural;
 
@@ -70,6 +71,65 @@ public sealed class LoadCombinationsTests
         var missing = CalcRunner.Run(Combos, With(psi, LoadCombinationsCalculator.Actions(("G", LoadCombinationsCalculator.Permanent, 10), ("W", "wind", 4))));
         Assert.True(missing.IsBlocked);
         Assert.Equal("psi-missing", missing.Blocks[0].RuleId);
+    }
+
+    [Fact]
+    public void The_National_Annex_Factor_Set_Needs_A_Record_Pinned_On_Every_Factor_And_Prints_Its_Provenance()
+    {
+        // DC-07 S5 (owner decision DC-21). With "National Annex record" chosen and no record applied, the sheet refuses in one sentence naming factor_set.
+        var chosen = CalcRunner.Run(Combos, With(CalcInputValue.Choice("factor_set", LoadCombinationsCalculator.FactorSetNationalAnnex)));
+        Assert.True(chosen.IsBlocked);
+        var block = Assert.Single(chosen.Blocks);
+        Assert.Equal("factor-set", block.RuleId);
+        Assert.StartsWith("factor_set:", block.Message, StringComparison.Ordinal);
+        Assert.Empty(CalcMessageShape.Problems(block.Message));
+        Assert.Single(block.Message.TrimEnd('.').Split(". "));
+        Assert.Contains("psi", block.Message, StringComparison.Ordinal);
+
+        // A pin on some of the factors only still refuses, naming the ones without it.
+        var pin = CalcProvenance.FromReference($"record:{Guid.NewGuid():N}@2 · Table NA.A1.2(B)") with { Revision = "2002+A1:2005, NA 2009" };
+        var partly = CalcRunner.Run(Combos, With(CalcInputValue.Choice("factor_set", LoadCombinationsCalculator.FactorSetNationalAnnex), CalcInputValue.Of("gamma_G_sup", 1.35, pin), CalcInputValue.Of("gamma_Q", 1.5, pin)));
+        Assert.True(partly.IsBlocked);
+        Assert.Contains("gamma_G_inf, xi, psi", partly.Blocks[0].Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("gamma_Q", partly.Blocks[0].Message, StringComparison.Ordinal);
+
+        // Every factor and the ψ table pinned to a record: the sheet runs, prints the set name and the record's provenance (its table or clause and edition), and the
+        // values are the record's (the numbers here are invented; nothing from a National Annex is typed).
+        var psi = CalcInputValue.Table("psi", [CalcRow.Of(("category", new CalcCell(Text: "B office")), ("psi_0", new CalcCell(0.6)), ("psi_1", new CalcCell(0.4)), ("psi_2", new CalcCell(0.2)))], pin);
+        var pinned = CalcRunner.Run(Combos, With(
+            CalcInputValue.Choice("factor_set", LoadCombinationsCalculator.FactorSetNationalAnnex), CalcInputValue.Choice("method", LoadCombinationsCalculator.Method610ab),
+            CalcInputValue.Of("gamma_G_sup", 1.4, pin), CalcInputValue.Of("gamma_G_inf", 1.0, pin), CalcInputValue.Of("gamma_Q", 1.6, pin), CalcInputValue.Of("xi", 0.9, pin), psi));
+        Assert.False(pinned.IsBlocked, string.Join("; ", pinned.Blocks.Select(b => b.Message)));
+        var set = Assert.IsType<TextValue>(pinned.FindOutput("factor_set_used")!.Value).Value;
+        Assert.StartsWith("National Annex record", set, StringComparison.Ordinal);
+        Assert.Contains("Table NA.A1.2(B)", set, StringComparison.Ordinal);
+        Assert.Contains("2002+A1:2005, NA 2009", set, StringComparison.Ordinal);
+        Assert.DoesNotContain("record:", set, StringComparison.Ordinal);
+        Assert.Contains(pinned.RunAssumptions, a => a.Statement.StartsWith("Factor set:", StringComparison.Ordinal) && a.Statement.Contains("Table NA.A1.2(B)", StringComparison.Ordinal));
+        // 6.10a: 1.4×10 + 1.6×0.6×5 = 18.8; 6.10b: 0.9×1.4×10 + 1.6×5 = 20.6 governs.
+        Assert.Equal(20.6, pinned.OutputSi("E_d_max") / 1e3, 9);
+
+        // "EN recommended" (the default) runs as before, pinned or not, and names its set.
+        var recommended = CalcRunner.Run(Combos, With());
+        Assert.False(recommended.IsBlocked);
+        Assert.StartsWith("EN recommended", Assert.IsType<TextValue>(recommended.FindOutput("factor_set_used")!.Value).Value, StringComparison.Ordinal);
+        Assert.Equal(21, recommended.OutputSi("E_d_max") / 1e3, 9);
+        var recommendedPinned = CalcRunner.Run(Combos, With(CalcInputValue.Of("xi", 0.9, pin)));
+        Assert.False(recommendedPinned.IsBlocked);
+    }
+
+    [Fact]
+    public void A_Calculation_Saved_Before_The_Factor_Set_Existed_Reads_As_EN_Recommended()
+    {
+        // Saved data compatibility (brief C-2): an input set with no factor_set, as every calculation saved on 1.2.0 has, gives today's values and the EN recommended set.
+        var old = new CalcInputSet([LoadCombinationsCalculator.Actions(("Dead load", LoadCombinationsCalculator.Permanent, 10), ("Office imposed", "B office", 5)), CalcInputValue.Of("xi", 0.925), CalcInputValue.Choice("method", LoadCombinationsCalculator.Method610ab)]);
+        Assert.Null(old.Find("factor_set"));
+        var r = CalcRunner.Run(Combos, old);
+        Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+        Assert.Equal(LoadCombinationsCalculator.FactorSetRecommended, Combos.Template.FindInput("factor_set")!.DefaultChoice);
+        Assert.StartsWith("EN recommended", Assert.IsType<TextValue>(r.FindOutput("factor_set_used")!.Value).Value, StringComparison.Ordinal);
+        // 6.10a: 1.35×10 + 1.5×0.7×5 = 18.75; 6.10b: 0.925×1.35×10 + 1.5×5 = 19.9875 governs (the typed ξ is used, as before).
+        Assert.Equal(19.9875, r.OutputSi("E_d_max") / 1e3, 9);
     }
 
     [Fact]

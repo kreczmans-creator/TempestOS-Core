@@ -1,4 +1,4 @@
-# Load combinations (EN 1990) (`struct.load-combinations@1.2.0`)
+# Load combinations (EN 1990) (`struct.load-combinations@1.3.0`)
 
 **In plain terms.** Real structures carry a permanent load (their own weight) and several variable loads (people, wind, snow), and the code asks for them to be combined with safety factors in several ways, each variable load taking its turn as the leading one. The worksheet takes each load's characteristic value and category, builds every combination Eurocode 0 asks for (strength, serviceability and accidental), and reports the largest and smallest design value and the combination that governs.
 
@@ -26,6 +26,7 @@ Each combination is shown as formula → substitution → result (`C1…` for th
 | `actions` | Actions (one effect, signed) | — | — | table | Setup | — |
 | `unit` | Unit of the effect | — | kN | kN, kN/m, kN/m^2, kN*m, kN*m/m | Setup | — |
 | `method` | ULS expression | — | 6.10 | 6.10, 6.10a and 6.10b | Setup | — |
+| `factor_set` | Factor set: the EN 1990 recommended values as entered, or a National Annex record applied to the partial factors and the ψ table | — | EN recommended | EN recommended, National Annex record | Setup | — |
 | `gamma_G_sup` | γ_G,sup (unfavourable permanent) | — | 1.35 | 1 to 2 | Factors | — |
 | `gamma_G_inf` | γ_G,inf (favourable permanent) | — | 1 | 0.8 to 1.2 | Factors | — |
 | `gamma_Q` | γ_Q (variable) | — | 1.5 | 1 to 2 | Factors | — |
@@ -57,6 +58,7 @@ Columns of `psi`:
 3. Bridge, fatigue and seismic combinations are not included. Basis: EN 1990 Annex A1 scope.
 4. Without a ψ record the recommended values of EN 1990 Annex A1 are used and labelled on the sheet. Basis: No National Annex table is shipped.
 5. UK National Annex values of ψ and γ come from a user record. Basis: No National Annex table is shipped.
+6. The factor set says whether the factors are the EN recommended values or come from a National Annex record. Basis: No National Annex value is shipped; a record carries its source, edition and table or clause, and the sheet prints them.
 6. Each permanent action takes γ_G,sup when it adds to the effect sought and γ_G,inf when it opposes it. Basis: EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions.
 7. For an equilibrium check with one source, the source's permanent actions are entered as one row. Basis: EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions.
 
@@ -95,12 +97,17 @@ Applicability rules:
 | `no-actions` | Block | Conservative | No actions: nothing to combine. |
 | `psi-missing` | Block | Conservative | A variable action's category has no ψ factors in the ψ record. |
 | `no-permanent` | Warning | Conservative | No permanent action: check the combinations are what you intend. |
+| `factor-set` | Block | Conservative | With the National Annex record set chosen, every partial factor and the ψ table must carry the pin of an applied record. |
 
 ## Limitations
 
 One scalar effect by superposition; buildings only; no EQU set B/C split, bridges, fatigue or seismic.
 
+**Factor set.** `factor_set` names where the partial and ψ factors come from. `EN recommended` (the default, and what a calculation saved before 1.3.0 reads) is the sheet as it was: the factors as entered, whose defaults are the EN 1990 Annex A1 recommended values. `National Annex record` takes `gamma_G_sup`, `gamma_G_inf`, `gamma_Q`, `xi` and the `psi` table from an `en1990.factors` record applied to the calculation (C-3 record template 15: the four partial factors on the first row, the ψ table in the category rows, with the National Annex, its edition and its tables as the record's source); its values are licensed and are never shipped or typed into the sheet. With that set chosen and no record applied to every one of the five inputs the sheet refuses in one sentence naming `factor_set` (rule `factor-set`). The sheet prints the set name as the text result `factor_set_used`; for a record it adds the record's table or clause and edition, lists each input's record citation in the Inputs section, and states the set under Assumptions.
+
 ### Changes by version
+
+**1.3.0 (DC-07 S5, owner decision DC-21).** New choice `factor_set` (Setup; `EN recommended`, the default, or `National Annex record`). With the record set chosen the five factor inputs must carry the pin of an applied `en1990.factors` record, else the sheet refuses naming `factor_set`; the set name and the record's provenance are printed (`factor_set_used`, an assumption). The known-answer cases and the worked example stay on `EN recommended` and keep their values; a calculation saved without `factor_set` reads `EN recommended`. The record kind `en1990.factors`, its template 15 and its requirement row (C-3) already existed and carry the set; no second kind was added, because the importer keys a kind by the inputs the calculator declares and the National Annex record holds the same five. No calculated value changes.
 
 **1.2.0 (C-2 consistency).** The inputs are grouped: the actions table, the unit and the ULS expression in Setup, the factors and the ψ table in Factors. The hard range of `K_FI` is widened to 0.5 to 2 so that its usual range of 0.9 to 1.1 sits inside it (a value outside 0.9 to 1.1 now warns instead of being refused). The standard is written in full (BS EN 1990:2002+A1:2005) and the UK National Annex is cited by its tables. The scope, assumptions and one message follow the sheet standard. No calculated value changes.
 

@@ -11,13 +11,14 @@ namespace Tempest.Calc.Tests.Calculators.Consistency;
 /// <item>an unconservative rule is a <b>block</b> (the sheet gives no result), or</item>
 /// <item>it is <b>paired with a check that fails when it fires</b>: <see cref="Probes"/> runs the template on inputs that make the rule fire and requires the named check to fail, or</item>
 /// <item>it is on <c>UnconservativeAllowList.json</c> with the reason it is not yet one of those and what remains to do. The list only shrinks: it has
-/// <see cref="Ceiling"/> entries; removing an entry lowers the ceiling in the same commit, and adding one fails the build unless a reviewer raises it.</item>
+/// <see cref="Ceiling"/> entries; removing an entry lowers the ceiling in the same commit, and adding one fails the build unless a reviewer raises it
+/// (raised once, 72 to 73, for <c>struct.ltb-interaction</c> <c>welded-pair</c>: a warning the owner chose in DC-21 for a licensed National Annex pair the sheet does not hold).</item>
 /// </list>
 /// </summary>
 public sealed class UnconservativeRuleTests
 {
     /// <summary>The number of entries on the allow-list today. Lower it with every entry removed; never raise it.</summary>
-    public const int Ceiling = 72;
+    public const int Ceiling = 73;
 
     /// <summary>One unconservative warning proved to be paired with a failing check: the template, the rule, the check that fails and inputs that make the rule fire.</summary>
     private sealed record Probe(string Template, string Rule, string CheckStartsWith, Func<CalcInputSet> Inputs);

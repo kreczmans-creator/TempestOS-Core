@@ -44,8 +44,8 @@ Calculation pack: the calculations listed in the index, issued together under on
   Template: pack
   Content hash: —
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 47/47
-  Test run: 2026-10-27 03:56 UTC
+  Known-answer cases passed: 49/49
+  Test run: 2026-10-27 07:03 UTC
   Application: TempestOS test
 
 9. References
@@ -70,6 +70,7 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   actions[2] |  | name = Maintenance load; category = E storage; F_k = -8 |  |  | 
   unit | Unit of the effect | kN |  | spec: SPEC-STR-09 §2 (actions) | any
   method | ULS expression | 6.10 |  | spec: SPEC-STR-09 §2 (actions) | any
+  factor_set | Factor set: the EN 1990 recommended values as entered, or a National Annex record applied to the partial factors and the ψ table | EN recommended |  | assumption: Sheet default value; no project figure given. | any
   gamma_G_sup | γ_G,sup (unfavourable permanent) | 1.35 |  | assumption: Sheet default value; no project figure given. | 1 … 2
   gamma_G_inf | γ_G,inf (favourable permanent) | 1 |  | assumption: Sheet default value; no project figure given. | 0.8 … 1.2
   gamma_Q | γ_Q (variable) | 1.5 |  | assumption: Sheet default value; no project figure given. | 1 … 2
@@ -82,77 +83,79 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   A3. Bridge, fatigue and seismic combinations are not included. (EN 1990 Annex A1 scope.)
   A4. Without a ψ record the recommended values of EN 1990 Annex A1 are used and labelled on the sheet. (No National Annex table is shipped.)
   A5. UK National Annex values of ψ and γ come from a user record. (No National Annex table is shipped.)
-  A6. Each permanent action takes γ_G,sup when it adds to the effect sought and γ_G,inf when it opposes it. (EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions.)
-  A7. For an equilibrium check with one source, the source's permanent actions are entered as one row. (EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions.)
-  A8. gamma_G_sup (γ_G,sup (unfavourable permanent)) is taken as 1.35. (Sheet default value; no project figure given.)
-  A9. gamma_G_inf (γ_G,inf (favourable permanent)) is taken as 1. (Sheet default value; no project figure given.)
-  A10. gamma_Q (γ_Q (variable)) is taken as 1.5. (Sheet default value; no project figure given.)
-  A11. xi (ξ reduction for 6.10b) is taken as 0.85. (Sheet default value; no project figure given.)
-  A12. K_FI (Consequence-class factor) is taken as 1. (Sheet default value; no project figure given.)
-  A13. ψ factors: EN 1990 Annex A1 recommended values (Table A1.1). (No ψ record entered.)
+  A6. The factor set says whether the factors are the EN recommended values or come from a National Annex record. (No National Annex value is shipped; a record carries its source, edition and table or clause, and the sheet prints them.)
+  A7. Each permanent action takes γ_G,sup when it adds to the effect sought and γ_G,inf when it opposes it. (EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions.)
+  A8. For an equilibrium check with one source, the source's permanent actions are entered as one row. (EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions.)
+  A9. factor_set (Factor set: the EN 1990 recommended values as entered, or a National Annex record applied to the partial factors and the ψ table) is taken as EN recommended. (Sheet default value; no project figure given.)
+  A10. gamma_G_sup (γ_G,sup (unfavourable permanent)) is taken as 1.35. (Sheet default value; no project figure given.)
+  A11. gamma_G_inf (γ_G,inf (favourable permanent)) is taken as 1. (Sheet default value; no project figure given.)
+  A12. gamma_Q (γ_Q (variable)) is taken as 1.5. (Sheet default value; no project figure given.)
+  A13. xi (ξ reduction for 6.10b) is taken as 0.85. (Sheet default value; no project figure given.)
+  A14. K_FI (Consequence-class factor) is taken as 1. (Sheet default value; no project figure given.)
+  A15. ψ factors: EN 1990 Annex A1 recommended values (Table A1.1). (No ψ record entered.)
 
 4. Working
-  [8] C1 = γ_G,inf·G1    « EN 1990 cl. 6.4.3.2
+  [9] C1 = γ_G,inf·G1    « EN 1990 cl. 6.4.3.2
       = 1×-12
       = -12 kN
         ULS 6.10, no variable action (max)
-  [9] C2 = 1·G1    « EN 1990 cl. 6.5.3
+  [10] C2 = 1·G1    « EN 1990 cl. 6.5.3
       = 1×-12
       = -12 kN
         SLS characteristic 6.14b, no variable action (max)
-  [10] C3 = 1·G1    « EN 1990 cl. 6.5.3
+  [11] C3 = 1·G1    « EN 1990 cl. 6.5.3
       = 1×-12
       = -12 kN
         SLS frequent 6.15b, no variable action (max)
-  [11] C4 = 1·G1    « EN 1990 cl. 6.5.3
+  [12] C4 = 1·G1    « EN 1990 cl. 6.5.3
       = 1×-12
       = -12 kN
         SLS quasi-permanent 6.16b (max)
-  [12] D1 = γ_G,sup·K_FI·G1 + γ_Q·K_FI·Q2    « EN 1990 cl. 6.4.3.2
+  [13] D1 = γ_G,sup·K_FI·G1 + γ_Q·K_FI·Q2    « EN 1990 cl. 6.4.3.2
       = 1.35×-12 + 1.5×-8
       = -28.2 kN
         ULS 6.10, Maintenance load leading (min)
-  [13] D2 = 1·G1 + 1·Q2    « EN 1990 cl. 6.5.3
+  [14] D2 = 1·G1 + 1·Q2    « EN 1990 cl. 6.5.3
       = 1×-12 + 1×-8
       = -20 kN
         SLS characteristic 6.14b, Maintenance load leading (min)
-  [14] D3 = 1·G1 + ψ₁·Q2    « EN 1990 cl. 6.5.3
+  [15] D3 = 1·G1 + ψ₁·Q2    « EN 1990 cl. 6.5.3
       = 1×-12 + 0.9×-8
       = -19.2 kN
         SLS frequent 6.15b, Maintenance load leading (min)
-  [15] D4 = 1·G1 + ψ₂·Q2    « EN 1990 cl. 6.5.3
+  [16] D4 = 1·G1 + ψ₂·Q2    « EN 1990 cl. 6.5.3
       = 1×-12 + 0.8×-8
       = -18.4 kN
         SLS quasi-permanent 6.16b (min)
-  [16] E_d_max = maximum over the combinations
+  [17] E_d_max = maximum over the combinations
       = ULS 6.10, no variable action
       = -12 kN
         ULS design effect, maximum
-  [17] E_d_min = minimum over the combinations
+  [18] E_d_min = minimum over the combinations
       = ULS 6.10, Maintenance load leading
       = -28.2 kN
         ULS design effect, minimum
-  [18] E_k_max = maximum over the combinations
+  [19] E_k_max = maximum over the combinations
       = SLS characteristic 6.14b, no variable action
       = -12 kN
         SLS characteristic effect, maximum
-  [19] E_k_min = minimum over the combinations
+  [20] E_k_min = minimum over the combinations
       = SLS characteristic 6.14b, Maintenance load leading
       = -20 kN
         SLS characteristic effect, minimum
-  [20] E_fr_max = maximum over the combinations
+  [21] E_fr_max = maximum over the combinations
       = SLS frequent 6.15b, no variable action
       = -12 kN
         SLS frequent effect, maximum
-  [21] E_fr_min = minimum over the combinations
+  [22] E_fr_min = minimum over the combinations
       = SLS frequent 6.15b, Maintenance load leading
       = -19.2 kN
         SLS frequent effect, minimum
-  [22] E_qp_max = maximum over the combinations
+  [23] E_qp_max = maximum over the combinations
       = SLS quasi-permanent 6.16b
       = -12 kN
         SLS quasi-permanent effect, maximum
-  [23] E_qp_min = minimum over the combinations
+  [24] E_qp_min = minimum over the combinations
       = SLS quasi-permanent 6.16b
       = -18.4 kN
         SLS quasi-permanent effect, minimum
@@ -162,6 +165,7 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   E_d_min = -28.20 kN    ULS design effect, minimum
   E_k_max = -12 kN    SLS characteristic effect, maximum
   E_qp_max = -12 kN    SLS quasi-permanent effect, maximum
+  factor_set_used = "EN recommended (the factors as entered; the defaults are the EN 1990 Annex A1 recommended values)"    Factor set
   E_d_gov = "ULS 6.10, no variable action"    ULS design effect, governing (max)
   E_k_min = -20 kN    SLS characteristic effect, minimum
   E_k_gov = "SLS characteristic 6.14b, no variable action"    SLS characteristic effect, governing (max)
@@ -178,11 +182,11 @@ ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on 
   WARNING  records: tabulated values not taken from a reference record are gamma_G_sup, gamma_G_inf, gamma_Q, xi (EN 1990 partial and ψ factors). Enter each as one so its source, edition and licence travel with it.  [record]
 
 8. Verification
-  Template: struct.load-combinations@1.2.0
-  Content hash: 2cdaa6adaf7b0cf8
+  Template: struct.load-combinations@1.3.0
+  Content hash: cb9c9324da911c6f
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 5/5
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:03 UTC
   Application: TempestOS test
 
 9. References
@@ -390,11 +394,11 @@ Member stiffness: three freedoms per node, Euler–Bernoulli members with axial 
   None.
 
 8. Verification
-  Template: struct.frame-2d@1.5.0
-  Content hash: 563dd9a0eb5dfb9f
+  Template: struct.frame-2d@1.6.0
+  Content hash: 228c165050cec261
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 6/6
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:03 UTC
   Application: TempestOS test
 
 9. References
@@ -657,7 +661,7 @@ Axial plastic resistance: N_pl,Rd = A f_y/γ_M0. Bending resistance, plastic mod
   Content hash: 09dec90614ac2f64
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 3/3
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:03 UTC
   Application: TempestOS test
 
 9. References
@@ -826,7 +830,7 @@ Centroid of the bolt group, each bolt weighted by its area: x_c = Σ A x / Σ A 
   Content hash: 6612491a876c3ed5
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 8/8
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:03 UTC
   Application: TempestOS test
 
 9. References
@@ -844,7 +848,7 @@ Issued: 2026-10-27    Issue: STR-SUP-001    Client: Client Co
 
 1. Scope and method
 Calculates the design resistance of one bolt in a plate, block tearing of the bolt group, the spacing limits, and a fillet weld by the simplified and directional methods, each against its design force. Loading is static.
-Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane) Bolt bearing resistance: F_b,Rd = k_h·min(k₁·α_b·f_u·d·t/γ_M2, [single lap, one bolt row: 1.5·f_u·d·t/γ_M2]); α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5); k_h = 1 (normal holes), 0.8 (oversize), 0.6 (slot across the load) Bolt tension resistance: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1 Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for a group loaded concentrically; V_eff,2,Rd = 0.5·f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for an eccentrically loaded group Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2
+Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P Shear (cl. 3.6, Table 3.4): F_v,Rd = k_v12·α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane); k_v12 = 0.85 for an M12 bolt of class 4.8, 5.8, 6.8, 8.8 or 10.9 in its normal clearance hole d₀ = d + 2 (Table 3.4, note on M12 bolts), else 1 Bolt bearing resistance: F_b,Rd = k_h·min(k₁·α_b·f_u·d·t/γ_M2, [single lap, one bolt row: 1.5·f_u·d·t/γ_M2]); α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5); k_h = 1 (normal holes), 0.8 (oversize), 0.6 (slot across the load) Bolt tension resistance: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1 Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for a group loaded concentrically; V_eff,2,Rd = 0.5·f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for an eccentrically loaded group Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
@@ -884,24 +888,25 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   A5. Bearing across the load is taken at an edge bolt, with k₁ from e₂ and p₂. (Conservative for every bolt in the group.)
   A6. Oversize holes reduce the bearing resistance by 0.8, and a slot across the load by 0.6. (BS EN 1993-1-8:2005 cl. 3.6.1, Table 3.4.)
   A7. A hole above the normal clearance, with the hole type left at normal, is treated as oversize. (BS EN 1993-1-8:2005 cl. 3.6.1, Table 3.4.)
-  A8. The single-lap cap on the bearing resistance applies only when the single-lap switch is on. (BS EN 1993-1-8:2005 cl. 3.6.1; a warning says when it would bind.)
-  A9. Spacing minima and γ_M factors are entered from a National Annex record. (A small set of factors only; no table from a standard is shipped.)
-  A10. The defaults for the spacing minima and γ_M factors are the recommended values of BS EN 1993-1-8. (A small set of factors only; no table from a standard is shipped.)
-  A11. Group forces and weld forces per length come from the bolt group and weld group sheets by link. (Linked from the bolt-group and weld-group calculations.)
-  A12. hole_type (Hole type: oversize holes reduce the bearing resistance by 0.8, a slot across the load by 0.6 (a d₀ above the normal clearance is treated as oversize)) is taken as Normal clearance. (Sheet default value; no project figure given.)
-  A13. block_load (Block tearing loading: concentric (V_eff,1) or eccentric (V_eff,2, the tension term halved)) is taken as Concentric loading (V_eff,1). (Sheet default value; no project figure given.)
-  A14. single_lap (Single-lap joint with only one bolt row (limits the bearing resistance to 1.5·f_u·d·t/γ_M2, cl. 3.6.1)) is taken as no. (Sheet default value; no project figure given.)
-  A15. threads (Threads in the shear plane) is taken as yes. (Sheet default value; no project figure given.)
-  A16. n_s (Shear planes) is taken as 1. (Sheet default value; no project figure given.)
-  A17. f_y (Plate yield strength) is taken as 275 MPa. (Sheet default value; no project figure given.)
-  A18. f_u (Plate ultimate tensile strength) is taken as 410 MPa. (Sheet default value; no project figure given.)
-  A19. gamma_M2 (Partial factor for bolt and weld resistance) is taken as 1.25. (Sheet default value; no project figure given.)
-  A20. gamma_M0 (Partial factor for cross-section resistance) is taken as 1. (Sheet default value; no project figure given.)
-  A21. k_e1 (Minimum e₁/d₀) is taken as 1.2. (Sheet default value; no project figure given.)
-  A22. k_e2 (Minimum e₂/d₀) is taken as 1.2. (Sheet default value; no project figure given.)
-  A23. k_p1 (Minimum p₁/d₀) is taken as 2.2. (Sheet default value; no project figure given.)
-  A24. k_p2 (Minimum p₂/d₀) is taken as 2.4. (Sheet default value; no project figure given.)
-  A25. Bearing is taken on the thinner ply, 11 mm, with this sheet's f_u, edge distances and spacings. (t_p = 20 mm and t_2 = 11 mm; where the other ply differs, run the sheet for it as well (BS EN 1993-1-8 cl. 3.6.1, Table 3.4).)
+  A8. A 12 mm bolt in its normal clearance hole takes 0.85 on its shear resistance, except classes 4.6 and 5.6. (BS EN 1993-1-8:2005 Table 3.4, the note on 12 mm and 14 mm bolts in 2 mm clearance holes.)
+  A9. The single-lap cap on the bearing resistance applies only when the single-lap switch is on. (BS EN 1993-1-8:2005 cl. 3.6.1; a warning says when it would bind.)
+  A10. Spacing minima and γ_M factors are entered from a National Annex record. (A small set of factors only; no table from a standard is shipped.)
+  A11. The defaults for the spacing minima and γ_M factors are the recommended values of BS EN 1993-1-8. (A small set of factors only; no table from a standard is shipped.)
+  A12. Group forces and weld forces per length come from the bolt group and weld group sheets by link. (Linked from the bolt-group and weld-group calculations.)
+  A13. hole_type (Hole type: oversize holes reduce the bearing resistance by 0.8, a slot across the load by 0.6 (a d₀ above the normal clearance is treated as oversize)) is taken as Normal clearance. (Sheet default value; no project figure given.)
+  A14. block_load (Block tearing loading: concentric (V_eff,1) or eccentric (V_eff,2, the tension term halved)) is taken as Concentric loading (V_eff,1). (Sheet default value; no project figure given.)
+  A15. single_lap (Single-lap joint with only one bolt row (limits the bearing resistance to 1.5·f_u·d·t/γ_M2, cl. 3.6.1)) is taken as no. (Sheet default value; no project figure given.)
+  A16. threads (Threads in the shear plane) is taken as yes. (Sheet default value; no project figure given.)
+  A17. n_s (Shear planes) is taken as 1. (Sheet default value; no project figure given.)
+  A18. f_y (Plate yield strength) is taken as 275 MPa. (Sheet default value; no project figure given.)
+  A19. f_u (Plate ultimate tensile strength) is taken as 410 MPa. (Sheet default value; no project figure given.)
+  A20. gamma_M2 (Partial factor for bolt and weld resistance) is taken as 1.25. (Sheet default value; no project figure given.)
+  A21. gamma_M0 (Partial factor for cross-section resistance) is taken as 1. (Sheet default value; no project figure given.)
+  A22. k_e1 (Minimum e₁/d₀) is taken as 1.2. (Sheet default value; no project figure given.)
+  A23. k_e2 (Minimum e₂/d₀) is taken as 1.2. (Sheet default value; no project figure given.)
+  A24. k_p1 (Minimum p₁/d₀) is taken as 2.2. (Sheet default value; no project figure given.)
+  A25. k_p2 (Minimum p₂/d₀) is taken as 2.4. (Sheet default value; no project figure given.)
+  A26. Bearing is taken on the thinner ply, 11 mm, with this sheet's f_u, edge distances and spacings. (t_p = 20 mm and t_2 = 11 mm; where the other ply differs, run the sheet for it as well (BS EN 1993-1-8 cl. 3.6.1, Table 3.4).)
 
 4. Working
   [21] f_ub = class first figure × 100    « EN 1993-1-8 Table 3.1
@@ -1013,11 +1018,11 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   WARNING  single_lap: k₁·α_b = 1.5152 exceeds 1.5, which caps bearing resistance of a single lap at 108.24 kN, not 109.33 kN. Switch single_lap on if that is the joint.  [single_lap]
 
 8. Verification
-  Template: struct.connection-ec3@1.8.0
-  Content hash: f5c75db5b1171fa0
+  Template: struct.connection-ec3@1.9.0
+  Content hash: 9d487fad84a4c3c8
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 8/8
-  Test run: 2026-10-27 03:56 UTC
+  Known-answer cases passed: 9/9
+  Test run: 2026-10-27 07:03 UTC
   Application: TempestOS test
 
 9. References
@@ -1038,7 +1043,7 @@ Issued: 2026-10-27    Issue: STR-SUP-001    Client: Client Co
 
 1. Scope and method
 Calculates the design resistance of one bolt in a plate, block tearing of the bolt group, the spacing limits, and a fillet weld by the simplified and directional methods, each against its design force. Loading is static.
-Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane) Bolt bearing resistance: F_b,Rd = k_h·min(k₁·α_b·f_u·d·t/γ_M2, [single lap, one bolt row: 1.5·f_u·d·t/γ_M2]); α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5); k_h = 1 (normal holes), 0.8 (oversize), 0.6 (slot across the load) Bolt tension resistance: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1 Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for a group loaded concentrically; V_eff,2,Rd = 0.5·f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for an eccentrically loaded group Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2
+Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P Shear (cl. 3.6, Table 3.4): F_v,Rd = k_v12·α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane); k_v12 = 0.85 for an M12 bolt of class 4.8, 5.8, 6.8, 8.8 or 10.9 in its normal clearance hole d₀ = d + 2 (Table 3.4, note on M12 bolts), else 1 Bolt bearing resistance: F_b,Rd = k_h·min(k₁·α_b·f_u·d·t/γ_M2, [single lap, one bolt row: 1.5·f_u·d·t/γ_M2]); α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5); k_h = 1 (normal holes), 0.8 (oversize), 0.6 (slot across the load) Bolt tension resistance: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1 Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for a group loaded concentrically; V_eff,2,Rd = 0.5·f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for an eccentrically loaded group Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
@@ -1073,23 +1078,24 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   A5. Bearing across the load is taken at an edge bolt, with k₁ from e₂ and p₂. (Conservative for every bolt in the group.)
   A6. Oversize holes reduce the bearing resistance by 0.8, and a slot across the load by 0.6. (BS EN 1993-1-8:2005 cl. 3.6.1, Table 3.4.)
   A7. A hole above the normal clearance, with the hole type left at normal, is treated as oversize. (BS EN 1993-1-8:2005 cl. 3.6.1, Table 3.4.)
-  A8. The single-lap cap on the bearing resistance applies only when the single-lap switch is on. (BS EN 1993-1-8:2005 cl. 3.6.1; a warning says when it would bind.)
-  A9. Spacing minima and γ_M factors are entered from a National Annex record. (A small set of factors only; no table from a standard is shipped.)
-  A10. The defaults for the spacing minima and γ_M factors are the recommended values of BS EN 1993-1-8. (A small set of factors only; no table from a standard is shipped.)
-  A11. Group forces and weld forces per length come from the bolt group and weld group sheets by link. (Linked from the bolt-group and weld-group calculations.)
-  A12. hole_type (Hole type: oversize holes reduce the bearing resistance by 0.8, a slot across the load by 0.6 (a d₀ above the normal clearance is treated as oversize)) is taken as Normal clearance. (Sheet default value; no project figure given.)
-  A13. block_load (Block tearing loading: concentric (V_eff,1) or eccentric (V_eff,2, the tension term halved)) is taken as Concentric loading (V_eff,1). (Sheet default value; no project figure given.)
-  A14. single_lap (Single-lap joint with only one bolt row (limits the bearing resistance to 1.5·f_u·d·t/γ_M2, cl. 3.6.1)) is taken as no. (Sheet default value; no project figure given.)
-  A15. threads (Threads in the shear plane) is taken as yes. (Sheet default value; no project figure given.)
-  A16. n_s (Shear planes) is taken as 1. (Sheet default value; no project figure given.)
-  A17. f_y (Plate yield strength) is taken as 275 MPa. (Sheet default value; no project figure given.)
-  A18. f_u (Plate ultimate tensile strength) is taken as 410 MPa. (Sheet default value; no project figure given.)
-  A19. gamma_M2 (Partial factor for bolt and weld resistance) is taken as 1.25. (Sheet default value; no project figure given.)
-  A20. gamma_M0 (Partial factor for cross-section resistance) is taken as 1. (Sheet default value; no project figure given.)
-  A21. k_e1 (Minimum e₁/d₀) is taken as 1.2. (Sheet default value; no project figure given.)
-  A22. k_e2 (Minimum e₂/d₀) is taken as 1.2. (Sheet default value; no project figure given.)
-  A23. k_p1 (Minimum p₁/d₀) is taken as 2.2. (Sheet default value; no project figure given.)
-  A24. k_p2 (Minimum p₂/d₀) is taken as 2.4. (Sheet default value; no project figure given.)
+  A8. A 12 mm bolt in its normal clearance hole takes 0.85 on its shear resistance, except classes 4.6 and 5.6. (BS EN 1993-1-8:2005 Table 3.4, the note on 12 mm and 14 mm bolts in 2 mm clearance holes.)
+  A9. The single-lap cap on the bearing resistance applies only when the single-lap switch is on. (BS EN 1993-1-8:2005 cl. 3.6.1; a warning says when it would bind.)
+  A10. Spacing minima and γ_M factors are entered from a National Annex record. (A small set of factors only; no table from a standard is shipped.)
+  A11. The defaults for the spacing minima and γ_M factors are the recommended values of BS EN 1993-1-8. (A small set of factors only; no table from a standard is shipped.)
+  A12. Group forces and weld forces per length come from the bolt group and weld group sheets by link. (Linked from the bolt-group and weld-group calculations.)
+  A13. hole_type (Hole type: oversize holes reduce the bearing resistance by 0.8, a slot across the load by 0.6 (a d₀ above the normal clearance is treated as oversize)) is taken as Normal clearance. (Sheet default value; no project figure given.)
+  A14. block_load (Block tearing loading: concentric (V_eff,1) or eccentric (V_eff,2, the tension term halved)) is taken as Concentric loading (V_eff,1). (Sheet default value; no project figure given.)
+  A15. single_lap (Single-lap joint with only one bolt row (limits the bearing resistance to 1.5·f_u·d·t/γ_M2, cl. 3.6.1)) is taken as no. (Sheet default value; no project figure given.)
+  A16. threads (Threads in the shear plane) is taken as yes. (Sheet default value; no project figure given.)
+  A17. n_s (Shear planes) is taken as 1. (Sheet default value; no project figure given.)
+  A18. f_y (Plate yield strength) is taken as 275 MPa. (Sheet default value; no project figure given.)
+  A19. f_u (Plate ultimate tensile strength) is taken as 410 MPa. (Sheet default value; no project figure given.)
+  A20. gamma_M2 (Partial factor for bolt and weld resistance) is taken as 1.25. (Sheet default value; no project figure given.)
+  A21. gamma_M0 (Partial factor for cross-section resistance) is taken as 1. (Sheet default value; no project figure given.)
+  A22. k_e1 (Minimum e₁/d₀) is taken as 1.2. (Sheet default value; no project figure given.)
+  A23. k_e2 (Minimum e₂/d₀) is taken as 1.2. (Sheet default value; no project figure given.)
+  A24. k_p1 (Minimum p₁/d₀) is taken as 2.2. (Sheet default value; no project figure given.)
+  A25. k_p2 (Minimum p₂/d₀) is taken as 2.4. (Sheet default value; no project figure given.)
 
 4. Working
   [20] f_ub = class first figure × 100    « EN 1993-1-8 Table 3.1
@@ -1190,11 +1196,11 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   WARNING  single_lap: k₁·α_b = 1.5152 exceeds 1.5, which caps bearing resistance of a single lap at 246 kN, not 248.48 kN. Switch single_lap on if that is the joint.  [single_lap]
 
 8. Verification
-  Template: struct.connection-ec3@1.8.0
-  Content hash: f5c75db5b1171fa0
+  Template: struct.connection-ec3@1.9.0
+  Content hash: 9d487fad84a4c3c8
   Engine: calc-engine/1.0.0
-  Known-answer cases passed: 8/8
-  Test run: 2026-10-27 03:56 UTC
+  Known-answer cases passed: 9/9
+  Test run: 2026-10-27 07:03 UTC
   Application: TempestOS test
 
 9. References
@@ -1252,7 +1258,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   gamma_M2 | Partial factor for the anchor bolts | 1.25 |  | assumption: Sheet default value; no project figure given. | 1.1 … 1.4
   C_fd | Friction coefficient, plate to grout | 0.2 |  | assumption: Sheet default value; no project figure given. | 0 … 0.4
   alpha | Concentration factor √(A_c1/A_c0) of the foundation (1 when the foundation geometry is not known) | 1 |  | drawing: DRG-STR-315 rev B | 1 … 2.5
-  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: 61bacd03ea52454f89c3982b858c47e7/1436100645414c4cbe67720e1463f2f6 | any
+  profis_ref | Hilti PROFIS report reference (the report is filed as Evidence) | PROFIS-BP1-PLACEHOLDER.txt |  | evidence: ef7fd968c69e4802a31f236d5a9dc0b2/9616cca20d034196b66740400fb15d81 | any
 
 3. Assumptions
   A1. The axial force is positive in compression, the opposite of the member check sheet. (Sign convention.)
@@ -1485,7 +1491,7 @@ Bearing (cl. 6.2.5): f_cd = α_cc·f_ck/γ_c; f_jd = β_j·α·f_cd, β_j = 2/3;
   Content hash: b3f3c18d0ee3f47a
   Engine: calc-engine/1.0.0
   Known-answer cases passed: 9/9
-  Test run: 2026-10-27 03:56 UTC
+  Test run: 2026-10-27 07:03 UTC
   Application: TempestOS test
 
 9. References

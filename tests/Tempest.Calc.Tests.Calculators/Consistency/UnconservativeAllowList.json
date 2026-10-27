@@ -120,7 +120,8 @@
     "k-svc": "Not fixed (A): the service-class factor of 1.0 is the stated default in saved sheets; requiring it changes them, so the owner has to decide."
   },
   "struct.ltb-interaction": {
-    "c1-psi": "Not fixed (B): the exact elastic C1 needs the moment diagram solved for the member, a second solve the sheet does not have; the closed form from psi is the one in use, and capping it would be a number with no source."
+    "c1-psi": "Not fixed (B): the exact elastic C1 needs the moment diagram solved for the member, a second solve the sheet does not have; the closed form from psi is the one in use, and capping it would be a number with no source.",
+    "welded-pair": "Not fixed (C): the National Annex's λ̄_LT,0 and β for welded sections are licensed values the sheet does not hold, so they come only from an ec3.ltb-factors record; the owner chose a warning (DC-03, DC-21), which a recorded basis on lambda_LT0 and beta_LT clears."
   },
   "struct.plate-bending": {
     "large-deflection": "Not fixed (A): above w/t = 0.5 the small-deflection theory overstates the deflection and the bending stress and omits the membrane stress, so the plate result is on the safe side for bending; the notice says so, and a block would refuse plates meant to act as membranes.",

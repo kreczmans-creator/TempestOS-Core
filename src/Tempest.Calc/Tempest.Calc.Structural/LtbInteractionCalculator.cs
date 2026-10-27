@@ -25,6 +25,11 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
     public const string NotSusceptible = "not susceptible (Table B.1)";
     public const string ModePsi = "ψ and M_y,Ed";
     public const string ModeEnds = "end moments";
+    /// <summary>The recommended λ̄_LT,0 and β of cl. 6.3.2.3 (the sheet's defaults): the pair for rolled sections, which a National Annex may replace for welded sections.</summary>
+    public const double RecommendedLambdaLt0 = 0.4;
+
+    public const double RecommendedBetaLt = 0.75;
+
     public const string RolledI = "rolled I";
     public const string WeldedI = "welded I";
     public const string CurveAuto = "auto (Table 6.4 / 6.5)";
@@ -39,7 +44,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
     public const string MaterialKind = "material.properties";
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.3.1", CalcDiscipline.Structural, "Lateral-torsional buckling and N+M interaction (EN 1993-1-1)",
+        Id, "1.3.2", CalcDiscipline.Structural, "Lateral-torsional buckling and N+M interaction (EN 1993-1-1)",
         "Calculates the lateral-torsional buckling, flexural buckling and bending-with-compression interaction of a uniform doubly-symmetric I-section member on fork supports, to EN 1993-1-1. Class 4 sections are outside this sheet.",
         "Critical moment (NCCI SN003 form): M_cr = C₁·π²E·I_z/(kL)²·[√((k/k_w)²·I_w/I_z + (kL)²·G·I_t/(π²E·I_z) + (C₂z_g)²) − C₂z_g]; C₁ = 1.88 − 1.40ψ + 0.52ψ² ≤ 2.70 (end moments, k = 1) unless entered\n" +
         "LTB slenderness: λ̄_LT = √(W_y·f_y/M_cr), W_y = W_pl,y (class 1, 2) or W_el,y (class 3)\n" +
@@ -148,6 +153,7 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
             new CalcApplicabilityRule("use-f", "The f modification belongs to 6.3.2.3 and is not applied with 6.3.2.2.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("annex-a", "Annex A coefficients are to be checked against the standard.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("slender", "Non-dimensional slenderness above 2.0.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("welded-pair", "A welded section checked by 6.3.2.3 with λ̄_LT,0 and β at the rolled-section pair and no recorded basis: the National Annex may give another pair for welded sections.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
         ],
         [
             new CalcTestCase("ka-annex-b-class2", "Annex B, Table B.2, class 2: N = 1200 kN with M_y = 200 kN·m (ψ = 0.5) and M_z = 15 kN·m",
@@ -445,6 +451,12 @@ public sealed class LtbInteractionCalculator : ICalcCalculator
             lam0 = c.InputSi("lambda_LT0");
             beta = c.InputSi("beta_LT");
             chiLt = LtbInteractionMath.ChiLtRolled(lamLt, alphaLt, lam0, beta);
+
+            // DC-03 S7 (owner decision DC-21): the recommended pair of 6.3.2.3 is the one for rolled sections; a National Annex may give another pair for welded
+            // sections, which the sheet does not hold (a licensed value: record kind ec3.ltb-factors). A basis recorded on both inputs makes the pair the person's.
+            if (welded && Math.Abs(lam0 - RecommendedLambdaLt0) < 1e-12 && Math.Abs(beta - RecommendedBetaLt) < 1e-12 && !(c.HasRecordedBasis("lambda_LT0") && c.HasRecordedBasis("beta_LT")))
+                c.Warn("welded-pair", "section_type: the section is welded, but λ̄_LT,0 = 0.4 and β = 0.75 are the rolled-section pair of clause 6.3.2.3. The National Annex may set another pair for welded sections, so enter lambda_LT0 and beta_LT from it.");
+
             var phiLt = 0.5 * (1 + alphaLt * (lamLt - lam0) + beta * lamLt * lamLt);
             c.Record("Phi_LT", "0.5[1 + α_LT(λ̄_LT − λ̄_LT,0) + β·λ̄_LT²]", $"0.5 × [1 + {F(alphaLt)} × ({F(lamLt)} − {F(lam0)}) + {F(beta)} × {F(lamLt)}²]", new ScalarValue(phiLt), "Φ_LT", "6.3.2.3(1)");
             c.Record("chi_LT_0", "1/(Φ_LT + √(Φ_LT² − β·λ̄_LT²)) ≤ 1, ≤ 1/λ̄_LT²", lamLt <= lam0 ? $"λ̄_LT {F(lamLt)} ≤ λ̄_LT,0 {F(lam0)}: no reduction" : $"1/({F(phiLt)} + √({F(phiLt)}² − {F(beta)} × {F(lamLt)}²))", new ScalarValue(chiLt), "Lateral-torsional reduction factor", "6.3.2.3(1)");

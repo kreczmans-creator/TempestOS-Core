@@ -531,7 +531,7 @@ public sealed class LtbInteractionTests
             Run(), Run(Choice("edition", LtbInteractionCalculator.Edition2022)), Run(Choice("section_class", "4")), Run(Q("W_pl_y", 1500, "cm^3")), Run(Choice("moment_mode", LtbInteractionCalculator.ModeEnds)),
             Run(Choice("annex", LtbInteractionCalculator.AnnexAMethod), Q("N_Ed", -5000, "kN")), Run(Choice("annex", LtbInteractionCalculator.AnnexAMethod), N("C_1", 1.2)), Run(N("C_1", 1.2)), Run(N("C_1", 1.2), N("C_m_y", 1.0), CalcInputValue.Switch("use_f", true)),
             Run(Q("z_g", 100, "mm")), Run(Choice("ltb_method", LtbInteractionCalculator.General), CalcInputValue.Switch("use_f", true)), Run(Q("f_y", 460, "MPa")), Run(N("C_m_LT", 0.25)), Run(N("C_1", 1.2), N("psi_y", 0.3), N("C_2", 0.2), Q("z_g", 50, "mm"), N("C_m_y", 0.9)),
-            CalcRunner.Run(Ltb, Defaults().With(new CalcInputValue("M_y_Ed"))), Run(Q("L_cr_z", 60, "m")),
+            CalcRunner.Run(Ltb, Defaults().With(new CalcInputValue("M_y_Ed"))), Run(Q("L_cr_z", 60, "m")), Run(Choice("section_type", LtbInteractionCalculator.WeldedI)),
         };
 
         foreach (var notice in runs.SelectMany(r => r.Notices))
@@ -543,7 +543,37 @@ public sealed class LtbInteractionTests
         }
 
         // ... including the ones that were raised before without a declaration.
-        Assert.All(new[] { "use-f", "engine", "C_m_LT", "moment", "k_c", "C_m_y", "zg-c2", "curve" }, id => Assert.Contains(id, declared));
+        Assert.All(new[] { "use-f", "engine", "C_m_LT", "moment", "k_c", "C_m_y", "zg-c2", "curve", "welded-pair" }, id => Assert.Contains(id, declared));
+    }
+
+    [Fact]
+    public void A_Welded_Section_Checked_By_6_3_2_3_On_The_Rolled_Section_Pair_Warns_Naming_Section_Type_Unless_A_Basis_Is_Recorded()
+    {
+        // DC-03 S7 (owner decision DC-21, C-1 finding struct.ltb-interaction-R1): the defaults λ̄_LT,0 = 0.4 and β = 0.75 are the rolled-section pair of 6.3.2.3; a National
+        // Annex may give another pair for welded sections, which the sheet does not hold. The warning changes no value.
+        var welded = Run(Choice("section_type", LtbInteractionCalculator.WeldedI), Choice("ltb_method", LtbInteractionCalculator.Rolled));
+        var warning = Assert.Single(welded.Warnings, w => w.RuleId == "welded-pair");
+        Assert.StartsWith("section_type:", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("lambda_LT0", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("beta_LT", warning.Message, StringComparison.Ordinal);
+        Assert.Contains("National Annex", warning.Message, StringComparison.Ordinal);
+        Assert.Empty(CalcMessageShape.Problems(warning.Message));
+        Assert.Equal(CalcRuleEffect.Unconservative, Ltb.Template.ApplicabilityRules.Single(r => r.Id == "welded-pair").Effect);
+
+        // A rolled section, the general method, a pair that is not the recommended one, and a recorded basis on both inputs carry no warning.
+        Assert.DoesNotContain(Run(Choice("section_type", LtbInteractionCalculator.RolledI), Choice("ltb_method", LtbInteractionCalculator.Rolled)).Warnings, w => w.RuleId == "welded-pair");
+        Assert.DoesNotContain(Run(Choice("section_type", LtbInteractionCalculator.WeldedI), Choice("ltb_method", LtbInteractionCalculator.General)).Warnings, w => w.RuleId == "welded-pair");
+        Assert.DoesNotContain(Run(Choice("section_type", LtbInteractionCalculator.WeldedI), N("lambda_LT0", 0.3)).Warnings, w => w.RuleId == "welded-pair");
+        var basis = CalcProvenance.Specification("National Annex in use, 6.3.2.3 parameters for welded sections");
+        var recorded = Run(Choice("section_type", LtbInteractionCalculator.WeldedI), CalcInputValue.Of("lambda_LT0", 0.4, basis), CalcInputValue.Of("beta_LT", 0.75, basis));
+        Assert.DoesNotContain(recorded.Warnings, w => w.RuleId == "welded-pair");
+
+        // A basis on one input only is not the pair's basis.
+        Assert.Contains(Run(Choice("section_type", LtbInteractionCalculator.WeldedI), CalcInputValue.Of("lambda_LT0", 0.4, basis)).Warnings, w => w.RuleId == "welded-pair");
+
+        // The warning changes no value: the welded section gives the same resistance with and without the recorded basis.
+        Assert.Equal(recorded.OutputSi("Mb_Rd"), welded.OutputSi("Mb_Rd"), 9);
+        Assert.Equal(recorded.OutputSi("chi_LT"), welded.OutputSi("chi_LT"), 12);
     }
 
     [Theory]

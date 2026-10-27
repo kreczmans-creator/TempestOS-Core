@@ -48,6 +48,16 @@
       "ValueText": "2 row(s)"
     },
     {
+      "Symbol": "factor_set",
+      "Text": "EN recommended",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "EN recommended"
+    },
+    {
       "Symbol": "gamma_G_inf",
       "Number": 1,
       "Provenance": {
@@ -264,7 +274,7 @@
               "Unit": "kN",
               "Provenance": {
                 "Kind": "Link",
-                "Reference": "calc:e4d6f6ead5b048149eb6517a3a3d9139#E_d_min",
+                "Reference": "calc:0796f46d8d1c4776ae71ebad9529d9e3#E_d_min",
                 "Revision": "A",
                 "IsSufficientToIssue": true
               }
@@ -486,7 +496,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:af66b4dd06c640b98924e7d776557c8a#M_abs_e1",
+        "Reference": "calc:de92db31d7bc4bd194d7fa662f4c4493#M_abs_e1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -509,7 +519,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:af66b4dd06c640b98924e7d776557c8a#N_e1",
+        "Reference": "calc:de92db31d7bc4bd194d7fa662f4c4493#N_e1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -521,7 +531,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:af66b4dd06c640b98924e7d776557c8a#V_e1",
+        "Reference": "calc:de92db31d7bc4bd194d7fa662f4c4493#V_e1",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -781,7 +791,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:af66b4dd06c640b98924e7d776557c8a#V_e2",
+        "Reference": "calc:de92db31d7bc4bd194d7fa662f4c4493#V_e2",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -793,7 +803,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:af66b4dd06c640b98924e7d776557c8a#M_abs_e2",
+        "Reference": "calc:de92db31d7bc4bd194d7fa662f4c4493#M_abs_e2",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -999,7 +1009,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:18692cbf95604a4d92a3eb3a41f8a583#F_t_Ed_max",
+        "Reference": "calc:3e079239f5184b1b9384dae17df65b1a#F_t_Ed_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1011,7 +1021,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:18692cbf95604a4d92a3eb3a41f8a583#F_v_Ed_max",
+        "Reference": "calc:3e079239f5184b1b9384dae17df65b1a#F_v_Ed_max",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1023,7 +1033,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:af66b4dd06c640b98924e7d776557c8a#V_e2",
+        "Reference": "calc:de92db31d7bc4bd194d7fa662f4c4493#V_e2",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1513,7 +1523,7 @@
       "Unit": "mm^2",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a6aa4f4f52ea468cb390d77b25bd1d17#A_s",
+        "Reference": "calc:ae614fbfbaff4aebac5478cec7d7c94d#A_s",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1558,7 +1568,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a6aa4f4f52ea468cb390d77b25bd1d17#F_b_Rd",
+        "Reference": "calc:ae614fbfbaff4aebac5478cec7d7c94d#F_b_Rd",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1570,7 +1580,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a6aa4f4f52ea468cb390d77b25bd1d17#F_t_Rd",
+        "Reference": "calc:ae614fbfbaff4aebac5478cec7d7c94d#F_t_Rd",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1594,7 +1604,7 @@
       "Unit": "kN*m",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:af66b4dd06c640b98924e7d776557c8a#R1_m_abs",
+        "Reference": "calc:de92db31d7bc4bd194d7fa662f4c4493#R1_m_abs",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1606,7 +1616,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:af66b4dd06c640b98924e7d776557c8a#R1_y",
+        "Reference": "calc:de92db31d7bc4bd194d7fa662f4c4493#R1_y",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1618,7 +1628,7 @@
       "Unit": "kN",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:af66b4dd06c640b98924e7d776557c8a#R1_x_abs",
+        "Reference": "calc:de92db31d7bc4bd194d7fa662f4c4493#R1_x_abs",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1697,7 +1707,7 @@
       "Unit": "MPa",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a6aa4f4f52ea468cb390d77b25bd1d17#f_ub",
+        "Reference": "calc:ae614fbfbaff4aebac5478cec7d7c94d#f_ub",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1720,7 +1730,7 @@
       "Unit": "MPa",
       "Provenance": {
         "Kind": "Link",
-        "Reference": "calc:a6aa4f4f52ea468cb390d77b25bd1d17#f_yb",
+        "Reference": "calc:ae614fbfbaff4aebac5478cec7d7c94d#f_yb",
         "Revision": "A",
         "IsSufficientToIssue": true
       },
@@ -1817,7 +1827,7 @@
       "Text": "PROFIS-BP1-PLACEHOLDER.txt",
       "Provenance": {
         "Kind": "Evidence",
-        "Reference": "6ca56dace36f490383d70541396bfdff/da57cfcfaff648fcaed0503332ea750d",
+        "Reference": "fb50c57dafd6453ab8a70e5b87220bf5/cb7f76cc5612474591dd11bd505bb202",
         "IsSufficientToIssue": true
       },
       "ValueText": "PROFIS-BP1-PLACEHOLDER.txt"

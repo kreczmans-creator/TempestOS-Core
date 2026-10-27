@@ -248,6 +248,42 @@ public sealed class FrameTests
         Assert.Throws<FrameModelException>(() => new FrameModel(nodes.Take(3).ToList(), elements.Take(2).ToList(), cases, []));
     }
 
+    [Theory]
+    [InlineData("nodes", FrameLimits.MaxNodes)]
+    [InlineData("elements", FrameLimits.MaxElements)]
+    [InlineData("loads", FrameLimits.MaxLoads)]
+    public void A_Table_Past_Its_Row_Cap_Is_Refused_At_Entry_Naming_The_Input_And_The_Cap(string symbol, int cap)
+    {
+        // DC-15 and DC-21: the caps are what the 4 MB store holds with margin (1,200 nodes, 2,400 elements, 2,400 load rows); one row more is refused by the input
+        // validator before the model is built, in a sentence that names the table and its cap.
+        var frame = new FrameCalculator();
+        Assert.Equal(cap, frame.Template.FindInput(symbol)!.MaxRows);
+        var rows = Enumerable.Range(1, cap + 1).Select(i => CalcRow.Of((symbol == "loads" ? "case" : "id", new CalcCell(i)))).ToList();
+        var set = CalcTemplateHasher.DefaultInputs(frame.Template).With(CalcInputValue.Table(symbol, rows));
+
+        var block = Assert.Single(CalcInputValidator.Validate(frame.Template, set), n => n.Severity == CalcNoticeSeverity.Block && n.Message.StartsWith(symbol + ":", StringComparison.Ordinal));
+        Assert.Contains($"at most {cap} rows", block.Message, StringComparison.Ordinal);
+        Assert.Contains($"{cap + 1} were given", block.Message, StringComparison.Ordinal);
+        Assert.Empty(CalcMessageShape.Problems(block.Message));
+
+        var r = CalcRunner.Run(frame, set);
+        Assert.True(r.IsBlocked);
+        Assert.Contains(r.Blocks, b => b.Message.StartsWith(symbol + ":", StringComparison.Ordinal) && b.Message.Contains($"at most {cap} rows", StringComparison.Ordinal));
+
+        // The cap itself is accepted by the validator (the model may still refuse it for its contents).
+        Assert.DoesNotContain(CalcInputValidator.Validate(frame.Template, set.With(CalcInputValue.Table(symbol, rows.Take(cap).ToList()))), n => n.Message.Contains("at most", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_Caps_Hold_The_Largest_Test_Frames()
+    {
+        // Every frame the tests build stays within the caps: the 1,001-node continuous beam, the 500-element budget frame, the soak grid (40 × 30 nodes, 2,330 members, 2,400 loads).
+        Assert.True(FrameLimits.MaxNodes >= 1_001 && FrameLimits.MaxElements >= 1_000);
+        Assert.True(FrameLimits.MaxElements >= 2 * FrameLimits.MaxNodes - 70, "the soak grid of MaxNodes nodes joins about 2 × MaxNodes − 70 members");
+        Assert.True(FrameLimits.MaxLoads >= 2 * FrameLimits.MaxNodes, "the soak grid loads every node in two cases");
+        Assert.Equal((1_200, 2_400, 2_400), (FrameLimits.MaxNodes, FrameLimits.MaxElements, FrameLimits.MaxLoads));
+    }
+
     [Fact]
     public void A_Long_Continuous_Beam_Solves_Within_The_Caps()
     {

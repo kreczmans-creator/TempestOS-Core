@@ -232,6 +232,67 @@ public sealed class ConnectionTests
     }
 
     [Fact]
+    public void An_M12_Bolt_In_Its_Normal_Clearance_Hole_Takes_0_85_On_Its_Shear_Resistance_And_Prints_The_Factor_As_A_Step()
+    {
+        // DC-03 and DC-21 (C-1 finding struct.connection-ec3-R1). M12 8.8, F_v,Ed 30 kN in the 14 mm normal clearance hole:
+        // python3: A_s = pi/4*((12-0.649519*1.75 + 12-1.226869*1.75)/2)**2 = 84.2665 mm2; 0.6*800*84.2665/1.25/1e3 = 32.3584 kN; x 0.85 = 27.5046 kN; 30/27.5046 = 1.0907 (FAIL); 30/32.3584 = 0.9271 (passed before the factor).
+        var m12 = CalcRunner.Run(Ec3, Defaults().With(CalcInputValue.Choice("size", "M12")).With(CalcInputValue.Quantity("F_v_Ed", 30, "kN")));
+        Assert.False(m12.IsBlocked);
+        Assert.Equal(27.5046, m12.OutputSi("F_v_Rd") / 1e3, 3);
+        Assert.Equal(0.85, m12.OutputSi("k_v12"), 12);
+        Assert.Equal(1.0907, m12.OutputSi("u_v"), 3);
+        Assert.Contains(m12.Checks, c => c.Name == "Shear force against bolt shear resistance" && !c.Passed);
+
+        var step = Assert.Single(m12.Steps, st => st.Symbol == "k_v12");
+        Assert.Contains("M12", step.Formula, StringComparison.Ordinal);
+        Assert.Contains("clearance hole", step.Formula, StringComparison.Ordinal);
+        Assert.Contains("Table 3.4", step.Clause ?? string.Empty, StringComparison.Ordinal);
+        Assert.StartsWith("k_v12·", m12.Steps.Single(st => st.Symbol == "F_v_Rd").Formula, StringComparison.Ordinal);
+
+        // The same bolt in a 13 mm hole, an M16 in its normal hole, and an M12 of class 4.6 or 5.6 carry no factor.
+        foreach (var set in new[]
+        {
+            Defaults().With(CalcInputValue.Choice("size", "M12")).With(CalcInputValue.Quantity("d_0", 13, "mm")),
+            Defaults().With(CalcInputValue.Choice("size", "M16")),
+            Defaults().With(CalcInputValue.Choice("size", "M12")).With(CalcInputValue.Choice("grade", "4.6")),
+            Defaults().With(CalcInputValue.Choice("size", "M12")).With(CalcInputValue.Choice("grade", "5.6")),
+        })
+        {
+            var r = CalcRunner.Run(Ec3, set);
+            Assert.False(r.IsBlocked);
+            Assert.Null(r.FindOutput("k_v12"));
+            Assert.DoesNotContain(r.Steps, st => st.Symbol == "k_v12");
+            Assert.DoesNotContain("k_v12", r.Steps.Single(st => st.Symbol == "F_v_Rd").Formula, StringComparison.Ordinal);
+        }
+
+        // M12 8.8 in a 13 mm hole keeps the full 32.358 kN; a 14 mm hole entered by hand is the normal clearance hole and takes the factor.
+        Assert.Equal(32.3584, CalcRunner.Run(Ec3, Defaults().With(CalcInputValue.Choice("size", "M12")).With(CalcInputValue.Quantity("d_0", 13, "mm"))).OutputSi("F_v_Rd") / 1e3, 3);
+        Assert.Equal(27.5046, CalcRunner.Run(Ec3, Defaults().With(CalcInputValue.Choice("size", "M12")).With(CalcInputValue.Quantity("d_0", 14, "mm"))).OutputSi("F_v_Rd") / 1e3, 3);
+
+        // An M12 in an oversize hole (d_0 15, type Oversize) is outside the note: no factor on shear, 0.8 on bearing.
+        var oversize = CalcRunner.Run(Ec3, Defaults().With(CalcInputValue.Choice("size", "M12")).With(CalcInputValue.Quantity("d_0", 15, "mm")).With(CalcInputValue.Choice("hole_type", ConnectionCalculator.HoleOversize)));
+        Assert.Equal(32.3584, oversize.OutputSi("F_v_Rd") / 1e3, 3);
+        Assert.Null(oversize.FindOutput("k_v12"));
+    }
+
+    [Theory]
+    [InlineData("4.6", 12, 14, ConnectionCalculator.HoleNormal, 1.0)]
+    [InlineData("4.8", 12, 14, ConnectionCalculator.HoleNormal, 0.85)]
+    [InlineData("5.6", 12, 14, ConnectionCalculator.HoleNormal, 1.0)]
+    [InlineData("5.8", 12, 14, ConnectionCalculator.HoleNormal, 0.85)]
+    [InlineData("6.8", 12, 14, ConnectionCalculator.HoleNormal, 0.85)]
+    [InlineData("8.8", 12, 14, ConnectionCalculator.HoleNormal, 0.85)]
+    [InlineData("10.9", 12, 14, ConnectionCalculator.HoleNormal, 0.85)]
+    [InlineData("8.8", 12, 13, ConnectionCalculator.HoleNormal, 1.0)]
+    [InlineData("8.8", 12, 15, ConnectionCalculator.HoleNormal, 1.0)]
+    [InlineData("8.8", 12, 14, ConnectionCalculator.HoleOversize, 1.0)]
+    [InlineData("8.8", 12, 14, ConnectionCalculator.HoleSlot, 1.0)]
+    [InlineData("8.8", 16, 18, ConnectionCalculator.HoleNormal, 1.0)]
+    [InlineData("8.8", 20, 22, ConnectionCalculator.HoleNormal, 1.0)]
+    public void The_Clearance_Shear_Factor_Is_0_85_Only_For_An_M12_Of_Class_4_8_To_10_9_In_Its_14_Mm_Normal_Hole(string grade, double d, double d0, string holeType, double expected) =>
+        Assert.Equal(expected, ConnectionCalculator.ClearanceShearFactor(grade, d, d0, holeType));
+
+    [Fact]
     public void An_Across_Corners_Below_The_Across_Flats_Is_Refused()
     {
         var r = CalcRunner.Run(Ec3, Defaults().With(CalcInputValue.Quantity("e_head", 25, "mm")));

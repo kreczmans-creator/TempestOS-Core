@@ -5,7 +5,7 @@ Title: Bolts and fillet welds (EN 1993-1-8)
 
 1. Scope and method
 Calculates the design resistance of one bolt in a plate, block tearing of the bolt group, the spacing limits, and a fillet weld by the simplified and directional methods, each against its design force. Loading is static.
-Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P Shear (cl. 3.6, Table 3.4): F_v,Rd = α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane) Bolt bearing resistance: F_b,Rd = k_h·min(k₁·α_b·f_u·d·t/γ_M2, [single lap, one bolt row: 1.5·f_u·d·t/γ_M2]); α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5); k_h = 1 (normal holes), 0.8 (oversize), 0.6 (slot across the load) Bolt tension resistance: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1 Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for a group loaded concentrically; V_eff,2,Rd = 0.5·f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for an eccentrically loaded group Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2
+Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P Shear (cl. 3.6, Table 3.4): F_v,Rd = k_v12·α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane); k_v12 = 0.85 for an M12 bolt of class 4.8, 5.8, 6.8, 8.8 or 10.9 in its normal clearance hole d₀ = d + 2 (Table 3.4, note on M12 bolts), else 1 Bolt bearing resistance: F_b,Rd = k_h·min(k₁·α_b·f_u·d·t/γ_M2, [single lap, one bolt row: 1.5·f_u·d·t/γ_M2]); α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5); k_h = 1 (normal holes), 0.8 (oversize), 0.6 (slot across the load) Bolt tension resistance: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1 Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for a group loaded concentrically; V_eff,2,Rd = 0.5·f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for an eccentrically loaded group Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2
 
 2. Inputs
   Symbol | Description | Value | Unit | Source | Valid range
@@ -41,10 +41,11 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   A5. Bearing across the load is taken at an edge bolt, with k₁ from e₂ and p₂. (Conservative for every bolt in the group.)
   A6. Oversize holes reduce the bearing resistance by 0.8, and a slot across the load by 0.6. (BS EN 1993-1-8:2005 cl. 3.6.1, Table 3.4.)
   A7. A hole above the normal clearance, with the hole type left at normal, is treated as oversize. (BS EN 1993-1-8:2005 cl. 3.6.1, Table 3.4.)
-  A8. The single-lap cap on the bearing resistance applies only when the single-lap switch is on. (BS EN 1993-1-8:2005 cl. 3.6.1; a warning says when it would bind.)
-  A9. Spacing minima and γ_M factors are entered from a National Annex record. (A small set of factors only; no table from a standard is shipped.)
-  A10. The defaults for the spacing minima and γ_M factors are the recommended values of BS EN 1993-1-8. (A small set of factors only; no table from a standard is shipped.)
-  A11. Group forces and weld forces per length come from the bolt group and weld group sheets by link. (Linked from the bolt-group and weld-group calculations.)
+  A8. A 12 mm bolt in its normal clearance hole takes 0.85 on its shear resistance, except classes 4.6 and 5.6. (BS EN 1993-1-8:2005 Table 3.4, the note on 12 mm and 14 mm bolts in 2 mm clearance holes.)
+  A9. The single-lap cap on the bearing resistance applies only when the single-lap switch is on. (BS EN 1993-1-8:2005 cl. 3.6.1; a warning says when it would bind.)
+  A10. Spacing minima and γ_M factors are entered from a National Annex record. (A small set of factors only; no table from a standard is shipped.)
+  A11. The defaults for the spacing minima and γ_M factors are the recommended values of BS EN 1993-1-8. (A small set of factors only; no table from a standard is shipped.)
+  A12. Group forces and weld forces per length come from the bolt group and weld group sheets by link. (Linked from the bolt-group and weld-group calculations.)
 
 4. Working
   [21] f_ub = class first figure × 100    « EN 1993-1-8 Table 3.1
@@ -145,8 +146,8 @@ Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ =
   WARNING  single_lap: k₁·α_b = 1.5152 exceeds 1.5, which caps bearing resistance of a single lap at 98.4 kN, not 99.394 kN. Switch single_lap on if that is the joint.  [single_lap]
 
 8. Verification
-  Template: struct.connection-ec3@1.8.0
-  Known-answer cases passed: 8/8
+  Template: struct.connection-ec3@1.9.0
+  Known-answer cases passed: 9/9
 
 9. References
   1. BS EN 1993-1-8:2005 cl. 3.5, Table 3.3 — Positioning of holes for bolts

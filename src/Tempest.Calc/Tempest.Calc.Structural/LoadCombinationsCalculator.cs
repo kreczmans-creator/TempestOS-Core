@@ -18,7 +18,12 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
     public const string Method610ab = "6.10a and 6.10b";
     public const string Permanent = "G permanent";
     public const string Accidental = "accidental";
+    public const string FactorSetRecommended = "EN recommended";
+    public const string FactorSetNationalAnnex = "National Annex record";
     public const int MaxActions = 30;
+
+    /// <summary>The inputs a National Annex record fills (record kind <c>en1990.factors</c>): every one must carry the record's pin when the National Annex set is chosen.</summary>
+    public static IReadOnlyList<string> FactorSymbols { get; } = ["gamma_G_sup", "gamma_G_inf", "gamma_Q", "xi", "psi"];
 
     /// <summary>The units an effect may be given in: one per action table, so every row shares one dimension.</summary>
     public static IReadOnlyList<string> EffectUnits { get; } = ["kN", "kN/m", "kN/m^2", "kN*m", "kN*m/m"];
@@ -58,7 +63,7 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.Structural, "Load combinations (EN 1990)",
+        Id, "1.3.0", CalcDiscipline.Structural, "Load combinations (EN 1990)",
         "Calculates the design values of one action effect under every EN 1990 Annex A1 combination for buildings, from persistent to accidental. Each variable action leads in turn; the envelopes and governing combinations are reported.",
         "ULS 6.10: Σ γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i (K_FI also on γ_G,sup)\n" +
         "ULS 6.10a: Σ γ_G·G + Σ γ_Q·K_FI·ψ_0·Q_i; 6.10b: Σ ξ·γ_G·G + γ_Q·K_FI·Q_1 + Σ γ_Q·K_FI·ψ_0·Q_i\n" +
@@ -70,6 +75,7 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
             new CalcInputSpec("actions", "Actions (one effect, signed)", CalcInputKind.Table, Columns: ActionColumns, MaxRows: MaxActions, Group: "Setup"),
             new CalcInputSpec("unit", "Unit of the effect", CalcInputKind.Choice, Choices: EffectUnits, DefaultChoice: "kN", Group: "Setup"),
             new CalcInputSpec("method", "ULS expression", CalcInputKind.Choice, Choices: [Method610, Method610ab], DefaultChoice: Method610, Group: "Setup"),
+            new CalcInputSpec("factor_set", "Factor set: the EN 1990 recommended values as entered, or a National Annex record applied to the partial factors and the ψ table", CalcInputKind.Choice, Choices: [FactorSetRecommended, FactorSetNationalAnnex], DefaultChoice: FactorSetRecommended, Group: "Setup"),
             new CalcInputSpec("gamma_G_sup", "γ_G,sup (unfavourable permanent)", CalcInputKind.Number, Default: 1.35, Min: 1, Max: 2, HardMin: 0.5, HardMax: 3, Group: "Factors"),
             new CalcInputSpec("gamma_G_inf", "γ_G,inf (favourable permanent)", CalcInputKind.Number, Default: 1.0, Min: 0.8, Max: 1.2, HardMin: 0, HardMax: 2, Group: "Factors"),
             new CalcInputSpec("gamma_Q", "γ_Q (variable)", CalcInputKind.Number, Default: 1.5, Min: 1, Max: 2, HardMin: 0.5, HardMax: 3, Group: "Factors"),
@@ -83,6 +89,7 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
             new CalcAssumption("Bridge, fatigue and seismic combinations are not included.", "EN 1990 Annex A1 scope."),
             new CalcAssumption("Without a ψ record the recommended values of EN 1990 Annex A1 are used and labelled on the sheet.", "No National Annex table is shipped."),
             new CalcAssumption("UK National Annex values of ψ and γ come from a user record.", "No National Annex table is shipped."),
+            new CalcAssumption("The factor set says whether the factors are the EN recommended values or come from a National Annex record.", "No National Annex value is shipped; a record carries its source, edition and table or clause, and the sheet prints them."),
             new CalcAssumption("Each permanent action takes γ_G,sup when it adds to the effect sought and γ_G,inf when it opposes it.", "EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions."),
             new CalcAssumption("For an equilibrium check with one source, the source's permanent actions are entered as one row.", "EN 1990 Table A1.2(B) note on favourable and unfavourable permanent actions."),
         ],
@@ -97,6 +104,7 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
             new CalcApplicabilityRule("no-actions", "No actions: nothing to combine.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("psi-missing", "A variable action's category has no ψ factors in the ψ record.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("no-permanent", "No permanent action: check the combinations are what you intend.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("factor-set", "With the National Annex record set chosen, every partial factor and the ψ table must carry the pin of an applied record.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
         ],
         [
             new CalcTestCase("ka-610-single", "Permanent plus office imposed, 6.10",
@@ -164,6 +172,32 @@ public sealed class LoadCombinationsCalculator : ICalcCalculator
         {
             c.Block("no-actions", c.EnterRows("actions"));
             return;
+        }
+
+        // DC-07 S5 (owner decision DC-21): the factor set is a choice. "EN recommended" is the sheet as it was (the factors as entered, defaulting to the Annex A1
+        // recommended values); "National Annex record" takes every factor and the ψ table from an applied en1990.factors record, whose values are licensed and never
+        // typed here. A calculation saved without the choice reads the default, EN recommended.
+        var nationalAnnex = c.InputText("factor_set") == FactorSetNationalAnnex;
+
+        if (nationalAnnex)
+        {
+            var unpinned = FactorSymbols.Where(s => CalcRecordPin.From(c.Inputs.Find(s)?.Provenance) is null).ToList();
+
+            if (unpinned.Count > 0)
+            {
+                c.Block("factor-set", $"factor_set: apply a National Annex record to {string.Join(", ", unpinned)}, or choose EN recommended.");
+                return;
+            }
+
+            var pin = c.Inputs.Find("gamma_G_sup")!.Provenance!;
+            var clause = pin.Reference is { } reference && reference.IndexOf(" · ", StringComparison.Ordinal) is var at and >= 0 ? reference[(at + 3)..].Trim() : string.Empty;
+            var provenance = string.Join(", ", new[] { clause, pin.Revision }.Where(t => !string.IsNullOrWhiteSpace(t)));
+            c.Output("factor_set_used", "Factor set", new TextValue($"{FactorSetNationalAnnex}{(provenance.Length > 0 ? " (" + provenance + ")" : string.Empty)}"));
+            c.Assume($"Factor set: the partial factors and the ψ table are taken from the National Annex record applied to them ({provenance}).", "Record kind en1990.factors; each input names its record, revision and table or clause.");
+        }
+        else
+        {
+            c.Output("factor_set_used", "Factor set", new TextValue($"{FactorSetRecommended} (the factors as entered; the defaults are the EN 1990 Annex A1 recommended values)"));
         }
 
         var unit = UnitCatalog.Parse(c.InputText("unit"));

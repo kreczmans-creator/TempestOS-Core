@@ -73,7 +73,7 @@ public sealed class FrameCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.5.0", CalcDiscipline.Structural, "Beam and 2D frame analysis",
+        Id, "1.6.0", CalcDiscipline.Structural, "Beam and 2D frame analysis",
         "Calculates reactions, member forces and deflections of a linear elastic plane frame or continuous beam by the direct stiffness method. Global x is right and y up; bending is about the section y-y axis, anticlockwise positive.",
         "Member stiffness: three freedoms per node, Euler–Bernoulli members with axial EA/L and bending EI/L³ terms.\nEnd releases: pins are taken out by static condensation; supports remove freedoms or add spring stiffness.\nSpan loads: they become equivalent nodal loads, the exact fixed-end forces.\nNodal displacements: K u = F, solved by banded LDLᵀ after a reverse Cuthill–McKee ordering; a non-positive pivot is reported as a mechanism.\nInternal forces: they follow from the member end actions and the Macaulay functions of the span loads.\nMember extremes: found at stations along each member, plus the zero-shear and zero-slope points found by bisection.",
         [
@@ -102,7 +102,7 @@ public sealed class FrameCalculator : ICalcCalculator
             new CalcApplicabilityRule("model", "The model is incomplete or inconsistent (a missing node, a zero-length member, a load off the member).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("report-name", "The combination named in report does not exist: the first combination is reported instead.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("mechanism", "The structure is a mechanism: a non-positive stiffness pivot.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
-            new CalcApplicabilityRule("size", "The model exceeds a cap (2,000 nodes, 4,000 elements, 50 cases, 200 load rows per member, factorisation work).", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
+            new CalcApplicabilityRule("size", "The model exceeds a cap (1,200 nodes, 2,400 elements, 2,400 load rows, 50 cases, 200 load rows per member, factorisation work); a table past its row cap is refused at entry.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("summary-only", "More than 50 members or supports: per-member and per-support lines are omitted from the sheet; the extremes and envelope remain.", CalcNoticeSeverity.Warning, CalcRuleEffect.Conservative),
             new CalcApplicabilityRule("large-deflection", "A deflection exceeds 1/50 of its member length: the small-displacement assumption is doubtful.", CalcNoticeSeverity.Warning, CalcRuleEffect.Unconservative),
         ],
