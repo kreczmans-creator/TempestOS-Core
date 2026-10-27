@@ -2619,7 +2619,7 @@
           ],
           "descriptions": [
             "Secant modulus",
-            "Secant modulus Es at the design strain and temperature (annular: at the nominal hoop strain ΔD/D) (typed; no default: the plastic's stress–strain data)",
+            "Secant modulus at the design strain and temperature (annular: at the nominal hoop strain ΔD/D) (typed; no default: the plastic's stress–strain data)",
             "Secant modulus used"
           ],
           "templates": [
@@ -2635,7 +2635,6 @@
           "meaning": "force",
           "quantity": "Force",
           "units": [
-            "N",
             "kN"
           ],
           "descriptions": [
@@ -3109,6 +3108,24 @@
       ]
     },
     {
+      "symbol": "F_defl",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Force",
+          "units": [
+            "N"
+          ],
+          "descriptions": [
+            "Deflection force"
+          ],
+          "templates": [
+            "mech.snap-fit"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "F_dyn",
       "meanings": [
         {
@@ -3455,7 +3472,7 @@
             "N"
           ],
           "descriptions": [
-            "Force the latches must hold against, for example the pressure on a cover (blank = no check; needs n_latch; may be linked from E2 F_seal)"
+            "Force the latches must hold against, for example the pressure on a cover (optional; blank = no check; n_latch must be entered too)"
           ],
           "templates": [
             "mech.snap-fit"
@@ -4986,7 +5003,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Force factor of the annular snap on the hoop force (record snapfit.annular-force-factor; e.g. the stiffening of a tube behind the ring; blank: 1, the free ring; no default)"
+            "Force factor of the annular snap on the hoop force (optional; blank = 1, the free ring; record snapfit.annular-force-factor, for example the stiffening of a tube behind the ring)"
           ],
           "templates": [
             "mech.snap-fit"
@@ -5104,7 +5121,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Deflection factor K_y"
+            "Deflection factor of the cantilever"
           ],
           "templates": [
             "mech.snap-fit"
@@ -5543,7 +5560,7 @@
             "mm"
           ],
           "descriptions": [
-            "Minimum length L_n"
+            "Minimum spring length"
           ],
           "templates": [
             "mech.spring"
@@ -5737,7 +5754,6 @@
           "meaning": "moment",
           "quantity": "Moment, torque",
           "units": [
-            "N·m",
             "kN·m"
           ],
           "descriptions": [
@@ -6918,7 +6934,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Required life the endurance strength belongs to"
+            "Number of cycles the endurance strength belongs to"
           ],
           "templates": [
             "mech.spring"
@@ -7172,19 +7188,6 @@
           ]
         },
         {
-          "meaning": "deflection-force",
-          "quantity": "Force",
-          "units": [
-            "N"
-          ],
-          "descriptions": [
-            "Deflection force"
-          ],
-          "templates": [
-            "mech.snap-fit"
-          ]
-        },
-        {
           "meaning": "dissipated-power",
           "quantity": "Power, heat flow",
           "units": [
@@ -7221,19 +7224,6 @@
           ],
           "templates": [
             "elec.enclosure-heat"
-          ]
-        },
-        {
-          "meaning": "internal-design-pressure",
-          "quantity": "Stress, pressure",
-          "units": [
-            "MPa"
-          ],
-          "descriptions": [
-            "Internal design pressure"
-          ],
-          "templates": [
-            "mech.thin-vessel"
           ]
         },
         {
@@ -8338,13 +8328,11 @@
             "mm"
           ],
           "descriptions": [
-            "Inside radius (corroded)",
             "Lug end radius R about the hole centre (the plate is 2R wide at the hole)",
             "Radius (bend)"
           ],
           "templates": [
             "elec.containment",
-            "mech.thin-vessel",
             "struct.lifting"
           ]
         },
@@ -8362,19 +8350,6 @@
           "templates": [
             "bs.insulation",
             "elec.thermal-chain"
-          ]
-        },
-        {
-          "meaning": "reliability",
-          "quantity": "Percent quantity",
-          "units": [
-            "%"
-          ],
-          "descriptions": [
-            "Reliability"
-          ],
-          "templates": [
-            "mech.shaft"
           ]
         },
         {
@@ -8907,6 +8882,24 @@
       ]
     },
     {
+      "symbol": "R_in",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Inside radius (corroded)"
+          ],
+          "templates": [
+            "mech.thin-vessel"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "R_km",
       "meanings": [
         {
@@ -9002,7 +8995,7 @@
       "symbol": "R_rel",
       "meanings": [
         {
-          "meaning": "",
+          "meaning": "reliability",
           "quantity": "Percent quantity",
           "units": [
             "%"
@@ -9011,7 +9004,8 @@
             "Reliability"
           ],
           "templates": [
-            "mech.bearing-life"
+            "mech.bearing-life",
+            "mech.shaft"
           ]
         }
       ]
@@ -9099,8 +9093,8 @@
             "MPa"
           ],
           "descriptions": [
-            "Tensile strength of the wire at this diameter R_m(d), typed (no default)",
-            "Wire tensile strength R_m(d)"
+            "Tensile strength of the wire at this diameter, typed (no default)",
+            "Wire tensile strength"
           ],
           "templates": [
             "mech.spring"
@@ -9118,7 +9112,7 @@
             "MPa"
           ],
           "descriptions": [
-            "R_m(d) curve coefficient A of the W3 material (R_m = A/d^m, A in MPa for d in mm)"
+            "Curve coefficient A of the material record (R_m = A/d^m, A in MPa for d in mm)"
           ],
           "templates": [
             "mech.spring"
@@ -9134,7 +9128,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "R_m(d) curve exponent m of the W3 material"
+            "Curve exponent m of the material record"
           ],
           "templates": [
             "mech.spring"
@@ -9807,7 +9801,7 @@
             "MPa"
           ],
           "descriptions": [
-            "Hub yield strength (the key bearing is checked against the weakest of key, shaft and hub; blank: the hub is not checked)"
+            "Hub yield strength (optional; blank = the hub is not checked; the key bearing is checked against the weakest of key, shaft and hub)"
           ],
           "templates": [
             "mech.shaft"
@@ -9876,7 +9870,6 @@
           "meaning": "torque",
           "quantity": "Moment, torque",
           "units": [
-            "N·m",
             "kN·m"
           ],
           "descriptions": [
@@ -10099,7 +10092,7 @@
             "kN·m"
           ],
           "descriptions": [
-            "Alternating torque amplitude T_a about the mean (blank: 0, a steady torque; a reversing or cyclic drive needs it)"
+            "Alternating torque amplitude about the mean (optional; blank = 0, a steady torque; a reversing or cyclic drive needs it)"
           ],
           "templates": [
             "mech.shaft"
@@ -10679,7 +10672,7 @@
           ],
           "descriptions": [
             "Peak torque",
-            "Peak torque for the yield check and the key (blank: T + T_a)"
+            "Peak torque for the yield check and the key (optional; blank = T + T_a)"
           ],
           "templates": [
             "elec.motor-sizing",
@@ -13847,6 +13840,22 @@
       ]
     },
     {
+      "symbol": "cpk_req",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Required C_pk"
+          ],
+          "templates": [
+            "mech.tolerance-stack"
+          ]
+        }
+      ]
+    },
+    {
       "symbol": "cpk_sq_max",
       "meanings": [
         {
@@ -13890,22 +13899,6 @@
           ],
           "templates": [
             "fp.oring-gland"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "cpk_target",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Required C_pk"
-          ],
-          "templates": [
-            "mech.tolerance-stack"
           ]
         }
       ]
@@ -14601,7 +14594,7 @@
           ],
           "descriptions": [
             "Maximum wire diameter",
-            "Maximum wire diameter d_max (EN 13906-1 solid length; blank: the nominal d, no tolerance added)"
+            "Maximum wire diameter, for the EN 13906-1 solid length (optional; blank = the nominal d, no tolerance added)"
           ],
           "templates": [
             "mech.spring"
@@ -15952,24 +15945,29 @@
           ]
         },
         {
-          "meaning": "maximum-strain",
+          "meaning": "strain",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Strain"
+          ],
+          "templates": [
+            "mech.snap-fit"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "eps_max",
+      "meanings": [
+        {
+          "meaning": "",
           "quantity": "Percent quantity",
           "units": [
             "%"
           ],
           "descriptions": [
             "Maximum strain"
-          ],
-          "templates": [
-            "mech.snap-fit"
-          ]
-        },
-        {
-          "meaning": "strain",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Strain"
           ],
           "templates": [
             "mech.snap-fit"
@@ -16003,7 +16001,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Permissible strain for one-time joining, as a fraction (0.04 is 4 %) at the temperature of use (no default: from the plastic's data)"
+            "Permissible strain for one-time joining, as a fraction, for example 0.04, at the temperature of use (no default: from the plastic's data)"
           ],
           "templates": [
             "mech.snap-fit"
@@ -18187,7 +18185,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Surface factor override (blank: k_a = a·S_ut^b, Shigley 10th ed. Table 6-2)"
+            "Surface factor override (optional; blank = a·S_ut^b, Shigley 10th ed. Table 6-2)"
           ],
           "templates": [
             "mech.shaft"
@@ -18247,7 +18245,7 @@
           "meaning": "",
           "quantity": "Line force, distributed load, stiffness",
           "units": [
-            "kN/mm"
+            "kN/m"
           ],
           "descriptions": [
             "Bar stiffness"
@@ -18293,7 +18291,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Temperature factor k_d"
+            "Temperature factor"
           ],
           "templates": [
             "mech.shaft"
@@ -18357,7 +18355,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Miscellaneous factor k_f"
+            "Miscellaneous factor"
           ],
           "templates": [
             "mech.shaft"
@@ -18486,10 +18484,10 @@
           "meaning": "",
           "quantity": "Line force, distributed load, stiffness",
           "units": [
-            "kN/mm"
+            "kN/m"
           ],
           "descriptions": [
-            "Restraint stiffness (leave empty for a rigid restraint)"
+            "Restraint stiffness (optional; blank = a rigid restraint)"
           ],
           "templates": [
             "mech.thermal-expansion"
@@ -18800,42 +18798,6 @@
       ]
     },
     {
-      "symbol": "l_1",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Length",
-          "units": [
-            "mm"
-          ],
-          "descriptions": [
-            "Leg length 1 (torsion)"
-          ],
-          "templates": [
-            "mech.spring"
-          ]
-        }
-      ]
-    },
-    {
-      "symbol": "l_2",
-      "meanings": [
-        {
-          "meaning": "",
-          "quantity": "Length",
-          "units": [
-            "mm"
-          ],
-          "descriptions": [
-            "Leg length 2 (torsion)"
-          ],
-          "templates": [
-            "mech.spring"
-          ]
-        }
-      ]
-    },
-    {
       "symbol": "l_eff",
       "meanings": [
         {
@@ -18883,6 +18845,42 @@
           ],
           "templates": [
             "mech.bolted-joint"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "l_leg_1",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Leg length 1 (torsion)"
+          ],
+          "templates": [
+            "mech.spring"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "l_leg_2",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Leg length 2 (torsion)"
+          ],
+          "templates": [
+            "mech.spring"
           ]
         }
       ]
@@ -19305,7 +19303,7 @@
           "meaning": "worst-case-margin-to-minimum",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Worst-case margin to the minimum"
@@ -19396,7 +19394,7 @@
             "mm"
           ],
           "descriptions": [
-            "Maximum acceptable result"
+            "Maximum acceptable result (optional; blank = no maximum)"
           ],
           "templates": [
             "mech.tolerance-stack"
@@ -19411,7 +19409,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Monte Carlo mean"
@@ -19429,10 +19427,10 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
-            "Monte Carlo 5th percentile"
+            "Monte Carlo 5 % quantile"
           ],
           "templates": [
             "mech.tolerance-stack"
@@ -19447,10 +19445,10 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
-            "Monte Carlo 95th percentile"
+            "Monte Carlo 95 % quantile"
           ],
           "templates": [
             "mech.tolerance-stack"
@@ -19465,7 +19463,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Monte Carlo σ"
@@ -19522,7 +19520,7 @@
             "mm"
           ],
           "descriptions": [
-            "Minimum acceptable result"
+            "Minimum acceptable result (optional; blank = no minimum)"
           ],
           "templates": [
             "mech.tolerance-stack"
@@ -19689,17 +19687,6 @@
           ]
         },
         {
-          "meaning": "active-coils",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Active coils (torsion: coils of the body)"
-          ],
-          "templates": [
-            "mech.spring"
-          ]
-        },
-        {
           "meaning": "air-change-rate",
           "quantity": "Rotational speed, frequency",
           "units": [
@@ -19743,17 +19730,6 @@
           ],
           "templates": [
             "fp.accumulator"
-          ]
-        },
-        {
-          "meaning": "thickness-design-factor",
-          "quantity": "Plain number",
-          "units": [],
-          "descriptions": [
-            "Design factor on the computed thickness (legacy; 1 for none)"
-          ],
-          "templates": [
-            "mech.thin-vessel"
           ]
         }
       ]
@@ -19847,6 +19823,22 @@
           ],
           "templates": [
             "mech.shaft-stress"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "n_active",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Active coils (torsion: coils of the body)"
+          ],
+          "templates": [
+            "mech.spring"
           ]
         }
       ]
@@ -19947,6 +19939,22 @@
           ],
           "templates": [
             "elec.pcb-trace"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "n_design",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Plain number",
+          "units": [],
+          "descriptions": [
+            "Design factor on the computed thickness (legacy; 1 for none)"
+          ],
+          "templates": [
+            "mech.thin-vessel"
           ]
         }
       ]
@@ -20108,7 +20116,7 @@
           "quantity": "Plain number",
           "units": [],
           "descriptions": [
-            "Number of identical latches that share a holding load (a whole number; blank = the holding force is not worked out)"
+            "Number of identical latches that share a holding load (a whole number) (optional; blank = the holding force is not worked out)"
           ],
           "templates": [
             "mech.snap-fit"
@@ -20732,19 +20740,6 @@
           ]
         },
         {
-          "meaning": "pitch",
-          "quantity": "Length",
-          "units": [
-            "mm"
-          ],
-          "descriptions": [
-            "Pitch"
-          ],
-          "templates": [
-            "mech.spring"
-          ]
-        },
-        {
           "meaning": "pressure",
           "quantity": "Stress, pressure",
           "units": [
@@ -20981,6 +20976,42 @@
           ],
           "templates": [
             "struct.column-buckling"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "p_coil",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Length",
+          "units": [
+            "mm"
+          ],
+          "descriptions": [
+            "Pitch"
+          ],
+          "templates": [
+            "mech.spring"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "p_design",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Stress, pressure",
+          "units": [
+            "MPa"
+          ],
+          "descriptions": [
+            "Internal design pressure"
+          ],
+          "templates": [
+            "mech.thin-vessel"
           ]
         }
       ]
@@ -22609,7 +22640,7 @@
             "mm"
           ],
           "descriptions": [
-            "Expected working travel s₂ − s₁ (optional, compression and extension; M9 lift links here): the sheet warns when the spring's own travel differs by more than 1 %; in torsion mode it is not used and the sheet says so"
+            "Expected working travel s₂ − s₁ (optional; blank = no check). The sheet warns when the spring's own travel differs by more than 1 %. Torsion mode does not use it, and the sheet says so"
           ],
           "templates": [
             "mech.spring"
@@ -22728,7 +22759,6 @@
           "meaning": "standard-deviation",
           "quantity": "Length",
           "units": [
-            "in",
             "mm"
           ],
           "descriptions": [
@@ -22793,6 +22823,24 @@
           ],
           "templates": [
             "mech.bolted-joint"
+          ]
+        }
+      ]
+    },
+    {
+      "symbol": "sigma_abs",
+      "meanings": [
+        {
+          "meaning": "",
+          "quantity": "Stress, pressure",
+          "units": [
+            "MPa"
+          ],
+          "descriptions": [
+            "Stress magnitude"
+          ],
+          "templates": [
+            "mech.thermal-expansion"
           ]
         }
       ]
@@ -24068,7 +24116,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Modified RSS tolerance (±)"
@@ -24229,7 +24277,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "RSS tolerance (±)"
@@ -24388,7 +24436,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Worst-case tolerance (±)"
@@ -27333,7 +27381,7 @@
             "mm"
           ],
           "descriptions": [
-            "Torque leaves at (blank: the shaft length, so every section beyond x_T1 carries the torque)"
+            "Torque leaves at (optional; blank = the shaft length, so every section beyond x_T1 carries the torque)"
           ],
           "templates": [
             "mech.shaft"
@@ -27475,7 +27523,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Mean result"
@@ -27493,7 +27541,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Nominal result"
@@ -27511,7 +27559,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Worst-case maximum"
@@ -27529,7 +27577,7 @@
           "meaning": "",
           "quantity": "Length",
           "units": [
-            "in"
+            "mm"
           ],
           "descriptions": [
             "Worst-case minimum"

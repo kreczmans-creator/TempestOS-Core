@@ -24,11 +24,11 @@ public sealed class ThickCylinderTests
         Assert.Contains("7.6695", warning.Message, StringComparison.Ordinal);
         Assert.Equal(7.669466, r.OutputSi("p_cr") / 1e6, 5);
         Assert.Equal(7.5 / 7.669466, r.OutputSi("u_cr"), 6);
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("Net external pressure within the elastic collapse", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Net external pressure against the elastic collapse", StringComparison.Ordinal) && c.Passed);
 
         // A little more pressure than the elastic collapse fails the sheet whatever the stress says.
         var over = CalcRunner.Run(Cylinder, Thin(8));
-        Assert.Contains(over.Checks, c => c.Name.StartsWith("Net external pressure within the elastic collapse", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(over.Checks, c => c.Name.StartsWith("Net external pressure against the elastic collapse", StringComparison.Ordinal) && !c.Passed);
         Assert.False(over.Passed);
 
         // Internal pressure, a thick wall or no external pressure: no stability notice, as before.

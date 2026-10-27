@@ -45,8 +45,8 @@ public sealed class ShaftCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.6.0", CalcDiscipline.Mechanical, "Shaft design",
-        "A stepped (optionally hollow) shaft on two bearings carrying radial loads in two planes and a torque with a steady (mean) part and an optional alternating part: bending moment, slope and deflection along it, the fatigue and yield safety factors at the sections the user marks, slopes at the bearings, deflection at the loads, the first lateral critical speed and parallel keys.",
+        Id, "1.7.0", CalcDiscipline.Mechanical, "Shaft design",
+        "Calculates the bending moment, slope, deflection, fatigue and yield safety factors, critical speed and keys of a stepped shaft on two bearings. It takes radial loads in two planes and a steady torque with an optional alternating part.",
         "Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(M_y² + M_z²)\n" +
         "Stress at a section: σ_a = K_f·32M_a·d/(π(d⁴ − d_i⁴)), τ_m = K_fs·16T_m·d/(π(d⁴ − d_i⁴)), τ_a = K_fs·16T_a·d/(π(d⁴ − d_i⁴)); K_f = 1 + q(K_t − 1)\n" +
         "Endurance limit: S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e1, S_e1 (the rotating-beam limit S_e′) = 0.5·S_ut (S_ut ≤ 1400 MPa, else 700 MPa); k_a = a·S_ut^b, k_b = 1.24d^−0.107 or 1.51d^−0.157, k_e = 1 − 0.08·z_R\n" +
@@ -55,49 +55,52 @@ public sealed class ShaftCalculator : ICalcCalculator
         "Weight loads (with w_masses): F_y,i = −m_i·g at each node, m_i the carried mass plus the shaft's own mass split to the node; without it the loads table is the whole load\n" +
         "Parallel key, on the peak torque T_k = the larger of T_m + T_a and T_pk: τ = 2T_k/(d·w·L), σ = 4T_k/(d·h·L); required length L = max(2T_k·n_target/(d·w·0.577·S_y,key), 4T_k·n_target/(d·h·S_y,min)), S_y,min the lowest of the key, the shaft and (when entered) the hub; a shoulder is checked on both sides and the lower n_f governs",
         [
-            new CalcInputSpec("segments", "Shaft segments (left to right)", CalcInputKind.Table, Columns: SegmentColumns, MaxRows: 20, Group: "Geometry"),
-            new CalcInputSpec("x_A", "Bearing A position", CalcInputKind.Quantity, "mm", Default: 0, Min: 0, Max: 3000, HardMin: 0, HardMax: 3000, Group: "Geometry"),
-            new CalcInputSpec("x_B", "Bearing B position", CalcInputKind.Quantity, "mm", Default: 400, Min: 1, Max: 3000, HardMin: 1, HardMax: 3000, Group: "Geometry"),
-            new CalcInputSpec("loads", "Radial loads and masses (a carried mass adds no weight unless w_masses is on: enter its weight as a force in F_y)", CalcInputKind.Table, Columns: LoadColumns, MaxRows: 20, Group: "Loads"),
-            new CalcInputSpec("w_masses", "Add the weight of the carried masses and of the shaft itself as downward vertical loads (optional; blank = refused when a mass is carried; off: the loads table is the whole load, the weights are entered as forces and the masses enter the critical speed only)", CalcInputKind.Boolean, IsOptional: true, Group: "Loads"),
-            new CalcInputSpec("T", "Torque transmitted, steady or mean part T_m", CalcInputKind.Quantity, "kN*m", Default: 0, Min: 0, Max: 50, HardMin: 0, HardMax: 50, Group: "Loads"),
-            new CalcInputSpec("T_a", "Alternating torque amplitude T_a about the mean (blank: 0, a steady torque; a reversing or cyclic drive needs it)", CalcInputKind.Quantity, "kN*m", Min: 0, Max: 50, HardMin: 0, HardMax: 50, IsOptional: true, Group: "Loads"),
-            new CalcInputSpec("T_pk", "Peak torque for the yield check and the key (blank: T + T_a)", CalcInputKind.Quantity, "kN*m", Min: 0, Max: 50, HardMin: 0, HardMax: 50, IsOptional: true, Group: "Loads"),
-            new CalcInputSpec("x_T1", "Torque enters at", CalcInputKind.Quantity, "mm", Default: 0, Min: 0, Max: 3000, HardMin: 0, HardMax: 3000, Group: "Loads"),
-            new CalcInputSpec("x_T2", "Torque leaves at (blank: the shaft length, so every section beyond x_T1 carries the torque)", CalcInputKind.Quantity, "mm", Min: 0, Max: 3000, HardMin: 0, HardMax: 3000, IsOptional: true, Group: "Loads"),
-            new CalcInputSpec("n", "Operating speed", CalcInputKind.Quantity, "rpm", Default: 1500, Min: 0, Max: 30000, HardMin: 0, HardMax: 30000, Group: "Loads"),
-            new CalcInputSpec("sections", "Sections to check", CalcInputKind.Table, Columns: SectionColumns, MaxRows: 20, Group: "Sections"),
-            new CalcInputSpec("S_ut", "Ultimate tensile strength", CalcInputKind.Quantity, "MPa", Default: 600, Min: 300, Max: 2000, HardMin: 300, HardMax: 2000, Group: "Material"),
+            new CalcInputSpec("segments", "Shaft segments (left to right)", CalcInputKind.Table, Columns: SegmentColumns, MaxRows: 20, Group: "Setup"),
+            new CalcInputSpec("loads", "Radial loads and masses (a carried mass adds no weight unless w_masses is on: enter its weight as a force in F_y)", CalcInputKind.Table, Columns: LoadColumns, MaxRows: 20, Group: "Setup"),
+            new CalcInputSpec("sections", "Sections to check", CalcInputKind.Table, Columns: SectionColumns, MaxRows: 20, Group: "Setup"),
+            new CalcInputSpec("x_A", "Bearing A position", CalcInputKind.Quantity, "mm", Default: 0, Min: 0, Max: 2000, HardMin: 0, HardMax: 3000, Group: "Geometry"),
+            new CalcInputSpec("x_B", "Bearing B position", CalcInputKind.Quantity, "mm", Default: 400, Min: 1, Max: 2000, HardMin: 1, HardMax: 3000, Group: "Geometry"),
+            new CalcInputSpec("S_ut", "Ultimate tensile strength", CalcInputKind.Quantity, "MPa", Default: 600, Min: 300, Max: 1800, HardMin: 300, HardMax: 2000, Group: "Material"),
             new CalcInputSpec("S_y", "Yield strength", CalcInputKind.Quantity, "MPa", Default: 450, Min: 150, Max: 1900, HardMin: 100, HardMax: 2000, Group: "Material"),
             new CalcInputSpec("E", "Young's modulus", CalcInputKind.Quantity, "GPa", Default: 207, Min: 50, Max: 250, HardMin: 10, HardMax: 500, Group: "Material"),
-            new CalcInputSpec("rho", "Density (shaft self-mass in the critical speed)", CalcInputKind.Quantity, "kg/m^3", Default: 7850, Min: 0, Max: 20000, HardMin: 0, HardMax: 20000, Group: "Material"),
-            new CalcInputSpec("finish", "Surface finish", CalcInputKind.Choice, Choices: [Ground, Machined, HotRolled, Forged], DefaultChoice: Machined, Group: "Fatigue"),
-            new CalcInputSpec("R", "Reliability", CalcInputKind.Quantity, "%", Default: 99, Min: 50, Max: 99.9, HardMin: 50, HardMax: 99.9, Group: "Fatigue"),
-            new CalcInputSpec("k_d", "Temperature factor k_d", CalcInputKind.Number, Default: 1, Min: 0.5, Max: 1.1, HardMin: 0.1, HardMax: 1.5, Group: "Fatigue"),
-            new CalcInputSpec("k_a", "Surface factor override (blank: k_a = a·S_ut^b, Shigley 10th ed. Table 6-2)", CalcInputKind.Number, Min: 0.1, Max: 1.5, HardMin: 0.05, HardMax: 2, IsOptional: true, Group: "Fatigue"),
-            new CalcInputSpec("k_f", "Miscellaneous factor k_f", CalcInputKind.Number, Default: 1, Min: 0.3, Max: 1.5, HardMin: 0.1, HardMax: 2, Group: "Fatigue"),
-            new CalcInputSpec("n_target", "Target safety factor", CalcInputKind.Number, Default: 1.5, Min: 1.2, Max: 4, HardMin: 1.2, HardMax: 4, Group: "Requirements"),
+            new CalcInputSpec("rho", "Density (shaft self-mass in the critical speed)", CalcInputKind.Quantity, "kg/m^3", Default: 7850, Min: 0, Max: 12000, HardMin: 0, HardMax: 20000, Group: "Material"),
+            new CalcInputSpec("T", "Torque transmitted, steady or mean part T_m", CalcInputKind.Quantity, "kN*m", Default: 0, Min: 0, Max: 40, HardMin: 0, HardMax: 50, Group: "Loads"),
+            new CalcInputSpec("x_T1", "Torque enters at", CalcInputKind.Quantity, "mm", Default: 0, Min: 0, Max: 2000, HardMin: 0, HardMax: 3000, Group: "Loads"),
+            new CalcInputSpec("T_a", "Alternating torque amplitude about the mean (optional; blank = 0, a steady torque; a reversing or cyclic drive needs it)", CalcInputKind.Quantity, "kN*m", Min: 0, Max: 40, HardMin: 0, HardMax: 50, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("T_pk", "Peak torque for the yield check and the key (optional; blank = T + T_a)", CalcInputKind.Quantity, "kN*m", Min: 0, Max: 40, HardMin: 0, HardMax: 50, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("x_T2", "Torque leaves at (optional; blank = the shaft length, so every section beyond x_T1 carries the torque)", CalcInputKind.Quantity, "mm", Min: 0, Max: 2000, HardMin: 0, HardMax: 3000, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("w_masses", "Add the weight of the carried masses and of the shaft itself as downward vertical loads (optional; blank = refused when a mass is carried; off: the loads table is the whole load, the weights are entered as forces and the masses enter the critical speed only)", CalcInputKind.Boolean, IsOptional: true, Group: "Loads"),
+            new CalcInputSpec("n", "Operating speed", CalcInputKind.Quantity, "rpm", Default: 1500, Min: 0, Max: 20000, HardMin: 0, HardMax: 30000, Group: "Conditions"),
+            new CalcInputSpec("finish", "Surface finish", CalcInputKind.Choice, Choices: [Ground, Machined, HotRolled, Forged], DefaultChoice: Machined, Group: "Factors"),
+            new CalcInputSpec("R_rel", "Reliability", CalcInputKind.Quantity, "%", Default: 99, Min: 90, Max: 99.9, HardMin: 50, HardMax: 99.9, Group: "Factors", Aliases: ["R"]),
+            new CalcInputSpec("k_d", "Temperature factor", CalcInputKind.Number, Default: 1, Min: 0.5, Max: 1.1, HardMin: 0.1, HardMax: 1.5, Group: "Factors"),
+            new CalcInputSpec("k_f", "Miscellaneous factor", CalcInputKind.Number, Default: 1, Min: 0.3, Max: 1.5, HardMin: 0.1, HardMax: 2, Group: "Factors"),
+            new CalcInputSpec("k_a", "Surface factor override (optional; blank = a·S_ut^b, Shigley 10th ed. Table 6-2)", CalcInputKind.Number, Min: 0.1, Max: 1.5, HardMin: 0.05, HardMax: 2, IsOptional: true, Group: "Factors"),
+            new CalcInputSpec("n_target", "Target safety factor", CalcInputKind.Number, Default: 1.5, Min: 1.2, Max: 3, HardMin: 1.2, HardMax: 4, Group: "Requirements"),
             new CalcInputSpec("r_c_min", "Smallest ratio of the first critical speed to the operating speed", CalcInputKind.Number, Default: 2, Min: 1.5, Max: 4, HardMin: 1, HardMax: 10, Group: "Requirements"),
             new CalcInputSpec("theta_max", "Slope limit at the bearings", CalcInputKind.Quantity, "rad", Default: 0.001, Min: 1e-5, Max: 0.1, HardMin: 1e-6, HardMax: 0.5, Group: "Requirements"),
             new CalcInputSpec("y_max", "Deflection limit at the loads", CalcInputKind.Quantity, "mm", Default: 0.13, Min: 0.001, Max: 10, HardMin: 1e-4, HardMax: 100, Group: "Requirements"),
-            new CalcInputSpec("x_key", "Key position", CalcInputKind.Quantity, "mm", Min: 0, Max: 3000, HardMin: 0, HardMax: 3000, IsOptional: true, Group: "Key"),
+            new CalcInputSpec("x_key", "Key position", CalcInputKind.Quantity, "mm", Min: 0, Max: 2000, HardMin: 0, HardMax: 3000, IsOptional: true, Group: "Key"),
             new CalcInputSpec("w", "Key width", CalcInputKind.Quantity, "mm", Min: 1, Max: 100, HardMin: 0.5, HardMax: 200, IsOptional: true, Group: "Key"),
             new CalcInputSpec("h", "Key height", CalcInputKind.Quantity, "mm", Min: 1, Max: 100, HardMin: 0.5, HardMax: 200, IsOptional: true, Group: "Key"),
             new CalcInputSpec("L_key", "Key length", CalcInputKind.Quantity, "mm", Min: 1, Max: 500, HardMin: 0.5, HardMax: 2000, IsOptional: true, Group: "Key"),
             new CalcInputSpec("S_y_key", "Key yield strength", CalcInputKind.Quantity, "MPa", Min: 150, Max: 1500, HardMin: 50, HardMax: 2000, IsOptional: true, Group: "Key"),
-            new CalcInputSpec("S_y_hub", "Hub yield strength (the key bearing is checked against the weakest of key, shaft and hub; blank: the hub is not checked)", CalcInputKind.Quantity, "MPa", Min: 50, Max: 2000, HardMin: 20, HardMax: 2500, IsOptional: true, Group: "Key"),
+            new CalcInputSpec("S_y_hub", "Hub yield strength (optional; blank = the hub is not checked; the key bearing is checked against the weakest of key, shaft and hub)", CalcInputKind.Quantity, "MPa", Min: 50, Max: 2000, HardMin: 20, HardMax: 2500, IsOptional: true, Group: "Key"),
         ],
         [
-            new CalcAssumption("Linear elastic, two simple bearing supports (pin at A, roller at B); bending fully reversed by rotation; torque a steady part T_m plus an alternating part T_a about it (fully alternating when T_m = 0), both acting between the torque-in and torque-out positions.", "Shigley 10th ed. §7-4."),
-            new CalcAssumption("No torsional vibration; only the first lateral mode, by Rayleigh with Dunkerley as a lower bound.", "Shigley 10th ed. §7-6."),
-            new CalcAssumption("K_t and K_ts come from user records or published fit equations; no stress-concentration chart is reproduced.", "No stress-concentration chart is shipped; the factors are entered or derived."),
-            new CalcAssumption("At a shoulder both sides are checked, each on its own diameter and bore, and the lower fatigue safety factor governs; k_c = 1 because the stresses are combined by von Mises.", "Shigley 10th ed. §6-9, §7-4."),
-            new CalcAssumption("The loads table is the whole load: a carried mass adds no weight to the reactions, the moment or the deflection, and neither does the shaft's own weight, unless w_masses is on (which adds m·g at the nodes in the vertical plane).", "Stated limitation; w_masses adds the weights."),
+            new CalcAssumption("The shaft is linear elastic on two simple bearing supports, a pin at A and a roller at B.", "Shigley 10th ed. §7-4."),
+            new CalcAssumption("Bending is fully reversed by rotation.", "Shigley 10th ed. §7-4."),
+            new CalcAssumption("The torque is a steady part T_m plus an alternating part T_a, acting between the torque-in and torque-out positions.", "The torque is fully alternating when T_m = 0."),
+            new CalcAssumption("The critical speed is the first lateral mode, by Rayleigh with Dunkerley as a lower bound.", "Shigley 10th ed. §7-6."),
+            new CalcAssumption("K_t and K_ts come from user records or published fit equations.", "No stress-concentration chart is shipped, so the factors are entered or derived."),
+            new CalcAssumption("At a shoulder both sides are checked, each on its own diameter and bore, and the lower factor governs.", "Shigley 10th ed. §6-9, §7-4."),
+            new CalcAssumption("The load factor k_c is 1, because the stresses are combined by von Mises.", "Shigley 10th ed. §6-9, §7-4."),
+            new CalcAssumption("The loads table is the whole load unless w_masses is on, which adds the weights.", "With w_masses on, the sheet adds m·g at the nodes in the vertical plane."),
             new CalcAssumption("Loads, sections and steps closer together than 1/200 of the shaft length share one node.", "Keeps the beam model well conditioned."),
         ],
         [
-            new CalcClauseRef("Shigley's Mechanical Engineering Design", "10th ed., Ch. 6 (§6-9, Table 6-2 Marin surface factors), Ch. 7 (§7-4 to §7-7)", "Fatigue, shaft stresses, deflection, critical speeds, keys"),
-            new CalcClauseRef("Mott, Machine Elements in Mechanical Design", "6th ed., Ch. 12", "Shaft design"),
+            new CalcClauseRef("Budynas, Shigley's Mechanical Engineering Design", "Ch. 6 (§6-9, Table 6-2 Marin surface factors) and Ch. 7 (§7-4 to §7-7), 10th ed.", "Fatigue, shaft stresses, deflection, critical speeds, keys"),
+            new CalcClauseRef("Mott, Machine Elements in Mechanical Design", "Ch. 12, 6th ed.", "Shaft design"),
         ],
         [
             new CalcApplicabilityRule("geometry", "Segments must run left to right, bearings and loads must lie on the shaft, and the bearings must be at least 1/200 of the shaft length apart.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
@@ -121,7 +124,7 @@ public sealed class ShaftCalculator : ICalcCalculator
                 [new CalcExpectedValue("tau_key", 36.99405, "MPa", 1e-6), new CalcExpectedValue("sigma_key", 84.55782, "MPa", 1e-6)]),
             new CalcTestCase("ka-shigley-7-1", "Shoulder fatigue: 1260 lbf·in reversed bending, 1100 lbf·in steady torque, d = 1.100 in (Shigley Ch. 7 example)",
                 new CalcReferenceSource("Budynas & Nisbett, Shigley's Mechanical Engineering Design", "10th ed., Ch. 7, Example 7-1", "Data of the example converted to SI exactly: M 1260 lbf·in = 142.361 N·m, T 1100 lbf·in = 124.283 N·m, d 1.100 in = 27.94 mm, S_ut 105 kpsi = 723.949 MPa, S_y 82 kpsi = 565.370 MPa; machined, R 0.99, K_t 1.68, K_ts 1.42, q 0.85, q_s 0.92; computed here (python3, independent): k_a 0.78769, k_b 0.86831, k_e 0.81389, S_e 201.50 MPa (29.23 kpsi), σ_a 104.91 MPa, τ_m 40.23 MPa, n_f (DE-Goodman) 1.621, n_y 4.489. The book's printed answers are to be compared by the owner against their copy; K_t, K_ts, q and q_s are those of the earlier version of this case and are equally to be checked"),
-                [Segments((400, 27.94, 0)), Loads((200, -1.4236088, 0, 0)), Q("T", 0.1242833119, "kN*m"), Q("x_T1", 0, "mm"), Q("x_T2", 400, "mm"), Sections((200, 1.68, 1.42, 0.85, 0.92)), Q("S_ut", 723.949485, "MPa"), Q("S_y", 565.370074, "MPa"), CalcInputValue.Choice("finish", Machined), Q("R", 99, "%")],
+                [Segments((400, 27.94, 0)), Loads((200, -1.4236088, 0, 0)), Q("T", 0.1242833119, "kN*m"), Q("x_T1", 0, "mm"), Q("x_T2", 400, "mm"), Sections((200, 1.68, 1.42, 0.85, 0.92)), Q("S_ut", 723.949485, "MPa"), Q("S_y", 565.370074, "MPa"), CalcInputValue.Choice("finish", Machined), Q("R_rel", 99, "%")],
                 [new CalcExpectedValue("S_e", 201.4997, "MPa", 1e-5), new CalcExpectedValue("n_f_min", 1.620988, "", 1e-5), new CalcExpectedValue("n_y_min", 4.488973, "", 1e-5)],
                 CalcReferenceStatus.Unconfirmed),
         ],
@@ -175,13 +178,13 @@ public sealed class ShaftCalculator : ICalcCalculator
         }
         catch (FrameModelException ex)
         {
-            c.Block("geometry", "segments: the shaft model could not be solved: " + ex.Message);
+            c.Block("geometry", "segments: the shaft model could not be solved. " + ex.Message);
         }
     }
 
     private void RunCore(CalcRunContext c)
     {
-        foreach (var s in new[] { "x_A", "x_B", "T", "x_T1", "n", "S_ut", "S_y", "E", "rho", "R", "k_d", "k_f", "n_target", "theta_max", "y_max" })
+        foreach (var s in new[] { "x_A", "x_B", "T", "x_T1", "n", "S_ut", "S_y", "E", "rho", "R_rel", "k_d", "k_f", "n_target", "theta_max", "y_max" })
             c.Input(s);
 
         if (c.Si("S_y") > c.Si("S_ut"))
@@ -218,7 +221,7 @@ public sealed class ShaftCalculator : ICalcCalculator
         if (c.Has("x_T2"))
             xT2 = c.InputSi("x_T2");
         else
-            c.Assume($"The torque leaves at the shaft end ({F(length * 1e3)} mm): x_T2 is blank.", "Every section beyond the torque entry carries the torque; enter x_T2 for a torque taken off part-way.");
+            c.Assume($"The torque leaves at the shaft end, {F(length * 1e3)} mm, because x_T2 is blank.", "Every section beyond the torque entry carries the torque, so enter x_T2 for a torque taken off part-way.");
 
         var xa = c.Si("x_A");
         var xb = c.Si("x_B");
@@ -234,7 +237,7 @@ public sealed class ShaftCalculator : ICalcCalculator
         // Points closer than L/200 share a node, so two bearings that near would collapse into one support (Black B-A-07).
         if (Math.Abs(xa - xb) < length / 200)
         {
-            c.Block("geometry", $"x_B: the bearings ({F(xa * 1e3)} and {F(xb * 1e3)} mm) are closer than 1/200 of the shaft length ({F(length * 1e3 / 200)} mm), so the model would treat them as one support; move them apart.");
+            c.Block("geometry", $"x_B: the bearings ({F(xa * 1e3)} and {F(xb * 1e3)} mm) are closer than 1/200 of the shaft length, {F(length * 1e3 / 200)} mm. Move them apart, because the model treats them as one support.");
             return;
         }
 
@@ -303,7 +306,7 @@ public sealed class ShaftCalculator : ICalcCalculator
         // A carried mass has a weight. Left blank, the switch said nothing about it and the sheet quietly left the weight out (1.5.1 and before: a warning that did not stop a pass).
         if (carried > 0 && !c.Has("w_masses"))
         {
-            c.Block("mass-weight", $"w_masses: a mass of {F(carried)} kg is carried; say whether the sheet adds the weights (on) or they are entered as forces in F_y (off).");
+            c.Block("mass-weight", $"w_masses: a mass of {F(carried)} kg is carried. Enter on to add the weights, or off if you enter them as forces in F_y.");
             return;
         }
 
@@ -359,7 +362,7 @@ public sealed class ShaftCalculator : ICalcCalculator
         var finish = c.InputText("finish");
         var (a, b) = finish switch { Ground => (1.58, -0.085), HotRolled => (57.7, -0.718), Forged => (272.0, -0.995), _ => (4.51, -0.265) };
         var ka = c.Has("k_a") ? c.InputSi("k_a") : a * Math.Pow(sut, b);
-        var z = NormalQuantile(c.Si("R"));
+        var z = NormalQuantile(c.Si("R_rel"));
         var ke = 1 - 0.08 * z;
         var sePrime = sut <= 1400 ? 0.5 * sut : 700;
         c.Record("k_a", c.Has("k_a") ? "k_a (entered, from a record)" : "a·S_ut^b", c.Has("k_a") ? F(ka) : $"{F(a)} × {F(sut)}^{F(b)} ({finish})", new ScalarValue(ka), "Surface factor", "Shigley 10th ed. §6-9, Table 6-2");
@@ -393,7 +396,7 @@ public sealed class ShaftCalculator : ICalcCalculator
                 var kb = dmm <= 51 ? 1.24 * Math.Pow(dmm, -0.107) : 1.51 * Math.Pow(Math.Min(dmm, 254), -0.157);
 
                 if (dmm > 254)
-                    c.Warn("size-factor", $"segments: d = {F(dmm)} mm is above 254 mm; k_b is held at its 254 mm value.");
+                    c.Warn("size-factor", $"segments: d = {F(dmm)} mm is above 254 mm, so k_b is held at its 254 mm value.");
 
                 var se = ka * kb * c.InputSi("k_d") * ke * c.InputSi("k_f") * sePrime;
                 var modulus = Math.PI * (Math.Pow(seg.D, 4) - Math.Pow(seg.Di, 4)) / seg.D;
@@ -430,7 +433,7 @@ public sealed class ShaftCalculator : ICalcCalculator
             var outside = sections.Where(q => q.X < tLo - 1e-12 || q.X > tHi + 1e-12).Select(q => F(q.X * 1e3)).ToList();
 
             if (outside.Count > 0)
-                c.Warn("torque-span", $"x_T2: the torque is transmitted only between x_T1 = {F(tLo * 1e3)} mm and x_T2 = {F(tHi * 1e3)} mm, so the section(s) at {string.Join(", ", outside)} mm carry no torque; set x_T2 (blank: the shaft length) if the torque is carried there.");
+                c.Warn("torque-span", $"x_T2: the torque acts between x_T1 = {F(tLo * 1e3)} and x_T2 = {F(tHi * 1e3)} mm only. The sections at {string.Join(", ", outside)} mm carry no torque, so set x_T2 if it is carried there.");
         }
 
         var outputs = new List<(string, string)> { ("R_A", "Reaction at A"), ("R_B", "Reaction at B"), ("d_A", "Seat diameter at A"), ("d_B", "Seat diameter at B"), ("M_max", "Largest bending moment"), ("theta_A", "Slope at A"), ("theta_B", "Slope at B"), ("y_load", "Deflection at the loads") };
@@ -461,8 +464,8 @@ public sealed class ShaftCalculator : ICalcCalculator
         {
             // Nothing deflects: no density and no carried mass, or every carried mass sits on a bearing (Black B-A-07).
             c.Warn("critical-speed-skipped", masses.Sum() > 0
-                ? "rho: every carried mass sits on a bearing and ρ is 0, so no mass deflects and no critical speed is found; enter ρ or move a mass off the bearings."
-                : "rho: no mass is carried and ρ is 0, so no critical speed is found; enter ρ (the shaft's own mass) or a carried mass.");
+                ? "rho: every carried mass sits on a bearing and ρ is 0, so no critical speed is found. Enter ρ or move a mass off the bearings."
+                : "rho: no mass is carried and ρ is 0, so no critical speed is found. Enter ρ (the shaft's own mass) or a carried mass.");
 
             // A shaft that runs has a critical speed: with no mass to deflect none can be found, and the check that it is far enough above the running speed is not made, so it fails
             // (it was left out and the sheet passed). A shaft at rest (n = 0) has none to clear.
@@ -505,13 +508,13 @@ public sealed class ShaftCalculator : ICalcCalculator
                 c.Check("Critical speed against the operating speed", "n_c_req", "n_c_D", "Shigley 10th ed. §7-6");
 
                 if (ratio < rcMin)
-                    c.Warn("critical-speed", $"n: the first critical speed (Dunkerley lower bound) is {CalcValue.FormatNumber(ratio, 3)} times the operating speed; keep it at least {CalcValue.FormatNumber(rcMin, 3)} times.");
+                    c.Warn("critical-speed", $"n: the first critical speed (Dunkerley lower bound) is {CalcValue.FormatNumber(ratio, 3)} times the operating speed. Keep it at least {CalcValue.FormatNumber(rcMin, 3)} times.");
             }
         }
 
         // Key.
         if ((c.Has("x_key") || c.Has("w") || c.Has("h") || c.Has("L_key")) && !(c.Has("x_key") && c.Has("w") && c.Has("h") && c.Has("L_key")))
-            c.Warn("key", "x_key: the key check needs its position, width, height and length; it is not made until all four are entered.");
+            c.Warn("key", "x_key: enter the position, width, height and length of the key. The key check is not made until all four are entered.");
 
         if (c.Has("x_key") && c.Has("w") && c.Has("h") && c.Has("L_key"))
         {
@@ -519,7 +522,7 @@ public sealed class ShaftCalculator : ICalcCalculator
                 c.Input(s);
 
             if (peakTorque > 0 && (c.Si("x_key") < tLo - 1e-12 || c.Si("x_key") > tHi + 1e-12))
-                c.Warn("torque-span", $"x_key: the key at {F(c.Si("x_key") * 1e3)} mm lies outside the torque span {F(tLo * 1e3)} … {F(tHi * 1e3)} mm; the key check still uses the peak torque.");
+                c.Warn("torque-span", $"x_key: the key at {F(c.Si("x_key") * 1e3)} mm lies outside the torque span, {F(tLo * 1e3)} to {F(tHi * 1e3)} mm. The key check still uses the peak torque.");
 
             var dk = Smallest(segments, c.Si("x_key")).D;
             var tauKey = 2 * peakTorque / (dk * c.Si("w") * c.Si("L_key")) / 1e6;
@@ -546,7 +549,7 @@ public sealed class ShaftCalculator : ICalcCalculator
                 }
                 else
                 {
-                    c.Warn("key-hub", "S_y_hub: no hub strength is entered, so the key bearing is checked against the key and the shaft only; the hub is often the weakest part, enter its yield strength.");
+                    c.Warn("key-hub", "S_y_hub: no hub strength is entered, so the key bearing is checked against the key and the shaft only. The hub is often the weakest part, so enter its yield strength.");
                 }
 
                 var lReq = Math.Max(2 * peakTorque * target / (dk * c.Si("w") * 0.577 * syk * 1e6), 4 * peakTorque * target / (dk * c.Si("h") * syBearing * 1e6));
@@ -565,17 +568,18 @@ public sealed class ShaftCalculator : ICalcCalculator
         {
             c.Record("u_f", "n_target/n_f,min", $"{F(nTarget)} / {Show(worstF)}", new ScalarValue(nTarget / worstF), "Fatigue utilisation");
             c.Record("u_y", "n_target/n_y,min", $"{F(nTarget)} / {Show(worstY)}", new ScalarValue(nTarget / worstY), "Yield utilisation");
-            c.CheckUtilisation("Fatigue safety factor against target (DE-Goodman)", "u_f", "Shigley 10th ed. §7-4");
-            c.CheckUtilisation("Yield safety factor against target", "u_y");
+            c.Check("Fatigue safety factor against target (DE-Goodman)", "n_target", "n_f_min", "Shigley 10th ed. §7-4");
+            c.Check("Yield safety factor against target", "n_target", "n_y_min");
         }
 
+        c.Record("theta_bearing", "max(θ_A, θ_B)", $"max({F(thetaA)}, {F(thetaB)})", ScalarValue.Of(Math.Max(thetaA, thetaB), "rad"), "Larger slope at a bearing");
         c.Record("u_slope", "max(θ_A, θ_B)/θ_max", $"{F(Math.Max(thetaA, thetaB))} / {F(c.Si("theta_max"))}", new ScalarValue(Math.Max(thetaA, thetaB) / c.Si("theta_max")), "Slope utilisation");
         c.Record("u_defl", "y_load/y_max", $"{F(yLoad * 1e3)} / {F(c.Si("y_max") * 1e3)} mm", new ScalarValue(yLoad / c.Si("y_max")), "Deflection utilisation");
-        c.CheckUtilisation("Slope at the bearings against limit", "u_slope");
-        c.CheckUtilisation("Deflection at the loads against limit", "u_defl");
+        c.Check("Slope at the bearings against limit", "theta_bearing", "theta_max");
+        c.Check("Deflection at the loads against limit", "y_load", "y_max");
 
         if (c.Has("S_y_key") && c.Has("L_key") && c.Has("w") && c.Has("h") && c.Has("x_key"))
-            c.CheckUtilisation("Key length against required", "u_key");
+            c.Check("Key length against required", "L_key_req", "L_key");
 
         c.Series(new CalcSeries("Bending moment", "x", "mm", "M", "N·m", xs.Select(x => (x * 1e3, At(x).M)).ToList()));
         c.Series(new CalcSeries("Deflection", "x", "mm", "y", "mm", xs.Select(x => (x * 1e3, At(x).Y * 1e3)).ToList()));

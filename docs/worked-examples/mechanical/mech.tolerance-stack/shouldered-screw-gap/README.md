@@ -2,12 +2,12 @@
 
 **Source.** Shigley's Mechanical Engineering Design, 9th ed., Ch. 1 tolerance stack-up example — Unconfirmed.
 
-Four inch-dimensioned parts on a shouldered screw. The worst-case gap can go negative (−0.005 in), so the stack fails the 0.003 in minimum; the RSS band ±0.006 in predicts most assemblies within 0.005 ± 0.006 in.
+Four inch-dimensioned parts on a shouldered screw, with the results in mm (0.005 in is 0.127 mm). The worst-case gap can go negative (−0.005 in), so the stack fails the 0.003 in minimum; the RSS band ±0.006 in predicts most assemblies within 0.005 ± 0.006 in.
 
 | Input | Value | Source |
 |---|---|---|
 | `contributors` | 4 row(s) | spec: Shigley 9e Ch. 1 example, part dimensions |
-| `cpk_target` | 1.33 | assumption: Usual capability target. |
+| `cpk_req` | 1.33 | assumption: Usual capability target. |
 | `f_rss` | 1.5 | assumption: Bender factor 1.5. |
 | `k` | 3 | assumption: Each part at ±3σ within its band. |
 | `minimum` | 0.003 in | spec: Shigley 9e Ch. 1 example, required gap |
@@ -17,9 +17,9 @@ Four inch-dimensioned parts on a shouldered screw. The worst-case gap can go neg
 
 | Output | Expected | Computed | Result |
 |---|---|---|---|
-| `x_nom` | 0.005 in | 0.005 in | PASS |
-| `t_wc` | 0.01 in | 0.01 in | PASS |
-| `t_rss` | 0.006 in | 0.006 in | PASS |
-| `x_wc_min` | -0.005 in | -0.005 in | PASS |
+| `x_nom` | 0.127 mm | 0.127 mm | PASS |
+| `t_wc` | 0.254 mm | 0.254 mm | PASS |
+| `t_rss` | 0.1524 mm | 0.1524 mm | PASS |
+| `x_wc_min` | -0.127 mm | -0.127 mm | PASS |
 
-Governing check: Worst case within requirement — FAIL. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Worst-case range against the requirement — FAIL. Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

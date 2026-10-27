@@ -334,7 +334,7 @@
     },
     {
       "id": "mech.shaft",
-      "version": "1.6.0",
+      "version": "1.7.0",
       "kats": 3,
       "katsPassed": 3,
       "failedKats": [],
@@ -344,7 +344,7 @@
     },
     {
       "id": "mech.shaft-stress",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "kats": 3,
       "katsPassed": 3,
       "failedKats": [],
@@ -354,7 +354,7 @@
     },
     {
       "id": "mech.snap-fit",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "kats": 11,
       "katsPassed": 11,
       "failedKats": [],
@@ -364,7 +364,7 @@
     },
     {
       "id": "mech.spring",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "kats": 8,
       "katsPassed": 8,
       "failedKats": [],
@@ -374,7 +374,7 @@
     },
     {
       "id": "mech.thermal-expansion",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "kats": 5,
       "katsPassed": 5,
       "failedKats": [],
@@ -384,7 +384,7 @@
     },
     {
       "id": "mech.thick-cylinder",
-      "version": "2.1.1",
+      "version": "2.2.0",
       "kats": 3,
       "katsPassed": 3,
       "failedKats": [],
@@ -394,7 +394,7 @@
     },
     {
       "id": "mech.thin-vessel",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "kats": 2,
       "katsPassed": 2,
       "failedKats": [],
@@ -404,7 +404,7 @@
     },
     {
       "id": "mech.tolerance-stack",
-      "version": "2.2.1",
+      "version": "2.3.0",
       "kats": 7,
       "katsPassed": 7,
       "failedKats": [],
@@ -414,7 +414,7 @@
     },
     {
       "id": "mech.weld-group",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "kats": 4,
       "katsPassed": 4,
       "failedKats": [],

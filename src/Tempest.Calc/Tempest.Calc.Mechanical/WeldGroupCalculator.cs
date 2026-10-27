@@ -19,35 +19,36 @@ public sealed class WeldGroupCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.2.0", CalcDiscipline.Mechanical, "Weld group (elastic line method)",
-        "A group of straight fillet welds in a plane under in-plane forces (with eccentricity, so torsion), an out-of-plane force and out-of-plane moments: the resultant force per unit length at every weld end, the critical point, the throat stress against the design strength and the leg size required.",
+        Id, "1.3.0", CalcDiscipline.Mechanical, "Weld group (elastic line method)",
+        "Calculates the force per unit length at every end of a fillet weld group, the throat stress and the leg size required. It covers one leg size, with in-plane forces and torque, an out-of-plane force and moments.",
         "Welds as lines of unit throat: L_w = Σ l, centroid x_c = Σ l·x_m/L_w\n" +
         "Unit second moments: I_ux = Σ [l(y_m − y_c)² + l·Δy²/12], I_uy likewise, product I_uxy = Σ [l(x_m − x_c)(y_m − y_c) + l·Δx·Δy/12], J_u = I_ux + I_uy\n" +
         "Torsion about the centroid: T = F_y(e_x − x_c) − F_x(e_y − y_c) + M_z\n" +
         "At each weld end: direct F/L_w, torsional T·r/J_u (perpendicular to r), out-of-plane F_z/L_w + [(M_x·I_uy − M_y·I_uxy)·y′ + (M_y·I_ux − M_x·I_uxy)·x′]/(I_ux·I_uy − I_uxy²) with F_z's eccentricity added to M_x and M_y (this reduces to M_x·y′/I_ux + M_y·x′/I_uy only for a group symmetric about a centroidal axis); vector sum f_r\n" +
         "Throat and weld stress: a = 0.707·s, τ = f_r,max/a; required leg s_req = f_r,max/(0.707·f_w)",
         [
-            new CalcInputSpec("welds", "Weld lines", CalcInputKind.Table, Columns: Columns, MaxRows: 50),
-            new CalcInputSpec("s", "Fillet leg", CalcInputKind.Quantity, "mm", Default: 6, Min: 3, Max: 25, HardMin: 3, HardMax: 25, Group: "Weld"),
-            new CalcInputSpec("f_w", "Design strength of the throat", CalcInputKind.Quantity, "MPa", Default: 220, Min: 50, Max: 600, HardMin: 1, HardMax: 2000, Group: "Weld"),
-            new CalcInputSpec("F_x", "In-plane force, x", CalcInputKind.Quantity, "kN", Default: 0, HardMin: -1e5, HardMax: 1e5, Group: "Loads"),
-            new CalcInputSpec("F_y", "In-plane force, y", CalcInputKind.Quantity, "kN", Default: -20, HardMin: -1e5, HardMax: 1e5, Group: "Loads"),
-            new CalcInputSpec("F_z", "Out-of-plane force (tension positive)", CalcInputKind.Quantity, "kN", Default: 0, HardMin: -1e5, HardMax: 1e5, Group: "Loads"),
-            new CalcInputSpec("e_x", "Point of application, x", CalcInputKind.Quantity, "mm", Default: 200, HardMin: -1e5, HardMax: 1e5, Group: "Loads"),
-            new CalcInputSpec("e_y", "Point of application, y", CalcInputKind.Quantity, "mm", Default: 50, HardMin: -1e5, HardMax: 1e5, Group: "Loads"),
-            new CalcInputSpec("M_x", "Out-of-plane moment about x (tension on +y side)", CalcInputKind.Quantity, "kN*m", Default: 0, HardMin: -1e5, HardMax: 1e5, Group: "Loads"),
-            new CalcInputSpec("M_y", "Out-of-plane moment about y (tension on +x side)", CalcInputKind.Quantity, "kN*m", Default: 0, HardMin: -1e5, HardMax: 1e5, Group: "Loads"),
-            new CalcInputSpec("M_z", "Additional in-plane torque", CalcInputKind.Quantity, "kN*m", Default: 0, HardMin: -1e5, HardMax: 1e5, Group: "Loads"),
+            new CalcInputSpec("welds", "Weld lines", CalcInputKind.Table, Columns: Columns, MaxRows: 50, Group: "Setup"),
+            new CalcInputSpec("s", "Fillet leg", CalcInputKind.Quantity, "mm", Default: 6, Min: 3, Max: 20, HardMin: 3, HardMax: 25, Group: "Geometry"),
+            new CalcInputSpec("f_w", "Design strength of the throat", CalcInputKind.Quantity, "MPa", Default: 220, Min: 50, Max: 600, HardMin: 1, HardMax: 2000, Group: "Material"),
+            new CalcInputSpec("F_x", "In-plane force, x", CalcInputKind.Quantity, "kN", Default: 0, Min: -1e4, Max: 1e4, HardMin: -1e5, HardMax: 1e5, Group: "Loads"),
+            new CalcInputSpec("F_y", "In-plane force, y", CalcInputKind.Quantity, "kN", Default: -20, Min: -1e4, Max: 1e4, HardMin: -1e5, HardMax: 1e5, Group: "Loads"),
+            new CalcInputSpec("F_z", "Out-of-plane force (tension positive)", CalcInputKind.Quantity, "kN", Default: 0, Min: -1e4, Max: 1e4, HardMin: -1e5, HardMax: 1e5, Group: "Loads"),
+            new CalcInputSpec("e_x", "Point of application, x", CalcInputKind.Quantity, "mm", Default: 200, Min: -5000, Max: 5000, HardMin: -1e5, HardMax: 1e5, Group: "Loads"),
+            new CalcInputSpec("e_y", "Point of application, y", CalcInputKind.Quantity, "mm", Default: 50, Min: -5000, Max: 5000, HardMin: -1e5, HardMax: 1e5, Group: "Loads"),
+            new CalcInputSpec("M_x", "Out-of-plane moment about x (tension on +y side)", CalcInputKind.Quantity, "kN*m", Default: 0, Min: -1e4, Max: 1e4, HardMin: -1e5, HardMax: 1e5, Group: "Loads"),
+            new CalcInputSpec("M_y", "Out-of-plane moment about y (tension on +x side)", CalcInputKind.Quantity, "kN*m", Default: 0, Min: -1e4, Max: 1e4, HardMin: -1e5, HardMax: 1e5, Group: "Loads"),
+            new CalcInputSpec("M_z", "Additional in-plane torque", CalcInputKind.Quantity, "kN*m", Default: 0, Min: -1e4, Max: 1e4, HardMin: -1e5, HardMax: 1e5, Group: "Loads"),
         ],
         [
-            new CalcAssumption("Elastic, static; the connected parts are rigid and the weld stress varies linearly with distance from the centroid.", "Conservative against the instantaneous-centre method."),
-            new CalcAssumption("Fillet welds only, all of one leg size; the throat is 0.707·s.", "Equal-leg fillet."),
-            new CalcAssumption("The design strength of the throat comes from S4 (EN 1993-1-8 simplified method) or a user allowable with its source.", "No resistance table ships."),
+            new CalcAssumption("The load is static, the weld is elastic and the connected parts are rigid.", "Conservative against the instantaneous-centre method."),
+            new CalcAssumption("The weld stress varies linearly with distance from the centroid.", "The elastic line method."),
+            new CalcAssumption("The welds are fillet welds of one leg size, and the throat is 0.707·s.", "Equal-leg fillet."),
+            new CalcAssumption("The design strength of the throat comes from EN 1993-1-8 (simplified method) or a user allowable with its source.", "No resistance table ships."),
         ],
         [
-            new CalcClauseRef("Shigley's Mechanical Engineering Design", "11th ed., Ch. 9, Tables 9-1 and 9-2", "Welds treated as lines: torsional and bending properties"),
-            new CalcClauseRef("Blodgett, Design of Welded Structures", "1966, §7.4", "Treating the weld as a line"),
-            new CalcClauseRef("EN 1993-1-8:2005", "cl. 4.5.3.3", "Simplified method for design resistance of fillet welds (resistance input)"),
+            new CalcClauseRef("Budynas, Shigley's Mechanical Engineering Design", "Ch. 9, Tables 9-1 and 9-2, 11th ed.", "Welds treated as lines: torsional and bending properties"),
+            new CalcClauseRef("Blodgett, Design of Welded Structures", "§7.4, 1st ed. (1966)", "Treating the weld as a line"),
+            new CalcClauseRef("BS EN 1993-1-8:2005", "cl. 4.5.3.3", "Simplified method for design resistance of fillet welds (resistance input)"),
         ],
         [
             new CalcApplicabilityRule("few-welds", "No weld of non-zero length.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
@@ -97,7 +98,7 @@ public sealed class WeldGroupCalculator : ICalcCalculator
 
         if (lines.Count == 0)
         {
-            c.Block("few-welds", c.EnterRows("welds").TrimEnd('.') + "; every weld needs a length above zero.");
+            c.Block("few-welds", c.EnterRows("welds").TrimEnd('.') + ", each with a length above zero.");
             return;
         }
 
@@ -134,7 +135,7 @@ public sealed class WeldGroupCalculator : ICalcCalculator
 
         if ((mx != 0 || my != 0) && g.Bending(mx, my, 1, 1) is null)
         {
-            c.Block("collinear", "M_x: all welds lie on one line and the out-of-plane moment has a component about that line, which no weld resists; add a weld off the line or remove that component.");
+            c.Block("collinear", "M_x: all welds lie on one line, and the out-of-plane moment has a component about that line. Add a weld off the line, or remove that component.");
             return;
         }
 
@@ -164,7 +165,7 @@ public sealed class WeldGroupCalculator : ICalcCalculator
         foreach (var (symbol, text) in new[] { ("L_w", "Weld length"), ("x_c", "Centroid x"), ("y_c", "Centroid y"), ("I_ux", "Unit second moment about x"), ("I_uy", "Unit second moment about y"), ("I_uxy", "Unit product moment"), ("J_u", "Unit polar moment"), ("T", "Torque about the centroid"), ("f_r_max", "Maximum force per unit length"), ("critical", "Critical point"), ("a", "Throat"), ("tau", "Throat stress"), ("s_req", "Leg required"), ("u", "Utilisation") })
             c.Output(symbol, text);
 
-        c.CheckUtilisation("Throat stress against design strength", "u", "EN 1993-1-8 cl. 4.5.3.3");
+        c.Check("Throat stress against design strength", "tau", "f_w", "EN 1993-1-8 cl. 4.5.3.3");
         c.Series(new CalcSeries("Weld lines", "x", "mm", "y", "mm", lines.SelectMany(l => new[] { (l.X1 * 1e3, l.Y1 * 1e3), (l.X2 * 1e3, l.Y2 * 1e3) }).ToList()));
     }
 

@@ -180,7 +180,7 @@ public sealed class MechanicalPortTests
     [Fact]
     public void Vessel_Outside_The_Thin_Shell_Range_Blocks()
     {
-        Assert.Contains(CalcRunner.Run(Vessel, Defaults(Vessel).With(CalcInputValue.Quantity("P", 50, "MPa"))).Blocks, b => b.RuleId == "thin-wall");
+        Assert.Contains(CalcRunner.Run(Vessel, Defaults(Vessel).With(CalcInputValue.Quantity("p_design", 50, "MPa"))).Blocks, b => b.RuleId == "thin-wall");
         Assert.Contains(CalcRunner.Run(Vessel, Defaults(Vessel).With(CalcInputValue.Quantity("t_p", 3, "mm"))).Blocks, b => b.RuleId == "corroded-through");
     }
 

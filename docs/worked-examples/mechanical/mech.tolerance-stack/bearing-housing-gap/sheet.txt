@@ -7,7 +7,7 @@ Checker: —    Checked: —
 Issued: —
 
 1. Scope and method
-A linear tolerance loop: worst-case limits, root-sum-square and modified RSS limits, predicted spread and capability against a stated requirement, contribution Pareto and a Monte Carlo prediction.
+Calculates the worst-case, root-sum-square and modified RSS limits of a linear tolerance loop, with the predicted spread and capability. It adds a contribution Pareto and a Monte Carlo prediction against a stated requirement.
 Worst case, every contributor at its limit: T_wc = Σ|half-bands|. Root sum of squares, the statistical stack: T_rss = √Σ half². Modified RSS, a factor on the RSS (Bender-style): T_mrss = factor × RSS. Predicted standard deviation of the stack, from each contributor's distribution: σ = √Σ σ_i². Process capability, taken from the nearer limit: C_pk = min(USL − μ, μ − LSL)/(3σ). Monte Carlo check, every contributor sampled from a fixed seed and summed with its sign: stack = Σ s_i x_i.
 
 2. Inputs
@@ -16,25 +16,25 @@ Worst case, every contributor at its limit: T_wc = Σ|half-bands|. Root sum of s
   contributors[1] |  | name = Housing bore depth; direction = adds; nominal = 40 mm; upper = 0.1 mm; lower = 0 mm |  |  | 
   contributors[2] |  | name = Bearing width; direction = subtracts; nominal = 20 mm; upper = 0 mm; lower = -0.12 mm |  |  | 
   contributors[3] |  | name = Spacer; direction = subtracts; nominal = 19.5 mm; upper = 0.02 mm; lower = -0.02 mm |  |  | 
-  minimum | Minimum acceptable result | 0.4 | mm | spec: SPEC-BRG-7 §4.2 | -1000000 … 1000000 mm
-  maximum | Maximum acceptable result | 0.8 | mm | spec: SPEC-BRG-7 §4.2 | -1000000 … 1000000 mm
+  notation | Drawing notation | BS 8888 |  | assumption: Metric drawing. | any
   k | Standard deviations per half-band (normal contributors) | 3 |  | assumption: Each part at ±3σ within its band. | 1 … 6
   f_rss | Modified-RSS factor (Bender-style) | 1.5 |  | assumption: Bender factor 1.5. | 1 … 2
-  cpk_target | Required C_pk | 1.33 |  | assumption: Usual capability target. | 1 … 2
+  cpk_req | Required C_pk | 1.33 |  | assumption: Usual capability target. | 1 … 2
+  minimum | Minimum acceptable result (optional; blank = no minimum) | 0.4 | mm | spec: SPEC-BRG-7 §4.2 | -10000 … 10000 mm
+  maximum | Maximum acceptable result (optional; blank = no maximum) | 0.8 | mm | spec: SPEC-BRG-7 §4.2 | -10000 … 10000 mm
   n_mc | Monte Carlo samples | 10000 |  | assumption: Default sample count. | 1000 … 100000
-  seed | Monte Carlo seed | 1 |  | assumption: Fixed seed for reproducibility. | 0 … 4295000000
-  notation | Drawing notation | BS 8888 |  | assumption: Metric drawing. | any
+  seed | Monte Carlo seed | 1 |  | assumption: Fixed seed for reproducibility. | 0 … 1000000000
 
 3. Assumptions
   A1. Every contributor acts along the one axis of the stack. (A linear stack: no angular or datum-shift effects beyond what the user enters as a contributor.)
-  A2. Statistical figures assume contributors vary independently about their mid-limit (plus any stated mean shift), each with the distribution stated for it. (The worst case is a guarantee; every statistical figure is a prediction about a population.)
+  A2. Contributors vary independently about their mid-limit and any stated mean shift, each with its stated distribution. (The worst case is a guarantee; every statistical figure is a prediction about a population.)
   A3. A position or profile contributor contributes ± half its tolerance zone, plus half the stated MMC bonus. (Diametral zones are bilateral about the true position.)
-  A4. k (Standard deviations per half-band (normal contributors)) is taken as 3. (Each part at ±3σ within its band.)
-  A5. f_rss (Modified-RSS factor (Bender-style)) is taken as 1.5. (Bender factor 1.5.)
-  A6. cpk_target (Required C_pk) is taken as 1.33. (Usual capability target.)
-  A7. n_mc (Monte Carlo samples) is taken as 10000. (Default sample count.)
-  A8. seed (Monte Carlo seed) is taken as 1. (Fixed seed for reproducibility.)
-  A9. notation (Drawing notation) is taken as BS 8888. (Metric drawing.)
+  A4. notation (Drawing notation) is taken as BS 8888. (Metric drawing.)
+  A5. k (Standard deviations per half-band (normal contributors)) is taken as 3. (Each part at ±3σ within its band.)
+  A6. f_rss (Modified-RSS factor (Bender-style)) is taken as 1.5. (Bender factor 1.5.)
+  A7. cpk_req (Required C_pk) is taken as 1.33. (Usual capability target.)
+  A8. n_mc (Monte Carlo samples) is taken as 10000. (Default sample count.)
+  A9. seed (Monte Carlo seed) is taken as 1. (Fixed seed for reproducibility.)
 
 4. Working
   [7] c1 = + 40 +0.1/0
@@ -129,11 +129,11 @@ Worst case, every contributor at its limit: T_wc = Σ|half-bands|. Root sum of s
       = Monte Carlo
       = 0.027228 mm
         Monte Carlo σ
-  [32] mc_p05 = 5th percentile
+  [32] mc_p05 = 5 % quantile
       = Monte Carlo
       = 0.56589 mm
         Monte Carlo 5 %
-  [33] mc_p95 = 95th percentile
+  [33] mc_p95 = 95 % quantile
       = Monte Carlo
       = 0.65462 mm
         Monte Carlo 95 %
@@ -146,11 +146,11 @@ Worst case, every contributor at its limit: T_wc = Σ|half-bands|. Root sum of s
   x_nom = 0.5000 mm    Nominal result
   x_mean = 0.6100 mm    Mean result
   t_wc = 0.1300 mm    Worst-case tolerance (±)
+  t_rss = 0.08062 mm    RSS tolerance (±)
+  sigma = 0.02687 mm    Predicted σ
   x_wc_min = 0.4800 mm    Worst-case minimum
   x_wc_max = 0.7400 mm    Worst-case maximum
-  t_rss = 0.08062 mm    RSS tolerance (±)
   t_mrss = 0.1209 mm    Modified RSS tolerance (±)
-  sigma = 0.02687 mm    Predicted σ
   m_min = 0.08000 mm    Worst-case margin to the minimum
   m_max = 0.06000 mm    Worst-case margin to the maximum
   cp = 2.4807    C_p
@@ -159,19 +159,19 @@ Worst case, every contributor at its limit: T_wc = Σ|half-bands|. Root sum of s
   yield = 100 %    Yield (predicted)
   mc_mean = 0.6099 mm    Monte Carlo mean
   mc_sigma = 0.02723 mm    Monte Carlo σ
-  mc_p05 = 0.5659 mm    Monte Carlo 5th percentile
-  mc_p95 = 0.6546 mm    Monte Carlo 95th percentile
+  mc_p05 = 0.5659 mm    Monte Carlo 5 % quantile
+  mc_p95 = 0.6546 mm    Monte Carlo 95 % quantile
   mc_yield = 100 %    Monte Carlo yield
 
 6. Checks (governing first)
-  PASS  C_pk against target: u_cpk = 0.56 vs u_cpk ≤ 1  utilisation 0.56
-  PASS  Worst case within requirement: 0.48 … 0.74 mm vs 0.4 … 0.8 mm
+  PASS  C_pk against the requirement: 1.33 vs 2.3567  utilisation 0.56
+  PASS  Worst-case range against the requirement: 0.48 … 0.74 mm vs 0.4 … 0.8 mm
 
 7. Applicability
-  WARNING  contributors: fewer than four contributors; RSS and modified RSS are optimistic for so few.  [few-contributors]
+  WARNING  contributors: there are fewer than four contributors. RSS and modified RSS are optimistic for so few.  [few-contributors]
 
 8. Verification
-  Template: mech.tolerance-stack@2.2.1
+  Template: mech.tolerance-stack@2.3.0
   Content hash: 0000000000000000
   Engine: engine
   Known-answer cases passed: 7/7
@@ -180,4 +180,4 @@ Worst case, every contributor at its limit: T_wc = Σ|half-bands|. Root sum of s
 9. References
   1. BS 8888 — Technical product documentation and specification
   2. ASME Y14.5 — Dimensioning and tolerancing
-  3. ISO 2768-1 — General tolerances (where a contributor's band is a general tolerance)
+  3. ISO 2768-1:1989 — General tolerances (where a contributor's band is a general tolerance)

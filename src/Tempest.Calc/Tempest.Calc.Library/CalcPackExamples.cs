@@ -637,7 +637,7 @@ internal static class CalcPackExamples
     /// </summary>
     public static IReadOnlyList<CalcInputValue> CamM7 { get; } =
     [
-        C("mode", "Compression"), Q("d", 6, "mm"), Q("D", 50, "mm"), N("n", 10.5), C("ends", "Squared and ground"), Q("L0", 145, "mm"), C("work", "Loads"), Q("F_1", 50, "N"),
+        C("mode", "Compression"), Q("d", 6, "mm"), Q("D", 50, "mm"), N("n_active", 10.5), C("ends", "Squared and ground"), Q("L0", 145, "mm"), C("work", "Loads"), Q("F_1", 50, "N"),
         C("rm_source", "Typed R_m(d)"), Q("Rm", 1500, "MPa"), Q("S_e", 400, "MPa"),
     ];
 

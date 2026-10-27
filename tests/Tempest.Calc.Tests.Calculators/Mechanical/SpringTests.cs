@@ -25,7 +25,7 @@ public sealed class SpringTests
     {
         Gen.Select(Gen.Double[0.5, 10], Gen.Double[5, 15], Gen.Double[2, 30], Gen.Double[40, 100], Gen.Double[0.1, 3]).Sample((d, c, n, g, s) =>
         {
-            var r = Run(Q("d", d, "mm"), Q("D", d * c, "mm"), CalcInputValue.Of("n", n), Q("G", g, "GPa"), CalcInputValue.Choice("work", SpringCalculator.Deflections), Q("s_1", 0, "mm"), Q("s_2", s, "mm"), Q("L0", 5000, "mm"));
+            var r = Run(Q("d", d, "mm"), Q("D", d * c, "mm"), CalcInputValue.Of("n_active", n), Q("G", g, "GPa"), CalcInputValue.Choice("work", SpringCalculator.Deflections), Q("s_1", 0, "mm"), Q("s_2", s, "mm"), Q("L0", 5000, "mm"));
             var k = g * 1e9 * Math.Pow(d * 1e-3, 4) / (8 * Math.Pow(d * c * 1e-3, 3) * n);
             return !r.IsBlocked && Math.Abs(r.OutputSi("k") - k) <= 1e-9 * k && Math.Abs(r.OutputSi("F_2") - k * s * 1e-3) <= 1e-9 * k * s * 1e-3;
         }, iter: 60);
@@ -63,7 +63,7 @@ public sealed class SpringTests
             SpringCalculator.Squared => (3.0, 0.0),
             _ => (2.0, 0.0),
         };
-        Assert.Equal((45 - a * 2) / (8 + b) * 1e-3, r.OutputSi("p"), 9);
+        Assert.Equal((45 - a * 2) / (8 + b) * 1e-3, r.OutputSi("p_coil"), 9);
     }
 
     [Fact]
@@ -122,7 +122,7 @@ public sealed class SpringTests
     [Fact]
     public void Buckling_Passes_Below_The_Critical_Deflection_And_Fails_At_Or_Above_It()
     {
-        var slender = new[] { Q("D", 20, "mm"), CalcInputValue.Of("n", 10), CalcInputValue.Choice("ends", SpringCalculator.PlainGround), Q("L0", 80, "mm"), CalcInputValue.Of("nu_seat", 1) };
+        var slender = new[] { Q("D", 20, "mm"), CalcInputValue.Of("n_active", 10), CalcInputValue.Choice("ends", SpringCalculator.PlainGround), Q("L0", 80, "mm"), CalcInputValue.Of("nu_seat", 1) };
         var ok = Run([.. slender, Q("F_1", 8, "N"), Q("F_2", 24, "N")]);
         Assert.Equal("PASS", Text(ok, "buckling"));
         Assert.DoesNotContain(ok.Warnings, w => w.RuleId == "buckling");
@@ -140,7 +140,7 @@ public sealed class SpringTests
     {
         // F7: a spring guided by a mandrel or in a bore cannot buckle freely, but the sheet failed it on the free-buckling check with no way to say so. guided = on skips that check, records the
         // assumption, and claims no buckling pass (no buckling row in the checks).
-        var slender = new[] { Q("D", 20, "mm"), CalcInputValue.Of("n", 10), CalcInputValue.Choice("ends", SpringCalculator.PlainGround), Q("L0", 80, "mm"), CalcInputValue.Of("nu_seat", 1), Q("F_1", 8, "N"), Q("F_2", 60, "N") };
+        var slender = new[] { Q("D", 20, "mm"), CalcInputValue.Of("n_active", 10), CalcInputValue.Choice("ends", SpringCalculator.PlainGround), Q("L0", 80, "mm"), CalcInputValue.Of("nu_seat", 1), Q("F_1", 8, "N"), Q("F_2", 60, "N") };
         var free = Run(slender);
         Assert.Equal("FAIL", Text(free, "buckling"));
         Assert.Contains(free.Checks, c => c.Name.StartsWith("Working deflection against the buckling", StringComparison.Ordinal) && !c.Passed);
@@ -176,8 +176,8 @@ public sealed class SpringTests
     {
         Gen.Select(Gen.Double[0.5, 1.2], Gen.Double[1.3, 2]).Sample((tight, loose) =>
         {
-            var a = Run(Q("D", 20, "mm"), CalcInputValue.Of("n", 10), CalcInputValue.Choice("ends", SpringCalculator.PlainGround), Q("L0", 150, "mm"), CalcInputValue.Of("nu_seat", tight));
-            var b = Run(Q("D", 20, "mm"), CalcInputValue.Of("n", 10), CalcInputValue.Choice("ends", SpringCalculator.PlainGround), Q("L0", 150, "mm"), CalcInputValue.Of("nu_seat", loose));
+            var a = Run(Q("D", 20, "mm"), CalcInputValue.Of("n_active", 10), CalcInputValue.Choice("ends", SpringCalculator.PlainGround), Q("L0", 150, "mm"), CalcInputValue.Of("nu_seat", tight));
+            var b = Run(Q("D", 20, "mm"), CalcInputValue.Of("n_active", 10), CalcInputValue.Choice("ends", SpringCalculator.PlainGround), Q("L0", 150, "mm"), CalcInputValue.Of("nu_seat", loose));
             return b.OutputSi("u_b") >= a.OutputSi("u_b");
         }, iter: 40);
     }
@@ -245,7 +245,7 @@ public sealed class SpringTests
         var r = Run(Q("F_2", 150, "N"));
         Assert.Contains(r.Checks, c => c.Name.StartsWith("Working deflection", StringComparison.Ordinal) && !c.Passed);
         var solid = Run(Q("L0", 60, "mm"));
-        Assert.Contains(solid.Checks, c => c.Name.StartsWith("Static shear stress", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(solid.Checks, c => c.Name.StartsWith("Shear stress at solid length", StringComparison.Ordinal) && !c.Passed);
     }
 
     [Fact]
@@ -277,7 +277,7 @@ public sealed class SpringTests
     // ------------------------------------------------------------------ extension
 
     private static CalcInputValue[] Extension(double f0 = 10, double f1 = 30, double f2 = 60) =>
-        [Mode(SpringCalculator.Extension), CalcInputValue.Of("n", 20), Q("F_0", f0, "N"), Q("F_1", f1, "N"), Q("F_2", f2, "N")];
+        [Mode(SpringCalculator.Extension), CalcInputValue.Of("n_active", 20), Q("F_0", f0, "N"), Q("F_1", f1, "N"), Q("F_2", f2, "N")];
 
     [Fact]
     public void An_Extension_Spring_Starts_Moving_At_The_Initial_Tension()
@@ -304,7 +304,7 @@ public sealed class SpringTests
     [Fact]
     public void An_Input_The_Chosen_Mode_Needs_Cannot_Be_Left_Blank()
     {
-        foreach (var (mode, symbol) in new[] { (SpringCalculator.Compression, "L0"), (SpringCalculator.Compression, "F_2"), (SpringCalculator.Extension, "F_0"), (SpringCalculator.Extension, "r_h1"), (SpringCalculator.Extension, "f_sigma"), (SpringCalculator.Torsion, "l_1"), (SpringCalculator.Torsion, "M_2") })
+        foreach (var (mode, symbol) in new[] { (SpringCalculator.Compression, "L0"), (SpringCalculator.Compression, "F_2"), (SpringCalculator.Extension, "F_0"), (SpringCalculator.Extension, "r_h1"), (SpringCalculator.Extension, "f_sigma"), (SpringCalculator.Torsion, "l_leg_1"), (SpringCalculator.Torsion, "M_2") })
         {
             var r = CalcRunner.Run(Spring, Defaults().With(Mode(mode)).With(new CalcInputValue(symbol)));
             Assert.True(r.IsBlocked, $"{mode} without {symbol}");
@@ -332,14 +332,14 @@ public sealed class SpringTests
     public void Extension_Springs_Check_The_Body_And_Both_Hook_Stresses()
     {
         var r = Run(Extension());
-        foreach (var name in new[] { "Static shear stress at working point 2", "Hook bending stress", "Hook side-bend torsion stress" })
+        foreach (var name in new[] { "Shear stress at working point 2 against the permissible stress", "Hook bending stress against the permissible stress", "Hook side-bend torsion stress against the permissible stress" })
             Assert.Contains(r.Checks, c => c.Name == name);
     }
 
     // ------------------------------------------------------------------ torsion
 
     private static CalcInputValue[] Torsion(double l1 = 30, double l2 = 30) =>
-        [Mode(SpringCalculator.Torsion), CalcInputValue.Of("n", 6), Q("l_1", l1, "mm"), Q("l_2", l2, "mm"), Q("M_1", 0.05, "N*m"), Q("M_2", 0.15, "N*m")];
+        [Mode(SpringCalculator.Torsion), CalcInputValue.Of("n_active", 6), Q("l_leg_1", l1, "mm"), Q("l_leg_2", l2, "mm"), Q("M_1", 0.05, "N*m"), Q("M_2", 0.15, "N*m")];
 
     [Fact]
     public void The_Legs_Soften_A_Torsion_Spring()
@@ -366,7 +366,7 @@ public sealed class SpringTests
     {
         var r = Run([.. Torsion(), CalcInputValue.Choice("work", SpringCalculator.Deflections), Q("phi_1", 10, "deg"), Q("phi_2", 30, "deg")]);
         Assert.Equal(r.OutputSi("k_phi") * 30 * Math.PI / 180, r.OutputSi("M_2"), 9);
-        Assert.Contains(r.Checks, c => c.Name.StartsWith("Static bending stress", StringComparison.Ordinal));
+        Assert.Contains(r.Checks, c => c.Name.StartsWith("Bending stress at working point 2", StringComparison.Ordinal));
         Assert.Null(r.FindOutput("k"));
     }
 
@@ -489,17 +489,17 @@ public sealed class SpringTests
         var ok = Run();
         Assert.Equal(3.136e-3, ok.OutputSi("S_a"), 12);
         Assert.Equal(23.136e-3, ok.OutputSi("L_n"), 12);
-        Assert.Contains(ok.Checks, c => c.Name.StartsWith("Minimum coil clearance", StringComparison.Ordinal) && c.Passed);
+        Assert.Contains(ok.Checks, c => c.Name.StartsWith("Working deflection against the travel to the minimum length", StringComparison.Ordinal) && c.Passed);
 
         // F₂ = 112.3 N: s₂ = 23 mm, so L₂ = 22 mm is above solid (20 mm) but inside the clearance (23.136 mm).
         var tight = Run(Q("F_2", 112.3, "N"));
-        Assert.Contains(tight.Checks, c => c.Name.StartsWith("Minimum coil clearance", StringComparison.Ordinal) && !c.Passed);
-        Assert.Contains(tight.Checks, c => c.Name == "Working deflection within the travel to solid" && c.Passed);
+        Assert.Contains(tight.Checks, c => c.Name.StartsWith("Working deflection against the travel to the minimum length", StringComparison.Ordinal) && !c.Passed);
+        Assert.Contains(tight.Checks, c => c.Name == "Working deflection against the travel to solid" && c.Passed);
 
         // Shigley's form has no clearance: no S_a, no check, and a free length between L_s and L_n is accepted.
         var shigley = Run(Q("F_2", 112.3, "N"), CalcInputValue.Choice("solid_method", SpringCalculator.SolidShigley));
         Assert.Null(shigley.FindOutput("S_a"));
-        Assert.DoesNotContain(shigley.Checks, c => c.Name.StartsWith("Minimum coil clearance", StringComparison.Ordinal));
+        Assert.DoesNotContain(shigley.Checks, c => c.Name.StartsWith("Working deflection against the travel to the minimum length", StringComparison.Ordinal));
         var between = Run(Q("L0", 22, "mm"), Q("F_1", 0, "N"), Q("F_2", 1, "N"));
         Assert.Contains(between.Blocks, b => b.RuleId == "solid" && b.Message.StartsWith("L0:", StringComparison.Ordinal) && b.Message.Contains("L_n", StringComparison.Ordinal));
         Assert.False(Run(Q("L0", 22, "mm"), Q("F_1", 0, "N"), Q("F_2", 1, "N"), CalcInputValue.Choice("solid_method", SpringCalculator.SolidShigley)).IsBlocked);
@@ -523,10 +523,10 @@ public sealed class SpringTests
     public void Review_Low_The_Travel_Check_Is_A_Utilisation_Not_A_Zero()
     {
         var r = Run();
-        var check = r.Checks.Single(c => c.Name == "Working deflection within the travel to solid");
+        var check = r.Checks.Single(c => c.Name == "Working deflection against the travel to solid");
         Assert.Equal(r.OutputSi("s_2") / r.OutputSi("s_c"), check.Utilisation, 12);
         Assert.True(check.Utilisation > 0 && check.Utilisation < 1);
-        Assert.Contains("u_s = ", check.DemandText, StringComparison.Ordinal);
+        Assert.EndsWith("mm", check.DemandText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -542,10 +542,10 @@ public sealed class SpringTests
         var runs = new[]
         {
             Run(), Run(Q("D", 1.5, "mm")), Run(Q("D", 6, "mm")), Run(Q("L0", 20, "mm")), Run(Q("F_1", 50, "N"), Q("F_2", 40, "N")), Run(Q("F_2", 600, "N")), Run(CalcInputValue.Of("N_c", 5000)),
-            Run(Q("f_op", 200, "Hz")), Run(Mode(SpringCalculator.Extension), Q("r_h2", 0.9, "mm")), Run(Mode(SpringCalculator.Torsion), Q("l_1", 30, "mm"), Q("l_2", 30, "mm"), Q("M_1", 0.05, "N*m"), Q("M_2", 0.15, "N*m")),
+            Run(Q("f_op", 200, "Hz")), Run(Mode(SpringCalculator.Extension), Q("r_h2", 0.9, "mm")), Run(Mode(SpringCalculator.Torsion), Q("l_leg_1", 30, "mm"), Q("l_leg_2", 30, "mm"), Q("M_1", 0.05, "N*m"), Q("M_2", 0.15, "N*m")),
             CalcRunner.Run(Spring, Defaults().With(Mode(SpringCalculator.Extension)).With(new CalcInputValue("F_0"))), CalcRunner.Run(Spring, Defaults().With(new CalcInputValue("Rm"))),
             Run(Q("L0", 22, "mm")), Run(Q("d_max", 1.5, "mm")),
-            Run(Q("D", 20, "mm"), CalcInputValue.Of("n", 10), CalcInputValue.Choice("ends", SpringCalculator.PlainGround), Q("L0", 80, "mm"), CalcInputValue.Of("nu_seat", 1), Q("F_1", 8, "N"), Q("F_2", 60, "N")),
+            Run(Q("D", 20, "mm"), CalcInputValue.Of("n_active", 10), CalcInputValue.Choice("ends", SpringCalculator.PlainGround), Q("L0", 80, "mm"), CalcInputValue.Of("nu_seat", 1), Q("F_1", 8, "N"), Q("F_2", 60, "N")),
             CalcRunner.Run(Spring, Defaults().With(CalcInputValue.Choice("rm_source", SpringCalculator.RmCurve))),
         };
 

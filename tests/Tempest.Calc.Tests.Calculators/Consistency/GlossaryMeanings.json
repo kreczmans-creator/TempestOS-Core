@@ -457,9 +457,6 @@
   "applied-axial-load": [
    "struct.column-buckling"
   ],
-  "deflection-force": [
-   "mech.snap-fit"
-  ],
   "dissipated-power": [
    "elec.thermal-chain"
   ],
@@ -468,9 +465,6 @@
   ],
   "heat-loss-per-item": [
    "elec.enclosure-heat"
-  ],
-  "internal-design-pressure": [
-   "mech.thin-vessel"
   ],
   "motor-rated-output-power": [
    "elec.conductor-sizing",
@@ -517,11 +511,7 @@
  "R": {
   "radius": [
    "elec.containment",
-   "mech.thin-vessel",
    "struct.lifting"
-  ],
-  "reliability": [
-   "mech.shaft"
   ],
   "resistance": [
    "elec.voltage-drop"
@@ -561,6 +551,12 @@
   "resistance-per-km": [
    "elec.motor-start",
    "elec.voltage-drop"
+  ]
+ },
+ "R_rel": {
+  "reliability": [
+   "mech.bearing-life",
+   "mech.shaft"
   ]
  },
  "R_tot": {
@@ -1068,9 +1064,6 @@
   "emissivity": [
    "bs.insulation"
   ],
-  "maximum-strain": [
-   "mech.snap-fit#output"
-  ],
   "roughness": [
    "bs.duct-sizing",
    "bs.pipe-pump"
@@ -1326,9 +1319,6 @@
   ]
  },
  "n": {
-  "active-coils": [
-   "mech.spring"
-  ],
   "air-change-rate": [
    "bs.room-heat-loss"
   ],
@@ -1345,9 +1335,6 @@
    "mech.bearing-life",
    "mech.bearing-life-basic",
    "mech.shaft"
-  ],
-  "thickness-design-factor": [
-   "mech.thin-vessel"
   ]
  },
  "n_L": {
@@ -1407,9 +1394,6 @@
  "p": {
   "barometric-pressure": [
    "bs.psychrometrics"
-  ],
-  "pitch": [
-   "mech.spring"
   ],
   "pressure": [
    "fp.oring-gland"

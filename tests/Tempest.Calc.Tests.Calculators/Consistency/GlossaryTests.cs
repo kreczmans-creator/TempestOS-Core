@@ -194,7 +194,6 @@ public sealed partial class GlossaryTests
         Assert.True(n.Count(r => r.Quantity == "Plain number") >= 2);
         Assert.Contains(n, r => r.Quantity != "Plain number");
         Assert.Equal(n.Count, n.Select(r => r.Meaning).Distinct(StringComparer.Ordinal).Count());
-        Assert.Contains(n, r => r.Meaning == "active-coils" && r.Templates.SequenceEqual(["mech.spring"]));
         Assert.Contains(n, r => r.Meaning == "gas-exponent" && r.Templates.SequenceEqual(["fp.accumulator"]));
         Assert.All(n, r => Assert.StartsWith("RESOLVE", r.Status, StringComparison.Ordinal));
     }

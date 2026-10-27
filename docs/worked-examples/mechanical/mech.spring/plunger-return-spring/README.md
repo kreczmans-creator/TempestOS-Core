@@ -22,7 +22,7 @@ A 3 mm wire coiled to 24 mm mean diameter (C = 8) with nine active coils has a r
 | `f_su` | 0.67 | assumption: Ultimate shear strength fraction of R_m used by the Goodman relation (textbook steel value); confirm in your reference. |
 | `f_tau` | 0.45 | assumption: Static permissible shear stress fraction of R_m for the example; take it from your design reference (record spring.permissible). |
 | `mode` | Compression | spec: Plunger assembly PLG-210 §4 rev B |
-| `n` | 9 | drawing: PLG-210-04 rev B |
+| `n_active` | 9 | drawing: PLG-210-04 rev B |
 | `n_f_req` | 1.2 | spec: Company spring standard SPR-01 |
 | `nu_seat` | 0.5 | spec: Plunger assembly PLG-210 §4: both end plates flat and parallel, no rotation |
 | `rho` | 7850 kg/m^3 | assumption: Generic steel density. |
@@ -43,4 +43,4 @@ A 3 mm wire coiled to 24 mm mean diameter (C = 8) with nine active coils has a r
 | `r_f` | 25.8746  | 25.8746  | PASS |
 | `n_f` | 1.55786  | 1.55786  | PASS |
 
-Governing check: Minimum coil clearance at L₂: working deflection within the travel to L_n = L_s + S_a — PASS (utilisation 0.88). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).
+Governing check: Working deflection against the travel to the minimum length, keeping the coil clearance at L₂ — PASS (utilisation 0.88). Files: `inputs.json` (loads into the worksheet), `sheet.txt` (rendered text), `sheet.pdf` (rendered by the Desktop).

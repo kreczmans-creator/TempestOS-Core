@@ -58,53 +58,60 @@ public sealed class SnapFitCalculator : ICalcCalculator
     ];
 
     public CalcTemplate Template { get; } = new(
-        Id, "1.4.0", CalcDiscipline.Mechanical, "Snap-fits",
-        "A plastic snap-fit joint of one of five forms: a cantilever lug of constant section, of tapered thickness or of tapered width, an annular (closed ring) snap, or a torsion bar. The strain at the critical section against the permissible strain of the plastic (one-time or repeated joining), the deflection force with the secant modulus, the assembly force (inclined entry face) and the separation force (return face) with Coulomb friction, and whether the joint is self-locking.",
+        Id, "1.5.0", CalcDiscipline.Mechanical, "Snap-fits",
+        "Calculates the strain, deflection force and joining forces of a plastic snap-fit: a cantilever lug, an annular ring or a torsion bar. It checks the strain against the permissible strain and whether the joint is self-locking.",
         "Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (constant section; the design guides print the rounded 0.67); a linear taper of the thickness to r_h = h_tip/h gives K_y = 2·J/φ_max with J = [2r_h − r_h²/2 − ln r_h − 3/2]/(1 − r_h)³ and φ_max = 1 for r_h ≥ 1/2 (otherwise the strain peaks inside the beam at t = (2a − 1)/a, a = 1 − r_h, with φ_max = (1 − t)/(1 − a·t)²); a linear taper of the width to r_b gives K_y = 2·J with J = [1/2 − 2r_b + 3r_b²/2 − r_b²·ln r_b]/(1 − r_b)³\n" +
-        "Strain and force of the cantilever: ε = y·h/(K_y·l²); P = b·h²·Es·ε/(6·l·φ_max) = (b·h²/6)·(Es·ε/l) at the root of a constant section; Es is the secant modulus at ε (typed, or interpolated from the W3 points Es(ε))\n" +
-        "Annular (derived, free thin ring): nominal hoop strain ε_nom = ΔD/D (the mean diameter D widened by the diametral interference ΔD); the strain checked is the larger of ε = K_ann·ε_nom (K_ann the user's strain factor) and the inner-surface strain ΔD/(D − h); the radial contact force summed round the ring is P = K_F·2π·Es·ε_nom·h·b (hoop force Es·ε_nom·h·b over the radius, K_F the user's optional force factor, 1 if none), b being the effective length of a free ring\n" +
-        "Torsion bar of radius r with a lever of length a deflected y: φ = y/a; the bar is held at one end (free length l_eff = l) or at both ends with the lever in the middle (l_eff = l/2, two halves in parallel); γ = φ·r/l_eff, equivalent tensile strain ε = γ/(1 + ν), γ_perm = ε_perm·(1 + ν); G = Es/(2(1 + ν)), T = n·G·(π r⁴/2)·φ/l_eff with n = 1 or 2, P = T/a (both ends: P = 4·G·J·φ/(l·a))\n" +
-        "Joining forces: W = P·(μ + tan α)/(1 − μ·tan α) on the entry face (angle α to the joining direction) and W′ = P·(μ + tan α′)/(1 − μ·tan α′) on the return face (α′); the joint is self-locking, with an infinite separation force, when α′ ≥ arctan(1/μ); assembly jams when μ·tan α ≥ 1\n" +
-        "Utilisation u = ε/ε_perm (FAIL above 1); permissible deflection y_perm = K_y·ε_perm·l²/h (annular ΔD_perm = ε_perm·min(D/K_ann, D − h); torsion y_perm = γ_perm·l_eff·a/r)",
+        "Strain and force of the cantilever: ε = y·h/(K_y·l²); F_defl = b·h²·Es·ε/(6·l·φ_max) = (b·h²/6)·(Es·ε/l) at the root of a constant section; Es is the secant modulus at ε (typed, or interpolated from the W3 points Es(ε))\n" +
+        "Annular (derived, free thin ring): nominal hoop strain ε_nom = ΔD/D (the mean diameter D widened by the diametral interference ΔD); the strain checked is the larger of ε = K_ann·ε_nom (K_ann the user's strain factor) and the inner-surface strain ΔD/(D − h); the radial contact force summed round the ring is F_defl = K_F·2π·Es·ε_nom·h·b (hoop force Es·ε_nom·h·b over the radius, K_F the user's optional force factor, 1 if none), b being the effective length of a free ring\n" +
+        "Torsion bar of radius r with a lever of length a deflected y: φ = y/a; the bar is held at one end (free length l_eff = l) or at both ends with the lever in the middle (l_eff = l/2, two halves in parallel); γ = φ·r/l_eff, equivalent tensile strain ε = γ/(1 + ν), γ_perm = ε_perm·(1 + ν); G = Es/(2(1 + ν)), T = n·G·(π r⁴/2)·φ/l_eff with n = 1 or 2, F_defl = T/a (both ends: F_defl = 4·G·J·φ/(l·a))\n" +
+        "Joining forces: W = F_defl·(μ + tan α)/(1 − μ·tan α) on the entry face (angle α to the joining direction) and W′ = F_defl·(μ + tan α′)/(1 − μ·tan α′) on the return face (α′); the joint is self-locking, with an infinite separation force, when α′ ≥ arctan(1/μ); assembly jams when μ·tan α ≥ 1\n" +
+        "Utilisation and permissible deflection: u = ε/ε_perm (FAIL above 1); y_perm = K_y·ε_perm·l²/h (annular ΔD_perm = ε_perm·min(D/K_ann, D − h); torsion y_perm = γ_perm·l_eff·a/r)",
         [
-            new CalcInputSpec("mode", "Form of snap-fit", CalcInputKind.Choice, Choices: [Constant, TaperedThickness, TaperedWidth, Annular, Torsion], DefaultChoice: Constant, Group: "Joint"),
+            new CalcInputSpec("mode", "Form of snap-fit", CalcInputKind.Choice, Choices: [Constant, TaperedThickness, TaperedWidth, Annular, Torsion], DefaultChoice: Constant, Group: "Setup"),
+            new CalcInputSpec("bar_support", "How the torsion bar is held: at one end, or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length)", CalcInputKind.Choice, Choices: [BarOne, BarBoth], DefaultChoice: BarOne, IsOptional: true, Group: "Setup"),
             new CalcInputSpec("l", "Length of the beam (cantilever); of the torsion bar: its free length when held at one end, or its whole length between the two supports when held at both ends with the lever in the middle", CalcInputKind.Quantity, "mm", Default: 15, Min: 2, Max: 100, HardMin: 0.1, HardMax: 1000, Group: "Geometry"),
             new CalcInputSpec("h", "Thickness at the root (cantilever); wall thickness of the ring (annular)", CalcInputKind.Quantity, "mm", Default: 2, Min: 0.3, Max: 10, HardMin: 0.01, HardMax: 100, Group: "Geometry"),
             new CalcInputSpec("b", "Width at the root (cantilever); effective axial length of the ring (annular: that of a free ring, not the lip of a longer tube)", CalcInputKind.Quantity, "mm", Default: 6, Min: 1, Max: 50, HardMin: 0.01, HardMax: 1000, Group: "Geometry"),
+            new CalcInputSpec("y", "Deflection at the tip (cantilever) or at the end of the lever (torsion): the undercut to be cleared", CalcInputKind.Quantity, "mm", Default: 1, Min: 0.05, Max: 20, HardMin: 0, HardMax: 1000, Group: "Geometry"),
             new CalcInputSpec("h_ratio", "Tip thickness / root thickness (tapered thickness)", CalcInputKind.Number, Default: 0.5, Min: 0.25, Max: 1, HardMin: 0.05, HardMax: 1, IsOptional: true, Group: "Geometry"),
             new CalcInputSpec("b_ratio", "Tip width / root width (tapered width)", CalcInputKind.Number, Default: 0.5, Min: 0.1, Max: 1, HardMin: 0.02, HardMax: 1, IsOptional: true, Group: "Geometry"),
-            new CalcInputSpec("y", "Deflection at the tip (cantilever) or at the end of the lever (torsion): the undercut to be cleared", CalcInputKind.Quantity, "mm", Default: 1, Min: 0.05, Max: 20, HardMin: 0, HardMax: 1000, Group: "Geometry"),
             new CalcInputSpec("D_ring", "Mean diameter of the ring (annular)", CalcInputKind.Quantity, "mm", Default: 30, Min: 5, Max: 500, HardMin: 0.5, HardMax: 5000, IsOptional: true, Group: "Geometry"),
             new CalcInputSpec("dD", "Interference on the diameter: how much the ring is widened to pass the undercut (annular)", CalcInputKind.Quantity, "mm", Default: 0.4, Min: 0, Max: 5, HardMin: 0, HardMax: 100, IsOptional: true, Group: "Geometry"),
             new CalcInputSpec("K_ann", "Strain factor of the annular snap on the nominal hoop strain ΔD/D (record snapfit.annular-factor; 1 for a plain free ring; no default: from your design reference)", CalcInputKind.Number, Min: 0.5, Max: 3, HardMin: 0.1, HardMax: 10, IsOptional: true, Group: "Geometry"),
-            new CalcInputSpec("K_F", "Force factor of the annular snap on the hoop force (record snapfit.annular-force-factor; e.g. the stiffening of a tube behind the ring; blank: 1, the free ring; no default)", CalcInputKind.Number, Min: 0.5, Max: 5, HardMin: 0.01, HardMax: 20, IsOptional: true, Group: "Geometry"),
-            new CalcInputSpec("bar_support", "How the torsion bar is held: at one end, or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length)", CalcInputKind.Choice, Choices: [BarOne, BarBoth], DefaultChoice: BarOne, IsOptional: true, Group: "Geometry"),
+            new CalcInputSpec("K_F", "Force factor of the annular snap on the hoop force (optional; blank = 1, the free ring; record snapfit.annular-force-factor, for example the stiffening of a tube behind the ring)", CalcInputKind.Number, Min: 0.5, Max: 5, HardMin: 0.01, HardMax: 20, IsOptional: true, Group: "Geometry"),
             new CalcInputSpec("r_bar", "Radius of the torsion bar", CalcInputKind.Quantity, "mm", Default: 1.5, Min: 0.3, Max: 10, HardMin: 0.01, HardMax: 100, IsOptional: true, Group: "Geometry"),
             new CalcInputSpec("a_arm", "Length of the lever on the torsion bar", CalcInputKind.Quantity, "mm", Default: 8, Min: 2, Max: 100, HardMin: 0.1, HardMax: 1000, IsOptional: true, Group: "Geometry"),
+            new CalcInputSpec("Es_source", "Where the secant modulus comes from: typed at the design strain, or interpolated from the Es(ε) points of a material record", CalcInputKind.Choice, Choices: [EsTyped, EsCurve], DefaultChoice: EsTyped, Group: "Material"),
+            new CalcInputSpec("loading", "How often the joint is made: selects the one-time or the repeated permissible strain", CalcInputKind.Choice, Choices: [Once, Repeated], DefaultChoice: Once, Group: "Material"),
+            new CalcInputSpec("T_use", "Temperature of use. Recorded: Es and the permissible strain must be the values at this temperature", CalcInputKind.Quantity, "degC", Default: 23, Min: -40, Max: 120, HardMin: -150, HardMax: 400, Group: "Material"),
+            new CalcInputSpec("Es", "Secant modulus at the design strain and temperature (annular: at the nominal hoop strain ΔD/D) (typed; no default: the plastic's stress–strain data)", CalcInputKind.Quantity, "MPa", Min: 10, Max: 20000, HardMin: 0.01, HardMax: 1e6, IsOptional: true, Group: "Material"),
+            new CalcInputSpec("Es_pts", "Secant modulus against strain, Es(ε), of the plastic at the temperature of use (from the material record)", CalcInputKind.Table, Columns: SecantColumns, MaxRows: 50, IsOptional: true, Group: "Material", MaterialProperty: SecantCurveKey),
+            new CalcInputSpec("eps_perm_once", "Permissible strain for one-time joining, as a fraction, for example 0.04, at the temperature of use (no default: from the plastic's data)", CalcInputKind.Number, Min: 0.001, Max: 0.3, HardMin: 1e-6, HardMax: 1, IsOptional: true, Group: "Material", MaterialProperty: "eps_perm_once"),
+            new CalcInputSpec("eps_perm_repeated", "Permissible strain for repeated joining, as a fraction (no default)", CalcInputKind.Number, Min: 0.001, Max: 0.3, HardMin: 1e-6, HardMax: 1, IsOptional: true, Group: "Material", MaterialProperty: "eps_perm_repeated"),
+            new CalcInputSpec("nu", "Poisson's ratio ν (torsion bar)", CalcInputKind.Number, Min: 0.2, Max: 0.49, HardMin: -0.99, HardMax: 0.499, IsOptional: true, Group: "Material", MaterialProperty: "nu"),
             new CalcInputSpec("alpha", "Entry (assembly) angle α of the inclined face to the joining direction", CalcInputKind.Quantity, "deg", Default: 30, Min: 5, Max: 60, HardMin: 0, HardMax: 89, Group: "Joining"),
             new CalcInputSpec("alpha_r", "Return (separation) angle α′ of the retaining face (90° is a face square to the joining direction)", CalcInputKind.Quantity, "deg", Default: 60, Min: 10, Max: 90, HardMin: 0, HardMax: 90, Group: "Joining"),
             new CalcInputSpec("mu", "Coefficient of friction between the two parts (record snapfit.friction; no default: the pair of materials, from your reference or a W3 friction pair)", CalcInputKind.Number, Min: 0.05, Max: 1, HardMin: 0, HardMax: 2, Group: "Joining"),
-            new CalcInputSpec("Es_source", "Where the secant modulus comes from: typed at the design strain, or interpolated from the Es(ε) points of a W3 material", CalcInputKind.Choice, Choices: [EsTyped, EsCurve], DefaultChoice: EsTyped, Group: "Material"),
-            new CalcInputSpec("Es", "Secant modulus Es at the design strain and temperature (annular: at the nominal hoop strain ΔD/D) (typed; no default: the plastic's stress–strain data)", CalcInputKind.Quantity, "MPa", Min: 10, Max: 20000, HardMin: 0.01, HardMax: 1e6, IsOptional: true, Group: "Material"),
-            new CalcInputSpec("Es_pts", "Secant modulus against strain, Es(ε), of the plastic at the temperature of use (from the W3 material)", CalcInputKind.Table, Columns: SecantColumns, MaxRows: 50, IsOptional: true, Group: "Material", MaterialProperty: SecantCurveKey),
-            new CalcInputSpec("loading", "How often the joint is made: selects the one-time or the repeated permissible strain", CalcInputKind.Choice, Choices: [Once, Repeated], DefaultChoice: Once, Group: "Material"),
-            new CalcInputSpec("eps_perm_once", "Permissible strain for one-time joining, as a fraction (0.04 is 4 %) at the temperature of use (no default: from the plastic's data)", CalcInputKind.Number, Min: 0.001, Max: 0.3, HardMin: 1e-6, HardMax: 1, IsOptional: true, Group: "Material", MaterialProperty: "eps_perm_once"),
-            new CalcInputSpec("eps_perm_repeated", "Permissible strain for repeated joining, as a fraction (no default)", CalcInputKind.Number, Min: 0.001, Max: 0.3, HardMin: 1e-6, HardMax: 1, IsOptional: true, Group: "Material", MaterialProperty: "eps_perm_repeated"),
-            new CalcInputSpec("nu", "Poisson's ratio ν (torsion bar)", CalcInputKind.Number, Min: 0.2, Max: 0.49, HardMin: -0.99, HardMax: 0.499, IsOptional: true, Group: "Material", MaterialProperty: "nu"),
-            new CalcInputSpec("n_latch", "Number of identical latches that share a holding load (a whole number; blank = the holding force is not worked out)", CalcInputKind.Number, Min: 1, Max: 100, HardMin: 1, HardMax: 1000, IsOptional: true, Group: "Holding"),
-            new CalcInputSpec("F_req", "Force the latches must hold against, for example the pressure on a cover (blank = no check; needs n_latch; may be linked from E2 F_seal)", CalcInputKind.Quantity, "N", Min: 0, Max: 100000, HardMin: 0, HardMax: 1e8, IsOptional: true, Group: "Holding"),
-            new CalcInputSpec("T_use", "Temperature of use. Recorded: Es and the permissible strain must be the values at this temperature", CalcInputKind.Quantity, "degC", Default: 23, Min: -40, Max: 120, HardMin: -150, HardMax: 400, Group: "Material"),
+            new CalcInputSpec("n_latch", "Number of identical latches that share a holding load (a whole number) (optional; blank = the holding force is not worked out)", CalcInputKind.Number, Min: 1, Max: 100, HardMin: 1, HardMax: 1000, IsOptional: true, Group: "Holding"),
+            new CalcInputSpec("F_req", "Force the latches must hold against, for example the pressure on a cover (optional; blank = no check; n_latch must be entered too)", CalcInputKind.Quantity, "N", Min: 0, Max: 100000, HardMin: 0, HardMax: 1e8, IsOptional: true, Group: "Holding"),
         ],
         [
-            new CalcAssumption("Beam theory (Euler–Bernoulli) for the cantilever: a rigid root, a linear taper, a constant secant modulus Es at the design strain over the whole beam, small deflection. The strain is the nominal surface strain at the critical section, with no local concentration from the root fillet; the geometry factors are derived by integration (the 0.67 of the design guides is the constant-section 2/3 rounded).", "Euler–Bernoulli beam theory (derived); the guide's closed forms for the constant section are to be checked against the owner's copy."),
-            new CalcAssumption("Es and the permissible strain are properties of the plastic at the temperature of use, with the loading (one-time or repeated) and the moisture state of the part. No values are supplied: they come from the plastic maker's data or a W3 material, and the temperature entered records what they were taken at.", "No plastics data are shipped."),
-            new CalcAssumption("Annular snap: a free, thin, closed ring of effective axial length b. The nominal hoop strain is the diametral interference over the mean diameter, ΔD/D; the strain checked is the larger of that times the user's strain factor K_ann (record snapfit.annular-factor, no default) and the inner-surface strain. The contact force is the hoop force Es·ε_nom·h·b taken round the ring, from the nominal strain only, times the user's optional force factor K_F (record snapfit.annular-force-factor; blank is 1); a tube behind the ring stiffens the joint and raises the force, which only K_F can represent. The strain on the inner (contact) surface is ΔD/(D − h), slightly above the mean-diameter value, so the check takes the larger of the two; a wall above a tenth of the diameter warns that the thin-ring model has run out.", "Derived from ring geometry (not a relation of the design guide); compare with the owner's copy of the guide."),
-            new CalcAssumption("Torsion bar: a solid round bar of radius r loaded at the end of a lever, the angle small (φ = y/a), held at one end or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length). The permissible shear strain is ε_perm·(1 + ν) and the equivalent tensile strain γ/(1 + ν); G = Es/(2(1 + ν)) with the secant modulus at that strain.", "γ = φ·r/l and γ_perm ≈ ε_perm·(1 + ν) are the brief's design-guide relations, to be checked against the owner's copy; the torque, the force and the two-ended case are derived."),
-            new CalcAssumption("Assembly and separation: a rigid mating part, Coulomb friction μ on the inclined face (α for assembly, α′ for separation), the deflection force P taken at the design deflection; no creep or stress relaxation of the joint in service, no impact (speed) effect.", "Friction on an inclined plane; the friction coefficient is the user's record."),
+            new CalcAssumption("The cantilever follows Euler–Bernoulli beam theory, with a rigid root, a linear taper and small deflection.", "Euler–Bernoulli beam theory (derived); the guide's closed forms for the constant section are to be checked against the owner's copy."),
+            new CalcAssumption("The secant modulus is constant over the whole beam, at the design strain.", "One modulus stands for the stress–strain curve."),
+            new CalcAssumption("The strain is the nominal surface strain at the critical section, with no local concentration from the root fillet.", "The geometry factors are derived by integration, and the 0.67 of the design guides is the constant-section 2/3 rounded."),
+            new CalcAssumption("Es and the permissible strain are the plastic's values for the temperature, loading and moisture of use.", "No plastics data are shipped, so they come from the plastic maker's data or a material record."),
+            new CalcAssumption("The annular snap is a free, thin, closed ring of effective axial length b.", "Derived from ring geometry, not a relation of the design guide, so compare it with the owner's copy of the guide."),
+            new CalcAssumption("The nominal hoop strain is the diametral interference over the mean diameter, ΔD/D.", "Derived from ring geometry."),
+            new CalcAssumption("The strain checked is the larger of K_ann times the nominal strain and the inner-surface strain ΔD/(D − h).", "K_ann is the user's strain factor (record snapfit.annular-factor, no default), and the inner-surface strain is slightly above the mean-diameter value."),
+            new CalcAssumption("The contact force is the hoop force Es·ε_nom·h·b taken round the ring, times the optional force factor K_F.", "K_F is the user's record (blank is 1), and a tube behind the ring stiffens the joint, which only K_F can represent."),
+            new CalcAssumption("The torsion bar is solid and round, loaded at a lever end, with a small angle φ = y/a.", "γ = φ·r/l and γ_perm ≈ ε_perm·(1 + ν) are the brief's design-guide relations, to be checked against the owner's copy."),
+            new CalcAssumption("The bar is held at one end, or at both ends with the lever in the middle.", "Held at both ends it has twice the strain and four times the stiffness of one end for the same total length, and the two-ended case is derived."),
+            new CalcAssumption("The permissible shear strain is ε_perm·(1 + ν), and the equivalent tensile strain is γ/(1 + ν).", "G = Es/(2(1 + ν)) uses the secant modulus at that strain."),
+            new CalcAssumption("The mating part is rigid, with Coulomb friction μ on the inclined face (α for assembly, α′ for separation).", "Friction on an inclined plane, with the friction coefficient the user's record."),
+            new CalcAssumption("The deflection force is taken at the design deflection, with no creep, stress relaxation or impact effect in service.", "A static joint model."),
         ],
         [
-            new CalcClauseRef(Ref, "Section B", "Cantilever, annular and torsion snap-fit relations"),
-            new CalcClauseRef("Euler–Bernoulli beam theory", "—", "Tip deflection and surface strain of a tapered cantilever, by integration"),
+            new CalcClauseRef(Ref, "Ch. B", "Cantilever, annular and torsion snap-fit relations"),
         ],
         [
             new CalcApplicabilityRule("missing", "An input the chosen form, or the chosen source of the secant modulus or the permissible strain, needs is blank.", CalcNoticeSeverity.Block, CalcRuleEffect.Conservative),
@@ -122,45 +129,45 @@ public sealed class SnapFitCalculator : ICalcCalculator
         ],
         [
             new CalcTestCase("ka-constant", "Cantilever of constant section: strain, deflection force, assembly and separation forces",
-                new CalcReferenceSource("Analytic (closed-form beam theory; recomputed in python3)", null, "l 15 mm, h 2 mm, b 6 mm, y 1 mm, Es 2400 MPa, ε_perm 0.04, μ 0.3, α 30°, α′ 60°: K_y = 2/3; ε = 3·h·y/(2·l²) = 1.33333 %; P = b·h²·Es·ε/(6·l) = 8.53333 N; u = 0.333333; y_perm = (2/3)·0.04·l²/h = 3 mm; W = P(μ + tan 30°)/(1 − μ·tan 30°) = 9.055114 N; arctan(1/μ) = 73.300756°; W′ = P(μ + tan 60°)/(1 − μ·tan 60°) = 36.096414 N"),
+                new CalcReferenceSource("Analytic (closed-form beam theory; recomputed in python3)", null, "l 15 mm, h 2 mm, b 6 mm, y 1 mm, Es 2400 MPa, ε_perm 0.04, μ 0.3, α 30°, α′ 60°: K_y = 2/3; ε = 3·h·y/(2·l²) = 1.33333 %; F_defl = b·h²·Es·ε/(6·l) = 8.53333 N; u = 0.333333; y_perm = (2/3)·0.04·l²/h = 3 mm; W = F_defl(μ + tan 30°)/(1 − μ·tan 30°) = 9.055114 N; arctan(1/μ) = 73.300756°; W′ = F_defl(μ + tan 60°)/(1 − μ·tan 60°) = 36.096414 N"),
                 [Q("l", 15, "mm"), Q("h", 2, "mm"), Q("b", 6, "mm"), Q("y", 1, "mm"), Q("Es", 2400, "MPa"), CalcInputValue.Of("eps_perm_once", 0.04), CalcInputValue.Of("mu", 0.3), Q("alpha", 30, "deg"), Q("alpha_r", 60, "deg")],
-                [new CalcExpectedValue("K_y", 2.0 / 3.0, "", 1e-12), new CalcExpectedValue("eps", 1.33333333333, "%", 1e-9), new CalcExpectedValue("P", 8.53333333333, "N", 1e-9), new CalcExpectedValue("strain_util", 0.333333333333, "", 1e-9), new CalcExpectedValue("y_perm", 3, "mm", 1e-9), new CalcExpectedValue("assembly_force", 9.05511405892, "N", 1e-9), new CalcExpectedValue("alpha_lock", 73.3007557660, "deg", 1e-9), new CalcExpectedValue("retention_force", 36.0964135774, "N", 1e-9)]),
+                [new CalcExpectedValue("K_y", 2.0 / 3.0, "", 1e-12), new CalcExpectedValue("eps_max", 1.33333333333, "%", 1e-9), new CalcExpectedValue("F_defl", 8.53333333333, "N", 1e-9), new CalcExpectedValue("strain_util", 0.333333333333, "", 1e-9), new CalcExpectedValue("y_perm", 3, "mm", 1e-9), new CalcExpectedValue("assembly_force", 9.05511405892, "N", 1e-9), new CalcExpectedValue("alpha_lock", 73.3007557660, "deg", 1e-9), new CalcExpectedValue("retention_force", 36.0964135774, "N", 1e-9)]),
             new CalcTestCase("ka-taper-thickness", "Cantilever with the thickness tapered to half: the deflection factor K_y = 1.0904",
-                new CalcReferenceSource("Analytic (Euler–Bernoulli integration; recomputed in python3 by closed form and by numerical double integration of the curvature)", null, "The geometry and loads of ka-constant with the tip thickness h/2: J = [2r − r²/2 − ln r − 3/2]/(1 − r)³ = 0.545177 at r = 0.5, the strain is largest at the root (φ_max = 1), K_y = 2J = 1.0903549; ε = y·h/(K_y·l²) = 0.815229 %; P = 5.217465 N; u = 0.203807; y_perm = 4.906597 mm; W = 5.536493 N; W′ = 22.070131 N"),
+                new CalcReferenceSource("Analytic (Euler–Bernoulli integration; recomputed in python3 by closed form and by numerical double integration of the curvature)", null, "The geometry and loads of ka-constant with the tip thickness h/2: J = [2r − r²/2 − ln r − 3/2]/(1 − r)³ = 0.545177 at r = 0.5, the strain is largest at the root (φ_max = 1), K_y = 2J = 1.0903549; ε = y·h/(K_y·l²) = 0.815229 %; F_defl = 5.217465 N; u = 0.203807; y_perm = 4.906597 mm; W = 5.536493 N; W′ = 22.070131 N"),
                 [Q("l", 15, "mm"), Q("h", 2, "mm"), Q("b", 6, "mm"), CalcInputValue.Choice("mode", TaperedThickness), CalcInputValue.Of("h_ratio", 0.5), Q("y", 1, "mm"), Q("Es", 2400, "MPa"), CalcInputValue.Of("eps_perm_once", 0.04), CalcInputValue.Of("mu", 0.3), Q("alpha", 30, "deg"), Q("alpha_r", 60, "deg")],
-                [new CalcExpectedValue("K_y", 1.09035488896, "", 1e-9), new CalcExpectedValue("phi_max", 1, "", 1e-12), new CalcExpectedValue("eps", 0.815228966174, "%", 1e-9), new CalcExpectedValue("P", 5.21746538331, "N", 1e-9), new CalcExpectedValue("strain_util", 0.203807241544, "", 1e-9), new CalcExpectedValue("y_perm", 4.90659700032, "mm", 1e-9), new CalcExpectedValue("assembly_force", 5.53649345463, "N", 1e-9), new CalcExpectedValue("retention_force", 22.0701314424, "N", 1e-9)]),
+                [new CalcExpectedValue("K_y", 1.09035488896, "", 1e-9), new CalcExpectedValue("phi_max", 1, "", 1e-12), new CalcExpectedValue("eps_max", 0.815228966174, "%", 1e-9), new CalcExpectedValue("F_defl", 5.21746538331, "N", 1e-9), new CalcExpectedValue("strain_util", 0.203807241544, "", 1e-9), new CalcExpectedValue("y_perm", 4.90659700032, "mm", 1e-9), new CalcExpectedValue("assembly_force", 5.53649345463, "N", 1e-9), new CalcExpectedValue("retention_force", 22.0701314424, "N", 1e-9)]),
             new CalcTestCase("ka-taper-thickness-deep", "Cantilever with the thickness tapered to 0.3: the strain peaks inside the beam",
-                new CalcReferenceSource("Analytic (Euler–Bernoulli integration; recomputed in python3 by closed form and by numerical double integration of the curvature)", null, "l 20 mm, h 2.5 mm, b 8 mm, tip thickness 0.3·h, y 1.2 mm, Es 2200 MPa, ε_perm 0.05, μ 0.25, α 25°, α′ 70°: a = 0.7, the strain shape (1 − t)/(1 − a·t)² peaks at t = (2a − 1)/a = 0.571429 with φ_max = 1.190476; J = 0.755023, K_y = 2J/φ_max = 1.2684382; ε = 0.591278 %; P = b·h²·Es·ε/(6·l·φ_max) = 4.552843 N; u = 0.118256; y_perm = 10.147506 mm; W = 3.691590 N; W′ = 43.582588 N"),
+                new CalcReferenceSource("Analytic (Euler–Bernoulli integration; recomputed in python3 by closed form and by numerical double integration of the curvature)", null, "l 20 mm, h 2.5 mm, b 8 mm, tip thickness 0.3·h, y 1.2 mm, Es 2200 MPa, ε_perm 0.05, μ 0.25, α 25°, α′ 70°: a = 0.7, the strain shape (1 − t)/(1 − a·t)² peaks at t = (2a − 1)/a = 0.571429 with φ_max = 1.190476; J = 0.755023, K_y = 2J/φ_max = 1.2684382; ε = 0.591278 %; F_defl = b·h²·Es·ε/(6·l·φ_max) = 4.552843 N; u = 0.118256; y_perm = 10.147506 mm; W = 3.691590 N; W′ = 43.582588 N"),
                 [Q("l", 20, "mm"), Q("h", 2.5, "mm"), Q("b", 8, "mm"), CalcInputValue.Choice("mode", TaperedThickness), CalcInputValue.Of("h_ratio", 0.3), Q("y", 1.2, "mm"), Q("Es", 2200, "MPa"), CalcInputValue.Of("eps_perm_once", 0.05), CalcInputValue.Of("mu", 0.25), Q("alpha", 25, "deg"), Q("alpha_r", 70, "deg")],
-                [new CalcExpectedValue("t_crit", 0.571428571429, "", 1e-9), new CalcExpectedValue("phi_max", 1.19047619048, "", 1e-9), new CalcExpectedValue("K_y", 1.26843822527, "", 1e-9), new CalcExpectedValue("eps", 0.591278301977, "%", 1e-9), new CalcExpectedValue("P", 4.55284292522, "N", 1e-9), new CalcExpectedValue("strain_util", 0.118255660395, "", 1e-9), new CalcExpectedValue("y_perm", 10.1475058022, "mm", 1e-9), new CalcExpectedValue("assembly_force", 3.69159048182, "N", 1e-9), new CalcExpectedValue("retention_force", 43.5825878892, "N", 1e-9)]),
+                [new CalcExpectedValue("t_crit", 0.571428571429, "", 1e-9), new CalcExpectedValue("phi_max", 1.19047619048, "", 1e-9), new CalcExpectedValue("K_y", 1.26843822527, "", 1e-9), new CalcExpectedValue("eps_max", 0.591278301977, "%", 1e-9), new CalcExpectedValue("F_defl", 4.55284292522, "N", 1e-9), new CalcExpectedValue("strain_util", 0.118255660395, "", 1e-9), new CalcExpectedValue("y_perm", 10.1475058022, "mm", 1e-9), new CalcExpectedValue("assembly_force", 3.69159048182, "N", 1e-9), new CalcExpectedValue("retention_force", 43.5825878892, "N", 1e-9)]),
             new CalcTestCase("ka-taper-width", "Cantilever with the width tapered to a quarter: K_y = 0.8552",
-                new CalcReferenceSource("Analytic (Euler–Bernoulli integration; recomputed in python3 by closed form and by numerical double integration of the curvature)", null, "l 12 mm, h 1.5 mm, b 8 mm, tip width b/4, y 0.8 mm, Es 3000 MPa, ε_perm 0.03, μ 0.35, α 35°, α′ 45°: J = [1/2 − 2r + 3r²/2 − r²·ln r]/(1 − r)³ = 0.427599 at r = 0.25, K_y = 2J = 0.8551983; ε = 0.974433 %; P = b·h²·Es·ε/(6·l) = 7.308246 N; u = 0.324811; y_perm = 2.462971 mm; W = 10.166773 N; W′ = 15.178665 N"),
+                new CalcReferenceSource("Analytic (Euler–Bernoulli integration; recomputed in python3 by closed form and by numerical double integration of the curvature)", null, "l 12 mm, h 1.5 mm, b 8 mm, tip width b/4, y 0.8 mm, Es 3000 MPa, ε_perm 0.03, μ 0.35, α 35°, α′ 45°: J = [1/2 − 2r + 3r²/2 − r²·ln r]/(1 − r)³ = 0.427599 at r = 0.25, K_y = 2J = 0.8551983; ε = 0.974433 %; F_defl = b·h²·Es·ε/(6·l) = 7.308246 N; u = 0.324811; y_perm = 2.462971 mm; W = 10.166773 N; W′ = 15.178665 N"),
                 [Q("l", 12, "mm"), Q("h", 1.5, "mm"), Q("b", 8, "mm"), CalcInputValue.Choice("mode", TaperedWidth), CalcInputValue.Of("b_ratio", 0.25), Q("y", 0.8, "mm"), Q("Es", 3000, "MPa"), CalcInputValue.Of("eps_perm_once", 0.03), CalcInputValue.Of("mu", 0.35), Q("alpha", 35, "deg"), Q("alpha_r", 45, "deg")],
-                [new CalcExpectedValue("K_y", 0.855198329221, "", 1e-9), new CalcExpectedValue("eps", 0.974432836057, "%", 1e-9), new CalcExpectedValue("P", 7.30824627042, "N", 1e-9), new CalcExpectedValue("strain_util", 0.324810945350, "", 1e-9), new CalcExpectedValue("y_perm", 2.46297118816, "mm", 1e-9), new CalcExpectedValue("assembly_force", 10.1667732745, "N", 1e-9), new CalcExpectedValue("retention_force", 15.1786653309, "N", 1e-9)]),
+                [new CalcExpectedValue("K_y", 0.855198329221, "", 1e-9), new CalcExpectedValue("eps_max", 0.974432836057, "%", 1e-9), new CalcExpectedValue("F_defl", 7.30824627042, "N", 1e-9), new CalcExpectedValue("strain_util", 0.324810945350, "", 1e-9), new CalcExpectedValue("y_perm", 2.46297118816, "mm", 1e-9), new CalcExpectedValue("assembly_force", 10.1667732745, "N", 1e-9), new CalcExpectedValue("retention_force", 15.1786653309, "N", 1e-9)]),
             new CalcTestCase("ka-annular", "Annular snap: hoop strain from the interference, radial force round the ring from the nominal strain",
-                new CalcReferenceSource("Analytic (thin-ring geometry; recomputed in python3, the force also by strain energy)", null, "D 30 mm, ΔD 0.4 mm, K_ann 1.2, h 1.5 mm, b 5 mm, Es 2400 MPa, ε_perm 0.04, μ 0.3, α 30°, α′ 60°: ε_nom = ΔD/D = 1.33333 %; K_ann·ε_nom = 1.6 % against the inner surface ΔD/(D − h) = 1.403509 %, so ε = 1.6 %; P = 2π·Es·ε_nom·h·b = 1507.964 N (K_ann does not enter); u = 0.4; ΔD_perm = ε_perm·D/K_ann = 1 mm; W = 1600.171 N; W′ = 6378.763 N"),
+                new CalcReferenceSource("Analytic (thin-ring geometry; recomputed in python3, the force also by strain energy)", null, "D 30 mm, ΔD 0.4 mm, K_ann 1.2, h 1.5 mm, b 5 mm, Es 2400 MPa, ε_perm 0.04, μ 0.3, α 30°, α′ 60°: ε_nom = ΔD/D = 1.33333 %; K_ann·ε_nom = 1.6 % against the inner surface ΔD/(D − h) = 1.403509 %, so ε = 1.6 %; F_defl = 2π·Es·ε_nom·h·b = 1507.964 N (K_ann does not enter); u = 0.4; ΔD_perm = ε_perm·D/K_ann = 1 mm; W = 1600.171 N; W′ = 6378.763 N"),
                 [CalcInputValue.Choice("mode", Annular), Q("h", 1.5, "mm"), Q("b", 5, "mm"), Q("D_ring", 30, "mm"), Q("dD", 0.4, "mm"), CalcInputValue.Of("K_ann", 1.2), Q("Es", 2400, "MPa"), CalcInputValue.Of("eps_perm_once", 0.04), CalcInputValue.Of("mu", 0.3), Q("alpha", 30, "deg"), Q("alpha_r", 60, "deg")],
-                [new CalcExpectedValue("eps_nom", 1.33333333333, "%", 1e-9), new CalcExpectedValue("eps", 1.6, "%", 1e-9), new CalcExpectedValue("eps_inner", 1.40350877193, "%", 1e-9), new CalcExpectedValue("K_F", 1, "", 1e-12), new CalcExpectedValue("P", 1507.96447372, "N", 1e-9), new CalcExpectedValue("strain_util", 0.4, "", 1e-9), new CalcExpectedValue("y_perm", 1, "mm", 1e-9), new CalcExpectedValue("assembly_force", 1600.17073903, "N", 1e-9), new CalcExpectedValue("retention_force", 6378.76280900, "N", 1e-9)]),
+                [new CalcExpectedValue("eps_nom", 1.33333333333, "%", 1e-9), new CalcExpectedValue("eps_max", 1.6, "%", 1e-9), new CalcExpectedValue("eps_inner", 1.40350877193, "%", 1e-9), new CalcExpectedValue("K_F", 1, "", 1e-12), new CalcExpectedValue("F_defl", 1507.96447372, "N", 1e-9), new CalcExpectedValue("strain_util", 0.4, "", 1e-9), new CalcExpectedValue("y_perm", 1, "mm", 1e-9), new CalcExpectedValue("assembly_force", 1600.17073903, "N", 1e-9), new CalcExpectedValue("retention_force", 6378.76280900, "N", 1e-9)]),
             new CalcTestCase("ka-annular-inner-surface", "Annular snap with K_ann = 1: the inner-surface strain governs the check",
-                new CalcReferenceSource("Analytic (thin-ring geometry; recomputed in python3)", null, "D 30 mm, ΔD 0.4 mm, K_ann 1, h 3 mm, b 5 mm, Es 2400 MPa, ε_perm 0.04, μ 0.3, α 30°, α′ 60° (h/D = 0.1, no warning): ε_nom = 1.33333 %, inner surface ΔD/(D − h) = 0.4/27 = 1.481481 % > K_ann·ε_nom, so ε = 1.481481 %; u = 0.0148148/0.04 = 0.370370; ΔD_perm = ε_perm·min(D/K_ann, D − h) = 1.08 mm; P = 2π·Es·ε_nom·h·b = 3015.929 N (the force uses the nominal strain); W = 3200.342 N; W′ = 12757.526 N"),
+                new CalcReferenceSource("Analytic (thin-ring geometry; recomputed in python3)", null, "D 30 mm, ΔD 0.4 mm, K_ann 1, h 3 mm, b 5 mm, Es 2400 MPa, ε_perm 0.04, μ 0.3, α 30°, α′ 60° (h/D = 0.1, no warning): ε_nom = 1.33333 %, inner surface ΔD/(D − h) = 0.4/27 = 1.481481 % > K_ann·ε_nom, so ε = 1.481481 %; u = 0.0148148/0.04 = 0.370370; ΔD_perm = ε_perm·min(D/K_ann, D − h) = 1.08 mm; F_defl = 2π·Es·ε_nom·h·b = 3015.929 N (the force uses the nominal strain); W = 3200.342 N; W′ = 12757.526 N"),
                 [CalcInputValue.Choice("mode", Annular), Q("h", 3, "mm"), Q("b", 5, "mm"), Q("D_ring", 30, "mm"), Q("dD", 0.4, "mm"), CalcInputValue.Of("K_ann", 1), Q("Es", 2400, "MPa"), CalcInputValue.Of("eps_perm_once", 0.04), CalcInputValue.Of("mu", 0.3), Q("alpha", 30, "deg"), Q("alpha_r", 60, "deg")],
-                [new CalcExpectedValue("eps_nom", 1.33333333333, "%", 1e-9), new CalcExpectedValue("eps_inner", 1.48148148148, "%", 1e-9), new CalcExpectedValue("eps", 1.48148148148, "%", 1e-9), new CalcExpectedValue("strain_util", 0.370370370370, "", 1e-9), new CalcExpectedValue("y_perm", 1.08, "mm", 1e-9), new CalcExpectedValue("P", 3015.92894745, "N", 1e-9), new CalcExpectedValue("assembly_force", 3200.34147805, "N", 1e-9), new CalcExpectedValue("retention_force", 12757.5256180, "N", 1e-9)]),
+                [new CalcExpectedValue("eps_nom", 1.33333333333, "%", 1e-9), new CalcExpectedValue("eps_inner", 1.48148148148, "%", 1e-9), new CalcExpectedValue("eps_max", 1.48148148148, "%", 1e-9), new CalcExpectedValue("strain_util", 0.370370370370, "", 1e-9), new CalcExpectedValue("y_perm", 1.08, "mm", 1e-9), new CalcExpectedValue("F_defl", 3015.92894745, "N", 1e-9), new CalcExpectedValue("assembly_force", 3200.34147805, "N", 1e-9), new CalcExpectedValue("retention_force", 12757.5256180, "N", 1e-9)]),
             new CalcTestCase("ka-annular-force-factor", "Annular snap with a force factor K_F = 1.25 (a tube behind the ring): the force scales, the strain does not",
-                new CalcReferenceSource("Analytic (thin-ring geometry; recomputed in python3, the force also by strain energy)", null, "The ring of ka-annular with K_F = 1.25: ε and the utilisation are unchanged (1.6 %, 0.4); P = K_F·2π·Es·ε_nom·h·b = 1884.956 N; W = 2000.213 N; W′ = 7973.454 N"),
+                new CalcReferenceSource("Analytic (thin-ring geometry; recomputed in python3, the force also by strain energy)", null, "The ring of ka-annular with K_F = 1.25: ε and the utilisation are unchanged (1.6 %, 0.4); F_defl = K_F·2π·Es·ε_nom·h·b = 1884.956 N; W = 2000.213 N; W′ = 7973.454 N"),
                 [CalcInputValue.Choice("mode", Annular), Q("h", 1.5, "mm"), Q("b", 5, "mm"), Q("D_ring", 30, "mm"), Q("dD", 0.4, "mm"), CalcInputValue.Of("K_ann", 1.2), CalcInputValue.Of("K_F", 1.25), Q("Es", 2400, "MPa"), CalcInputValue.Of("eps_perm_once", 0.04), CalcInputValue.Of("mu", 0.3), Q("alpha", 30, "deg"), Q("alpha_r", 60, "deg")],
-                [new CalcExpectedValue("eps", 1.6, "%", 1e-9), new CalcExpectedValue("K_F", 1.25, "", 1e-12), new CalcExpectedValue("P", 1884.95559215, "N", 1e-9), new CalcExpectedValue("strain_util", 0.4, "", 1e-9), new CalcExpectedValue("assembly_force", 2000.21342378, "N", 1e-9), new CalcExpectedValue("retention_force", 7973.45351125, "N", 1e-9)]),
+                [new CalcExpectedValue("eps_max", 1.6, "%", 1e-9), new CalcExpectedValue("K_F", 1.25, "", 1e-12), new CalcExpectedValue("F_defl", 1884.95559215, "N", 1e-9), new CalcExpectedValue("strain_util", 0.4, "", 1e-9), new CalcExpectedValue("assembly_force", 2000.21342378, "N", 1e-9), new CalcExpectedValue("retention_force", 7973.45351125, "N", 1e-9)]),
             new CalcTestCase("ka-torsion", "Torsion bar: shear strain, permissible shear strain, torque and lever force",
-                new CalcReferenceSource("Analytic (closed-form; recomputed in python3)", null, "l 20 mm, r 2 mm, lever a 10 mm, y 1.5 mm, ν 0.38, Es 2000 MPa, ε_perm 0.03, μ 0.3, α 30°, α′ 60°: φ = y/a = 0.15 rad = 8.594367°; γ = φ·r/l = 0.015; ε = γ/(1 + ν) = 1.086957 %; γ_perm = ε_perm·(1 + ν) = 0.0414; u = 0.362319; G = Es/(2(1 + ν)) = 724.6377 MPa; T = G·(π r⁴/2)·φ/l = 0.136591 N·m; P = T/a = 13.659098 N; y_perm = γ_perm·l·a/r = 4.14 mm; W = 14.494300 N; W′ = 57.778649 N"),
+                new CalcReferenceSource("Analytic (closed-form; recomputed in python3)", null, "l 20 mm, r 2 mm, lever a 10 mm, y 1.5 mm, ν 0.38, Es 2000 MPa, ε_perm 0.03, μ 0.3, α 30°, α′ 60°: φ = y/a = 0.15 rad = 8.594367°; γ = φ·r/l = 0.015; ε = γ/(1 + ν) = 1.086957 %; γ_perm = ε_perm·(1 + ν) = 0.0414; u = 0.362319; G = Es/(2(1 + ν)) = 724.6377 MPa; T = G·(π r⁴/2)·φ/l = 0.136591 N·m; F_defl = T/a = 13.659098 N; y_perm = γ_perm·l·a/r = 4.14 mm; W = 14.494300 N; W′ = 57.778649 N"),
                 [CalcInputValue.Choice("mode", Torsion), Q("l", 20, "mm"), Q("r_bar", 2, "mm"), Q("a_arm", 10, "mm"), Q("y", 1.5, "mm"), CalcInputValue.Of("nu", 0.38), Q("Es", 2000, "MPa"), CalcInputValue.Of("eps_perm_once", 0.03), CalcInputValue.Of("mu", 0.3), Q("alpha", 30, "deg"), Q("alpha_r", 60, "deg")],
-                [new CalcExpectedValue("phi", 8.59436692696, "deg", 1e-9), new CalcExpectedValue("gamma", 0.015, "", 1e-9), new CalcExpectedValue("eps", 1.08695652174, "%", 1e-9), new CalcExpectedValue("gamma_perm", 0.0414, "", 1e-9), new CalcExpectedValue("strain_util", 0.362318840580, "", 1e-9), new CalcExpectedValue("G_sec", 724.637681159, "MPa", 1e-9), new CalcExpectedValue("T_bar", 0.136590984939, "N*m", 1e-9), new CalcExpectedValue("P", 13.6590984939, "N", 1e-9), new CalcExpectedValue("y_perm", 4.14, "mm", 1e-9), new CalcExpectedValue("assembly_force", 14.4943001723, "N", 1e-9), new CalcExpectedValue("retention_force", 57.7786486322, "N", 1e-9)]),
+                [new CalcExpectedValue("phi", 8.59436692696, "deg", 1e-9), new CalcExpectedValue("gamma", 0.015, "", 1e-9), new CalcExpectedValue("eps_max", 1.08695652174, "%", 1e-9), new CalcExpectedValue("gamma_perm", 0.0414, "", 1e-9), new CalcExpectedValue("strain_util", 0.362318840580, "", 1e-9), new CalcExpectedValue("G_sec", 724.637681159, "MPa", 1e-9), new CalcExpectedValue("T_bar", 0.136590984939, "N*m", 1e-9), new CalcExpectedValue("F_defl", 13.6590984939, "N", 1e-9), new CalcExpectedValue("y_perm", 4.14, "mm", 1e-9), new CalcExpectedValue("assembly_force", 14.4943001723, "N", 1e-9), new CalcExpectedValue("retention_force", 57.7786486322, "N", 1e-9)]),
             new CalcTestCase("ka-torsion-both-ends", "Torsion bar held at both ends with the lever in the middle: twice the strain, four times the stiffness",
-                new CalcReferenceSource("Analytic (closed-form; recomputed in python3, the force also by strain energy U = G·γ²·π·r²·L/4, P = 2U/y)", null, "The bar of ka-torsion (whole length L = 20 mm between the supports, r 2 mm, lever 10 mm, y 1.5 mm, ν 0.38, Es 2000 MPa, ε_perm 0.03, μ 0.3, α 30°, α′ 60°) held at both ends: l_eff = L/2 = 10 mm; γ = φ·r/l_eff = 0.03; ε = 2.173913 %; u = 0.724638; T = 2·G·(π r⁴/2)·φ/l_eff = 4·G·J·φ/L = 0.546364 N·m; P = T/a = 54.636394 N; y_perm = γ_perm·l_eff·a/r = 2.07 mm; W = 57.977201 N; W′ = 231.114595 N"),
+                new CalcReferenceSource("Analytic (closed-form; recomputed in python3, the force also by strain energy U = G·γ²·π·r²·L/4, F_defl = 2U/y)", null, "The bar of ka-torsion (whole length L = 20 mm between the supports, r 2 mm, lever 10 mm, y 1.5 mm, ν 0.38, Es 2000 MPa, ε_perm 0.03, μ 0.3, α 30°, α′ 60°) held at both ends: l_eff = L/2 = 10 mm; γ = φ·r/l_eff = 0.03; ε = 2.173913 %; u = 0.724638; T = 2·G·(π r⁴/2)·φ/l_eff = 4·G·J·φ/L = 0.546364 N·m; F_defl = T/a = 54.636394 N; y_perm = γ_perm·l_eff·a/r = 2.07 mm; W = 57.977201 N; W′ = 231.114595 N"),
                 [CalcInputValue.Choice("mode", Torsion), CalcInputValue.Choice("bar_support", BarBoth), Q("l", 20, "mm"), Q("r_bar", 2, "mm"), Q("a_arm", 10, "mm"), Q("y", 1.5, "mm"), CalcInputValue.Of("nu", 0.38), Q("Es", 2000, "MPa"), CalcInputValue.Of("eps_perm_once", 0.03), CalcInputValue.Of("mu", 0.3), Q("alpha", 30, "deg"), Q("alpha_r", 60, "deg")],
-                [new CalcExpectedValue("l_eff", 10, "mm", 1e-9), new CalcExpectedValue("gamma", 0.03, "", 1e-9), new CalcExpectedValue("eps", 2.17391304348, "%", 1e-9), new CalcExpectedValue("strain_util", 0.724637681159, "", 1e-9), new CalcExpectedValue("T_bar", 0.546363939755, "N*m", 1e-9), new CalcExpectedValue("P", 54.6363939755, "N", 1e-9), new CalcExpectedValue("y_perm", 2.07, "mm", 1e-9), new CalcExpectedValue("assembly_force", 57.9772006894, "N", 1e-9), new CalcExpectedValue("retention_force", 231.114594529, "N", 1e-9)]),
+                [new CalcExpectedValue("l_eff", 10, "mm", 1e-9), new CalcExpectedValue("gamma", 0.03, "", 1e-9), new CalcExpectedValue("eps_max", 2.17391304348, "%", 1e-9), new CalcExpectedValue("strain_util", 0.724637681159, "", 1e-9), new CalcExpectedValue("T_bar", 0.546363939755, "N*m", 1e-9), new CalcExpectedValue("F_defl", 54.6363939755, "N", 1e-9), new CalcExpectedValue("y_perm", 2.07, "mm", 1e-9), new CalcExpectedValue("assembly_force", 57.9772006894, "N", 1e-9), new CalcExpectedValue("retention_force", 231.114594529, "N", 1e-9)]),
             new CalcTestCase("ka-curve", "Cantilever with the secant modulus interpolated from W3 points Es(ε)",
-                new CalcReferenceSource("Analytic (closed-form; recomputed in python3)", null, "l 15 mm, h 2 mm, b 6 mm, y 1.5 mm: ε = 2 %; points (0.5 %, 2600 MPa), (1 %, 2400 MPa), (3 %, 1800 MPa) give Es(2 %) = 2400 − 600·(0.01/0.02) = 2100 MPa; P = b·h²·Es·ε/(6·l) = 11.2 N; ε_perm 0.04: u = 0.5"),
+                new CalcReferenceSource("Analytic (closed-form; recomputed in python3)", null, "l 15 mm, h 2 mm, b 6 mm, y 1.5 mm: ε = 2 %; points (0.5 %, 2600 MPa), (1 %, 2400 MPa), (3 %, 1800 MPa) give Es(2 %) = 2400 − 600·(0.01/0.02) = 2100 MPa; F_defl = b·h²·Es·ε/(6·l) = 11.2 N; ε_perm 0.04: u = 0.5"),
                 [Q("l", 15, "mm"), Q("h", 2, "mm"), Q("b", 6, "mm"), Q("y", 1.5, "mm"), CalcInputValue.Choice("Es_source", EsCurve), SecantPoints((0.005, 2600), (0.01, 2400), (0.03, 1800)), CalcInputValue.Of("eps_perm_once", 0.04), CalcInputValue.Of("mu", 0.3), Q("alpha", 30, "deg"), Q("alpha_r", 60, "deg")],
-                [new CalcExpectedValue("eps", 2, "%", 1e-9), new CalcExpectedValue("Es", 2100, "MPa", 1e-9), new CalcExpectedValue("P", 11.2, "N", 1e-9), new CalcExpectedValue("strain_util", 0.5, "", 1e-9)]),
+                [new CalcExpectedValue("eps_max", 2, "%", 1e-9), new CalcExpectedValue("Es", 2100, "MPa", 1e-9), new CalcExpectedValue("F_defl", 11.2, "N", 1e-9), new CalcExpectedValue("strain_util", 0.5, "", 1e-9)]),
             new CalcTestCase("ka-holding", "Four of the constant-section latches hold a 100 N load: F_hold = n·W′",
                 new CalcReferenceSource("Analytic (n identical latches sharing the load equally; recomputed in python3)", null, "The cantilever of ka-constant (W′ = 36.096414 N) with n_latch = 4 and a load F_req = 100 N: F_hold = 4 × 36.096414 = 144.385654 N, utilisation 100/144.385654 = 0.692590 (PASS)"),
                 [Q("l", 15, "mm"), Q("h", 2, "mm"), Q("b", 6, "mm"), Q("y", 1, "mm"), Q("Es", 2400, "MPa"), CalcInputValue.Of("eps_perm_once", 0.04), CalcInputValue.Of("mu", 0.3), Q("alpha", 30, "deg"), Q("alpha_r", 60, "deg"), CalcInputValue.Of("n_latch", 4), Q("F_req", 100, "N")],
@@ -169,10 +176,10 @@ public sealed class SnapFitCalculator : ICalcCalculator
         Category: "Connections",
         OutputPorts:
         [
-            new CalcOutputPort("assembly_force", "N", "Force to push the parts together over the entry face (snap.assembly_force)"),
-            new CalcOutputPort("retention_force", "N", "Force to separate the parts over the return face (snap.retention_force); reads \"self-locking\" and has no number when the return angle locks"),
-            new CalcOutputPort("strain_util", "", "Strain at the critical section / permissible strain (snap.strain_util)"),
-            new CalcOutputPort("F_hold", "N", "Force n_latch latches hold, n × the separation force (only when n_latch is entered and the joint is not self-locking)"),
+            new CalcOutputPort("assembly_force", "N", "Force to push the parts together over the entry face", "snapfit.force_assembly"),
+            new CalcOutputPort("retention_force", "N", "Force to separate the parts over the return face; reads \"self-locking\" and has no number when the return angle locks", "snapfit.force_retention"),
+            new CalcOutputPort("strain_util", "", "Strain at the critical section over the permissible strain", "snapfit.utilisation_strain"),
+            new CalcOutputPort("F_hold", "N", "Force the latches hold, n_latch times the separation force (only when n_latch is entered and the joint is not self-locking)", "snapfit.force_hold"),
         ],
         RecordKinds:
         [
@@ -197,7 +204,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
         foreach (var s in new[] { "mu", "alpha", "alpha_r", "T_use" })
             c.Input(s);
 
-        c.Assume($"Es and the permissible strain are the values of the plastic at the temperature of use, {F(c.Si("T_use") - 273.15)} °C, as entered, in the moisture state of the part; the sheet cannot check this.", "Recorded temperature of use.");
+        c.Assume($"Es and the permissible strain are the plastic's values at {F(c.Si("T_use") - 273.15)} °C, the temperature of use. The sheet cannot check them, or the moisture state of the part.", "Recorded temperature of use.");
 
         if (!Strain(c, mode))
             return;
@@ -228,7 +235,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
             if (c.Has(symbol))
                 continue;
 
-            c.Block("missing", $"{symbol}: enter '{c.Template.FindInput(symbol)?.Description ?? symbol}'; the {c.InputText("mode").ToLowerInvariant()} calculation needs it.");
+            c.Block("missing", $"{symbol}: enter a value, because the {c.InputText("mode").ToLowerInvariant()} calculation uses it{(c.Template.FindInput(symbol)?.Default is null ? " and the input has no default" : string.Empty)}.");
             return false;
         }
 
@@ -263,13 +270,13 @@ public sealed class SnapFitCalculator : ICalcCalculator
         // Beam theory under-estimates the stiffness and the strain of a beam shorter than five thicknesses (it warned and passed): refused.
         if (c.Si("l_h") < SlendernessLimit)
         {
-            c.Block("slender", $"l: the beam is {F(c.Si("l_h"))} times as long as it is thick (l/h < {SlendernessLimit:0}); beam theory is not reliable there. Lengthen the beam or thin it to at least {SlendernessLimit:0} thicknesses, or check the strain with a finite-element model or a test.");
+            c.Block("slender", $"l: the beam is {F(c.Si("l_h"))} thicknesses long, and beam theory is not reliable below {SlendernessLimit:0}. Lengthen the beam, thin it, or check the strain with a finite-element model or a test.");
             return false;
         }
 
         // mech.snap-fit-01: beam theory is linear, so a deflection that is a large share of the length is under-predicted in strain and force.
         if (c.Si("y") / c.Si("l") > LargeDeflectionLimit)
-            c.Warn("large-deflection", $"y: the deflection is {F(c.Si("y") / c.Si("l"))} of the length l; beam theory is linear and under-predicts the strain and the force at this size (a large-deflection solution gives about +4 % strain and +10 % force at y/l 0.3, +8.5 % and +22 % at 0.41), so the strain check is unconservative; check by a large-deflection model or a test.");
+            c.Warn("large-deflection", $"y: the deflection is {F(c.Si("y") / c.Si("l"))} of the length l, so linear beam theory understates the strain and the force. Check it with a large-deflection model or a test.");
 
         double ky;
         double phiMax = 1;
@@ -307,7 +314,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
             c.Record("K_y", "2/3", "constant section", new ScalarValue(ky), "Deflection factor: y = K_y·ε·l²/h (derived; the design guides print the rounded 0.67)", Derived);
         }
 
-        c.Assign("eps", "y * h / (K_y * l^2)", "%", "Maximum surface strain at the critical section (nominal)", mode == Constant ? Ref : Derived);
+        c.Assign("eps_max", "y * h / (K_y * l^2)", "%", "Maximum surface strain at the critical section (nominal)", mode == Constant ? Ref : Derived);
         return true;
     }
 
@@ -327,12 +334,12 @@ public sealed class SnapFitCalculator : ICalcCalculator
 
         c.Assign("eps_nom", "dD / D_ring", "%", "Nominal hoop strain ΔD/D of the mean diameter (drives the force)", DerivedRing);
         c.Assign("eps_inner", "dD / (D_ring - h)", "%", "Nominal strain at the inner (contact) surface ΔD/(D − h)", DerivedRing);
-        c.Assign("eps", "max(K_ann * eps_nom, eps_inner)", "%", "Hoop strain checked: the larger of the nominal strain times the user's strain factor K_ann and the inner-surface strain", DerivedRing);
+        c.Assign("eps_max", "max(K_ann * eps_nom, eps_inner)", "%", "Hoop strain checked: the larger of the nominal strain times the user's strain factor K_ann and the inner-surface strain", DerivedRing);
 
         // The thin-ring model of the hoop strain and force is not good beyond h/D = 10 % (it warned and passed): refused.
         if (c.Si("h") / c.Si("D_ring") > 0.1 + 1e-12) // tolerance: a ring exactly at 10 % is not refused
         {
-            c.Block("thick-ring", $"h: the wall is {F(c.Si("h") / c.Si("D_ring") * 100)} % of the mean diameter (h/D > 10 %); the thin-ring model of the hoop strain and force is not good there. Thin the wall or enlarge the ring, or check the ring with a finite-element model or a test.");
+            c.Block("thick-ring", $"h: the wall is {F(c.Si("h") / c.Si("D_ring") * 100)} % of the mean diameter, and the thin-ring model holds only to 10 %. Thin the wall, enlarge the ring, or check it with a finite-element model or a test.");
             return false;
         }
 
@@ -363,12 +370,12 @@ public sealed class SnapFitCalculator : ICalcCalculator
         // The small-angle relation φ = y/a is not good above about 20° (it warned and passed): refused.
         if (c.Si("phi") > SmallAngleLimit)
         {
-            c.Block("small-angle", $"y: the bar twists {F(c.Si("phi") * 180 / Math.PI)}°; the small-angle relation φ = y/a is not good above about 20°. Lengthen the lever or reduce the deflection.");
+            c.Block("small-angle", $"y: the bar twists {F(c.Si("phi") * 180 / Math.PI)}°, and the small-angle relation φ = y/a holds only to about 20°. Lengthen the lever or reduce the deflection.");
             return false;
         }
 
         c.Assign("gamma", "phi * r_bar / l_eff", null, "Shear strain at the surface of the bar", both ? DerivedBar : Ref);
-        c.Assign("eps", "gamma / (1 + nu)", "%", "Equivalent tensile strain γ/(1 + ν)", DerivedBar);
+        c.Assign("eps_max", "gamma / (1 + nu)", "%", "Equivalent tensile strain γ/(1 + ν)", DerivedBar);
         return true;
     }
 
@@ -388,7 +395,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
         c.Assign("eps_perm", epsSymbol, "%", $"Permissible strain ({(repeated ? "repeated" : "one-time")} joining, as entered)", Ref);
 
         if (c.InputText("Es_source") == EsCurve)
-            return SecantFromCurve(c, mode == Annular ? "eps_nom" : "eps");
+            return SecantFromCurve(c, mode == Annular ? "eps_nom" : "eps_max");
 
         if (!Require(c, "Es"))
             return false;
@@ -415,7 +422,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
 
         if (points.Count == 0)
         {
-            c.Block("es-curve", c.EnterRows("Es_pts").TrimEnd('.') + "; a row needs a strain of zero or more and a positive secant modulus.");
+            c.Block("es-curve", "Es_pts: enter at least one row with a strain of zero or more and a positive secant modulus.");
             return false;
         }
 
@@ -424,7 +431,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
         var es = Interpolate(points, eps, out var outside);
 
         if (outside)
-            c.Warn("es-range", $"Es_pts: the design strain {F(eps * 100)} % is outside the strains of the points ({F(points[0].Strain * 100)} … {F(points[^1].Strain * 100)} %); the end value of the secant modulus is held, with no extrapolation.");
+            c.Warn("es-range", $"Es_pts: the design strain {F(eps * 100)} % is outside the strain range of the points, {F(points[0].Strain * 100)} to {F(points[^1].Strain * 100)} %. The end value of the secant modulus is held, with no extrapolation.");
 
         c.Record("Es", "Es(ε) by linear interpolation of the W3 points", $"ε = {F(eps * 100)} % in {points.Count} point(s)", ScalarValue.Of(es / 1e6, "MPa"), "Secant modulus at the design strain (from the W3 points)", "W3 material points (linear interpolation)");
         return true;
@@ -468,7 +475,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
                 else
                     c.Record("K_F", "1 (no force factor entered)", "free ring", new ScalarValue(1), "Force factor K_F on the hoop force (none entered: the free ring)", DerivedRing);
 
-                c.Assign("P", "K_F * 2 * pi * Es * eps_nom * h * b", "N", "Radial contact force summed round the ring, from the nominal strain (hoop force Es·ε_nom·h·b over the radius)", DerivedRing);
+                c.Assign("F_defl", "K_F * 2 * pi * Es * eps_nom * h * b", "N", "Radial contact force summed round the ring, from the nominal strain (hoop force Es·ε_nom·h·b over the radius)", DerivedRing);
                 c.Assign("y_perm", "eps_perm * min(D_ring / K_ann, D_ring - h)", "mm", "Permissible interference on the diameter ΔD_perm (the smaller of the mean-diameter and the inner-surface limits)", DerivedRing);
                 break;
             case Torsion:
@@ -476,27 +483,27 @@ public sealed class SnapFitCalculator : ICalcCalculator
                 c.Assign("G_sec", "Es / (2 * (1 + nu))", "MPa", "Secant shear modulus Es/(2(1 + ν))");
                 c.Assign("J_bar", "pi * r_bar^4 / 2", "mm^4", "Polar second moment of the bar");
                 c.Assign("T_bar", "n_bar * G_sec * J_bar * phi / l_eff", "N*m", "Torque in the bar", DerivedBar);
-                c.Assign("P", "T_bar / a_arm", "N", "Force at the end of the lever", DerivedBar);
+                c.Assign("F_defl", "T_bar / a_arm", "N", "Force at the end of the lever", DerivedBar);
                 c.Assign("y_perm", "gamma_perm * l_eff * a_arm / r_bar", "mm", "Permissible deflection at the end of the lever", DerivedBar);
                 break;
             default:
-                c.Assign("P", "b * h^2 * Es * eps / (6 * l * phi_max)", "N", "Deflection force at the tip: P = (b·h²/6)·(Es·ε/l) at the root of a constant section", mode == Constant ? Ref : Derived);
+                c.Assign("F_defl", "b * h^2 * Es * eps_max / (6 * l * phi_max)", "N", "Deflection force at the tip: F_defl = (b·h²/6)·(Es·ε/l) at the root of a constant section", mode == Constant ? Ref : Derived);
                 c.Assign("y_perm", "K_y * eps_perm * l^2 / h", "mm", "Permissible tip deflection", mode == Constant ? Ref : Derived);
                 break;
         }
 
-        c.Assign("strain_util", "eps / eps_perm", null, "Strain / permissible strain");
-        c.Output("eps", "Maximum strain");
+        c.Assign("strain_util", "eps_max / eps_perm", null, "Strain / permissible strain");
+        c.Output("eps_max", "Maximum strain");
         c.Output("eps_perm", "Permissible strain");
         c.Output("strain_util", "Strain / permissible strain");
         c.Output("Es", "Secant modulus used");
-        c.Output("P", "Deflection force");
+        c.Output("F_defl", "Deflection force");
         c.Output("y_perm", mode == Annular ? "Permissible interference on the diameter" : "Permissible deflection");
 
         if (mode is Constant or TaperedThickness or TaperedWidth)
         {
             c.Output("l_h", "Slenderness l/h");
-            c.Output("K_y", "Deflection factor K_y");
+            c.Output("K_y", "Deflection factor of the cantilever");
             c.Output("phi_max", "Strain shape maximum");
 
             if (c.Session.Find("t_crit") is not null)
@@ -518,7 +525,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
             c.Output("T_bar", "Torque in the bar");
         }
 
-        c.CheckUtilisation("Strain at the critical section against the permissible strain", "strain_util", Ref);
+        c.Check("Strain at the critical section against the permissible strain", "eps_max", "eps_perm", Ref);
     }
 
     // ------------------------------------------------------------------
@@ -533,16 +540,16 @@ public sealed class SnapFitCalculator : ICalcCalculator
         c.Assign("tan_a", "tan(alpha)", null, "tan α of the entry face");
         c.Assign("mu_tan_a", "mu * tan_a", null, "μ·tan α of the entry face");
         var jams = c.Si("mu_tan_a") >= 1 - 1e-9;
-        c.CheckCondition("Assembly: the entry face does not jam (μ·tan α < 1)", !jams, $"μ·tan α = {F(c.Si("mu_tan_a"))}", "< 1", "mu_tan_a", Ref);
+        c.CheckCondition("Entry-face friction μ·tan α against the jamming limit", !jams, $"μ·tan α = {F(c.Si("mu_tan_a"))}", "< 1", "mu_tan_a", Ref);
 
         if (jams)
         {
             c.Output("assembly_force", "Assembly force", new TextValue("jams (μ·tan α ≥ 1)"));
-            c.Warn("assembly-jam", $"alpha: μ·tan α = {F(c.Si("mu_tan_a"))} is 1 or more; the entry face jams and the part cannot be pushed on. Reduce the entry angle α or the friction.");
+            c.Warn("assembly-jam", $"alpha: μ·tan α is {F(c.Si("mu_tan_a"))}, which is 1 or more, so the entry face jams. Reduce the entry angle or the friction.");
         }
         else
         {
-            c.Assign("assembly_force", "P * (mu + tan_a) / (1 - mu_tan_a)", "N", "Assembly force W = P·(μ + tan α)/(1 − μ·tan α)", Ref);
+            c.Assign("assembly_force", "F_defl * (mu + tan_a) / (1 - mu_tan_a)", "N", "Assembly force W = F_defl·(μ + tan α)/(1 − μ·tan α)", Ref);
             c.Output("assembly_force", "Assembly force");
         }
 
@@ -555,12 +562,12 @@ public sealed class SnapFitCalculator : ICalcCalculator
         {
             c.Output("retention_force", "Separation force", new TextValue("self-locking (infinite)"));
             c.Output("self_locking", "Self-locking", new TextValue("Yes: α′ ≥ arctan(1/μ); the parts cannot be separated by pulling"));
-            c.Warn("self-locking", $"alpha_r: the return angle {F(alphaR * 180 / Math.PI)}° is at or above arctan(1/μ) = {F(limit * 180 / Math.PI)}°; the separation force is infinite and the joint cannot be undone by pulling. That is right for a permanent joint and wrong for a serviceable one.");
+            c.Warn("self-locking", $"alpha_r: the return angle {F(alphaR * 180 / Math.PI)}° is at or above arctan(1/μ) = {F(limit * 180 / Math.PI)}°, so the joint cannot be undone by pulling. That suits a permanent joint and not a serviceable one.");
         }
         else
         {
             c.Assign("tan_ar", "tan(alpha_r)", null, "tan α′ of the return face");
-            c.Assign("retention_force", "P * (mu + tan_ar) / (1 - mu * tan_ar)", "N", "Separation force W′ = P·(μ + tan α′)/(1 − μ·tan α′)", Ref);
+            c.Assign("retention_force", "F_defl * (mu + tan_ar) / (1 - mu * tan_ar)", "N", "Separation force W′ = F_defl·(μ + tan α′)/(1 − μ·tan α′)", Ref);
             c.Output("retention_force", "Separation force");
             c.Output("self_locking", "Self-locking", new TextValue("No"));
 
@@ -571,7 +578,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
 
                 if (Math.Abs(n - Math.Round(n)) > 1e-9)
                 {
-                    c.Block("n_latch", "n_latch: the number of latches must be a whole number.");
+                    c.Block("n-latch", "n_latch: enter a whole number of latches.");
                     return;
                 }
 
@@ -583,7 +590,7 @@ public sealed class SnapFitCalculator : ICalcCalculator
                     c.Input("F_req");
                     c.Assign("u_hold", "F_req / F_hold", null, "Utilisation of the latches' holding force");
                     c.Output("u_hold", "Holding utilisation");
-                    c.CheckUtilisation("Latches hold the load: F_req ≤ n·W′", "u_hold", Ref);
+                    c.Check("Required holding force against the force the latches hold", "F_req", "F_hold", Ref);
                 }
             }
             else if (c.Has("F_req"))

@@ -587,7 +587,7 @@
       "ValueText": "no"
     },
     {
-      "Symbol": "l_1",
+      "Symbol": "l_leg_1",
       "Number": 0,
       "Unit": "mm",
       "Provenance": {
@@ -598,7 +598,7 @@
       "ValueText": "0"
     },
     {
-      "Symbol": "l_2",
+      "Symbol": "l_leg_2",
       "Number": 0,
       "Unit": "mm",
       "Provenance": {
@@ -620,7 +620,7 @@
       "ValueText": "Compression"
     },
     {
-      "Symbol": "n",
+      "Symbol": "n_active",
       "Number": 10.5,
       "Provenance": {
         "Kind": "Drawing",
@@ -796,7 +796,7 @@
       "ValueText": "207"
     },
     {
-      "Symbol": "R",
+      "Symbol": "R_rel",
       "Number": 99,
       "Unit": "%",
       "Provenance": {

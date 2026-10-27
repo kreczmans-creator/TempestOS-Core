@@ -155,7 +155,7 @@ public sealed class UnconservativePassTests
     // ---- mech.spring buckling ---------------------------------------------------------------------------------------------------------------
 
     internal static CalcInputSet SlenderSpringInputs(double f2) => CalcTemplateHasher.DefaultInputs(new SpringCalculator().Template)
-        .With(CalcInputValue.Quantity("D", 20, "mm")).With(CalcInputValue.Of("n", 10)).With(CalcInputValue.Choice("ends", SpringCalculator.PlainGround))
+        .With(CalcInputValue.Quantity("D", 20, "mm")).With(CalcInputValue.Of("n_active", 10)).With(CalcInputValue.Choice("ends", SpringCalculator.PlainGround))
         .With(CalcInputValue.Quantity("L0", 80, "mm")).With(CalcInputValue.Of("nu_seat", 1)).With(CalcInputValue.Quantity("F_1", 8, "N")).With(CalcInputValue.Quantity("F_2", f2, "N"));
 
     private static CalcRunResult SlenderSpring(double f2) => CalcRunner.Run(new SpringCalculator(), SlenderSpringInputs(f2));

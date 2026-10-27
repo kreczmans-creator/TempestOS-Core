@@ -16,7 +16,7 @@ The bar wants to grow 1.44 mm; the first 0.5 mm closes the gap freely and the re
 
 | Output | Expected | Computed | Result |
 |---|---|---|---|
-| `F` | 47000 N | 47000 N | PASS |
+| `F` | 47 kN | 47 kN | PASS |
 | `sigma` | -94 MPa | -94 MPa | PASS |
 | `delta` | 0.5 mm | 0.5 mm | PASS |
 
