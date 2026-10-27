@@ -222,4 +222,83 @@ public sealed class WorksheetShotFixReviewTests
         DiagramPolyline l => l.Points,
         _ => [],
     };
+    [AvaloniaFact]
+    public void Item10_A_Wide_Tables_Sideways_Scroll_Bar_Is_Drawn_At_Rest()
+    {
+        var view = Live("bs.duct-sizing", out _);
+        Assert.True(view.IsTableScrollBarAlwaysShown("sections"));
+        var scroller = view.GetLogicalDescendants().OfType<ScrollViewer>().Single(v => AutomationProperties.GetName(v) == "sections columns");
+        Assert.False(scroller.AllowAutoHide);
+    }
+
+    [Fact]
+    public void Item11_Subscript_Digits_Are_Set_Low_On_The_Form()
+    {
+        var segments = SymbolText.FormSegments("ṁ (h₁ − h₂) = W₁₂");
+        Assert.Equal([("ṁ (h", false), ("1", true), (" − h", false), ("2", true), (") = W", false), ("12", true)], segments.Select(x => (x.Text, x.Subscript)));
+
+        // The PDF faces have the digits: its parse leaves them as they are.
+        Assert.Equal("ṁ (h₁ − h₂) = W₁₂", Assert.Single(SymbolText.Parse("ṁ (h₁ − h₂) = W₁₂")).Text);
+    }
+
+    [AvaloniaFact]
+    public void Item11_A_Working_Line_With_Subscript_Digits_Is_Typeset()
+    {
+        var block = new TextBlock { FontSize = 13 };
+        SymbolText.Set(block, "q = ṁ (h₁ − h₂)");
+        Assert.Null(block.Text);
+        Assert.NotNull(block.Inlines);
+        Assert.Equal("q = ṁ (h₁ − h₂)", SymbolText.Raw(block));
+    }
+
+    [Fact]
+    public void Item12_Lambda_Bar_LT_Is_A_Lambda_With_Its_Bar_Over_It_And_LT_Set_Low()
+    {
+        var segments = SymbolText.Parse("λ̄_LT = √(W_y·f_y/M_cr)");
+        Assert.Equal(("λ̄", false), (segments[0].Text, segments[0].Subscript));
+        Assert.Equal(("LT", true), (segments[1].Text, segments[1].Subscript));
+
+        var texts = new List<Tempest.Desktop.Documents.DocumentTemplate.TextRun>
+        {
+            new(100, 200, "λ̄_LT = √(W_y·f_y/M_cr)", 10, false, SkiaSharp.SKTextAlign.Left, SkiaSharp.SKColors.Black, Tempest.Desktop.Documents.DocumentFontRole.Body, Symbols: true),
+        };
+        Tempest.Desktop.Documents.DocumentTemplate.TypesetSymbols(texts);
+        Tempest.Desktop.Documents.DocumentTemplate.PlaceCombiningMarks(texts);
+        Tempest.Desktop.Documents.DocumentTemplate.FallBackForMissingGlyphs(texts);
+
+        Assert.DoesNotContain(texts, t => t.Text.Contains('_', StringComparison.Ordinal));
+        var lambda = texts.Single(t => t.Text == "λ");
+        var bar = texts.Single(t => t.Text == "\u0304");
+        var lt = texts.Single(t => t.Text == "LT");
+        Assert.True(lt.Size < lambda.Size);
+
+        using var paint = new SkiaSharp.SKPaint { Typeface = Tempest.Desktop.Documents.DocumentFonts.For(lambda.FontRole, false), TextSize = lambda.Size };
+        var lambdaRight = lambda.X + paint.MeasureText("λ");
+        paint.Typeface = Tempest.Desktop.Documents.DocumentFonts.For(bar.FontRole, false);
+        var bounds = default(SkiaSharp.SKRect);
+        paint.MeasureText(bar.Text, ref bounds);
+        var barCentre = bar.X + (bounds.Left + bounds.Right) / 2;
+        Assert.InRange(barCentre, lambda.X, lambdaRight);
+        Assert.True(lt.X >= lambdaRight - 0.01f, "LT follows the lambda, with no room left for a bar beside it");
+        Assert.True(lt.X <= lambdaRight + 0.5f, $"LT starts {lt.X - lambdaRight:0.00} pt after the lambda: the bar took width of the line");
+    }
+
+    [AvaloniaFact]
+    public void Item13_Table_Cells_Have_No_Placeholder_Their_Text_In_A_Tooltip_And_Short_Headers()
+    {
+        var glaser = Live("bs.glaser", out _);
+        glaser.AddTableRow("layers");
+        Assert.Null(glaser.TableCellPlaceholder("layers", 0, "element"));
+
+        var headers = glaser.GetLogicalDescendants().OfType<TextBlock>().Where(b => b.Text?.StartsWith("Element (blank", StringComparison.Ordinal) == true).ToList();
+        var header = Assert.Single(headers);
+        Assert.Equal(2, header.MaxLines);
+        Assert.Equal(Avalonia.Layout.VerticalAlignment.Bottom, header.VerticalAlignment);
+
+        var combinations = Live("struct.load-combinations", out _);
+        combinations.AddTableRow("actions");
+        const string longName = "Slab, finishes and services on the third floor, permanent";
+        combinations.SetTableCell("actions", 0, "name", text: longName);
+        Assert.Contains(longName, combinations.TableCellTip("actions", 0, "name") ?? string.Empty, StringComparison.Ordinal);
+    }
 }

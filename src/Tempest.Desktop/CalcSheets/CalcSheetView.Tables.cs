@@ -112,6 +112,8 @@ public sealed partial class CalcSheetView
 
         public TextBox? Vector { get; set; }
 
+        public ScrollViewer? Scroller { get; set; }
+
         public string VectorInitial { get; set; } = string.Empty;
 
         public ComboBox? VectorUnit { get; set; }
@@ -305,7 +307,9 @@ public sealed partial class CalcSheetView
         for (var i = 0; i < columns.Count; i++)
         {
             var column = columns[i];
-            var label = new TextBlock { Text = column.Label, FontSize = DesignTokens.FontSizeCaption, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, DesignTokens.SpaceXs, 0), Opacity = column.IsOptional ? 0.75 : 1 };
+            // At most two lines, set on the bottom of the header row, so a long label neither stands the header far above the rows nor hides
+            // the others (the re-shoot found bs.glaser's five-line Element header); the whole label is in the tooltip.
+            var label = new TextBlock { Text = column.Label, FontSize = DesignTokens.FontSizeCaption, TextWrapping = TextWrapping.Wrap, MaxLines = 2, TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, DesignTokens.SpaceXs, 0), Opacity = column.IsOptional ? 0.75 : 1 };
             ToolTip.SetTip(label, $"{column.Key}: {column.Label}{(column.IsOptional ? " (optional)" : string.Empty)}{RangeText(column)}");
             Grid.SetColumn(label, i + 1);
             head.Children.Add(label);
@@ -337,7 +341,12 @@ public sealed partial class CalcSheetView
             grid.Children.Add(units);
 
         grid.Children.Add(t.RowHost);
-        block.Children.Add(new ScrollViewer { Content = grid, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled });
+        // A table wider than the panel scrolls sideways, and its scroll bar is drawn at rest, so the columns past the edge are seen to be there
+        // (the re-shoot found bs.duct-sizing cut at "Fixed side a" with nothing to say more columns followed).
+        var scroller = new ScrollViewer { Content = grid, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Disabled, AllowAutoHide = false };
+        AutomationProperties.SetName(scroller, $"{t.Spec.Symbol} columns");
+        t.Scroller = scroller;
+        block.Children.Add(scroller);
 
         foreach (var row in (t.Seed?.Rows ?? []).Take(t.Spec.MaxRows))
             AddRow(t, row, raise: false);
@@ -360,6 +369,22 @@ public sealed partial class CalcSheetView
 
         UpdateRowCount(t);
     }
+
+    /// <summary>A cell's tooltip: where it is, then its whole text (a long text is cut in the cell; the re-shoot found it with no way to read it).</summary>
+    private static string CellTip(string head, string? text) => string.IsNullOrEmpty(text) ? head : $"{head}\n{text}";
+
+    /// <summary>Whether a table input's sideways scroll bar is drawn at rest.</summary>
+    public bool IsTableScrollBarAlwaysShown(string symbol) => _tables.TryGetValue(symbol, out var t) && t.Scroller is { AllowAutoHide: false, HorizontalScrollBarVisibility: not ScrollBarVisibility.Disabled and not ScrollBarVisibility.Hidden };
+
+    /// <summary>The tooltip of a table cell (row 0-based, column by key), or <see langword="null"/>.</summary>
+    public string? TableCellTip(string symbol, int row, string column) =>
+        _tables.TryGetValue(symbol, out var t) && row >= 0 && row < t.Rows.Count && t.Rows[row].Row.Children.OfType<Control>().FirstOrDefault(c => AutomationProperties.GetName(c) == $"{symbol} row {row + 1} {column}") is { } cell
+            ? ToolTip.GetTip(cell) as string
+            : null;
+
+    /// <summary>The placeholder a table cell shows when empty (row 0-based, column by key), or <see langword="null"/>.</summary>
+    public string? TableCellPlaceholder(string symbol, int row, string column) =>
+        _tables.TryGetValue(symbol, out var t) && row >= 0 && row < t.Rows.Count ? t.Rows[row].Cells.FirstOrDefault(c => c.Column.Key == column)?.Text?.Watermark : null;
 
     private static string RangeText(CalcColumnSpec c)
     {
@@ -416,17 +441,27 @@ public sealed partial class CalcSheetView
                     break;
 
                 default:
+                    // No placeholder: an empty optional column read "text" in every row (bs.glaser); the column's header names it.
                     cell.InitialText = CellText(t, column, seedCell);
-                    cell.Text = Input(cell.InitialText, column.Kind == CalcInputKind.Text ? "text" : "number");
+                    cell.Text = Input(cell.InitialText);
                     cell.Text.MaxLength = 400;
-                    cell.Text.TextChanged += (_, _) => TableChanged(t);
+                    var box = cell.Text;
+                    var tipHead = $"{t.Spec.Symbol}, row {index}: {column.Label}";
+                    box.TextChanged += (_, _) => TableChanged(t);
+
+                    // The tooltip follows the text as it is set (TextChanged is raised later, after the edit settles).
+                    box.PropertyChanged += (_, e) =>
+                    {
+                        if (e.Property == TextBox.TextProperty)
+                            ToolTip.SetTip(box, CellTip(tipHead, box.Text));
+                    };
                     control = cell.Text;
                     break;
             }
 
             control.Margin = new Thickness(0, 0, DesignTokens.SpaceXs, 0);
             AutomationProperties.SetName(control, $"{t.Spec.Symbol} row {index} {column.Key}");
-            ToolTip.SetTip(control, $"{t.Spec.Symbol}, row {index}: {column.Label}");
+            ToolTip.SetTip(control, CellTip($"{t.Spec.Symbol}, row {index}: {column.Label}", cell.Text?.Text ?? cell.Choice?.SelectedItem as string));
             Grid.SetColumn(control, i + 1);
             editor.Row.Children.Add(control);
             editor.Cells.Add(cell);
