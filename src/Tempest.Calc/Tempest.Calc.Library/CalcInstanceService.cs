@@ -690,7 +690,13 @@ public sealed partial class CalcInstanceService
             && !(instance.Status == CalcInstanceStatus.Checked && (inputsOverride is not null || instance.SecondCheck is { Accepted: false } || (await StalenessAsync(instance, cancellationToken).ConfigureAwait(false)).IsStale)))
             return CalcActionResult.Refused($"Calculation '{instance.Name}' is {instance.Status}; only an issued calculation, or a checked one that has gone stale, can be revised.", instance);
 
-        var entry = _catalogue.Get(instance.TemplateId);
+        // The revision is made on the template's current version (ADR-0177 §5). A template that is gone, or a calculation made by a newer build than
+        // this one, has no current version to revise onto here; the refusal says what became of the version (§6), never a thrown lookup.
+        var resolution = _catalogue.Resolve(instance.TemplateReference);
+
+        if (resolution.Current is not { } entry || resolution.State == CalcVersionState.Newer)
+            return CalcActionResult.Refused(OlderVersionRefusal(instance), instance);
+
         var now = _time.GetUtcNow();
         var author = CurrentPrincipal();
         var id = Guid.NewGuid();
@@ -717,6 +723,21 @@ public sealed partial class CalcInstanceService
         var carried = entry.Template.RequiresAttestation
             ? (inputsOverride ?? instance.Inputs).Where(i => !CalcAttestation.Symbols.Contains(i.Symbol, StringComparer.Ordinal)).ToList()
             : inputsOverride ?? instance.Inputs;
+
+        // An input whose meaning changed since the calculation's version is not carried into the revision: its stored number would mean something else
+        // (ADR-0177 review). Judged on the symbol the record holds, before aliases are folded: a value stored under an alias keeps its meaning.
+        if (carried.FirstOrDefault(i => entry.Template.ResolveInput(i.Symbol) is { } spec && spec.MeaningChangedSince(i.Symbol, instance.TemplateVersion)) is { } changed)
+        {
+            var spec = entry.Template.ResolveInput(changed.Symbol)!;
+            return CalcActionResult.Refused($"Calculation '{instance.Name}' cannot be revised onto {entry.Reference}: {spec.MeaningChangeText(instance.TemplateId, instance.TemplateReference)}, so its stored value cannot be carried. Start a new calculation on {entry.Reference} and enter {spec.Symbol} afresh; the other inputs can be read from the stored sheet.", instance);
+        }
+
+        // C-2: a value stored under a symbol an input had before it was renamed is carried under the input it has become; one stored under two of
+        // its names with different values is refused, never chosen silently (ADR-0177 review).
+        if (!CalcInputAliases.TryCanonicalise(entry.Template, carried.ToList(), out var canonicalCarried, out var aliasConflict))
+            return CalcActionResult.Refused($"Calculation '{instance.Name}' cannot be revised: {aliasConflict}", instance);
+
+        carried = canonicalCarried;
 
         var probe = new CalcInstance(
             id, entry.Reference, entry.ContentHash, instance.ProjectId, instance.Name, nextRevision,

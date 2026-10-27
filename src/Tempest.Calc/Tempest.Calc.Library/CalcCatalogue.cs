@@ -287,6 +287,17 @@ public sealed class CalcCatalogue
             }
         }
 
+        // ADR-0177 review: a change of meaning is declared at a version the template has reached, with both meanings said, or the refusal sentences would be empty.
+        foreach (var (symbol, at, was, now) in t.Inputs.Where(i => i.HasMeaningChange).Select(i => (i.Symbol, i.MeaningChangedAt, i.MeaningWas, i.MeaningNow))
+            .Concat((t.OutputPorts ?? []).Where(p => p.HasMeaningChange).Select(p => (p.Symbol, p.MeaningChangedAt, p.MeaningWas, p.MeaningNow))))
+        {
+            if (!CalcTemplateVersion.IsWellFormed(at) || CalcTemplateVersion.Compare(at!, t.Version) > 0)
+                throw new ArgumentException($"Template '{t.Id}': '{symbol}' says its meaning changed at version '{at}', which is not a version of the template up to {t.Version}.");
+
+            if (string.IsNullOrWhiteSpace(was) || string.IsNullOrWhiteSpace(now))
+                throw new ArgumentException($"Template '{t.Id}': '{symbol}' says its meaning changed at {at} but not what it meant before and what it means now.");
+        }
+
         // ADR-0173: the governance a template asks for must be satisfiable, or no instance of it could ever be issued.
         if (t.FeatureFlag is { Length: > 0 } flag && !CalcFeatures.All.Contains(flag, StringComparer.Ordinal))
             throw new ArgumentException($"Template '{t.Id}' names the unknown feature flag '{flag}'.");
@@ -304,20 +315,5 @@ public sealed class CalcCatalogue
             throw new ArgumentException($"Template '{t.Id}' requires a second check, so its first check must also be independent (IndependentCheck).");
     }
 
-    internal static int CompareVersions(string a, string b)
-    {
-        var pa = a.Split('.').Select(x => int.TryParse(x, out var n) ? n : 0).ToArray();
-        var pb = b.Split('.').Select(x => int.TryParse(x, out var n) ? n : 0).ToArray();
-
-        for (var i = 0; i < Math.Max(pa.Length, pb.Length); i++)
-        {
-            var x = i < pa.Length ? pa[i] : 0;
-            var y = i < pb.Length ? pb[i] : 0;
-
-            if (x != y)
-                return x.CompareTo(y);
-        }
-
-        return 0;
-    }
+    internal static int CompareVersions(string a, string b) => CalcTemplateVersion.Compare(a, b);
 }

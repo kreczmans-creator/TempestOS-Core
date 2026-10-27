@@ -16,7 +16,12 @@ namespace Tempest.Calc.Library;
 /// </param>
 /// <param name="Omit">Opening inputs the example leaves out because another input replaces them (a flow, when a heat load gives it).</param>
 /// <param name="Hint">Said after the reason when this step blocks the chain (what the user must supply).</param>
-public sealed record CalcPackStep(string Key, string TemplateId, string Name, IReadOnlyList<CalcInputValue>? Example = null, IReadOnlyList<string>? Omit = null, string? Hint = null);
+/// <param name="TemplateVersion">
+/// The template version the step was saved from (a template saved from a chain records each calculation's version); <see langword="null"/> for a
+/// template composed in code, which is written for the current version. A binding or an example that names a symbol whose meaning changed after
+/// this version (<see cref="CalcOutputPort.MeaningChangedAt"/>, <see cref="CalcInputSpec.MeaningChangedAt"/>) is refused rather than rebound.
+/// </param>
+public sealed record CalcPackStep(string Key, string TemplateId, string Name, IReadOnlyList<CalcInputValue>? Example = null, IReadOnlyList<string>? Omit = null, string? Hint = null, string? TemplateVersion = null);
 
 /// <summary>
 /// One link of a pack template: output <paramref name="Output"/> of step <paramref name="FromStep"/> feeds input

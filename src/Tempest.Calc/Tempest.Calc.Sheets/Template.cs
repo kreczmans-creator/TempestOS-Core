@@ -45,7 +45,10 @@ public enum CalcInputKind
 /// template also lists the input's symbol in a record kind of that name (Addendum B, W3). <see cref="PressureBasis"/> names the
 /// basis of a pressure input so the sheet prints "bar a" or "bar g" beside it. <see cref="Aliases"/> are the symbols this input was
 /// called before it was renamed (C-2): an inputs file, a CSV, a saved draft or a pack link that still uses one is read as this input
-/// (<see cref="CalcInputAliases"/>); nothing writes an alias.
+/// (<see cref="CalcInputAliases"/>); nothing writes an alias. <see cref="MeaningChangedAt"/> is the template version at which this symbol
+/// came to mean something else (an axis swapped, a width that became a depth), with <see cref="MeaningWas"/> and <see cref="MeaningNow"/>
+/// saying what in plain words: a value stored under this symbol by a calculation made on an earlier version is not carried, linked or bound
+/// (ADR-0177 review); a value stored under an alias keeps its meaning, since an alias is declared precisely because the old symbol is this input.
 /// </summary>
 public sealed record CalcInputSpec(
     string Symbol,
@@ -68,8 +71,26 @@ public sealed record CalcInputSpec(
     string? ReferenceLibrary = null,
     string? ReferenceProperty = null,
     string? ReferenceDimension = null,
-    IReadOnlyList<string>? Aliases = null)
+    IReadOnlyList<string>? Aliases = null,
+    string? MeaningChangedAt = null,
+    string? MeaningWas = null,
+    string? MeaningNow = null)
 {
+    /// <summary>Whether this input declares that its meaning changed at a version (<see cref="MeaningChangedAt"/>).</summary>
+    public bool HasMeaningChange => MeaningChangedAt is { Length: > 0 };
+
+    /// <summary>
+    /// Whether a value stored under <paramref name="givenSymbol"/> by a calculation made on template version <paramref name="version"/> means
+    /// something else now: the symbol is this input's own (not an alias, which keeps its meaning), the input declares a meaning change, and the
+    /// version is older than the change.
+    /// </summary>
+    public bool MeaningChangedSince(string givenSymbol, string version) =>
+        HasMeaningChange && string.Equals(givenSymbol, Symbol, StringComparison.Ordinal) && CalcTemplateVersion.Compare(version, MeaningChangedAt!) < 0;
+
+    /// <summary>"h meant the width on id@1.1.0; since id@1.2.0 it means the depth", for a sentence that refuses to carry the old value.</summary>
+    public string MeaningChangeText(string templateId, string oldReference) =>
+        CalcTemplateVersion.MeaningChangeText(Symbol, templateId, oldReference, MeaningChangedAt, MeaningWas, MeaningNow);
+
     /// <summary>A pressure that is always gauge (above the atmosphere): <see cref="PressureBasis"/> "g".</summary>
     public const string BasisGauge = "g";
 
@@ -150,6 +171,38 @@ public sealed record CalcInputSpec(
         var unit = DefaultUnit.Length > 0 && Kind is CalcInputKind.Quantity or CalcInputKind.Vector ? $" in {DefaultUnit}" : string.Empty;
         return $"enter '{Description}'{unit}; it has no default value.";
     }
+}
+
+/// <summary>Template versions are dotted digits ("1.2.0"); this compares them part by part, a missing part reading as 0.</summary>
+public static class CalcTemplateVersion
+{
+    /// <summary>Negative when <paramref name="a"/> is the earlier version, zero when the same, positive when the later.</summary>
+    public static int Compare(string a, string b)
+    {
+        ArgumentNullException.ThrowIfNull(a);
+        ArgumentNullException.ThrowIfNull(b);
+        var pa = a.Split('.').Select(x => int.TryParse(x, out var n) ? n : 0).ToArray();
+        var pb = b.Split('.').Select(x => int.TryParse(x, out var n) ? n : 0).ToArray();
+
+        for (var i = 0; i < Math.Max(pa.Length, pb.Length); i++)
+        {
+            var x = i < pa.Length ? pa[i] : 0;
+            var y = i < pb.Length ? pb[i] : 0;
+
+            if (x != y)
+                return x.CompareTo(y);
+        }
+
+        return 0;
+    }
+
+    /// <summary>Whether <paramref name="version"/> is dotted digits, as a template version must be.</summary>
+    public static bool IsWellFormed(string? version) =>
+        version is { Length: > 0 and <= 32 } && version.All(c => char.IsAsciiDigit(c) || c == '.');
+
+    /// <summary>"W_el_y meant the elastic modulus about the minor axis on id@1.1.0; since id@1.2.0 it means the elastic modulus about the major axis".</summary>
+    internal static string MeaningChangeText(string symbol, string templateId, string oldReference, string? changedAt, string? was, string? now) =>
+        $"{symbol} meant {was} on {oldReference}; since {templateId}@{changedAt} it means {now}";
 }
 
 /// <summary>One column of a <see cref="CalcInputKind.Table"/> input.</summary>

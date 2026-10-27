@@ -134,6 +134,10 @@ public static class CalcTemplateHasher
             if (i.Aliases is { Count: > 0 } aliases)
                 sb.Append("  aliases=").Append(string.Join(",", aliases)).Append('\n');
 
+            // ADR-0177 review: a declared change of meaning is part of the version's contract; an input that declares none keeps its hash.
+            if (i.HasMeaningChange)
+                sb.Append("  meaning=").Append(i.MeaningChangedAt).Append('|').Append(i.MeaningWas).Append('|').Append(i.MeaningNow).Append('\n');
+
             foreach (var c in i.Columns ?? [])
                 sb.Append("  column=").Append(c.Key).Append('|').Append(c.Label).Append('|').Append(c.Kind).Append('|').Append(c.DefaultUnit).Append('|').Append(string.Join(",", c.Choices ?? [])).Append('\n');
         }
@@ -166,6 +170,9 @@ public static class CalcTemplateHasher
 
             if (o.Aliases is { Count: > 0 } portAliases)
                 sb.Append("|aliases=").Append(string.Join(",", portAliases));
+
+            if (o.HasMeaningChange)
+                sb.Append("|meaning=").Append(o.MeaningChangedAt).Append('|').Append(o.MeaningWas).Append('|').Append(o.MeaningNow);
 
             sb.Append('\n');
         }
