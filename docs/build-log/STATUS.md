@@ -1,6 +1,7 @@
-# STATUS — 2026-10-26 (Addendum C Track S: 6/8 merged)
+# STATUS — 2026-10-27 (Addendum C Track S: 6/8 merged; owner decisions DC-21 in progress)
 Release line: release/v0.26.0, VERSION 0.26.0. Holds the v0.26.0 base, Addendum A, Addendum B, the legacy calculator replacement first planned as v0.27.0 (ADR-0167, D-39…D-47, DI-01…DI-10; nothing ships as 0.27.0) and Addendum C Track P. 54 worksheet templates (52 listed with the Lifting flag off), 13 calculation packs, 87 worked examples.
 Gate on the merged line after Addendum C C-1, C-3–C-7 and the Addendum C reviews (Linux, 0 warnings): Engine 465, Sheets 145, Calculators 2,320, FluidPower 118, Import 625, Library 1,003 (+1 skip), Core 7,235 (+15 skip), Desktop 1,545 (three CI shards; soak CI mode in shard 3); licence check passed (Svg.Custom MS-PL flagged, DB-08).
+Owner decisions (DC-21, 2026-10-27): merged — DB-08 in-house SVG reader with caps and a bounded-probe CI job, DA-12 self-check with the SELF-CHECKED mark, SEC-C-06 dashboard build column (`v0.26.0/od-platform`, two Fable reviews, DC-22); DC-14 superseded template versions resolvable and DC-15 AA revision labels (`v0.26.0/od-registry`, ADR-0177) ride the C-2 integration. In progress: C-2 integration (five discipline branches merged, review fixes committed, regeneration and gate running); then the calculator decisions (DC-03, DC-05, DC-07, DC-10, DC-15, DC-18) and the 27 reference diagrams (DI-08), then C-8.
 §B9 gates:
 - [x] release/v0.26.0 builds; all automated tests pass on Linux (above). Windows CI: see PR #31 checks on the head.
 - [x] Fluid Power discipline registered (ADR-0170); F1–F3 complete.
