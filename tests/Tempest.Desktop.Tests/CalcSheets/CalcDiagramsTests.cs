@@ -27,15 +27,7 @@ public sealed class CalcDiagramsTests
     /// </summary>
     public static readonly IReadOnlyList<string> WithoutDiagramYet =
     [
-        "bs.pipe-expansion",
-        "bs.room-heat-loss",
-        "bs.sealed-system",
-        "elec.conductor-sizing",
-        "elec.containment",
-        "elec.fault-protection",
-        "elec.load-budget",
-        "elec.motor-start",
-        "elec.pcb-trace",
+
 
     ];
 

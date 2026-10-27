@@ -6,6 +6,8 @@
 
 Calculates the catalogue output each room's emitter needs at the design flow, return and room temperatures, and checks it against the selected emitters. It also gives the minimum expansion vessel for the system volume, temperatures, static head and pressures.
 
+**Reference diagram.** The worksheet draws the sealed circuit: the boiler, the flow and return pipework, three emitters for the rooms as listed, and the expansion vessel below the static height. Bound inputs: V_plant, V_pipe, V_vessel, rooms, h_static, T_flow, T_return, T_room, T_fill, T_max, p_f, p_prv, p_margin and n. Not to scale; inputs only.
+
 ## Method
 
 - Emitter temperature difference: ΔT = (T_flow + T_return)/2 − T_room, or the log mean (T_flow − T_return)/ln((T_flow − T_room)/(T_return − T_room))

@@ -6,6 +6,8 @@
 
 Calculates the demand of a set of loads per supply and the minimum DC power supply, transformer and battery for it. It also gives the heat the loads dissipate for the enclosure calculation.
 
+**Reference diagram.** The worksheet draws the three buses with one load on each for the loads as listed, the additional load, the DC power supply fed from the bus the choice selects, the transformer and the battery. Bound inputs: loads, psu_bus, U_3ph, U_1ph, U_DC, P_add, eta_psu, k_T, U_b, t_auto, T_amb, SF, DoD and k_age. Not to scale; inputs only.
+
 ## Method
 
 - Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative); this duty-weighted demand sizes the transformer and the enclosure heat

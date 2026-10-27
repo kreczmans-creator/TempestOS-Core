@@ -6,6 +6,8 @@
 
 Calculates the fill of a conduit, trunking or tray, the bend radius and the pull of the cables through a route. The space factor, bend multiple, friction coefficient and pulling limits are your own records.
 
+**Reference diagram.** The worksheet draws the containment in section, round or rectangular as the choice selects, with three cables for the cables as listed, and the pull route in plan beside it with the start tension. Bound inputs: cables, D_int, W_int, H_int, route, T_1, mu, w_c, k_n, f_max, n_bend, T_grip and P_lim. Not to scale; inputs only.
+
 ## Method
 
 - Cable area: A_cab = Σ n_i·π·d_i²/4 (n_i cables of overall diameter d_i)

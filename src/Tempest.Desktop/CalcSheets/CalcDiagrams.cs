@@ -54,6 +54,16 @@ public static partial class CalcDiagrams
         Glaser(),
         HeatExchanger(),
         Insulation(),
+        // ---- BsElec ----
+        PipeExpansion(),
+        RoomHeatLoss(),
+        SealedSystem(),
+        ConductorSizing(),
+        Containment(),
+        FaultProtection(),
+        LoadBudget(),
+        MotorStart(),
+        PcbTrace(),
     ];
 
     /// <summary>The diagram of the template <paramref name="templateId"/>, or <see langword="null"/>.</summary>

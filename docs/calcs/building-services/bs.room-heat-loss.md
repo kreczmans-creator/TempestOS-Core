@@ -6,6 +6,8 @@
 
 Calculates the U-values of built-up elements and the steady-state design heat loss of one room. It gives the fabric and ventilation loss, the room load for sizing emitters, the heat loss coefficient and an optional check against target U-values.
 
+**Reference diagram.** The worksheet draws the room in section: a layered wall, a roof, a floor and a window stand for the elements and layers as listed, with the outside air beyond and the ventilation air entering. Bound inputs: elements, layers, V, A_floor, T_int, theta_e, T_supply, n, n_inf, y_tb, f_add and U_target. Not to scale; inputs only.
+
 ## Method
 
 - Element U-value: U = 1/(R_si + Σ d/λ + R_g + R_se), or the user's U override for ground floors and glazing

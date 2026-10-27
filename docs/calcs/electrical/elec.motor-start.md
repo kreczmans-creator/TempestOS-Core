@@ -6,6 +6,8 @@
 
 Calculates the voltage dip when a three-phase induction motor starts, from the source, cable and locked-rotor impedances. It also gives the capacitor kvar for a target power factor and the parallel-resonance order.
 
+**Reference diagram.** The worksheet draws the source, the starter the choice selects, the cable run and the motor, with the source data across the top. Bound inputs: S_n, u_k, S_k, I_k, XR, A_c, L_cab, n_par, T_c, P, U, eta, cos_phi, I_LR_r, cos_phi_st, dip_limit, and for the limited starters k_soft, k_vfd and cos_phi_vfd. Not to scale; inputs only.
+
 ## Method
 
 - Rated current: I_n = P/(√3·U·cos φ·η), or entered

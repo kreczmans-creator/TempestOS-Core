@@ -6,6 +6,8 @@
 
 Calculates the design current, the smallest preferred device rating and the smallest conductor whose tabulated capacity carries that rating. It checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z, using your own capacity and rating records.
 
+**Reference diagram.** The worksheet draws the circuit the supply choice selects: the supply, the protective device, three or two conductors of the circuit length, and the load. Bound inputs: U, device, insulation, L, P, cos_phi, eta, T_amb, N_g, C_a, C_g, C_i, system and ratings. Not to scale; inputs only.
+
 ## Method
 
 - Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b

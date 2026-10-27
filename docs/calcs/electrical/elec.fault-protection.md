@@ -6,6 +6,8 @@
 
 Calculates automatic disconnection of supply in a TN system for one circuit: loop impedance, disconnection time and the adiabatic conductor check. It also gives the prospective three-phase fault at the origin against the breaking capacity.
 
+**Reference diagram.** The worksheet draws the earth-fault loop: the supply behind the external impedance, the device, the line conductor to the fault and the protective conductor back. The fuse or MCCB choice adds its time–current points. Bound inputs: U_0, Z_e, I_n, S_line, S_cpc, L, curve, S_r, u_k, T_op, t_req, C_min, c_max, theta_i and theta_f. Not to scale; inputs only.
+
 ## Method
 
 - Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/S (k_R = 1.125 takes the pure-copper ρ_20 to the cable standard's maximum conductor resistance; k enters with the pure ρ_20)
