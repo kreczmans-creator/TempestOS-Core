@@ -155,9 +155,10 @@ The phases below are as they stood on that branch (D-38; ADR-0167), kept unchang
 - [x] Generated files regenerated (golden, worked examples, PDFs, spec hand-arithmetic); worked-examples index counts updated
 - [x] Full gate: Engine 465/0, Sheets 135/0, Calculators 2,076/0, FluidPower 97/0, Import 625/0, Library 474/0 (+1 skip), Core 7,235/0 (+15 skip), Desktop 1,389/0; `scripts/check-licences.py` passes
 - [x] Draw the reference diagrams for the 27 Addendum A and B templates and empty `CalcDiagramsTests.WithoutDiagramYet` (Principle 33; DI-08): 27 diagrams, 100 drawings, reviewed (DC-25, `v0.26.0/di08-all`)
-- [ ] Regenerate graphify-out and its zip (integrator)
+- [x] Regenerate graphify-out and its zip (integrator; last on 35334d56)
 - [ ] Windows CI on the merged head; the RealShell journey on Windows (Y11-04)
 - [ ] Owner: confirm the book editions in D-44 (DI-03, DI-04 and DI-08 decided in DC-21)
 - [x] Track S: C-1 fixes for Track P's open Critical and High defects
 - [x] Refine the test suite: timing tests apart from the coverage collector, shared-state tests in their own collections, race and GUID flakes fixed at their cause, Desktop shards rebalanced (DC-28)
 - [x] Find and fix what kept failing the CI runs: CRLF checkout, the Calc loop that stopped at the first failing project, the SVG probe start-up, Windows handle counting, round-off digits and glossary line ends on Windows (DC-28, DC-29); first all-green push run 693, then 695
+- [x] Screenshot review (owner, 2026-10-27): fix every finding of the 1,087-screenshot run, the independent review's 9 items and the second run's findings; re-shoot (DC-30…DC-34)
