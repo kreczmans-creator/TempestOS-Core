@@ -207,7 +207,7 @@ public sealed class RecordImportService
 
     /// <summary>What <paramref name="request"/> would do, without doing it.</summary>
     public async Task<RecordImportPreview> PreviewAsync(RecordImportRequest request, CancellationToken cancellationToken = default) =>
-        (await AnalyseAsync(request, cancellationToken).ConfigureAwait(false)).Preview;
+        (await AnalyseAsync(request, null, cancellationToken).ConfigureAwait(false)).Preview;
 
     /// <summary>
     /// Saves every record of the import, or none. The file is analysed again first, against the store as it is now: if anything is an error nothing
@@ -228,7 +228,38 @@ public sealed class RecordImportService
 
     private async Task<RecordImportOutcome> CommitCoreAsync(RecordImportRequest request, string? seedPrincipal, CancellationToken cancellationToken)
     {
-        var (preview, records) = await AnalyseAsync(request, cancellationToken).ConfigureAwait(false);
+        var (preview, records, refusal) = await PlanCoreAsync(request, seedPrincipal, null, cancellationToken).ConfigureAwait(false);
+
+        if (refusal is not null)
+            return new RecordImportOutcome(false, [], refusal, preview);
+
+        return await WriteAsync(records, cancellationToken).ConfigureAwait(false) is { } failed
+            ? new RecordImportOutcome(false, [], failed, preview)
+            : new RecordImportOutcome(true, records, null, preview);
+    }
+
+    /// <summary>
+    /// Plans a bundled record set within a seeding run (owner decision 2026-10-29): the same analysis as <see cref="CommitAsSeedAsync"/>, checked
+    /// against the store as <paramref name="run"/> holds it plus the sets planned before it in the run, and nothing written. The records it returns
+    /// join the run, so a later set's title check sees them. The run writes the planned sets with <see cref="WriteAsync"/>.
+    /// </summary>
+    /// <returns>The records to save, or why the set is refused (as <see cref="CommitAsSeedAsync"/> words it).</returns>
+    internal async Task<(IReadOnlyList<CalcDataRecord> Records, string? Refusal)> PlanSeedAsync(RecordImportRequest request, string seedPrincipal, RecordSeedRun run, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(seedPrincipal);
+        ArgumentNullException.ThrowIfNull(run);
+        var (_, records, refusal) = await PlanCoreAsync(request, seedPrincipal, run, cancellationToken).ConfigureAwait(false);
+
+        if (refusal is not null)
+            return ([], refusal);
+
+        run.Add(records);
+        return (records, null);
+    }
+
+    private async Task<(RecordImportPreview Preview, IReadOnlyList<CalcDataRecord> Records, string? Refusal)> PlanCoreAsync(RecordImportRequest request, string? seedPrincipal, RecordSeedRun? run, CancellationToken cancellationToken)
+    {
+        var (preview, records) = await AnalyseAsync(request, run, cancellationToken).ConfigureAwait(false);
 
         if (seedPrincipal is not null)
         {
@@ -240,26 +271,34 @@ public sealed class RecordImportService
         }
 
         if (!preview.CanCommit || records.Count == 0)
-            return new RecordImportOutcome(false, [], $"Nothing was saved: {preview.Blocker ?? "there is nothing to save."}", preview);
+            return (preview, [], $"Nothing was saved: {preview.Blocker ?? "there is nothing to save."}");
 
+        return (preview, records, null);
+    }
+
+    /// <summary>
+    /// Writes planned records in one transaction: all of them or none. Returns <see langword="null"/> when they are in the store, or why nothing was saved.
+    /// </summary>
+    internal async Task<string?> WriteAsync(IReadOnlyList<CalcDataRecord> records, CancellationToken cancellationToken)
+    {
         try
         {
             await _service.Store.SaveRecordsAsync(records, cancellationToken).ConfigureAwait(false);
         }
         catch (CalcInstanceImmutableException)
         {
-            return new RecordImportOutcome(false, [], "Nothing was saved: another save took one of these record revisions at the same moment. Preview the file again and commit it again.", preview);
+            return "Nothing was saved: another save took one of these record revisions at the same moment. Preview the file again and commit it again.";
         }
         catch (InvalidOperationException ex)
         {
-            return new RecordImportOutcome(false, [], $"Nothing was saved: {ex.Message}", preview);
+            return $"Nothing was saved: {ex.Message}";
         }
         catch (PersistenceException ex)
         {
-            return new RecordImportOutcome(false, [], $"Nothing was saved: the store could not commit ({ex.Message}).", preview);
+            return $"Nothing was saved: the store could not commit ({ex.Message}).";
         }
 
-        return new RecordImportOutcome(true, records, null, preview);
+        return null;
     }
 
     private sealed record Analysis(RecordImportPreview Preview, IReadOnlyList<CalcDataRecord> Records);
@@ -267,7 +306,7 @@ public sealed class RecordImportService
     private static Analysis Refuse(string reason, RecordTemplate? template = null, string? fileName = null, string? sha = null) =>
         new(RecordImportPreview.Refused(reason, template, fileName, sha), []);
 
-    private async Task<Analysis> AnalyseAsync(RecordImportRequest request, CancellationToken cancellationToken)
+    private async Task<Analysis> AnalyseAsync(RecordImportRequest request, RecordSeedRun? run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(request.Provenance);
@@ -286,7 +325,7 @@ public sealed class RecordImportService
                 return Refuse($"Template {template.FileName} fills the proposed kind '{template.Kind}', which no calculator declares yet, so there is no record to save it as. {template.Note}", template);
         }
 
-        var schema = SchemaFor(template.Kind);
+        var schema = run is null ? SchemaFor(template.Kind) : run.Schemas.GetValueOrDefault(template.Kind);
 
         if (schema is null)
             return Refuse($"No calculator available in this build declares the record kind '{template.Kind}', so template {template.FileName} cannot be imported.", template);
@@ -387,7 +426,7 @@ public sealed class RecordImportService
             return new Analysis(new RecordImportPreview(template, file.FileName, sha, columns, views, fileIssues, [], null, delimiter), []);
 
         // Plan and prepare the records.
-        var plan = await PlanAsync(request, template, schema, bound, rows, file, sha, fileIssues, cancellationToken).ConfigureAwait(false);
+        var plan = await PlanAsync(request, template, schema, bound, rows, file, sha, fileIssues, run, cancellationToken).ConfigureAwait(false);
         var planned = plan.Select(p => new RecordImportPlanned(p.Record.Title, p.Record.Kind, p.Record.Revision, p.Record.Revision > 1 ? p.Record.Id : null, [.. p.Record.Values.Select(v => v.Symbol)], p.Record.Values.Max(v => v.Rows?.Count ?? 0), p.Record.IsLicensed())).ToList();
         var stillErrors = fileIssues.Any(i => i.Severity == RecordSeverity.Error) || rows.Any(r => r.Issues.Any(i => i.Severity == RecordSeverity.Error));
 
@@ -870,6 +909,7 @@ public sealed class RecordImportService
         ImportedFile file,
         string? sha,
         List<RecordImportIssue> fileIssues,
+        RecordSeedRun? run,
         CancellationToken cancellationToken)
     {
         var prov = request.Provenance;
@@ -891,7 +931,10 @@ public sealed class RecordImportService
             PlanRows(template, bound, valid, source, notes, prov, drafts);
 
         // Titles: a title already in the store is refused unless the import is its next revision; no title may repeat within the import.
-        var existing = await _service.Store.ListRecordsAsync(template.Kind, cancellationToken).ConfigureAwait(false);
+        // A seeding run holds the store's records (read once for the whole run) and the sets it planned before this one.
+        var existing = run is null
+            ? await _service.Store.ListRecordsAsync(template.Kind, cancellationToken).ConfigureAwait(false)
+            : run.Existing(template.Kind);
         var titles = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var prepared = new List<PlannedRecord>();
 

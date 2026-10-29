@@ -56,37 +56,110 @@ public sealed class ReferenceRecordSeeds
     /// Saves every bundled set that is not in the store yet. Safe to call again: a set already in is skipped, and so is a set whose kind no visible
     /// calculator declares. A refused set saves nothing and is reported; the others still go in.
     /// </summary>
+    /// <remarks>
+    /// It runs at every start-up, so it is kept cheap (seeding speed fix, 2026-10-29): the store's records are read once and the record kinds built
+    /// once for the whole pass, each set is checked through the ordinary import against those plus the sets planned before it, and every set that
+    /// passes is written in ONE transaction. If that write fails, each set is written on its own, so a set that cannot be written refuses only itself.
+    /// </remarks>
     public async Task<IReadOnlyList<RecordSeedOutcome>> EnsureSeededAsync(CancellationToken cancellationToken = default)
     {
-        var outcomes = new List<RecordSeedOutcome>();
-        var present = (await _service.Store.ListRecordsAsync(null, cancellationToken).ConfigureAwait(false))
-            .Select(r => r.Notes ?? string.Empty)
-            .ToList();
+        var sets = RecordSeedCatalogue.All;
+        var outcomes = new RecordSeedOutcome?[sets.Count];
+        var latest = await _service.Store.ListRecordsAsync(null, cancellationToken).ConfigureAwait(false);
+        var present = MarkedSetIds(latest);
+        RecordSeedRun? run = null;
+        var pending = new List<(int Index, IReadOnlyList<CalcDataRecord> Records)>();
 
-        foreach (var set in RecordSeedCatalogue.All)
+        for (var i = 0; i < sets.Count; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var set = sets[i];
 
-            if (present.Any(n => n.Contains(set.Marker, StringComparison.Ordinal)))
+            if (present.Contains(set.Id))
             {
-                outcomes.Add(new RecordSeedOutcome(set, RecordSeedResult.AlreadyPresent, 0, null));
+                outcomes[i] = new RecordSeedOutcome(set, RecordSeedResult.AlreadyPresent, 0, null);
                 continue;
             }
 
-            if (RecordTemplates.Find(set.TemplateId) is not { } template || _service.RecordImport.SchemaFor(template.Kind) is null)
+            // Built only when a set is missing: a start-up on a store that has every set reads the records and nothing else.
+            run ??= new RecordSeedRun(_service.RecordImport.Schemas(), latest);
+
+            if (RecordTemplates.Find(set.TemplateId) is not { } template || run.Schemas.GetValueOrDefault(template.Kind) is not { } schema)
             {
-                outcomes.Add(new RecordSeedOutcome(set, RecordSeedResult.KindHidden, 0, null));
+                outcomes[i] = new RecordSeedOutcome(set, RecordSeedResult.KindHidden, 0, null);
                 continue;
             }
 
-            var outcome = await _service.RecordImport.CommitAsSeedAsync(Request(set), SeedPrincipal, cancellationToken).ConfigureAwait(false);
-            outcomes.Add(outcome.Committed
-                ? new RecordSeedOutcome(set, RecordSeedResult.Saved, outcome.Records.Count, null)
-                : new RecordSeedOutcome(set, RecordSeedResult.Refused, 0, outcome.Refusal));
+            if (schema.IsMaterial)
+            {
+                // A material set is checked against the material library in the store, so the sets planned before it are written first.
+                await WritePendingAsync(sets, pending, outcomes, cancellationToken).ConfigureAwait(false);
+                var outcome = await _service.RecordImport.CommitAsSeedAsync(Request(set), SeedPrincipal, cancellationToken).ConfigureAwait(false);
+                run.Add(outcome.Records);
+                outcomes[i] = outcome.Committed
+                    ? new RecordSeedOutcome(set, RecordSeedResult.Saved, outcome.Records.Count, null)
+                    : new RecordSeedOutcome(set, RecordSeedResult.Refused, 0, outcome.Refusal);
+                continue;
+            }
+
+            var (records, refusal) = await _service.RecordImport.PlanSeedAsync(Request(set), SeedPrincipal, run, cancellationToken).ConfigureAwait(false);
+
+            if (refusal is not null)
+                outcomes[i] = new RecordSeedOutcome(set, RecordSeedResult.Refused, 0, refusal);
+            else
+                pending.Add((i, records));
         }
 
+        await WritePendingAsync(sets, pending, outcomes, cancellationToken).ConfigureAwait(false);
         _seeded = true;
-        return outcomes;
+        return [.. outcomes.Select(o => o!)];
+    }
+
+    /// <summary>Writes the planned sets in one transaction; if that fails, each set on its own, so a set that cannot be written refuses only itself.</summary>
+    private async Task WritePendingAsync(IReadOnlyList<RecordSeedSet> sets, List<(int Index, IReadOnlyList<CalcDataRecord> Records)> pending, RecordSeedOutcome?[] outcomes, CancellationToken cancellationToken)
+    {
+        if (pending.Count == 0)
+            return;
+
+        var failed = await _service.RecordImport.WriteAsync([.. pending.SelectMany(p => p.Records)], cancellationToken).ConfigureAwait(false);
+
+        foreach (var (index, records) in pending)
+        {
+            var problem = failed is null || pending.Count == 1
+                ? failed
+                : await _service.RecordImport.WriteAsync(records, cancellationToken).ConfigureAwait(false);
+
+            outcomes[index] = problem is null
+                ? new RecordSeedOutcome(sets[index], RecordSeedResult.Saved, records.Count, null)
+                : new RecordSeedOutcome(sets[index], RecordSeedResult.Refused, 0, problem);
+        }
+
+        pending.Clear();
+    }
+
+    private const string MarkerStart = "[seed-set:";
+
+    /// <summary>The ids of the sets whose marker (<see cref="RecordSeedSet.Marker"/>) is in a record's notes: one pass over the notes, not one per set.</summary>
+    private static HashSet<string> MarkedSetIds(IReadOnlyList<CalcDataRecord> records)
+    {
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var notes in records.Select(r => r.Notes))
+        {
+            if (notes is null)
+                continue;
+
+            for (var at = notes.IndexOf(MarkerStart, StringComparison.Ordinal); at >= 0; at = notes.IndexOf(MarkerStart, at + 1, StringComparison.Ordinal))
+            {
+                var start = at + MarkerStart.Length;
+                var end = notes.IndexOf(']', start);
+
+                if (end > start)
+                    ids.Add(notes[start..end]);
+            }
+        }
+
+        return ids;
     }
 
     /// <summary>Whether a pass has run in this session.</summary>
