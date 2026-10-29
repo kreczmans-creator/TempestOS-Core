@@ -120,6 +120,74 @@ public sealed class BundledRecordSeedTests
         Assert.Equal(records.Count, (await host.Store.ListRecordsAsync()).Count);
     }
 
+    // Seeding speed (2026-10-29): seeding runs at every start-up, so a fresh store takes every set in one transaction, not one per set.
+    [Fact]
+    public async Task Seeding_A_Fresh_Store_Writes_Every_Set_In_One_Transaction()
+    {
+        var host = Host();
+        var before = host.Backing.CurrentSequence;
+
+        var outcomes = await host.Service.RecordSeeds.EnsureSeededAsync();
+
+        Assert.All(outcomes, o => Assert.Equal(RecordSeedResult.Saved, o.Result));
+        Assert.Equal(1, host.Backing.CurrentSequence - before);
+        Assert.Equal(outcomes.Sum(o => o.Records), (await host.Store.ListRecordsAsync()).Count);
+
+        // A second pass writes nothing.
+        await host.Service.RecordSeeds.EnsureSeededAsync();
+        Assert.Equal(1, host.Backing.CurrentSequence - before);
+    }
+
+    [Fact]
+    public async Task When_The_One_Write_Fails_Each_Set_Is_Written_On_Its_Own()
+    {
+        var host = Host();
+        var before = host.Backing.CurrentSequence;
+        host.Failing.FailNextCommit = true;
+
+        var outcomes = await host.Service.RecordSeeds.EnsureSeededAsync();
+
+        Assert.All(outcomes, o => Assert.True(o.Result == RecordSeedResult.Saved, $"{o.Set.Id}: {o.Result} {o.Problem}"));
+        Assert.Equal(RecordSeedCatalogue.All.Count, host.Backing.CurrentSequence - before);
+        Assert.Equal(outcomes.Sum(o => o.Records), (await host.Store.ListRecordsAsync()).Count);
+    }
+
+    [Fact]
+    public async Task When_The_Store_Cannot_Write_Every_Set_Is_Refused_Nothing_Is_Saved_And_The_Next_Pass_Saves_Them()
+    {
+        var host = Host();
+        host.Failing.FailEveryCommit = true;
+
+        var refused = await host.Service.RecordSeeds.EnsureSeededAsync();
+
+        Assert.All(refused, o => Assert.Equal(RecordSeedResult.Refused, o.Result));
+        Assert.All(refused, o => Assert.StartsWith("Nothing was saved: the store could not commit", o.Problem, StringComparison.Ordinal));
+        Assert.Empty(await host.Store.ListRecordsAsync());
+
+        host.Failing.FailEveryCommit = false;
+        var saved = await host.Service.RecordSeeds.EnsureSeededAsync();
+        Assert.All(saved, o => Assert.Equal(RecordSeedResult.Saved, o.Result));
+    }
+
+    [Fact]
+    public async Task A_Set_Is_Checked_Against_The_Sets_Planned_Before_It_In_The_Same_Pass()
+    {
+        // The pass writes once at the end, so a set's title check must see the sets planned before it, as it saw them in the store when each set
+        // was written before the next was read: the same set planned twice in one pass is refused the second time, and nothing is written.
+        var host = Host();
+        var set = RecordSeedCatalogue.Find("joint-friction-mortar")!;
+        var run = new RecordSeedRun(host.Service.RecordImport.Schemas(), await host.Store.ListRecordsAsync());
+
+        var (first, firstRefusal) = await host.Service.RecordImport.PlanSeedAsync(ReferenceRecordSeeds.Request(set), ReferenceRecordSeeds.SeedPrincipal, run);
+        var (second, secondRefusal) = await host.Service.RecordImport.PlanSeedAsync(ReferenceRecordSeeds.Request(set), ReferenceRecordSeeds.SeedPrincipal, run);
+
+        Assert.Null(firstRefusal);
+        Assert.NotEmpty(first);
+        Assert.Empty(second);
+        Assert.Contains("exists already", secondRefusal, StringComparison.Ordinal);
+        Assert.Empty(await host.Store.ListRecordsAsync());
+    }
+
     [Fact]
     public async Task After_Seeding_Only_The_Layer_Build_Up_Is_Still_A_Missing_Required_Record()
     {
