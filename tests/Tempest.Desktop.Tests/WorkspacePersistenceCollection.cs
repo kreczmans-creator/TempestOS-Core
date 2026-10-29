@@ -79,9 +79,12 @@ namespace Tempest.Desktop.Tests;
 /// run at all.
 /// </para>
 /// </remarks>
-[CollectionDefinition("Tempest.Desktop WorkspaceHost persistence", DisableParallelization = true)]
+[CollectionDefinition(Name, DisableParallelization = true)]
 public sealed class WorkspacePersistenceCollection : ICollectionFixture<PersistenceRootCleanupFixture>
 {
+    /// <summary>The collection's name, as every host test's <c>[Collection]</c> attribute spells it.</summary>
+    public const string Name = "Tempest.Desktop WorkspaceHost persistence";
+
     /// <summary>
     /// The single parent directory every isolated persistence root this
     /// test run creates lives under — one per process, not one per test.
