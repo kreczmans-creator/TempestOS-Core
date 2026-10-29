@@ -27,6 +27,46 @@ public sealed class WorksheetRecordsScreenTests
     private sealed record Shell(WorkspaceHost Host, MainWindow Window, EngineeringAreaView Area, CalcSheetView Sheet, CalcSheetCoordinator Coordinator);
 
     [AvaloniaFact]
+    public async Task A_Real_Start_Up_Saves_The_Bundled_Records_So_Conductor_Sizing_Lacks_None_And_Room_Heat_Loss_Only_Its_Layers()
+    {
+        var shell = await OpenAsync(bundled: true);
+
+        try
+        {
+            var (host, window, area, sheet, _) = shell;
+            sheet.SelectTemplate("elec.conductor-sizing");
+            await Settle();
+
+            Assert.Empty(sheet.MissingRequiredKinds);
+            Assert.StartsWith("All 2 required record(s) are entered", sheet.RequirementsSummary, StringComparison.Ordinal);
+
+            sheet.SelectTemplate("bs.room-heat-loss");
+            await Settle();
+            Assert.Equal(["material.conductivity"], sheet.MissingRequiredKinds);
+
+            // The records screen lists the bundled tables as licensed, entered by TempestOS, never with their numbers.
+            area.SelectNode("Reference records screen");
+            await Settle();
+            var screen = window.GetLogicalDescendants().OfType<CalcRecordsView>().Single();
+            await screen.Model.SelectKindAsync("cable.ampacity");
+            await Settle();
+            Assert.Equal(2, screen.Model.Records.Count);
+            Assert.All(screen.Model.Records, r => Assert.True(r.Licensed));
+            Assert.All(screen.Model.Records, r => Assert.Equal(Tempest.Calc.Library.RecordSeeds.ReferenceRecordSeeds.SeedPrincipal, r.EnteredBy));
+
+            // A second start-up on the same database adds nothing.
+            var count = (await host.CalcInstances!.Store.ListRecordsAsync()).Count;
+            var again = await host.CalcInstances.RecordSeeds.EnsureSeededAsync();
+            Assert.All(again, o => Assert.Equal(Tempest.Calc.Library.RecordSeeds.RecordSeedResult.AlreadyPresent, o.Result));
+            Assert.Equal(count, (await host.CalcInstances.Store.ListRecordsAsync()).Count);
+        }
+        finally
+        {
+            await CloseAsync(shell);
+        }
+    }
+
+    [AvaloniaFact]
     public async Task A_Worksheet_Lists_Its_Missing_Required_Records_Links_To_The_Screen_And_An_Imported_File_Clears_Them()
     {
         var shell = await OpenAsync();
@@ -379,9 +419,13 @@ public sealed class WorksheetRecordsScreenTests
 
     // ------------------------------------------------------------------
 
-    private static async Task<Shell> OpenAsync()
+    /// <summary>
+    /// The shell on a fresh database. These tests drive the empty-store flow (a kind with no record, then one imported), so by default the
+    /// bundled reference records (owner comment 5) are not saved; <paramref name="bundled"/> opens it as a real start-up does.
+    /// </summary>
+    private static async Task<Shell> OpenAsync(bool bundled = false)
     {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath()) { SeedBundledRecords = bundled };
         await host.StartAsync();
         var window = new MainWindow(host, new StubFilePicker());
         window.Show();

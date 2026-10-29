@@ -1,0 +1,5 @@
+fluid[text],concentration[%],t_fill[degC],t_max[degC],e_fluid[-]
+Water,0,10,70,0.02244
+Water,0,10,80,0.02872
+Water,0,10,90,0.03563
+Water,0,5,80,0.029

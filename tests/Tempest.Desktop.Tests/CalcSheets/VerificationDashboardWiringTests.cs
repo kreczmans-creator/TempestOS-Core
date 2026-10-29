@@ -82,14 +82,20 @@ public sealed class VerificationDashboardWiringTests
             Assert.Contains($"{examples.Count} of {examples.Count} worked examples recorded", bearing.ManualTest.Note, StringComparison.Ordinal);
             Assert.Equal("Not tested", dashboard.Rows.Single(r => r.Id == SpringId).ManualTest.Label);
 
-            // mech.spring: C-3 marks the wire strength and the endurance strength Required, so those two are what the row says is missing
-            // (not the permissible-stress fractions or the end-support coefficient, which the calculator runs on a default for).
+            // mech.spring: C-3 marks the wire strength and the endurance strength Required; since owner comment 5 start-up saves bundled records of
+            // both, so the row lists none missing.
             var spring = dashboard.Rows.Single(r => r.Id == SpringId);
-            Assert.Equal(2, spring.MissingRecordKinds.Count);
-            Assert.Equal(["Wire tensile strength R_m(d)", "Endurance strength"], spring.MissingRecordKinds);
-            Assert.True(spring.Matches(VerificationStatusFilter.MissingRecords));
-            var c3 = await host.CalcInstances!.RecordImport.MissingRequiredAsync(SpringId);
-            Assert.Equal(c3.Select(r => r.Title), spring.MissingRecordKinds);
+            Assert.Empty(spring.MissingRecordKinds);
+            Assert.False(spring.Matches(VerificationStatusFilter.MissingRecords));
+            Assert.Empty(await host.CalcInstances!.RecordImport.MissingRequiredAsync(SpringId));
+
+            // bs.glaser: C-3 marks the layers and the monthly climate Required and the humidity class Conditional. The climate is bundled, the
+            // humidity class is not but is only Conditional, so the row lists the layers alone.
+            var glaser = dashboard.Rows.Single(r => r.Id == "bs.glaser");
+            Assert.Equal(["Layer conductivity and vapour resistance"], glaser.MissingRecordKinds);
+            Assert.True(glaser.Matches(VerificationStatusFilter.MissingRecords));
+            var c3 = await host.CalcInstances.RecordImport.MissingRequiredAsync("bs.glaser");
+            Assert.Equal(c3.Select(r => r.Title), glaser.MissingRecordKinds);
         }
         finally
         {

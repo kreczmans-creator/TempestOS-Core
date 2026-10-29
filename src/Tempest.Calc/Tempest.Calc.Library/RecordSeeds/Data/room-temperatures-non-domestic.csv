@@ -1,0 +1,29 @@
+room_type[text],theta_i[degC]
+Art galleries and museums,20
+Assembly and lecture halls,18
+Banking halls,20
+Bars,18
+Canteens and dining rooms,20
+Churches and chapels,18
+Dining and banqueting halls,21
+Exhibition halls,18
+"Factories, sedentary work",19
+"Factories, light work",16
+Gymnasiums,16
+Hospital offices,20
+Hospital wards and patient areas,18
+"Hotel bedrooms, standard",22
+"Hotel bedrooms, luxury",24
+Hotel public rooms,21
+Laboratories,20
+Law courts,20
+Library reading rooms,20
+Offices,20
+Restaurants and tea shops,18
+Classrooms,18
+"Shops, small",18
+"Shops, large",18
+Shop fitting rooms,21
+Sports pavilion dressing rooms,21
+Swimming pool changing rooms,22
+"Warehouses, working and packing spaces",16

@@ -1,0 +1,13 @@
+month[text],theta_e[degC],RH_e[%],days[d]
+January,3.4,93.6,31
+February,3.38,91.91,28
+March,4.62,88.93,31
+April,6.93,85.88,30
+May,9.76,83.16,31
+June,12.65,83.56,30
+July,14.45,83.96,31
+August,14.09,85.35,31
+September,12.15,86.94,30
+October,9.22,90.34,31
+November,6.07,93.12,30
+December,3.94,94.11,31

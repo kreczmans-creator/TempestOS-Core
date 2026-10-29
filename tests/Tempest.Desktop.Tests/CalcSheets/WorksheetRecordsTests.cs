@@ -18,7 +18,8 @@ public sealed class WorksheetRecordsTests
     [AvaloniaFact]
     public async Task Inputs_Saved_As_A_Record_Are_Cited_And_Applied_To_Another_Draft_And_A_Licensed_Record_Is_Withheld()
     {
-        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath());
+        // The save-a-record flow starts from a kind with no record, as a database from before the bundled records (owner comment 5) would.
+        var host = new WorkspaceHost(WorkspacePersistenceCollection.NewIsolatedPersistenceRootPath()) { SeedBundledRecords = false };
 
         try
         {

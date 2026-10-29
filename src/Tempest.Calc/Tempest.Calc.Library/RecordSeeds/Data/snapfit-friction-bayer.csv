@@ -1,0 +1,37 @@
+pair[text],mu[-]
+"PTFE on steel, low end of range",0.12
+"PTFE on steel, high end of range",0.22
+"PE rigid on steel, low end of range",0.2
+"PE rigid on steel, high end of range",0.25
+"PE rigid on PE rigid, high end x 2 (derived)",0.5
+"PP on steel, low end of range",0.25
+"PP on steel, high end of range",0.3
+"PP on PP, high end x 1.5 (derived)",0.45
+"POM on steel, low end of range",0.2
+"POM on steel, high end of range",0.35
+"POM on POM, high end x 1.5 (derived)",0.525
+"PA on steel, low end of range",0.3
+"PA on steel, high end of range",0.4
+"PA on PA, high end x 1.5 (derived)",0.6
+"PBT on steel, low end of range",0.35
+"PBT on steel, high end of range",0.4
+"PS on steel, low end of range",0.4
+"PS on steel, high end of range",0.5
+"PS on PS, high end x 1.2 (derived)",0.6
+"SAN on steel, low end of range",0.45
+"SAN on steel, high end of range",0.55
+"PC on steel, low end of range",0.45
+"PC on steel, high end of range",0.55
+"PC on PC, high end x 1.2 (derived)",0.66
+"PMMA on steel, low end of range",0.5
+"PMMA on steel, high end of range",0.6
+"PMMA on PMMA, high end x 1.2 (derived)",0.72
+"ABS on steel, low end of range",0.5
+"ABS on steel, high end of range",0.65
+"ABS on ABS, high end x 1.2 (derived)",0.78
+"PE flexible on steel, low end of range",0.55
+"PE flexible on steel, high end of range",0.6
+"PE flexible on PE flexible, high end x 1.2 (derived)",0.72
+"PVC on steel, low end of range",0.55
+"PVC on steel, high end of range",0.6
+"PVC on PVC, high end x 1 (derived)",0.6

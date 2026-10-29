@@ -1,0 +1,6 @@
+material[text],rho_20[ohm*mm],alpha[1/K],Q_c[J/(K*mm3)],beta[K],theta_i[degC],theta_f[degC]
+"Copper, 70 °C thermoplastic (PVC), up to 300 mm²",1.7241e-05,0.003929,0.00345,234.5,70,160
+"Copper, 70 °C thermoplastic (PVC), over 300 mm²",1.7241e-05,0.003929,0.00345,234.5,70,140
+"Copper, 90 °C thermosetting (XLPE, EPR)",1.7241e-05,0.003929,0.00345,234.5,90,250
+"Aluminium, 70 °C thermoplastic (PVC), up to 300 mm²",2.8267e-05,0.004032,0.0025,228,70,160
+"Aluminium, 90 °C thermosetting (XLPE, EPR)",2.8267e-05,0.004032,0.0025,228,90,250

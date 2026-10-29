@@ -213,9 +213,31 @@ public sealed class RecordImportService
     /// Saves every record of the import, or none. The file is analysed again first, against the store as it is now: if anything is an error nothing
     /// is written; the records are then written in one transaction, and a failed write leaves the store as it was.
     /// </summary>
-    public async Task<RecordImportOutcome> CommitAsync(RecordImportRequest request, CancellationToken cancellationToken = default)
+    public Task<RecordImportOutcome> CommitAsync(RecordImportRequest request, CancellationToken cancellationToken = default) =>
+        CommitCoreAsync(request, null, cancellationToken);
+
+    /// <summary>
+    /// Commits a bundled record set (owner decision 2026-10-29): the same analysis and the same all-or-nothing write as <see cref="CommitAsync"/>, with
+    /// <paramref name="seedPrincipal"/> stamped as who entered the records and their values in place of the signed-in person, who did not.
+    /// </summary>
+    internal Task<RecordImportOutcome> CommitAsSeedAsync(RecordImportRequest request, string seedPrincipal, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(seedPrincipal);
+        return CommitCoreAsync(request, seedPrincipal, cancellationToken);
+    }
+
+    private async Task<RecordImportOutcome> CommitCoreAsync(RecordImportRequest request, string? seedPrincipal, CancellationToken cancellationToken)
     {
         var (preview, records) = await AnalyseAsync(request, cancellationToken).ConfigureAwait(false);
+
+        if (seedPrincipal is not null)
+        {
+            records = [.. records.Select(r => r with
+            {
+                EnteredBy = seedPrincipal,
+                Values = [.. r.Values.Select(v => v.Source is { } s ? v with { Source = s with { EnteredBy = seedPrincipal } } : v)],
+            })];
+        }
 
         if (!preview.CanCommit || records.Count == 0)
             return new RecordImportOutcome(false, [], $"Nothing was saved: {preview.Blocker ?? "there is nothing to save."}", preview);
