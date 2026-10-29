@@ -219,7 +219,7 @@ public sealed partial class CalcSheetView
         var t = new TableEditor(spec, seed);
         var block = new StackPanel { Spacing = DesignTokens.SpaceXs, Margin = new Thickness(0, DesignTokens.SpaceXs, 0, DesignTokens.SpaceSm) };
         AutomationProperties.SetName(block, TableEditorName(spec.Symbol));
-        var title = Typeset(new TextBlock { FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap }, $"{spec.Symbol} — {spec.Description}{(spec.IsOptional ? " (optional)" : string.Empty)}");
+        var title = Typeset(new TextBlock { FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap }, $"{InputLabel(spec)}{(spec.IsOptional ? " (optional)" : string.Empty)}");
         ToolTip.SetTip(title, $"{spec.Symbol}: {spec.Description}");
         block.Children.Add(title);
 

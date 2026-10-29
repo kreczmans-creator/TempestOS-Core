@@ -13,7 +13,9 @@ using Tempest.Core.UnitsAndQuantities;
 namespace Tempest.Calc.Library;
 
 /// <summary>One released reference record a worksheet input can be filled from.</summary>
-public sealed record CalcReferenceOption(string Library, string RecordId, string Label, string Pin);
+/// <param name="Size">A fastener's thread size ("M12 x 1.75"), where it can be read; the picker then offers the size and the grade apart (owner, 2026-10-29).</param>
+/// <param name="Grade">A fastener's grade or property class ("8.8", "A4-80"), or <see langword="null"/> where the record names none.</param>
+public sealed record CalcReferenceOption(string Library, string RecordId, string Label, string Pin, string? Size = null, string? Grade = null);
 
 /// <summary>What one fill produced: the input values with their pinned provenance, and the inputs the record could not supply.</summary>
 public sealed record CalcReferenceFillResult(IReadOnlyList<CalcInputValue> Values, IReadOnlyList<CalcNotice> Problems, string? Pin, string? Label)
@@ -74,25 +76,28 @@ public sealed class CalcReferenceFill
             case Materials:
             {
                 var records = await _materials.ListAsync(cancellationToken).ConfigureAwait(false);
-                return records.Where(r => r.ValidationState == ReferenceValidationState.Released)
-                    .Select(r => new CalcReferenceOption(library, r.Id, Label(r.Definition.Designation, r.Definition.Name), ReferencePin.For(_materials.LibraryName, r).ToString()))
-                    .OrderBy(o => o.Label, StringComparer.Ordinal).ToList();
+                return CalcReferenceOrder.Order(records.Where(r => r.ValidationState == ReferenceValidationState.Released)
+                    .Select(r => new CalcReferenceOption(library, r.Id, CalcReferenceOrder.Label(r.Definition.Designation, r.Definition.Name), ReferencePin.For(_materials.LibraryName, r).ToString())));
             }
 
             case Fasteners:
             {
                 var records = await _fasteners.ListAsync(cancellationToken).ConfigureAwait(false);
-                return records.Where(r => r.ValidationState == ReferenceValidationState.Released)
-                    .Select(r => new CalcReferenceOption(library, r.Id, Label(r.Definition.Designation, r.Definition.Mechanical?.PropertyClass ?? r.Definition.Family.ToString()), ReferencePin.For(_fasteners.LibraryName, r).ToString()))
-                    .OrderBy(o => o.Label, StringComparer.Ordinal).ToList();
+                // Owner, 2026-10-29: sizes in numeric order (M3 before M27), and each record split into its thread size and grade.
+                return CalcReferenceOrder.Order(records.Where(r => r.ValidationState == ReferenceValidationState.Released)
+                    .Select(r =>
+                    {
+                        var (size, grade) = CalcReferenceOrder.SplitFastener(r.Definition.Designation, r.Definition.Thread?.Designation, r.Definition.Mechanical?.PropertyClass);
+                        var label = CalcReferenceOrder.Label(r.Definition.Designation, r.Definition.Mechanical?.PropertyClass ?? r.Definition.Family.ToString());
+                        return new CalcReferenceOption(library, r.Id, label, ReferencePin.For(_fasteners.LibraryName, r).ToString(), size, grade);
+                    }));
             }
 
             case Bearings:
             {
                 var records = await _bearings.ListAsync(cancellationToken).ConfigureAwait(false);
-                return records.Where(r => r.ValidationState == ReferenceValidationState.Released)
-                    .Select(r => new CalcReferenceOption(library, r.Id, Label(r.Definition.Identity.Designation, r.Definition.Family.ToString()), ReferencePin.For(_bearings.LibraryName, r).ToString()))
-                    .OrderBy(o => o.Label, StringComparer.Ordinal).ToList();
+                return CalcReferenceOrder.Order(records.Where(r => r.ValidationState == ReferenceValidationState.Released)
+                    .Select(r => new CalcReferenceOption(library, r.Id, CalcReferenceOrder.Label(r.Definition.Identity.Designation, r.Definition.Family.ToString()), ReferencePin.For(_bearings.LibraryName, r).ToString())));
             }
 
             default:
@@ -205,7 +210,4 @@ public sealed class CalcReferenceFill
             Materials => Task.FromResult(new ReferenceTextReading(ReferencePropertyRefusal.RequiredPropertyMissing, $"A material record supplies no text property '{property}'.", null, null)),
             _ => throw new ArgumentException($"Unknown reference library '{library}'.", nameof(library)),
         };
-
-    private static string Label(string? designation, string name) =>
-        designation is { Length: > 0 } d && !string.Equals(d, name, StringComparison.Ordinal) ? $"{d} — {name}" : (designation is { Length: > 0 } ? designation : name);
 }

@@ -149,7 +149,7 @@ public sealed partial class CalcSheetView : UserControl
     /// <summary>One picker per reference library (or slot) the template draws on; items are the released records' labels (ADR-0167 §3).</summary>
     private readonly Dictionary<string, ComboBox> _referencePickers = new(StringComparer.Ordinal);
     /// <summary>The labels last listed per library for <see cref="_referenceLabelsFor"/>: a rebuilt form (an import, a save, a revision) shows them again instead of "Loading…".</summary>
-    private readonly Dictionary<string, IReadOnlyList<string>> _referenceLabels = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, IReadOnlyList<ReferenceChoice>> _referenceLabels = new(StringComparer.Ordinal);
     private string? _referenceLabelsFor;
     private readonly StackPanel _cadHost = new();
     private readonly StackPanel _scanHost = new();
@@ -494,17 +494,11 @@ public sealed partial class CalcSheetView : UserControl
     /// <summary>The libraries the shown template draws on, in input order; empty when none.</summary>
     public IReadOnlyList<string> ReferenceLibraries => _referencePickers.Keys.ToList();
 
-    /// <summary>Fills a library's picker with the released records' labels; the selection is cleared.</summary>
+    /// <summary>Fills a library's picker with the released records' labels (one picker: the labels carry no size); the selection is cleared.</summary>
     public void SetReferenceOptions(string library, IReadOnlyList<string> labels)
     {
         ArgumentNullException.ThrowIfNull(labels);
-
-        if (!_referencePickers.TryGetValue(library, out var picker))
-            return;
-
-        _referenceLabels[library] = labels;
-        _referenceLabelsFor = SelectedTemplate?.Reference;
-        ShowOptions(picker, labels);
+        SetReferenceOptions(library, labels.Select(l => new ReferenceChoice(l)).ToList());
     }
 
     private void ShowOptions(ComboBox picker, IReadOnlyList<string> labels)
@@ -540,6 +534,9 @@ public sealed partial class CalcSheetView : UserControl
     }
 
     public CalcCatalogueEntry? SelectedTemplate { get; private set; }
+
+    /// <summary>The header line under the title: the template reference (id@version), its hash and its reference count.</summary>
+    public string TemplateReferenceText => _reference.Text ?? string.Empty;
 
     public CalcInstance? CurrentInstance { get; private set; }
 
@@ -599,9 +596,11 @@ public sealed partial class CalcSheetView : UserControl
 
             foreach (var entry in group.OrderBy(e => e.Template.Title, StringComparer.Ordinal))
             {
-                var leaf = new TreeViewItem { Header = $"{entry.Template.Title}{LeafVersionSeparator}v{entry.Template.Version} {entry.ShortHash[..8]}", Tag = entry, HeaderTemplate = CatalogueLeafTemplate };
+                // Owner, 2026-10-29: a row shows the calculation's title only. Its version and hash stay on the row's tooltip, the opened
+                // worksheet's header, the issued sheet and the register.
+                var leaf = new TreeViewItem { Header = entry.Template.Title, Tag = entry, HeaderTemplate = CatalogueLeafTemplate };
                 AutomationProperties.SetName(leaf, entry.Template.Title);
-                ToolTip.SetTip(leaf, $"{entry.Reference} — hash {entry.ShortHash}\n{entry.Template.Scope}");
+                ToolTip.SetTip(leaf, CatalogueLeafTip(entry));
                 node.Items.Add(leaf);
             }
 
@@ -631,27 +630,22 @@ public sealed partial class CalcSheetView : UserControl
             _scope.Text = "No worksheets are registered in this build.";
     }
 
-    /// <summary>Between a catalogue leaf's title and its version.</summary>
-    private const string LeafVersionSeparator = "  ·  ";
+    /// <summary>The tooltip on a catalogue row: the title, then the version and hash that identify the template, then its scope.</summary>
+    public static string CatalogueLeafTip(CalcCatalogueEntry entry)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        return $"{entry.Template.Title}\nVersion {entry.Template.Version}  ·  hash {entry.ShortHash}\n{entry.Reference}\n{entry.Template.Scope}";
+    }
 
-    /// <summary>The automation name of a catalogue leaf's version text.</summary>
-    public const string LeafVersionName = "Worksheet version";
+    /// <summary>The automation name of a catalogue leaf's title text.</summary>
+    public const string LeafTitleName = "Worksheet title";
 
-    /// <summary>
-    /// A catalogue leaf: the title wraps in the width left, and the version and hash keep their own column at the right, so a long title
-    /// (Glaser condensation, Plane wall heat transfer) no longer pushes the hash out of the 380 px column. The header stays the plain text.
-    /// </summary>
+    /// <summary>A catalogue leaf: the title alone, wrapped in the width of the 380 px column (a long title such as Glaser condensation wraps).</summary>
     private static readonly Avalonia.Controls.Templates.FuncDataTemplate<string> CatalogueLeafTemplate = new((text, _) =>
     {
-        var at = text?.LastIndexOf(LeafVersionSeparator, StringComparison.Ordinal) ?? -1;
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
-        var title = new TextBlock { Text = at < 0 ? text : text![..at], TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
-        var version = new TextBlock { Text = at < 0 ? string.Empty : text![(at + LeafVersionSeparator.Length)..], Opacity = 0.75, Margin = new Thickness(DesignTokens.SpaceSm, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
-        AutomationProperties.SetName(version, LeafVersionName);
-        Grid.SetColumn(version, 1);
-        grid.Children.Add(title);
-        grid.Children.Add(version);
-        return grid;
+        var title = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
+        AutomationProperties.SetName(title, LeafTitleName);
+        return title;
     }, supportsRecycling: false);
 
     public void SelectTemplate(string reference)
@@ -703,6 +697,8 @@ public sealed partial class CalcSheetView : UserControl
         _fields.Clear();
         _tables.Clear();
         _referencePickers.Clear();
+        _splitPickers.Clear();
+        _inputNames = CalcInputLabel.Names(entry.Template);
 
         if (_referenceLabelsFor != entry.Reference)
             _referenceLabels.Clear();
@@ -743,11 +739,17 @@ public sealed partial class CalcSheetView : UserControl
             Grid.SetColumn(picker, 1);
             row.Children.Add(label);
             row.Children.Add(picker);
+
+            // Owner, 2026-10-29: records with a size (fasteners) are picked by size, then grade; the pair is shown in place of the one picker.
+            var split = BuildSplitPicker(library);
+            ToolTip.SetTip(split.Size, ToolTip.GetTip(picker));
+            Grid.SetColumn(split.Host, 1);
+            row.Children.Add(split.Host);
             _form.Children.Add(row);
             _referencePickers[library] = picker;
 
             if (_referenceLabels.TryGetValue(library, out var known))
-                ShowOptions(picker, known);
+                ShowChoices(library, known);
         }
 
         foreach (var spec in entry.Template.Inputs)
@@ -981,15 +983,15 @@ public sealed partial class CalcSheetView : UserControl
             SetTableEnabled(t, !IsReadOnly);
 
         // A reference picker fills fields, so it is read-only with them (an issued form showed it still enabled).
-        foreach (var picker in _referencePickers.Values)
-            picker.IsEnabled = !IsReadOnly && picker.ItemCount > 0;
+        SetReferencePickersEnabled();
 
         RenderRequirements();
         UpdateActions();
     }
 
     /// <summary>Whether the reference picker of <paramref name="library"/> can be used, as drawn.</summary>
-    public bool IsReferencePickerEnabled(string library) => _referencePickers.TryGetValue(library, out var picker) && picker.IsEnabled;
+    public bool IsReferencePickerEnabled(string library) =>
+        IsReferencePickerSplit(library) ? _splitPickers[library].Size.IsEnabled : _referencePickers.TryGetValue(library, out var picker) && picker.IsEnabled;
 
     public void ShowStatus(string message) => _status.Text = message;
 
@@ -1234,6 +1236,7 @@ public sealed partial class CalcSheetView : UserControl
         _fields.Clear();
         _tables.Clear();
         _referencePickers.Clear();
+        _splitPickers.Clear();
         _carriedInputs.Clear();
         _problems.Text = string.Empty;
         var block = new SelectableTextBlock { Text = text, FontFamily = DesignTokens.MonoFont, FontSize = DesignTokens.FontSizeCaption + 1, TextWrapping = TextWrapping.NoWrap };
@@ -1272,11 +1275,25 @@ public sealed partial class CalcSheetView : UserControl
         row.BringIntoView();
     }
 
+    /// <summary>The short names of the shown template's inputs (<see cref="CalcInputLabel.Names"/>).</summary>
+    private IReadOnlyDictionary<string, string> _inputNames = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>"symbol — name", as an input row (or a table's title) shows it.</summary>
+    private string InputLabel(CalcInputSpec spec) =>
+        $"{spec.Symbol} — {(_inputNames.TryGetValue(spec.Symbol, out var name) ? name : CalcInputLabel.Name(spec.Description))}";
+
+    /// <summary>The text an input row's label shows, as typed (symbols not yet set as subscripts); <see langword="null"/> when the input has no row.</summary>
+    public string? InputLabelText(string symbol) => _fields.TryGetValue(symbol, out var f) && f.Row.Children.OfType<TextBlock>().FirstOrDefault() is { } label ? SymbolText.Raw(label) : null;
+
+    /// <summary>The tooltip on an input row's label, or <see langword="null"/>.</summary>
+    public string? InputLabelTip(string symbol) => _fields.TryGetValue(symbol, out var f) && f.Row.Children.OfType<TextBlock>().FirstOrDefault() is { } label ? ToolTip.GetTip(label) as string : null;
+
     private Control BuildField(CalcInputSpec spec, CalcInputValue? seed, bool blankWhenAbsent = false)
     {
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("200,160,90,120,*") };
-        var label = Typeset(new TextBlock { FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap }, $"{spec.Symbol} — {spec.Description}");
-        var tip = $"{spec.Symbol}: {spec.Description}\nValid range: {spec.RangeText}{(spec.IsOptional ? "\nOptional" : string.Empty)}";
+        // Owner, 2026-10-29: the row shows "symbol — name" only; the full description is the tooltip on the label and the field.
+        var label = Typeset(new TextBlock { FontSize = DesignTokens.FontSizeBody, VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap }, InputLabel(spec));
+        var tip = CalcInputLabel.Tooltip(spec);
         ToolTip.SetTip(label, tip);
         Grid.SetColumn(label, 0);
         row.Children.Add(label);

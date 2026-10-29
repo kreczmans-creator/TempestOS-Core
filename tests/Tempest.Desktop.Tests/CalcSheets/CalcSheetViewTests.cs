@@ -22,15 +22,22 @@ public sealed class CalcSheetViewTests
     }
 
     [AvaloniaFact]
-    public void Catalogue_ListsTemplates_ByDiscipline_WithVersionAndHash()
+    public void Catalogue_ListsTemplates_ByDiscipline_ByTitle_WithVersionAndHashInTheTooltip()
     {
+        // Owner, 2026-10-29: a row shows the title only; the version and hash stay available on the row's tooltip.
         var (view, catalogue) = NewView();
         var tree = view.GetLogicalDescendants().OfType<TreeView>().Single(t => AutomationProperties.GetName(t) == CalcSheetView.CatalogueAutomationName);
         var discipline = Assert.Single(tree.Items.OfType<TreeViewItem>());
         Assert.Equal("Structural", AutomationProperties.GetName(discipline));
         var leaf = Assert.Single(discipline.Items.OfType<TreeViewItem>());
-        Assert.Contains("v1.0.0", leaf.Header?.ToString(), StringComparison.Ordinal);
-        Assert.Contains(catalogue.Current()[0].ShortHash[..8], leaf.Header?.ToString(), StringComparison.Ordinal);
+        var entry = catalogue.Current()[0];
+        Assert.Equal(entry.Template.Title, leaf.Header?.ToString());
+        Assert.DoesNotContain("v1.0.0", leaf.Header?.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(entry.ShortHash[..8], leaf.Header?.ToString(), StringComparison.Ordinal);
+        var tip = ToolTip.GetTip(leaf) as string;
+        Assert.Contains("Version 1.0.0", tip, StringComparison.Ordinal);
+        Assert.Contains(entry.ShortHash, tip, StringComparison.Ordinal);
+        Assert.Contains(entry.Reference, tip, StringComparison.Ordinal);
     }
 
     [AvaloniaFact]
