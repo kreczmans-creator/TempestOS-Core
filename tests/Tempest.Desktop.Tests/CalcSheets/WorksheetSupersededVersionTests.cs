@@ -254,9 +254,10 @@ public sealed class WorksheetSupersededVersionTests
         // A build that keeps 1.0.0 beside 1.1.0 (a frozen copy): the catalogue offers 1.1.0 for new sheets, and the issued sheet opens on its own version.
         var (view, coordinator) = Open(fx, [VersionedStress.V100, VersionedStress.V110]);
         var tree = view.GetLogicalDescendants().OfType<TreeView>().Single(t => AutomationProperties.GetName(t) == CalcSheetView.CatalogueAutomationName);
-        var leaves = tree.Items.OfType<TreeViewItem>().SelectMany(d => d.Items.OfType<TreeViewItem>()).Select(l => l.Header?.ToString() ?? string.Empty).ToList();
-        Assert.Contains(leaves, l => l.Contains("v1.1.0", StringComparison.Ordinal));
-        Assert.DoesNotContain(leaves, l => l.Contains("v1.0.0", StringComparison.Ordinal));
+        // The row shows the title only (owner, 2026-10-29); its tooltip carries the version.
+        var leaves = tree.Items.OfType<TreeViewItem>().SelectMany(d => d.Items.OfType<TreeViewItem>()).Select(l => ToolTip.GetTip(l) as string ?? string.Empty).ToList();
+        Assert.Contains(leaves, l => l.Contains("Version 1.1.0", StringComparison.Ordinal));
+        Assert.DoesNotContain(leaves, l => l.Contains("Version 1.0.0", StringComparison.Ordinal));
 
         await coordinator.OpenAsync(issued.Id);
         Assert.Equal($"{Id}@1.0.0", view.SelectedTemplate?.Reference);
