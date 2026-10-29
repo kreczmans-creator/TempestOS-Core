@@ -275,7 +275,8 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         _view.SetLinkTargets(targets);
 
         var records = _service.Catalogue.Find(instance.TemplateReference) is null ? [] : await _service.RecordsForAsync(instance.TemplateReference).ConfigureAwait(true);
-        _view.SetRecords([.. records.Take(200).Select(r => new CalcSheetView.RecordChoice(r.Id, $"{r.Citation} · rev {r.Revision}"))]);
+        // Owner, 2026-10-29: a record picker lists names that carry numbers in numeric order.
+        _view.SetRecords([.. records.Take(200).Select(r => new CalcSheetView.RecordChoice(r.Id, $"{r.Citation} · rev {r.Revision}")).OrderBy(r => r.Label, CalcReferenceOrder.Natural)]);
     }
 
     /// <summary>Opens a file picker for the external report (PDF) and files it on the calculation's Evidence.</summary>
@@ -845,7 +846,7 @@ public sealed class CalcSheetCoordinator : Tempest.Core.Events.IEventHandler<Cal
         {
             var options = _references is null ? [] : await _references.ListReleasedAsync(library).ConfigureAwait(true);
             _referenceOptions[library] = options;
-            _view.SetReferenceOptions(library, options.Select(o => o.Label).ToList());
+            _view.SetReferenceOptions(library, options.Select(o => new CalcSheetView.ReferenceChoice(o.Label, o.Size, o.Grade)).ToList());
         }
     }
 

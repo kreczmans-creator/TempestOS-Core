@@ -213,7 +213,7 @@ public sealed class WorksheetShotFixTests
         Assert.False(view.IsRequirementsShown);
     }
     [AvaloniaFact]
-    public void Item8_A_Long_Catalogue_Title_Wraps_And_Keeps_Its_Version_In_The_Column()
+    public void Item8_A_Long_Catalogue_Title_Wraps_In_The_Column_And_Shows_No_Version()
     {
         var long1 = new TestWorksheetCalculator();
         var longTitle = new LongTitle(long1);
@@ -226,12 +226,15 @@ public sealed class WorksheetShotFixTests
 
         var tree = view.GetLogicalDescendants().OfType<TreeView>().Single(t => AutomationProperties.GetName(t) == CalcSheetView.CatalogueAutomationName);
         var leaf = tree.Items.OfType<TreeViewItem>().Single().Items.OfType<TreeViewItem>().Single();
-        Assert.Contains("v1.0.0", leaf.Header?.ToString(), StringComparison.Ordinal);
+        // Owner, 2026-10-29: the row is the title only; the version is on the tooltip.
+        Assert.DoesNotContain("v1.0.0", leaf.Header?.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Version 1.0.0", ToolTip.GetTip(leaf) as string, StringComparison.Ordinal);
 
-        var version = leaf.GetVisualDescendants().OfType<TextBlock>().Single(t => AutomationProperties.GetName(t) == CalcSheetView.LeafVersionName);
-        Assert.StartsWith("v1.0.0 ", version.Text, StringComparison.Ordinal);
-        var right = version.TranslatePoint(new Point(version.Bounds.Width, 0), view)!.Value.X;
-        Assert.True(right <= 380, $"the version ends at {right} px, past the 380 px catalogue column");
+        var title = leaf.GetVisualDescendants().OfType<TextBlock>().Single(t => AutomationProperties.GetName(t) == CalcSheetView.LeafTitleName);
+        Assert.Equal(longTitle.Template.Title, title.Text);
+        var right = title.TranslatePoint(new Point(title.Bounds.Width, 0), view)!.Value.X;
+        Assert.True(right <= 380, $"the title ends at {right} px, past the 380 px catalogue column");
+        Assert.True(title.Bounds.Height > title.FontSize * 1.5, "the long title does not wrap");
     }
 
     private sealed class LongTitle(TestWorksheetCalculator inner) : ICalcCalculator
