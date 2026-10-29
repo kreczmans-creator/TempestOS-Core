@@ -31,6 +31,11 @@
     <EmbeddedResource Include="ManualTesting\guided-test-script.json" LogicalName="Tempest.Calc.Library.ManualTesting.guided-test-script.json" />
   </ItemGroup>
 
+  <!-- Owner decision 2026-10-29 (comment 5): the bundled reference records, one Track P template CSV per set; RecordSeeds/RecordSeedCatalogue.cs holds their sources and licence status. -->
+  <ItemGroup>
+    <EmbeddedResource Include="RecordSeeds\Data\*.csv" LogicalName="Tempest.Calc.Library.RecordSeeds.Data.%(Filename).csv" />
+  </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="Tempest.Calc.Tests.Library" />
   </ItemGroup>

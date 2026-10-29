@@ -1,0 +1,6 @@
+fluid_h[text],t_mean_h[degC],cp_h[J/(kg*K)],fluid_c[text],t_mean_c[degC],cp_c[J/(kg*K)]
+Water,80,4196.8,Water,20,4184.1
+Water,70,4190.1,Water,20,4184.1
+Water,70,4190.1,Water,40,4179.4
+Water,60,4185,Water,10,4195.2
+Water,45,4180.1,Water,15,4188.5

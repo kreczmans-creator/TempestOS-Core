@@ -150,8 +150,10 @@ public sealed class VerificationDashboardViewTests
             Assert.Equal(host.CalcCatalogue!.Current().Count + host.CalcInstances.PackTemplates.Count, view.Model.Rows.Count);
             Assert.Contains(window.GetLogicalDescendants().OfType<TreeViewItem>(), n => AutomationProperties.GetName(n) == "Verification dashboard");
 
-            // The records lookup finds the kinds with no record entered; opening the screen entered none, seeded none, changed none.
-            Assert.Contains(view.Model.Rows, r => r.Id == "elec.conductor-sizing" && r.MissingRecordKinds.Contains("Cable ampacity (current-carrying capacities)"));
+            // The records lookup finds the kinds with no record entered; opening the screen entered none, seeded none, changed none. Since owner
+            // comment 5 start-up saves the bundled records, so conductor sizing lacks nothing and room heat loss still lacks its layer build-up.
+            Assert.Contains(view.Model.Rows, r => r.Id == "bs.room-heat-loss" && r.MissingRecordKinds.Contains("Layer thermal conductivity"));
+            Assert.Contains(view.Model.Rows, r => r.Id == "elec.conductor-sizing" && r.MissingRecordKinds.Count == 0);
             Assert.Equal(recordsBefore, (await host.CalcInstances.Store.ListRecordsAsync()).Count);
 
             // The rest of Calculations still opens beside it.

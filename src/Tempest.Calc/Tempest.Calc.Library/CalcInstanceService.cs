@@ -142,6 +142,11 @@ public sealed partial class CalcInstanceService
     /// <summary>The reference-record import (Addendum C, C-3): Track P's record templates, preview, all-or-nothing commit, and the records a calculator is missing.</summary>
     public RecordImportService RecordImport => _recordImport ??= new RecordImportService(this);
 
+    private global::Tempest.Calc.Library.RecordSeeds.ReferenceRecordSeeds? _recordSeeds;
+
+    /// <summary>The bundled reference records (owner decision 2026-10-29): web-sourced and derived record sets, each with its sources and licence status.</summary>
+    public global::Tempest.Calc.Library.RecordSeeds.ReferenceRecordSeeds RecordSeeds => _recordSeeds ??= new global::Tempest.Calc.Library.RecordSeeds.ReferenceRecordSeeds(this);
+
     // ------------------------------------------------------------------
     // Create, update, run
     // ------------------------------------------------------------------

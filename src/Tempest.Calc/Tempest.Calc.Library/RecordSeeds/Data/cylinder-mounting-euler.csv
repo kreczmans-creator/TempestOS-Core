@@ -1,0 +1,5 @@
+mounting[text],K_m[-]
+Both ends fixed (Euler theory),0.5
+"One end fixed, one pinned (Euler theory)",0.7
+Both ends pinned (Euler theory),1
+"One end fixed, one free (Euler theory)",2

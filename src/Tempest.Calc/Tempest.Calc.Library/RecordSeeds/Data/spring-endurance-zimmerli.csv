@@ -1,0 +1,3 @@
+wire[text],stress[text],N_c[-],S_e[MPa]
+"Spring steel wire under 10 mm, unpeened",shear,10000000,241
+"Spring steel wire under 10 mm, shot-peened",shear,10000000,398

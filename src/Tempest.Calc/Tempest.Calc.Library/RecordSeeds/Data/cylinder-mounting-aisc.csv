@@ -1,0 +1,7 @@
+mounting[text],K_m[-]
+Both ends fixed (recommended design value),0.65
+"One end fixed, one pinned (recommended design value)",0.8
+"Fixed, other end fixed against rotation but free to sway (recommended design value)",1.2
+Both ends pinned (recommended design value),1
+"One end fixed, one free (recommended design value)",2.1
+"Pinned, other end fixed against rotation but free to sway (recommended design value)",2

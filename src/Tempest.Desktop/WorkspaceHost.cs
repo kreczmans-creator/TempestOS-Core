@@ -124,6 +124,12 @@ public sealed class WorkspaceHost : IAsyncDisposable
     }
 
     /// <summary>
+    /// Whether start-up saves the bundled reference records (owner decision 2026-10-29, comment 5). On by default; a test of the empty-store record
+    /// flow turns it off, as a database that predates the bundled records would look.
+    /// </summary>
+    public bool SeedBundledRecords { get; init; } = true;
+
+    /// <summary>
     /// Builds the Host, starts the Workspace (loading any persisted session
     /// state — `ADR-0064`, unchanged), and registers all six real
     /// Engineering Disciplines.
@@ -384,6 +390,25 @@ public sealed class WorkspaceHost : IAsyncDisposable
         // Addendum C, C-6: the seeded demonstration project. Built here and never run: nothing at start-up installs it; Settings → Demo project does, when asked.
         CalcDemo = new Tempest.Calc.Library.CalcDemoProjectService(CalcInstances, domainContext, Tempest.Desktop.CalcSheets.CalcCalculatorComposition.DemoCableTables(),
             (Tempest.Core.Audit.IAuditRecorder)host.Services!.GetService(typeof(Tempest.Core.Audit.IAuditRecorder)));
+
+        // Owner decision 2026-10-29 (comment 5): the bundled reference records go into the store once, through the ordinary record import, each
+        // with its sources and licence status. A set already in is skipped; a refused set is logged and never stops start-up.
+        try
+        {
+            var seeds = SeedBundledRecords
+                ? await CalcInstances.RecordSeeds.EnsureSeededAsync(cancellationToken).ConfigureAwait(false)
+                : Array.Empty<Tempest.Calc.Library.RecordSeeds.RecordSeedOutcome>();
+
+            foreach (var seed in seeds)
+            {
+                if (seed.Result == Tempest.Calc.Library.RecordSeeds.RecordSeedResult.Refused)
+                    hostLogger?.Warning($"Bundled reference records '{seed.Set.Id}' were not saved: {seed.Problem}");
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            hostLogger?.Warning($"Saving the bundled reference records failed ({ex.GetType().Name}); they are tried again at the next start.");
+        }
 
         // One-off sweep (`ADR-0173`): Evidence a worksheet made before the managed marker existed is marked now, so the generic Evidence acts refuse it.
         try
