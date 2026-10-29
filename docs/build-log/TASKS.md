@@ -162,3 +162,4 @@ The phases below are as they stood on that branch (D-38; ADR-0167), kept unchang
 - [x] Refine the test suite: timing tests apart from the coverage collector, shared-state tests in their own collections, race and GUID flakes fixed at their cause, Desktop shards rebalanced (DC-28)
 - [x] Find and fix what kept failing the CI runs: CRLF checkout, the Calc loop that stopped at the first failing project, the SVG probe start-up, Windows handle counting, round-off digits and glossary line ends on Windows (DC-28, DC-29); first all-green push run 693, then 695
 - [x] Screenshot review (owner, 2026-10-27): fix every finding of the 1,087-screenshot run, the independent review's 9 items and the second run's findings; re-shoot (DC-30…DC-34)
+- [x] Owner testing round 2 (2026-10-29): comments 1-5 built (DC-35, DC-36); CI timeouts fixed at cause (DC-37, DC-38)
