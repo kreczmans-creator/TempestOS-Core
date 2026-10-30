@@ -31,7 +31,6 @@ public sealed class ReferenceRecordSeeds
     public const string SeedPrincipal = "TempestOS (bundled reference records)";
 
     private readonly CalcInstanceService _service;
-    private bool _seeded;
 
     internal ReferenceRecordSeeds(CalcInstanceService service) => _service = service ?? throw new ArgumentNullException(nameof(service));
 
@@ -111,7 +110,6 @@ public sealed class ReferenceRecordSeeds
         }
 
         await WritePendingAsync(sets, pending, outcomes, cancellationToken).ConfigureAwait(false);
-        _seeded = true;
         return [.. outcomes.Select(o => o!)];
     }
 
@@ -162,6 +160,4 @@ public sealed class ReferenceRecordSeeds
         return ids;
     }
 
-    /// <summary>Whether a pass has run in this session.</summary>
-    public bool HasRun => _seeded;
 }
