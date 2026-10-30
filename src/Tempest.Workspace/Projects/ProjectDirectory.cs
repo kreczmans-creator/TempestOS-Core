@@ -62,14 +62,25 @@ public sealed class ProjectDirectory : IProjectDirectory
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<ProjectSummary>> ListAsync(CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<ProjectSummary>> ListAsync(CancellationToken cancellationToken = default) => ListAsync(includeDeleted: false, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<ProjectSummary>> ListIncludingDeletedAsync(CancellationToken cancellationToken = default) => ListAsync(includeDeleted: true, cancellationToken);
+
+    private async Task<IReadOnlyList<ProjectSummary>> ListAsync(bool includeDeleted, CancellationToken cancellationToken)
     {
         // `TD-88`/`WP 21.5B`: `ToSummary` needs `IProject`-own fields, not
         // on the index row.
         var entries = await _context.Repository.ListByKindAsync(ProjectKind, cancellationToken).ConfigureAwait(false);
+
+        // A deleted project (a removed demonstration, black-team B-C-03) is not listed for a person to pick; the number check still sees it.
+        if (!includeDeleted)
+            entries = [.. entries.Where(e => !e.IsDeleted)];
+
         var projects = await _context.Repository.MaterialiseAsync<IProject>(entries, cancellationToken).ConfigureAwait(false);
 
         return projects
+            .Where(p => includeDeleted || p is not IDeletable { IsDeleted: true })
             .Select(ToSummary)
             .OrderBy(p => p.Identifier ?? string.Empty, StringComparer.Ordinal)
             .ThenBy(p => p.DisplayName, StringComparer.Ordinal)
@@ -94,7 +105,7 @@ public sealed class ProjectDirectory : IProjectDirectory
         // EngineeringObjectFactory itself (`TD-38`) — the product shell
         // enforces it here rather than letting two projects share the
         // identifier every other surface labels them by.
-        var existing = await ListAsync(cancellationToken).ConfigureAwait(false);
+        var existing = await ListIncludingDeletedAsync(cancellationToken).ConfigureAwait(false);
         if (existing.Any(p => string.Equals(p.Identifier, identifier, StringComparison.OrdinalIgnoreCase)))
             throw new DuplicateProjectIdentifierException(identifier);
 

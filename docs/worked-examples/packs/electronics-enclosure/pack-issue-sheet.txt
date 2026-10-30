@@ -1,0 +1,875 @@
+CALCULATION SHEET — ISSUED
+Project: Controller box 7
+Calc ID: Motor controller enclosure calc pack    Revision: A
+Title: Calculation pack
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: ELX-ENC-001    Client: Client Co
+
+PACK INDEX
+  1. Power trace — PCB trace width (IPC-2221) — rev A — ISSUED — Minimum trace width against the width as drawn PASS
+  2. Board load budget — Load budget, PSU, transformer and battery — rev A — ISSUED
+  3. Enclosure temperature — Enclosure heat dissipation and fan sizing — rev A — ISSUED — Natural temperature rise against the allowed rise PASS
+  4. Cover latches — Snap-fits — rev A — ISSUED — Required holding force against the force the latches hold PASS
+  5. Cover plate — Plate bending — rev A — ISSUED — Deflection against the deflection limit PASS
+
+REVISIONS
+  A  2026-10-27  test.engineer  First issue
+
+1. Scope and method
+Calculation pack: the calculations listed in the index, issued together under one issue sheet.
+
+
+2. Inputs
+  None.
+
+3. Assumptions
+  None.
+
+4. Working
+  None.
+
+5. Results
+  None.
+
+6. Checks (governing first)
+  None.
+
+7. Applicability
+  None.
+
+8. Verification
+  Template: pack
+  Content hash: —
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 36/36
+  Test run: 2026-10-27 03:56 UTC
+  Application: TempestOS test
+
+9. References
+  None.
+
+CALCULATION SHEET — ISSUED
+Project: Controller box 7
+Calc ID: Power trace    Revision: A
+Title: PCB trace width (IPC-2221)
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: ELX-ENC-001    Client: Client Co
+
+1. Scope and method
+Calculates the minimum width of a printed-circuit trace for a current and an allowed temperature rise by the legacy IPC-2221 curve-fit, conservative for multilayer boards. It also gives the resistance, voltage drop and I²R loss of the trace as drawn.
+Trace cross-section: I = k·ΔT^0.44·A^0.725, so A = [I/(k·ΔT^0.44)]^(1/0.725) with A in mil², k = 0.048 external, 0.024 internal Copper thickness: t = w_Cu·t_oz, t_oz = 1.378 mil per oz/ft² (35 µm, derived) Minimum width: w_min = A/t; utilisation u_w = w_min/w_act Resistivity at the operating temperature: ρ_T = ρ_20·[1 + α·(T_amb + ΔT − 20)] Trace resistance: R = ρ_T·L/(w_act·t); voltage drop ΔV = I·R; loss P = I²·R
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  layer | Layer | External layer |  | spec: SPEC-ELX-02 §3 (supply rail) | any
+  w_act | Trace width as drawn | 2 | mm | spec: SPEC-ELX-02 §3 (supply rail) | 0.05 … 10 mm
+  L | Trace length | 150 | mm | spec: SPEC-ELX-02 §3 (supply rail) | 1 … 1000 mm
+  Cu_oz | Finished copper weight in oz/ft² (0.5 to 6), not a thickness in µm: 17.5 µm is ½ oz, 35 µm is 1 oz, 70 µm is 2 oz, 105 µm is 3 oz | 2 |  | spec: SPEC-ELX-02 §3 (supply rail) | 0.5 … 6
+  rho_20 | Copper resistivity at 20 °C (annealed copper, 1.724e-8 Ω·m) | 0.01724 | Ω·mm²/m | assumption: Sheet default value; no project figure given. | 0.0165 … 0.0185 Ω·mm²/m
+  alpha | Temperature coefficient of resistance of copper | 0.00393 | 1/K | assumption: Sheet default value; no project figure given. | 0.0035 … 0.0042 1/K
+  I | Trace current (the curve-fit was drawn for up to 35 A: above it the sheet is refused) | 8 | A | spec: SPEC-ELX-02 §3 (supply rail) | 0.01 … 35 A
+  T_amb | Ambient temperature at the board | 60 | °C | spec: SPEC-ELX-02 §3 (supply rail) | -40 … 125 °C
+  dT | Allowed temperature rise above ambient | 30 | K | spec: SPEC-ELX-02 §3 (supply rail) | 1 … 100 K
+  k_ext | Curve-fit constant k, external layer | 0.048 |  | assumption: Sheet default value; no project figure given. | 0.01 … 0.1
+  k_int | Curve-fit constant k, internal layer | 0.024 |  | assumption: Sheet default value; no project figure given. | 0.005 … 0.05
+  n_dT | Exponent of the temperature rise | 0.44 |  | assumption: Sheet default value; no project figure given. | 0.3 … 0.6
+  n_A | Exponent of the cross-section | 0.725 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
+  t_oz | Copper thickness per oz/ft² (35 µm = 1.378 mil, derived) | 1.378 | mil | assumption: Sheet default value; no project figure given. | 1.2 … 1.5 mil
+
+3. Assumptions
+  A1. The curve-fit is the legacy IPC-2221 relation for a trace with no plane or convective help. (IPC-2221 curve-fit (legacy); IPC-2152 is not implemented.)
+  A2. The curve-fit was drawn for 1 to 3 oz copper and currents up to 35 A. (IPC-2221 curve-fit (legacy).)
+  A3. The curve-fit was drawn for rises of 10 to 100 K and widths up to 10 mm. (IPC-2221 curve-fit (legacy).)
+  A4. The result screens the trace width and is not a thermal analysis of the board. (Scope of the curve-fit.)
+  A5. The curve-fit is conservative for multilayer boards. (IPC-2221 curve-fit (legacy).)
+  A6. Copper thickness is the nominal 1.378 mil (35 µm) per oz/ft² of finished copper. (Derived: 35 µm / 25.4 µm per mil.)
+  A7. Plating build-up on outer layers and etch-back are not modelled. (Scope of the sheet.)
+  A8. The resistance uses the trace as drawn at the temperature ambient plus rise. (Derived constants for annealed copper.)
+  A9. The resistivity at 20 °C is corrected with a linear temperature coefficient. (Derived constants for annealed copper.)
+  A10. Vias, pads, bends and skin effect are ignored. (Scope of the sheet.)
+  A11. The current is steady direct current, or RMS current at low frequency. (Scope of the curve-fit.)
+  A12. The rise is the allowed rise in the worst case. (Scope of the curve-fit.)
+  A13. rho_20 (Copper resistivity at 20 °C (annealed copper, 1.724e-8 Ω·m)) is taken as 0.01724 Ω·mm²/m. (Sheet default value; no project figure given.)
+  A14. alpha (Temperature coefficient of resistance of copper) is taken as 0.00393 1/K. (Sheet default value; no project figure given.)
+  A15. k_ext (Curve-fit constant k, external layer) is taken as 0.048. (Sheet default value; no project figure given.)
+  A16. k_int (Curve-fit constant k, internal layer) is taken as 0.024. (Sheet default value; no project figure given.)
+  A17. n_dT (Exponent of the temperature rise) is taken as 0.44. (Sheet default value; no project figure given.)
+  A18. n_A (Exponent of the cross-section) is taken as 0.725. (Sheet default value; no project figure given.)
+  A19. t_oz (Copper thickness per oz/ft² (35 µm = 1.378 mil, derived)) is taken as 1.378 mil. (Sheet default value; no project figure given.)
+
+4. Working
+  [14] k = k_ext    « IPC-2221 cl. 6 (legacy)
+      = 0.048
+      = 0.048
+        Curve-fit constant k (external layer)
+  [15] I_n = I / (1 A)
+      = 8 A / 1 A
+      = 8
+        Current as a number of amperes
+  [16] dT_n = dT / (1 K)
+      = 30 K / 1 K
+      = 30
+        Temperature rise as a number of kelvin
+  [17] A_req = (I_n / (k * dT_n^n_dT))^(1 / n_A) * (1 mil^2)    « IPC-2221 cl. 6 (legacy)
+      = (8 / (0.048 × 30^0.44))^(1 / 0.725) × 1 mil^2
+      = 147.29 mil²
+        Minimum conductor cross-section
+  [18] t_Cu = Cu_oz * t_oz
+      = 2 × 1.378 mil
+      = 70.002 um
+        Copper thickness
+  [19] w_min = A_req / t_Cu
+      = 147.29 mil² / 70.002 um
+      = 1.3574 mm
+        Minimum trace width
+  [20] u_w = w_min / w_act
+      = 1.3574 mm / 2 mm
+      = 0.67871
+        Width utilisation (minimum / as drawn)
+  [21] A_act = w_act * t_Cu
+      = 2 mm × 70.002 um
+      = 0.14 mm²
+        Cross-section of the trace as drawn
+  [22] T_trace = T_amb + dT
+      = 60 degC + 30 K
+      = 90 degC
+        Trace operating temperature
+  [23] rho_T = rho_20 * (1 + alpha * (T_trace - 20 degC))
+      = 0.01724 ohm·mm²/m × (1 + 0.00393 1/K × (90 degC − 20 degC))
+      = 0.021983 ohm·mm²/m
+        Copper resistivity at the operating temperature
+  [24] trace_R = rho_T * L / A_act
+      = 0.021983 ohm·mm²/m × 150 mm / 0.14 mm²
+      = 23.552 mohm
+        Trace resistance at the operating temperature
+  [25] vdrop = I * trace_R
+      = 8 A × 23.552 mohm
+      = 188.42 mV
+        Voltage drop along the trace
+  [26] trace_Ploss = I^2 * trace_R
+      = (8 A)^2 × 23.552 mohm
+      = 1507.3 mW
+        Power loss in the trace (I²R)
+
+5. Results
+  trace_R = 23.55 mΩ    Trace resistance
+  trace_Ploss = 1507.3 mW    Power loss
+  vdrop = 188.4 mV    Voltage drop
+  A_req = 147.3 mil²    Minimum cross-section
+  w_min = 1.357 mm    Minimum trace width (governing)
+  u_w = 0.68    Width utilisation
+
+6. Checks (governing first)
+  PASS  Minimum trace width against the width as drawn: 1.357 mm vs 2 mm  utilisation 0.68  « IPC-2221 cl. 6 (legacy)
+
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are k_ext, k_int, n_dT, n_A, t_oz (IPC-2221 legacy curve-fit method constants); rho_20, alpha (Copper material constants). Enter each as one so its source, edition and licence travel with it.  [record]
+
+8. Verification
+  Template: elec.pcb-trace@1.3.0
+  Content hash: a52a92c6c8ccbf82
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 6/6
+  Test run: 2026-10-27 03:56 UTC
+  Application: TempestOS test
+
+9. References
+  1. IPC-2221B:2012 cl. 6 — Electrical properties: current-carrying capacity of printed-board conductors (legacy curve-fit; edition to be checked)
+  2. Hughes, Electrical and Electronic Technology Ch. on DC circuits, 12th ed. (edition to be checked) — Resistivity and temperature coefficient of resistance
+
+
+CALCULATION SHEET — ISSUED
+Project: Controller box 7
+Calc ID: Board load budget    Revision: A
+Title: Load budget, PSU, transformer and battery
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: ELX-ENC-001    Client: Client Co
+
+1. Scope and method
+Calculates the demand of a set of loads per supply and the minimum DC power supply, transformer and battery for it. It also gives the heat the loads dissipate for the enclosure calculation.
+Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative); this duty-weighted demand sizes the transformer and the enclosure heat Running load of each load while it is on: P_i·k_i, apparent P_i·k_i/cosφ_i (the duty d is the share of time on, so it is left out: a cable, a bus and a power supply carry the load while it is on) Bus currents: I_3φ = S_3φ,run/(√3·U), I_1φ = S_1φ,run/U, I_DC = P_DC,run/U_DC, from the running loads; when a bus is chosen for the DC power supply its input P_DC,run/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i + P_DC·(1/η_PSU − 1), h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0); the second term is the power supply's own loss, present when an AC bus is chosen for it Power supply sizing: P_PSU ≥ SF·P_DC,run/f_derate (the running DC load, duty not applied; f_derate from the manufacturer's curve at T_amb and altitude) Transformer sizing: S_T ≥ SF·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery sizing: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t, never below I_b·t (the exponent is not valid beyond the rated hour rate H)
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  loads | Loads | 4 row(s) |  | spec: SPEC-ELX-02 §4 (board loads) | any
+  loads[1] |  | name = Power trace loss (PCB); supply = DC; P = 0.0015073 kW; cosphi = 1; eta = 1; heat = 1; d = 1; k = 1; inrush = 1; backed = no |  | P: link: Power trace rev A · trace_Ploss | 
+  loads[2] |  | name = Gate drivers and logic; supply = DC; P = 0.025 kW; cosphi = 1; eta = 0.9; heat = 1; d = 1; k = 1; inrush = 1; backed = no |  |  | 
+  loads[3] |  | name = Power stage; supply = DC; P = 0.2 kW; cosphi = 1; eta = 0.96; d = 1; k = 1; inrush = 1; backed = no |  |  | 
+  loads[4] |  | name = Display and sensors; supply = DC; P = 0.012 kW; cosphi = 1; eta = 1; heat = 1; d = 1; k = 1; inrush = 1; backed = no |  |  | 
+  psu_bus | AC bus that feeds the DC power supply (its input P_DC/η_PSU is added to that bus) | AC single-phase |  | spec: SPEC-ELX-02 §4 (board loads) | any
+  P_add | Additional three-phase load (linked from the motor-sizing RMS power) | 0 | kW | assumption: Sheet default value; no project figure given. | 0 … 100 kW
+  cosphi_add | Power factor of the additional load | 0.85 |  | assumption: Sheet default value; no project figure given. | 0.6 … 1
+  eta_add | Efficiency of the additional load | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.6 … 1
+  inrush_add | Starting multiple of the additional load | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 10
+  heat_add | Share of the additional load's input power released inside the enclosure (a linked machine is outside it: 0) | 0 |  | assumption: Sheet default value; no project figure given. | 0 … 0.5
+  U_3ph | Three-phase line voltage | 400 | V | assumption: Sheet default value; no project figure given. | 12 … 690 V
+  U_1ph | Single-phase voltage | 230 | V | assumption: Sheet default value; no project figure given. | 12 … 480 V
+  U_DC | DC bus voltage | 24 | V | assumption: Sheet default value; no project figure given. | 12 … 600 V
+  T_amb | Ambient temperature | 40 | °C | assumption: Sheet default value; no project figure given. | 0 … 60 °C
+  U_b | Battery nominal voltage | 24 | V | assumption: Sheet default value; no project figure given. | 2 … 1000 V
+  eta_psu | DC power supply efficiency (power factor taken as 1) | 0.9 |  | spec: SPEC-ELX-02 §4 (board loads) | 0.7 … 1
+  SF | Sizing safety factor | 1.25 |  | assumption: Sheet default value; no project figure given. | 1 … 1.4
+  f_derate | PSU derating factor at the ambient and altitude | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
+  k_T | Transformer short-time overload allowed for inrush | 3 |  | assumption: Sheet default value; no project figure given. | 1 … 20
+  eta_conv | Conversion efficiency battery → loads | 1 |  | assumption: Sheet default value; no project figure given. | 0.7 … 1
+  DoD | Allowed depth of discharge | 0.8 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
+  eta_b | Battery discharge efficiency | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.7 … 1
+  k_temp | Temperature capacity factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.3 … 1.2
+  k_age | Ageing (end-of-life) factor | 0.8 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
+  t_auto | Battery autonomy | 0 | h | assumption: Sheet default value; no project figure given. | 0 … 48 h
+
+3. Assumptions
+  A1. Each load's P is its electrical input. (Load budget convention.)
+  A2. DC loads count at power factor 1 in the transformer demand. (Load budget convention.)
+  A3. With a PSU bus chosen, DC loads count at P/η_PSU, which already includes the supply's own loss. (Load budget convention.)
+  A4. The sheet adds that loss to Φ itself, as P_DC·(1/η_PSU − 1), whenever psu_bus and η_PSU are set. (Load budget convention.)
+  A5. Do not add the power supply as a load row, which would count its loss twice. (Load budget convention.)
+  A6. The heat released inside the enclosure is h·P·d·k per load. (Stated convention for the heat a load releases inside the panel.)
+  A7. The default h = 1 − η is the loss of a drive or supply. (Stated convention for the heat a load releases inside the panel; change h for a load that differs.)
+  A8. Electronics release all their input (h = 1) and a machine outside the panel releases none (h = 0). (Stated convention for the heat a load releases inside the panel; change h for a load that differs.)
+  A9. Apparent powers are added arithmetically, which is conservative when power factors differ. (Upper bound on S.)
+  A10. PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records. (Entered as reference records, which carry their source, edition and licence.)
+  A11. P_add (Additional three-phase load (linked from the motor-sizing RMS power)) is taken as 0 kW. (Sheet default value; no project figure given.)
+  A12. cosphi_add (Power factor of the additional load) is taken as 0.85. (Sheet default value; no project figure given.)
+  A13. eta_add (Efficiency of the additional load) is taken as 0.9. (Sheet default value; no project figure given.)
+  A14. inrush_add (Starting multiple of the additional load) is taken as 1. (Sheet default value; no project figure given.)
+  A15. heat_add (Share of the additional load's input power released inside the enclosure (a linked machine is outside it: 0)) is taken as 0. (Sheet default value; no project figure given.)
+  A16. U_3ph (Three-phase line voltage) is taken as 400 V. (Sheet default value; no project figure given.)
+  A17. U_1ph (Single-phase voltage) is taken as 230 V. (Sheet default value; no project figure given.)
+  A18. U_DC (DC bus voltage) is taken as 24 V. (Sheet default value; no project figure given.)
+  A19. T_amb (Ambient temperature) is taken as 40 °C. (Sheet default value; no project figure given.)
+  A20. U_b (Battery nominal voltage) is taken as 24 V. (Sheet default value; no project figure given.)
+  A21. SF (Sizing safety factor) is taken as 1.25. (Sheet default value; no project figure given.)
+  A22. f_derate (PSU derating factor at the ambient and altitude) is taken as 1. (Sheet default value; no project figure given.)
+  A23. k_T (Transformer short-time overload allowed for inrush) is taken as 3. (Sheet default value; no project figure given.)
+  A24. eta_conv (Conversion efficiency battery → loads) is taken as 1. (Sheet default value; no project figure given.)
+  A25. DoD (Allowed depth of discharge) is taken as 0.8. (Sheet default value; no project figure given.)
+  A26. eta_b (Battery discharge efficiency) is taken as 0.95. (Sheet default value; no project figure given.)
+  A27. k_temp (Temperature capacity factor) is taken as 1. (Sheet default value; no project figure given.)
+  A28. k_age (Ageing (end-of-life) factor) is taken as 0.8. (Sheet default value; no project figure given.)
+  A29. t_auto (Battery autonomy) is taken as 0 h. (Sheet default value; no project figure given.)
+
+4. Working
+  [22] L1 = P·d·k; P·d·k/cosφ
+      = 0.0015073 × 1 × 1 = 0.0015073 kW; 0.0016748 kVA
+      = 0.0015073 kW
+        Power trace loss (PCB) (DC)
+  [23] L2 = P·d·k; P·d·k/cosφ
+      = 0.025 × 1 × 1 = 0.025 kW; 0.027778 kVA
+      = 0.025 kW
+        Gate drivers and logic (DC)
+  [24] L3 = P·d·k; P·d·k/cosφ
+      = 0.2 × 1 × 1 = 0.2 kW; 0.22222 kVA
+      = 0.2 kW
+        Power stage (DC)
+  [25] L4 = P·d·k; P·d·k/cosφ
+      = 0.012 × 1 × 1 = 0.012 kW; 0.013333 kVA
+      = 0.012 kW
+        Display and sensors (DC)
+  [26] P_conn = Σ P_i
+      = 0.0015073 + 0.025 + 0.2 + 0.012
+      = 0.23851 kW
+        Connected load
+  [27] P_dem = Σ P_i·d_i·k_i
+      = 0.0015073 + 0.025 + 0.2 + 0.012
+      = 0.23851 kW
+        Demand active power
+  [28] S_dem = Σ P_i·d_i·k_i/cosφ_i
+      = 0.0016748 + 0.027778 + 0.22222 + 0.013333
+      = 0.26501 kVA
+        Demand apparent power (arithmetic)
+  [29] I_3ph = S_3φ,run/(√3·U_3ph), S_run = Σ P_i·k_i/cosφ_i
+      = 0 / (√3 × 400)
+      = 0 A
+        Three-phase bus current, loads while on (duty not applied)
+  [30] I_1ph = S_1φ,run/U_1ph, S_run = Σ P_i·k_i/cosφ_i
+      = 265.01 / 230
+      = 1.1522 A
+        Single-phase bus current, loads while on (duty not applied)
+  [31] I_DC = P_DC,run/U_DC, P_DC,run = Σ DC P_i·k_i
+      = 238.51 / 24
+      = 9.9378 A
+        DC bus current, loads while on (duty not applied)
+  [32] Phi = Σ h_i·P_i·d_i·k_i + P_DC·(1/η_PSU − 1)
+      = 1×0.0015073 + 1×0.025 + 0.04×0.2 + 1×0.012 + PSU loss 0.026501
+      = 0.073008 kW
+        Heat dissipated inside the enclosure (→ enclosure-heat P_add)
+  [33] P_DC = Σ DC P_i·d_i·k_i
+      = 238.51 W
+      = 238.51 W
+        DC demand (duty-weighted)
+  [34] P_DC_run = Σ DC P_i·k_i
+      = 238.51 W
+      = 238.51 W
+        DC load while on (duty not applied)
+  [35] P_PSU_req = SF * P_DC_run / f_derate
+      = 1.25 × 238.51 W / 1
+      = 0.29813 kW
+        Minimum PSU rating (the supply carries the load while it is on)
+  [36] S_T_req = SF * S_dem
+      = 1.25 × 0.26501 kVA
+      = 0.33126 kVA
+        Minimum transformer rating for the running load
+  [37] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
+      = 0.26501 + 0
+      = 0.26501 kVA
+        Peak apparent power while the largest load starts
+  [38] S_T_req_start = S_peak / k_T
+      = 0.26501 kVA / 3
+      = 0.088336 kVA
+        Minimum transformer rating for the starting peak
+  [39] S_T_min = max(S_T_req, S_T_req_start)
+      = max(0.33126 kVA, 0.088336 kVA)
+      = 0.33126 kVA
+        Minimum transformer rating (running load and starting peak)
+  [40] U_L = U_3ph
+      = 400 V
+      = 400 V
+        Three-phase line voltage of the bus
+  [41] pf_link = cosφ of the linked machine
+      = 0.85
+      = 0.85
+        Power factor of the linked machine
+
+5. Results
+  P_dem = 0.2385 kW    Demand active power
+  S_dem = 0.2650 kVA    Demand apparent power
+  I_3ph = 0 A    Three-phase bus current
+  I_1ph = 1.152 A    Single-phase bus current
+  I_DC = 9.938 A    DC bus current
+  Phi = 0.07301 kW    Heat dissipated inside the enclosure
+  U_L = 400 V    Three-phase line voltage
+  pf_link = 0.85    Power factor of the linked machine
+  P_conn = 0.2385 kW    Connected load
+  P_PSU_req = 0.2981 kW    Minimum PSU rating
+  S_T_req = 0.3313 kVA    Minimum transformer rating, running load
+  S_peak = 0.2650 kVA    Peak apparent power at start
+  S_T_req_start = 0.08834 kVA    Minimum transformer rating, starting peak
+  S_T_min = 0.3313 kVA    Minimum transformer rating, running and starting
+
+6. Checks (governing first)
+  None.
+
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.  [record]
+
+8. Verification
+  Template: elec.load-budget@1.6.1
+  Content hash: 37b6289e618acdb2
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 4/4
+  Test run: 2026-10-27 03:56 UTC
+  Application: TempestOS test
+
+9. References
+  1. Reddy (ed.), Linden's Handbook of Batteries Ch. 3–4, 5th ed. — Battery sizing and the Peukert relation
+  2. BS EN 60204-1:2018 cl. 4.3 — Electrical supply (supply voltage tolerance)
+
+
+CALCULATION SHEET — ISSUED
+Project: Controller box 7
+Calc ID: Enclosure temperature    Revision: A
+Title: Enclosure heat dissipation and fan sizing
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: ELX-ENC-001    Client: Client Co
+
+1. Scope and method
+Calculates the heat load of a control enclosure, its natural temperature rise and the airflow for a target rise. It also gives the fan duty point and the cooling-unit capacity needed when the limit cannot be met.
+Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+ α I A_sun). Effective cooling surface, each face weighted by how freely it sheds heat: A_eff = Σ f_face × A_face. Temperature rise with natural cooling, one coefficient over the exposed faces (the IEC TR 60890 tables are not used): ΔT = P/(h_conv·A_eff). Air flow a fan must move to hold the target rise: V = P/(ρ c_p ΔT_target), with ρ = p(z)/(287.055 T) and c_p = 1006 J/(kg·K). Fan duty point, where the fan curve meets the system resistance (found by bisection): p_fan(V) = p_sys (V/V_ref)². Cooling unit capacity, when the surfaces alone cannot reject the heat: P_cool = P − h_conv·A_eff·(T_max − T_amb); with T_max at or below T_amb the term is a gain, P_cool = P + h_conv·A_eff·(T_amb − T_max), and no ventilation airflow or fan duty is given. Sealed enclosure (sealing temperature T_seal entered, no breather): Δp = p_site·|T_int/T_seal − 1|, the pressure difference across the walls when the air warms or cools from the sealing temperature at constant volume, in absolute temperatures (a rise when T_int > T_seal, a suction when below); a breather or relief element limits it, dp_seal = min(Δp, dp_relief); the force on a cover of area A_cover is F_seal = dp_seal·A_cover
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  loads | Heat loads | 1 row(s) |  | drawing: DRG-ELX-210 rev B | any
+  loads[1] |  | name = Terminals and wiring; P = 4 W; qty = 1; duty = 1 |  |  | 
+  W | Enclosure width | 0.5 | m | drawing: DRG-ELX-210 rev B | 0.1 … 5 m
+  H | Enclosure height | 0.6 | m | drawing: DRG-ELX-210 rev B | 0.1 … 5 m
+  D | Enclosure depth | 0.2 | m | drawing: DRG-ELX-210 rev B | 0.1 … 5 m
+  f_top | Top exposure (1 free, 0 covered) | 1 |  | drawing: DRG-ELX-210 rev B | 0 … 1
+  f_front | Front exposure | 1 |  | drawing: DRG-ELX-210 rev B | 0 … 1
+  f_rear | Rear exposure (0 = wall-mounted) | 0 |  | drawing: DRG-ELX-210 rev B | 0 … 1
+  f_left | Left side exposure | 1 |  | drawing: DRG-ELX-210 rev B | 0 … 1
+  f_right | Right side exposure | 1 |  | drawing: DRG-ELX-210 rev B | 0 … 1
+  f_bottom | Bottom exposure (0 = on the floor) | 0 |  | drawing: DRG-ELX-210 rev B | 0 … 1
+  A_sun | Sunlit area | 0 | m² | assumption: Sheet default value; no project figure given. | 0 … 100 m²
+  alpha_sun | Surface absorptivity | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
+  h_conv | Overall heat-transfer coefficient of the enclosure surface (editable reference value) | 5.5 | W/(m²·K) | assumption: Sheet default value; no project figure given. | 3 … 8 W/(m²·K)
+  P_add | Additional heat load (linked from the load-budget dissipated heat or another calculation) | 0.0730082 | kW | link: Board load budget rev A · Phi | 0 … 100 kW
+  I_sun | Solar irradiance on the enclosure (0 = indoors) | 0 | W/m² | assumption: Sheet default value; no project figure given. | 0 … 1200 W/m²
+  T_amb | Ambient temperature | 35 | °C | drawing: DRG-ELX-210 rev B | -20 … 55 °C
+  altitude | Site altitude (air density) | 0 | m | assumption: Sheet default value; no project figure given. | 0 … 4000 m
+  T_seal | Temperature at which the enclosure was closed with no breather or vent, for the pressure difference across its walls when the air warms or cools (optional; blank = vented, so no pressure difference) | 25 | °C | drawing: DRG-ELX-210 rev B | -20 … 55 °C
+  dp_relief | Cracking pressure of the breather or relief element a sealed enclosure has (optional; blank = none, so the full gas-law difference acts; needs T_seal) | 1 | kPa | drawing: DRG-ELX-210 rev B | 0.1 … 20 kPa
+  A_cover | Area of the cover or door the pressure difference acts on, for the force on its fixings (optional; blank = not worked out; needs T_seal) | 0.3 | m² | drawing: DRG-ELX-210 rev B | 0.01 … 5 m²
+  T_max | Maximum internal temperature | 60 | °C | drawing: DRG-ELX-210 rev B | 20 … 80 °C
+  p_sys | System resistance (filters, grilles) at the reference airflow | 20 | Pa | assumption: Sheet default value; no project figure given. | 0 … 500 Pa
+  V_ref | Reference airflow for the system resistance | 100 | m³/h | assumption: Sheet default value; no project figure given. | 1 … 100000 m³/h
+
+3. Assumptions
+  A1. Heat leaves the enclosure through its exposed faces at one overall coefficient h_conv. (Plain exposed-area method of manufacturer practice, not an IEC TR 60890 verification; h_conv is a reference value the user may edit.)
+  A2. The coefficient covers natural convection and radiation to surroundings at the ambient temperature. (Plain exposed-area method of manufacturer practice, not an IEC TR 60890 verification; h_conv is a reference value the user may edit.)
+  A3. Covered faces dissipate nothing. (Plain exposed-area method of manufacturer practice, not an IEC TR 60890 verification; h_conv is a reference value the user may edit.)
+  A4. Forced ventilation removes the full heat load with air entering at ambient and leaving at the target rise. (Manufacturer fan-sizing practice.)
+  A5. Natural dissipation is neglected for the airflow, which is conservative. (Manufacturer fan-sizing practice.)
+  A6. A sealed enclosure (T_seal entered) is a closed, rigid, leak-free volume of dry air at the site pressure when closed. (Ideal gas at constant volume (derived).)
+  A7. The pressure difference follows the ideal-gas relation at constant volume, from the sealing temperature to T_int. (Ideal gas at constant volume (derived).)
+  A8. T_int is the internal temperature with natural dissipation, without a cooling unit. (Ideal gas at constant volume (derived).)
+  A9. A breather, a seal that leaks or a flexing wall reduces the difference, so the result is an upper bound. (Ideal gas at constant volume (derived).)
+  A10. A pressure-compensation element is modelled only as a cap at its cracking pressure, with no flow resistance. (Ideal gas at constant volume (derived).)
+  A11. The site pressure is the standard atmosphere at the altitude. (Ideal gas at constant volume (derived).)
+  A12. The fan curve is linear between the entered points. (Duty-point idealisation.)
+  A13. The system resistance scales with airflow squared. (Duty-point idealisation.)
+  A14. A_sun (Sunlit area) is taken as 0 m². (Sheet default value; no project figure given.)
+  A15. alpha_sun (Surface absorptivity) is taken as 0.5. (Sheet default value; no project figure given.)
+  A16. h_conv (Overall heat-transfer coefficient of the enclosure surface (editable reference value)) is taken as 5.5 W/(m²·K). (Sheet default value; no project figure given.)
+  A17. I_sun (Solar irradiance on the enclosure (0 = indoors)) is taken as 0 W/m². (Sheet default value; no project figure given.)
+  A18. altitude (Site altitude (air density)) is taken as 0 m. (Sheet default value; no project figure given.)
+  A19. p_sys (System resistance (filters, grilles) at the reference airflow) is taken as 20 Pa. (Sheet default value; no project figure given.)
+  A20. V_ref (Reference airflow for the system resistance) is taken as 100 m³/h. (Sheet default value; no project figure given.)
+  A21. The effective surface is the plain exposed-area method of manufacturer practice: each face area weighted by how freely it sheds heat, one overall coefficient h. This is not a verification of temperature rise to IEC TR 60890 or BS EN 61439-1 cl. 10.10 (neither the surface factors nor the standard's temperature-rise correlation is used). (Stated on every run so the result is not read as an assembly verification.)
+
+4. Working
+  [18] P_loads = Σ P_i × n_i × d_i
+      = 1 item(s)
+      = 0.004 kW
+        Internal heat load
+  [19] P_solar = alpha_sun * I_sun * A_sun
+      = 0.5 × 0 W/m² × 0 m²
+      = 0 kW
+        Solar gain
+  [20] P_total = P_loads + P_add + P_solar
+      = 0.004 kW + 0.073008 kW + 0 kW
+      = 0.077008 kW
+        Total heat to remove
+  [21] A_eff = f_top * W * D + f_bottom * W * D + f_front * W * H + f_rear * W * H + f_left * H * D + f_right * H * D    « plain exposed-area method (manufacturer practice), not an IEC TR 60890 verification
+      = 1 × 0.5 m × 0.2 m + 0 × 0.5 m × 0.2 m + 1 × 0.5 m × 0.6 m + 0 × 0.5 m × 0.6 m + 1 × 0.6 m × 0.2 m + 1 × 0.6 m × 0.2 m
+      = 0.64 m²
+        Effective dissipating surface
+  [22] dT_nat = P_total / (h_conv * A_eff)
+      = 0.077008 kW / (5.5 W/(m²·K) × 0.64 m²)
+      = 21.877 K
+        Temperature rise with natural dissipation
+  [23] T_int = T_amb + dT_nat
+      = 35 degC + 21.877 K
+      = 56.877 degC
+        Internal temperature with natural dissipation
+  [24] dT_allow = T_max - T_amb
+      = 60 degC − 35 degC
+      = 25 K
+        Allowed rise
+  [25] u_nat = dT_nat / dT_allow
+      = 21.877 K / 25 K
+      = 0.87509
+        Natural dissipation utilisation
+  [26] P_nat_max = h_conv * A_eff * dT_allow
+      = 5.5 W/(m²·K) × 0.64 m² × 25 K
+      = 0.088 kW
+        Heat the enclosure dissipates naturally at the limit
+  [27] P_cool = max(0 W, P_total - P_nat_max)
+      = max(0 W, 0.077008 kW − 0.088 kW)
+      = 0 kW
+        Cooling-unit capacity needed if ventilation is not used
+  [28] p_site = 101325 (1 − 2.25577e-5 z)^5.2559
+      = z = 0 m
+      = 101.32 kPa
+        Site pressure
+  [30] dp_gas = p_site·|T_int/T_seal − 1|
+      = 101.32 kPa × |330.03 K / 298.15 K − 1|
+      = 10.833 kPa
+        Pressure difference of the sealed air between the sealing temperature and T_int, with no breather (magnitude)
+  [32] dp_seal = min(dp_gas, dp_relief)
+      = 1 kPa
+      = 1 kPa
+        Pressure difference across the walls of the sealed enclosure (magnitude, limited to the cracking pressure of a breather or relief element when one is entered)
+  [34] F_seal = dp_seal·A_cover
+      = 1 kPa × 0.3 m²
+      = 300 N
+        Force of the pressure difference on the cover
+  [35] rho_air = p_site / (287.055 J/(kg*K) * T_amb)
+      = 101.32 kPa / (287.055 J/(kg*K) × 35 degC)
+      = 1.1455 kg/m³
+        Air density at ambient and altitude
+  [36] V_req = P_total / (rho_air * 1006 J/(kg*K) * dT_allow)
+      = 0.077008 kW / (1.1455 kg/m³ × 1006 J/(kg*K) × 25 K)
+      = 9.623 m³/h
+        Airflow for forced ventilation at the allowed rise (natural dissipation neglected)
+  [37] V_req_net = max(0 m^3/h, (P_total - P_nat_max) / (rho_air * 1006 J/(kg*K) * dT_allow))
+      = max(0 m^3/h, (0.077008 kW − 0.088 kW) / (1.1455 kg/m³ × 1006 J/(kg*K) × 25 K))
+      = 0 m³/h
+        Airflow crediting natural dissipation
+
+5. Results
+  P_total = 0.07701 kW    Total heat
+  P_cool = 0 kW    Cooling unit needed
+  P_nat_max = 0.08800 kW    Natural dissipation at the limit
+  T_max = 60 °C    Internal temperature limit
+  dT_nat = 21.88 K    Natural temperature rise (governing)
+  T_int = 56.88 °C    Internal temperature (natural)
+  V_req = 9.623 m³/h    Required airflow
+  dp_seal = 1 kPa    Pressure difference of the sealed enclosure
+  F_seal = 300 N    Force on the cover
+  dp_gas = 10.83 kPa    Gas-law pressure difference (no breather)
+  P_loads = 0.004000 kW    Internal heat load
+  P_solar = 0 kW    Solar gain
+  A_eff = 0.6400 m²    Effective surface
+  rho_air = 1.145 kg/m³    Air density
+  V_req_net = 0 m³/h    Required airflow (net)
+
+6. Checks (governing first)
+  PASS  Natural temperature rise against the allowed rise: 21.88 K vs 25 K  utilisation 0.88
+
+7. Applicability
+  WARNING  dp_relief: the breather or relief element opens at 1 kPa, below the gas-law difference of 10.83 kPa. So dp_seal is the cracking pressure.  [seal-relief]
+
+8. Verification
+  Template: elec.enclosure-heat@1.7.1
+  Content hash: c419a03dc9212448
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 4/4
+  Test run: 2026-10-27 03:56 UTC
+  Application: TempestOS test
+
+9. References
+  1. IEC TR 60890:2022 — A method of temperature-rise verification of low-voltage switchgear and controlgear assemblies by calculation
+  2. BS EN 61439-1:2021 cl. 10.10 — Verification of temperature rise (edition to be checked)
+
+
+CALCULATION SHEET — ISSUED
+Project: Controller box 7
+Calc ID: Cover latches    Revision: A
+Title: Snap-fits
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: ELX-ENC-001    Client: Client Co
+
+1. Scope and method
+Calculates the strain, deflection force and joining forces of a plastic snap-fit: a cantilever lug, an annular ring or a torsion bar. It checks the strain against the permissible strain and whether the joint is self-locking.
+Cantilever geometry (Euler–Bernoulli): y = K_y·ε·l²/h with K_y = 2/3 (constant section; the design guides print the rounded 0.67); a linear taper of the thickness to r_h = h_tip/h gives K_y = 2·J/φ_max with J = [2r_h − r_h²/2 − ln r_h − 3/2]/(1 − r_h)³ and φ_max = 1 for r_h ≥ 1/2 (otherwise the strain peaks inside the beam at t = (2a − 1)/a, a = 1 − r_h, with φ_max = (1 − t)/(1 − a·t)²); a linear taper of the width to r_b gives K_y = 2·J with J = [1/2 − 2r_b + 3r_b²/2 − r_b²·ln r_b]/(1 − r_b)³ Strain and force of the cantilever: ε = y·h/(K_y·l²); F_defl = b·h²·Es·ε/(6·l·φ_max) = (b·h²/6)·(Es·ε/l) at the root of a constant section; Es is the secant modulus at ε (typed, or interpolated from the W3 points Es(ε)) Annular (derived, free thin ring): nominal hoop strain ε_nom = ΔD/D (the mean diameter D widened by the diametral interference ΔD); the strain checked is the larger of ε = K_ann·ε_nom (K_ann the user's strain factor) and the inner-surface strain ΔD/(D − h); the radial contact force summed round the ring is F_defl = K_F·2π·Es·ε_nom·h·b (hoop force Es·ε_nom·h·b over the radius, K_F the user's optional force factor, 1 if none), b being the effective length of a free ring Torsion bar of radius r with a lever of length a deflected y: φ = y/a; the bar is held at one end (free length l_eff = l) or at both ends with the lever in the middle (l_eff = l/2, two halves in parallel); γ = φ·r/l_eff, equivalent tensile strain ε = γ/(1 + ν), γ_perm = ε_perm·(1 + ν); G = Es/(2(1 + ν)), T = n·G·(π r⁴/2)·φ/l_eff with n = 1 or 2, F_defl = T/a (both ends: F_defl = 4·G·J·φ/(l·a)) Joining forces: W = F_defl·(μ + tan α)/(1 − μ·tan α) on the entry face (angle α to the joining direction) and W′ = F_defl·(μ + tan α′)/(1 − μ·tan α′) on the return face (α′); the joint is self-locking, with an infinite separation force, when α′ ≥ arctan(1/μ); assembly jams when μ·tan α ≥ 1 Utilisation and permissible deflection: u = ε/ε_perm (FAIL above 1); y_perm = K_y·ε_perm·l²/h (annular ΔD_perm = ε_perm·min(D/K_ann, D − h); torsion y_perm = γ_perm·l_eff·a/r)
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  mode | Form of snap-fit | Cantilever, constant section |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | any
+  bar_support | How the torsion bar is held: at one end, or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length) | Held at one end |  | assumption: Sheet default value; no project figure given. | any
+  l | Length of the beam (cantilever); of the torsion bar: its free length when held at one end, or its whole length between the two supports when held at both ends with the lever in the middle | 12 | mm | spec: SPEC-ELX-02 §6 (lid latch geometry) | 2 … 100 mm
+  h | Thickness at the root (cantilever); wall thickness of the ring (annular) | 1.6 | mm | spec: SPEC-ELX-02 §6 (lid latch geometry) | 0.3 … 10 mm
+  b | Width at the root (cantilever); effective axial length of the ring (annular: that of a free ring, not the lip of a longer tube) | 5 | mm | spec: SPEC-ELX-02 §6 (lid latch geometry) | 1 … 50 mm
+  y | Deflection at the tip (cantilever) or at the end of the lever (torsion): the undercut to be cleared | 1 | mm | spec: SPEC-ELX-02 §6 (lid latch geometry) | 0.05 … 20 mm
+  h_ratio | Tip thickness / root thickness (tapered thickness) | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.25 … 1
+  b_ratio | Tip width / root width (tapered width) | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
+  D_ring | Mean diameter of the ring (annular) | 30 | mm | assumption: Sheet default value; no project figure given. | 5 … 500 mm
+  dD | Interference on the diameter: how much the ring is widened to pass the undercut (annular) | 0.4 | mm | assumption: Sheet default value; no project figure given. | 0 … 5 mm
+  r_bar | Radius of the torsion bar | 1.5 | mm | assumption: Sheet default value; no project figure given. | 0.3 … 10 mm
+  a_arm | Length of the lever on the torsion bar | 8 | mm | assumption: Sheet default value; no project figure given. | 2 … 100 mm
+  Es_source | Where the secant modulus comes from: typed at the design strain, or interpolated from the Es(ε) points of a material record | Typed secant modulus |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | any
+  loading | How often the joint is made: selects the one-time or the repeated permissible strain | One-time (assembled once or rarely) |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | any
+  T_use | Temperature of use. Recorded: Es and the permissible strain must be the values at this temperature | 56.8773 | °C | link: Enclosure temperature rev A · T_int | -40 … 120 °C
+  Es | Secant modulus at the design strain and temperature (annular: at the nominal hoop strain ΔD/D) (typed; no default: the plastic's stress–strain data) | 1400 | MPa | spec: SPEC-ELX-02 §6 (latch plastic: Es and eps_perm at 60 C) | 10 … 20000 MPa
+  eps_perm_once | Permissible strain for one-time joining, as a fraction, for example 0.04, at the temperature of use (no default: from the plastic's data) | 0.03 |  | spec: SPEC-ELX-02 §6 (latch plastic: Es and eps_perm at 60 C) | 0.001 … 0.3
+  alpha | Entry (assembly) angle α of the inclined face to the joining direction | 30 | ° | spec: SPEC-ELX-02 §6 (lid latch geometry) | 5 … 60 °
+  alpha_r | Return (separation) angle α′ of the retaining face (90° is a face square to the joining direction) | 70 | ° | spec: SPEC-ELX-02 §6 (lid latch geometry) | 10 … 90 °
+  mu | Coefficient of friction between the two parts (record snapfit.friction; no default: the pair of materials, from your reference or a W3 friction pair) | 0.3 |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | 0.05 … 1
+  n_latch | Number of identical latches that share a holding load (a whole number) (optional; blank = the holding force is not worked out) | 6 |  | spec: SPEC-ELX-02 §6 (lid latch geometry) | 1 … 100
+  F_req | Force the latches must hold against, for example the pressure on a cover (optional; blank = no check; n_latch must be entered too) | 300 | N | link: Enclosure temperature rev A · F_seal | 0 … 100000 N
+
+3. Assumptions
+  A1. The cantilever follows Euler–Bernoulli beam theory, with a rigid root, a linear taper and small deflection. (Euler–Bernoulli beam theory (derived); the guide's closed forms for the constant section are to be checked against the owner's copy.)
+  A2. The secant modulus is constant over the whole beam, at the design strain. (One modulus stands for the stress–strain curve.)
+  A3. The strain is the nominal surface strain at the critical section, with no local concentration from the root fillet. (The geometry factors are derived by integration, and the 0.67 of the design guides is the constant-section 2/3 rounded.)
+  A4. Es and the permissible strain are the plastic's values for the temperature, loading and moisture of use. (No plastics data are shipped, so they come from the plastic maker's data or a material record.)
+  A5. The annular snap is a free, thin, closed ring of effective axial length b. (Derived from ring geometry, not a relation of the design guide, so compare it with the owner's copy of the guide.)
+  A6. The nominal hoop strain is the diametral interference over the mean diameter, ΔD/D. (Derived from ring geometry.)
+  A7. The strain checked is the larger of K_ann times the nominal strain and the inner-surface strain ΔD/(D − h). (K_ann is the user's strain factor (record snapfit.annular-factor, no default), and the inner-surface strain is slightly above the mean-diameter value.)
+  A8. The contact force is the hoop force Es·ε_nom·h·b taken round the ring, times the optional force factor K_F. (K_F is the user's record (blank is 1), and a tube behind the ring stiffens the joint, which only K_F can represent.)
+  A9. The torsion bar is solid and round, loaded at a lever end, with a small angle φ = y/a. (γ = φ·r/l and γ_perm ≈ ε_perm·(1 + ν) are the brief's design-guide relations, to be checked against the owner's copy.)
+  A10. The bar is held at one end, or at both ends with the lever in the middle. (Held at both ends it has twice the strain and four times the stiffness of one end for the same total length, and the two-ended case is derived.)
+  A11. The permissible shear strain is ε_perm·(1 + ν), and the equivalent tensile strain is γ/(1 + ν). (G = Es/(2(1 + ν)) uses the secant modulus at that strain.)
+  A12. The mating part is rigid, with Coulomb friction μ on the inclined face (α for assembly, α′ for separation). (Friction on an inclined plane, with the friction coefficient the user's record.)
+  A13. The deflection force is taken at the design deflection, with no creep, stress relaxation or impact effect in service. (A static joint model.)
+  A14. bar_support (How the torsion bar is held: at one end, or at both ends with the lever in the middle (twice the strain and four times the stiffness of one end for the same total length)) is taken as Held at one end. (Sheet default value; no project figure given.)
+  A15. h_ratio (Tip thickness / root thickness (tapered thickness)) is taken as 0.5. (Sheet default value; no project figure given.)
+  A16. b_ratio (Tip width / root width (tapered width)) is taken as 0.5. (Sheet default value; no project figure given.)
+  A17. D_ring (Mean diameter of the ring (annular)) is taken as 30 mm. (Sheet default value; no project figure given.)
+  A18. dD (Interference on the diameter: how much the ring is widened to pass the undercut (annular)) is taken as 0.4 mm. (Sheet default value; no project figure given.)
+  A19. r_bar (Radius of the torsion bar) is taken as 1.5 mm. (Sheet default value; no project figure given.)
+  A20. a_arm (Length of the lever on the torsion bar) is taken as 8 mm. (Sheet default value; no project figure given.)
+  A21. Es and the permissible strain are the plastic's values at 56.877 °C, the temperature of use. The sheet cannot check them, or the moisture state of the part. (Recorded temperature of use.)
+
+4. Working
+  [10] l_h = l / h
+      = 12 mm / 1.6 mm
+      = 7.5
+        Slenderness of the beam l/h
+  [11] phi_max = 1    « Euler–Bernoulli beam theory (derived)
+      = —
+      = 1
+        Largest value of the strain shape along the beam (the root)
+  [12] K_y = 2/3    « Euler–Bernoulli beam theory (derived)
+      = constant section
+      = 0.66667
+        Deflection factor: y = K_y·ε·l²/h (derived; the design guides print the rounded 0.67)
+  [13] eps_max = y * h / (K_y * l^2)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+      = 1 mm × 1.6 mm / (0.66667 × (12 mm)^2)
+      = 1.6667 %
+        Maximum surface strain at the critical section (nominal)
+  [16] eps_perm = eps_perm_once    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+      = 0.03
+      = 3 %
+        Permissible strain (one-time joining, as entered)
+  [19] F_defl = b * h^2 * Es * eps_max / (6 * l * phi_max)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+      = 5 mm × (1.6 mm)^2 × 1400 MPa × 1.6667 % / (6 × 12 mm × 1)
+      = 4.1481 N
+        Deflection force at the tip: F_defl = (b·h²/6)·(Es·ε/l) at the root of a constant section
+  [20] y_perm = K_y * eps_perm * l^2 / h    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+      = 0.66667 × 3 % × (12 mm)^2 / 1.6 mm
+      = 1.8 mm
+        Permissible tip deflection
+  [21] strain_util = eps_max / eps_perm
+      = 1.6667 % / 3 %
+      = 0.55556
+        Strain / permissible strain
+  [22] tan_a = tan(alpha)
+      = tan(30 deg)
+      = 0.57735
+        tan α of the entry face
+  [23] mu_tan_a = mu * tan_a
+      = 0.3 × 0.57735
+      = 0.17321
+        μ·tan α of the entry face
+  [24] assembly_force = F_defl * (mu + tan_a) / (1 - mu_tan_a)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+      = 4.1481 N × (0.3 + 0.57735) / (1 − 0.17321)
+      = 4.4018 N
+        Assembly force W = F_defl·(μ + tan α)/(1 − μ·tan α)
+  [25] alpha_lock = arctan(1/μ)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+      = arctan(1/0.3)
+      = 73.301 deg
+        Return angle above which the joint is self-locking (π/2 when μ = 0)
+  [26] tan_ar = tan(alpha_r)
+      = tan(70 deg)
+      = 2.7475
+        tan α′ of the return face
+  [27] retention_force = F_defl * (mu + tan_ar) / (1 - mu * tan_ar)    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+      = 4.1481 N × (0.3 + 2.7475) / (1 − 0.3 × 2.7475)
+      = 71.925 N
+        Separation force W′ = F_defl·(μ + tan α′)/(1 − μ·tan α′)
+  [29] F_hold = n_latch * retention_force    « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+      = 6 × 71.925 N
+      = 431.55 N
+        Force the latches hold together: n × the separation force W′ of one (equal sharing assumed)
+  [31] u_hold = F_req / F_hold
+      = 300 N / 431.55 N
+      = 0.69516
+        Utilisation of the latches' holding force
+
+5. Results
+  assembly_force = 4.402 N    Assembly force
+  retention_force = 71.93 N    Separation force
+  strain_util = 0.56    Strain / permissible strain
+  F_hold = 431.6 N    Holding force of the latches
+  eps_max = 1.667 %    Maximum strain
+  eps_perm = 3 %    Permissible strain
+  Es = 1400 MPa    Secant modulus used
+  F_defl = 4.148 N    Deflection force
+  y_perm = 1.800 mm    Permissible deflection
+  l_h = 7.5    Slenderness l/h
+  K_y = 0.66667    Deflection factor of the cantilever
+  phi_max = 1    Strain shape maximum
+  alpha_lock = 73.30°    Self-locking return angle
+  self_locking = "No"    Self-locking
+  fillet_advisory = "The strain above is the nominal strain, with no local concentration. A sharp internal corner at the root (or at the end of the bar or ring) concentrates the strain and is the usual place for a snap-fit to break: give the root a generous fillet radius, of the order of the thickness, taper the section away from it, and apply a concentration factor from your own reference if the radius is small."    Root-fillet advisory
+  u_hold = 0.70    Holding utilisation (governing)
+
+6. Checks (governing first)
+  PASS  Required holding force against the force the latches hold: 300 N vs 431.6 N  utilisation 0.70  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+  PASS  Strain at the critical section against the permissible strain: 1.667 % vs 3 %  utilisation 0.56  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+  PASS  Entry-face friction μ·tan α against the jamming limit: μ·tan α = 0.17321 vs < 1  « Covestro, Snap-Fit Joints for Plastics: A Design Guide
+
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are eps_perm_once (Material properties); mu (Coefficient of friction); Es (Secant modulus at the design strain). Enter each as one so its source, edition and licence travel with it.  [record]
+
+8. Verification
+  Template: mech.snap-fit@1.5.0
+  Content hash: 32eaeb1d9537950d
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 11/11
+  Test run: 2026-10-27 03:56 UTC
+  Application: TempestOS test
+
+9. References
+  1. Covestro, Snap-Fit Joints for Plastics: A Design Guide Ch. B — Cantilever, annular and torsion snap-fit relations
+
+
+CALCULATION SHEET — ISSUED
+Project: Controller box 7
+Calc ID: Cover plate    Revision: A
+Title: Plate bending
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: ELX-ENC-001    Client: Client Co
+
+1. Scope and method
+Calculates the deflection, von Mises stress and fundamental frequency of a thin, flat, isotropic plate under a lateral load, by Kirchhoff small-deflection theory. It covers circular and rectangular plates, simply supported or clamped, under uniform, patch or ring loads.
+Flexural rigidity: D = D_flex = E·t_p³/(12(1 − ν²)); surface stress σ = 6M/t_p²; von Mises σ_vm = √(σ_x² − σ_x·σ_y + σ_y² + 3τ_xy²) Circular, uniform q, clamped: w = q·a⁴/(64D); σ_edge = 3q·a²/(4t_p²); simply supported: w = (5 + ν)·q·a⁴/(64(1 + ν)D); σ_centre = 3(3 + ν)·q·a²/(8t_p²) Circular, central patch (radius c, pressure q) or ring (radius b, force F): w = A + B·r² (+ q·r⁴/64D) inside, A′ + B′·r² + C′·ln(r/a) + k·r²·ln(r/a) outside, k = q·c²/8D or F/8πD; constants from continuity of w, w′, M_r at the load radius and the edge conditions; M_r = −D(w″ + ν·w′/r), M_θ = −D(w′/r + ν·w″) Rectangular, simply supported: w = Σ W_mn·sin(mπx/a)·sin(nπy/b) over odd m, n; W_mn = q_mn/(π⁴D(m²/a² + n²/b²)²); q_mn = 16q/(π²mn) (uniform) or 16q/(π²mn)·sin(mπ/2)·sin(nπ/2)·sin(mπu/2a)·sin(nπv/2b) (patch u × v); M_x = Dπ²ΣW_mn(m²/a² + ν·n²/b²)·sin·sin, M_y likewise, M_xy = −D(1 − ν)π²ΣW_mn(mn/ab)·cos·cos; terms added until w, the centre moments and the corner M_xy each change by < 10⁻⁶ over a doubling (cap 1024 × 1024; the corner sum of a uniform load, which converges like 1/N², is Richardson-extrapolated before it is compared) Rectangular, clamped: Ritz, w = Σ c_ij·X_i(x/a)·Y_j(y/b), X_k(ξ) = ξ²(1 − ξ)²·P₂ₖ(2ξ − 1); c from the minimum of the total potential energy; order K taken as 8, 12, 16, 20, 25, 30 until w and the stress change by < 10⁻⁵ (or the change stops falling) Fundamental frequency: simply supported rectangle ω₁₁ = π²(1/a² + 1/b²)·√(D/(ρ·t_p)), f = ω/2π; circular ω = (λ²/a²)·√(D/(ρ·t_p)), λ² from the Bessel characteristic equation; clamped rectangle by Rayleigh–Ritz with the same basis Plate checks: σ_vm ≤ f_y/γ_M0; w_max ≤ span/ratio (circular span = diameter, rectangle span = shorter side); WARN w/t_p > 0.5
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  shape | Plate shape | rectangular |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
+  support | Edge support, all round | simply supported |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
+  load_type | Load type | uniform |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
+  load_basis | Uniform and patch loads given as | pressure q |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | any
+  a | Plate radius (circular) or length in the x direction (rectangular) | 600 | mm | spec: SPEC-ELX-02 §7 (lid plate geometry) | 10 … 10000 mm
+  b | Length in the y direction (rectangular plate only, not used for a circular plate) | 500 | mm | spec: SPEC-ELX-02 §7 (lid plate geometry) | 10 … 10000 mm
+  t_p | Plate thickness | 4 | mm | spec: SPEC-ELX-02 §7 (lid plate geometry) | 0.5 … 100 mm
+  E | Young's modulus | 69 | GPa | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 0.1 … 500 GPa
+  nu | Poisson's ratio | 0.33 |  | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 0 … 0.45
+  rho | Density (for the frequency) | 2700 | kg/m³ | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 100 … 20000 kg/m³
+  f_y | Yield strength | 120 | MPa | spec: SPEC-ELX-02 §7 (lid alloy: E, nu, rho and f_y at 60 C) | 5 … 2000 MPa
+  q | Pressure on the loaded area (uniform and patch loads, pressure basis) | 1 | kPa | link: Enclosure temperature rev A · dp_seal | 0.001 … 5000 kPa
+  F | Total force (force basis: uniform, patch and ring loads; a ring load always uses the force) | 5 | kN | assumption: Sheet default value; no project figure given. | 0.001 … 10000 kN
+  r0 | Patch radius (circular plate, central patch) | 50 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
+  u | Patch size in x (rectangular plate, central patch) | 100 | mm | assumption: Sheet default value; no project figure given. | 1 … 10000 mm
+  v | Patch size in y (rectangular plate, central patch) | 100 | mm | assumption: Sheet default value; no project figure given. | 1 … 10000 mm
+  r_ring | Ring radius (circular plate, ring load) | 150 | mm | assumption: Sheet default value; no project figure given. | 1 … 5000 mm
+  gamma_M0 | Partial factor on the resistance of the cross-section | 1 |  | spec: SPEC-ELX-02 §7 (lid plate geometry) | 1 … 1.5
+  defl_ratio | Deflection limit as span/ratio (span = diameter of a circular plate, shorter side of a rectangle) | 250 |  | assumption: Sheet default value; no project figure given. | 50 … 2000
+
+3. Assumptions
+  A1. The plate is thin, flat, isotropic, linear elastic and of constant thickness, so Kirchhoff small-deflection theory applies. (The middle surface is unstrained, and shear deformation is neglected, so the sheet is blocked below span/t of 10.)
+  A2. The deflection stays small against the thickness, with w/t at most 0.5. (Above 0.5, membrane action stiffens the plate, and the small-deflection result overstates the deflection and the bending stress. The sheet warns.)
+  A3. The edge support is the same all round and ideal. (A simply supported edge is held at zero deflection and is free to rotate, and a clamped edge allows no deflection or rotation. There are no elastic edges.)
+  A4. A simply supported rectangle has its corners held down. (The sheet reports the corner reaction 2·M_xy. If the corners can lift, the deflection and the central moments are larger than computed.)
+  A5. The von Mises stress is that of the plane-stress field at the plate surface, from the bending and twisting moments. (The stress is 6M/t². The through-thickness shear and the local stress under a concentrated load are not included.)
+  A6. The stress of a clamped rectangle is scanned on a 21 × 21 grid over a quarter of the plate. (A simply supported rectangle is governed at the centre or at a corner, where the twisting moment acts.)
+  A7. The patches are centred and a ring load is concentric. (A load smaller than the thickness is a concentrated load, and the sheet warns (rule `patch-thin`). Patches below 1 % (circular), 2 % (simply supported rectangle) or 25 % (clamped rectangle) of the plate size are refused.)
+  A8. The clamped rectangle is a Ritz approximation, so its moments and stress converge more slowly than its deflection. (The sheet reports the order used and the last change, which understates the error for long plates and small patches. Compare a critical result with finite elements.)
+  A9. The material properties E, ν, ρ and f_y are inputs, each citing its source when taken from the material library. (The generic textbook seeds in the library are indicative.)
+  A10. F (Total force (force basis: uniform, patch and ring loads; a ring load always uses the force)) is taken as 5 kN. (Sheet default value; no project figure given.)
+  A11. r0 (Patch radius (circular plate, central patch)) is taken as 50 mm. (Sheet default value; no project figure given.)
+  A12. u (Patch size in x (rectangular plate, central patch)) is taken as 100 mm. (Sheet default value; no project figure given.)
+  A13. v (Patch size in y (rectangular plate, central patch)) is taken as 100 mm. (Sheet default value; no project figure given.)
+  A14. r_ring (Ring radius (circular plate, ring load)) is taken as 150 mm. (Sheet default value; no project figure given.)
+  A15. defl_ratio (Deflection limit as span/ratio (span = diameter of a circular plate, shorter side of a rectangle)) is taken as 250. (Sheet default value; no project figure given.)
+
+4. Working
+  [15] F_total = q·A_loaded    « Kirchhoff theory
+      = 1 kPa × 300000 mm²
+      = 0.3 kN
+        Total load on the plate
+  [16] D_flex = E*t_p^3/(12*(1 - nu^2))    « Kirchhoff theory
+      = 69 GPa × (4 mm)^3 / (12 × (1 − 0.33^2))
+      = 0.41297 kN·m
+        Flexural rigidity of the plate
+  [17] terms_used = odd terms per direction N (m, n = 1, 3, … 2N − 1)    « T&WK Ch. 5
+      = 128 odd terms per direction (16384 terms), last change 7.1087e-7
+      = 128
+        Terms of the Navier series used
+  [18] w_max = 16q/(π⁶D)·Σ (−1)^((m+n)/2−1)/(m·n·(m²/a² + n²/b²)²), m, n odd    « T&WK Ch. 5
+      = 128 odd terms per direction (16384 terms), last change 7.1087e-7
+      = 0.85516 mm
+        Maximum deflection (centre)
+  [19] M_x_c = D·π²·Σ W_mn(m²/a² + ν·n²/b²)·sin·sin at the centre    « T&WK Ch. 5
+      = 128 odd terms per direction (16384 terms), last change 7.1087e-7
+      = 0.012913 kN·m/m
+        M_x at the centre
+  [20] M_y_c = D·π²·Σ W_mn(n²/b² + ν·m²/a²)·sin·sin at the centre    « T&WK Ch. 5
+      = 128 odd terms per direction (16384 terms), last change 7.1087e-7
+      = 0.015928 kN·m/m
+        M_y at the centre
+  [21] M_xy_k = |D(1 − ν)·π²·Σ W_mn·(mn/ab)| at a corner, with the 1/N² tail of the sum removed by Richardson extrapolation (s_N + (s_N − s_N/2)/3)    « T&WK Ch. 5
+      = 128 odd terms per direction (16384 terms), last change 7.1087e-7
+      = 0.0090825 kN·m/m
+        Twisting moment at a corner
+  [22] R_corner = 2·M_xy at a corner    « T&WK Ch. 5
+      = 2 × 0.0090825 kN·m/m
+      = 0.018165 kN
+        Corner reaction holding the corner down
+  [23] M_vm_c = √(M_x² − M_x·M_y + M_y²) at the centre    « von Mises
+      = M_x = 0.012913, M_y = 0.015928 kN·m/m
+      = 0.014655 kN·m/m
+        Von Mises moment at the centre
+  [24] M_vm_k = √3·|M_xy| at a corner    « von Mises
+      = M_xy = 0.0090825 kN·m/m
+      = 0.015731 kN·m/m
+        Von Mises moment at a corner (pure twist)
+  [25] omega_11 = π²(1/a² + 1/b²)·√(D/(ρt))    « T&WK Ch. 5
+      = a = 600 mm, b = 500 mm, D_flex = 0.41297 kN·m, ρt = 10.8 kg/m²
+      = 413.65 rad/s
+        Angular frequency of the (1,1) mode
+  [26] M_vm = √(M_1² − M_1·M_2 + M_2² + 3M_12²) at the governing point    « von Mises
+      = corner (twisting moment)
+      = 0.015731 kN·m/m
+        Greatest von Mises moment per unit width
+  [27] sigma_max = 6·M_vm/t²    « Kirchhoff theory
+      = 6 × 0.015731 kN·m/m / (4 mm)²
+      = 5.8993 MPa
+        Greatest von Mises surface stress
+  [28] sigma_principal = 6·M_principal/t²    « Kirchhoff theory
+      = 6 × 0.015928 kN·m/m / (4 mm)²
+      = 5.9731 MPa
+        Greatest principal surface stress
+  [29] f1 = ω/2π    « Leissa
+      = D_flex = 0.41297 kN·m, ρt = 10.8 kg/m²
+      = 65.835 Hz
+        Fundamental natural frequency (ω is the angular frequency, rad/s; f is in Hz)
+  [30] w_over_t = w_max/t_p    « Kirchhoff theory
+      = 0.85516 mm / 4 mm
+      = 0.21379
+        Deflection over thickness
+  [31] f_yd = f_y/gamma_M0    « BS EN 1993-1-1 6.2.1(5)
+      = 120 MPa / 1
+      = 120 MPa
+        Design yield strength
+  [32] u_stress = sigma_max/f_yd    « BS EN 1993-1-1 6.2.1(5)
+      = 5.8993 MPa / 120 MPa
+      = 0.049161
+        Stress utilisation
+  [33] w_lim = span/ratio    « Serviceability
+      = 500 mm / 250
+      = 2 mm
+        Deflection limit
+  [34] u_defl = w_max/w_lim    « Serviceability
+      = 0.85516 mm / 2 mm
+      = 0.42758
+        Deflection utilisation
+
+5. Results
+  w_max = 0.8552 mm    Maximum deflection (governing)
+  sigma_max = 5.899 MPa    Greatest von Mises stress
+  f1 = 65.83 Hz    Fundamental frequency
+  D_flex = 0.4130 kN·m    Flexural rigidity
+  sigma_principal = 5.973 MPa    Greatest principal stress
+  f_yd = 120 MPa    Design yield strength
+  w_over_t = 0.21379    Deflection over thickness
+  terms_used = 128    Series terms used
+  M_x_c = 0.01291 kN·m/m    M_x at the centre
+  M_y_c = 0.01593 kN·m/m    M_y at the centre
+  M_xy_k = 0.009083 kN·m/m    Corner twisting moment
+  R_corner = 0.01817 kN    Corner reaction
+  location = "corner (twisting moment)"    Governing stress point
+  u_stress = 0.05    Stress utilisation
+  u_defl = 0.43    Deflection utilisation
+
+6. Checks (governing first)
+  PASS  Deflection against the deflection limit: 0.8552 mm vs 2 mm  utilisation 0.43  « Serviceability
+  PASS  Von Mises stress against the design yield strength: 5.899 MPa vs 120 MPa  utilisation 0.05  « cl. 6.2.1(5)
+
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are E, nu, rho, f_y (Material properties); gamma_M0 (EN 1993 National Annex factors); defl_ratio (Deflection limit). Enter each as one so its source, edition and licence travel with it.  [record]
+
+8. Verification
+  Template: struct.plate-bending@1.4.0
+  Content hash: 73b2e646dac2f675
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 11/11
+  Test run: 2026-10-27 03:56 UTC
+  Application: TempestOS test
+
+9. References
+  1. Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 3, 2nd ed. — Symmetrical bending of circular plates
+  2. Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 5, 2nd ed. — Simply supported rectangular plates (Navier solution)
+  3. Timoshenko & Woinowsky-Krieger, Theory of Plates and Shells Ch. 6, 2nd ed. — Rectangular plates with various edge conditions
+  4. Leissa, Vibration of Plates (NASA SP-160) Ch. 2 and 4, 1st ed. — Natural frequencies of circular and rectangular plates
+  5. BS EN 1993-1-1:2005+A1:2014 cl. 6.1(1) — Partial factor γ_M0
+  6. BS EN 1993-1-1:2005+A1:2014 cl. 6.2.1(5) — Yield criterion for the cross-section

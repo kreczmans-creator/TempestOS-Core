@@ -61,7 +61,9 @@ public sealed record DocumentViewSession
         int currentPage,
         DocumentViewport viewport,
         string? materialisedPath,
-        string? externalOpenRefusedReason = null)
+        string? externalOpenRefusedReason = null,
+        string? unavailableDetail = null,
+        string? renderingNote = null)
     {
         AttachmentId = attachmentId;
         FileName = fileName;
@@ -73,7 +75,29 @@ public sealed record DocumentViewSession
         Viewport = viewport;
         MaterialisedPath = materialisedPath;
         ExternalOpenRefusedReason = externalOpenRefusedReason;
+        UnavailableDetail = unavailableDetail;
+        RenderingNote = renderingNote;
     }
+
+    /// <summary>
+    /// A sentence for the page status when a ready document is shown but not
+    /// whole: an SVG whose clip paths, masks, filters, patterns, markers or
+    /// text on a path this platform does not draw says which (I2), so the
+    /// drawing is never silently wrong. <see langword="null"/> for a document
+    /// shown as stored, and for every session that is not ready.
+    /// </summary>
+    public string? RenderingNote { get; private init; }
+
+    /// <summary>
+    /// What happened to a document that is not showing, when the status
+    /// alone does not say it: a <see cref="DocumentViewStatus.Corrupt"/>
+    /// session whose content is intact but <em>took too long to read</em>
+    /// (the viewer gives a document a fixed time to open, so a file built
+    /// to keep the reader busy ends as a sentence, not a frozen window).
+    /// Written as the predicate of a sentence whose subject is the file
+    /// name; <see langword="null"/> whenever the status says enough.
+    /// </summary>
+    public string? UnavailableDetail { get; private init; }
 
     /// <summary>The attachment being viewed.</summary>
     public Guid AttachmentId { get; private init; }
@@ -144,7 +168,8 @@ public sealed record DocumentViewSession
         double contentWidth,
         double contentHeight,
         double viewportWidth,
-        double viewportHeight)
+        double viewportHeight,
+        string? renderingNote = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
 
@@ -157,7 +182,8 @@ public sealed record DocumentViewSession
             Math.Max(1, pageCount),
             1,
             DocumentViewport.Create(contentWidth, contentHeight, viewportWidth, viewportHeight),
-            materialisedPath: null);
+            materialisedPath: null,
+            renderingNote: string.IsNullOrWhiteSpace(renderingNote) ? null : renderingNote.Trim());
     }
 
     /// <summary>A document that could not be shown, and the reason.</summary>
@@ -173,7 +199,8 @@ public sealed record DocumentViewSession
         DocumentViewStatus status,
         ViewableDocumentFormat format = ViewableDocumentFormat.Unsupported,
         string? materialisedPath = null,
-        string? externalOpenRefusedReason = null)
+        string? externalOpenRefusedReason = null,
+        string? unavailableDetail = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
 
@@ -184,7 +211,8 @@ public sealed record DocumentViewSession
             attachmentId, fileName, contentType ?? string.Empty, status, format, 0, 0,
             DocumentViewport.Create(1, 1, 1, 1),
             status is DocumentViewStatus.Unsupported ? materialisedPath : null,
-            status is DocumentViewStatus.Unsupported ? externalOpenRefusedReason : null);
+            status is DocumentViewStatus.Unsupported ? externalOpenRefusedReason : null,
+            string.IsNullOrWhiteSpace(unavailableDetail) ? null : unavailableDetail.Trim());
     }
 
     /// <summary>The status a content read maps to, before any format decision.</summary>

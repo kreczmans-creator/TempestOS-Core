@@ -1,0 +1,322 @@
+[
+  {
+    "Symbol": "A",
+    "Number": 51.3,
+    "Unit": "cm^2",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet / Blue Book UB 305\u00D7165\u00D740",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "51.3"
+  },
+  {
+    "Symbol": "E",
+    "Number": 210,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 1993-1-1 3.2.6",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "210"
+  },
+  {
+    "Symbol": "I_y",
+    "Number": 8503,
+    "Unit": "cm^4",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet / Blue Book",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "8503"
+  },
+  {
+    "Symbol": "I_z",
+    "Number": 764,
+    "Unit": "cm^4",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet / Blue Book",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "764"
+  },
+  {
+    "Symbol": "L_cr_y",
+    "Number": 6,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Span 6 m.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "6"
+  },
+  {
+    "Symbol": "L_cr_z",
+    "Number": 1.5,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Compression flange restrained at 1.5 m by the deck.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.5"
+  },
+  {
+    "Symbol": "M_y_Ed",
+    "Number": 120,
+    "Unit": "kN*m",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S2 frame sheet, two-span beam, ULS (rounded)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "120"
+  },
+  {
+    "Symbol": "M_z_Ed",
+    "Number": 0,
+    "Unit": "kN*m",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S2 frame sheet",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "N_Ed",
+    "Number": 0,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S2 frame sheet, two-span beam, ULS",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "V_Ed",
+    "Number": 100,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S2 frame sheet, two-span beam, ULS (rounded)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100"
+  },
+  {
+    "Symbol": "W_el_y",
+    "Number": 560,
+    "Unit": "cm^3",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet / Blue Book",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "560"
+  },
+  {
+    "Symbol": "W_el_z",
+    "Number": 92.6,
+    "Unit": "cm^3",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet / Blue Book",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "92.6"
+  },
+  {
+    "Symbol": "W_pl_y",
+    "Number": 623,
+    "Unit": "cm^3",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet / Blue Book",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "623"
+  },
+  {
+    "Symbol": "W_pl_z",
+    "Number": 142,
+    "Unit": "cm^3",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "S1 section sheet / Blue Book",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "142"
+  },
+  {
+    "Symbol": "b",
+    "Number": 165,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UB 305\u00D7165\u00D740",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "165"
+  },
+  {
+    "Symbol": "curve_y",
+    "Text": "a",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 1993-1-1 Table 6.2: rolled, h/b \u003E 1.2, t_f \u2264 40, y-y",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "a"
+  },
+  {
+    "Symbol": "curve_z",
+    "Text": "b",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 1993-1-1 Table 6.2: rolled, h/b \u003E 1.2, t_f \u2264 40, z-z",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "b"
+  },
+  {
+    "Symbol": "eta",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA to BS EN 1993-1-5 NA.2.4",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "f_y",
+    "Number": 275,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10025-2 S275, t \u2264 16 mm",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "275"
+  },
+  {
+    "Symbol": "gamma_M0",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA to BS EN 1993-1-1 NA.2.15",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "gamma_M1",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA to BS EN 1993-1-1 NA.2.15",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "gamma_M2",
+    "Number": 1.1,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "UK NA to BS EN 1993-1-1 NA.2.15",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.1"
+  },
+  {
+    "Symbol": "h",
+    "Number": 303.4,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UB 305\u00D7165\u00D740",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "303.4"
+  },
+  {
+    "Symbol": "k_yy",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "No axial force; interaction factors irrelevant.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "k_zz",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "No axial force; interaction factors irrelevant.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "ltb",
+    "Text": "Restrained",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "The deck restrains the compression flange (at 1.5 m, as L_cr_z), so lateral-torsional buckling does not govern; 6.3.2 is outside this sheet.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Restrained"
+  },
+  {
+    "Symbol": "r",
+    "Number": 8.9,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UB 305\u00D7165\u00D740",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "8.9"
+  },
+  {
+    "Symbol": "section_class",
+    "Text": "1",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "UB 305\u00D7165\u00D740 S275 is class 1 in bending (Blue Book).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "t_f",
+    "Number": 10.2,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UB 305\u00D7165\u00D740",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10.2"
+  },
+  {
+    "Symbol": "t_w",
+    "Number": 6,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "BS EN 10365 UB 305\u00D7165\u00D740",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "6"
+  }
+]

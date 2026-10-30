@@ -1,0 +1,43 @@
+room_type[text],theta_i[degC]
+"Bathroom, dwelling age band A to J",23
+"Bathroom, dwelling age band K onwards",23
+"Bedroom, dwelling age band A to J",18
+"Bedroom, dwelling age band K onwards",21
+"Bedroom with en-suite, dwelling age band A to J",21
+"Bedroom with en-suite, dwelling age band K onwards",21
+"Bedroom/study, dwelling age band A to J",21
+"Bedroom/study, dwelling age band K onwards",21
+"Breakfast room, dwelling age band A to J",21
+"Breakfast room, dwelling age band K onwards",21
+"Cloakroom/WC, dwelling age band A to J",18
+"Cloakroom/WC, dwelling age band K onwards",21
+"Dining room, dwelling age band A to J",21
+"Dining room, dwelling age band K onwards",21
+"Dressing room, dwelling age band A to J",18
+"Dressing room, dwelling age band K onwards",21
+"Family/breakfast room, dwelling age band A to J",21
+"Family/breakfast room, dwelling age band K onwards",21
+"Games room, dwelling age band A to J",21
+"Games room, dwelling age band K onwards",21
+"Hall, dwelling age band A to J",18
+"Hall, dwelling age band K onwards",21
+"Internal room/corridor, dwelling age band A to J",18
+"Internal room/corridor, dwelling age band K onwards",21
+"Kitchen, dwelling age band A to J",18
+"Kitchen, dwelling age band K onwards",21
+"Landing, dwelling age band A to J",18
+"Landing, dwelling age band K onwards",21
+"Lounge/sitting room, dwelling age band A to J",22
+"Lounge/sitting room, dwelling age band K onwards",22
+"Living room, dwelling age band A to J",22
+"Living room, dwelling age band K onwards",22
+"Shower room, dwelling age band A to J",23
+"Shower room, dwelling age band K onwards",23
+"Store room, dwelling age band A to J",18
+"Store room, dwelling age band K onwards",21
+"Study, dwelling age band A to J",21
+"Study, dwelling age band K onwards",21
+"Toilet, dwelling age band A to J",18
+"Toilet, dwelling age band K onwards",21
+"Utility room, dwelling age band A to J",18
+"Utility room, dwelling age band K onwards",21

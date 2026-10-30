@@ -77,6 +77,7 @@ public sealed class CalculationEngine : ICalculationEngine
     private readonly ILogger? _logger;
     private readonly IPersistenceStore? _recordIndex;
     private readonly IAuditRecorder? _auditRecorder;
+    private Func<string, bool>? _featureEnabled;
 
     /// <summary>
     /// Initialises a new instance of the <see cref="CalculationEngine"/> class.
@@ -115,6 +116,21 @@ public sealed class CalculationEngine : ICalculationEngine
         _auditRecorder = auditRecorder;
     }
 
+    /// <summary>
+    /// States which optional features (`ADR-0173`) this installation has switched on, once, when the host is composed. Until it is called no feature
+    /// is on: a calculation gated behind a feature (<see cref="CalculationFeatureGate"/>) is refused by <see cref="ExecuteAsync{TInput, TResult}(string, TInput, CancellationToken)"/>
+    /// and both <c>ReRunAsync</c> overloads, which share one execution path, so no caller that runs a definition by id can reach it while its feature is off.
+    /// It cannot be changed afterwards.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The features were already stated.</exception>
+    public void ConfigureFeatures(Func<string, bool> featureEnabled)
+    {
+        ArgumentNullException.ThrowIfNull(featureEnabled);
+
+        if (Interlocked.CompareExchange(ref _featureEnabled, featureEnabled, null) is not null)
+            throw new InvalidOperationException("The engine's features were already configured; they are fixed for the life of the host.");
+    }
+
     /// <inheritdoc />
     public void RegisterDefinition<TInput, TResult>(ICalculationDefinition<TInput, TResult> definition)
     {
@@ -142,6 +158,10 @@ public sealed class CalculationEngine : ICalculationEngine
         string calculationId, TInput input, Guid? predecessorRecordId, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(calculationId);
+
+        // `ADR-0173`: the one choke point every run by id passes through, before the lookup, so a gated id is refused whether or not it is registered.
+        if (CalculationFeatureGate.RefusalFor(calculationId, _featureEnabled) is { } switchedOff)
+            throw new CalculationFeatureDisabledException(calculationId, switchedOff);
 
         if (!_definitions.TryGetValue(calculationId, out var boxed) || boxed is not ICalculationDefinition<TInput, TResult> definition)
             throw new CalculationDefinitionNotFoundException(calculationId);
@@ -293,6 +313,48 @@ public sealed class CalculationEngine : ICalculationEngine
             dto.Input,
             dto.InputTypeName,
             dto.PredecessorRecordId);
+    }
+
+    /// <inheritdoc />
+    public async Task<CalculationRecordDocument?> FindRecordDocumentAsync(Guid recordId, CancellationToken cancellationToken = default)
+    {
+        var document = await _documentStore.FindAsync(recordId, cancellationToken).ConfigureAwait(false);
+
+        if (document is null)
+            return null;
+
+        if (!string.Equals(document.Kind, CalculationRecordDocumentKind, StringComparison.Ordinal))
+            throw new CalculationException($"Document '{recordId}' is a '{document.Kind}', not a {CalculationRecordDocumentKind}.");
+
+        var revisions = await _documentStore.GetRevisionHistoryAsync(recordId, cancellationToken).ConfigureAwait(false);
+
+        if (revisions.Count == 0)
+            return null;
+
+        CalculationRecordDto<JsonElement>? dto;
+
+        try
+        {
+            dto = JsonSerializer.Deserialize<CalculationRecordDto<JsonElement>>(revisions[^1].Content);
+        }
+        catch (JsonException exception)
+        {
+            throw new CalculationException($"Calculation record '{recordId}' could not be read: {exception.Message}");
+        }
+
+        if (dto is null)
+            throw new CalculationException($"Calculation record '{recordId}' deserialised to nothing.");
+
+        JsonElement? input = dto.Input switch
+        {
+            JsonElement e => e.Clone(),
+            null => null,
+            var other => JsonSerializer.SerializeToElement(other),
+        };
+
+        return new CalculationRecordDocument(
+            recordId, dto.CalculationId, dto.Result.Clone(), dto.ResultTypeName, dto.Assumptions, dto.IntermediateResults, dto.Validation,
+            dto.ReferencedMaterialIds, dto.ExecutedAt, dto.ExecutedByPrincipalId, revisions[^1].RevisionNumber, input, dto.InputTypeName, dto.PredecessorRecordId);
     }
 
     /// <inheritdoc />

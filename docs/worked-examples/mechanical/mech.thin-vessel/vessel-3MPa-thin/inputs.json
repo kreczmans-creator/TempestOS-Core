@@ -1,0 +1,79 @@
+[
+  {
+    "Symbol": "E_j",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-MECH-03 design criteria",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "R_in",
+    "Number": 750,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-PV-602",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "750"
+  },
+  {
+    "Symbol": "S",
+    "Number": 138,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-MECH-03 design criteria",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "138"
+  },
+  {
+    "Symbol": "c",
+    "Number": 1.5,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-MECH-03 design criteria",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.5"
+  },
+  {
+    "Symbol": "n_design",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-MECH-03 design criteria",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "p_design",
+    "Number": 3,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-SCHEDULE-01",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3"
+  },
+  {
+    "Symbol": "t_p",
+    "Number": 15,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-PV-602",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "15"
+  }
+]

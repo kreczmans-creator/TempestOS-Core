@@ -1,0 +1,126 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: elec.fault-protection    Revision: A
+Title: Fault protection (BS 7671)
+
+1. Scope and method
+Calculates automatic disconnection of supply in a TN system for one circuit: loop impedance, disconnection time and the adiabatic conductor check. It also gives the prospective three-phase fault at the origin against the breaking capacity.
+Loop impedance: Z_s = Z_e + (R_1 + R_2)·[1 + α(θ − 20)], R = k_R·ρ_20·L/S (k_R = 1.125 takes the pure-copper ρ_20 to the cable standard's maximum conductor resistance; k enters with the pure ρ_20) Fault current: I_f = C_min·U_0/Z_s, C_min = 0.95 Maximum loop impedance: Z_s,max = C_min·U_0/I_a; I_a = 5, 10 or 20·I_n for MCB types B, C, D, or read from the time–current points at t_req (log-log) Adiabatic conductor check: S_min = √(I²t)/k, k = √[Q_c(β + 20)/ρ_20 · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived); I²t = I_f²·t_d from 0.1 s; below 0.1 s the device's let-through I²t at the maximum prospective fault bounds both conductors at the origin (reg. 434.5.2, 543.1.3), and without it the sheet fails 'Conductors against let-through at the origin' Protective device check: the device chosen here must be the one carried from the cable step (device_code 1 = MCB B, 2 = C, 3 = D, 4 = fuse or MCCB), else the sheet is blocked Fault level (simplified): Z_T = u_k·U_n²/S_r, I_k3 = c·U_n/(√3·Z_T), U_n = √3·U_0
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  device | Protective device | MCB type B (I_a = 5 I_n) |  | manual | any
+  I_n | Rated current | 32 | A | manual | 6 … 630 A
+  L | Circuit length | 20 | m | manual | 1 … 500 m
+  S_line | Line conductor cross-section | 2.5 | mm² | manual | 1 … 300 mm²
+  S_cpc | Protective conductor cross-section | 1.5 | mm² | manual | 1 … 300 mm²
+  rho_20 | Resistivity at 20 °C (used for k, and for R₁ + R₂ through k_R) | 0.017241 | Ω·mm²/m | manual | 0.015 … 0.05 Ω·mm²/m
+  k_R | Conductor resistance factor on ρ₂₀ for R₁ + R₂ (1 = the resistivity itself; the default of 1.125 takes pure copper to the cable standard's maximum conductor resistances, so Z_s is not understated; k is not changed by it) | 1 |  | manual | 1 … 1.25
+  alpha | Temperature coefficient of resistance | 0.00393 | 1/K | manual | 0.0035 … 0.0045 1/K
+  Q_c | Volumetric heat capacity | 0.00345 | J/(K·mm³) | manual | 0.002 … 0.005 J/(K·mm³)
+  beta | Reciprocal temperature coefficient β | 234.5 | K | manual | 200 … 260 K
+  theta_i | Initial temperature for the adiabatic check | 70 | °C | manual | 40 … 120 °C
+  theta_f | Final temperature for the adiabatic check | 160 | °C | manual | 140 … 300 °C
+  U_0 | Nominal voltage to earth | 230 | V | manual | 100 … 600 V
+  Z_e | External earth fault loop impedance | 0.35 | Ω | manual | 0.05 … 2 Ω
+  T_op | Conductor temperature for Z_s | 70 | °C | manual | 30 … 90 °C
+  C_min | Voltage factor for the minimum fault | 0.95 |  | manual | 0.93 … 1
+  c_max | Voltage factor c for the maximum fault | 1.1 |  | manual | 1.05 … 1.1
+  t_req | Required disconnection time | 0.4 | s | manual | 0.2 … 5 s
+
+3. Assumptions
+  A1. The system is TN with a single earth fault of negligible impedance. (Scope of the check.)
+  A2. There is no motor contribution, no arc fault and no IT system. (Scope of the check.)
+  A3. The line and protective conductors are the same material at the same temperature. (Conductor data from a material record.)
+  A4. The resistance is ρ₂₀·L/S corrected by α. (Conductor data from a material record.)
+  A5. The factor k is derived from the material constants, not read from a licensed table. (Derived constants, not read from a table.)
+  A6. Fuse and MCCB characteristics are points the user reads off the manufacturer's curve. (No time–current table ships.)
+  A7. The points are interpolated log-log, with no extrapolation. (No time–current table ships.)
+  A8. The optional field-test value 0.8 × Z_s,max is a rule of thumb for measurements at ambient temperature. (Labelled on the sheet.)
+  A9. The line conductor check (BS 7671 clause 434.5.2) needs the device's let-through energy at the maximum prospective fault. (Stated limitation: the end-of-line earth fault is the minimum fault, not the maximum.)
+  A10. The end-of-line earth fault is the minimum fault and does not bound that energy. (Stated limitation: the end-of-line earth fault is the minimum fault, not the maximum.)
+  A11. The line conductor check is made only when I2t_let is entered or the disconnection time is 0.1 s or more. (Stated limitation: the end-of-line earth fault is the minimum fault, not the maximum.)
+
+4. Working
+  [19] R_12 = rho_20 * k_R * L * (1 / S_line + 1 / S_cpc) * (1 + alpha * (T_op - 20 degC))
+      = 0.017241 ohm·mm²/m × 1 × 20 m × (1 / 2.5 mm² + 1 / 1.5 mm²) × (1 + 0.00393 1/K × (70 degC − 20 degC))
+      = 0.44008 ohm
+        R₁ + R₂ at the conductor temperature
+  [20] Z_s = Z_e + R_12    « BS 7671 reg. 411.4.4
+      = 0.35 ohm + 0.44008 ohm
+      = 0.79008 ohm
+        Earth fault loop impedance
+  [21] I_f = C_min * U_0 / Z_s
+      = 0.95 × 230 V / 0.79008 ohm
+      = 276.55 A
+        Earth fault current
+  [22] I_a = 5 * I_n    « BS EN 60898-1
+      = 5 × 32 A
+      = 160 A
+        Instantaneous tripping current (5 I_n)
+  [23] Z_s_max = C_min * U_0 / I_a    « BS 7671 reg. 411.4.4
+      = 0.95 × 230 V / 160 A
+      = 1.3656 ohm
+        Maximum earth fault loop impedance
+  [24] u_Zs = Z_s / Z_s_max
+      = 0.79008 ohm / 1.3656 ohm
+      = 0.57855
+        Loop impedance utilisation
+  [25] Z_test = 0.8 * Z_s_max
+      = 0.8 × 1.3656 ohm
+      = 1.0925 ohm
+        Field-test maximum at ambient (0.8 × Z_s,max, rule of thumb)
+  [26] t_d = instantaneous region (I_f ≥ I_a): t ≤ 0.1 s
+      = I_f = 276.55 A
+      = 0.1 s
+        Disconnection time
+  [27] I2t = I_f²·0.1 s (no let-through entered)
+      = 276.55² × 0.1
+      = 7648.2 A²·s
+        Fault energy at the end-of-line fault, clearing time taken as 0.1 s
+  [28] k = √[Q_c(β + 20)/ρ₂₀ · ln(1 + (θ_f − θ_i)/(β + θ_i))] (derived)    « BS 7671 reg. 543.1.3
+      = √[0.00345 × 254.5 / 0.000017241 × ln(1 + 90/304.5)]
+      = 114.84
+        Adiabatic factor k, A·√s/mm² (derived, compare with the licensed table)
+  [29] S_min = √(I²t)/k    « BS 7671 reg. 543.1.3, 434.5.2
+      = √7648.2 / 114.84
+      = 0.76155 mm²
+        Minimum conductor cross-section (adiabatic)
+  [30] u_cpc = S_min / S_cpc
+      = 0.76155 mm² / 1.5 mm²
+      = 0.5077
+        Protective conductor utilisation
+
+5. Results
+  Z_s = 0.7901 Ω    Loop impedance
+  I_f = 276.55 A    Earth fault current
+  S_min = 0.7616 mm²    Minimum cross-section
+  R_12 = 0.4401 Ω    R₁ + R₂
+  I_a = 160 A    Disconnection current
+  t_d = 0.1000 s    Disconnection time
+  Z_s_max = 1.3656 Ω    Maximum loop impedance
+  Z_test = 1.0925 Ω    Field-test maximum (rule of thumb)
+  k = 114.84    Adiabatic factor (derived)
+  u_Zs = 0.58    Loop impedance utilisation
+  u_cpc = 0.51    Protective conductor utilisation
+
+6. Checks (governing first)
+  FAIL  Conductors against let-through at the origin: I2t_let not entered vs I²t the device lets through at the maximum prospective fault  « BS 7671 reg. 434.5.2, 543.1.3
+  PASS  Loop impedance against the maximum: 0.7901 Ω vs 1.3656 Ω  utilisation 0.58  « BS 7671 reg. 411.4.4
+  PASS  Adiabatic minimum against the protective conductor: 0.7616 mm² vs 1.500 mm²  utilisation 0.51  « BS 7671 reg. 543.1.3
+  PASS  Disconnection time against the required time: 0.1000 s vs 0.4000 s  utilisation 0.25  « BS 7671 reg. 411.3.2.2
+
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are rho_20, k_R, alpha, Q_c, beta, theta_i, theta_f (Conductor material constants). Enter each as one so its source, edition and licence travel with it.  [record]
+  WARNING  k_R: the factor 1 leaves R₁ + R₂ near the pure resistivity, so Z_s is understated. Use 1.125 unless the conductor resistance is measured or taken from the maker's data.  [resistance]
+  WARNING  I2t_let: disconnection is below 0.1 s and no let-through I²t is entered. The check 'Conductors against let-through at the origin' fails until I2t_let is entered.  [let-through]
+
+8. Verification
+  Template: elec.fault-protection@1.6.0
+  Known-answer cases passed: 6/6
+
+9. References
+  1. BS 7671:2018 reg. 411.3.2.2, 411.3.2.3, 411.4.4 — Automatic disconnection in TN systems: times and the loop impedance condition
+  2. BS 7671:2018 reg. 543.1.3, 434.5.2 — Protective conductor and fault current adiabatic checks
+  3. BS EN 60204-1:2018 cl. 6.3.3 — Protection by automatic disconnection of supply
+  4. IEC 60909-0:2016 cl. 5.3 — Voltage factor c

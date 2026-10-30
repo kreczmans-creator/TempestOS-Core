@@ -1,0 +1,366 @@
+[
+  {
+    "Symbol": "Mc_limit",
+    "Number": 500,
+    "Unit": "g/m^2",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-A-02 \u00A74.4: limit on the condensate per interface",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "500"
+  },
+  {
+    "Symbol": "RH_crit",
+    "Number": 80,
+    "Unit": "%",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-A-02 \u00A74.4: critical surface humidity",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "80"
+  },
+  {
+    "Symbol": "RH_int",
+    "Number": 50,
+    "Unit": "%",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-A-02 \u00A73.1: internal design humidity",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "50"
+  },
+  {
+    "Symbol": "Rse",
+    "Number": 0.04,
+    "Unit": "m^2*K/W",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Project surface-resistance record (external), assumed",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.04"
+  },
+  {
+    "Symbol": "Rsi",
+    "Number": 0.13,
+    "Unit": "m^2*K/W",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Project surface-resistance record (internal, horizontal flow), assumed",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.13"
+  },
+  {
+    "Symbol": "Rsi_f",
+    "Number": 0.25,
+    "Unit": "m^2*K/W",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Conventional R_si,f = 0.25 m\u00B2K/W for the surface-condensation check of an opaque element (a record, to be checked against the owner\u0027s copy of ISO 13788), assumed",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.25"
+  },
+  {
+    "Symbol": "T_int",
+    "Number": 20,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-A-02 \u00A73.1: living-room design temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20"
+  },
+  {
+    "Symbol": "breathable",
+    "Flag": false,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Mineral wool and brick: no timber or hygroscopic layers.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "no"
+  },
+  {
+    "Symbol": "climate",
+    "Rows": [
+      {
+        "Cells": {
+          "month": {
+            "Text": "M1"
+          },
+          "theta_e": {
+            "Number": 2,
+            "Unit": "degC"
+          },
+          "RH_e": {
+            "Number": 90,
+            "Unit": "%"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "month": {
+            "Text": "M2"
+          },
+          "theta_e": {
+            "Number": 3,
+            "Unit": "degC"
+          },
+          "RH_e": {
+            "Number": 88,
+            "Unit": "%"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "month": {
+            "Text": "M3"
+          },
+          "theta_e": {
+            "Number": 6,
+            "Unit": "degC"
+          },
+          "RH_e": {
+            "Number": 84,
+            "Unit": "%"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "month": {
+            "Text": "M4"
+          },
+          "theta_e": {
+            "Number": 9,
+            "Unit": "degC"
+          },
+          "RH_e": {
+            "Number": 80,
+            "Unit": "%"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "month": {
+            "Text": "M5"
+          },
+          "theta_e": {
+            "Number": 13,
+            "Unit": "degC"
+          },
+          "RH_e": {
+            "Number": 76,
+            "Unit": "%"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "month": {
+            "Text": "M6"
+          },
+          "theta_e": {
+            "Number": 16,
+            "Unit": "degC"
+          },
+          "RH_e": {
+            "Number": 74,
+            "Unit": "%"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "month": {
+            "Text": "M7"
+          },
+          "theta_e": {
+            "Number": 18,
+            "Unit": "degC"
+          },
+          "RH_e": {
+            "Number": 74,
+            "Unit": "%"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "month": {
+            "Text": "M8"
+          },
+          "theta_e": {
+            "Number": 18,
+            "Unit": "degC"
+          },
+          "RH_e": {
+            "Number": 76,
+            "Unit": "%"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "month": {
+            "Text": "M9"
+          },
+          "theta_e": {
+            "Number": 15,
+            "Unit": "degC"
+          },
+          "RH_e": {
+            "Number": 82,
+            "Unit": "%"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "month": {
+            "Text": "M10"
+          },
+          "theta_e": {
+            "Number": 11,
+            "Unit": "degC"
+          },
+          "RH_e": {
+            "Number": 87,
+            "Unit": "%"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "month": {
+            "Text": "M11"
+          },
+          "theta_e": {
+            "Number": 6,
+            "Unit": "degC"
+          },
+          "RH_e": {
+            "Number": 90,
+            "Unit": "%"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "month": {
+            "Text": "M12"
+          },
+          "theta_e": {
+            "Number": 3,
+            "Unit": "degC"
+          },
+          "RH_e": {
+            "Number": 91,
+            "Unit": "%"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Invented illustrative maritime year; replace with the project\u0027s own monthly climate record (take it from your licensed source).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "12 row(s)"
+  },
+  {
+    "Symbol": "dp_f",
+    "Number": 1.1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Moisture-excess mode only; this example holds a constant internal humidity, so the conventional 1.10 is kept unused.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.1"
+  },
+  {
+    "Symbol": "humidity_mode",
+    "Text": "constant internal relative humidity",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Constant internal humidity; no humidity-class record is held for this project.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "constant internal relative humidity"
+  },
+  {
+    "Symbol": "layers",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "Plasterboard"
+          },
+          "d": {
+            "Number": 12.5,
+            "Unit": "mm"
+          },
+          "lambda": {
+            "Number": 0.25,
+            "Unit": "W/(m*K)"
+          },
+          "mu": {
+            "Number": 8
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Mineral wool"
+          },
+          "d": {
+            "Number": 50,
+            "Unit": "mm"
+          },
+          "lambda": {
+            "Number": 0.035,
+            "Unit": "W/(m*K)"
+          },
+          "mu": {
+            "Number": 1
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Existing brick"
+          },
+          "d": {
+            "Number": 215,
+            "Unit": "mm"
+          },
+          "lambda": {
+            "Number": 0.8,
+            "Unit": "W/(m*K)"
+          },
+          "mu": {
+            "Number": 10
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "A-310",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3 row(s)"
+  }
+]

@@ -29,7 +29,7 @@ internal sealed record ComposedCoordinators(
     AttachmentViewerLauncher AttachmentViewers,
     WorkspaceLayoutPresetCoordinator LayoutPresets,
     EngineeringCalculationCoordinator EngineeringCalculationCoordinator,
-    CalculationModulesCoordinator CalculationModulesCoordinator,
+    Tempest.Desktop.CalcSheets.CalcSheetCoordinator CalcSheets,
     ProjectDeliveryCoordinator ProjectDelivery,
     ProjectGovernanceCoordinator ProjectGovernanceCoordinator);
 
@@ -303,11 +303,40 @@ internal sealed partial class MainWindowComposer
         // (`ADR-0103`, the same shape as the two above).
         var engineeringCalculationCoordinator = new EngineeringCalculationCoordinator(host.BracketCalculations!, views.EngineeringCalculation);
 
-        // The Engineering Calculators' own collaborator (`WP 21.7B`).
-        var calculationModulesCoordinator = new CalculationModulesCoordinator(host.CalculationModules!, views.CalculationModules);
+        // `v0.26.0` (ADR-0165): the worksheet surface's own collaborator.
+        // The checker is read where the author is (ICurrentPrincipalAccessor, the one source of truth), never from
+        // host.SessionPrincipal, so a sheet cannot name its author and checker from two different sessions.
+        var principals = (Tempest.Core.Identity.ICurrentPrincipalAccessor)host.Services!.GetService(typeof(Tempest.Core.Identity.ICurrentPrincipalAccessor));
+        var calcSheets = new Tempest.Desktop.CalcSheets.CalcSheetCoordinator(host.CalcInstances!, views.Worksheets, host.ProjectContext!, () => principals.Current?.Identity.Id,
+            (Tempest.Core.Events.IEventBus)host.Services!.GetService(typeof(Tempest.Core.Events.IEventBus)),
+            (Tempest.Core.Logging.ILogger?)host.Services.GetService(typeof(Tempest.Core.Logging.ILogger)),
+            host.Materials is { } materials && host.Fasteners is { } fasteners && host.Bearings is { } bearings ? new Tempest.Calc.Library.CalcReferenceFill(materials, fasteners, bearings) : null,
+            views.WorksheetRegister);
+
+        // Addendum C, C-3: a worksheet's "Fill" and "Open records screen" links land on the records screen, and what the screen saves
+        // is what the worksheet's missing-records list reads again.
+        calcSheets.OpenRecordsScreenAsync = kind => views.EngineeringAreaView.OpenRecordsAsync(kind);
+        views.WorksheetRecords.Model.Committed += saved => _ = calcSheets.RefreshRequirementsAsync();
+
+        // Addendum C, C-5 (ADR-0175): the Guided test under Calculations. It drives the worksheet form as a scratch sheet and keeps its results in
+        // its own test-run records; it is given no calculation, Evidence or issue service. Left out when the build's script could not be read.
+        if (host.ManualTests is { } manualTests && host.CalcCatalogue is { } calcCatalogue)
+        {
+            var guided = new Tempest.Desktop.GuidedTest.GuidedTestViewModel(
+                manualTests,
+                new Tempest.Desktop.GuidedTest.CalcGuidedWorksheetHost(views.Worksheets, calcSheets, calcCatalogue),
+                (Tempest.Core.Logging.ILogger?)host.Services.GetService(typeof(Tempest.Core.Logging.ILogger)),
+                // "Delete older finished runs" asks through the app's own confirmation dialog before it removes anything.
+                (title, message, confirmCaption) => views.ConfirmationDialog.ConfirmAsync(title, message, confirmCaption));
+            views.EngineeringAreaView.InstallGuidedTest(new Tempest.Desktop.GuidedTest.GuidedTestView(guided), guided.RefreshAsync);
+        }
+
+        // `ADR-0173`: Evidence a worksheet manages is checked, issued and revised there; its editor's "Open worksheet" lands here.
+        viewCoordinator.OpenCalculationForEvidenceAsync = evidenceId =>
+            calcSheets.OpenForEvidenceAsync(evidenceId, views.EngineeringAreaView.OpenWorksheetAsync);
 
         return new ComposedCoordinators(
             undoRedo, viewCoordinator, cockpitView, homeDashboardView, dockingComposer, attachmentViewers, layoutPresets,
-            engineeringCalculationCoordinator, calculationModulesCoordinator, projectDelivery, projectGovernanceCoordinator);
+            engineeringCalculationCoordinator, calcSheets, projectDelivery, projectGovernanceCoordinator);
     }
 }

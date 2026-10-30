@@ -112,9 +112,56 @@ public sealed class EvidenceService : IEvidenceService
     }
 
     /// <inheritdoc />
-    public async Task<Evidence> CreateAsync(
+    public Task<Evidence> CreateAsync(
         Guid? parentId, string title, EvidenceClassification classification, Guid? subjectId = null,
+        CancellationToken cancellationToken = default) =>
+        CreateCoreAsync(parentId, title, classification, subjectId, managedBy: null, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<Evidence> CreateManagedAsync(
+        Guid? parentId, string title, EvidenceClassification classification, string managedBy, Guid? subjectId = null,
         CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(managedBy);
+        return CreateCoreAsync(parentId, title, classification, subjectId, managedBy, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<EvidenceActionResult> ManageAsync(Guid evidenceId, EvidenceOwner owner, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(owner);
+
+        var evidence = await FindEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false);
+        if (evidence is null)
+            return new EvidenceActionResult(EvidenceRefusal.EvidenceNotFound, $"No evidence '{evidenceId}' is registered.", null);
+
+        if (evidence.ManagedBy is { } existing)
+        {
+            return string.Equals(existing, owner.Name, StringComparison.Ordinal)
+                ? new EvidenceActionResult(EvidenceRefusal.None, null, evidence)
+                : new EvidenceActionResult(EvidenceRefusal.ManagedElsewhere, $"Evidence '{evidenceId}' is managed by '{existing}'.", evidence);
+        }
+
+        await evidence.SetManagedByAsync(owner.Name, cancellationToken).ConfigureAwait(false);
+        return new EvidenceActionResult(EvidenceRefusal.None, null, evidence);
+    }
+
+    /// <summary>The refusal for managed evidence presented to an act without its owner, or <see langword="null"/> when <paramref name="owner"/> is its owner (or it is ordinary evidence).</summary>
+    private static EvidenceActionResult? ManagedRefusal(Evidence evidence, EvidenceOwner? owner, string act, string verb)
+    {
+        if (evidence.ManagedBy is not { } managedBy || string.Equals(owner?.Name, managedBy, StringComparison.Ordinal))
+            return null;
+
+        var surface = string.Equals(managedBy, Evidence.CalcWorksheetOwner, StringComparison.Ordinal) ? "its calculation worksheet" : $"'{managedBy}'";
+        return new EvidenceActionResult(
+            EvidenceRefusal.ManagedElsewhere,
+            $"Evidence '{evidence.Id}' is the record of a calculation and is managed by {surface}: it cannot be {act} here. Open the worksheet and {verb} it there, where its attestation, second check and feature switch apply.",
+            evidence);
+    }
+
+    private async Task<Evidence> CreateCoreAsync(
+        Guid? parentId, string title, EvidenceClassification classification, Guid? subjectId, string? managedBy,
+        CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
 
@@ -145,7 +192,7 @@ public sealed class EvidenceService : IEvidenceService
             _context,
             (doc, rev) => new Evidence(
                 doc, rev, _context, identifier: null, title, EngineeringObjectMetadata.Empty,
-                classification, subjectId, authorId))
+                classification, subjectId, authorId, managedBy: managedBy))
             .CreateAsync($"{title} — evidence recorded in Tempest.", projectScopeId, cancellationToken)
             .ConfigureAwait(false);
 
@@ -234,9 +281,18 @@ public sealed class EvidenceService : IEvidenceService
     }
 
     /// <inheritdoc />
-    public async Task<EvidenceActionResult> RecordCheckAsync(
+    public Task<EvidenceActionResult> RecordCheckAsync(
         Guid evidenceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        RecordCheckInOneTransactionAsync(evidenceId, checkerName, checkerOrganisation, statement, outcome, alsoWrite: null, cancellationToken, owner: null);
+
+    /// <inheritdoc />
+    public async Task<EvidenceActionResult> RecordCheckInOneTransactionAsync(
+        Guid evidenceId, string checkerName, string checkerOrganisation, string statement, CheckOutcome outcome,
+        Func<Persistence.IPersistenceTransaction, CancellationToken, Task>? alsoWrite,
+        CancellationToken cancellationToken = default,
+        EvidenceOwner? owner = null,
+        bool selfCheck = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(checkerName);
         ArgumentException.ThrowIfNullOrWhiteSpace(checkerOrganisation);
@@ -245,6 +301,9 @@ public sealed class EvidenceService : IEvidenceService
         var evidence = await FindEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false);
         if (evidence is null)
             return new EvidenceActionResult(EvidenceRefusal.EvidenceNotFound, $"No evidence '{evidenceId}' is registered.", null);
+
+        if (ManagedRefusal(evidence, owner, "checked", "check") is { } managedCheck)
+            return managedCheck;
 
         if (!EvidenceStatusTransitions.IsPermitted(evidence.Status, EvidenceStatus.Checked))
         {
@@ -264,7 +323,6 @@ public sealed class EvidenceService : IEvidenceService
 
         var principal = _principals.Current;
         string? checkerIdentityId = null;
-        var selfCheck = false;
 
         if (await IsIndependentCheckRequiredAsync(cancellationToken).ConfigureAwait(false))
         {
@@ -276,7 +334,8 @@ public sealed class EvidenceService : IEvidenceService
                     evidence);
             }
 
-            selfCheck = string.Equals(principal.Identity.Id, evidence.AuthorIdentityId, StringComparison.Ordinal);
+            // DA-12 (D3): an owner that already knows the checker is the author says so; the rule's own finding is OR-ed in.
+            selfCheck |= string.Equals(principal.Identity.Id, evidence.AuthorIdentityId, StringComparison.Ordinal);
 
             // `ADR-0161`: whether the checker must be a second person is the
             // global second-person sign-off switch (off by default). Off,
@@ -299,7 +358,14 @@ public sealed class EvidenceService : IEvidenceService
         var recordedBy = principal?.Identity.Id ?? _context.ResolveCurrentPrincipalId();
         var check = new CheckRecord(checkerName, checkerOrganisation, checkerIdentityId, recordedBy, _time.GetUtcNow(), statement, outcome, selfCheck);
 
-        await evidence.RecordCheckAsync(check, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await evidence.RecordCheckAsync(check, alsoWrite, cancellationToken).ConfigureAwait(false);
+        }
+        catch (ConcurrentCheckException ex)
+        {
+            return new EvidenceActionResult(EvidenceRefusal.TransitionNotPermitted, ex.Message, evidence);
+        }
 
         return new EvidenceActionResult(EvidenceRefusal.None, null, evidence);
     }
@@ -317,6 +383,9 @@ public sealed class EvidenceService : IEvidenceService
         var evidence = await FindEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false);
         if (evidence is null)
             return new EvidenceActionResult(EvidenceRefusal.EvidenceNotFound, $"No evidence '{evidenceId}' is registered.", null);
+
+        if (ManagedRefusal(evidence, null, "issued", "issue") is { } managedIssue)
+            return managedIssue;
 
         if (!EvidenceStatusTransitions.IsPermitted(evidence.Status, EvidenceStatus.Issued))
         {
@@ -356,11 +425,68 @@ public sealed class EvidenceService : IEvidenceService
     }
 
     /// <inheritdoc />
+    public async Task<EvidenceActionResult> IssueInOneTransactionAsync(
+        Guid evidenceId, string issueReference, string revision, string client,
+        Func<Evidence, DateTimeOffset, CancellationToken, Task<IssueSheetContent?>>? renderSheetAsync = null,
+        Func<Persistence.IPersistenceTransaction, CancellationToken, Task>? alsoWrite = null,
+        CancellationToken cancellationToken = default,
+        EvidenceOwner? owner = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(issueReference);
+        ArgumentException.ThrowIfNullOrWhiteSpace(revision);
+        ArgumentException.ThrowIfNullOrWhiteSpace(client);
+
+        var evidence = await FindEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false);
+        if (evidence is null)
+            return new EvidenceActionResult(EvidenceRefusal.EvidenceNotFound, $"No evidence '{evidenceId}' is registered.", null);
+
+        if (ManagedRefusal(evidence, owner, "issued", "issue") is { } managedIssue)
+            return managedIssue;
+
+        if (!EvidenceStatusTransitions.IsPermitted(evidence.Status, EvidenceStatus.Issued))
+        {
+            return new EvidenceActionResult(
+                EvidenceRefusal.TransitionNotPermitted,
+                $"Evidence '{evidenceId}' is {evidence.Status}; it cannot be issued from that status. Check it first.",
+                evidence);
+        }
+
+        if (await FindArchivedOwningProjectAsync(evidence.Id, cancellationToken).ConfigureAwait(false) is { } archivedForIssue)
+        {
+            return new EvidenceActionResult(
+                EvidenceRefusal.ProjectArchived,
+                $"Project '{archivedForIssue.Id}' is archived (closed {archivedForIssue.ClosedOn:O}); this evidence is read-only.",
+                evidence);
+        }
+
+        var issuedAtUtc = _time.GetUtcNow();
+
+        // Rendering is pure and happens before the transaction opens; the
+        // bytes it returns are written inside it with everything else.
+        var sheet = renderSheetAsync is null ? null : await renderSheetAsync(evidence, issuedAtUtc, cancellationToken).ConfigureAwait(false);
+        var issue = new IssueRecord(issueReference, revision, client, issuedAtUtc, null);
+
+        try
+        {
+            await evidence.RecordIssueAsync(issue, sheet, alsoWrite, cancellationToken).ConfigureAwait(false);
+        }
+        catch (ConcurrentIssueException ex)
+        {
+            return new EvidenceActionResult(EvidenceRefusal.TransitionNotPermitted, ex.Message, evidence);
+        }
+
+        return new EvidenceActionResult(EvidenceRefusal.None, null, evidence);
+    }
+
+    /// <inheritdoc />
     public async Task<EvidenceActionResult> ReviseAsync(Guid evidenceId, CancellationToken cancellationToken = default)
     {
         var evidence = await FindEvidenceAsync(evidenceId, cancellationToken).ConfigureAwait(false);
         if (evidence is null)
             return new EvidenceActionResult(EvidenceRefusal.EvidenceNotFound, $"No evidence '{evidenceId}' is registered.", null);
+
+        if (ManagedRefusal(evidence, null, "revised", "revise") is { } managedRevise)
+            return managedRevise;
 
         if (!EvidenceStatusTransitions.IsPermitted(evidence.Status, EvidenceStatus.Draft))
         {

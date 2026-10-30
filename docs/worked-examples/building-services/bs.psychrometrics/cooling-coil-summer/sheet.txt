@@ -1,0 +1,200 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: cooling-coil-summer    Revision: A
+Title: Psychrometrics
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. Scope and method
+Calculates the state of moist air from dry-bulb and one other property at a stated pressure or altitude. It then applies one air-handling process with its heat and moisture balance: sensible heating or cooling, dehumidification, humidification or mixing.
+Saturation and humidity: p_ws(T) by Hyland–Wexler over water at or above 0 °C and over ice below; W = 0.621945 p_w/(p − p_w); φ = p_w/p_ws Enthalpy and volume per kilogram of dry air: h = 1.006 T + W(2501 + 1.86 T) kJ/kg; v = 0.287042 (T + 273.15)(1 + 1.607858 W)/p Dew point and wet-bulb temperatures, by bisection: p_ws(T_dp) = p_w; the wet-bulb from the adiabatic-saturation relation Sensible heating or cooling at constant moisture content: Phi = ṁ (h₂ − h₁) Cooling with dehumidification, less the heat leaving in the condensate: Q_total = ṁ(h₁ − h₂) − ṁ_w h_w, with ṁ_w = ṁ(W₁ − W₂) Sensible and latent split of the coil load, along T₁ → T₂ at W₁ then W₁ → W₂ at T₂: Q_sensible = ṁ(h₁ − h(T₂, W₁)); Q_latent = ṁ(h(T₂, W₁) − h₂); SHR = Q_sensible/(Q_sensible + Q_latent); with RH_2 blank and T₂ above the entering dew point the coil is dry, W₂ = W₁ Steam and adiabatic humidification: h₂ = h₁ + (W₂ − W₁) h_steam for steam; h₂ = h₁ for adiabatic (spray) humidification Mixing two airstreams, weighted by dry-air mass flow: W_mix = Σṁ W/Σṁ; h_mix = Σṁ h/Σṁ
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  known | Second known property | relative humidity |  | assumption: RH given. | any
+  process | Process | cooling with dehumidification |  | assumption: Chilled-water coil. | any
+  altitude | Altitude (used when no pressure is entered) | 0 | m | assumption: Sea-level site. | -500 … 5000 m
+  T_db | Dry-bulb temperature | 28 | °C | spec: CIBSE Guide A summer design condition for the site, assumed | -40 … 60 °C
+  RH | Relative humidity | 60 |  | spec: Design condition | 5 … 100
+  m_da | Dry-air mass flow | 2.4 | kg/s | spec: AHU schedule AHU-01: 2.0 m³/s ≈ 2.4 kg/s dry air | 0 … 1000 kg/s
+  h_steam | Steam enthalpy (steam humidification) | 2676 |  | assumption: Steam humidification only; this cooling coil does not use it, so the template default is kept. | 2500 … 3000
+  T_2 | Leaving dry-bulb (sensible, cooling) | 12 | °C | spec: AHU schedule AHU-01 off-coil 12 °C | -40 … 80 °C
+  RH_2 | Leaving relative humidity (cooling, evaporative) | 95 |  | assumption: Off-coil 95 % RH (typical contact factor). | 5 … 100
+
+3. Assumptions
+  A1. Moist air is an ideal mixture of ideal gases. (ASHRAE Fundamentals Ch. 1 ideal-gas relations.)
+  A2. The enhancement factor is taken as 1. (ASHRAE Fundamentals Ch. 1 ideal-gas relations.)
+  A3. Condensate leaves at the coil leaving dry-bulb. (Process conventions.)
+  A4. Steam adds the enthalpy h_steam at negligible mass of dry air. (Process conventions.)
+  A5. Adiabatic humidification follows a line of constant enthalpy, which is close to constant wet-bulb. (Evaporative process idealisation.)
+  A6. known (Second known property) is taken as relative humidity. (RH given.)
+  A7. process (Process) is taken as cooling with dehumidification. (Chilled-water coil.)
+  A8. altitude (Altitude (used when no pressure is entered)) is taken as 0 m. (Sea-level site.)
+  A9. h_steam (Steam enthalpy (steam humidification)) is taken as 2676. (Steam humidification only; this cooling coil does not use it, so the template default is kept.)
+  A10. RH_2 (Leaving relative humidity (cooling, evaporative)) is taken as 95. (Off-coil 95 % RH (typical contact factor).)
+
+4. Working
+  [2] p_atm = 101.325 (1 − 2.25577e-5 z)^5.2559    « ASHRAE Ch. 1 eq. 3
+      = z = 0 m
+      = 101.32 kPa
+        Barometric pressure (standard atmosphere)
+  [6] p_ws_1 = p_ws(t) Hyland–Wexler (entering)
+      = t = 28 °C
+      = 3.7822 kPa
+        Saturation pressure, state 1
+  [7] p_w_1 = p W/(0.621945 + W)
+      = W = 0.014249
+      = 2.2693 kPa
+        Vapour pressure, state 1
+  [8] T_1_out = dry-bulb (entering)
+      = t = 28 °C
+      = 28 degC
+        Dry-bulb, state 1
+  [9] W_1 = 0.621945 p_w/(p − p_w)
+      = 2.2693 / (101.32 − 2.2693)
+      = 14.249
+        Humidity ratio, state 1 (g/kg dry air)
+  [10] RH_1 = p_w / p_ws
+      = 2.2693 / 3.7822
+      = 60
+        Relative humidity, state 1 (%)
+  [11] phi_1 = p_w / p_ws
+      = 2.2693 / 3.7822
+      = 60 %
+        Relative humidity, state 1, as a percentage quantity (the same value as RH_1; a plain-number output cannot be linked to a percentage input)
+  [12] T_dp_1 = p_ws(t_dp) = p_w, bisection
+      = p_w = 2.2693 kPa
+      = 19.514 degC
+        Dew point, state 1
+  [13] T_wb_1 = adiabatic-saturation relation, bisection
+      = t = 28, W = 0.014249
+      = 22.074 degC
+        Wet-bulb, state 1
+  [14] h_1 = 1.006 t + W (2501 + 1.86 t)
+      = 1.006 × 28 + 0.014249 × (2501 + 1.86 × 28)
+      = 64.546
+        Enthalpy, state 1 (kJ/kg dry air)
+  [15] v_1 = 0.287042 (t + 273.15)(1 + 1.607858 W)/p
+      = p = 101.32 kPa
+      = 0.87267 m³/kg
+        Specific volume, state 1 (per kg dry air)
+  [16] rho_1 = (1 + W)/v
+      = (1 + 0.014249) / 0.87267
+      = 1.1622 kg/m³
+        Moist-air density, state 1
+  [21] p_ws_2 = p_ws(t) Hyland–Wexler (leaving)
+      = t = 12 °C
+      = 1.4026 kPa
+        Saturation pressure, state 2
+  [22] p_w_2 = p W/(0.621945 + W)
+      = W = 0.0082878
+      = 1.3325 kPa
+        Vapour pressure, state 2
+  [23] T_2_out = dry-bulb (leaving)
+      = t = 12 °C
+      = 12 degC
+        Dry-bulb, state 2
+  [24] W_2 = 0.621945 p_w/(p − p_w)
+      = 1.3325 / (101.32 − 1.3325)
+      = 8.2878
+        Humidity ratio, state 2 (g/kg dry air)
+  [25] RH_2 = p_w / p_ws
+      = 1.3325 / 1.4026
+      = 95
+        Relative humidity, state 2 (%)
+  [26] phi_2 = p_w / p_ws
+      = 1.3325 / 1.4026
+      = 95 %
+        Relative humidity, state 2, as a percentage quantity (the same value as RH_2; a plain-number output cannot be linked to a percentage input)
+  [27] T_dp_2 = p_ws(t_dp) = p_w, bisection
+      = p_w = 1.3325 kPa
+      = 11.225 degC
+        Dew point, state 2
+  [28] T_wb_2 = adiabatic-saturation relation, bisection
+      = t = 12, W = 0.0082878
+      = 11.553 degC
+        Wet-bulb, state 2
+  [29] h_2 = 1.006 t + W (2501 + 1.86 t)
+      = 1.006 × 12 + 0.0082878 × (2501 + 1.86 × 12)
+      = 32.985
+        Enthalpy, state 2 (kJ/kg dry air)
+  [30] v_2 = 0.287042 (t + 273.15)(1 + 1.607858 W)/p
+      = p = 101.32 kPa
+      = 0.81856 m³/kg
+        Specific volume, state 2 (per kg dry air)
+  [31] rho_2 = (1 + W)/v
+      = (1 + 0.0082878) / 0.81856
+      = 1.2318 kg/m³
+        Moist-air density, state 2
+  [32] m_w = ṁ (W₁ − W₂)
+      = 2.4 × (14.249 − 8.2878) g/kg
+      = 0.014306 kg/s
+        Condensate
+  [33] h_w = 4.186 t₂ (condensate enthalpy)
+      = 4.186 × 12
+      = 50.232
+        Condensate enthalpy, kJ/kg
+  [34] Q_total = ṁ (h₁ − h₂) − ṁ_w h_w
+      = 2.4 × (64.546 − 32.985) − 0.014306 × 50.232
+      = 75.027 kW
+        Total cooling load
+  [35] Q_sensible = ṁ (h₁ − h(t₂, W₁))
+      = 2.4 × (64.546 − 48.026)
+      = 39.648 kW
+        Sensible part: the air cooled from t₁ to t₂ at the entering humidity ratio W₁
+  [36] Q_latent = ṁ (h(t₂, W₁) − h₂)
+      = 2.4 × (48.026 − 32.985)
+      = 36.098 kW
+        Latent part: the moisture removed from W₁ to W₂ at t₂
+  [37] SHR = Q_sensible / (Q_sensible + Q_latent)
+      = 39.648 / (39.648 + 36.098)
+      = 0.52344
+        Sensible heat ratio
+
+5. Results
+  T_1_out = 28 °C    Dry-bulb temperature, state 1
+  phi_1 = 60 %    Relative humidity, state 1, as a quantity in % (for linking)
+  T_dp_1 = 19.51 °C    Dew point, state 1
+  T_wb_1 = 22.07 °C    Wet-bulb temperature, state 1
+  W_1 = 14.249    Humidity ratio, state 1, in grams per kilogram of dry air
+  h_1 = 64.546    Enthalpy, state 1, in kilojoules per kilogram of dry air
+  T_2_out = 12 °C    Dry-bulb temperature, state 2
+  W_2 = 8.2878    Humidity ratio, state 2, in grams per kilogram of dry air
+  h_2 = 32.985    Enthalpy, state 2, in kilojoules per kilogram of dry air
+  p_ws_1 = 3.782 kPa    Saturation pressure, state 1
+  p_w_1 = 2.269 kPa    Vapour pressure, state 1
+  RH_1 = 60    Relative humidity, state 1, as a number from 0 to 100
+  v_1 = 0.8727 m³/kg    Specific volume, state 1
+  rho_1 = 1.162 kg/m³    Moist-air density, state 1
+  p_ws_2 = 1.403 kPa    Saturation pressure, state 2
+  p_w_2 = 1.332 kPa    Vapour pressure, state 2
+  RH_2 = 95    Relative humidity, state 2, as a number from 0 to 100
+  phi_2 = 95 %    Relative humidity, state 2, as a quantity in % (for linking)
+  T_dp_2 = 11.22 °C    Dew point, state 2
+  T_wb_2 = 11.55 °C    Wet-bulb temperature, state 2
+  v_2 = 0.8186 m³/kg    Specific volume, state 2
+  rho_2 = 1.232 kg/m³    Moist-air density, state 2
+  m_w = 0.01431 kg/s    Condensate
+  Q_total = 75.03 kW    Total cooling
+  Q_sensible = 39.65 kW    Sensible cooling
+  Q_latent = 36.10 kW    Latent cooling
+  SHR = 0.52344    Sensible heat ratio
+
+6. Checks (governing first)
+  None.
+
+7. Applicability
+  None.
+
+8. Verification
+  Template: bs.psychrometrics@1.4.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 4/4
+  Test run: —
+
+9. References
+  1. ASHRAE Handbook — Fundamentals Ch. 1 — Psychrometrics (ideal-gas relations, processes)
+  2. Hyland & Wexler, ASHRAE Trans. 89(2A), 1983 — Saturation pressure of water and ice
+  3. CIBSE Guide C §1 — Properties of humid air (principles)

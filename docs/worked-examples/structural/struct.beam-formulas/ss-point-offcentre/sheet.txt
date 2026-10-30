@@ -1,0 +1,96 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: ss-point-offcentre    Revision: A
+Title: Beam formulas (single span)
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. Scope and method
+Calculates reactions, maximum moment and shear, and maximum deflection of a single-span beam for the standard support and load cases. Left end at x = 0; loads downward; sagging moments and downward deflections positive.
+Formula source: Roark Table 8.1, in this sheet's own notation, for the chosen support and load case. Simply supported beam, point load at a (b = L − a), reaction and largest moment: R_A = F b / L; M_max = F a b / L. Simply supported beam, point load at a, largest deflection when a ≥ b: δ_max = F b (L² − b²)^(3/2) / (9√3 L EI) at x = √((L² − b²)/3). Propped cantilever, uniform load, reaction and moments: R_B = 3wL/8; M_A = −wL²/8; sagging M_max = 9wL²/128 at x = 5L/8.
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  case | Case | simply supported, point load at a |  | assumption: Single span, pin–roller. | any
+  L | Span | 6 | m | drawing: DRG-FL-201 rev A | 0.1 … 100 m
+  I | Second moment of area | 8503 | cm⁴ | reference: UB 305×165×40 (Blue Book) | 1 … 100000000 cm⁴
+  E | Young's modulus | 210 | GPa | spec: BS EN 1993-1-1 3.2.6 | 1 … 500 GPa
+  F | Point load, downward (optional; blank = not used by the distributed-load and couple cases) | 50 | kN | spec: Load schedule LS-01: plant load | 0 … 100000 kN
+  a | Load position from the left end (optional; blank = not used by the distributed-load cases) | 4 | m | drawing: DRG-FL-201 rev A | 0 … 100 m
+
+3. Assumptions
+  A1. The beam is prismatic, linear elastic and Euler–Bernoulli, with small deflections. (Roark Table 8.1 conditions.)
+  A2. A cantilever is fixed at the left end (x = 0) and free at the right. (Case convention.)
+  A3. case (Case) is taken as simply supported, point load at a. (Single span, pin–roller.)
+
+4. Working
+  [5] EI = E * I
+      = 210 GPa × 8503 cm⁴
+      = 17856 kN·m²
+        Flexural rigidity
+  [8] b = L - a
+      = 6 m − 4 m
+      = 2 m
+        Distance from the load to the right end
+  [9] R_A = F * b / L    « Roark 8.1 2a
+      = 50 kN × 2 m / 6 m
+      = 16.667 kN
+        Left reaction
+  [10] R_B = F * a / L
+      = 50 kN × 4 m / 6 m
+      = 33.333 kN
+        Right reaction
+  [11] M_max = F * a * b / L
+      = 50 kN × 4 m × 2 m / 6 m
+      = 66.667 kN·m
+        Maximum moment, under the load
+  [12] x_M = a
+      = 4 m
+      = 4 m
+        Position of the maximum moment
+  [13] M_min = 0 kN*m
+      = 0 kN·m
+        Minimum moment
+  [14] V_max = max(R_A, R_B)
+      = max(16.667 kN, 33.333 kN)
+      = 33.333 kN
+        Maximum shear
+  [15] c_far = b
+      = 2 m
+      = 2 m
+        Shorter segment (the deflection formula's b)
+  [16] x_delta = sqrt((L^2 - c_far^2) / 3)
+      = sqrt(((6 m)^2 − (2 m)^2) / 3)
+      = 3.266 m
+        Position of the maximum deflection
+  [17] delta_max = F * c_far * sqrt((L^2 - c_far^2)^3) / (9 * sqrt(3) * L * EI)
+      = 50 kN × 2 m × sqrt(((6 m)^2 − (2 m)^2)^3) / (9 × sqrt(3) × 6 m × 17856 kN·m²)
+      = 10.839 mm
+        Maximum deflection
+
+5. Results
+  R_A = 16.67 kN    Left reaction
+  R_B = 33.33 kN    Right reaction
+  M_max = 66.67 kN·m    Maximum sagging moment
+  M_min = 0 kN·m    Minimum (hogging) moment
+  V_max = 33.33 kN    Maximum shear
+  delta_max = 10.84 mm    Maximum deflection
+  x_M = 4 m    Position of M_max
+  x_delta = 3.266 m    Position of δ_max
+
+6. Checks (governing first)
+  None.
+
+7. Applicability
+  None.
+
+8. Verification
+  Template: struct.beam-formulas@1.2.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 8/8
+  Test run: —
+
+9. References
+  1. Young and Budynas, Roark's Formulas for Stress and Strain Table 8.1, 8th ed. — Shear, moment, slope and deflection formulas for elastic straight beams

@@ -1,0 +1,157 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: struct.connection-ec3    Revision: A
+Title: Bolts and fillet welds (EN 1993-1-8)
+
+1. Scope and method
+Calculates the design resistance of one bolt in a plate, block tearing of the bolt group, the spacing limits, and a fillet weld by the simplified and directional methods, each against its design force. Loading is static.
+Bolt strengths: f_ub = class × 100 MPa; A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P Shear (cl. 3.6, Table 3.4): F_v,Rd = k_v12·α_v·f_ub·A·n_s/γ_M2; α_v = 0.6 (4.6, 5.6, 8.8 or shank in the plane), 0.5 (4.8, 5.8, 6.8, 10.9 with threads in the plane); k_v12 = 0.85 for an M12 bolt of class 4.8, 5.8, 6.8, 8.8 or 10.9 in its normal clearance hole d₀ = d + 2 (Table 3.4, note on M12 bolts), else 1 Bolt bearing resistance: F_b,Rd = k_h·min(k₁·α_b·f_u·d·t/γ_M2, [single lap, one bolt row: 1.5·f_u·d·t/γ_M2]); α_b = min(α_d, f_ub/f_u, 1), α_d = e₁/3d₀ (end) or p₁/3d₀ − 1/4 (inner); k₁ = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5); k_h = 1 (normal holes), 0.8 (oversize), 0.6 (slot across the load) Bolt tension resistance: F_t,Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9; punching B_p,Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = (s + e)/2 from the across-flats s and the across-corners e of the smaller of head and nut, or d_m = s when e is not entered (conservative); combined F_v/F_v,Rd + F_t/(1.4F_t,Rd) ≤ 1 Block tearing (cl. 3.10.2): V_eff,1,Rd = f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for a group loaded concentrically; V_eff,2,Rd = 0.5·f_u·A_nt/γ_M2 + f_y·A_nv/(√3·γ_M0) for an eccentrically loaded group Weld, simplified (cl. 4.5.3.3): f_vw,d = f_u/(√3·β_w·γ_M2), F_w,Rd = f_vw,d·a; directional (cl. 4.5.3.2): √(σ⊥² + 3(τ⊥² + τ∥²)) ≤ f_u/(β_w·γ_M2), σ⊥ ≤ 0.9f_u/γ_M2
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  grade | Bolt property class | 8.8 |  | manual | any
+  size | Bolt size | M20 |  | manual | any
+  steel | Plate steel grade (β_w) | S275 |  | manual | any
+  hole_type | Hole type: oversize holes reduce the bearing resistance by 0.8, a slot across the load by 0.6 (a d₀ above the normal clearance is treated as oversize) | Normal clearance |  | manual | any
+  block_load | Block tearing loading: concentric (V_eff,1) or eccentric (V_eff,2, the tension term halved) | Concentric loading (V_eff,1) |  | manual | any
+  single_lap | Single-lap joint with only one bolt row (limits the bearing resistance to 1.5·f_u·d·t/γ_M2, cl. 3.6.1) | no |  | manual | any
+  threads | Threads in the shear plane | yes |  | manual | any
+  n_s | Shear planes | 1 |  | manual | 1 … 2
+  t_p | Plate thickness | 10 | mm | manual | 4 … 40 mm
+  e_1 | End distance (load direction) | 40 | mm | manual | 15 … 250 mm
+  e_2 | Edge distance (across the load) | 40 | mm | manual | 15 … 250 mm
+  p_1 | Pitch in the load direction (optional; blank = one row) | 70 | mm | manual | 30 … 300 mm
+  p_2 | Gauge across the load (optional; blank = one line) | 70 | mm | manual | 30 … 300 mm
+  f_y | Plate yield strength | 275 | MPa | manual | 235 … 440 MPa
+  f_u | Plate ultimate tensile strength | 410 | MPa | manual | 340 … 700 MPa
+  F_v_Ed | Shear per bolt | 50 | kN | manual | 0 … 1000 kN
+  F_t_Ed | Tension per bolt | 30 | kN | manual | 0 … 1000 kN
+  gamma_M2 | Partial factor for bolt and weld resistance | 1.25 |  | manual | 1.1 … 1.4
+  gamma_M0 | Partial factor for cross-section resistance | 1 |  | manual | 1 … 1.1
+  k_e1 | Minimum e₁/d₀ | 1.2 |  | manual | 1 … 2.5
+  k_e2 | Minimum e₂/d₀ | 1.2 |  | manual | 1 … 2.5
+  k_p1 | Minimum p₁/d₀ | 2.2 |  | manual | 2 … 3.5
+  k_p2 | Minimum p₂/d₀ | 2.4 |  | manual | 2 … 3.5
+
+3. Assumptions
+  A1. Loading is static. (Scope of this sheet.)
+  A2. Bolts are category A in shear (bearing type) and category D in tension (non-preloaded). (Scope of this sheet.)
+  A3. The joint has no slip-resistant bolts and no moment end plates. (Scope of this sheet.)
+  A4. Bearing is taken at the worst of an end bolt and an inner bolt. (Conservative for every bolt in the group.)
+  A5. Bearing across the load is taken at an edge bolt, with k₁ from e₂ and p₂. (Conservative for every bolt in the group.)
+  A6. Oversize holes reduce the bearing resistance by 0.8, and a slot across the load by 0.6. (BS EN 1993-1-8:2005 cl. 3.6.1, Table 3.4.)
+  A7. A hole above the normal clearance, with the hole type left at normal, is treated as oversize. (BS EN 1993-1-8:2005 cl. 3.6.1, Table 3.4.)
+  A8. A 12 mm bolt in its normal clearance hole takes 0.85 on its shear resistance, except classes 4.6 and 5.6. (BS EN 1993-1-8:2005 Table 3.4, the note on 12 mm and 14 mm bolts in 2 mm clearance holes.)
+  A9. The single-lap cap on the bearing resistance applies only when the single-lap switch is on. (BS EN 1993-1-8:2005 cl. 3.6.1; a warning says when it would bind.)
+  A10. Spacing minima and γ_M factors are entered from a National Annex record. (A small set of factors only; no table from a standard is shipped.)
+  A11. The defaults for the spacing minima and γ_M factors are the recommended values of BS EN 1993-1-8. (A small set of factors only; no table from a standard is shipped.)
+  A12. Group forces and weld forces per length come from the bolt group and weld group sheets by link. (Linked from the bolt-group and weld-group calculations.)
+
+4. Working
+  [21] f_ub = class first figure × 100    « EN 1993-1-8 Table 3.1
+      = class 8.8
+      = 800 MPa
+        Bolt ultimate tensile strength
+  [22] f_yb = f_ub × second figure / 10    « EN 1993-1-8 Table 3.1
+      = class 8.8
+      = 640 MPa
+        Bolt yield strength
+  [23] A_s = π/4·((d₂ + d₃)/2)², d₂ = d − 0.6495P, d₃ = d − 1.2269P    « ISO 898-1 cl. 9.1
+      = d = 20, P = 2.5 mm
+      = 244.79 mm²
+        Tensile stress area
+  [24] d_0 = d + 2 (≤ M24), d + 3 (≥ M27) unless entered
+      = 22 mm
+      = 22 mm
+        Hole diameter
+  [25] alpha_v = α_v (threads in the shear plane)    « EN 1993-1-8 Table 3.4
+      = class 8.8
+      = 0.6
+        Shear factor
+  [26] F_v_Rd = α_v·f_ub·A·n_s/γ_M2    « EN 1993-1-8 Table 3.4
+      = 0.6 × 800 × 244.79 × 1 / 1.25
+      = 94.001 kN
+        Shear resistance per bolt
+  [27] alpha_b = min(α_d, f_ub/f_u, 1), α_d = min(e₁/3d₀, p₁/3d₀ − 1/4)    « EN 1993-1-8 Table 3.4
+      = min(0.60606, 0.81061, 1.9512, 1)
+      = 0.60606
+        Bearing factor α_b
+  [28] k_1 = min(2.8e₂/d₀ − 1.7, 1.4p₂/d₀ − 1.7, 2.5)    « EN 1993-1-8 Table 3.4
+      = e₂ = 40, p₂ = 70, d₀ = 22
+      = 2.5
+        Bearing factor k₁
+  [30] F_b_Rd = k₁·α_b·f_u·d·t/γ_M2    « EN 1993-1-8 cl. 3.6.1, Table 3.4
+      = 2.5 × 0.60606 × 410 × 20 × 10 / 1.25
+      = 99.394 kN
+        Bearing resistance per bolt
+  [31] F_t_Rd = k₂·f_ub·A_s/γ_M2, k₂ = 0.9    « EN 1993-1-8 Table 3.4
+      = 0.9 × 800 × 244.79 / 1.25
+      = 141 kN
+        Tension resistance per bolt
+  [32] B_p_Rd = 0.6π·d_m·t·f_u/γ_M2, d_m = s (e not entered)    « EN 1993-1-8 Table 3.4
+      = 0.6π × 30 × 10 × 410 / 1.25
+      = 185.48 kN
+        Punching shear resistance
+  [33] u_v = F_v_Ed / F_v_Rd
+      = 50 kN / 94.001 kN
+      = 0.53191
+        Shear utilisation
+  [34] u_b = F_v_Ed / F_b_Rd
+      = 50 kN / 99.394 kN
+      = 0.50305
+        Bearing utilisation
+  [35] u_t = F_t_Ed / min(F_t_Rd, B_p_Rd)
+      = 30 kN / min(141 kN, 185.48 kN)
+      = 0.21276
+        Tension utilisation (tension or punching)
+  [36] u_vt = F_v_Ed / F_v_Rd + F_t_Ed / (1.4 * F_t_Rd)    « EN 1993-1-8 Table 3.4
+      = 50 kN / 94.001 kN + 30 kN / (1.4 × 141 kN)
+      = 0.68388
+        Combined shear and tension
+  [38] u_limit = limit
+      = the utilisation limit
+      = 1
+        Utilisation limit
+  [39] F_t_lim = min(F_t_Rd, B_p_Rd)
+      = min(141 kN, 185.48 kN)
+      = 141 kN
+        Governing tension or punching resistance
+
+5. Results
+  F_v_Rd = 94.00 kN    Shear resistance
+  F_b_Rd = 99.39 kN    Bearing resistance
+  F_t_Rd = 141.00 kN    Tension resistance
+  A_s = 244.8 mm²    Stress area
+  f_ub = 800 MPa    Bolt ultimate tensile strength
+  f_yb = 640 MPa    Bolt yield strength
+  alpha_v = 0.6    Shear factor
+  alpha_b = 0.60606    Bearing factor
+  k_1 = 2.5    Bearing factor k₁
+  B_p_Rd = 185.48 kN    Punching resistance
+  governing = "combined (0.684)"    Governing bolt mode
+  u_v = 0.53    Shear utilisation
+  u_b = 0.50    Bearing utilisation
+  u_t = 0.21    Tension utilisation
+  u_vt = 0.68    Combined utilisation (governing)
+
+6. Checks (governing first)
+  PASS  Combined shear and tension against its limit: 0.68388 vs 1  utilisation 0.68  « EN 1993-1-8 Table 3.4
+  PASS  Shear force against bolt shear resistance: 50 kN vs 94.00 kN  utilisation 0.53  « EN 1993-1-8 Table 3.4
+  PASS  Shear force against bolt bearing resistance: 50 kN vs 99.39 kN  utilisation 0.50  « EN 1993-1-8 Table 3.4
+  PASS  Tension force against bolt tension or punching resistance: 30 kN vs 141.00 kN  utilisation 0.21  « EN 1993-1-8 Table 3.4
+  PASS  Spacing and edge distances against the Table 3.3 minima: e₁ 40, e₂ 40, p₁ 70, p₂ 70 mm vs ≥ 26.4, 26.4, 48.4, 52.8 mm  « EN 1993-1-8 Table 3.3
+
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are gamma_M2, gamma_M0, k_e1, k_e2, k_p1, k_p2 (EN 1993-1-8 National Annex factors); f_y, f_u (Plate strengths). Enter each as one so its source, edition and licence travel with it.  [record]
+  WARNING  single_lap: k₁·α_b = 1.5152 exceeds 1.5, which caps bearing resistance of a single lap at 98.4 kN, not 99.394 kN. Switch single_lap on if that is the joint.  [single_lap]
+
+8. Verification
+  Template: struct.connection-ec3@1.9.0
+  Known-answer cases passed: 9/9
+
+9. References
+  1. BS EN 1993-1-8:2005 cl. 3.5, Table 3.3 — Positioning of holes for bolts
+  2. BS EN 1993-1-8:2005 cl. 3.6.1, Table 3.4 — Design resistance of individual fasteners
+  3. BS EN 1993-1-8:2005 cl. 3.10.2 — Block tearing
+  4. BS EN 1993-1-8:2005 cl. 4.5.3.2, 4.5.3.3, Table 4.1 — Fillet welds: directional and simplified methods; correlation factor
+  5. ISO 898-1:2013 cl. 9.1 — Nominal stress area (formula)

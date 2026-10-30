@@ -1,0 +1,5 @@
+case[text],C_1[-],C_2[-],k_c[-]
+"Simply supported, uniform load, k = 1",1.127,0.454,
+"Simply supported, central point load, k = 1",1.348,0.63,
+"End moments, psi = 1 (uniform moment)",1,,
+"End moments, psi = 0",1.77,,

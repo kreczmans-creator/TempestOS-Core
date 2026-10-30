@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -325,9 +326,17 @@ internal sealed class EvidenceLifecycleSection : IEditorSection
     private readonly Button _checkButton = new() { Content = "Check", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
     private readonly Button _issueButton = new() { Content = "Issue", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
     private readonly Button _reviseButton = new() { Content = "Revise", MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly Button _openWorksheetButton = new() { Content = OpenWorksheetCaption, MinHeight = DesignTokens.MinControlSize, IsVisible = false };
+    private readonly TextBlock _managedNote = new() { FontSize = DesignTokens.FontSizeBody, TextWrapping = TextWrapping.Wrap, IsVisible = false };
     private readonly TextBlock _statusMessage = new() { FontSize = DesignTokens.FontSizeCaption, Opacity = 0.8 };
     private Expander _expander = null!;
     private EditorSectionContext _ctx = null!;
+
+    /// <summary>The caption of the action that takes the user to the worksheet that governs this Evidence (`ADR-0173`).</summary>
+    public const string OpenWorksheetCaption = "Open worksheet";
+
+    /// <summary>Why Check, Issue and Revise are not offered for Evidence a worksheet manages.</summary>
+    public const string ManagedNoteText = "This Evidence belongs to a calculation worksheet. It is checked, issued and revised there, so that the worksheet's own governance applies; open the worksheet to do so.";
 
     public string Title => "Lifecycle";
 
@@ -344,14 +353,19 @@ internal sealed class EvidenceLifecycleSection : IEditorSection
         actions.Children.Add(_checkButton);
         actions.Children.Add(_issueButton);
         actions.Children.Add(_reviseButton);
+        actions.Children.Add(_openWorksheetButton);
         var body = new StackPanel { Spacing = DesignTokens.SpaceXs };
         body.Children.Add(_panel);
+        body.Children.Add(_managedNote);
         body.Children.Add(actions);
         body.Children.Add(_statusMessage);
 
         _checkButton.Classes.Add(ChromeStyles.Primary);
         _issueButton.Classes.Add(ChromeStyles.Primary);
         _reviseButton.Classes.Add(ChromeStyles.Subtle);
+        _openWorksheetButton.Classes.Add(ChromeStyles.Primary);
+        AutomationProperties.SetName(_openWorksheetButton, OpenWorksheetCaption);
+        _openWorksheetButton.Click += (_, _) => OnOpenWorksheet();
         _checkButton.Click += async (_, _) => await OnCheckAsync().ConfigureAwait(true);
         _issueButton.Click += async (_, _) => await OnIssueAsync().ConfigureAwait(true);
         _reviseButton.Click += async (_, _) => await OnReviseAsync().ConfigureAwait(true);
@@ -392,11 +406,28 @@ internal sealed class EvidenceLifecycleSection : IEditorSection
         // `WP 18.2B`: each action visible only when
         // `EvidenceStatusTransitions` actually permits it from here —
         // Check from Draft, Issue from Checked, Revise from Issued.
-        _checkButton.IsVisible = _ctx.EvidenceSupport is not null && evidence.Status == EvidenceStatus.Draft;
-        _issueButton.IsVisible = _ctx.EvidenceSupport is not null && evidence.Status == EvidenceStatus.Checked;
-        _reviseButton.IsVisible = _ctx.EvidenceSupport is not null && evidence.Status == EvidenceStatus.Issued;
+        //
+        // `ADR-0173`: Evidence a calculation worksheet manages is checked, issued
+        // and revised only through that worksheet (the service refuses these acts
+        // for it), so none of the three is offered; "Open worksheet" is.
+        var managed = evidence.ManagedBy is not null;
+        _checkButton.IsVisible = !managed && _ctx.EvidenceSupport is not null && evidence.Status == EvidenceStatus.Draft;
+        _issueButton.IsVisible = !managed && _ctx.EvidenceSupport is not null && evidence.Status == EvidenceStatus.Checked;
+        _reviseButton.IsVisible = !managed && _ctx.EvidenceSupport is not null && evidence.Status == EvidenceStatus.Issued;
+        _managedNote.Text = managed ? ManagedNoteText : string.Empty;
+        _managedNote.IsVisible = managed;
+        _openWorksheetButton.IsVisible = managed;
         _statusMessage.Text = string.Empty;
         return Task.CompletedTask;
+    }
+
+    /// <summary>Asks the shell to open the worksheet that manages this Evidence (`ADR-0173`).</summary>
+    private void OnOpenWorksheet()
+    {
+        if (_ctx.GetOpenCalculationHandler?.Invoke() is { } open)
+            open(_ctx.ObjectId);
+        else
+            _statusMessage.Text = "The worksheet cannot be opened from here; open it from the Engineering department's Worksheets.";
     }
 
     /// <summary>

@@ -1,0 +1,243 @@
+[
+  {
+    "Symbol": "F_p",
+    "Number": 0,
+    "Unit": "N",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Linear axes only; the rotary table does not use it.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "J_L",
+    "Number": 0.5,
+    "Unit": "kg*m^2",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "S1-style inertia calc of the 600 mm table with fixtures: 0.5 kg\u00B7m\u00B2",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.5"
+  },
+  {
+    "Symbol": "J_mech",
+    "Number": 0,
+    "Unit": "kg*m^2",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Sizing convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "J_motor",
+    "Number": 0.0005,
+    "Unit": "kg*m^2",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Motor datasheet SM-060: 5.0e-4 kg\u00B7m\u00B2, 3.0 / 9.0 N\u00B7m, 3000 rpm",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.0005"
+  },
+  {
+    "Symbol": "J_ratio_max",
+    "Number": 10,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Sizing convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10"
+  },
+  {
+    "Symbol": "SF",
+    "Number": 1.25,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Sizing convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.25"
+  },
+  {
+    "Symbol": "T_L",
+    "Number": 0,
+    "Unit": "N*m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Sizing convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "T_basis",
+    "Text": "Load peak (T_pk)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design torque for the coupling taken at the load peak; template default.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Load peak (T_pk)"
+  },
+  {
+    "Symbol": "T_peak",
+    "Number": 9,
+    "Unit": "N*m",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Motor datasheet SM-060: 5.0e-4 kg\u00B7m\u00B2, 3.0 / 9.0 N\u00B7m, 3000 rpm",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "9"
+  },
+  {
+    "Symbol": "T_rated",
+    "Number": 3,
+    "Unit": "N*m",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Motor datasheet SM-060: 5.0e-4 kg\u00B7m\u00B2, 3.0 / 9.0 N\u00B7m, 3000 rpm",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3"
+  },
+  {
+    "Symbol": "brake",
+    "Flag": false,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Linear axes only; the rotary table does not use it.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "no"
+  },
+  {
+    "Symbol": "duty_mode",
+    "Text": "point-to-point",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Cycle specification CS-7: 90\u00B0 index then dwell",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "point-to-point"
+  },
+  {
+    "Symbol": "eta",
+    "Number": 0.85,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Gearbox datasheet PG-10: 10:1, 85 %",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.85"
+  },
+  {
+    "Symbol": "f_acc",
+    "Number": 0.3333333333333333,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Cycle specification CS-7: 90\u00B0 index in 0.3 s, 0.7 s dwell",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.333333"
+  },
+  {
+    "Symbol": "i",
+    "Number": 10,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Gearbox datasheet PG-10: 10:1, 85 %",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10"
+  },
+  {
+    "Symbol": "mechanism",
+    "Text": "gearbox rotary",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Sizing convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "gearbox rotary"
+  },
+  {
+    "Symbol": "mu",
+    "Number": 0.1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Linear axes only; the rotary table does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.1"
+  },
+  {
+    "Symbol": "n_max",
+    "Number": 3000,
+    "Unit": "rpm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Motor datasheet SM-060: 5.0e-4 kg\u00B7m\u00B2, 3.0 / 9.0 N\u00B7m, 3000 rpm",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3000"
+  },
+  {
+    "Symbol": "profile",
+    "Text": "trapezoidal",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Sizing convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "trapezoidal"
+  },
+  {
+    "Symbol": "s",
+    "Number": 0.25,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Cycle specification CS-7: 90\u00B0 index in 0.3 s, 0.7 s dwell",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.25"
+  },
+  {
+    "Symbol": "t_dwell",
+    "Number": 0.7,
+    "Unit": "s",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Cycle specification CS-7: 90\u00B0 index in 0.3 s, 0.7 s dwell",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.7"
+  },
+  {
+    "Symbol": "t_move",
+    "Number": 0.3,
+    "Unit": "s",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Cycle specification CS-7: 90\u00B0 index in 0.3 s, 0.7 s dwell",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.3"
+  },
+  {
+    "Symbol": "theta",
+    "Number": 0,
+    "Unit": "deg",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Linear axes only; the rotary table does not use it.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  }
+]

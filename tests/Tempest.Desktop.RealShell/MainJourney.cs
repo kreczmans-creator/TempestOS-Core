@@ -455,125 +455,67 @@ internal static class MainJourney
 
     private static void Calculators(Journal journal)
     {
+        // ADR-0167: the legacy Calculators surface is retired; its journey (runbook C4/C8, beam on S355J2, 3.96825 mm)
+        // now runs on the beam worksheet with the reference fill. Compare needs a revision (check, issue, revise), which
+        // the Evidence journey covers; it is not repeated here.
         journal.Step(
-            "calculators", "Engineering → Calculators", "mouse",
-            "A catalogue of sixteen calculations by category, and the Libraries panel counting released records",
+            "worksheets", "Engineering → Worksheets", "mouse",
+            "The worksheet catalogue by discipline, with Beam formulas under Structural",
             () =>
             {
-                if (!Act.Click("Engineering", settleMs: 900) || !Act.ClickRow("Calculators", settleMs: 3_000))
+                if (!Act.Click("Engineering", settleMs: 900) || !Act.ClickRow("Worksheets", settleMs: 3_000))
                     return Act.Failed(Act.LastProblem);
 
-                if (!Ui.WaitUntil(() => Ui.ByName("Calculator catalogue") is not null, 20_000))
-                    return Act.Failed("the calculator catalogue never rendered");
+                if (!Ui.WaitUntil(() => Ui.ByName("Worksheet catalogue") is not null && Ui.ByName("Beam formulas (single span)") is not null, 20_000))
+                    return Act.Failed("the worksheet catalogue never rendered");
 
-                // "Calculator catalogue" and "Calculator status" are the
-                // panel and the status line, not calculations.
-                var count = Ui.Snapshot()
-                    .Where(node => node.TypeName == "TreeViewItem" && node.Name.StartsWith("Calculator ", StringComparison.Ordinal))
-                    .Select(node => node.Name)
-                    .Distinct(StringComparer.Ordinal)
-                    .Count();
-                var libraries = Ui.FirstTextContaining("Materials:") ?? "(no library counts)";
-                return count == 16
-                    ? Act.Verified($"{count} calculations listed; libraries read \"{libraries}\"")
-                    : Act.Failed($"{count} calculations listed (expected 16); libraries read \"{libraries}\"");
+                return Act.Verified("catalogue listed with \"Beam formulas (single span)\"");
             });
 
         journal.Step(
-            "calculator-form", "Pick Beam bending and deflection and its governed material", "mouse",
-            "The form is generated with a unit picker per quantity; the material's own properties fill the sourced fields",
+            "worksheet-form", "Pick Beam formulas and fill E from the released S355J2", "mouse",
+            "The form shows every input with its unit and source; the material record fills E = 210 GPa with a pinned reference",
             () =>
             {
-                if (!Act.Click("Calculator Beam bending and deflection", settleMs: 2_500))
+                if (!Act.Click("Beam formulas (single span)", settleMs: 2_500))
                     return Act.Failed(Act.LastProblem);
 
-                if (!Ui.WaitUntil(() => Ui.ByName("Material record") is not null && Ui.ByName("Span L") is not null, 15_000))
-                    return Act.Failed("the generated form never appeared");
+                if (!Ui.WaitUntil(() => Ui.ByName("Materials record") is not null && Ui.ByName("L") is not null, 15_000))
+                    return Act.Failed("the worksheet form never appeared");
 
-                if (!Act.Choose("Material record", "S355J2"))
+                if (!Act.Choose("Materials record", "S355J2"))
                     return Act.Failed(Act.LastProblem);
 
-                if (!Ui.WaitUntil(() => Ui.ByName("Young's modulus E")?.Text == "210", 12_000))
-                    return Act.Failed($"Young's modulus reads '{Ui.ByName("Young's modulus E")?.Text}'");
+                if (!Ui.WaitUntil(() => Ui.ByName("E")?.Text == "210", 12_000))
+                    return Act.Failed($"E reads '{Ui.ByName("E")?.Text}'");
 
-                var status = Ui.ByName("Calculator status")?.Text ?? string.Empty;
-                var allowable = Ui.ByName("Allowable bending stress")?.Text ?? string.Empty;
-                var method = Ui.FirstTextContaining("Method: Euler-Bernoulli") ?? "(no method reference)";
-                var specification = Ui.FirstTextContaining("Specification: docs/engineering") ?? "(no specification path)";
-
-                return status.Contains("mat-s355j2@5", StringComparison.Ordinal) && allowable == "355"
-                    ? Act.Verified($"E=210 GPa, allowable={allowable} MPa; \"{status}\"; \"{method}\"; \"{specification}\"")
-                    : Act.Failed($"E={Ui.ByName("Young's modulus E")?.Text}, allowable={allowable}; status \"{status}\"");
+                return Act.Verified($"E=210 GPa; status \"{Ui.ByName("Worksheet status")?.Text}\"");
             });
 
         journal.Step(
-            "calculate", "Enter the inputs and press Calculate", "keyboard + mouse",
-            "Deflection 3.96825 mm, bending stress 125 MPa, \"Meets its criteria\" (PHYSICAL_REVIEW §7i C4)",
+            "calculate", "Enter the beam and save it as a calculation", "keyboard + mouse",
+            "Deflection 3.9683 mm recalculated live, the governing check named, saved into the register",
             () =>
             {
-                if (!Act.TypeInto("Load W", "10")
-                    || !Act.TypeInto("Span L", "2000")
-                    || !Act.TypeInto("Second moment of area I", "2000000")
-                    || !Act.TypeInto("Extreme fibre distance c", "50")
-                    || !Act.TypeInto("Deflection limit", "8")
+                if (!Act.Choose("case", "simply supported, point load at a")
+                    || !Act.TypeInto("L", "2")
+                    || !Act.TypeInto("I", "200")
+                    || !Act.TypeInto("P", "10")
+                    || !Act.TypeInto("a", "1")
                     || !Act.TypeInto("Calculation name", CalculationName))
                     return Act.Failed(Act.LastProblem);
 
-                if (!Act.Click("Calculate", settleMs: 3_000))
+                if (!Ui.WaitUntil(() => (Ui.ByName("Result delta_max")?.Text ?? string.Empty).StartsWith("3.968", StringComparison.Ordinal), 15_000))
+                    return Act.Failed($"delta_max reads '{Ui.ByName("Result delta_max")?.Text}'");
+
+                if (!Act.Click("Save as calculation", settleMs: 3_000))
                     return Act.Failed(Act.LastProblem);
 
-                if (!Ui.WaitUntil(() => (Ui.ByName("Calculator status")?.Text ?? string.Empty).Contains("Calculated", StringComparison.Ordinal), 25_000))
-                    return Act.Failed($"the calculator status reads \"{Ui.ByName("Calculator status")?.Text}\"");
+                if (!Ui.WaitUntil(() => (Ui.ByName("Worksheet status")?.Text ?? string.Empty).StartsWith("Saved", StringComparison.Ordinal), 25_000))
+                    return Act.Failed($"the worksheet status reads \"{Ui.ByName("Worksheet status")?.Text}\"");
 
-                var outcome = Ui.ByName("Calculation outcome")?.Text ?? "(no outcome)";
-                var deflection = Ui.FirstTextContaining("3.96825 mm");
-                var stress = Ui.FirstTextContaining("125 MPa");
-
-                return outcome.Contains("Meets its criteria", StringComparison.Ordinal) && deflection is not null && stress is not null
-                    ? Act.Verified($"\"{outcome}\"; deflection {deflection}; stress {stress}; status \"{Ui.ByName("Calculator status")?.Text}\"")
-                    : Act.Failed($"outcome \"{outcome}\"; deflection {deflection ?? "not shown"}; stress {stress ?? "not shown"}");
+                return Act.Verified($"delta_max {Ui.ByName("Result delta_max")?.Text}; {Ui.ByName("Governing check")?.Text}; \"{Ui.ByName("Worksheet status")?.Text}\"");
             });
-
-        journal.Step(
-            "recalculate", "Change the span to 2500 mm and calculate again", "keyboard + mouse",
-            "A second run on the same calculation, with a deflection of 7.7505 mm",
-            () =>
-            {
-                if (!Act.TypeInto("Span L", "2500") || !Act.Click("Calculate", settleMs: 3_000))
-                    return Act.Failed(Act.LastProblem);
-
-                if (!Ui.WaitUntil(() => (Ui.ByName("Calculator status")?.Text ?? string.Empty).Contains("again", StringComparison.Ordinal), 25_000))
-                    return Act.Failed($"the calculator status reads \"{Ui.ByName("Calculator status")?.Text}\"");
-
-                var deflection = Ui.FirstTextContaining("7.7505 mm");
-                return deflection is not null
-                    ? Act.Verified($"status \"{Ui.ByName("Calculator status")?.Text}\"; {Trim(deflection)}")
-                    : Act.Failed($"no 7.7505 mm reading; status \"{Ui.ByName("Calculator status")?.Text}\"");
-            });
-
-        journal.Step(
-            "compare", "Compare with previous", "mouse",
-            "A Before/After table naming only what changed between the last two runs",
-            () =>
-            {
-                if (!Act.Click("Compare with previous", settleMs: 2_500))
-                    return Act.Failed(Act.LastProblem);
-
-                if (!Ui.WaitUntil(() => Ui.FirstTextContaining("Compared with the previous run") is not null, 15_000))
-                    return Act.Failed($"the calculator status reads \"{Ui.ByName("Calculator status")?.Text}\"");
-
-                var line = Ui.FirstTextContaining("Compared with the previous run")!;
-                var section = Ui.FirstTextContaining("Comparison with the previous run") ?? "(no comparison section)";
-                var spans = Ui.VisibleText()
-                    .Where(text => text.Contains("2000", StringComparison.Ordinal) && text.Contains("2500", StringComparison.Ordinal))
-                    .Select(Trim)
-                    .ToList();
-
-                return Act.Verified(
-                    $"\"{Trim(line)}\"; section \"{section}\""
-                    + (spans.Count > 0 ? $"; before/after row(s): {string.Join(" ; ", spans)}" : string.Empty));
-            },
-            required: false);
 
         journal.Step(
             "calculation-register", "Engineering → Engineering Calculations", "mouse",

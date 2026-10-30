@@ -1,0 +1,208 @@
+CALCULATION SHEET — ISSUED
+Project: Equipment support ES-4
+Calc ID: Support frame    Revision: A
+Title: Beam and 2D frame analysis
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: STR-SUP-001    Client: Client Co
+
+1. Scope and method
+Calculates reactions, member forces and deflections of a linear elastic plane frame or continuous beam by the direct stiffness method. Global x is right and y up; bending is about the section y-y axis, anticlockwise positive.
+Member stiffness: three freedoms per node, Euler–Bernoulli members with axial EA/L and bending EI/L³ terms. End releases: pins are taken out by static condensation; supports remove freedoms or add spring stiffness. Span loads: they become equivalent nodal loads, the exact fixed-end forces. Nodal displacements: K u = F, solved by banded LDLᵀ after a reverse Cuthill–McKee ordering; a non-positive pivot is reported as a mechanism. Internal forces: they follow from the member end actions and the Macaulay functions of the span loads. Member extremes: found at stations along each member, plus the zero-shear and zero-slope points found by bisection.
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  nodes | Nodes | 3 row(s) |  | drawing: DRG-STR-310 rev B | any
+  nodes[1] |  | id = 1; x = 0 m; y = 0 m; support = fixed |  |  | 
+  nodes[2] |  | id = 2; x = 0 m; y = 3 m; support = free |  |  | 
+  nodes[3] |  | id = 3; x = 1 m; y = 3 m; support = free |  |  | 
+  elements | Elements | 2 row(s) |  | drawing: DRG-STR-310 rev B | any
+  elements[1] |  | id = 1; i = 1; j = 2; A = 58.7 cm²; I = 4568 cm⁴; rel_i = no; rel_j = no |  |  | 
+  elements[2] |  | id = 2; i = 2; j = 3; A = 58.7 cm²; I = 4568 cm⁴; rel_i = no; rel_j = no |  |  | 
+  loads | Loads | 2 row(s) |  | drawing: DRG-STR-310 rev B | any
+  loads[1] |  | case = 1; kind = nodal; target = 3; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 0 kN; F_y = -28.2 kN; M = 0 kN·m |  | F_y: link: Load combinations rev A · E_d_min | 
+  loads[2] |  | case = 2; kind = nodal; target = 2; a = 0 m; b = 0 m; w1 = 0 kN/m; w2 = 0 kN/m; F_x = 5 kN; F_y = 0 kN; M = 0 kN·m |  |  | 
+  n_div | Stations per member | 20 |  | assumption: Sheet default value; no project figure given. | 4 … 100
+  combinations | Load combinations (optional; blank = each case alone) | 2 row(s) |  | drawing: DRG-STR-310 rev B | any
+  combinations[1] |  | name = ULS; case = 1; factor = 1 |  |  | 
+  combinations[2] |  | name = ULS; case = 2; factor = 1 |  |  | 
+  report | Combination to report in detail (optional; blank = the first) | ULS |  | drawing: DRG-STR-310 rev B | any
+  E | Default Young's modulus | 210 | GPa | drawing: DRG-STR-310 rev B | 1 … 500 GPa
+
+3. Assumptions
+  A1. The analysis is linear elastic and first order, with small displacements. (Euler–Bernoulli direct stiffness.)
+  A2. Members have no shear deformation, and there are no P–Δ effects or buckling. (Euler–Bernoulli direct stiffness.)
+  A3. Members are prismatic between nodes and connect rigidly unless a release is stated. (Static condensation of the released rotation.)
+  A4. A released member end transmits no moment. (Static condensation of the released rotation.)
+  A5. Distributed loads act perpendicular to the member unless marked as gravity loads. (Load table convention.)
+  A6. Gravity loads act in global −y per metre of member length. (Load table convention.)
+  A7. n_div (Stations per member) is taken as 20. (Sheet default value; no project figure given.)
+
+4. Working
+  [4] n_nodes = nodes
+      = 3
+      = 3
+        Nodes in the model
+  [5] n_elements = elements
+      = 2
+      = 2
+        Members in the model
+  [6] n_comb = combinations
+      = ULS
+      = 1
+        Load combinations analysed
+  [7] comb = reported combination
+      = ULS
+      = "ULS"
+        The combination detailed below
+  [8] R1_x = reaction at node 1, x
+      = Σ member end forces − applied nodal loads
+      = -5 kN
+        Horizontal reaction at node 1
+  [9] R1_y = reaction at node 1, y
+      = Σ member end forces − applied nodal loads
+      = 28.2 kN
+        Vertical reaction at node 1
+  [10] R1_m = reaction at node 1, moment
+      = Σ member end moments − applied nodal couple
+      = 43.2 kN·m
+        Moment reaction at node 1
+  [11] R1_x_abs = |R_x| at node 1
+      = |-5| kN
+      = 5 kN
+        Magnitude of the horizontal reaction at node 1
+  [12] R1_m_abs = |M| at node 1
+      = |43.2| kN·m
+      = 43.2 kN·m
+        Magnitude of the moment reaction at node 1
+  [13] sum_R_y = Σ R_y
+      = all supports
+      = 28.2 kN
+        Total vertical reaction (equilibrium check against the applied load)
+  [14] sum_R_x = Σ R_x
+      = all supports
+      = -5 kN
+        Total horizontal reaction
+  [15] M_max_e1 = member 1: max sagging M
+      = at x = 3 m from node 1
+      = -28.2 kN·m
+        Member 1 maximum moment
+  [16] M_min_e1 = member 1: min (hogging) M
+      = at x = 0 m
+      = -43.2 kN·m
+        Member 1 minimum moment
+  [17] M_abs_e1 = member 1: max |M|
+      = max(|-28.2|, |-43.2|) kN·m
+      = 43.2 kN·m
+        Member 1 greatest moment magnitude (sagging or hogging)
+  [18] V_e1 = member 1: max |V|
+      = 5 kN
+      = 5 kN
+        Member 1 maximum shear
+  [19] N_e1 = member 1: max |N| (tension +)
+      = -28.2 kN
+      = -28.2 kN
+        Member 1 axial force of greatest magnitude
+  [20] d_e1 = member 1: max |deflection|
+      = at x = 3 m
+      = 17.92 mm
+        Member 1 maximum transverse deflection
+  [21] M_max_e2 = member 2: max sagging M
+      = at x = 1 m from node 2
+      = 0 kN·m
+        Member 2 maximum moment
+  [22] M_min_e2 = member 2: min (hogging) M
+      = at x = 0 m
+      = -28.2 kN·m
+        Member 2 minimum moment
+  [23] M_abs_e2 = member 2: max |M|
+      = max(|0|, |-28.2|) kN·m
+      = 28.2 kN·m
+        Member 2 greatest moment magnitude (sagging or hogging)
+  [24] V_e2 = member 2: max |V|
+      = 28.2 kN
+      = 28.2 kN
+        Member 2 maximum shear
+  [25] N_e2 = member 2: max |N| (tension +)
+      = 0 kN
+      = 0 kN
+        Member 2 axial force of greatest magnitude
+  [26] d_e2 = member 2: max |deflection|
+      = at x = 1 m
+      = 12.213 mm
+        Member 2 maximum transverse deflection
+  [27] M_max = max sagging moment
+      = member 2 at x = 1 m
+      = 0 kN·m
+        Maximum moment in the reported combination
+  [28] x_Mmax = position of M_max
+      = from node i of member 2
+      = 1 m
+        Position of the maximum moment
+  [29] M_min = min (hogging) moment
+      = member 1 at x = 0 m
+      = -43.2 kN·m
+        Minimum moment in the reported combination
+  [30] V_max = max |V|
+      = member 2
+      = 28.2 kN
+        Maximum shear in the reported combination
+  [31] N_max = max tension
+      = member 2
+      = 0 kN
+        Maximum axial tension
+  [32] N_min = max compression (negative)
+      = member 1
+      = -28.2 kN
+        Maximum axial compression
+  [33] d_max = max |deflection|
+      = member 1 at x = 3 m
+      = 17.92 mm
+        Maximum transverse deflection
+
+5. Results
+  R1_x = -5 kN    R_x node 1
+  R1_y = 28.20 kN    R_y node 1
+  R1_m = 43.20 kN·m    M node 1
+  R1_x_abs = 5 kN    |R_x| node 1
+  R1_m_abs = 43.20 kN·m    |M| node 1
+  N_e1 = -28.20 kN    N, member 1
+  V_e1 = 5 kN    |V| max, member 1
+  M_abs_e1 = 43.20 kN·m    |M| max, member 1
+  M_max_e1 = -28.20 kN·m    M max, member 1
+  M_min_e1 = -43.20 kN·m    M min, member 1
+  V_e2 = 28.20 kN    |V| max, member 2
+  M_abs_e2 = 28.20 kN·m    |M| max, member 2
+  sum_R_y = 28.20 kN    Σ R_y
+  sum_R_x = -5 kN    Σ R_x
+  M_max = 0 kN·m    M max
+  M_min = -43.20 kN·m    M min
+  V_max = 28.20 kN    |V| max
+  N_max = 0 kN    N max (tension)
+  N_min = -28.20 kN    N min (compression)
+  d_max = 17.92 mm    δ max
+  d_e1 = 17.92 mm    δ max, member 1
+  M_max_e2 = 0 kN·m    M max, member 2
+  M_min_e2 = -28.20 kN·m    M min, member 2
+  N_e2 = 0 kN    N, member 2
+  d_e2 = 12.21 mm    δ max, member 2
+  x_Mmax = 1 m    x of M max
+
+6. Checks (governing first)
+  None.
+
+7. Applicability
+  None.
+
+8. Verification
+  Template: struct.frame-2d@1.6.1
+  Content hash: 7cc285fbdb0f1aaf
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 6/6
+  Test run: 2026-10-27 10:55 UTC
+  Application: TempestOS test
+
+9. References
+  1. Hibbeler, Structural Analysis Ch. 16, 9th ed. — Plane frame analysis using the stiffness method
+  2. Young and Budynas, Roark's Formulas for Stress and Strain Table 8.1, 8th ed. — Shear, moment, slope and deflection formulas for elastic straight beams
+  3. BS EN 1990:2002+A1:2005 cl. 6.4.3 — Combinations of actions (user-entered factors)

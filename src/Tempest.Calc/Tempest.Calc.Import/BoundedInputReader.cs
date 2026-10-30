@@ -1,0 +1,234 @@
+using System.Security.Cryptography;
+using System.Text;
+
+namespace Tempest.Calc.Import;
+
+/// <summary>An untrusted file as read: its safe display name, its bytes (never more than the cap) and their SHA-256.</summary>
+public sealed record ImportedFile(string FileName, byte[] Bytes, string Sha256)
+{
+    public int Length => Bytes.Length;
+}
+
+/// <summary>
+/// The only way an untrusted engineering file enters the importers: a bounded, streaming read. The byte cap is enforced
+/// while reading (a stream that lies about its length, or never ends, stops at the cap); a time limit and the caller's
+/// cancellation token stop a stalled stream; text is decoded as strict UTF-8 (a UTF-8 byte order mark is dropped, UTF-16
+/// and UTF-32 are refused with a message, an invalid byte sequence is refused), and every control character other than tab,
+/// carriage return and line feed is refused.
+/// </summary>
+public static class BoundedInputReader
+{
+    private const int ChunkBytes = 64 * 1024;
+
+    /// <summary>How long a cancelled read waits for its worker to close the file before the cancellation is passed on.</summary>
+    private static readonly TimeSpan WorkerCloseWait = TimeSpan.FromSeconds(1);
+    private static readonly UTF8Encoding Strict = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    /// <summary>Reads <paramref name="stream"/> to the end or to the cap, whichever comes first; past the cap the file is refused.</summary>
+    public static async Task<ImportedFile> ReadAsync(Stream stream, string fileName, ImportLimits? limits = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        limits ??= ImportLimits.Default;
+
+        if (stream.CanSeek)
+        {
+            long length;
+
+            try
+            {
+                length = stream.Length;
+            }
+            catch (NotSupportedException)
+            {
+                length = -1;
+            }
+
+            if (length > limits.MaxBytes)
+                throw TooLarge(limits);
+        }
+
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(limits.Timeout);
+        using var buffer = new MemoryStream();
+        var chunk = new byte[ChunkBytes];
+
+        try
+        {
+            while (true)
+            {
+                var read = await stream.ReadAsync(chunk.AsMemory(), timeout.Token).ConfigureAwait(false);
+
+                if (read == 0)
+                    break;
+
+                if (buffer.Length + read > limits.MaxBytes)
+                    throw TooLarge(limits);
+
+                buffer.Write(chunk, 0, read);
+            }
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new ImportRefusedException(ImportRefusalCode.Timeout, $"Reading the file took longer than {limits.Timeout.TotalSeconds:0.#} seconds, so it was stopped.");
+        }
+
+        return FromBytes(buffer.ToArray(), fileName, limits);
+    }
+
+    /// <summary>
+    /// Reads a file from disk after canonicalising its path (see <see cref="ImportPath"/>). The open and the read both run under the
+    /// time limit: a path that blocks on open (a named pipe) is abandoned at the limit, not waited for. Only a regular file is read:
+    /// a stream that cannot seek (a pipe, a character device) is refused.
+    /// </summary>
+    public static async Task<ImportedFile> ReadFileAsync(string path, string? requiredRoot = null, ImportLimits? limits = null, CancellationToken cancellationToken = default)
+    {
+        limits ??= ImportLimits.Default;
+        var full = ImportPath.CanonicaliseExistingFile(path, requiredRoot);
+        var leaf = ImportPath.SafeLeafName(full);
+
+        // The token the worker reads under is its own, cancelled at the limit or by the caller; the caller's cancellation and the limit
+        // are both applied to the wait, so a worker stuck inside open() cannot hold the caller.
+        var workerStop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        workerStop.CancelAfter(limits.Timeout);
+        var stopToken = workerStop.Token;
+
+        var worker = Task.Run(
+            async () =>
+            {
+                var stream = new FileStream(full, FileMode.Open, FileAccess.Read, FileShare.Read, ChunkBytes, FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+                await using (stream.ConfigureAwait(false))
+                {
+                    if (!stream.CanSeek)
+                        throw new ImportRefusedException(ImportRefusalCode.UnsafePath, "Only a regular file is read; a pipe or a device is not.");
+
+                    return await ReadAsync(stream, leaf, limits, stopToken).ConfigureAwait(false);
+                }
+            },
+            CancellationToken.None);
+
+        // The source is disposed when the worker ends, not when this method returns: a worker still inside open() holds its token.
+        _ = worker.ContinueWith(static (_, source) => ((CancellationTokenSource)source!).Dispose(), workerStop, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+
+        try
+        {
+            return await worker.WaitAsync(limits.Timeout + TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            await StopWorkerAsync(workerStop).ConfigureAwait(false);
+            throw new ImportRefusedException(ImportRefusalCode.Timeout, $"Opening or reading the file took longer than {limits.Timeout.TotalSeconds:0.#} seconds, so it was stopped.");
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new ImportRefusedException(ImportRefusalCode.Timeout, $"Opening or reading the file took longer than {limits.Timeout.TotalSeconds:0.#} seconds, so it was stopped.");
+        }
+        catch (OperationCanceledException)
+        {
+            // The caller cancelled. Stop the worker and give it a short, bounded time to close the file, so the file is not
+            // left open behind the caller (Windows refuses to delete or rewrite a file another handle still holds).
+            await StopWorkerAsync(workerStop).ConfigureAwait(false);
+            await Task.WhenAny(worker, Task.Delay(WorkerCloseWait, CancellationToken.None)).ConfigureAwait(false);
+            _ = worker.Exception;
+            throw;
+        }
+        catch (IOException e)
+        {
+            throw new ImportRefusedException(ImportRefusalCode.NotFound, "The file could not be opened: " + (e.Message.Length > 120 ? e.Message[..120] : e.Message));
+        }
+        catch (UnauthorizedAccessException)
+        {
+            throw new ImportRefusedException(ImportRefusalCode.UnsafePath, "The file could not be opened (access denied, or it is not a file).");
+        }
+    }
+
+    // The worker disposes the source when it ends, so a stop that comes after the end finds it disposed: there is nothing left to stop.
+    private static async Task StopWorkerAsync(CancellationTokenSource workerStop)
+    {
+        try
+        {
+            await workerStop.CancelAsync().ConfigureAwait(false);
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
+    /// <summary>Wraps bytes already in memory (a test, a clipboard): the same cap and the same hash.</summary>
+    public static ImportedFile FromBytes(byte[] bytes, string fileName, ImportLimits? limits = null)
+    {
+        ArgumentNullException.ThrowIfNull(bytes);
+        limits ??= ImportLimits.Default;
+
+        if (bytes.Length > limits.MaxBytes)
+            throw TooLarge(limits);
+
+        return new ImportedFile(ImportPath.SafeLeafName(fileName), bytes, Convert.ToHexStringLower(SHA256.HashData(bytes)));
+    }
+
+    /// <summary>
+    /// Decodes a file as strict UTF-8 text. A UTF-8 byte order mark is dropped; UTF-16 and UTF-32 are refused; an invalid
+    /// byte sequence is refused; a control character other than tab, carriage return or line feed is refused with its line.
+    /// </summary>
+    public static string DecodeText(ImportedFile file)
+    {
+        ArgumentNullException.ThrowIfNull(file);
+        var bytes = file.Bytes.AsSpan();
+
+        if (bytes.Length >= 4 && bytes[0] == 0xFF && bytes[1] == 0xFE && bytes[2] == 0 && bytes[3] == 0
+            || bytes.Length >= 4 && bytes[0] == 0 && bytes[1] == 0 && bytes[2] == 0xFE && bytes[3] == 0xFF
+            || bytes.Length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE
+            || bytes.Length >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF)
+            throw new ImportRefusedException(ImportRefusalCode.InvalidEncoding, "The file is UTF-16 or UTF-32 text. Save it as UTF-8 and import it again.");
+
+        if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+            bytes = bytes[3..];
+
+        string text;
+
+        try
+        {
+            text = Strict.GetString(bytes);
+        }
+        catch (DecoderFallbackException)
+        {
+            throw new ImportRefusedException(ImportRefusalCode.InvalidEncoding, "The file is not valid UTF-8 text. Save it as UTF-8 and import it again.");
+        }
+
+        // A second byte order mark (a file saved twice) is dropped too, so it cannot sit in the first header field.
+        text = text.TrimStart('\uFEFF');
+        RejectControlCharacters(text);
+        return text;
+    }
+
+    /// <summary>Refuses a control character other than tab, carriage return and line feed (including DEL and the C1 controls), naming the line.</summary>
+    public static void RejectControlCharacters(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        var line = 1;
+
+        for (var i = 0; i < text.Length; i++)
+        {
+            var c = text[i];
+
+            if (c == '\n')
+            {
+                line++;
+                continue;
+            }
+
+            if (c is '\t' or '\r')
+                continue;
+
+            if (char.IsControl(c))
+                throw new ImportRefusedException(ImportRefusalCode.ControlCharacter, $"The file holds a control character (U+{(int)c:X4}) on line {line}. Only tab, carriage return and line feed are allowed.");
+
+            // Characters that change how text is displayed without being visible: a name or value can read differently from what it is.
+            if (c is '\uFEFF' or '\u061C' or '\u200E' or '\u200F' or (>= '\u202A' and <= '\u202E') or (>= '\u2066' and <= '\u2069'))
+                throw new ImportRefusedException(ImportRefusalCode.ControlCharacter, $"The file holds an invisible direction-changing character (U+{(int)c:X4}) on line {line}.");
+        }
+    }
+
+    private static ImportRefusedException TooLarge(ImportLimits limits) =>
+        new(ImportRefusalCode.TooLarge, $"The file is larger than {limits.MaxBytes / (1024.0 * 1024.0):0.#} MB and was not read.");
+}

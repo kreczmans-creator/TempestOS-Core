@@ -1,0 +1,284 @@
+using CsCheck;
+using Tempest.Calc.Sheets;
+using Tempest.Calc.Structural;
+using Tempest.Calc.Structural.Geometry;
+
+namespace Tempest.Calc.Tests.Calculators.Structural;
+
+public sealed class SectionPropertiesTests
+{
+    private static readonly SectionPropertiesCalculator Calc = new();
+
+    private static CalcRunResult Run(params CalcInputValue[] values) => CalcRunner.Run(Calc, new CalcInputSet(values));
+
+    [Fact]
+    public void Polygon_Rectangle_Matches_Closed_Form()
+    {
+        Gen.Select(Gen.Double[1, 500], Gen.Double[1, 500]).Sample((b, h) =>
+        {
+            var p = PolygonSection.Compute(Shapes.Rectangle(b / 1e3, h / 1e3));
+            var bm = b / 1e3;
+            var hm = h / 1e3;
+            Assert.Equal(bm * hm, p.A, bm * hm * 1e-12);
+            Assert.Equal(bm * hm * hm * hm / 12, p.Ixx, p.Ixx * 1e-9);
+            Assert.Equal(hm * bm * bm * bm / 12, p.Iyy, p.Iyy * 1e-9);
+            Assert.Equal(bm * hm * hm / 4, p.WplX, p.WplX * 1e-9);
+            Assert.Equal(hm * bm * bm / 4, p.WplY, p.WplY * 1e-9);
+            Assert.Equal(0, p.Ixy, p.Ixx * 1e-9);
+        }, iter: 200);
+    }
+
+    [Fact]
+    public void Rotation_Preserves_Area_And_Principal_Values()
+    {
+        Gen.Select(Gen.Double[10, 300], Gen.Double[10, 300], Gen.Double[2, 9], Gen.Double[-3, 3]).Sample((h, b, t, angle) =>
+        {
+            var loops = Shapes.Angle(h / 1e3, b / 1e3, t / 1e3, 0);
+            var p0 = PolygonSection.Compute(loops);
+            var p1 = PolygonSection.Compute(loops.Select(l => l.Transform(0.05, -0.02, angle)).ToList());
+            Assert.Equal(p0.A, p1.A, p0.A * 1e-9);
+            Assert.Equal(p0.I1, p1.I1, p0.I1 * 1e-9);
+            Assert.Equal(p0.I2, p1.I2, p0.I1 * 1e-9);
+            Assert.Equal(p0.Ixx + p0.Iyy, p1.Ixx + p1.Iyy, p0.I1 * 1e-9);
+        }, iter: 100);
+    }
+
+    [Fact]
+    public void Composite_Of_Two_Rectangles_Equals_One_Rectangle()
+    {
+        var one = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeRectangle), CalcInputValue.Quantity("b", 100, "mm"), CalcInputValue.Quantity("h", 200, "mm"));
+        var two = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeComposite), SectionPropertiesCalculator.Parts(
+            (SectionPropertiesCalculator.ShapeRectangle, 100, 120, 0, 0, 0, 0, 60, 0, "add"),
+            (SectionPropertiesCalculator.ShapeRectangle, 100, 80, 0, 0, 0, 0, 160, 0, "add")));
+        Assert.False(two.IsBlocked, string.Join("; ", two.Blocks.Select(b => b.Message)));
+
+        foreach (var symbol in new[] { "A", "I_y", "I_z", "W_el_y", "W_pl_y", "W_pl_z", "r_g_y" })
+            Assert.Equal(one.OutputSi(symbol), two.OutputSi(symbol), one.OutputSi(symbol) * 1e-9);
+    }
+
+    [Fact]
+    public void Subtracted_Part_Makes_A_Hole()
+    {
+        var tube = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeHollowRectangle), CalcInputValue.Quantity("b", 100, "mm"), CalcInputValue.Quantity("h", 150, "mm"), CalcInputValue.Quantity("t_w", 10, "mm"), CalcInputValue.Quantity("r", 0, "mm"), CalcInputValue.Quantity("r_i", 0, "mm"));
+        var composite = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeComposite), SectionPropertiesCalculator.Parts(
+            (SectionPropertiesCalculator.ShapeRectangle, 100, 150, 0, 0, 0, 0, 0, 0, "add"),
+            (SectionPropertiesCalculator.ShapeRectangle, 80, 130, 0, 0, 0, 0, 0, 0, "subtract")));
+        Assert.Equal(tube.OutputSi("A"), composite.OutputSi("A"), tube.OutputSi("A") * 1e-9);
+        Assert.Equal(tube.OutputSi("I_y"), composite.OutputSi("I_y"), tube.OutputSi("I_y") * 1e-9);
+        Assert.Equal(tube.OutputSi("W_pl_y"), composite.OutputSi("W_pl_y"), tube.OutputSi("W_pl_y") * 1e-9);
+    }
+
+    [Fact]
+    public void Composite_Tube_Part_Added_Is_A_Ring_Not_A_Disc()
+    {
+        // struct.section-properties-01: the bore of a hollow part was turned into solid material when the part was added.
+        var tube = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeTube), CalcInputValue.Quantity("d", 200, "mm"), CalcInputValue.Quantity("t_w", 10, "mm"));
+        var composite = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeComposite), SectionPropertiesCalculator.Parts(
+            (SectionPropertiesCalculator.ShapeTube, 0, 200, 10, 0, 0, 0, 0, 0, "add")));
+        Assert.False(composite.IsBlocked, string.Join("; ", composite.Blocks.Select(b => b.Message)));
+
+        // Independent (python): A = pi/4 (200^2 - 180^2) = 59.690 cm2; I = pi/64 (200^4 - 180^4) = 2700.98 cm4.
+        Assert.Equal(59.690, composite.OutputSi("A") * 1e4, 0.01);
+        Assert.Equal(2700.98, composite.OutputSi("I_y") * 1e8, 0.5);
+
+        foreach (var symbol in new[] { "A", "I_y", "I_z", "W_el_y", "W_pl_y" })
+            Assert.Equal(tube.OutputSi(symbol), composite.OutputSi(symbol), tube.OutputSi(symbol) * 5e-4);
+    }
+
+    [Fact]
+    public void Composite_Hollow_Rectangle_Part_Added_Matches_The_Primitive()
+    {
+        var shs = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeHollowRectangle), CalcInputValue.Quantity("b", 100, "mm"), CalcInputValue.Quantity("h", 100, "mm"), CalcInputValue.Quantity("t_w", 5, "mm"), CalcInputValue.Quantity("r", 7.5, "mm"), CalcInputValue.Quantity("r_i", 5, "mm"));
+        var composite = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeComposite), SectionPropertiesCalculator.Parts(
+            (SectionPropertiesCalculator.ShapeHollowRectangle, 100, 100, 5, 0, 7.5, 0, 0, 0, "add")));
+        Assert.False(composite.IsBlocked, string.Join("; ", composite.Blocks.Select(b => b.Message)));
+
+        // Independent (python): A = (100^2 - (4 - pi) 7.5^2) - (90^2 - (4 - pi) 5^2) = 18.732 cm2 (the flipped bore gave 180.3 cm2).
+        Assert.Equal(18.732, composite.OutputSi("A") * 1e4, 0.001);
+
+        foreach (var symbol in new[] { "A", "I_y", "I_z", "W_pl_y" })
+            Assert.Equal(shs.OutputSi(symbol), composite.OutputSi(symbol), shs.OutputSi(symbol) * 1e-6);
+    }
+
+    [Fact]
+    public void Composite_Tube_Part_Subtracted_Leaves_The_Bore_Solid()
+    {
+        // Rectangle 300 x 300 minus a tube d 200 t 10: the ring is removed and the 180 mm bore stays solid.
+        var composite = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeComposite), SectionPropertiesCalculator.Parts(
+            (SectionPropertiesCalculator.ShapeRectangle, 300, 300, 0, 0, 0, 0, 0, 0, "add"),
+            (SectionPropertiesCalculator.ShapeTube, 0, 200, 10, 0, 0, 0, 0, 0, "subtract")));
+        Assert.False(composite.IsBlocked, string.Join("; ", composite.Blocks.Select(b => b.Message)));
+
+        // Independent (python): A = 300^2 - pi/4 (200^2 - 180^2) = 840.31 cm2; I = 300^4/12 - pi/64 (200^4 - 180^4) = 64799.0 cm4.
+        Assert.Equal(840.31, composite.OutputSi("A") * 1e4, 0.01);
+        Assert.Equal(64799.0, composite.OutputSi("I_y") * 1e8, 0.5);
+    }
+
+    [Fact]
+    public void Polygon_With_Hole_Matches_The_Tube()
+    {
+        var hole = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(
+            ("mm", [(-50, -75), (50, -75), (50, 75), (-50, 75)]),
+            ("mm", [(-40, -65), (40, -65), (40, 65), (-40, 65)])));
+        Assert.False(hole.IsBlocked);
+        Assert.Equal((100 * 150 - 80 * 130) * 1e-6, hole.OutputSi("A"), 1e-15);
+        var ixx = (100.0 * 150 * 150 * 150 - 80.0 * 130 * 130 * 130) / 12 * 1e-12;
+        Assert.Equal(ixx, hole.OutputSi("I_y"), ixx * 1e-9);
+    }
+
+    [Fact]
+    public void Missing_Dimension_Blocks_With_The_Symbol()
+    {
+        var r = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeTube), CalcInputValue.Quantity("t_w", 5, "mm"));
+        Assert.True(r.IsBlocked);
+        Assert.Contains(r.Blocks, b => b.Message.StartsWith("d:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Impossible_Geometry_Blocks()
+    {
+        Assert.True(Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeTube), CalcInputValue.Quantity("d", 20, "mm"), CalcInputValue.Quantity("t_w", 10, "mm")).IsBlocked);
+        Assert.True(Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeI), CalcInputValue.Quantity("h", 100, "mm"), CalcInputValue.Quantity("b", 50, "mm"), CalcInputValue.Quantity("t_w", 60, "mm"), CalcInputValue.Quantity("t_f", 10, "mm"), CalcInputValue.Quantity("r", 0, "mm")).IsBlocked);
+        Assert.True(Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(("mm", [(0, 0), (10, 0), (20, 0)]))).IsBlocked);
+        Assert.True(Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(("mm", [(0, 0), (10, 0)]))).IsBlocked);
+        Assert.True(Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeComposite)).IsBlocked);
+    }
+
+    [Fact]
+    public void Hole_Larger_Than_Outline_Blocks()
+    {
+        var r = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(
+            ("mm", [(0, 0), (10, 0), (10, 10), (0, 10)]),
+            ("mm", [(-5, -5), (20, -5), (20, 20), (-5, 20)])));
+        Assert.True(r.IsBlocked);
+    }
+
+    [Fact]
+    public void A_Self_Crossing_Outline_Blocks_With_A_Plain_Message()
+    {
+        // struct.section-properties-04: the loop (0,0), (100,100), (100,0), (0,60) crosses itself and ended in the engine's "sqrt of a negative number is undefined".
+        var r = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(("mm", [(0, 0), (100, 100), (100, 0), (0, 60)])));
+        Assert.True(r.IsBlocked);
+        var block = Assert.Single(r.Blocks);
+        Assert.Equal("geometry", block.RuleId);
+        Assert.Contains("crosses itself", block.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("sqrt", block.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_Hole_Outside_Or_Across_The_Outline_Blocks_Instead_Of_Running_With_The_Wrong_Area()
+    {
+        // struct.section-properties-04: a square 100 outline with a 10 x 10 "hole" at x 200 to 210 ran with no notice and gave A = 99 cm2 (the hole subtracted as if it lay in the section).
+        var square = ("mm", (IReadOnlyList<(double, double)>)[(0, 0), (100, 0), (100, 100), (0, 100)]);
+        var outside = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(square, ("mm", [(200, 0), (210, 0), (210, 10), (200, 10)])));
+        Assert.True(outside.IsBlocked);
+        Assert.Contains("outside the outline", Assert.Single(outside.Blocks).Message, StringComparison.Ordinal);
+
+        var across = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(square, ("mm", [(90, 40), (120, 40), (120, 60), (90, 60)])));
+        Assert.True(across.IsBlocked);
+        Assert.Contains("crosses", Assert.Single(across.Blocks).Message, StringComparison.Ordinal);
+
+        // A hole inside the outline still runs (the tube-like polygon of Polygon_With_Hole_Matches_The_Tube).
+        Assert.False(Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(square, ("mm", [(10, 10), (20, 10), (20, 20), (10, 20)]))).IsBlocked);
+    }
+
+    [Theory]
+    [InlineData("channel", 4.3, "low")]
+    [InlineData("angle", 8.9, "low")]
+    [InlineData("tee", 2.8, "high")]
+    public void The_Torsion_Constant_Of_A_Channel_Angle_Or_Tee_States_How_Far_Ignoring_The_Fillet_Errs(string shape, double percent, string direction)
+    {
+        // struct.section-properties-03: J = sum b t^3/3 against a finite-element value (channel 200x75, t 6, t_f 11, r 12: 4.3 % low; angle 100x75, t 10, r 12: 8.9 % low; sharp tee 150x150: 2.8 % high).
+        var dims = shape switch
+        {
+            "channel" => new[] { CalcInputValue.Quantity("h", 200, "mm"), CalcInputValue.Quantity("b", 75, "mm"), CalcInputValue.Quantity("t_w", 6, "mm"), CalcInputValue.Quantity("t_f", 11, "mm"), CalcInputValue.Quantity("r", 12, "mm") },
+            "angle" => [CalcInputValue.Quantity("h", 100, "mm"), CalcInputValue.Quantity("b", 75, "mm"), CalcInputValue.Quantity("t_w", 10, "mm"), CalcInputValue.Quantity("r", 12, "mm")],
+            _ => [CalcInputValue.Quantity("h", 150, "mm"), CalcInputValue.Quantity("b", 150, "mm"), CalcInputValue.Quantity("t_w", 10, "mm"), CalcInputValue.Quantity("t_f", 15, "mm")],
+        };
+        var r = Run([CalcInputValue.Choice("shape", shape), .. dims]);
+        Assert.False(r.IsBlocked);
+        var warning = Assert.Single(r.Warnings, w => w.RuleId == "thin-walled-torsion");
+        Assert.Contains($"about {percent:0.#} % {direction}", warning.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Polygon_And_Parametric_Angle_Agree()
+    {
+        var shape = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeAngle), CalcInputValue.Quantity("h", 150, "mm"), CalcInputValue.Quantity("b", 90, "mm"), CalcInputValue.Quantity("t_w", 12, "mm"), CalcInputValue.Quantity("r", 0, "mm"));
+        var poly = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapePolygon), SectionPropertiesCalculator.Polygon(("mm", [(0, 0), (90, 0), (90, 12), (12, 12), (12, 150), (0, 150)])));
+
+        foreach (var symbol in new[] { "A", "x_c", "y_c", "I_y", "I_z", "I_yz", "I_1", "I_2", "theta", "W_pl_y" })
+            Assert.Equal(shape.OutputSi(symbol), poly.OutputSi(symbol), Math.Abs(shape.OutputSi(symbol)) * 1e-9 + 1e-15);
+
+        Assert.Contains(poly.Notices, n => n.RuleId == "no-torsion");
+        Assert.Null(poly.FindOutput("J"));
+        Assert.NotNull(shape.FindOutput("J"));
+    }
+
+    [Fact]
+    public void Principal_Axes_Of_An_Angle_Are_Rotated()
+    {
+        var r = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeAngle), CalcInputValue.Quantity("h", 100, "mm"), CalcInputValue.Quantity("b", 100, "mm"), CalcInputValue.Quantity("t_w", 10, "mm"), CalcInputValue.Quantity("r", 0, "mm"));
+        var theta = r.OutputSi("theta");
+        Assert.Equal(Math.PI / 4, Math.Abs(theta), 6);
+        Assert.True(r.OutputSi("I_1") > r.OutputSi("I_y"));
+        Assert.True(r.OutputSi("I_2") < r.OutputSi("I_z"));
+    }
+
+    [Fact]
+    public void Vertex_Cap_Is_Enforced()
+    {
+        var many = Enumerable.Range(0, SectionLoop.MaxVertices + 1).Select(i => new Point2(Math.Cos(i * 1e-4), Math.Sin(i * 1e-4))).ToList();
+        Assert.Throws<ArgumentException>(() => new SectionLoop(many, false));
+    }
+
+    [Fact]
+    public void Torsion_Of_A_Square_Matches_The_Tabulated_Factor()
+    {
+        // Roark Table 10.1: K = 0.1406 a⁴ for a square.
+        Assert.Equal(0.1406, Torsion.Rectangle(1, 1), 4);
+        Assert.Equal(Torsion.Rectangle(2, 1), Torsion.Rectangle(1, 2), 15);
+    }
+
+    [Fact]
+    public void A_Section_Given_Under_The_Old_Wall_Thickness_Symbol_Gives_The_Same_Values_As_One_Given_Under_The_New_One()
+    {
+        // C-2 phase B: the input t is now t_w; the old symbol is an alias, so a saved calculation, an inputs file or a pack example that still says t loads unchanged.
+        var oldForm = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeTube), CalcInputValue.Quantity("d", 200, "mm"), CalcInputValue.Quantity("t", 10, "mm"));
+        var newForm = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeTube), CalcInputValue.Quantity("d", 200, "mm"), CalcInputValue.Quantity("t_w", 10, "mm"));
+
+        Assert.False(oldForm.IsBlocked);
+        foreach (var symbol in new[] { "A", "I_y", "I_z", "W_el_y", "W_pl_y", "J" })
+            Assert.Equal(newForm.OutputSi(symbol), oldForm.OutputSi(symbol));
+
+        Assert.Equal(59.690, oldForm.OutputSi("A") * 1e4, 3);
+    }
+
+    [Fact]
+    public void A_Composite_Table_Saved_With_The_Old_Thickness_Column_Still_Runs()
+    {
+        // The parts table had a column "t" before it became "t_w"; a saved table keeps its keys, so the calculator reads the old key when the new one is absent.
+        var tube = CalcInputValue.Table("parts", [CalcRow.Of(("shape", new CalcCell(Text: SectionPropertiesCalculator.ShapeTube)), ("h", new CalcCell(200, "mm")), ("t", new CalcCell(10, "mm")), ("x0", new CalcCell(0, "mm")), ("y0", new CalcCell(0, "mm")))]);
+        var r = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeComposite), tube);
+
+        Assert.False(r.IsBlocked, string.Join("; ", r.Blocks.Select(b => b.Message)));
+        var newTube = CalcInputValue.Table("parts", [CalcRow.Of(("shape", new CalcCell(Text: SectionPropertiesCalculator.ShapeTube)), ("h", new CalcCell(200, "mm")), ("t_w", new CalcCell(10, "mm")), ("x0", new CalcCell(0, "mm")), ("y0", new CalcCell(0, "mm")))]);
+        var current = Run(CalcInputValue.Choice("shape", SectionPropertiesCalculator.ShapeComposite), newTube);
+        Assert.Equal(current.OutputSi("A"), r.OutputSi("A"));
+        Assert.Equal(current.OutputSi("I_y"), r.OutputSi("I_y"));
+        Assert.Equal(59.69, r.OutputSi("A") * 1e4, 0.01);
+    }
+
+    [Fact]
+    public void The_Properties_Are_Named_In_The_EN_1993_Axes_Major_Y_Y_And_Minor_Z_Z()
+    {
+        // An I-section drawn upright (web vertical) has its major axis horizontal: I_y is the large one, I_z the small one, and the same for the moduli and radii.
+        var r = Run(Calc.Template.TestCases[0].Inputs.ToArray());
+
+        Assert.True(r.OutputSi("I_y") > 10 * r.OutputSi("I_z"));
+        Assert.True(r.OutputSi("W_el_y") > 5 * r.OutputSi("W_el_z"));
+        Assert.True(r.OutputSi("W_pl_y") > 5 * r.OutputSi("W_pl_z"));
+        Assert.True(r.OutputSi("r_g_y") > 3 * r.OutputSi("r_g_z"));
+        Assert.Equal(r.OutputSi("I_y") / r.OutputSi("A"), r.OutputSi("r_g_y") * r.OutputSi("r_g_y"), 12);
+    }
+}

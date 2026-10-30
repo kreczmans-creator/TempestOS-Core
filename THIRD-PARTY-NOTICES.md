@@ -31,7 +31,6 @@ rendering dependency is directly relevant to what this platform ships.
 | [Microsoft.Extensions.Logging.Abstractions](https://www.nuget.org/packages/Microsoft.Extensions.Logging.Abstractions) | 10.0.11 | MIT |
 | [Microsoft.NET.Test.Sdk](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk) | 17.14.1 | MIT |
 | [PDFtoImage](https://www.nuget.org/packages/PDFtoImage) | 4.1.1 | MIT |
-| [Svg.Skia](https://www.nuget.org/packages/Svg.Skia) | 2.0.0.8 | MIT |
 | [System.Security.Cryptography.ProtectedData](https://www.nuget.org/packages/System.Security.Cryptography.ProtectedData) | 10.0.11 | MIT |
 | [Tmds.DBus.Protocol](https://www.nuget.org/packages/Tmds.DBus.Protocol) | 0.21.3 | MIT |
 | [Velopack](https://www.nuget.org/packages/Velopack) | 1.2.0 | MIT |
@@ -40,7 +39,7 @@ rendering dependency is directly relevant to what this platform ships.
 
 ## Notes
 
-- **Svg.Skia** (`WP 21.4A`) renders SVG attachments in the viewer through SkiaSharp; pinned to the last 2.x release because its SkiaSharp floor matches the version this solution resolves. Untrusted SVG is sanitised before parsing (external references blanked, DOCTYPE and script stripped).
+- **SVG attachments** are rendered by the app's own code (`Tempest.Desktop/Viewing/SvgPictureBuilder.cs`) over SkiaSharp. `Svg.Skia` 2.0.0.8 (`WP 21.4A`) did this until v0.26.0; it was removed under owner decision DB-08 because its transitive `Svg.Custom` is MS-PL, outside the MIT, BSD and Apache set this project allows, so no SVG package is referenced. Untrusted SVG is still sanitised before parsing (external references blanked, DOCTYPE and script stripped), and the reader itself follows no reference and reads XML with no resolver.
 - **Velopack** (`WP 21.5A`, `WP RC.0A`) is referenced by `Tempest.Desktop` only: the Windows installer, the in-place update check (off by default, HTTPS feed) and installed-versus-development-run detection. `Tempest.Harness` carries no installer.
 - **PDFtoImage** (used by `Tempest.Desktop`'s PDF page source) pulls in
   `SkiaSharp` (MIT) and, for its native rendering engine,
@@ -104,6 +103,13 @@ redistribution of the fonts themselves, bundled with software, free of
 charge; it does not permit selling the fonts on their own. See either
 vendored `OFL-*.txt` file, or <https://openfontlicense.org>, for the full
 licence text.
+
+One more embedded face is not third-party. **Tempest Symbols**
+(`src/Tempest.Desktop/Documents/Assets/Fonts/TempestSymbols-Regular.ttf`)
+draws the few symbols no other face has, such as ⊥, ∥ and ∮. It is drawn
+for TempestOS from plain geometry by `scripts/generate-symbol-font.py`, so it
+is the project's own work under the project's own licence. The script uses
+fontTools (MIT) at generation time only; the build does not need it.
 
 ## Brand assets
 

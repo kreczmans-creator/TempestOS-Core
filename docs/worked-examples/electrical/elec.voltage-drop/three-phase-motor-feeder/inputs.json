@@ -1,0 +1,173 @@
+[
+  {
+    "Symbol": "A_c",
+    "Number": 35,
+    "Unit": "mm^2",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Cable schedule CS-01: 35 mm\u00B2 Cu XLPE/SWA",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "35"
+  },
+  {
+    "Symbol": "I",
+    "Number": 100,
+    "Unit": "A",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Motor schedule MS-01: 100 A full-load current",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100"
+  },
+  {
+    "Symbol": "I_z",
+    "Number": 119,
+    "Unit": "A",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Cable schedule CS-01: I_z = 119 A for the installation method",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "119"
+  },
+  {
+    "Symbol": "L",
+    "Number": 80,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-E-120",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "80"
+  },
+  {
+    "Symbol": "T_amb",
+    "Number": 30,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "30"
+  },
+  {
+    "Symbol": "T_c",
+    "Number": 70,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "70"
+  },
+  {
+    "Symbol": "T_rated",
+    "Number": 70,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "70"
+  },
+  {
+    "Symbol": "V_n",
+    "Number": 400,
+    "Unit": "V",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "400"
+  },
+  {
+    "Symbol": "X_km",
+    "Number": 0.08,
+    "Unit": "ohm/km",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Cable datasheet: 0.08 \u03A9/km",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.08"
+  },
+  {
+    "Symbol": "alpha",
+    "Number": 0.00393,
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "Reference record: annealed copper 0.01724 \u03A9\u00B7mm\u00B2/m, 0.00393/K (Hughes)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.00393"
+  },
+  {
+    "Symbol": "cos_phi",
+    "Number": 0.85,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.85"
+  },
+  {
+    "Symbol": "data",
+    "Text": "resistivity and area",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "resistivity and area"
+  },
+  {
+    "Symbol": "dv_limit",
+    "Number": 5,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Project spec ES-3 \u00A74: 5 % (BS 7671 Appendix 4 \u00A76.4 default for other uses)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "5"
+  },
+  {
+    "Symbol": "n_par",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "rho_20",
+    "Number": 0.01724,
+    "Unit": "ohm*mm^2/m",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "Reference record: annealed copper 0.01724 \u03A9\u00B7mm\u00B2/m, 0.00393/K (Hughes)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.01724"
+  },
+  {
+    "Symbol": "system",
+    "Text": "AC three-phase",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Design convention.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "AC three-phase"
+  }
+]

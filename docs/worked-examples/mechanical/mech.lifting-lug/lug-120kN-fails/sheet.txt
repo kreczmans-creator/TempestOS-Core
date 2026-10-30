@@ -1,0 +1,139 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: lug-120kN-fails    Revision: A
+Title: Lifting lug and pin joint
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. Scope and method
+Calculates the net-section tension, bearing, tear-out, pin shear and pin bending of a pinned lifting lug between two cheek plates under a load along the lug. It is a design calculation, not a thorough examination.
+Net-section tension, beside the hole: σ_t = F_lug/((W − d_h)·t_lug) Bearing of the pin on the lug: σ_br = F_lug/(d_p·t_lug) Tear-out shear beyond the hole, on two planes: τ_to = F_lug/(2·a·t_lug) Pin shear, in double shear: τ_p = F_lug/(2·π·d_p²/4) Pin bending moment, from the lever arm across the lug, the gap and the cheek plate: M = (F_lug/2)·(t_lug/4 + g + t_s/2) Pin bending stress: σ_b = 32·M/(π·d_p³) Utilisation of each mode, its stress over the allowable entered: u = σ/σ_allow
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  F_lug | Load on the lug (along the lug) | 120 | kN | spec: LOAD-SCHEDULE-01 | 0.01 … 100000 kN
+  t_lug | Lug thickness | 15 | mm | drawing: DRG-LL-102 rev A | 1 … 500 mm
+  W | Lug width at the hole | 90 | mm | drawing: DRG-LL-102 rev A | 5 … 2000 mm
+  d_h | Hole diameter | 26 | mm | drawing: DRG-LL-102 rev A | 2 … 1000 mm
+  a | Edge distance, hole edge to lug end (load direction) | 30 | mm | drawing: DRG-LL-102 rev A | 1 … 2000 mm
+  d_p | Pin diameter | 25 | mm | drawing: DRG-LL-102 rev A | 2 … 1000 mm
+  t_s | Cheek plate thickness (each) | 10 | mm | drawing: DRG-LL-102 rev A | 1 … 500 mm
+  g | Clearance, lug face to cheek plate (each side) | 1 | mm | drawing: DRG-LL-102 rev A | 0 … 100 mm
+  f_t | Allowable tensile stress, lug | 150 | MPa | spec: SPEC-MECH-03 design criteria | 1 … 2000 MPa
+  f_br | Allowable bearing stress, lug | 200 | MPa | spec: SPEC-MECH-03 design criteria | 1 … 3000 MPa
+  f_v | Allowable shear stress, lug | 90 | MPa | spec: SPEC-MECH-03 design criteria | 1 … 2000 MPa
+  f_b_pin | Allowable bending stress, pin | 250 | MPa | spec: SPEC-MECH-03 design criteria | 1 … 3000 MPa
+  f_v_pin | Allowable shear stress, pin | 150 | MPa | spec: SPEC-MECH-03 design criteria | 1 … 2000 MPa
+
+3. Assumptions
+  A1. The load acts along the lug's axis through the hole centre. (No out-of-plane or side load.)
+  A2. The pin bears uniformly over the lug thickness and over each cheek plate. (Pin-bending idealisation for a lug between two cheek plates.)
+  A3. Each cheek plate reacts half the load. (Pin-bending idealisation for a lug between two cheek plates.)
+  A4. The pin is a close fit, with d_p at least 0.9 d_h. (Uniform-bearing idealisation.)
+  A5. This is a design calculation, not a thorough examination. (The sheet checks the lug and pin at the stated loads against the allowables entered. LOLER reg 9 and PUWER duties stay with the owner and the competent person.)
+
+4. Working
+  [14] k_fit = d_p / d_h
+      = 25 mm / 26 mm
+      = 0.96154
+        Pin-to-hole ratio
+  [15] A_net = (W - d_h) * t_lug
+      = (90 mm − 26 mm) × 15 mm
+      = 960 mm²
+        Net section through the hole
+  [16] sigma_t = F_lug / A_net    « ASME BTH-1 Ch. 3
+      = 120 kN / 960 mm²
+      = 125 MPa
+        Net-section tension
+  [17] A_br = d_p * t_lug
+      = 25 mm × 15 mm
+      = 375 mm²
+        Bearing area
+  [18] sigma_br = F_lug / A_br
+      = 120 kN / 375 mm²
+      = 320 MPa
+        Bearing of the pin on the hole
+  [19] A_to = 2 * a * t_lug
+      = 2 × 30 mm × 15 mm
+      = 900 mm²
+        Tear-out area (two planes beyond the hole)
+  [20] tau_to = F_lug / A_to
+      = 120 kN / 900 mm²
+      = 133.33 MPa
+        Tear-out shear
+  [21] A_p = 2 * pi * d_p^2 / 4
+      = 2 × π × (25 mm)^2 / 4
+      = 981.75 mm²
+        Pin area in double shear
+  [22] tau_p = F_lug / A_p
+      = 120 kN / 981.75 mm²
+      = 122.23 MPa
+        Pin shear
+  [23] M_p = F_lug / 2 * (t_lug / 4 + g + t_s / 2)
+      = 120 kN / 2 × (15 mm / 4 + 1 mm + 10 mm / 2)
+      = 0.585 kN·m
+        Pin bending moment (uniform bearing on lug and cheek plates)
+  [24] Z_p = pi * d_p^3 / 32
+      = π × (25 mm)^3 / 32
+      = 1534 mm³
+        Pin section modulus
+  [25] sigma_b = M_p / Z_p
+      = 0.585 kN·m / 1534 mm³
+      = 381.36 MPa
+        Pin bending stress
+  [26] u_t = sigma_t / f_t
+      = 125 MPa / 150 MPa
+      = 0.83333
+        Net-section utilisation
+  [27] u_br = sigma_br / f_br
+      = 320 MPa / 200 MPa
+      = 1.6
+        Bearing utilisation
+  [28] u_to = tau_to / f_v
+      = 133.33 MPa / 90 MPa
+      = 1.4815
+        Tear-out utilisation
+  [29] u_p = tau_p / f_v_pin
+      = 122.23 MPa / 150 MPa
+      = 0.81487
+        Pin shear utilisation
+  [30] u_b = sigma_b / f_b_pin
+      = 381.36 MPa / 250 MPa
+      = 1.5254
+        Pin bending utilisation
+
+5. Results
+  u_t = 0.83    Net-section utilisation
+  u_br = 1.60    Bearing utilisation (governing)
+  u_to = 1.49    Tear-out utilisation
+  u_p = 0.81    Pin shear utilisation
+  u_b = 1.53    Pin bending utilisation
+  M_p = 0.5850 kN·m    Pin bending moment
+  sigma_t = 125 MPa    Net-section tension
+  sigma_br = 320 MPa    Bearing stress
+  tau_to = 133.4 MPa    Tear-out shear
+  tau_p = 122.2 MPa    Pin shear
+  sigma_b = 381.4 MPa    Pin bending stress
+  sheet_notice = "This is a design calculation, not a thorough examination. It does not replace the thorough examination by a competent person (LOLER reg 9) or the marking, testing and certification that the regulations require. Signatures are not authenticated by TempestOS: the signed-in names of the author, the checkers and the competent person are as entered into this installation."    Status of this sheet
+
+6. Checks (governing first)
+  FAIL  Pin bearing against the allowable bearing stress: 320 MPa vs 200 MPa  utilisation 1.60  « ASME BTH-1 Ch. 3
+  FAIL  Pin bending stress against the allowable pin bending stress: 381.4 MPa vs 250 MPa  utilisation 1.53
+  FAIL  Tear-out shear against the allowable shear stress: 133.4 MPa vs 90 MPa  utilisation 1.49  « ASME BTH-1 Ch. 3
+  PASS  Net-section tension against the allowable tensile stress: 125 MPa vs 150 MPa  utilisation 0.83  « ASME BTH-1 Ch. 3
+  PASS  Pin double shear against the allowable pin shear stress: 122.2 MPa vs 150 MPa  utilisation 0.81
+
+7. Applicability
+  None.
+
+8. Verification
+  Template: mech.lifting-lug@1.2.0
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 2/2
+  Test run: —
+
+9. References
+  1. ASME BTH-1 Ch. 3 — Pinned connections
+  2. Budynas and Nisbett, Shigley's Mechanical Engineering Design Ch. 3, 11th ed. — Shear, bearing and bending stresses

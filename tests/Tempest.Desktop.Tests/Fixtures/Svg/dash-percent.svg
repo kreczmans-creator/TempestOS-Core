@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="50">
+  <rect width="200" height="50" fill="#ffffff"/>
+  <!-- A percentage dash refers to the normalised diagonal (145.8 here), so 10% is 14.6 units on and 14.6 off, not 20 of the width. -->
+  <line x1="0" y1="25" x2="200" y2="25" stroke="#000000" stroke-width="10" stroke-dasharray="10% 10%"/>
+</svg>

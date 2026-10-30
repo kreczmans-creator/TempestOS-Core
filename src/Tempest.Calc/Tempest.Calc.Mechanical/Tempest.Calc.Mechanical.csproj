@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ADR-0165: M1 tolerance stack v2, M2 ISO 286 fits + press fit, M3
+       bolted joint + bolt group. Depends on Engine and Sheets only. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tempest.Calc.Mechanical</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisModeSecurity>All</AnalysisModeSecurity>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tempest.Calc.Sheets\Tempest.Calc.Sheets.csproj" />
+    <ProjectReference Include="..\Tempest.Calc.Structural\Tempest.Calc.Structural.csproj" />
+  </ItemGroup>
+
+</Project>

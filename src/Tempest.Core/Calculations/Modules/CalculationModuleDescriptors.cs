@@ -75,14 +75,22 @@ public static class StandardParts
     public static IReadOnlyList<StandardValue> MetricBoltDiameters { get; } =
         [.. new[] { 3, 4, 5, 6, 8, 10, 12, 14, 16, 20, 22, 24, 27, 30, 36 }.Select(d => new StandardValue($"M{d}", d))];
 
-    /// <summary>ISO 898-1 property classes, as ultimate shear strength taken as 0.6 x the nominal tensile strength, MPa.</summary>
+    /// <summary>
+    /// ISO 898-1 property classes as a shear strength α_v·f_ub, MPa, for the case this module computes: the
+    /// unthreaded shank in the shear plane, where EN 1993-1-8 Table 3.4 gives α_v = 0.6 for every class and A is the
+    /// gross area (the module multiplies by π d²/4). Threads in the shear plane (A_s, and α_v = 0.5 for 4.8, 5.8, 6.8,
+    /// 10.9) are the S4 worksheet's job (`struct.connection-ec3`); see ADR-0169.
+    /// </summary>
     public static IReadOnlyList<StandardValue> BoltShearStrengths { get; } =
     [
         new("Class 4.6 (fub 400)", 240),
+        new("Class 4.8 (fub 400, shank in shear plane)", 240),
         new("Class 5.6 (fub 500)", 300),
+        new("Class 5.8 (fub 500, shank in shear plane)", 300),
+        new("Class 6.8 (fub 600, shank in shear plane)", 360),
         new("Class 8.8 (fub 800)", 480),
-        new("Class 10.9 (fub 1000)", 600),
-        new("Class 12.9 (fub 1200)", 720),
+        new("Class 10.9 (fub 1000, shank in shear plane)", 600),
+        new("Class 12.9 (fub 1200, shank in shear plane; outside EN 1993-1-8)", 720),
     ];
 
     /// <summary>ISO 273 medium-series clearance holes for the metric bolts above, mm.</summary>
@@ -161,6 +169,16 @@ public sealed record CalculationModuleDescriptor(
 /// </remarks>
 public static class CalculationModuleDescriptors
 {
+    /// <summary>The name of the feature (`ADR-0173`) that withholds the lifting modules until the installation switches it on; the same name the worksheet calculators' feature flag carries.</summary>
+    public const string LiftingFeature = CalculationFeatureGate.LiftingFeature;
+
+    /// <summary>
+    /// The feature a module is gated behind, or <see langword="null"/> for a module that is always available. The older lifting-lug and pin-joint
+    /// module is a lifting calculation like S8 and is withheld with it (`ADR-0173`).
+    /// </summary>
+    public static string? FeatureOf(string moduleId) =>
+        CalculationFeatureGate.FeatureOf(moduleId);
+
     private const string Docs = "docs/engineering/calculations/";
     private const string Material = "MaterialPin";
 
@@ -168,7 +186,7 @@ public static class CalculationModuleDescriptors
     public static IReadOnlyList<CalculationModuleDescriptor> All { get; } =
     [
         new(BoltShearCapacityCalculationDefinition.Id, "Bolt shear capacity", "Structural",
-            "Allowable shear capacity of a bolted joint from the shear-plane area, the ultimate shear strength and a safety factor: the standard single- and double-shear hand check.",
+            "Allowable shear capacity of a bolted joint from the shear-plane area, the ultimate shear strength and a safety factor: the standard single- and double-shear hand check, with the unthreaded shank in the shear plane (threads in the plane: use the EN 1993-1-8 worksheet).",
             null, typeof(BoltShearCapacityCalculationDefinition),
             [
                 Q("Diameter", "Bolt diameter", nameof(Length), "mm", "> 0", "The bolt's nominal shank diameter.", standard: StandardParts.MetricBoltDiameters),

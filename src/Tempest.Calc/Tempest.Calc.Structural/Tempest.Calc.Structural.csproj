@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ADR-0165: S1 section properties, S2 beam and 2D frame solver, S3
+       EN 1993-1-1 member checks. Depends on Engine and Sheets only. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tempest.Calc.Structural</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisModeSecurity>All</AnalysisModeSecurity>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tempest.Calc.Sheets\Tempest.Calc.Sheets.csproj" />
+  </ItemGroup>
+
+</Project>

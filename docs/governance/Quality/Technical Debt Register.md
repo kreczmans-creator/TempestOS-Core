@@ -630,6 +630,14 @@ produced) — a render-only feature exactly as scoped, not a viewport-model
 change, so "Fit" on a 90°-rotated page does not itself re-derive a new fit
 zoom for the now-landscape shape.
 
+**Superseded in v0.26.0 (owner decision DB-08, DC-21):** `Svg.Skia` was
+removed because its transitive `Svg.Custom` is MS-PL, outside the licence
+set `scripts/check-licences.py` allows. `SvgDocumentPageSource` now draws
+through the app's own `SvgPictureBuilder` (SkiaSharp only); the Desktop
+test `SvgRenderComparisonTests` holds it to the pictures `Svg.Skia`
+produced before the switch, and `SvgMarkupSanitiser` stays as defence in
+depth. The paragraphs below describe the closure as it was made.
+
 **Closed by `WP 21.4A` (2026-09-15), with evidence — moved out of the
 Live Backlog:** `TD-99` (the SVG half `WP 20.2B` left open), `TD-98`
 (markup and annotation, the gap `WP 20.2B`'s own rotation closure left

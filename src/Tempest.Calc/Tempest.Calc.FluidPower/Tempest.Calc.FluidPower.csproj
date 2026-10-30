@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ADR-0170: the Fluid Power discipline (hydraulics; pneumatics later).
+       F1 cylinder and actuator circuit, F2 accumulator, F3 seal groove.
+       Depends on Engine and Sheets only; the shared gas-law kernel
+       (Tempest.Calc.Engine.Physics.GasLaw) arrives through Sheets. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tempest.Calc.FluidPower</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisModeSecurity>All</AnalysisModeSecurity>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tempest.Calc.Sheets\Tempest.Calc.Sheets.csproj" />
+  </ItemGroup>
+
+</Project>

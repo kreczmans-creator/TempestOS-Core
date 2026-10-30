@@ -1,0 +1,64 @@
+[
+  {
+    "Symbol": "D",
+    "Number": 50,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-HUB-04",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "50"
+  },
+  {
+    "Symbol": "hole_grade",
+    "Number": 7,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "DRG-HUB-04: H7/p6",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "7"
+  },
+  {
+    "Symbol": "hole_kind",
+    "Text": "ISO 286 hole class",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "DRG-HUB-04: the hole is an ISO 286 class (H7), not a bearing bore",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "ISO 286 hole class"
+  },
+  {
+    "Symbol": "hole_letter",
+    "Text": "H",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "DRG-HUB-04: H7/p6",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "H"
+  },
+  {
+    "Symbol": "shaft_grade",
+    "Number": 6,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "DRG-HUB-04: H7/p6",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "6"
+  },
+  {
+    "Symbol": "shaft_letter",
+    "Text": "p",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "DRG-HUB-04: H7/p6",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "p"
+  }
+]

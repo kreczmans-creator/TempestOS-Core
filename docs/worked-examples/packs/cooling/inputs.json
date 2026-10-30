@@ -1,0 +1,962 @@
+{
+  "e6": [
+    {
+      "Symbol": "DoD",
+      "Number": 0.8,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.8"
+    },
+    {
+      "Symbol": "P_add",
+      "Number": 0,
+      "Unit": "kW",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "SF",
+      "Number": 1.25,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.25"
+    },
+    {
+      "Symbol": "T_amb",
+      "Number": 40,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
+      "Symbol": "U_1ph",
+      "Number": 230,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "230"
+    },
+    {
+      "Symbol": "U_3ph",
+      "Number": 400,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "400"
+    },
+    {
+      "Symbol": "U_DC",
+      "Number": 24,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "24"
+    },
+    {
+      "Symbol": "U_b",
+      "Number": 24,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "24"
+    },
+    {
+      "Symbol": "cosphi_add",
+      "Number": 0.85,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-MCC-03 \u00A74 (panel schedule)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.85"
+    },
+    {
+      "Symbol": "eta_add",
+      "Number": 0.9,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.9"
+    },
+    {
+      "Symbol": "eta_b",
+      "Number": 0.95,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.95"
+    },
+    {
+      "Symbol": "eta_conv",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "eta_psu",
+      "Number": 0.9,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.9"
+    },
+    {
+      "Symbol": "f_derate",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "heat_add",
+      "Number": 0,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "inrush_add",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "k_T",
+      "Number": 3,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3"
+    },
+    {
+      "Symbol": "k_age",
+      "Number": 0.8,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.8"
+    },
+    {
+      "Symbol": "k_temp",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "loads",
+      "Rows": [
+        {
+          "Cells": {
+            "name": {
+              "Text": "Extruder drive"
+            },
+            "supply": {
+              "Text": "AC three-phase"
+            },
+            "P": {
+              "Number": 55,
+              "Unit": "kW"
+            },
+            "cosphi": {
+              "Number": 0.95
+            },
+            "eta": {
+              "Number": 0.97
+            },
+            "d": {
+              "Number": 1
+            },
+            "k": {
+              "Number": 1
+            },
+            "inrush": {
+              "Number": 1
+            },
+            "backed": {
+              "Flag": false
+            }
+          }
+        },
+        {
+          "Cells": {
+            "name": {
+              "Text": "Pump drive"
+            },
+            "supply": {
+              "Text": "AC three-phase"
+            },
+            "P": {
+              "Number": 30,
+              "Unit": "kW"
+            },
+            "cosphi": {
+              "Number": 0.95
+            },
+            "eta": {
+              "Number": 0.975
+            },
+            "d": {
+              "Number": 1
+            },
+            "k": {
+              "Number": 1
+            },
+            "inrush": {
+              "Number": 1
+            },
+            "backed": {
+              "Flag": false
+            }
+          }
+        },
+        {
+          "Cells": {
+            "name": {
+              "Text": "Servo drives (4)"
+            },
+            "supply": {
+              "Text": "AC three-phase"
+            },
+            "P": {
+              "Number": 30,
+              "Unit": "kW"
+            },
+            "cosphi": {
+              "Number": 0.9
+            },
+            "eta": {
+              "Number": 0.96
+            },
+            "d": {
+              "Number": 0.8
+            },
+            "k": {
+              "Number": 1
+            },
+            "inrush": {
+              "Number": 1
+            },
+            "backed": {
+              "Flag": false
+            }
+          }
+        },
+        {
+          "Cells": {
+            "name": {
+              "Text": "24 V supplies"
+            },
+            "supply": {
+              "Text": "AC three-phase"
+            },
+            "P": {
+              "Number": 1.5,
+              "Unit": "kW"
+            },
+            "cosphi": {
+              "Number": 0.9
+            },
+            "eta": {
+              "Number": 0.9
+            },
+            "d": {
+              "Number": 1
+            },
+            "k": {
+              "Number": 1
+            },
+            "inrush": {
+              "Number": 1
+            },
+            "backed": {
+              "Flag": false
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-MCC-03 \u00A74 (panel schedule)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4 row(s)"
+    },
+    {
+      "Symbol": "psu_bus",
+      "Text": "not counted on an AC bus",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "not counted on an AC bus"
+    },
+    {
+      "Symbol": "t_auto",
+      "Number": 0,
+      "Unit": "h",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    }
+  ],
+  "e2": [
+    {
+      "Symbol": "A_sun",
+      "Number": 0,
+      "Unit": "m^2",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "D",
+      "Number": 0.6,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.6"
+    },
+    {
+      "Symbol": "H",
+      "Number": 2,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2"
+    },
+    {
+      "Symbol": "I_sun",
+      "Number": 0,
+      "Unit": "W/m^2",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "P_add",
+      "Number": 3.510000000000003,
+      "Unit": "kW",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:66640f1bb1f145f992e15ae0dd02b16e#Phi",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3.51"
+    },
+    {
+      "Symbol": "T_amb",
+      "Number": 35,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "35"
+    },
+    {
+      "Symbol": "T_max",
+      "Number": 45,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "45"
+    },
+    {
+      "Symbol": "V_ref",
+      "Number": 100,
+      "Unit": "m^3/h",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "100"
+    },
+    {
+      "Symbol": "W",
+      "Number": 1.2,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.2"
+    },
+    {
+      "Symbol": "alpha_sun",
+      "Number": 0.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "altitude",
+      "Number": 0,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "f_bottom",
+      "Number": 0,
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "f_front",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "f_left",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "f_rear",
+      "Number": 0,
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "f_right",
+      "Number": 0,
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "f_top",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "h_conv",
+      "Number": 5.5,
+      "Unit": "W/(m^2*K)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5.5"
+    },
+    {
+      "Symbol": "loads",
+      "Rows": [
+        {
+          "Cells": {
+            "name": {
+              "Text": "Busbars, contactors and terminals"
+            },
+            "P": {
+              "Number": 150,
+              "Unit": "W"
+            },
+            "qty": {
+              "Number": 1
+            },
+            "duty": {
+              "Number": 1
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1 row(s)"
+    },
+    {
+      "Symbol": "p_sys",
+      "Number": 20,
+      "Unit": "Pa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "20"
+    }
+  ],
+  "b5": [
+    {
+      "Symbol": "Q_req",
+      "Number": 3.4224000000000028,
+      "Unit": "kW",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:43ae0a942f55410992dadb7d07ad77db#P_cool",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3.4224"
+    },
+    {
+      "Symbol": "R_f",
+      "Number": 0.0001,
+      "Unit": "m^2*K/W",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-MCC-03 \u00A77 (cooling water)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.0001"
+    },
+    {
+      "Symbol": "T_c_in",
+      "Number": 22,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-MCC-03 \u00A77 (cooling water)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "22"
+    },
+    {
+      "Symbol": "T_h_in",
+      "Number": 45,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:43ae0a942f55410992dadb7d07ad77db#T_max",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "45"
+    },
+    {
+      "Symbol": "U_clean",
+      "Number": 60,
+      "Unit": "W/(m^2*K)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-MCC-03 \u00A77 (cooling water)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "60"
+    },
+    {
+      "Symbol": "arrangement",
+      "Text": "counterflow",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-MCC-03 \u00A77 (cooling water)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "counterflow"
+    },
+    {
+      "Symbol": "const_side",
+      "Text": "hot side at constant temperature (e.g. condensing vapour)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "hot side at constant temperature (e.g. condensing vapour)"
+    },
+    {
+      "Symbol": "cp_c",
+      "Number": 4180,
+      "Unit": "J/(kg*K)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-MCC-03 \u00A77 (cooling water)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4180"
+    },
+    {
+      "Symbol": "cp_h",
+      "Number": 1006,
+      "Unit": "J/(kg*K)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-MCC-03 \u00A77 (cooling water)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1006"
+    },
+    {
+      "Symbol": "dT_min",
+      "Number": 2,
+      "Unit": "K",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2"
+    },
+    {
+      "Symbol": "m_c",
+      "Number": 0.25,
+      "Unit": "kg/s",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-MCC-03 \u00A77 (cooling water)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.25"
+    },
+    {
+      "Symbol": "m_h",
+      "Number": 0.4,
+      "Unit": "kg/s",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-MCC-03 \u00A77 (cooling water)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.4"
+    },
+    {
+      "Symbol": "mode",
+      "Text": "sizing (given duty)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-MCC-03 \u00A77 (cooling water)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "sizing (given duty)"
+    }
+  ],
+  "b1": [
+    {
+      "Symbol": "D_law",
+      "Text": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)"
+    },
+    {
+      "Symbol": "D_ratio",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "Phi_load",
+      "Number": 3.4224000000000028,
+      "Unit": "kW",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:587d6b93b8ac42e8aafa642460ad9e94#Phi",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3.4224"
+    },
+    {
+      "Symbol": "T_fluid",
+      "Number": 23.637511961722453,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:587d6b93b8ac42e8aafa642460ad9e94#T_c_m",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "23.6375"
+    },
+    {
+      "Symbol": "circuit",
+      "Text": "closed (flow and return: the rises cancel, no static lift)",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-215",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "closed (flow and return: the rises cancel, no static lift)"
+    },
+    {
+      "Symbol": "cp_load",
+      "Number": 4180,
+      "Unit": "J/(kg*K)",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:587d6b93b8ac42e8aafa642460ad9e94#cp_c",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4180"
+    },
+    {
+      "Symbol": "dT_load",
+      "Number": 3.2750239234449623,
+      "Unit": "K",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:587d6b93b8ac42e8aafa642460ad9e94#dT_c",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3.27502"
+    },
+    {
+      "Symbol": "eta_pump",
+      "Number": 0.7,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.7"
+    },
+    {
+      "Symbol": "fluid",
+      "Text": "water",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-215",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "water"
+    },
+    {
+      "Symbol": "h_out",
+      "Number": 0,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "n_pump",
+      "Number": 2800,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-215",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2800"
+    },
+    {
+      "Symbol": "n_ratio",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "p_atm",
+      "Number": 101.325,
+      "Unit": "kPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "101.325"
+    },
+    {
+      "Symbol": "segments",
+      "Rows": [
+        {
+          "Cells": {
+            "name": {
+              "Text": "cooling water supply and return"
+            },
+            "L": {
+              "Number": 30,
+              "Unit": "m"
+            },
+            "D": {
+              "Number": 25,
+              "Unit": "mm"
+            },
+            "eps": {
+              "Number": 0.045,
+              "Unit": "mm"
+            },
+            "K": {
+              "Number": 12
+            },
+            "L_eq": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "dz": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "side": {
+              "Text": "discharge"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-MCC-215",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1 row(s)"
+    },
+    {
+      "Symbol": "v_limit",
+      "Number": 3,
+      "Unit": "m/s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3"
+    },
+    {
+      "Symbol": "z_s",
+      "Number": 0,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    }
+  ]
+}

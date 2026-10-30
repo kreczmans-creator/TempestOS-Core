@@ -250,13 +250,18 @@ public sealed class OAuthAuthoriserTests
         // Releases the port shortly after the authoriser's own first
         // attempt would have collided with it, well inside the retry
         // window - simulating the transient TD-183 collision rather than a
-        // port genuinely held for the run's whole duration.
-        _ = Task.Run(async () =>
+        // port genuinely held for the run's whole duration. A dedicated
+        // thread, not the thread pool: under a parallel test run the pool
+        // can be starved past the listener's whole 500 ms retry budget
+        // (Windows CI, push run on 86b52fb3), and the release then came too
+        // late for any attempt.
+        var releaser = new Thread(() =>
         {
-            await Task.Delay(75);
+            Thread.Sleep(75);
             occupier.Stop();
             ((IDisposable)occupier).Dispose();
-        });
+        }) { IsBackground = true, Name = "port-releaser" };
+        releaser.Start();
 
         var configuration = BuildConfiguration("client-abc", loopbackPort: port);
         var handler = new StubHttpMessageHandler();

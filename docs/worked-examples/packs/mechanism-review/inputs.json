@@ -1,0 +1,2009 @@
+{
+  "m9": [
+    {
+      "Symbol": "F_ext",
+      "Number": 0,
+      "Unit": "N",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "F_load",
+      "Number": 200,
+      "Unit": "N",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "200"
+    },
+    {
+      "Symbol": "F_pre",
+      "Number": 50,
+      "Unit": "N",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "50"
+    },
+    {
+      "Symbol": "J_out",
+      "Number": 0.002,
+      "Unit": "kg*m^2",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.002"
+    },
+    {
+      "Symbol": "L1",
+      "Number": 100,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "100"
+    },
+    {
+      "Symbol": "L2",
+      "Number": 30,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "L3",
+      "Number": 90,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "90"
+    },
+    {
+      "Symbol": "L4",
+      "Number": 70,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "70"
+    },
+    {
+      "Symbol": "R_r",
+      "Number": 15,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "15"
+    },
+    {
+      "Symbol": "Rb",
+      "Number": 60,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "60"
+    },
+    {
+      "Symbol": "T_load",
+      "Number": 1.5,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.5"
+    },
+    {
+      "Symbol": "circuit",
+      "Text": "Open",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Open"
+    },
+    {
+      "Symbol": "e_off",
+      "Number": 0,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "follower",
+      "Text": "Roller",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Roller"
+    },
+    {
+      "Symbol": "k_sp",
+      "Number": 9.874,
+      "Unit": "kN/m",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "9.874"
+    },
+    {
+      "Symbol": "load_dir",
+      "Text": "Opposes motion",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Opposes motion"
+    },
+    {
+      "Symbol": "m_f",
+      "Number": 4,
+      "Unit": "kg",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4"
+    },
+    {
+      "Symbol": "m_slider",
+      "Number": 0.5,
+      "Unit": "kg",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "mode",
+      "Text": "Cam",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Cam"
+    },
+    {
+      "Symbol": "mu_req",
+      "Number": 40,
+      "Unit": "deg",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
+      "Symbol": "n_in",
+      "Number": 150,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "150"
+    },
+    {
+      "Symbol": "phi_max",
+      "Number": 30,
+      "Unit": "deg",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "segs",
+      "Rows": [
+        {
+          "Cells": {
+            "kind": {
+              "Text": "Rise"
+            },
+            "law": {
+              "Text": "Cycloidal"
+            },
+            "beta": {
+              "Number": 120,
+              "Unit": "deg"
+            },
+            "h": {
+              "Number": 40,
+              "Unit": "mm"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "kind": {
+              "Text": "Dwell"
+            },
+            "law": {},
+            "beta": {
+              "Number": 60,
+              "Unit": "deg"
+            },
+            "h": {
+              "Number": 0,
+              "Unit": "mm"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "kind": {
+              "Text": "Return"
+            },
+            "law": {
+              "Text": "Modified trapezoid"
+            },
+            "beta": {
+              "Number": 120,
+              "Unit": "deg"
+            },
+            "h": {
+              "Number": 40,
+              "Unit": "mm"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "kind": {
+              "Text": "Dwell"
+            },
+            "law": {},
+            "beta": {
+              "Number": 60,
+              "Unit": "deg"
+            },
+            "h": {
+              "Number": 0,
+              "Unit": "mm"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4 row(s)"
+    },
+    {
+      "Symbol": "steps",
+      "Number": 72,
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "72"
+    },
+    {
+      "Symbol": "theta_range",
+      "Number": 360,
+      "Unit": "deg",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "360"
+    },
+    {
+      "Symbol": "theta_start",
+      "Number": 0,
+      "Unit": "deg",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    }
+  ],
+  "m7": [
+    {
+      "Symbol": "D",
+      "Number": 50,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-415",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "50"
+    },
+    {
+      "Symbol": "E",
+      "Number": 206,
+      "Unit": "GPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "206"
+    },
+    {
+      "Symbol": "F_0",
+      "Number": 10,
+      "Unit": "N",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "F_1",
+      "Number": 50,
+      "Unit": "N",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-415",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "50"
+    },
+    {
+      "Symbol": "F_2",
+      "Number": 444.96000000000004,
+      "Unit": "N",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:a6e8ab566a3e400891436f5138011776#F_spring_max",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "444.96"
+    },
+    {
+      "Symbol": "G",
+      "Number": 80,
+      "Unit": "GPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "80"
+    },
+    {
+      "Symbol": "L0",
+      "Number": 145,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-415",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "145"
+    },
+    {
+      "Symbol": "M_1",
+      "Number": 0.05,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.05"
+    },
+    {
+      "Symbol": "M_2",
+      "Number": 0.15,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.15"
+    },
+    {
+      "Symbol": "N_c",
+      "Number": 10000000,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10000000"
+    },
+    {
+      "Symbol": "Rm",
+      "Number": 1500,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-415",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1500"
+    },
+    {
+      "Symbol": "S_e",
+      "Number": 400,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-415",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "400"
+    },
+    {
+      "Symbol": "corr",
+      "Text": "Bergstr\u00E4sser",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Bergstr\u00E4sser"
+    },
+    {
+      "Symbol": "d",
+      "Number": 6,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-415",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "6"
+    },
+    {
+      "Symbol": "ends",
+      "Text": "Squared and ground",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-415",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Squared and ground"
+    },
+    {
+      "Symbol": "f_op",
+      "Number": 2.5,
+      "Unit": "Hz",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:a6e8ab566a3e400891436f5138011776#f_in",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2.5"
+    },
+    {
+      "Symbol": "f_sigma",
+      "Number": 0.75,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.75"
+    },
+    {
+      "Symbol": "f_su",
+      "Number": 0.67,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.67"
+    },
+    {
+      "Symbol": "f_tau",
+      "Number": 0.45,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.45"
+    },
+    {
+      "Symbol": "guided",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
+    },
+    {
+      "Symbol": "l_leg_1",
+      "Number": 0,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "l_leg_2",
+      "Number": 0,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "mode",
+      "Text": "Compression",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-415",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Compression"
+    },
+    {
+      "Symbol": "n_active",
+      "Number": 10.5,
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-415",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10.5"
+    },
+    {
+      "Symbol": "n_f_req",
+      "Number": 1.2,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.2"
+    },
+    {
+      "Symbol": "nu_seat",
+      "Number": 0.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "phi_1",
+      "Number": 5,
+      "Unit": "deg",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5"
+    },
+    {
+      "Symbol": "phi_2",
+      "Number": 15,
+      "Unit": "deg",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "15"
+    },
+    {
+      "Symbol": "r_h1",
+      "Number": 8,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "8"
+    },
+    {
+      "Symbol": "r_h2",
+      "Number": 4,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4"
+    },
+    {
+      "Symbol": "rho",
+      "Number": 7850,
+      "Unit": "kg/m^3",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "7850"
+    },
+    {
+      "Symbol": "rm_source",
+      "Text": "Typed R_m(d)",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-415",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Typed R_m(d)"
+    },
+    {
+      "Symbol": "s_1",
+      "Number": 2,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2"
+    },
+    {
+      "Symbol": "s_2",
+      "Number": 8,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "8"
+    },
+    {
+      "Symbol": "s_work",
+      "Number": 40,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:a6e8ab566a3e400891436f5138011776#lift",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
+      "Symbol": "solid_method",
+      "Text": "EN 13906-1 (d_max, coil clearance)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "EN 13906-1 (d_max, coil clearance)"
+    },
+    {
+      "Symbol": "tors_factor",
+      "Text": "EN 13906-3 (q)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "EN 13906-3 (q)"
+    },
+    {
+      "Symbol": "work",
+      "Text": "Loads",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-415",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Loads"
+    }
+  ],
+  "m4": [
+    {
+      "Symbol": "E",
+      "Number": 207,
+      "Unit": "GPa",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-420",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "207"
+    },
+    {
+      "Symbol": "R_rel",
+      "Number": 99,
+      "Unit": "%",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "99"
+    },
+    {
+      "Symbol": "S_ut",
+      "Number": 850,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-420",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "850"
+    },
+    {
+      "Symbol": "S_y",
+      "Number": 650,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-420",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "650"
+    },
+    {
+      "Symbol": "T",
+      "Number": 0,
+      "Unit": "kN*m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "T_a",
+      "Number": 0.010111347132931246,
+      "Unit": "kN*m",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:a6e8ab566a3e400891436f5138011776#input_torque",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.0101113"
+    },
+    {
+      "Symbol": "T_pk",
+      "Number": 0.010111347132931246,
+      "Unit": "kN*m",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:a6e8ab566a3e400891436f5138011776#input_torque",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.0101113"
+    },
+    {
+      "Symbol": "finish",
+      "Text": "ground",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-420",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "ground"
+    },
+    {
+      "Symbol": "k_d",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "k_f",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "loads",
+      "Rows": [
+        {
+          "Cells": {
+            "x": {
+              "Number": 150,
+              "Unit": "mm"
+            },
+            "F_y": {
+              "Number": 0.44496,
+              "Unit": "kN",
+              "Provenance": {
+                "Kind": "Link",
+                "Reference": "calc:a6e8ab566a3e400891436f5138011776#F_pin_pk",
+                "Revision": "A",
+                "IsSufficientToIssue": true
+              }
+            },
+            "F_z": {
+              "Number": 0,
+              "Unit": "kN"
+            },
+            "m": {
+              "Number": 3,
+              "Unit": "kg"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-420",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1 row(s)"
+    },
+    {
+      "Symbol": "n",
+      "Number": 150,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:a6e8ab566a3e400891436f5138011776#n_in",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "150"
+    },
+    {
+      "Symbol": "n_target",
+      "Number": 1.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.5"
+    },
+    {
+      "Symbol": "r_c_min",
+      "Number": 2,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2"
+    },
+    {
+      "Symbol": "rho",
+      "Number": 7850,
+      "Unit": "kg/m^3",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-420",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "7850"
+    },
+    {
+      "Symbol": "sections",
+      "Rows": [
+        {
+          "Cells": {
+            "x": {
+              "Number": 50,
+              "Unit": "mm"
+            },
+            "K_t": {
+              "Number": 1.7
+            },
+            "K_ts": {
+              "Number": 1.5
+            },
+            "q": {
+              "Number": 0.85
+            },
+            "q_s": {
+              "Number": 0.9
+            }
+          }
+        },
+        {
+          "Cells": {
+            "x": {
+              "Number": 150,
+              "Unit": "mm"
+            },
+            "K_t": {
+              "Number": 1.7
+            },
+            "K_ts": {
+              "Number": 1.5
+            },
+            "q": {
+              "Number": 0.85
+            },
+            "q_s": {
+              "Number": 0.9
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-420",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2 row(s)"
+    },
+    {
+      "Symbol": "segments",
+      "Rows": [
+        {
+          "Cells": {
+            "x_end": {
+              "Number": 50,
+              "Unit": "mm"
+            },
+            "d": {
+              "Number": 20,
+              "Unit": "mm"
+            },
+            "d_i": {
+              "Number": 0,
+              "Unit": "mm"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "x_end": {
+              "Number": 250,
+              "Unit": "mm"
+            },
+            "d": {
+              "Number": 25,
+              "Unit": "mm"
+            },
+            "d_i": {
+              "Number": 0,
+              "Unit": "mm"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "x_end": {
+              "Number": 300,
+              "Unit": "mm"
+            },
+            "d": {
+              "Number": 20,
+              "Unit": "mm"
+            },
+            "d_i": {
+              "Number": 0,
+              "Unit": "mm"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-420",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3 row(s)"
+    },
+    {
+      "Symbol": "theta_max",
+      "Number": 0.001,
+      "Unit": "rad",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.001"
+    },
+    {
+      "Symbol": "w_masses",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
+    },
+    {
+      "Symbol": "x_A",
+      "Number": 25,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-420",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "25"
+    },
+    {
+      "Symbol": "x_B",
+      "Number": 275,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-420",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "275"
+    },
+    {
+      "Symbol": "x_T1",
+      "Number": 0,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-420",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "x_T2",
+      "Number": 150,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-TMP-420",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "150"
+    },
+    {
+      "Symbol": "y_max",
+      "Number": 0.13,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.13"
+    }
+  ],
+  "m5": [
+    {
+      "Symbol": "C",
+      "Number": 3.5,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A75 (bearing schedule)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3.5"
+    },
+    {
+      "Symbol": "C_0",
+      "Number": 1.8,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A75 (bearing schedule)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.8"
+    },
+    {
+      "Symbol": "F_a",
+      "Number": 0,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "F_r",
+      "Number": 0.22247999999989407,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:25ea608f80b540c3bb8a7abed4d6e7a8#R_A",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.22248"
+    },
+    {
+      "Symbol": "L_req",
+      "Number": 20000,
+      "Unit": "h",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A75 (bearing schedule)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "20000"
+    },
+    {
+      "Symbol": "R_rel",
+      "Number": 90,
+      "Unit": "%",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A75 (bearing schedule)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "90"
+    },
+    {
+      "Symbol": "X",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "X_0",
+      "Number": 0.6,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.6"
+    },
+    {
+      "Symbol": "X_1",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "Y",
+      "Number": 0,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "Y_0",
+      "Number": 0.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "Y_1",
+      "Number": 0,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "a_iso",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "e_lim",
+      "Number": 0.3,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.3"
+    },
+    {
+      "Symbol": "n",
+      "Number": 150,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:a6e8ab566a3e400891436f5138011776#n_in",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "150"
+    },
+    {
+      "Symbol": "s_0_req",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "type",
+      "Text": "ball (p = 3)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A75 (bearing schedule)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "ball (p = 3)"
+    }
+  ],
+  "e1": [
+    {
+      "Symbol": "F_p",
+      "Number": 0,
+      "Unit": "N",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "J_L",
+      "Number": 0.05,
+      "Unit": "kg*m^2",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A76 (cam drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.05"
+    },
+    {
+      "Symbol": "J_mech",
+      "Number": 0.0002,
+      "Unit": "kg*m^2",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A76 (cam drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.0002"
+    },
+    {
+      "Symbol": "J_motor",
+      "Number": 0.0005,
+      "Unit": "kg*m^2",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A76 (cam drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.0005"
+    },
+    {
+      "Symbol": "J_ratio_max",
+      "Number": 10,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "SF",
+      "Number": 1.25,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.25"
+    },
+    {
+      "Symbol": "T_L",
+      "Number": 4.816164185103693,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:a6e8ab566a3e400891436f5138011776#T_rms_in",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4.81616"
+    },
+    {
+      "Symbol": "T_basis",
+      "Text": "Load peak (T_pk)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Load peak (T_pk)"
+    },
+    {
+      "Symbol": "T_peak",
+      "Number": 3,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A76 (cam drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3"
+    },
+    {
+      "Symbol": "T_rated",
+      "Number": 1,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A76 (cam drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "brake",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
+    },
+    {
+      "Symbol": "duty_mode",
+      "Text": "continuous",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A76 (cam drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "continuous"
+    },
+    {
+      "Symbol": "eta",
+      "Number": 0.9,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A76 (cam drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.9"
+    },
+    {
+      "Symbol": "f_acc",
+      "Number": 0.3333333333333333,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.333333"
+    },
+    {
+      "Symbol": "i",
+      "Number": 9.6,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A76 (cam drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "9.6"
+    },
+    {
+      "Symbol": "m",
+      "Number": 50,
+      "Unit": "kg",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "50"
+    },
+    {
+      "Symbol": "mechanism",
+      "Text": "gearbox rotary",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A76 (cam drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "gearbox rotary"
+    },
+    {
+      "Symbol": "mu",
+      "Number": 0.1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.1"
+    },
+    {
+      "Symbol": "n_L",
+      "Number": 150,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:a6e8ab566a3e400891436f5138011776#n_in",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "150"
+    },
+    {
+      "Symbol": "n_max",
+      "Number": 3000,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A76 (cam drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3000"
+    },
+    {
+      "Symbol": "n_rated",
+      "Number": 1440,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A76 (cam drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1440"
+    },
+    {
+      "Symbol": "p_screw",
+      "Number": 10,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "profile",
+      "Text": "trapezoidal",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "trapezoidal"
+    },
+    {
+      "Symbol": "s",
+      "Number": 0.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "t_dwell",
+      "Number": 0.5,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "t_move",
+      "Number": 0.5,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "t_start",
+      "Number": 2,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A76 (cam drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2"
+    },
+    {
+      "Symbol": "theta",
+      "Number": 0,
+      "Unit": "deg",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    }
+  ],
+  "e4": [
+    {
+      "Symbol": "C_a",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "C_c",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "C_g",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "C_i",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "L",
+      "Number": 15,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A77 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "15"
+    },
+    {
+      "Symbol": "N_g",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "P",
+      "Number": 0.15079644737231007,
+      "Unit": "kW",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:cf7dd9fc25bd48efba9034f11780c713#P_rated",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.150796"
+    },
+    {
+      "Symbol": "T_amb",
+      "Number": 30,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "T_ref",
+      "Number": 30,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "U",
+      "Number": 400,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A77 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "400"
+    },
+    {
+      "Symbol": "ampacity",
+      "Rows": [
+        {
+          "Cells": {
+            "CSA": {
+              "Number": 1.5,
+              "Unit": "mm^2"
+            },
+            "I_t": {
+              "Number": 12.3,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "CSA": {
+              "Number": 2.5,
+              "Unit": "mm^2"
+            },
+            "I_t": {
+              "Number": 17.7,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "CSA": {
+              "Number": 4,
+              "Unit": "mm^2"
+            },
+            "I_t": {
+              "Number": 24.1,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "CSA": {
+              "Number": 6,
+              "Unit": "mm^2"
+            },
+            "I_t": {
+              "Number": 31.9,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "CSA": {
+              "Number": 10,
+              "Unit": "mm^2"
+            },
+            "I_t": {
+              "Number": 44.6,
+              "Unit": "A"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Reference",
+        "Reference": "record:620fd189b1ff48a6b68549ef28ffd373@1 \u00B7 invented values for the worked example",
+        "Revision": "n/a",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5 row(s)"
+    },
+    {
+      "Symbol": "context",
+      "Text": "BS EN 60204-1 machine wiring",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "BS EN 60204-1 machine wiring"
+    },
+    {
+      "Symbol": "cos_phi",
+      "Number": 0.8,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A77 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.8"
+    },
+    {
+      "Symbol": "derive_Ca",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
+    },
+    {
+      "Symbol": "device",
+      "Text": "MCB type C",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A77 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "MCB type C"
+    },
+    {
+      "Symbol": "eta",
+      "Number": 0.8,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A77 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.8"
+    },
+    {
+      "Symbol": "insulation",
+      "Text": "PVC 70 \u00B0C",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A77 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "PVC 70 \u00B0C"
+    },
+    {
+      "Symbol": "method",
+      "Text": "C",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-TMP-04 \u00A77 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "C"
+    },
+    {
+      "Symbol": "ratings",
+      "Rows": [
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 6,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 10,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 16,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 20,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 25,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 32,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 40,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 50,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 63,
+              "Unit": "A"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Reference",
+        "Reference": "record:91e441a824dc4feaada633d77d4379e6@1 \u00B7 invented values for the worked example",
+        "Revision": "n/a",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "9 row(s)"
+    },
+    {
+      "Symbol": "supply",
+      "Text": "three-phase",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "three-phase"
+    },
+    {
+      "Symbol": "system",
+      "Text": "metric",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "metric"
+    }
+  ]
+}

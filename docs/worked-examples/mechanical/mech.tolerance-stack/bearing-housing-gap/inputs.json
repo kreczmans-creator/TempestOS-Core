@@ -1,0 +1,162 @@
+[
+  {
+    "Symbol": "contributors",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "Housing bore depth"
+          },
+          "direction": {
+            "Text": "adds"
+          },
+          "nominal": {
+            "Number": 40,
+            "Unit": "mm"
+          },
+          "upper": {
+            "Number": 0.1,
+            "Unit": "mm"
+          },
+          "lower": {
+            "Number": 0,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Bearing width"
+          },
+          "direction": {
+            "Text": "subtracts"
+          },
+          "nominal": {
+            "Number": 20,
+            "Unit": "mm"
+          },
+          "upper": {
+            "Number": 0,
+            "Unit": "mm"
+          },
+          "lower": {
+            "Number": -0.12,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Spacer"
+          },
+          "direction": {
+            "Text": "subtracts"
+          },
+          "nominal": {
+            "Number": 19.5,
+            "Unit": "mm"
+          },
+          "upper": {
+            "Number": 0.02,
+            "Unit": "mm"
+          },
+          "lower": {
+            "Number": -0.02,
+            "Unit": "mm"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-HSG-001",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3 row(s)"
+  },
+  {
+    "Symbol": "cpk_req",
+    "Number": 1.33,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Usual capability target.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.33"
+  },
+  {
+    "Symbol": "f_rss",
+    "Number": 1.5,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Bender factor 1.5.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.5"
+  },
+  {
+    "Symbol": "k",
+    "Number": 3,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Each part at \u00B13\u03C3 within its band.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3"
+  },
+  {
+    "Symbol": "maximum",
+    "Number": 0.8,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-BRG-7 \u00A74.2",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.8"
+  },
+  {
+    "Symbol": "minimum",
+    "Number": 0.4,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-BRG-7 \u00A74.2",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.4"
+  },
+  {
+    "Symbol": "n_mc",
+    "Number": 10000,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Default sample count.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10000"
+  },
+  {
+    "Symbol": "notation",
+    "Text": "BS 8888",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Metric drawing.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "BS 8888"
+  },
+  {
+    "Symbol": "seed",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Fixed seed for reproducibility.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  }
+]

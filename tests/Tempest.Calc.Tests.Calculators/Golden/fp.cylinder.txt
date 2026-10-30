@@ -1,0 +1,396 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: fp.cylinder    Revision: A
+Title: Cylinder and actuator circuit
+
+1. Scope and method
+Calculates a hydraulic cylinder in its circuit: force, speed, swept volume, pump and motor duty, line velocities, orifice flow and a rod buckling check (screening only; ISO/TS 13725 method not implemented). It is not a design to a standard.
+Piston and rod areas: A_b = π·D²/4, A_r = π·d_r²/4, A_a = A_b − A_r, area ratio φ = A_b/A_a Cylinder force: F_ext = (p_sys·A_b − p_back·A_a)·η_m, F_ret = (p_sys·A_a − p_back·A_b)·η_m, regenerative F_ext = p_sys·A_r·η_m Speed and time: v_ext = Q·η_vc/A_b, v_ret = Q·η_vc/A_a, t = stroke/v, t_cycle = t_ext + t_ret + t_dwell, and a required speed gives Q = v_req·A_b/η_vc (regenerative A_r) Swept volume: ΔV_ext = A_b·stroke (regenerative A_r·stroke), ΔV_ret = A_a·stroke, ΔV = the larger Pump and motor: Q_p = V_g·n_p·η_vp, P = p_sys·Q_p/η_tp, T = P/ω, motor T = Δp·V_gm/(2π)·η_hm Line velocities: v = Q_line/A_line with Q_suc = max(Q, V_g·n_p), Q_prs = Q_line·A_b/A_a (regenerative A_b/A_r if larger), Q_rtn = Q_line·A_b/A_a, Q_line = max(Q, Q_p), d_min = √(4Q/(π·v_max)) Orifice flow: Q = C_d·A_o·√(2Δp/ρ), d_o = √(4Q/(π·C_d·√(2Δp/ρ))) Rod buckling: L_eff = K_m·L_b, L_b = L_closed + stroke (blank 2·stroke + L_add), λ = L_eff/(d_r/4), λ_c = π·√(2E/f_y), F_cr by Euler π²·E·I/L_eff² above λ_c or Johnson A_r·f_y·[1 − f_y·λ²/(4π²E)], u = max(F_push, p_sys·A_b)·S_f/F_cr
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  mode | Extend connection | Standard |  | manual | any
+  D | Bore | 100 | mm | manual | 20 … 400 mm
+  d_r | Rod diameter | 70 | mm | manual | 10 … 300 mm
+  stroke | Stroke | 500 | mm | manual | 10 … 3000 mm
+  d_suc | Suction line inside diameter | 40 | mm | manual | 8 … 150 mm
+  d_prs | Pressure line inside diameter, to the cylinder cap port and judged at the larger flow of the two strokes | 16 | mm | manual | 8 … 150 mm
+  d_ret | Return line inside diameter | 25 | mm | manual | 8 … 150 mm
+  E | Young's modulus of the rod | 210 | GPa | manual | 60 … 220 GPa
+  f_y | Yield strength of the rod | 500 | MPa | manual | 200 … 1200 MPa
+  F_push | Load to push on the extend stroke, which compresses the rod | 80 | kN | manual | 0 … 5000 kN
+  F_pull | Load to pull on the retract stroke | 40 | kN | manual | 0 … 5000 kN
+  p_sys | Supply pressure at the cylinder and the pump, gauge | 160 | bar g | manual | 5 … 420 bar g
+  p_back | Back pressure on the discharge side of the standard connection, gauge | 0 | bar g | manual | 0 … 100 bar g
+  rho | Fluid density | 870 | kg/m³ | manual | 750 … 1100 kg/m³
+  t_dwell | Dwell time added to each cycle | 0 | s | manual | 0 … 600 s
+  Q | Flow into the cylinder (optional; blank = a required extend speed gives it) | 36 | L/min | manual | 1 … 1000 L/min
+  eta_m | Mechanical efficiency of the cylinder, from seal and guide friction | 0.95 |  | manual | 0.8 … 1
+  eta_vc | Volumetric efficiency of the cylinder, from leakage past the piston | 0.98 |  | manual | 0.9 … 1
+  K_m | Effective-length factor K of the mounting (L_eff = K·L) | 1 |  | manual | 0.5 … 2
+  S_f | Safety factor on the critical load | 3.5 |  | manual | 1.5 … 10
+  v_suc_max | Suction line velocity limit (your record, and the default is a placeholder, not a code value) | 1.2 | m/s | manual | 0.3 … 10 m/s
+  v_prs_max | Pressure line velocity limit (your record, and the default is a placeholder, not a code value) | 5 | m/s | manual | 0.3 … 10 m/s
+  v_ret_max | Return line velocity limit (your record, and the default is a placeholder, not a code value) | 3 | m/s | manual | 0.3 … 10 m/s
+  hoses | Available hose or pipe inside diameters from your supplier's range (optional; blank = no size is recommended) | 9 row(s) |  | manual | any
+  hoses[1] |  | ID = 8 mm |  |  | 
+  hoses[2] |  | ID = 10 mm |  |  | 
+  hoses[3] |  | ID = 12.5 mm |  |  | 
+  hoses[4] |  | ID = 16 mm |  |  | 
+  hoses[5] |  | ID = 20 mm |  |  | 
+  hoses[6] |  | ID = 25 mm |  |  | 
+  hoses[7] |  | ID = 32 mm |  |  | 
+  hoses[8] |  | ID = 40 mm |  |  | 
+  hoses[9] |  | ID = 50 mm |  |  | 
+  L_add | Length of the closed cylinder beyond its stroke (body, end caps and mounting eyes), added to the stroke when the closed length is not entered | 100 | mm | manual | 0 … 1000 mm
+  eta_vp | Volumetric efficiency of the pump | 0.95 |  | manual | 0.8 … 1
+  eta_tp | Total efficiency of the pump (volumetric × hydromechanical) | 0.88 |  | manual | 0.7 … 1
+  V_g | Pump displacement per revolution (optional; blank = no pump delivery check) | 28 | cm³/rev | manual | 1 … 500 cm³/rev
+  n_p | Pump speed | 1450 | rpm | manual | 500 … 3600 rpm
+  eta_hm | Hydromechanical efficiency of the motor | 0.9 |  | manual | 0.7 … 1
+  V_gm | Hydraulic motor displacement per revolution (optional; blank = no motor) | 16 | cm³/rev | manual | 1 … 500 cm³/rev
+  dp_m | Pressure drop across the motor | 160 | bar | manual | 5 … 420 bar
+  C_d | Orifice discharge coefficient | 0.62 |  | manual | 0.5 … 0.9
+  dp_o | Pressure drop across the orifice (optional; blank = no orifice screening) | 10 | bar | manual | 1 … 350 bar
+  d_o | Orifice diameter, which gives the flow it passes | 3 | mm | manual | 0.5 … 50 mm
+
+3. Assumptions
+  A1. The supply pressure p_sys is the gauge pressure at the cylinder port and at the pump outlet. (F = p·A·η_m, closed form.)
+  A2. Line losses are not subtracted, because the pipe calculation gives the losses of a pipe run. (F = p·A·η_m, closed form.)
+  A3. The force is the pressure on the area less the back pressure on the other side, times the mechanical efficiency. (F = p·A·η_m, closed form.)
+  A4. The speed is the flow into the cylinder times the volumetric efficiency over the area. (v = Q·η_vc/A.)
+  A5. The motion is steady, with no acceleration, cushioning or compressibility. (v = Q·η_vc/A.)
+  A6. The cycle time is the two strokes plus the dwell. (v = Q·η_vc/A.)
+  A7. The pump power is the supply pressure times the pump delivery over the total efficiency. (P = p·Q_p/η_tp.)
+  A8. When the pump delivers more than the circuit takes, the excess goes over the relief valve at the supply pressure. (P = p·Q_p/η_tp.)
+  A9. That is the conservative case for the drive. (P = p·Q_p/η_tp.)
+  A10. The shaft torque is the power over the angular speed. (P = p·Q_p/η_tp.)
+  A11. The line flows use the pump delivery when it is larger than the circuit flow. (Continuity.)
+  A12. The suction line carries the geometric delivery V_g·n_p. (Continuity.)
+  A13. The pressure and return lines carry the larger of the circuit flow and the pump delivery, with no volumetric efficiency. (Continuity.)
+  A14. These flows are the conservative side of the speeds, which use Q·η_vc. (Continuity.)
+  A15. The cap-port line is judged at the larger flow of the two strokes. (Continuity.)
+  A16. On the retract stroke the cap-port line carries the cap-side discharge Q_line·A_b/A_a. (Continuity.)
+  A17. In the regenerative extend it carries Q_line·A_b/A_r when that is larger. (Continuity.)
+  A18. The velocity limits are your records, and the sheet defaults are placeholders, not values from a standard. (Continuity.)
+  A19. The orifice relation is the sharp-edged turbulent one, Q = C_d·A·√(2Δp/ρ), with your discharge coefficient. (Orifice equation, closed form.)
+  A20. It ignores viscosity and cavitation. (Orifice equation, closed form.)
+  A21. It screens a flow-control orifice and is not a valve selection. (Orifice equation, closed form.)
+  A22. The rod is a solid round column of its own diameter, with the effective-length factor of the mounting. (Euler and Johnson column relations, closed form.)
+  A23. The tube, the piston and the rod-end stiffness are not modelled. (Euler and Johnson column relations, closed form.)
+  A24. The rod diameter is taken over the whole pin-to-pin length at full stroke, closed length plus stroke. (Euler and Johnson column relations, closed form.)
+  A25. A body stiffer than the rod makes this conservative. (Euler and Johnson column relations, closed form.)
+  A26. The rod is judged at the larger of the push load you enter and the stall thrust p_sys·A_b. (Euler and Johnson column relations, closed form.)
+  A27. A stalled, obstructed or relief-limited cylinder loads the rod with the full pressure force on the bore. (Euler and Johnson column relations, closed form.)
+  A28. At stall there is no flow, so there is no back pressure, and seal friction does not relieve the rod. (Euler and Johnson column relations, closed form.)
+  A29. No pressure-limiting device is credited. (Euler and Johnson column relations, closed form.)
+  A30. The regenerative extend is judged at the same stall thrust, because the standard connection can always be selected. (Euler and Johnson column relations, closed form.)
+  A31. The mounting factor K_m defaults to 1, pinned at both ends, and a fixed-free mounting is K_m = 2. (Euler and Johnson column relations, closed form.)
+  A32. The mounting factor K_m and the safety factor S_f are your records. (Euler and Johnson column relations, closed form.)
+  A33. The rod buckling check is a screening, and the ISO/TS 13725 method is not implemented. (Euler and Johnson column relations, closed form.)
+  A34. Standard connection: the extend force is the pressure on the bore area less the back pressure on the annulus area; the retract force the pressure on the annulus less the back pressure on the bore. (Continuity and force balance.)
+
+4. Working
+  [34] A_b = pi * D^2 / 4
+      = π × (100 mm)^2 / 4
+      = 78.54 cm²
+        Bore (cap-side) area
+  [35] A_r = pi * d_r^2 / 4
+      = π × (70 mm)^2 / 4
+      = 38.485 cm²
+        Rod area
+  [36] A_a = A_b - A_r
+      = 78.54 cm² − 38.485 cm²
+      = 40.055 cm²
+        Annulus (rod-side) area
+  [37] phi = A_b / A_a
+      = 78.54 cm² / 40.055 cm²
+      = 1.9608
+        Area ratio A_b/A_a
+  [39] F_ext = (p_sys * A_b - p_back * A_a) * eta_m
+      = (160 bar g × 78.54 cm² − 0 bar g × 40.055 cm²) × 0.95
+      = 119.38 kN
+        Extend force
+  [40] v_ext = Q * eta_vc / A_b
+      = 36 L/min × 0.98 / 78.54 cm²
+      = 74.866 mm/s
+        Extend speed
+  [41] dV_ext = A_b * stroke
+      = 78.54 cm² × 500 mm
+      = 3.927 L
+        Liquid taken from the supply for the extend stroke
+  [42] F_ret = (p_sys * A_a - p_back * A_b) * eta_m
+      = (160 bar g × 40.055 cm² − 0 bar g × 78.54 cm²) × 0.95
+      = 60.884 kN
+        Retract force
+  [43] v_ret = Q * eta_vc / A_a
+      = 36 L/min × 0.98 / 40.055 cm²
+      = 146.8 mm/s
+        Retract speed
+  [44] t_ext = stroke / v_ext
+      = 500 mm / 74.866 mm/s
+      = 6.6786 s
+        Extend stroke time
+  [45] t_ret = stroke / v_ret
+      = 500 mm / 146.8 mm/s
+      = 3.4061 s
+        Retract stroke time
+  [46] t_cycle = t_ext + t_ret + t_dwell
+      = 6.6786 s + 3.4061 s + 0 s
+      = 10.085 s
+        Cycle time
+  [47] dV_ret = A_a * stroke
+      = 40.055 cm² × 500 mm
+      = 2.0028 L
+        Liquid taken from the supply for the retract stroke
+  [48] dV = max(dV_ext, dV_ret)
+      = max(3.927 L, 2.0028 L)
+      = 3.927 L
+        Swept volume of the larger stroke
+  [49] Q_p = V_g * n_p * eta_vp
+      = 28 cm³/rev × 1450 rpm × 0.95
+      = 38.57 L/min
+        Pump delivery
+  [50] Vg_req = Q / (n_p * eta_vp)
+      = 36 L/min / (1450 rpm × 0.95)
+      = 26.134 cm³/rev
+        Pump displacement the circuit flow needs at this speed
+  [51] u_pump = Q / Q_p
+      = 36 L/min / 38.57 L/min
+      = 0.93337
+        Circuit flow over the pump delivery
+  [52] Q_pump = Q_p
+      = 38.57 L/min
+      = 38.57 L/min
+        Flow the pump delivers at the supply pressure
+  [53] P_hyd = p_sys * Q_pump
+      = 160 bar g × 38.57 L/min
+      = 10.285 kW
+        Hydraulic power at the pump outlet
+  [54] P_pump = P_hyd / eta_tp
+      = 10.285 kW / 0.88
+      = 11.688 kW
+        Pump shaft power
+  [55] T_shaft = P_pump / n_p
+      = 11.688 kW / 1450 rpm
+      = 76.973 N·m
+        Pump shaft torque P / ω
+  [56] n_shaft = n_p
+      = 1450 rpm
+      = 1450 rpm
+        Pump shaft speed
+  [57] T_motor = dp_m * V_gm * eta_hm
+      = 160 bar × 16 cm³/rev × 0.9
+      = 36.669 N·m
+        Motor torque Δp·V_g/(2π)·η_hm (the displacement per revolution carries the 1/2π)
+  [58] Q_line = max(Q, Q_p)
+      = max(36 L/min, 38.57 L/min)
+      = 38.57 L/min
+        Flow in the pressure and return lines before the area ratio (the larger of the circuit flow and the pump delivery)
+  [59] Q_suc = max(Q, V_g * n_p)
+      = max(36 L/min, 28 cm³/rev × 1450 rpm)
+      = 40.6 L/min
+        Flow in the suction line (the larger of the circuit flow and the geometric pump delivery V_g·n)
+  [60] Q_prs = Q_line * A_b / A_a
+      = 38.57 L/min × 78.54 cm² / 40.055 cm²
+      = 75.627 L/min
+        Flow in the line to the cap port, worst stroke (retract: the cap-side discharge Q·A_b/A_a)
+  [61] Q_rtn = Q_line * A_b / A_a
+      = 38.57 L/min × 78.54 cm² / 40.055 cm²
+      = 75.627 L/min
+        Flow in the return line on the retract stroke (cap-side discharge)
+  [62] v_suc = Q_suc / (pi * d_suc^2 / 4)
+      = 40.6 L/min / (π × (40 mm)^2 / 4)
+      = 0.53847 m/s
+        Velocity in the suction line
+  [63] u_suc = v_suc / v_suc_max
+      = 0.53847 m/s / 1.2 m/s
+      = 0.44873
+        Velocity in the suction line over its limit
+  [64] d_min_suc = sqrt(4 * Q_suc / (pi * v_suc_max))
+      = sqrt(4 × 40.6 L/min / (π × 1.2 m/s))
+      = 26.795 mm
+        Smallest suction line bore for the velocity limit
+  [65] d_rec_suc = smallest listed size not below the minimum bore
+      = d_min = 26.795 mm, 9 sizes listed
+      = 32 mm
+        Recommended suction line bore
+  [66] v_prs = Q_prs / (pi * d_prs^2 / 4)
+      = 75.627 L/min / (π × (16 mm)^2 / 4)
+      = 6.269 m/s
+        Velocity in the pressure line
+  [67] u_prs = v_prs / v_prs_max
+      = 6.269 m/s / 5 m/s
+      = 1.2538
+        Velocity in the pressure line over its limit
+  [68] d_min_prs = sqrt(4 * Q_prs / (pi * v_prs_max))
+      = sqrt(4 × 75.627 L/min / (π × 5 m/s))
+      = 17.916 mm
+        Smallest pressure line bore for the velocity limit
+  [69] d_rec_prs = smallest listed size not below the minimum bore
+      = d_min = 17.916 mm, 9 sizes listed
+      = 20 mm
+        Recommended pressure line bore
+  [70] v_rtn = Q_rtn / (pi * d_ret^2 / 4)
+      = 75.627 L/min / (π × (25 mm)^2 / 4)
+      = 2.5678 m/s
+        Velocity in the return line
+  [71] u_rtn = v_rtn / v_ret_max
+      = 2.5678 m/s / 3 m/s
+      = 0.85593
+        Velocity in the return line over its limit
+  [72] d_min_rtn = sqrt(4 * Q_rtn / (pi * v_ret_max))
+      = sqrt(4 × 75.627 L/min / (π × 3 m/s))
+      = 23.129 mm
+        Smallest return line bore for the velocity limit
+  [73] d_rec_rtn = smallest listed size not below the minimum bore
+      = d_min = 23.129 mm, 9 sizes listed
+      = 25 mm
+        Recommended return line bore
+  [74] v_jet = C_d * sqrt(2 * dp_o / rho)
+      = 0.62 × sqrt(2 × 10 bar / 870 kg/m³)
+      = 29.727 m/s
+        Effective jet velocity C_d·√(2Δp/ρ)
+  [75] d_o_req = sqrt(4 * Q / (pi * v_jet))
+      = sqrt(4 × 36 L/min / (π × 29.727 m/s))
+      = 5.0694 mm
+        Orifice diameter that passes the circuit flow at this pressure drop
+  [76] Q_o = v_jet * pi * d_o^2 / 4
+      = 29.727 m/s × π × (3 mm)^2 / 4
+      = 12.608 L/min
+        Flow through the entered orifice
+  [77] L_b = 2 * stroke + L_add
+      = 2 × 500 mm + 100 mm
+      = 1100 mm
+        Buckling length, estimated: the closed length (stroke + L_add) plus the stroke
+  [78] L_eff = K_m * L_b
+      = 1 × 1100 mm
+      = 1100 mm
+        Effective length K·L
+  [79] I_r = pi * d_r^4 / 64
+      = π × (70 mm)^4 / 64
+      = 1178600 mm⁴
+        Second moment of area of the rod
+  [80] r_g = d_r / 4
+      = 70 mm / 4
+      = 17.5 mm
+        Radius of gyration of the solid rod
+  [81] lam = L_eff / r_g
+      = 1100 mm / 17.5 mm
+      = 62.857
+        Slenderness ratio
+  [82] lam_c = pi * sqrt(2 * E / f_y)
+      = π × sqrt(2 × 210 GPa / 500 MPa)
+      = 91.052
+        Transition slenderness between Johnson and Euler
+  [83] F_cr = A_r * f_y * (1 - f_y * lam^2 / (4 * pi^2 * E))
+      = 38.485 cm² × 500 MPa × (1 − 500 MPa × 62.857^2 / (4 × π^2 × 210 GPa))
+      = 1465.7 kN
+        Critical load, Johnson parabola (stocky rod)
+  [84] F_allow = F_cr / S_f
+      = 1465.7 kN / 3.5
+      = 418.77 kN
+        Allowable push load: critical load over the safety factor
+  [85] F_stall = p_sys * A_b
+      = 160 bar g × 78.54 cm²
+      = 125.66 kN
+        Stall thrust: the supply pressure on the bore area (no flow, so no back pressure; the friction of the seals does not relieve the rod of a stalled cylinder)
+  [86] F_buck = max(F_push, F_stall)
+      = max(80 kN, 125.66 kN)
+      = 125.66 kN
+        Rod load for the buckling check: the larger of the push load entered and the stall thrust p_sys·A_b
+  [87] u_buck = F_buck / F_allow
+      = 125.66 kN / 418.77 kN
+      = 0.30008
+        Buckling utilisation
+  [88] u_push = F_push / F_ext
+      = 80 kN / 119.38 kN
+      = 0.67013
+        Push load over the extend force
+  [89] u_pull = F_pull / F_ret
+      = 40 kN / 60.884 kN
+      = 0.65699
+        Pull load over the retract force
+  [90] p_push = (F_push / eta_m + p_back * A_a) / A_b
+      = (80 kN / 0.95 + 0 bar g × 40.055 cm²) / 78.54 cm²
+      = 107.22 bar
+        Pressure at the cylinder the push load needs: (F_push/η_m + p_back·A_a)/A_b
+
+5. Results
+  Q = 36 L/min    Flow into the cylinder
+  p_sys = 160 bar g    Supply pressure
+  P_pump = 11.69 kW    Pump shaft power
+  u_buck = 0.30    Rod buckling utilisation (screening)
+  F_ext = 119.38 kN    Extend force
+  dV = 3.927 L    Swept volume per stroke (the larger)
+  p_push = 107.22 bar    Pressure the push load needs at the cylinder
+  T_shaft = 76.97 N·m    Pump shaft torque
+  n_shaft = 1450 rpm    Pump shaft speed
+  Q_prs = 75.63 L/min    Flow in the line to the cap port (worst stroke)
+  rho = 870 kg/m³    Fluid density
+  d_prs = 16 mm    Pressure line inside diameter
+  A_b = 78.54 cm²    Bore area
+  A_r = 38.48 cm²    Rod area
+  A_a = 40.06 cm²    Annulus area
+  phi = 1.9608    Area ratio A_b/A_a
+  F_ret = 60.88 kN    Retract force
+  v_ext = 74.87 mm/s    Extend speed
+  v_ret = 146.8 mm/s    Retract speed
+  t_ext = 6.679 s    Extend time
+  t_ret = 3.406 s    Retract time
+  t_cycle = 10.08 s    Cycle time
+  dV_ext = 3.927 L    Extend swept volume
+  dV_ret = 2.003 L    Retract swept volume
+  Q_p = 38.57 L/min    Pump delivery
+  Vg_req = 26.13 cm³/rev    Pump displacement the circuit needs
+  T_motor = 36.67 N·m    Hydraulic motor torque
+  Q_line = 38.57 L/min    Flow in the pressure and return lines before the area ratio
+  Q_suc = 40.60 L/min    Flow in the suction line
+  Q_rtn = 75.63 L/min    Flow in the return line
+  v_suc = 0.5385 m/s    Suction line velocity
+  v_prs = 6.270 m/s    Pressure line velocity (cap-port line, worst stroke) (governing)
+  v_rtn = 2.568 m/s    Return line velocity
+  d_min_suc = 26.79 mm    Smallest suction line bore
+  d_min_prs = 17.92 mm    Smallest pressure line bore
+  d_min_rtn = 23.13 mm    Smallest return line bore
+  d_rec_suc = 32 mm    Recommended suction line bore
+  d_rec_prs = 20 mm    Recommended pressure line bore
+  d_rec_rtn = 25 mm    Recommended return line bore
+  d_o_req = 5.069 mm    Orifice diameter for the circuit flow
+  Q_o = 12.61 L/min    Flow through the entered orifice
+  L_b = 1100 mm    Buckling length (pin to pin at full stroke)
+  L_eff = 1100 mm    Effective length
+  lam = 62.857    Slenderness
+  lam_c = 91.052    Transition slenderness
+  F_cr = 1465.7 kN    Critical load (screening)
+  F_allow = 418.77 kN    Allowable push load (screening)
+  F_stall = 125.66 kN    Stall thrust p_sys·A_b
+  F_buck = 125.66 kN    Rod load judged for buckling: the larger of the push load and the stall thrust
+  buckling_note = "screening only; ISO/TS 13725 method not implemented; stocky rod, Johnson parabola"    Rod buckling check
+  u_push = 0.67    Push load over the extend force
+  u_pull = 0.66    Pull load over the retract force
+  u_pump = 0.93    Circuit flow over the pump delivery
+  u_suc = 0.45    Suction line velocity over its limit
+  u_prs = 1.26    Pressure line velocity over its limit
+  u_rtn = 0.86    Return line velocity over its limit
+
+6. Checks (governing first)
+  FAIL  Pressure line velocity against its limit, cap-port line at the larger stroke flow: 6.270 m/s vs 5 m/s  utilisation 1.26  « cylinder.line-limits record
+  PASS  Circuit flow against the pump delivery: 36 L/min vs 38.57 L/min  utilisation 0.93
+  PASS  Return line velocity against its limit: 2.568 m/s vs 3 m/s  utilisation 0.86  « cylinder.line-limits record
+  PASS  Push load against the extend force: 80 kN vs 119.38 kN  utilisation 0.67
+  PASS  Pull load against the retract force: 40 kN vs 60.88 kN  utilisation 0.66
+  PASS  Suction line velocity against its limit: 0.5385 m/s vs 1.200 m/s  utilisation 0.45  « cylinder.line-limits record
+  PASS  Rod load against the allowable push load, screening only; ISO/TS 13725 method not implemented: 125.66 kN vs 418.77 kN  utilisation 0.30  « Euler / Johnson column relations
+
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are E, f_y (Rod material properties); K_m (Mounting effective-length factor); S_f (Rod buckling safety factor); v_suc_max, v_prs_max, v_ret_max (Line velocity limits); hoses (Hose and pipe size list). Enter each as one so its source, edition and licence travel with it.  [record]
+  WARNING  L_closed: enter the closed pin-to-pin length from the cylinder drawing. The buckling length is estimated as 2 × stroke + L_add = 1100 mm.  [length]
+
+8. Verification
+  Template: fp.cylinder@1.5.0
+  Known-answer cases passed: 7/7
+
+9. References
+  1. ISO/TS 13725:2016 — Cylinder buckling load: method not implemented, screening only
+  2. Esposito, Fluid Power with Applications Ch. on cylinders and pumps, 7th ed. — Force, speed, flow and power relations, closed form

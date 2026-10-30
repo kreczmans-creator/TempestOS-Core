@@ -1,0 +1,81 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: shaft-40mm    Revision: A
+Title: Shaft under combined bending and torsion
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. Scope and method
+Calculates the bending and torsional stresses in a solid round shaft, with stress-concentration factors, and the factors of safety against yield. It covers static loading only, not fatigue or hollow shafts.
+Bending stress, with its stress concentration: σ = K_t·32M/(πd³). Torsional shear stress, with its stress concentration: τ = K_ts·16T/(πd³). Maximum shear stress (Tresca): τ_max = √((σ/2)² + τ²). von Mises equivalent stress: σ' = √(σ² + 3τ²). Factors of safety against yield, the lower governing: n_T = (S_y/2)/τ_max; n_VM = S_y/σ'.
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  d | Shaft diameter | 40 | mm | drawing: DRG-SH-401 rev A | 1 … 2000 mm
+  S_y | Yield strength | 350 | MPa | drawing: DRG-SH-401 rev A | 50 … 3000 MPa
+  M | Bending moment (magnitude) | 500 | N·m | spec: LOAD-SCHEDULE-01 | 0 … 10000000 N·m
+  T | Torque (magnitude) | 800 | N·m | spec: LOAD-SCHEDULE-01 | 0 … 10000000 N·m
+  K_t | Bending stress-concentration factor (1 for none) | 1 |  | drawing: DRG-SH-401 rev A | 1 … 5
+  K_ts | Torsional stress-concentration factor (1 for none) | 1 |  | drawing: DRG-SH-401 rev A | 1 … 5
+  n_req | Required factor of safety | 2 |  | spec: SPEC-MECH-03 design criteria | 1 … 10
+
+3. Assumptions
+  A1. The shaft is a solid round section, linear elastic, under static loading. (The stress formulas of the method assume this.)
+
+4. Working
+  [8] sigma = K_t * 32 * M / (pi * d^3)    « Shigley §7-4
+      = 1 × 32 × 500 N·m / (π × (40 mm)^3)
+      = 79.577 MPa
+        Bending stress
+  [9] tau = K_ts * 16 * T / (pi * d^3)    « Shigley §7-4
+      = 1 × 16 × 800 N·m / (π × (40 mm)^3)
+      = 63.662 MPa
+        Torsional shear stress
+  [10] tau_max = sqrt((sigma / 2)^2 + tau^2)    « Shigley §5-4
+      = sqrt((79.577 MPa / 2)^2 + (63.662 MPa)^2)
+      = 75.073 MPa
+        Maximum shear stress (Tresca)
+  [11] sigma_vm = sqrt(sigma^2 + 3 * tau^2)    « Shigley §5-5
+      = sqrt((79.577 MPa)^2 + 3 × (63.662 MPa)^2)
+      = 135.98 MPa
+        von Mises stress
+  [12] n_T = (S_y / 2) / tau_max
+      = 350 MPa / 2 / 75.073 MPa
+      = 2.3311
+        Factor of safety, maximum shear stress
+  [13] n_VM = S_y / sigma_vm
+      = 350 MPa / 135.98 MPa
+      = 2.5739
+        Factor of safety, distortion energy
+  [14] n_min = min(n_T, n_VM)
+      = min(2.3311, 2.5739)
+      = 2.3311
+        Governing factor of safety
+
+5. Results
+  tau_max = 75.07 MPa    Maximum shear stress
+  sigma_vm = 136.0 MPa    von Mises stress
+  n_min = 2.331    Governing factor of safety
+  sigma = 79.58 MPa    Bending stress
+  tau = 63.66 MPa    Torsional shear
+  n_T = 2.331    Factor of safety (Tresca)
+  n_VM = 2.5738    Factor of safety (von Mises)
+  u_n = 0.86    Utilisation of factor of safety against the required factor (governing)
+
+6. Checks (governing first)
+  PASS  Factor of safety against the required factor: 2 vs 2.3311  utilisation 0.86  « Shigley §7-4
+
+7. Applicability
+  None.
+
+8. Verification
+  Template: mech.shaft-stress@1.1.1
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 3/3
+  Test run: —
+
+9. References
+  1. Budynas, Shigley's Mechanical Engineering Design §5-4 and §5-5, 10th ed. — Maximum-shear-stress and distortion-energy theories
+  2. Budynas, Shigley's Mechanical Engineering Design §7-4, 10th ed. — Shaft design for stress

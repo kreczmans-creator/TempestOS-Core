@@ -36,7 +36,7 @@ namespace Tempest.Desktop.Views;
 /// `ADR-0163`) navigates to <see cref="ShellArea.Engineering"/> and shows
 /// that category's command bar, Explorer and Properties *in this right
 /// pane*, with the tree still beside it (`v0.24.0` Product Owner review);
-/// Modules → Calculations' own children embed the calculators, the
+/// Modules → Calculations' own children embed the worksheets, the
 /// register of issued sheets and the packs and templates; Modules →
 /// Reference data embeds a second <see cref="LibrariesView"/> instance
 /// (the first is already parented inside <see cref="EvidenceWorkspaceView"/>,
@@ -50,9 +50,12 @@ public sealed class EngineeringAreaView : UserControl
     private readonly EngineeringCalculationView _engineeringCalculation;
     private readonly LibrariesView _referenceData;
     private readonly EngineeringAssetsView _engineeringAssets;
-    private readonly CalculationModulesView _calculators;
     private readonly Func<Task> _onEngineeringCalculationSelected;
-    private readonly Func<Task> _onCalculatorsSelected;
+    private readonly Func<Task>? _onRegisterSelected;
+    private readonly DockPanel? _registerPanel;
+    private readonly Tempest.Desktop.CalcSheets.CalcSheetView _worksheets;
+    private readonly Func<Task> _onWorksheetsSelected;
+    private readonly Tempest.Desktop.CalcSheets.VerificationDashboardView? _verification;
     private readonly ICommandDispatcher _commandDispatcher;
     private readonly Action<Guid, string> _openObjectRightUp;
 
@@ -72,8 +75,18 @@ public sealed class EngineeringAreaView : UserControl
     private readonly TreeViewItem _disciplinesNode = new() { Header = "Disciplines", IsExpanded = true };
     private readonly Dictionary<string, TreeViewItem> _disciplineNodes = new(StringComparer.Ordinal);
     private readonly TreeViewItem _calculationsNode = new() { Header = "Calculation register" };
-    private readonly TreeViewItem _calculatorsNode = new() { Header = "Calculators" };
+    private readonly TreeViewItem _worksheetsNode = new() { Header = "Worksheets" };
+    private readonly TreeViewItem _guidedTestNode = new() { Header = "Guided test" };
+    private TreeViewItem? _calculationsModuleNode;
+
+    // Addendum C, C-5: the Guided test beside the worksheet form. Installed by the composer once its collaborators exist; absent when the build has no script.
+    private DockPanel? _guidedTestHost;
+    private Func<Task>? _onGuidedTestSelected;
+    private readonly Dictionary<string, TreeViewItem> _disciplineWorksheetNodes = new(StringComparer.Ordinal);
     private readonly TreeViewItem _assetsNode = new() { Header = "Packs and templates" };
+    private readonly TreeViewItem _recordsNode = new() { Header = "Reference records" };
+    private readonly Tempest.Desktop.CalcSheets.CalcRecordsView? _records;
+    private readonly TreeViewItem _verificationNode = new() { Header = "Verification" };
     private readonly TreeViewItem _referenceDataNode = new() { Header = "Reference data" };
 
     private readonly WorkspaceChangesSubscription _workspaceChanges;
@@ -98,14 +111,16 @@ public sealed class EngineeringAreaView : UserControl
     /// <summary>Initialises a new instance of the <see cref="EngineeringAreaView"/> class.</summary>
     /// <param name="openObjectRightUp">Opens a Tasks row's own source object right up — the same delegate every other rail area's Tasks/dashboard rows already use.</param>
     /// <param name="engineeringAssets">The merged engineering capability's own area (`WP 21.2B`; `TD-160`, `TD-165`) — Modules → Calculations → Packs and templates.</param>
-    /// <param name="calculators">The Engineering Calculators (`WP 21.7B`) — Modules → Calculators: every product calculation from a generated form.</param>
-    /// <param name="onCalculatorsSelected">Re-reads the calculators' catalogue and released materials on entry, the same shape as <paramref name="onEngineeringCalculationSelected"/>.</param>
     public EngineeringAreaView(
         IShellNavigator navigator, ITasksReadModel tasksReadModel,
         EngineeringCalculationView engineeringCalculation, LibrariesView referenceData,
         EngineeringDashboardView dashboard, Func<Task> onEngineeringCalculationSelected,
         ICommandDispatcher commandDispatcher, Action<Guid, string> openObjectRightUp,
-        EngineeringAssetsView engineeringAssets, CalculationModulesView calculators, Func<Task> onCalculatorsSelected)
+        EngineeringAssetsView engineeringAssets,
+        Tempest.Desktop.CalcSheets.CalcSheetView worksheets, Func<Task> onWorksheetsSelected,
+        Tempest.Desktop.CalcSheets.CalcRegisterView? worksheetRegister = null, Func<Task>? onRegisterSelected = null, Func<Guid, Task>? openWorksheetInstance = null,
+        Tempest.Desktop.CalcSheets.CalcRecordsView? records = null,
+        Tempest.Desktop.CalcSheets.VerificationDashboardView? verification = null)
     {
         ArgumentNullException.ThrowIfNull(navigator);
         ArgumentNullException.ThrowIfNull(tasksReadModel);
@@ -116,18 +131,35 @@ public sealed class EngineeringAreaView : UserControl
         ArgumentNullException.ThrowIfNull(commandDispatcher);
         ArgumentNullException.ThrowIfNull(openObjectRightUp);
         ArgumentNullException.ThrowIfNull(engineeringAssets);
-        ArgumentNullException.ThrowIfNull(calculators);
-        ArgumentNullException.ThrowIfNull(onCalculatorsSelected);
+        ArgumentNullException.ThrowIfNull(worksheets);
+        ArgumentNullException.ThrowIfNull(onWorksheetsSelected);
 
         _navigator = navigator;
         _tasksReadModel = tasksReadModel;
         _engineeringCalculation = engineeringCalculation;
         _referenceData = referenceData;
         _engineeringAssets = engineeringAssets;
-        _calculators = calculators;
-        _onCalculatorsSelected = onCalculatorsSelected;
+        _worksheets = worksheets;
+        _records = records;
+        _onWorksheetsSelected = onWorksheetsSelected;
         _dashboard = dashboard;
         _onEngineeringCalculationSelected = onEngineeringCalculationSelected;
+        _onRegisterSelected = onRegisterSelected;
+        _verification = verification;
+
+        // The register node lists the worksheet calculations above the bracket-check surface (the showcase journey
+        // found it showed only the bracket records); a row opens in the worksheet form.
+        if (worksheetRegister is not null)
+        {
+            DockPanel.SetDock(worksheetRegister, Dock.Top);
+            _registerPanel = new DockPanel { LastChildFill = true };
+            _registerPanel.Children.Add(worksheetRegister);
+            _registerPanel.Children.Add(engineeringCalculation);
+
+            if (openWorksheetInstance is not null)
+                worksheetRegister.OpenRequested += id => _ = OpenWorksheetInstanceAsync(() => openWorksheetInstance(id));
+        }
+
         _commandDispatcher = commandDispatcher;
         _openObjectRightUp = openObjectRightUp;
 
@@ -142,7 +174,8 @@ public sealed class EngineeringAreaView : UserControl
         // tagged with its command category. Calculations is the one home
         // for calculation work: its own node shows the project's
         // calculations on the surface, and its children hold the
-        // calculators, the register of issued sheets, and the packs and
+        // worksheets (ADR-0167: they replaced the legacy Calculators), the
+        // register of issued sheets, and the packs and
         // templates (what was Modules → Engineering Assets).
         foreach (var category in EngineeringDisciplines.Disciplines)
             _disciplinesNode.Items.Add(SurfaceNode(category));
@@ -153,9 +186,17 @@ public sealed class EngineeringAreaView : UserControl
             if (category == "Calculations")
             {
                 node.IsExpanded = true;
-                node.Items.Add(_calculatorsNode);
+                node.Items.Add(_worksheetsNode);
                 node.Items.Add(_calculationsNode);
                 node.Items.Add(_assetsNode);
+
+                if (records is not null)
+                    node.Items.Add(_recordsNode);
+
+                // Addendum C, C-4: the read-only verification dashboard, beside the other Calculations screens.
+                if (_verification is not null)
+                    node.Items.Add(_verificationNode);
+                _calculationsModuleNode = node;
             }
 
             _modulesNode.Items.Add(node);
@@ -170,8 +211,9 @@ public sealed class EngineeringAreaView : UserControl
         foreach (var (node, name) in new[]
                  {
                      (_dashboardNode, "Dashboard"), (_tasksNode, "Tasks"), (_disciplinesNode, "Disciplines"), (_modulesNode, "Modules"),
-                     (_calculationsNode, "Calculation register"), (_calculatorsNode, "Calculators"),
-                     (_assetsNode, "Packs and templates"), (_referenceDataNode, "Reference data"),
+                     (_calculationsNode, "Calculation register"), (_worksheetsNode, "Worksheets"),
+                     (_assetsNode, "Packs and templates"), (_recordsNode, "Reference records screen"), (_verificationNode, "Verification dashboard"),
+                     (_referenceDataNode, "Reference data"),
                  })
             AutomationProperties.SetName(node, name);
         AutomationProperties.SetName(_tree, "Engineering tree");
@@ -201,19 +243,118 @@ public sealed class EngineeringAreaView : UserControl
         Content = split;
     }
 
+    /// <summary>`v0.26.0` (ADR-0165, D-11): the tag of a discipline's own Worksheets child node.</summary>
+    private sealed record WorksheetsMarker(string Category);
+
     private TreeViewItem SurfaceNode(string category)
     {
         var node = new TreeViewItem { Header = EngineeringDisciplines.Label(category), Tag = category };
         AutomationProperties.SetName(node, EngineeringDisciplines.NavigatorName(category));
         _disciplineNodes[category] = node;
+
+        if (Tempest.Desktop.CalcSheets.CalcSheetView.DisciplineFor(category) is not null)
+        {
+            var worksheets = new TreeViewItem { Header = "Worksheets", Tag = new WorksheetsMarker(category) };
+            AutomationProperties.SetName(worksheets, $"{EngineeringDisciplines.Label(category)} worksheets");
+            node.Items.Add(worksheets);
+            _disciplineWorksheetNodes[category] = worksheets;
+        }
+
         return node;
+    }
+
+    /// <summary>
+    /// Addendum C, C-5: adds the Guided test node under Calculations. Its panel is shown beside the one worksheet form (the form cannot be in two places,
+    /// so the form moves between the Worksheets node and this one); <paramref name="onSelected"/> runs when the node is picked, before it is shown.
+    /// </summary>
+    public void InstallGuidedTest(Control guidedTest, Func<Task> onSelected)
+    {
+        ArgumentNullException.ThrowIfNull(guidedTest);
+        ArgumentNullException.ThrowIfNull(onSelected);
+
+        if (_guidedTestHost is not null || _calculationsModuleNode is null)
+            return;
+
+        _onGuidedTestSelected = onSelected;
+        _guidedTestHost = new DockPanel { LastChildFill = true };
+        DockPanel.SetDock(guidedTest, Dock.Left);
+        _guidedTestHost.Children.Add(guidedTest);
+        AutomationProperties.SetName(_guidedTestNode, "Guided test");
+        _calculationsModuleNode.Items.Add(_guidedTestNode);
+    }
+
+    /// <summary>The form is one control: before it is shown on its own it leaves the Guided test's host, and the Guided test's host takes it back when shown.</summary>
+    private void ShowWorksheetsSurface()
+    {
+        _guidedTestHost?.Children.Remove(_worksheets);
+        _detail.Content = _worksheets;
+    }
+
+    /// <summary>Shows the Guided test panel with the worksheet form beside it.</summary>
+    private void ShowGuidedTestSurface()
+    {
+        if (_guidedTestHost is null)
+            return;
+
+        // Release the form from the detail pane first (a control has one parent), then seat it beside the panel.
+        _detail.Content = _guidedTestHost;
+
+        if (!_guidedTestHost.Children.Contains(_worksheets))
+            _guidedTestHost.Children.Add(_worksheets);
+    }
+
+    /// <summary>`v0.26.0`: opens the Worksheets node and selects <paramref name="templateReference"/> in it (the Ctrl+K entry per calculator).</summary>
+    public async Task OpenWorksheetAsync(string templateReference)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(templateReference);
+
+        if (_navigator.Current.Area != ShellArea.EngineeringDepartment)
+            await _navigator.GoToModuleAsync(ShellArea.EngineeringDepartment).ConfigureAwait(true);
+
+        _worksheets.FilterDiscipline(null);
+        _tree.SelectedItem = _worksheetsNode;
+        await _onWorksheetsSelected().ConfigureAwait(true);
+        ShowWorksheetsSurface();
+        _worksheets.SelectTemplate(templateReference);
+    }
+
+    /// <summary>Shows the Worksheets node and opens a calculation in it (a register row's Open).</summary>
+    private async Task OpenWorksheetInstanceAsync(Func<Task> open)
+    {
+        _suppressSelection = true;
+        _tree.SelectedItem = _worksheetsNode;
+        _suppressSelection = false;
+        await _onWorksheetsSelected().ConfigureAwait(true);
+        _worksheets.FilterDiscipline(null);
+        ShowWorksheetsSurface();
+        await open().ConfigureAwait(true);
+    }
+
+    /// <summary>
+    /// Addendum C, C-3: opens the records screen (Modules → Calculations → Reference records), on <paramref name="kind"/> when one is given — the
+    /// "Fill" and "Open records screen" links of a worksheet land here.
+    /// </summary>
+    public async Task OpenRecordsAsync(string? kind)
+    {
+        if (_records is null)
+            return;
+
+        if (_navigator.Current.Area != ShellArea.EngineeringDepartment)
+            await _navigator.GoToModuleAsync(ShellArea.EngineeringDepartment).ConfigureAwait(true);
+
+        _suppressSelection = true;
+        _tree.SelectedItem = _recordsNode;
+        _suppressSelection = false;
+        await _records.RefreshAsync(kind).ConfigureAwait(true);
+        _detail.Content = _records;
     }
 
     /// <summary>
     /// Selects the node named <paramref name="automationName"/>
     /// ("Dashboard", "Tasks", "Disciplines", "Mechanical discipline" and
     /// its siblings, "Modules", "Requirements module" and its siblings,
-    /// "Calculators", "Calculation register", "Packs and templates" or
+    /// "Worksheets", "Calculation register", "Packs and templates",
+    /// "Reference records screen", "Verification dashboard" or
     /// "Reference data") — the same name a
     /// screen reader announces, and what a journey test drives the tree
     /// by.
@@ -222,9 +363,12 @@ public sealed class EngineeringAreaView : UserControl
     {
         var item = new[]
             {
-                _dashboardNode, _tasksNode, _disciplinesNode, _modulesNode, _calculationsNode, _calculatorsNode, _assetsNode, _referenceDataNode,
+                _dashboardNode, _tasksNode, _disciplinesNode, _modulesNode, _calculationsNode, _assetsNode, _recordsNode, _verificationNode, _referenceDataNode,
             }
             .Concat(_disciplineNodes.Values)
+            .Concat(_disciplineWorksheetNodes.Values)
+            .Append(_worksheetsNode)
+            .Append(_guidedTestNode)
             .Single(i => string.Equals(AutomationProperties.GetName(i), automationName, StringComparison.Ordinal));
         _tree.SelectedItem = item;
     }
@@ -347,6 +491,14 @@ public sealed class EngineeringAreaView : UserControl
         if (_tree.SelectedItem is not TreeViewItem selected)
             return;
 
+        if (selected.Tag is WorksheetsMarker marker)
+        {
+            await _onWorksheetsSelected().ConfigureAwait(true);
+            _worksheets.FilterDiscipline(Tempest.Desktop.CalcSheets.CalcSheetView.DisciplineFor(marker.Category));
+            ShowWorksheetsSurface();
+            return;
+        }
+
         if (selected.Tag is string category)
         {
             // Into the engineering surface, beside this tree: navigate only
@@ -390,15 +542,25 @@ public sealed class EngineeringAreaView : UserControl
 
         if (ReferenceEquals(selected, _calculationsNode))
         {
-            await _onEngineeringCalculationSelected().ConfigureAwait(true);
-            _detail.Content = _engineeringCalculation;
+            await (_onRegisterSelected ?? _onEngineeringCalculationSelected)().ConfigureAwait(true);
+            _detail.Content = (Control?)_registerPanel ?? _engineeringCalculation;
             return;
         }
 
-        if (ReferenceEquals(selected, _calculatorsNode))
+        if (ReferenceEquals(selected, _worksheetsNode))
         {
-            await _onCalculatorsSelected().ConfigureAwait(true);
-            _detail.Content = _calculators;
+            await _onWorksheetsSelected().ConfigureAwait(true);
+            _worksheets.FilterDiscipline(null);
+            ShowWorksheetsSurface();
+            return;
+        }
+
+        if (ReferenceEquals(selected, _guidedTestNode) && _onGuidedTestSelected is { } enterGuidedTest)
+        {
+            await _onWorksheetsSelected().ConfigureAwait(true);
+            _worksheets.FilterDiscipline(null);
+            await enterGuidedTest().ConfigureAwait(true);
+            ShowGuidedTestSurface();
             return;
         }
 
@@ -406,6 +568,20 @@ public sealed class EngineeringAreaView : UserControl
         {
             await _engineeringAssets.RefreshAsync().ConfigureAwait(true);
             _detail.Content = _engineeringAssets;
+            return;
+        }
+
+        if (ReferenceEquals(selected, _recordsNode) && _records is not null)
+        {
+            await _records.RefreshAsync().ConfigureAwait(true);
+            _detail.Content = _records;
+            return;
+        }
+
+        if (ReferenceEquals(selected, _verificationNode) && _verification is not null)
+        {
+            await _verification.RefreshAsync().ConfigureAwait(true);
+            _detail.Content = _verification;
             return;
         }
 

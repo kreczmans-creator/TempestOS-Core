@@ -1,0 +1,51 @@
+# Calc pack — Wet heating (`pack.wet-heating`)
+
+**Chain.** Room A heat loss (`bs.room-heat-loss`) → Sealed system; Room B heat loss (`bs.room-heat-loss`) → Sealed system; Sealed system (`bs.sealed-system`) → Primary pipework and pump; Primary pipework and pump (`bs.pipe-pump`) → Circulator motor.
+
+**Purpose.** Sizes a wet heating circuit from the rooms to the circulator: room heat losses, emitters and expansion vessel, the pipework and pump at the flow that heat needs, and the motor that drives the pump. The loop is closed (no static lift) and the example load is small, so the pump duty is a deliberately tiny illustration. The pipework water content in the sealed system is entered by hand from the pipework's V_pipe, because a link back from B1 would be a cycle (the sealed-system step warns while it is left at its 20 L default). Each room's design temperature (B4's θ_int) is the room temperature of that room's emitter. The pump head covers pipe friction only unless the water-side loss of the boiler or heat exchanger, valves and emitters is entered as the outlet head h_out of the pipework step (the step warns while it is 0). The pipework step is on water: a glycol loop must be given the custom fluid with its density and viscosity (the step warns when the specific heat is not water's).
+
+Two rooms' design heat losses are the two rows of the sealed system's room table (table-cell links); the sealed system's total heat, flow-to-return difference and mean water temperature give the primary pipework its flow and fluid; the pump's shaft torque and speed are the circulator motor's load. The loop is closed, so there is no static lift, and the 40 m of 10 mm microbore carries about 57 L/h for a 0.64 kW load: the pump duty is a deliberately tiny illustration. The sealed system's pipework water content (3.14 L) is entered, equal to the pipework's own V_pipe, because a link back from the pipework would be a cycle.
+
+**Issue.** Project “Plant room heating”, pack “Plant room heating calc pack”, checked once as a bundle and issued under issue reference **`HTG-001`** to Client Co in one transaction. After issue every step is read-only and carries that reference. Checked against SPEC-HTG-01 §3.
+
+## Steps
+
+| Step | Calculator | Revision | Checks |
+|---|---|---|---|
+| Room A heat loss | `bs.room-heat-loss` | A | 1 of 1 PASS |
+| Room B heat loss | `bs.room-heat-loss` | A | none |
+| Sealed system | `bs.sealed-system` | A | none |
+| Primary pipework and pump | `bs.pipe-pump` | A | 1 of 1 PASS |
+| Circulator motor | `elec.motor-sizing` | A | 5 of 5 PASS |
+
+## Links
+
+Every link is pinned to the upstream revision named in the issued sheet (`link: <step> rev <n> · <output>`); changing an input of a step makes every step that takes from it, directly or through other steps, stale, and the pack cannot be checked or issued until each is updated in order.
+
+| From | Output | To | Input | Value carried |
+|---|---|---|---|---|
+| Room A heat loss | `Phi_HL` | Sealed system | `rooms` row 1 (`Phi`), a table-cell link | 0.379444 kW |
+| Room B heat loss | `Phi_HL` | Sealed system | `rooms` row 2 (`Phi`), a table-cell link | 0.304608 kW |
+| Room A heat loss | `T_int` | Sealed system | `rooms` row 1 (`t_i`), a table-cell link | 21 degC |
+| Room B heat loss | `T_int` | Sealed system | `rooms` row 2 (`t_i`), a table-cell link | 21 degC |
+| Sealed system | `Phi_tot` | Primary pipework and pump | `Phi_load` | 0.684052 kW |
+| Sealed system | `dT_fr` | Primary pipework and pump | `dT_load` | 10 K |
+| Sealed system | `T_m` | Primary pipework and pump | `T_fluid` | 70 degC |
+| Primary pipework and pump | `T_shaft` | Circulator motor | `T_L` | 0.000323393 N*m |
+| Primary pipework and pump | `n_shaft` | Circulator motor | `n_L` | 2800 rpm |
+
+## Inputs and provenance
+
+Every input of every step carries a provenance on the issued sheet: the figures chosen for this example cite an (invented) specification or drawing, an input left at the sheet's default is recorded as an assumption, and a linked input names the calculation and output it comes from. Project, drawing, specification and issue references are illustrative; they are not real documents.
+
+## Files
+
+- `pack-issue-sheet.txt` — the pack's issue sheet (index, members, revisions) as stored on the Evidence record.
+- `b4a-bs-room-heat-loss.sheet.txt` — Room A heat loss, the issued sheet.
+- `b4b-bs-room-heat-loss.sheet.txt` — Room B heat loss, the issued sheet.
+- `b6-bs-sealed-system.sheet.txt` — Sealed system, the issued sheet.
+- `b1-bs-pipe-pump.sheet.txt` — Primary pipework and pump, the issued sheet.
+- `e1-elec-motor-sizing.sheet.txt` — Circulator motor, the issued sheet.
+- `inputs.json` — a record of every step's inputs as issued, links included: one JSON object keyed by step, each value that step's list of inputs. It is not a file that one worksheet imports whole (a worksheet takes the inputs of one calculation: copy one step's list out of it to load that step). Links and attached-file references in it name the original calculations and their Evidence, so they do not resolve in another project.
+
+Generated by `ChainPackWorkedExampleTests` in `tests/Tempest.Calc.Tests.Library/Chains`. The PDFs are rendered separately.

@@ -1,0 +1,64 @@
+[
+  {
+    "Symbol": "D",
+    "Number": 25,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-SHAFT-12",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "25"
+  },
+  {
+    "Symbol": "hole_grade",
+    "Number": 7,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "DRG-SHAFT-12 note 3",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "7"
+  },
+  {
+    "Symbol": "hole_kind",
+    "Text": "ISO 286 hole class",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "DRG-SHAFT-12 note 3: the hole is an ISO 286 class (H7), not a bearing bore",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "ISO 286 hole class"
+  },
+  {
+    "Symbol": "hole_letter",
+    "Text": "H",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "DRG-SHAFT-12 note 3: H7/g6",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "H"
+  },
+  {
+    "Symbol": "shaft_grade",
+    "Number": 6,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "DRG-SHAFT-12 note 3",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "6"
+  },
+  {
+    "Symbol": "shaft_letter",
+    "Text": "g",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "DRG-SHAFT-12 note 3",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "g"
+  }
+]

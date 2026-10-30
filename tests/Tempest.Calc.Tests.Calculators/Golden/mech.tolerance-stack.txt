@@ -1,0 +1,166 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: mech.tolerance-stack    Revision: A
+Title: Tolerance stack-up (1D)
+
+1. Scope and method
+Calculates the worst-case, root-sum-square and modified RSS limits of a linear tolerance loop, with the predicted spread and capability. It adds a contribution Pareto and a Monte Carlo prediction against a stated requirement.
+Worst case, every contributor at its limit: T_wc = Σ|half-bands|. Root sum of squares, the statistical stack: T_rss = √Σ half². Modified RSS, a factor on the RSS (Bender-style): T_mrss = factor × RSS. Predicted standard deviation of the stack, from each contributor's distribution: σ = √Σ σ_i². Process capability, taken from the nearer limit: C_pk = min(USL − μ, μ − LSL)/(3σ). Monte Carlo check, every contributor sampled from a fixed seed and summed with its sign: stack = Σ s_i x_i.
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  contributors | Contributors in the loop | 4 row(s) |  | manual | any
+  contributors[1] |  | name = a shoulder length; direction = adds; nominal = 1.75 in; upper = 0.003 in; lower = -0.003 in |  |  | 
+  contributors[2] |  | name = b sleeve; direction = subtracts; nominal = 0.75 in; upper = 0.001 in; lower = -0.001 in |  |  | 
+  contributors[3] |  | name = c washer; direction = subtracts; nominal = 0.12 in; upper = 0.005 in; lower = -0.005 in |  |  | 
+  contributors[4] |  | name = d sleeve; direction = subtracts; nominal = 0.875 in; upper = 0.001 in; lower = -0.001 in |  |  | 
+  notation | Drawing notation | BS 8888 |  | manual | any
+  k | Standard deviations per half-band (normal contributors) | 3 |  | manual | 1 … 6
+  f_rss | Modified-RSS factor (Bender-style) | 1.5 |  | manual | 1 … 2
+  cpk_req | Required C_pk | 1.33 |  | manual | 1 … 2
+  minimum | Minimum acceptable result (optional; blank = no minimum) | 0.003 | in | manual | -393.7 … 393.7 in
+  n_mc | Monte Carlo samples | 10000 |  | manual | 1000 … 100000
+  seed | Monte Carlo seed | 1 |  | manual | 0 … 1000000000
+
+3. Assumptions
+  A1. Every contributor acts along the one axis of the stack. (A linear stack: no angular or datum-shift effects beyond what the user enters as a contributor.)
+  A2. Contributors vary independently about their mid-limit and any stated mean shift, each with its stated distribution. (The worst case is a guarantee; every statistical figure is a prediction about a population.)
+  A3. A position or profile contributor contributes ± half its tolerance zone, plus half the stated MMC bonus. (Diametral zones are bilateral about the true position.)
+
+4. Working
+  [6] c1 = + 44.45 ±0.0762
+      = mid 44.45 mm, ± 0.0762 mm, σ 0.0254 mm (normal)
+      = 44.45 mm
+        a shoulder length
+  [7] c2 = − 19.05 ±0.0254
+      = mid 19.05 mm, ± 0.0254 mm, σ 0.00846667 mm (normal)
+      = -19.05 mm
+        b sleeve
+  [8] c3 = − 3.048 ±0.127
+      = mid 3.048 mm, ± 0.127 mm, σ 0.0423333 mm (normal)
+      = -3.048 mm
+        c washer
+  [9] c4 = − 22.225 ±0.0254
+      = mid 22.225 mm, ± 0.0254 mm, σ 0.00846667 mm (normal)
+      = -22.225 mm
+        d sleeve
+  [10] x_nom = Σ (sign × nominal)
+      = 44.45 − 19.05 − 3.048 − 22.225
+      = 0.127 mm
+        Nominal result
+  [11] x_mean = Σ (sign × mid-limit)
+      = 44.45 − 19.05 − 3.048 − 22.225
+      = 0.127 mm
+        Mean result
+  [12] t_wc = Σ half-bands
+      = 0.0762 + 0.0254 + 0.127 + 0.0254
+      = 0.254 mm
+        Worst-case tolerance (±)
+  [13] x_wc_min = x_mean - t_wc
+      = 0.127 mm − 0.254 mm
+      = -0.127 mm
+        Worst-case minimum
+  [14] x_wc_max = x_mean + t_wc
+      = 0.127 mm + 0.254 mm
+      = 0.381 mm
+        Worst-case maximum
+  [15] t_rss = √Σ half²
+      = √(0.0762² + 0.0254² + 0.127² + 0.0254²)
+      = 0.1524 mm
+        Root-sum-square tolerance (±)
+  [16] x_rss_min = x_mean - t_rss
+      = 0.127 mm − 0.1524 mm
+      = -0.0254 mm
+        RSS minimum
+  [17] x_rss_max = x_mean + t_rss
+      = 0.127 mm + 0.1524 mm
+      = 0.2794 mm
+        RSS maximum
+  [18] t_mrss = f_rss * t_rss
+      = 1.5 × 0.1524 mm
+      = 0.2286 mm
+        Modified RSS tolerance (±)
+  [19] sigma = √Σ σ_i²
+      = √(0.0254² + 0.00846667² + 0.0423333² + 0.00846667²)
+      = 0.0508 mm
+        Predicted standard deviation of the result
+  [20] m_min = x_wc_min − minimum
+      = -0.127 − 0.0762
+      = -0.2032 mm
+        Worst-case margin to the minimum
+  [21] cpk = min(x_mean − LSL, USL − x_mean) / (3 σ)
+      = min(0.0508, ∞) / (3 × 0.0508)
+      = 0.33333
+        Process capability index C_pk
+  [22] dpmo = 10⁶ × P(outside)
+      = 10⁶ × Φ-tails at σ = 0.0508
+      = 158660
+        Predicted defects per million
+  [23] yield = 1 − dpmo / 10⁶
+      = 1 − 158660 / 10⁶
+      = 84.134 %
+        Predicted yield
+  [24] u_cpk = cpk_target / cpk
+      = 1.33 / 0.33333
+      = 3.99
+        Capability utilisation
+  [25] pareto = largest contributor (statistical)
+      = a shoulder length 25 %; b sleeve 2.78 %; c washer 69.4 %; d sleeve 2.78 %
+      = "c washer"
+        Contribution Pareto
+  [28] mc_mean = mean of 10000 samples (seed 1)
+      = Monte Carlo
+      = 0.12705 mm
+        Monte Carlo mean
+  [29] mc_sigma = sample standard deviation
+      = Monte Carlo
+      = 0.050593 mm
+        Monte Carlo σ
+  [30] mc_p05 = 5 % quantile
+      = Monte Carlo
+      = 0.044003 mm
+        Monte Carlo 5 %
+  [31] mc_p95 = 95 % quantile
+      = Monte Carlo
+      = 0.21023 mm
+        Monte Carlo 95 %
+  [32] mc_yield = samples inside the requirement
+      = 8461 of 10000
+      = 84.61 %
+        Monte Carlo yield
+
+5. Results
+  x_nom = 0.1270 mm    Nominal result
+  x_mean = 0.1270 mm    Mean result
+  t_wc = 0.2540 mm    Worst-case tolerance (±)
+  t_rss = 0.1524 mm    RSS tolerance (±)
+  sigma = 0.05080 mm    Predicted σ
+  x_wc_min = -0.1270 mm    Worst-case minimum
+  x_wc_max = 0.3810 mm    Worst-case maximum
+  t_mrss = 0.2286 mm    Modified RSS tolerance (±)
+  m_min = -0.2032 mm    Worst-case margin to the minimum
+  cpk = 0.33333    C_pk
+  dpmo = 158660    DPMO (predicted)
+  yield = 84.13 %    Yield (predicted)
+  mc_mean = 0.1270 mm    Monte Carlo mean
+  mc_sigma = 0.05059 mm    Monte Carlo σ
+  mc_p05 = 0.04400 mm    Monte Carlo 5 % quantile
+  mc_p95 = 0.2102 mm    Monte Carlo 95 % quantile
+  mc_yield = 84.61 %    Monte Carlo yield
+  u_cpk = 3.99    Capability utilisation
+
+6. Checks (governing first)
+  FAIL  Worst-case range against the requirement: -0.127 … 0.381 mm vs 0.0762 … open mm
+  FAIL  C_pk against the requirement: 1.33 vs 0.33333  utilisation 3.99
+
+7. Applicability
+  None.
+
+8. Verification
+  Template: mech.tolerance-stack@2.3.0
+  Known-answer cases passed: 7/7
+
+9. References
+  1. BS 8888 — Technical product documentation and specification
+  2. ASME Y14.5 — Dimensioning and tolerancing
+  3. ISO 2768-1:1989 — General tolerances (where a contributor's band is a general tolerance)

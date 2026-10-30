@@ -1,0 +1,155 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: oil-transfer-laminar    Revision: A
+Title: Pipe pressure drop and pump duty
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. Scope and method
+Calculates the friction and fitting losses of series pipe segments at a given flow, the system curve and the duty point against a pump curve. It also gives the affinity-law shift for a speed or impeller change, and the NPSH.
+Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place of a flow; v = Q/(πD²/4) Reynolds number and friction factor: Re = ρvD/μ; f = 64/Re for laminar flow (Re < 2300); Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) for turbulent flow, by fixed-point iteration (at most 100 steps) from the Swamee–Jain value, which also cross-checks it Head lost in a segment: h_f = f (L + L_eq)/D · v²/2g + K v²/2g System curve: H_sys(Q) = Σdz + h_out + Σh_f,lam·(Q/Q₀) + Σh_f,other·(Q/Q₀)², with a laminar segment's friction scaled as Q and every other friction and fitting loss as Q² (a closed circuit has Σdz = 0) Water held in the pipes: V_pipe = Σ π/4·D²·L Duty point: H_pump(Q) = H_sys(Q), every crossing found by a scan and refined by bisection, the stable one nearest the design flow reported; pump affinity laws Q ∝ n·D^a, H ∝ n²·D², with a = 1 for a trimmed impeller (the default) and a = 3 for a geometrically similar pump Net positive suction head available: NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg, with h_f,suction that of the 'suction' segments at the larger of the design flow and the duty flow Shaft torque for the motor: T = P/ω, with P the larger of the design-flow and duty-point shaft power at the speed n_pump, or the shifted duty power at the shifted speed n_pump·n₂/n₁
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  fluid | Fluid | custom (ρ and μ given) |  | spec: Oil datasheet ISO VG 680 at 20 °C | any
+  circuit | Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored) | open (the pump lifts the water by the rises entered) |  | assumption: Open transfer line to an open discharge. | any
+  segments | Pipe segments in series | 1 row(s) |  | drawing: DRG-L-020 rev A | any
+  segments[1] |  | name = transfer line; L = 40 m; D = 50 mm; eps = 0 mm; K = 0; L_eq = 0 m; dz = 0 m; side = discharge |  |  | 
+  rho_custom | Density (custom fluid) | 888 | kg/m³ | spec: Oil datasheet ISO VG 680 | 500 … 2000 kg/m³
+  mu_custom | Dynamic viscosity (custom fluid) | 800 | mPa·s | spec: Oil datasheet ISO VG 680 at 20 °C | 0.1 … 1000 mPa·s
+  h_out | Pressure head required at the outlet | 0 | m | assumption: Open discharge. | 0 … 1000 m
+  Q | Design flow rate (optional; blank = the flow comes from the heat load) | 1 | m³/h | spec: Transfer pump duty | 0.01 … 100000 m³/h
+  T_fluid | Fluid temperature (mean; link the mean water temperature of the sealed system for a heating loop) | 20 | °C | assumption: Ambient 20 °C. | 0 … 100 °C
+  p_atm | Atmospheric pressure (NPSH) | 101.325 | kPa | assumption: Sea level. | 50 … 110 kPa
+  z_s | Static head at the pump suction (+ flooded, − lift) | 0 | m | assumption: Pump suction level with the tank outlet. | -10 … 100 m
+  v_limit | Velocity limit (warning and check) | 3 | m/s | assumption: Practice limit. | 0.5 … 10 m/s
+  D_law | Law for the diameter ratio: a trimmed impeller of the same casing (Q ∝ D, H ∝ D²) or a geometrically similar pump (Q ∝ D³, H ∝ D²) | impeller trim (Q ∝ n·D, H ∝ n²·D²) |  | assumption: The impeller is unchanged (D_ratio = 1), so the law has no effect; template default kept. | any
+  n_ratio | Speed ratio n₂/n₁ (affinity) | 1 |  | assumption: No speed change. | 0.2 … 2
+  D_ratio | Impeller diameter ratio D₂/D₁ (affinity; the law is chosen above) | 1 |  | assumption: Impeller unchanged. | 0.7 … 1.1
+  eta_pump | Pump efficiency at duty (for shaft power) | 0.7 |  | assumption: Illustrative pump efficiency for the shaft power; take it from the pump datasheet. | 0.2 … 0.95
+
+3. Assumptions
+  A1. Flow is steady, incompressible and fully developed, and all segments carry the full design flow in series. (Darcy–Weisbach.)
+  A2. Fitting losses scale with velocity head (K method) or add pipe length (equivalent-length method). (Crane TP-410 practice.)
+  A3. Both fitting methods may be used on one segment. (Crane TP-410 practice.)
+  A4. The system curve scales turbulent and transitional friction and all fitting losses with Q² from the design flow. (H_sys = H_static + k₁ Q + k₂ Q².)
+  A5. The friction factor is held at its design-flow value on the system curve. (H_sys = H_static + k₁ Q + k₂ Q².)
+  A6. The friction of a laminar segment scales with Q, and the static part is independent of flow. (H_sys = H_static + k₁ Q + k₂ Q².)
+  A7. Water properties are from published correlations at atmospheric pressure, 0 to 100 °C. (Kell 1975; Vogel fit; Hyland & Wexler 1983.)
+  A8. Any other fluid is entered with its own density and viscosity and their provenance. (Stated.)
+  A9. circuit (Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored)) is taken as open (the pump lifts the water by the rises entered). (Open transfer line to an open discharge.)
+  A10. h_out (Pressure head required at the outlet) is taken as 0 m. (Open discharge.)
+  A11. T_fluid (Fluid temperature (mean; link the mean water temperature of the sealed system for a heating loop)) is taken as 20 °C. (Ambient 20 °C.)
+  A12. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sea level.)
+  A13. z_s (Static head at the pump suction (+ flooded, − lift)) is taken as 0 m. (Pump suction level with the tank outlet.)
+  A14. v_limit (Velocity limit (warning and check)) is taken as 3 m/s. (Practice limit.)
+  A15. D_law (Law for the diameter ratio: a trimmed impeller of the same casing (Q ∝ D, H ∝ D²) or a geometrically similar pump (Q ∝ D³, H ∝ D²)) is taken as impeller trim (Q ∝ n·D, H ∝ n²·D²). (The impeller is unchanged (D_ratio = 1), so the law has no effect; template default kept.)
+  A16. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 1. (No speed change.)
+  A17. D_ratio (Impeller diameter ratio D₂/D₁ (affinity; the law is chosen above)) is taken as 1. (Impeller unchanged.)
+  A18. eta_pump (Pump efficiency at duty (for shaft power)) is taken as 0.7. (Illustrative pump efficiency for the shaft power; take it from the pump datasheet.)
+
+4. Working
+  [5] rho = rho_custom
+      = 888 kg/m³
+      = 888 kg/m³
+        Density (as entered)
+  [6] mu = mu_custom
+      = 800 mPa·s
+      = 800 mPa·s
+        Dynamic viscosity (as entered)
+  [7] T_line = T (no T_line entered)
+      = 20 °C
+      = 20 degC
+        Design temperature of the line to insulate: the fluid temperature T, since no T_line was entered
+  [11] Q_design = Q
+      = 1 m³/h
+      = 1 m³/h
+        Design flow (as entered)
+  [12] v_s1 = transfer line: Q / (π D²/4)
+      = 1 m³/h / (π × 50² mm² / 4)
+      = 0.14147 m/s
+        Velocity, transfer line
+  [13] Re_s1 = transfer line: ρ v D / μ
+      = 888 × 0.14147 × 0.05 / 0.8
+      = 7.8516
+        Reynolds number, transfer line
+  [14] f_s1 = transfer line: Darcy friction factor
+      = 64 / Re (laminar)
+      = 8.1512
+        Friction factor, transfer line
+  [15] h_f_s1 = transfer line: f (L + L_eq)/D · v²/2g + K v²/2g
+      = 8.1512 × (40 + 0) / 0.05 × 0.0010204 + 0 × 0.0010204
+      = 6.6542 m
+        Head loss, transfer line
+  [16] h_f_total = Σ h_f
+      = 1 segment(s)
+      = 6.6542 m
+        Total friction and fitting loss at the design flow
+  [18] V_pipe = Σ π/4·D²·L
+      = 1 segment(s)
+      = 78.54 L
+        Water held in the pipe segments
+  [19] H_static = Σ dz + h_out
+      = 0 + 0
+      = 0 m
+        Static head
+  [20] H_sys = H_static + h_f_total
+      = 0 m + 6.6542 m
+      = 6.6542 m
+        System head at the design flow
+  [21] dp_total = rho * 9.80665 m/s^2 * h_f_total
+      = 888 kg/m³ × 9.80665 m/s^2 × 6.6542 m
+      = 57.947 kPa
+        Friction pressure drop at the design flow
+  [22] dp_sys = rho * 9.80665 m/s^2 * H_sys
+      = 888 kg/m³ × 9.80665 m/s^2 × 6.6542 m
+      = 57.947 kPa
+        System pressure at the design flow
+  [23] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
+      = 888 kg/m³ × 9.80665 m/s^2 × 1 m³/h × 6.6542 m
+      = 0.016096 kW
+        Hydraulic power at the design point
+  [26] v_peak = highest segment velocity
+      = 0.14147 m/s
+      = 0.14147 m/s
+        Highest velocity
+  [27] u_v = v_peak / v_limit
+      = 0.14147 / 3
+      = 0.047157
+        Velocity utilisation
+
+5. Results
+  Q_design = 1 m³/h    Design flow
+  H_static = 0 m    Static head
+  V_pipe = 78.54 L    Water held in the pipes
+  H_sys = 6.654 m    System head at Q
+  h_f_total = 6.654 m    Σ h_f
+  dp_total = 57.95 kPa    Friction Δp
+  dp_sys = 57.95 kPa    System Δp
+  P_hyd = 0.01610 kW    Hydraulic power
+  v_peak = 0.1415 m/s    Highest velocity (governing)
+  T_line = 20 °C    Line design temperature
+  v_s1 = 0.1415 m/s    Velocity, transfer line
+  Re_s1 = 7.8516    Re, transfer line
+  f_s1 = 8.1512    f, transfer line
+  h_f_s1 = 6.654 m    h_f, transfer line
+
+6. Checks (governing first)
+  PASS  Highest velocity against limit: 0.1415 m/s vs 3 m/s  utilisation 0.05
+
+7. Applicability
+  WARNING  segments: transfer line is laminar (Re = 7.8516), so f = 64/Re. The system curve and the duty point scale its friction with Q, not Q².  [laminar]
+
+8. Verification
+  Template: bs.pipe-pump@1.10.1
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 5/5
+  Test run: —
+
+9. References
+  1. Crane Co., Flow of Fluids Through Valves, Fittings and Pipe (Technical Paper No. 410) — Flow of fluids through valves, fittings and pipe
+  2. Çengel & Cimbala, Fluid Mechanics Ch. 8, 4th ed. — Internal flow: friction factor, minor losses, pump duty
+  3. CIBSE Guide C §4 — Flow of fluids in pipes and ducts (principles)
+  4. Kell, J. Chem. Eng. Data 20(1), 1975 — Density of liquid water

@@ -1,0 +1,114 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: mech.thick-cylinder    Revision: A
+Title: Thick-walled cylinder (Lamé)
+
+1. Scope and method
+Calculates the radial, hoop and axial stresses at the bore and outer surface of a thick-walled cylinder under internal and external pressure. It also gives von Mises and Tresca stresses, the utilisation and a thin-wall estimate.
+Lamé constants from the bore and outside pressures: A = (a² p_i − b² p_o)/(b² − a²); B = a² b² (p_i − p_o)/(b² − a²). Radial and hoop stress at radius r: σ_r = A − B/r²; σ_θ = A + B/r². Axial stress, closed or open ends: σ_z = A (closed); σ_z = 0 (open). Equivalent stresses from the three principal stresses: von Mises; Tresca = the largest principal difference.
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  closed | Closed ends (axial stress carried by the wall) | yes |  | manual | any
+  a | Inner radius | 50 | mm | manual | 0.1 … 5000 mm
+  b | Outer radius | 100 | mm | manual | 0.1 … 5000 mm
+  E | Young's modulus (the elastic collapse pressure under external pressure only) | 207 | GPa | manual | 1 … 500 GPa
+  nu | Poisson's ratio (the elastic collapse pressure under external pressure only) | 0.3 |  | manual | 0.1 … 0.49
+  p_i | Internal pressure | 50 | MPa | manual | 0 … 1000 MPa
+  p_o | External pressure | 0 | MPa | manual | 0 … 1000 MPa
+  sigma_allow | Allowable stress | 200 | MPa | manual | 1 … 3000 MPa
+
+3. Assumptions
+  A1. The cylinder is long, elastic and isotropic, and its stresses vary with radius only. (Lamé solution, with end effects neglected.)
+  A2. Closed ends carry the pressure end load as a uniform axial stress. (σ_z = A.)
+
+4. Working
+  [9] A = (a^2 * p_i - b^2 * p_o) / (b^2 - a^2)    « Roark Table 13.5
+      = ((50 mm)^2 × 50 MPa − (100 mm)^2 × 0 MPa) / ((100 mm)^2 − (50 mm)^2)
+      = 16.667 MPa
+        Lamé constant A
+  [10] B = a^2 * b^2 * (p_i - p_o) / (b^2 - a^2)    « Roark Table 13.5
+      = (50 mm)^2 × (100 mm)^2 × (50 MPa − 0 MPa) / ((100 mm)^2 − (50 mm)^2)
+      = 166670 MPa·mm²
+        Lamé constant B
+  [11] sigma_r_a = A - B / a^2
+      = 16.667 MPa − 166670 MPa·mm² / (50 mm)^2
+      = -50 MPa
+        Radial stress at the bore
+  [12] sigma_t_a = A + B / a^2
+      = 16.667 MPa + 166670 MPa·mm² / (50 mm)^2
+      = 83.333 MPa
+        Hoop stress at the bore
+  [13] sigma_r_b = A - B / b^2
+      = 16.667 MPa − 166670 MPa·mm² / (100 mm)^2
+      = 0 MPa
+        Radial stress at the outer surface
+  [14] sigma_t_b = A + B / b^2
+      = 16.667 MPa + 166670 MPa·mm² / (100 mm)^2
+      = 33.333 MPa
+        Hoop stress at the outer surface
+  [15] sigma_z = A
+      = 16.667 MPa
+      = 16.667 MPa
+        Axial stress (closed ends)
+  [16] sigma_vm_a = sqrt(((sigma_t_a - sigma_r_a)^2 + (sigma_r_a - sigma_z)^2 + (sigma_z - sigma_t_a)^2) / 2)
+      = sqrt(((83.333 MPa − (-50 MPa))^2 + ((-50 MPa) − 16.667 MPa)^2 + (16.667 MPa − 83.333 MPa)^2) / 2)
+      = 115.47 MPa
+        von Mises stress at the bore
+  [17] sigma_vm_b = sqrt(((sigma_t_b - sigma_r_b)^2 + (sigma_r_b - sigma_z)^2 + (sigma_z - sigma_t_b)^2) / 2)
+      = sqrt(((33.333 MPa − 0 MPa)^2 + (0 MPa − 16.667 MPa)^2 + (16.667 MPa − 33.333 MPa)^2) / 2)
+      = 28.868 MPa
+        von Mises stress at the outer surface
+  [18] sigma_tr_a = max(sigma_t_a, sigma_r_a, sigma_z) - min(sigma_t_a, sigma_r_a, sigma_z)
+      = max(83.333 MPa, -50 MPa, 16.667 MPa) − min(83.333 MPa, -50 MPa, 16.667 MPa)
+      = 133.33 MPa
+        Tresca stress at the bore
+  [19] sigma_tr_b = max(sigma_t_b, sigma_r_b, sigma_z) - min(sigma_t_b, sigma_r_b, sigma_z)
+      = max(33.333 MPa, 0 MPa, 16.667 MPa) − min(33.333 MPa, 0 MPa, 16.667 MPa)
+      = 33.333 MPa
+        Tresca stress at the outer surface
+  [20] sigma_vm_max = max(sigma_vm_a, sigma_vm_b)
+      = max(115.47 MPa, 28.868 MPa)
+      = 115.47 MPa
+        Maximum von Mises stress
+  [21] u = sigma_vm_max / sigma_allow
+      = 115.47 MPa / 200 MPa
+      = 0.57735
+        Utilisation
+  [22] sigma_thin = (p_i - p_o) * (a + b) / 2 / (b - a)
+      = (50 MPa − 0 MPa) × (50 mm + 100 mm) / 2 / (100 mm − 50 mm)
+      = 75 MPa
+        Thin-wall hoop estimate at the mean radius
+  [23] k_wall = b / a
+      = 100 mm / 50 mm
+      = 2
+        Wall ratio b/a
+
+5. Results
+  sigma_t_a = 83.33 MPa    Hoop stress, bore
+  sigma_vm_max = 115.5 MPa    Maximum von Mises (governing)
+  sigma_r_a = -50 MPa    Radial stress, bore
+  sigma_r_b = 0 MPa    Radial stress, outer
+  sigma_t_b = 33.33 MPa    Hoop stress, outer
+  sigma_z = 16.67 MPa    Axial stress
+  sigma_vm_a = 115.5 MPa    von Mises, bore
+  sigma_vm_b = 28.87 MPa    von Mises, outer
+  sigma_tr_a = 133.3 MPa    Tresca, bore
+  sigma_tr_b = 33.33 MPa    Tresca, outer
+  sigma_thin = 75 MPa    Thin-wall hoop estimate
+  k_wall = 2    Wall ratio
+  u = 0.58    Utilisation
+
+6. Checks (governing first)
+  PASS  von Mises against allowable: 115.5 MPa vs 200 MPa  utilisation 0.58
+
+7. Applicability
+  None.
+
+8. Verification
+  Template: mech.thick-cylinder@2.2.1
+  Known-answer cases passed: 3/3
+
+9. References
+  1. Young, Roark's Formulas for Stress and Strain Ch. 13, Table 13.5, 8th ed. — Thick-walled cylinders
+  2. Budynas, Shigley's Mechanical Engineering Design §3-14, 10th ed. — Stresses in pressurised cylinders

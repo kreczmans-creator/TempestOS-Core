@@ -1,5 +1,8 @@
+using Tempest.Core.Audit;
 using Tempest.Core.EngineeringData;
 using Tempest.Core.EngineeringDomain;
+using Tempest.Core.Events;
+using Tempest.Core.Persistence;
 using Tempest.Core.ReferenceData;
 
 namespace Tempest.Core.Evidence;
@@ -48,6 +51,10 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
     private EvidenceStatus _status;
     private CheckRecord? _check;
     private IssueRecord? _issue;
+    private string? _managedBy;
+
+    /// <summary>The <see cref="ManagedBy"/> value of the Evidence a calculation worksheet owns (`ADR-0173`): checked, issued and revised from its worksheet only.</summary>
+    public const string CalcWorksheetOwner = "calc.worksheet";
 
     /// <summary>Initialises a new instance of the <see cref="Evidence"/> class.</summary>
     public Evidence(
@@ -55,7 +62,7 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
         string? identifier, string displayName, EngineeringObjectMetadata metadata,
         EvidenceClassification classification, Guid? subjectId, string authorIdentityId,
         IReadOnlyList<EvidenceCitation>? citations = null, IReadOnlyList<DeclaredFigure>? declaredFigures = null,
-        EvidenceStatus status = EvidenceStatus.Draft, CheckRecord? check = null, IssueRecord? issue = null)
+        EvidenceStatus status = EvidenceStatus.Draft, CheckRecord? check = null, IssueRecord? issue = null, string? managedBy = null)
         : base(document, currentRevision, context, identifier, displayName, metadata)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(authorIdentityId);
@@ -68,6 +75,27 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
         _status = status;
         _check = check;
         _issue = issue;
+        _managedBy = string.IsNullOrWhiteSpace(managedBy) ? null : managedBy;
+    }
+
+    /// <summary>
+    /// The surface that owns this evidence's check, issue and revise, or <see langword="null"/> for ordinary evidence (`ADR-0173`). The
+    /// evidence of a calculation worksheet is managed by it: <see cref="IEvidenceService"/> refuses to check, issue or revise managed
+    /// evidence for any caller that does not present its owner, so the generic Evidence commands cannot move a calculation's record past the
+    /// worksheet's own governance (attestation, second check, feature flag, independent check).
+    /// </summary>
+    public string? ManagedBy => _managedBy;
+
+    /// <summary>Marks this evidence as managed by <paramref name="owner"/>, in one transaction with an audit row. Not undone.</summary>
+    internal Task SetManagedByAsync(string owner, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(owner);
+
+        return MutateTypeStateAndPersistAsync(
+            () => new Dictionary<string, string?>(StringComparer.Ordinal) { [nameof(ManagedBy)] = owner },
+            () => _managedBy = owner,
+            $"Managed by '{owner}': checked, issued and revised from its own surface only.",
+            cancellationToken);
     }
 
     /// <inheritdoc cref="IEvidenceRecord.Classification" />
@@ -204,29 +232,124 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
     }
 
     /// <summary>Records <paramref name="check"/> and moves <see cref="Status"/> to <see cref="EvidenceStatus.Checked"/>, as one transaction.</summary>
-    internal Task RecordCheckAsync(CheckRecord check, CancellationToken cancellationToken = default)
+    internal Task RecordCheckAsync(CheckRecord check, CancellationToken cancellationToken = default) => RecordCheckAsync(check, alsoWrite: null, cancellationToken);
+
+    /// <summary>
+    /// `v0.26.0` Phase 6 (R-15, R-19): records <paramref name="check"/> and
+    /// moves <see cref="Status"/> to <see cref="EvidenceStatus.Checked"/> in
+    /// one transaction with whatever <paramref name="alsoWrite"/> adds (a
+    /// calculation instance's own Checked mark), after re-reading the
+    /// stored status under that transaction: a second check racing this
+    /// one is refused with <see cref="ConcurrentCheckException"/> and
+    /// nothing is written.
+    /// </summary>
+    internal Task RecordCheckAsync(CheckRecord check, Func<IPersistenceTransaction, CancellationToken, Task>? alsoWrite, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(check);
 
-        return MutateTypeStateAndPersistAsync(
-            () =>
+        return MutateAndPersistAsync(
+            current =>
             {
-                var state = new Dictionary<string, string?>(StringComparer.Ordinal);
+                var state = new Dictionary<string, string?>(current.TypeState, StringComparer.Ordinal);
                 WriteJson(state, nameof(Check), check);
                 state[nameof(Status)] = EvidenceStatus.Checked.ToString();
-                return state;
+                return current with { TypeState = state };
             },
-            () =>
+            EngineeringAuditActions.StateChanged,
+            $"Checked by '{check.CheckerName}' ({check.CheckerOrganisation}): {check.Outcome}."
+            + (check.SelfCheck ? $" Checked by its own author — {Governance.SignOffPolicy.SelfApprovalNote}." : string.Empty),
+            WorkspaceChangeType.Updated,
+            cancellationToken,
+            alsoWrite: alsoWrite is null ? null : (transaction, _, token) => alsoWrite(transaction, token),
+            alsoApply: _ =>
             {
                 _check = check;
                 _status = EvidenceStatus.Checked;
             },
-            $"Checked by '{check.CheckerName}' ({check.CheckerOrganisation}): {check.Outcome}."
-            + (check.SelfCheck ? $" Checked by its own author — {Governance.SignOffPolicy.SelfApprovalNote}." : string.Empty),
-            cancellationToken);
+            verifyBeforeWrite: async (transaction, token) =>
+            {
+                var stored = await EngineeringDomain.EngineeringObjectStateStore.ReadInTransactionAsync(transaction, Id, token).ConfigureAwait(false);
+                var storedStatus = stored?.TypeState.TryGetValue(nameof(Status), out var s) == true && Enum.TryParse<EvidenceStatus>(s, out var parsed) ? parsed : Status;
+
+                if (!EvidenceStatusTransitions.IsPermitted(storedStatus, EvidenceStatus.Checked))
+                    throw new ConcurrentCheckException($"Evidence '{Id}' is {storedStatus}: another check completed first; nothing was written.");
+            });
     }
 
     /// <summary>Records <paramref name="issue"/> and moves <see cref="Status"/> to <see cref="EvidenceStatus.Issued"/>, as one transaction.</summary>
+    /// <summary>
+    /// `v0.26.0` (ADR-0165): records the issue, attaches the rendered sheet
+    /// and runs <paramref name="alsoWrite"/> (a calculation instance
+    /// snapshot, a register link) in <b>one</b> transaction. A fault
+    /// anywhere leaves this evidence exactly as it was: Checked, with no
+    /// attachment, no issue record and no orphan.
+    /// </summary>
+    internal async Task<Guid?> RecordIssueAsync(
+        IssueRecord issue,
+        IssueSheetContent? sheet,
+        Func<IPersistenceTransaction, CancellationToken, Task>? alsoWrite,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(issue);
+
+        if (sheet is not null && sheet.Content.Length > AttachmentContentLimits.MaximumSizeInBytes)
+            throw new AttachmentContentTooLargeException(sheet.FileName, sheet.Content.Length);
+
+        var attachmentId = sheet is null ? (Guid?)null : sheet.AttachmentId ?? Guid.NewGuid();
+        var contentHash = sheet is null ? null : AttachmentContentStore.ComputeHash(sheet.Content.Span);
+        var attachment = sheet is null || attachmentId is null ? null : new Attachment(attachmentId.Value, sheet.FileName, sheet.ContentType, sheet.Content.Length, contentHash);
+        var recorded = issue with { IssueSheetAttachmentId = attachmentId };
+
+        await MutateAndPersistAsync(
+            current =>
+            {
+                var state = new Dictionary<string, string?>(current.TypeState, StringComparer.Ordinal);
+                WriteJson(state, nameof(Issue), recorded);
+                state[nameof(Status)] = EvidenceStatus.Issued.ToString();
+
+                return current with
+                {
+                    TypeState = state,
+                    Attachments = sheet is null || attachmentId is null
+                        ? current.Attachments
+                        : [.. current.Attachments, new EngineeringObjectAttachmentState(attachmentId.Value, sheet.FileName, sheet.ContentType, sheet.Content.Length, contentHash)],
+                };
+            },
+            EngineeringAuditActions.StateChanged,
+            $"Issued as '{issue.IssueReference}' revision '{issue.Revision}' to '{issue.Client}'.",
+            WorkspaceChangeType.Updated,
+            cancellationToken,
+            alsoWrite: async (transaction, _, token) =>
+            {
+                if (sheet is not null && attachmentId is not null)
+                    await Context.AttachmentWriter.SaveAsync(transaction, attachmentId.Value, sheet.Content, token).ConfigureAwait(false);
+
+                if (alsoWrite is not null)
+                    await alsoWrite(transaction, token).ConfigureAwait(false);
+            },
+            alsoApply: _ =>
+            {
+                _issue = recorded;
+                _status = EvidenceStatus.Issued;
+            },
+            applyAttachments: attachment is null ? null : () => [.. AttachmentsSnapshot(), attachment],
+            verifyBeforeWrite: async (transaction, token) =>
+            {
+                // The caller checked the status before the transaction opened;
+                // a second Issue racing this one may have committed since.
+                // Read the stored state under this transaction and refuse
+                // unless it still permits the move — the whole transaction
+                // (attachment, issue record, anything in alsoWrite) rolls back.
+                var stored = await EngineeringDomain.EngineeringObjectStateStore.ReadInTransactionAsync(transaction, Id, token).ConfigureAwait(false);
+                var storedStatus = stored?.TypeState.TryGetValue(nameof(Status), out var s) == true && Enum.TryParse<EvidenceStatus>(s, out var parsed) ? parsed : Status;
+
+                if (!EvidenceStatusTransitions.IsPermitted(storedStatus, EvidenceStatus.Issued))
+                    throw new ConcurrentIssueException($"Evidence '{Id}' is {storedStatus}: another issue completed first; nothing was written.");
+            }).ConfigureAwait(false);
+
+        return attachmentId;
+    }
+
     internal Task RecordIssueAsync(IssueRecord issue, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(issue);
@@ -269,6 +392,10 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
         state[nameof(Status)] = _status.ToString();
         WriteJson(state, nameof(Check), _check);
         WriteJson(state, nameof(Issue), _issue);
+
+        // Only managed evidence writes the key, so every earlier record's stored state is unchanged.
+        if (_managedBy is not null)
+            state[nameof(ManagedBy)] = _managedBy;
     }
 
     /// <inheritdoc />
@@ -280,6 +407,7 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
         _status = ReadStatus(state);
         _check = state.TypeJson<CheckRecord>(nameof(Check));
         _issue = state.TypeJson<IssueRecord>(nameof(Issue));
+        _managedBy = state.Type(nameof(ManagedBy)) is { Length: > 0 } managed ? managed : null;
     }
 
     private static EvidenceClassification ReadClassification(EngineeringObjectState state) =>
@@ -298,5 +426,25 @@ public sealed class Evidence : EngineeringObjectBase, IEvidenceRecord, IRehydrat
         new(document, currentRevision, context, state.Identifier, state.DisplayName, state.Metadata,
             ReadClassification(state), state.TypeGuid(nameof(SubjectId)), state.Type(nameof(AuthorIdentityId)) ?? string.Empty,
             ReadCitations(state), ReadDeclaredFigures(state), ReadStatus(state),
-            state.TypeJson<CheckRecord>(nameof(Check)), state.TypeJson<IssueRecord>(nameof(Issue)));
+            state.TypeJson<CheckRecord>(nameof(Check)), state.TypeJson<IssueRecord>(nameof(Issue)), state.Type(nameof(ManagedBy)));
+}
+
+/// <summary>Raised inside the Issue transaction when the stored Evidence no longer permits issuing (a concurrent Issue won); the transaction rolls back.</summary>
+public sealed class ConcurrentIssueException : InvalidOperationException
+{
+    public ConcurrentIssueException(string message) : base(message) { }
+
+    public ConcurrentIssueException() { }
+
+    public ConcurrentIssueException(string message, Exception innerException) : base(message, innerException) { }
+}
+
+/// <summary>Raised inside the Check transaction when the stored Evidence no longer permits checking (a concurrent Check won); the transaction rolls back.</summary>
+public sealed class ConcurrentCheckException : InvalidOperationException
+{
+    public ConcurrentCheckException(string message) : base(message) { }
+
+    public ConcurrentCheckException() { }
+
+    public ConcurrentCheckException(string message, Exception innerException) : base(message, innerException) { }
 }

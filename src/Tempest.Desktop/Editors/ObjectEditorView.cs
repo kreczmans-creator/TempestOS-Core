@@ -404,6 +404,18 @@ public sealed class ObjectEditorView : UserControl
         remove => _exportReportRequested -= value;
     }
 
+    private Action<Guid>? _openCalculationRequested;
+
+    /// <summary>
+    /// "Open worksheet" on Evidence a calculation worksheet manages (`ADR-0173`): raised with the Evidence's id. Such Evidence is checked, issued and
+    /// revised in its worksheet, not here, so the Lifecycle section offers this instead of Check, Issue and Revise.
+    /// </summary>
+    public event Action<Guid>? OpenCalculationRequested
+    {
+        add => _openCalculationRequested += value;
+        remove => _openCalculationRequested -= value;
+    }
+
     private ObjectEditorView(
         Guid objectId, string objectKind, EngineeringDomainContext domainContext, IWorkspaceManager manager, Action<Guid, string> navigateToObject,
         ICommandDispatcher commandDispatcher, IRequirementsService? requirementsService, CalculationTemplateRegistry? calculationTemplates,
@@ -443,7 +455,8 @@ public sealed class ObjectEditorView : UserControl
             RefreshAsync: () => RefreshAsync(),
             ReportAction: (message, outcome) => ActionCompleted?.Invoke(message, outcome),
             GetOpenAttachmentHandler: () => _openAttachmentRequested,
-            GetExportReportHandler: () => _exportReportRequested);
+            GetExportReportHandler: () => _exportReportRequested,
+            GetOpenCalculationHandler: () => _openCalculationRequested);
 
         Content = BuildLayout();
 

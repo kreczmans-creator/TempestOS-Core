@@ -1,0 +1,461 @@
+[
+  {
+    "Symbol": "C_batt",
+    "Number": 17,
+    "Unit": "A*h",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "E-SCH-010",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "17"
+  },
+  {
+    "Symbol": "DoD",
+    "Number": 0.8,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "VRLA, 80 % depth of discharge.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.8"
+  },
+  {
+    "Symbol": "P_PSU",
+    "Number": 240,
+    "Unit": "W",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "E-SCH-010",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "240"
+  },
+  {
+    "Symbol": "P_add",
+    "Number": 0,
+    "Unit": "kW",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "No further load linked into this panel: every load is in the table.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "SF",
+    "Number": 1.25,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "25 % growth margin.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.25"
+  },
+  {
+    "Symbol": "S_T",
+    "Number": 25,
+    "Unit": "kVA",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Existing site transformer allocation",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "25"
+  },
+  {
+    "Symbol": "T_amb",
+    "Number": 45,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Plant room design maximum",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "45"
+  },
+  {
+    "Symbol": "U_1ph",
+    "Number": 230,
+    "Unit": "V",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Site supply",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "230"
+  },
+  {
+    "Symbol": "U_3ph",
+    "Number": 400,
+    "Unit": "V",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Site supply",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "400"
+  },
+  {
+    "Symbol": "U_DC",
+    "Number": 24,
+    "Unit": "V",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "E-SCH-010",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "24"
+  },
+  {
+    "Symbol": "U_b",
+    "Number": 24,
+    "Unit": "V",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "E-SCH-010",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "24"
+  },
+  {
+    "Symbol": "cosphi_add",
+    "Number": 0.85,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used while P_add is 0; template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.85"
+  },
+  {
+    "Symbol": "eta_add",
+    "Number": 0.9,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used while P_add is 0; template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.9"
+  },
+  {
+    "Symbol": "eta_b",
+    "Number": 0.95,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Discharge efficiency.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.95"
+  },
+  {
+    "Symbol": "eta_conv",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "DC UPS module, loads on the battery bus.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "eta_psu",
+    "Number": 0.9,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "24 V supply efficiency 90 %, power factor taken as 1.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.9"
+  },
+  {
+    "Symbol": "f_derate",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "PSU rated to 60 \u00B0C without derating (datasheet).",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "heat_add",
+    "Number": 0,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used while P_add is 0; template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "inrush_add",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used while P_add is 0; template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "k_T",
+    "Number": 3,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Short-time overload allowed by the supply authority.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3"
+  },
+  {
+    "Symbol": "k_age",
+    "Number": 0.8,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "End-of-life capacity 80 %.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.8"
+  },
+  {
+    "Symbol": "k_temp",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Battery kept at 20 \u00B0C.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "loads",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "Duty pump"
+          },
+          "supply": {
+            "Text": "AC three-phase"
+          },
+          "P": {
+            "Number": 11,
+            "Unit": "kW"
+          },
+          "cosphi": {
+            "Number": 0.86
+          },
+          "eta": {
+            "Number": 0.91
+          },
+          "d": {
+            "Number": 1
+          },
+          "k": {
+            "Number": 1
+          },
+          "inrush": {
+            "Number": 6.5
+          },
+          "backed": {
+            "Flag": false
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Standby pump"
+          },
+          "supply": {
+            "Text": "AC three-phase"
+          },
+          "P": {
+            "Number": 11,
+            "Unit": "kW"
+          },
+          "cosphi": {
+            "Number": 0.86
+          },
+          "eta": {
+            "Number": 0.91
+          },
+          "d": {
+            "Number": 1
+          },
+          "k": {
+            "Number": 0
+          },
+          "inrush": {
+            "Number": 6.5
+          },
+          "backed": {
+            "Flag": false
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Panel fan"
+          },
+          "supply": {
+            "Text": "AC single-phase"
+          },
+          "P": {
+            "Number": 0.06,
+            "Unit": "kW"
+          },
+          "cosphi": {
+            "Number": 0.9
+          },
+          "eta": {
+            "Number": 0.7
+          },
+          "d": {
+            "Number": 1
+          },
+          "k": {
+            "Number": 1
+          },
+          "inrush": {
+            "Number": 1
+          },
+          "backed": {
+            "Flag": false
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Panel light"
+          },
+          "supply": {
+            "Text": "AC single-phase"
+          },
+          "P": {
+            "Number": 0.02,
+            "Unit": "kW"
+          },
+          "cosphi": {
+            "Number": 0.95
+          },
+          "eta": {
+            "Number": 1
+          },
+          "d": {
+            "Number": 0.1
+          },
+          "k": {
+            "Number": 1
+          },
+          "inrush": {
+            "Number": 1
+          },
+          "backed": {
+            "Flag": false
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "PLC and I/O"
+          },
+          "supply": {
+            "Text": "DC"
+          },
+          "P": {
+            "Number": 0.096,
+            "Unit": "kW"
+          },
+          "cosphi": {
+            "Number": 1
+          },
+          "eta": {
+            "Number": 0.9
+          },
+          "d": {
+            "Number": 1
+          },
+          "k": {
+            "Number": 1
+          },
+          "inrush": {
+            "Number": 1
+          },
+          "backed": {
+            "Flag": true
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Router"
+          },
+          "supply": {
+            "Text": "DC"
+          },
+          "P": {
+            "Number": 0.024,
+            "Unit": "kW"
+          },
+          "cosphi": {
+            "Number": 1
+          },
+          "eta": {
+            "Number": 0.9
+          },
+          "d": {
+            "Number": 1
+          },
+          "k": {
+            "Number": 1
+          },
+          "inrush": {
+            "Number": 1
+          },
+          "backed": {
+            "Flag": true
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "E-SCH-010",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "6 row(s)"
+  },
+  {
+    "Symbol": "psu_bus",
+    "Text": "AC single-phase",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "E-SCH-010",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "AC single-phase"
+  },
+  {
+    "Symbol": "t_auto",
+    "Number": 2,
+    "Unit": "h",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Telemetry to stay up for 2 h on mains loss",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2"
+  }
+]

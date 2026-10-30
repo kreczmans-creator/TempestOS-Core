@@ -1,0 +1,8 @@
+conductor[text],csa[mm2],r_dc[mV/A/m],r_1ph[mV/A/m],x_1ph[mV/A/m],z_1ph[mV/A/m],r_3ph[mV/A/m],x_3ph[mV/A/m],z_3ph[mV/A/m]
+"Copper, 6242Y twin and earth",1,,,,44,,,
+"Copper, 6242Y twin and earth",1.5,,,,29,,,
+"Copper, 6242Y twin and earth",2.5,,,,18,,,
+"Copper, 6242Y twin and earth",4,,,,11,,,
+"Copper, 6242Y twin and earth",6,,,,7.3,,,
+"Copper, 6242Y twin and earth",10,,,,4.4,,,
+"Copper, 6242Y twin and earth",16,,,,2.8,,,

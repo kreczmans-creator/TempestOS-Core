@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text;
 using SkiaSharp;
 
 namespace Tempest.Desktop.Documents;
@@ -21,6 +22,12 @@ public enum DocumentFontRole
 
     /// <summary>Numeric/machine-data readouts, the header band's reference line — Space Mono.</summary>
     Mono,
+
+    /// <summary>
+    /// The fallback for a symbol no other face has (⊥, ∥, ∮ …): Tempest Symbols, the project's own face
+    /// (<c>scripts/generate-symbol-font.py</c>). A renderer never asks for it; <see cref="DocumentTemplate.FallBackForMissingGlyphs"/> assigns it.
+    /// </summary>
+    Symbol,
 }
 
 /// <summary>
@@ -54,6 +61,10 @@ public static class DocumentFonts
     private static readonly Lazy<SKTypeface> DisplayBoldTypeface = new(() => Load("ChakraPetch-Bold.ttf"));
     private static readonly Lazy<SKTypeface> MonoRegularTypeface = new(() => Load("SpaceMono-Regular.ttf"));
     private static readonly Lazy<SKTypeface> MonoBoldTypeface = new(() => Load("SpaceMono-Bold.ttf"));
+    private static readonly Lazy<SKTypeface> SymbolTypeface = new(() => Load(SymbolFile));
+
+    /// <summary>The fallback face's file. It is drawn for TempestOS from plain geometry, so it carries no third-party licence.</summary>
+    private const string SymbolFile = "TempestSymbols-Regular.ttf";
 
     /// <summary>
     /// Deliberately still <see cref="SKTypeface.Default"/> — <c>Inter-Variable.ttf</c>
@@ -101,8 +112,58 @@ public static class DocumentFonts
     {
         DocumentFontRole.Display => bold ? DisplayBoldTypeface.Value : DisplayRegularTypeface.Value,
         DocumentFontRole.Mono => bold ? MonoBoldTypeface.Value : MonoRegularTypeface.Value,
+        DocumentFontRole.Symbol => SymbolTypeface.Value,
         _ => BodyTypeface.Value,
     };
+
+    /// <summary>Whether the fallback face (Tempest Symbols) loaded from its embedded resource.</summary>
+    public static bool SymbolLoaded => !ReferenceEquals(SymbolTypeface.Value, SKTypeface.Default);
+
+    /// <summary>
+    /// The faces a run in <paramref name="role"/> draws a character with, in order: its own face, then the body face, then
+    /// the fallback face. A character none of them has prints as a box.
+    /// </summary>
+    public static IReadOnlyList<DocumentFontRole> FallbackChain(DocumentFontRole role) => role switch
+    {
+        DocumentFontRole.Body => [DocumentFontRole.Body, DocumentFontRole.Symbol],
+        DocumentFontRole.Symbol => [DocumentFontRole.Symbol, DocumentFontRole.Body],
+        _ => [role, DocumentFontRole.Body, DocumentFontRole.Symbol],
+    };
+
+    /// <summary>The first face in <paramref name="role"/>'s chain (<see cref="FallbackChain"/>) with a glyph for <paramref name="rune"/>, or <see langword="null"/> when none has one.</summary>
+    public static DocumentFontRole? FaceFor(Rune rune, DocumentFontRole role, bool bold)
+    {
+        // White space and control characters draw nothing; the run's own face keeps them.
+        if (Rune.IsWhiteSpace(rune) || Rune.IsControl(rune))
+            return role;
+
+        var text = rune.ToString();
+
+        foreach (var candidate in FallbackChain(role))
+        {
+            if (For(candidate, bold).ContainsGlyphs(text))
+                return candidate;
+        }
+
+        return null;
+    }
+
+    /// <summary>Every distinct character of <paramref name="text"/> that no face in <paramref name="role"/>'s chain can draw (each would print as a box).</summary>
+    public static IReadOnlyList<string> Undrawable(string? text, DocumentFontRole role = DocumentFontRole.Body, bool bold = false)
+    {
+        if (string.IsNullOrEmpty(text))
+            return [];
+
+        var missing = new List<string>();
+
+        foreach (var rune in text.EnumerateRunes())
+        {
+            if (FaceFor(rune, role, bold) is null && !missing.Contains(rune.ToString()))
+                missing.Add(rune.ToString());
+        }
+
+        return missing;
+    }
 
     /// <summary>
     /// Loads <paramref name="fileName"/> from this assembly's own embedded
@@ -114,6 +175,131 @@ public static class DocumentFonts
     /// (root namespace, folder separators as dots) is an implementation
     /// detail this class would rather not depend on verbatim.
     /// </summary>
+    private static readonly Dictionary<string, byte[]?> RawCache = new(StringComparer.Ordinal);
+
+    /// <summary>The raw bytes of a brand font resource, or <see langword="null"/> where the role draws with the platform default (Body).</summary>
+    public static byte[]? RawBytes(DocumentFontRole role, bool bold)
+    {
+        var fileName = role switch
+        {
+            DocumentFontRole.Display => bold ? "ChakraPetch-Bold.ttf" : "ChakraPetch-Regular.ttf",
+            DocumentFontRole.Mono => bold ? "SpaceMono-Bold.ttf" : "SpaceMono-Regular.ttf",
+            DocumentFontRole.Symbol => SymbolFile,
+            _ => null,
+        };
+
+        if (fileName is null)
+            return null;
+
+        lock (RawCache)
+        {
+            if (!RawCache.TryGetValue(fileName, out var bytes))
+            {
+                var assembly = typeof(DocumentFonts).Assembly;
+                var resourceName = Array.Find(assembly.GetManifestResourceNames(), n => n.EndsWith(fileName, StringComparison.Ordinal));
+                using var stream = resourceName is null ? null : assembly.GetManifestResourceStream(resourceName);
+
+                if (stream is null)
+                {
+                    bytes = null;
+                }
+                else
+                {
+                    using var copy = new MemoryStream();
+                    stream.CopyTo(copy);
+                    bytes = copy.ToArray();
+                }
+
+                RawCache[fileName] = bytes;
+            }
+
+            return bytes;
+        }
+    }
+
+    /// <summary>
+    /// `v0.26.0` (§3.6): one subset typeface per brand face used by
+    /// <paramref name="runs"/>, holding only the glyphs those runs draw
+    /// (<see cref="TrueTypeSubsetter"/>). A face that cannot be subset is
+    /// left out, so the caller draws it whole. The caller disposes them.
+    /// </summary>
+    public static Dictionary<(DocumentFontRole Role, bool Bold), SKTypeface> SubsetsFor(IEnumerable<DocumentTemplate.TextRun> runs)
+    {
+        ArgumentNullException.ThrowIfNull(runs);
+
+        var chars = new Dictionary<(DocumentFontRole, bool), HashSet<int>>();
+
+        foreach (var run in runs)
+        {
+            if (!chars.TryGetValue((run.FontRole, run.Bold), out var set))
+                chars[(run.FontRole, run.Bold)] = set = [];
+
+            foreach (var rune in run.Text.EnumerateRunes())
+                set.Add(rune.Value);
+        }
+
+        var result = new Dictionary<(DocumentFontRole, bool), SKTypeface>();
+
+        foreach (var ((role, bold), set) in chars)
+        {
+            // Body draws with the platform default face; its bytes come from
+            // the typeface itself so that it, too, is embedded as a subset
+            // (Windows's default face alone is several hundred kilobytes).
+            var raw = RawBytes(role, bold) ?? DefaultFaceBytes();
+
+            if (raw is null)
+                continue;
+
+            try
+            {
+                var subset = TrueTypeSubsetter.Subset(raw, set);
+                var typeface = SKTypeface.FromData(SKData.CreateCopy(subset));
+
+                if (typeface is not null)
+                    result[(role, bold)] = typeface;
+            }
+            catch (InvalidDataException)
+            {
+                // Draw that face whole; the subsetter never breaks a document.
+            }
+        }
+
+        return result;
+    }
+
+    private static byte[]? _defaultFaceBytes;
+    private static bool _defaultFaceRead;
+
+    /// <summary>The raw bytes of the Body typeface (the platform default), read once through <see cref="SKTypeface.OpenStream()"/>; <see langword="null"/> when the platform exposes no data.</summary>
+    private static byte[]? DefaultFaceBytes()
+    {
+        lock (RawCache)
+        {
+            if (_defaultFaceRead)
+                return _defaultFaceBytes;
+
+            _defaultFaceRead = true;
+
+            try
+            {
+                using var stream = BodyTypeface.Value.OpenStream();
+
+                if (stream is null || stream.Length <= 0 || stream.Length > 32 * 1024 * 1024)
+                    return null;
+
+                var bytes = new byte[stream.Length];
+                var read = stream.Read(bytes, bytes.Length);
+                _defaultFaceBytes = read == bytes.Length ? bytes : null;
+            }
+            catch (Exception ex) when (ex is IOException or InvalidOperationException or NotSupportedException)
+            {
+                _defaultFaceBytes = null;
+            }
+
+            return _defaultFaceBytes;
+        }
+    }
+
     private static SKTypeface Load(string fileName)
     {
         var assembly = typeof(DocumentFonts).Assembly;

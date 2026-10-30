@@ -1,0 +1,91 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: struct.fillet-weld    Revision: A
+Title: Fillet weld (EN 1993-1-8)
+
+1. Scope and method
+Calculates the utilisation of a fillet weld loaded parallel, transverse and normal to its axis, with the required throat and leg. The simplified method compares the resultant over the throat with the design shear strength.
+Resultant force on the weld: F = √(F_∥² + F_⊥² + F_n²). Design shear strength of the weld, simplified method: f_vw,d = f_u/(√3·β_w·γ_M2). Long-joint reduction of a lap joint longer than 150·a (4.11(3)): β_Lw = min(1, 1.2 − 0.2·L/(150·a)); 1 for a shorter lap or another joint type. Shear stress on the throat: τ_w = F/(a·L). Weld resistance and utilisation: F_w,Rd = β_Lw·f_vw,d·a·L; u = F/F_w,Rd. Throat needed (not less than 3 mm, with the β_Lw of the throat provided) and the matching leg: a_req = max(F/(β_Lw·f_vw,d·L), 3 mm); leg = √2·a.
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  joint | Joint type: a lap joint is reduced beyond 150 throats, and Other is for a weld whose stress follows the base metal | Lap joint |  | manual | any
+  L | Effective weld length | 200 | mm | manual | 30 … 10000 mm
+  a | Throat thickness | 5 | mm | manual | 3 … 50 mm
+  f_u | Ultimate tensile strength of the weaker part joined | 490 | MPa | manual | 300 … 1000 MPa
+  F_par | Force parallel to the weld axis | 150 | kN | manual | -100000 … 100000 kN
+  F_tr | Force transverse to the weld axis, in the plane of the parts | 0 | kN | manual | -100000 … 100000 kN
+  F_n | Force normal to the plane of the parts | 0 | kN | manual | -100000 … 100000 kN
+  beta_w | Correlation factor (0.8 S235, 0.85 S275, 0.9 S355, 1.0 S420 and S460) | 0.9 |  | manual | 0.8 … 1
+  gamma_M2 | Partial factor for the weld resistance | 1.25 |  | manual | 1 … 2
+
+3. Assumptions
+  A1. The resultant force is shared uniformly along the effective length. (Simplified method.)
+  A2. Equal-leg fillet: leg = √2 × throat. (Geometry.)
+  A3. A lap joint longer than 150·a is reduced by β_Lw = 1.2 − 0.2·L/(150·a), not above 1. (BS EN 1993-1-8 4.11(3).)
+  A4. The weld length L is the length of the lap in the direction of the force. (BS EN 1993-1-8 4.11(3).)
+
+4. Working
+  [10] beta_Lw = no long-joint reduction    « BS EN 1993-1-8 4.11
+      = lap not longer than 150·a
+      = 1
+        Long-joint reduction factor (1: not reduced)
+  [11] F = sqrt(F_par^2 + F_tr^2 + F_n^2)
+      = sqrt((150 kN)^2 + (0 kN)^2 + (0 kN)^2)
+      = 150 kN
+        Resultant force on the weld
+  [12] f_vw_d = f_u / (sqrt(3) * beta_w * gamma_M2)    « BS EN 1993-1-8 4.5.3.3
+      = 490 MPa / (sqrt(3) × 0.9 × 1.25)
+      = 251.47 MPa
+        Design shear strength of the weld
+  [13] tau_w = F / (a * L)
+      = 150 kN / (5 mm × 200 mm)
+      = 150 MPa
+        Stress on the throat
+  [14] F_w_Rd = beta_Lw * f_vw_d * a * L    « BS EN 1993-1-8 4.5.3.3
+      = 1 × 251.47 MPa × 5 mm × 200 mm
+      = 251.47 kN
+        Design resistance of the weld, reduced by the long-joint factor when it applies
+  [15] u = F / F_w_Rd
+      = 150 kN / 251.47 kN
+      = 0.5965
+        Utilisation
+  [16] a_calc = F / (beta_Lw * f_vw_d * L)
+      = 150 kN / (1 × 251.47 MPa × 200 mm)
+      = 2.9825 mm
+        Throat needed for the load (with the long-joint factor of the throat provided)
+  [17] a_req = max(a_calc, 3 mm)    « BS EN 1993-1-8 4.5.2(2)
+      = max(2.9825 mm, 3 mm)
+      = 3 mm
+        Required throat (not less than 3 mm)
+  [18] s_leg = sqrt(2) * a
+      = sqrt(2) × 5 mm
+      = 7.0711 mm
+        Leg length of the throat provided (equal legs)
+
+5. Results
+  F_w_Rd = 251.47 kN    Weld resistance
+  u = 0.60    Utilisation
+  f_vw_d = 251.5 MPa    Design shear strength
+  tau_w = 150 MPa    Throat stress
+  a_req = 3 mm    Required throat
+  s_leg = 7.071 mm    Leg length provided
+  F = 150 kN    Resultant force (governing)
+  beta_Lw = 1    Long-joint factor
+  a_calc = 2.982 mm    Throat needed
+
+6. Checks (governing first)
+  PASS  Weld force against weld resistance: 150 kN vs 251.47 kN  utilisation 0.60  « BS EN 1993-1-8 4.5.3.3
+
+7. Applicability
+  None.
+
+8. Verification
+  Template: struct.fillet-weld@1.2.0
+  Known-answer cases passed: 3/3
+
+9. References
+  1. BS EN 1993-1-8:2005 cl. 4.5.3.3 — Simplified method for design resistance of fillet weld
+  2. BS EN 1993-1-8:2005 cl. 4.5.2(2) — Effective throat thickness: minimum 3 mm
+  3. BS EN 1993-1-8:2005 cl. 4.5.1(2) — Effective length: welds shorter than 30 mm or 6 throats not to carry load
+  4. BS EN 1993-1-8:2005 cl. 4.11 — Long joints

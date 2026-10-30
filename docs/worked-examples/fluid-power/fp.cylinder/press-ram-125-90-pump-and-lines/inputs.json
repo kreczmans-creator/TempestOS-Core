@@ -1,0 +1,409 @@
+[
+  {
+    "Symbol": "C_d",
+    "Number": 0.62,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Orifice only; this circuit has none, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.62"
+  },
+  {
+    "Symbol": "D",
+    "Number": 125,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DWG-4310",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "125"
+  },
+  {
+    "Symbol": "E",
+    "Number": 210,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: rod material (chromed carbon steel), to be taken from the material library",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "210"
+  },
+  {
+    "Symbol": "F_pull",
+    "Number": 60,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Hydraulic specification HS-31: return stroke load 60 kN",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "F_push",
+    "Number": 150,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Hydraulic specification HS-31: pressing force 150 kN",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "150"
+  },
+  {
+    "Symbol": "K_m",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: cylinder mounting (clevis at both ends, pinned), to be taken from the cylinder maker\u0027s mounting guidance",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "L_add",
+    "Number": 150,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DWG-4310",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "150"
+  },
+  {
+    "Symbol": "L_closed",
+    "Number": 950,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DWG-4310",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "950"
+  },
+  {
+    "Symbol": "Q",
+    "Number": 60,
+    "Unit": "L/min",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Hydraulic specification HS-31: ram flow 60 L/min",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "S_f",
+    "Number": 3.5,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Safety factor chosen for this example; the design reference sets the real one.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3.5"
+  },
+  {
+    "Symbol": "V_g",
+    "Number": 45,
+    "Unit": "cm^3/rev",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Hydraulic specification HS-31: fixed-displacement pump 45 cm\u00B3/rev",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "45"
+  },
+  {
+    "Symbol": "d_prs",
+    "Number": 25,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DWG-4311",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "25"
+  },
+  {
+    "Symbol": "d_r",
+    "Number": 90,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DWG-4310",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "90"
+  },
+  {
+    "Symbol": "d_ret",
+    "Number": 32,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DWG-4311",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "32"
+  },
+  {
+    "Symbol": "d_suc",
+    "Number": 50,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DWG-4311",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "50"
+  },
+  {
+    "Symbol": "eta_hm",
+    "Number": 0.9,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Hydraulic motor only; this circuit has none, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.9"
+  },
+  {
+    "Symbol": "eta_m",
+    "Number": 0.95,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Typical seal and guide friction for a new cylinder; to be confirmed against the cylinder maker\u0027s figure.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.95"
+  },
+  {
+    "Symbol": "eta_tp",
+    "Number": 0.88,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Pump total efficiency at 180 bar; to be taken from the pump data sheet.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.88"
+  },
+  {
+    "Symbol": "eta_vc",
+    "Number": 0.98,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Allowance for leakage past the piston; to be confirmed against the cylinder maker\u0027s figure.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.98"
+  },
+  {
+    "Symbol": "eta_vp",
+    "Number": 0.95,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Pump volumetric efficiency at 180 bar; to be taken from the pump data sheet.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.95"
+  },
+  {
+    "Symbol": "f_y",
+    "Number": 500,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: rod material (chromed carbon steel), to be taken from the rod maker\u0027s certificate",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "500"
+  },
+  {
+    "Symbol": "hoses",
+    "Rows": [
+      {
+        "Cells": {
+          "ID": {
+            "Number": 16,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "ID": {
+            "Number": 19,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "ID": {
+            "Number": 25,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "ID": {
+            "Number": 32,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "ID": {
+            "Number": 38,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "ID": {
+            "Number": 51,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "ID": {
+            "Number": 63,
+            "Unit": "mm"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: illustrative hose size list invented for this example, to be replaced by the supplier\u0027s range",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "7 row(s)"
+  },
+  {
+    "Symbol": "mode",
+    "Text": "Standard",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Standard connection: the ram needs its full bore force for the press stroke.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Standard"
+  },
+  {
+    "Symbol": "n_p",
+    "Number": 1450,
+    "Unit": "rpm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Hydraulic specification HS-31: 4-pole motor, 1450 rpm",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1450"
+  },
+  {
+    "Symbol": "p_back",
+    "Number": 0,
+    "Unit": "bar",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Return line direct to tank; the return filter drop is neglected for this example.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "p_sys",
+    "Number": 180,
+    "Unit": "bar",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Hydraulic specification HS-31: relief valve set 180 bar at the ram",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "180"
+  },
+  {
+    "Symbol": "rho",
+    "Number": 870,
+    "Unit": "kg/m^3",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "fluid data sheet: mineral oil, density at 40 \u00B0C, to be taken from the oil supplier\u0027s data",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "870"
+  },
+  {
+    "Symbol": "stroke",
+    "Number": 800,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DWG-4310",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "800"
+  },
+  {
+    "Symbol": "t_dwell",
+    "Number": 0,
+    "Unit": "s",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Cycle time of the strokes only; dwell added by the machine controller.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "v_prs_max",
+    "Number": 5,
+    "Unit": "m/s",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: line velocity limits, a placeholder to be replaced from the design reference",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "5"
+  },
+  {
+    "Symbol": "v_ret_max",
+    "Number": 3,
+    "Unit": "m/s",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: line velocity limits, a placeholder to be replaced from the design reference",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3"
+  },
+  {
+    "Symbol": "v_suc_max",
+    "Number": 1.2,
+    "Unit": "m/s",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: line velocity limits, a placeholder to be replaced from the design reference",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.2"
+  }
+]

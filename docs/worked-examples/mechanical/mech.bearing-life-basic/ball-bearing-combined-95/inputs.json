@@ -1,0 +1,101 @@
+[
+  {
+    "Symbol": "C",
+    "Number": 25,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-GB-211",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "25"
+  },
+  {
+    "Symbol": "F_a",
+    "Number": 1.5,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-SCHEDULE-01",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.5"
+  },
+  {
+    "Symbol": "F_r",
+    "Number": 3,
+    "Unit": "kN",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-SCHEDULE-01",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3"
+  },
+  {
+    "Symbol": "L_req",
+    "Number": 2000,
+    "Unit": "h",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-MECH-03 design criteria",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2000"
+  },
+  {
+    "Symbol": "X",
+    "Number": 0.56,
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-GB-211",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.56"
+  },
+  {
+    "Symbol": "Y",
+    "Number": 1.5,
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-GB-211",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.5"
+  },
+  {
+    "Symbol": "a_1",
+    "Number": 0.64,
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-MECH-03 design criteria",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.64"
+  },
+  {
+    "Symbol": "n",
+    "Number": 1000,
+    "Unit": "rpm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "LOAD-SCHEDULE-01",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1000"
+  },
+  {
+    "Symbol": "type",
+    "Text": "ball",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-GB-211",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "ball"
+  }
+]

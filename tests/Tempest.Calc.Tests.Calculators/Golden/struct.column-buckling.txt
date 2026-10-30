@@ -1,0 +1,94 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: struct.column-buckling    Revision: A
+Title: Column buckling (Perry–Robertson)
+
+1. Scope and method
+Calculates the compressive strength and resistance of a pin-ended strut by the Perry–Robertson formula, and its utilisation against an applied axial load. The Robertson constant comes from the strut curve.
+Radius of gyration and slenderness: r = √(I/A); λ = L_E/r. Euler buckling stress and load: p_E = π²E/λ²; F_E = p_E·A. Limiting slenderness, below which the strut is not reduced for buckling: λ_0 = 0.2·√(π²E/p_y). Perry factor (Robertson constant a = 2.0, 3.5, 5.5, 8.0 for curves a–d): η = max(0.001·a·(λ − λ_0), 0). Compressive strength by the Perry–Robertson formula: φ = (p_y + (η + 1)·p_E)/2; p_c = p_E·p_y/(φ + √(φ² − p_E·p_y)). Compression resistance and utilisation: F_c_Rd = p_c·A; u = F/F_c_Rd.
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  curve | Strut curve (selects the Robertson constant) | c |  | manual | any
+  L_E | Effective length | 3 | m | manual | 0.1 … 50 m
+  A | Cross-section area | 2000 | mm² | manual | 10 … 1000000 mm²
+  I | Second moment of area about the weaker axis | 200 | cm⁴ | manual | 0.01 … 10000000 cm⁴
+  E | Young's modulus | 205 | GPa | manual | 50 … 450 GPa
+  p_y | Design strength (yield) | 275 | MPa | manual | 100 … 1000 MPa
+  F | Applied axial load | 150 | kN | manual | 0 … 100000 kN
+
+3. Assumptions
+  A1. The strut is pin-ended and prismatic, under axial load only. (Effective length carries the end restraint.)
+  A2. Buckling is about the axis of the given second moment. (The user gives the weaker axis.)
+  A3. Initial imperfection represented by the Perry factor η = 0.001·a·(λ − λ_0), with a from the strut curve. (Robertson's fit to strut tests.)
+
+4. Working
+  [8] a_R = 5.5    « BS 5950-1 Annex C
+      = 5.5
+        Robertson constant for strut curve c
+  [9] r = sqrt(I / A)
+      = sqrt(200 cm⁴ / 2000 mm²)
+      = 31.623 mm
+        Radius of gyration
+  [10] lambda = L_E / r
+      = 3 m / 31.623 mm
+      = 94.868
+        Slenderness
+  [11] p_E = pi^2 * E / lambda^2    « BS 5950-1 Annex C
+      = π^2 × 205 GPa / 94.868^2
+      = 224.81 MPa
+        Euler critical stress
+  [12] F_E = p_E * A
+      = 224.81 MPa × 2000 mm²
+      = 449.62 kN
+        Euler critical load
+  [13] lambda_0 = 0.2 * sqrt(pi^2 * E / p_y)    « BS 5950-1 Annex C
+      = 0.2 × sqrt(π^2 × 205 GPa / 275 MPa)
+      = 17.155
+        Limiting slenderness
+  [14] eta = max(0.001 * a_R * (lambda - lambda_0), 0)    « BS 5950-1 Annex C
+      = max(0.001 × 5.5 × (94.868 − 17.155), 0)
+      = 0.42742
+        Perry factor (initial imperfection)
+  [15] phi = (p_y + (eta + 1) * p_E) / 2
+      = (275 MPa + (0.42742 + 1) × 224.81 MPa) / 2
+      = 297.95 MPa
+        Perry–Robertson φ
+  [16] p_c = p_E * p_y / (phi + sqrt(phi^2 - p_E * p_y))    « BS 5950-1 Annex C
+      = 224.81 MPa × 275 MPa / (297.95 MPa + sqrt((297.95 MPa)^2 − 224.81 MPa × 275 MPa))
+      = 133.78 MPa
+        Compressive strength
+  [17] F_c_Rd = p_c * A
+      = 133.78 MPa × 2000 mm²
+      = 267.56 kN
+        Compression resistance
+  [18] u = F / F_c_Rd
+      = 150 kN / 267.56 kN
+      = 0.56062
+        Utilisation
+
+5. Results
+  F_c_Rd = 267.56 kN    Compression resistance
+  F_E = 449.62 kN    Euler critical load
+  p_c = 133.8 MPa    Compressive strength
+  lambda = 94.868    Slenderness
+  u = 0.56    Utilisation (governing)
+  r = 31.62 mm    Radius of gyration
+  p_E = 224.8 MPa    Euler stress
+  lambda_0 = 17.155    Limiting slenderness
+  eta = 0.42742    Perry factor
+
+6. Checks (governing first)
+  PASS  Axial load against compression resistance: 150 kN vs 267.56 kN  utilisation 0.56  « BS 5950-1 Annex C
+
+7. Applicability
+  None.
+
+8. Verification
+  Template: struct.column-buckling@1.1.0
+  Known-answer cases passed: 3/3
+
+9. References
+  1. BS 5950-1:2000 Annex C — Compressive strength (Perry strut formula)
+  2. BS 5950-1:2000 cl. 4.7.3.2 — Maximum slenderness
+  3. BS 5950-1:2000 Table 23 — Allocation of strut curve

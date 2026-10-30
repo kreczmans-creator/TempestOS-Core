@@ -1,0 +1,2101 @@
+{
+  "f1": [
+    {
+      "Symbol": "C_d",
+      "Number": 0.62,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.62"
+    },
+    {
+      "Symbol": "D",
+      "Number": 100,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A72 (press duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "100"
+    },
+    {
+      "Symbol": "E",
+      "Number": 210,
+      "Unit": "GPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "210"
+    },
+    {
+      "Symbol": "F_pull",
+      "Number": 40,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A72 (press duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
+      "Symbol": "F_push",
+      "Number": 80,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A72 (press duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "80"
+    },
+    {
+      "Symbol": "K_m",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "L_add",
+      "Number": 100,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "100"
+    },
+    {
+      "Symbol": "Q",
+      "Number": 36,
+      "Unit": "L/min",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A72 (press duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "36"
+    },
+    {
+      "Symbol": "S_f",
+      "Number": 3.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3.5"
+    },
+    {
+      "Symbol": "V_g",
+      "Number": 28,
+      "Unit": "cm^3/rev",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A72 (press duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "28"
+    },
+    {
+      "Symbol": "d_prs",
+      "Number": 20,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A72 (press duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "20"
+    },
+    {
+      "Symbol": "d_r",
+      "Number": 70,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A72 (press duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "70"
+    },
+    {
+      "Symbol": "d_ret",
+      "Number": 25,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "25"
+    },
+    {
+      "Symbol": "d_suc",
+      "Number": 40,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
+      "Symbol": "eta_hm",
+      "Number": 0.9,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.9"
+    },
+    {
+      "Symbol": "eta_m",
+      "Number": 0.95,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.95"
+    },
+    {
+      "Symbol": "eta_tp",
+      "Number": 0.88,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.88"
+    },
+    {
+      "Symbol": "eta_vc",
+      "Number": 0.98,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.98"
+    },
+    {
+      "Symbol": "eta_vp",
+      "Number": 0.95,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.95"
+    },
+    {
+      "Symbol": "f_y",
+      "Number": 500,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "500"
+    },
+    {
+      "Symbol": "mode",
+      "Text": "Standard",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A72 (press duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Standard"
+    },
+    {
+      "Symbol": "n_p",
+      "Number": 1450,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A72 (press duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1450"
+    },
+    {
+      "Symbol": "p_back",
+      "Number": 0,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "p_sys",
+      "Number": 160,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A72 (press duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "160"
+    },
+    {
+      "Symbol": "rho",
+      "Number": 870,
+      "Unit": "kg/m^3",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A72 (press duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "870"
+    },
+    {
+      "Symbol": "stroke",
+      "Number": 500,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A72 (press duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "500"
+    },
+    {
+      "Symbol": "t_dwell",
+      "Number": 0,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "v_prs_max",
+      "Number": 5,
+      "Unit": "m/s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5"
+    },
+    {
+      "Symbol": "v_ret_max",
+      "Number": 3,
+      "Unit": "m/s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3"
+    },
+    {
+      "Symbol": "v_suc_max",
+      "Number": 1.2,
+      "Unit": "m/s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.2"
+    }
+  ],
+  "f2": [
+    {
+      "Symbol": "T_c",
+      "Number": 20,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "20"
+    },
+    {
+      "Symbol": "T_max",
+      "Number": 50,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A73 (accumulator)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "50"
+    },
+    {
+      "Symbol": "T_min",
+      "Number": 10,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A73 (accumulator)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "dV",
+      "Number": 3.926990816987242,
+      "Unit": "L",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:0556960c16a2408bae20314b4afe7d10#dV",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3.92699"
+    },
+    {
+      "Symbol": "f_rg",
+      "Number": 1.311,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A73 (accumulator)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.311"
+    },
+    {
+      "Symbol": "mode",
+      "Text": "Emergency stroke",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A73 (accumulator)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Emergency stroke"
+    },
+    {
+      "Symbol": "n_gas",
+      "Number": 1.4,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A73 (accumulator)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.4"
+    },
+    {
+      "Symbol": "p_0",
+      "Number": 105,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A73 (accumulator)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "105"
+    },
+    {
+      "Symbol": "p_1",
+      "Number": 120,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A73 (accumulator)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "120"
+    },
+    {
+      "Symbol": "p_2",
+      "Number": 160,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:0556960c16a2408bae20314b4afe7d10#p_sys",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "160"
+    },
+    {
+      "Symbol": "p_atm",
+      "Number": 1.01325,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.01325"
+    },
+    {
+      "Symbol": "p_basis",
+      "Text": "Gauge",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Gauge"
+    },
+    {
+      "Symbol": "p_load",
+      "Number": 107.22017218822424,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:0556960c16a2408bae20314b4afe7d10#p_push",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "107.22"
+    },
+    {
+      "Symbol": "process",
+      "Text": "By duty",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "By duty"
+    },
+    {
+      "Symbol": "r_0",
+      "Number": 0.9,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.9"
+    },
+    {
+      "Symbol": "r_p",
+      "Number": 4,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4"
+    }
+  ],
+  "b1": [
+    {
+      "Symbol": "D_law",
+      "Text": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)"
+    },
+    {
+      "Symbol": "D_ratio",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "Q",
+      "Number": 4.537647058823531,
+      "Unit": "m^3/h",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:0556960c16a2408bae20314b4afe7d10#Q_prs",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4.53765"
+    },
+    {
+      "Symbol": "T_fluid",
+      "Number": 50,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-HPU-510",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "50"
+    },
+    {
+      "Symbol": "circuit",
+      "Text": "open (the pump lifts the water by the rises entered)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "open (the pump lifts the water by the rises entered)"
+    },
+    {
+      "Symbol": "eta_pump",
+      "Number": 0.7,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.7"
+    },
+    {
+      "Symbol": "fluid",
+      "Text": "custom (\u03C1 and \u03BC given)",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-HPU-510",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "custom (\u03C1 and \u03BC given)"
+    },
+    {
+      "Symbol": "h_out",
+      "Number": 0,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "mu_custom",
+      "Number": 30,
+      "Unit": "mPa*s",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-HPU-510",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "n_ratio",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "p_atm",
+      "Number": 101.325,
+      "Unit": "kPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "101.325"
+    },
+    {
+      "Symbol": "rho_custom",
+      "Number": 870,
+      "Unit": "kg/m^3",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:0556960c16a2408bae20314b4afe7d10#rho",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "870"
+    },
+    {
+      "Symbol": "segments",
+      "Rows": [
+        {
+          "Cells": {
+            "name": {
+              "Text": "pressure line to cylinder"
+            },
+            "L": {
+              "Number": 12,
+              "Unit": "m"
+            },
+            "D": {
+              "Number": 20,
+              "Unit": "mm",
+              "Provenance": {
+                "Kind": "Link",
+                "Reference": "calc:0556960c16a2408bae20314b4afe7d10#d_prs",
+                "Revision": "A",
+                "IsSufficientToIssue": true
+              }
+            },
+            "eps": {
+              "Number": 0.045,
+              "Unit": "mm"
+            },
+            "K": {
+              "Number": 6
+            },
+            "L_eq": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "dz": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "side": {
+              "Text": "discharge"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-HPU-510",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1 row(s)"
+    },
+    {
+      "Symbol": "v_limit",
+      "Number": 5,
+      "Unit": "m/s",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-HPU-510",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5"
+    },
+    {
+      "Symbol": "z_s",
+      "Number": 0,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    }
+  ],
+  "e1": [
+    {
+      "Symbol": "F_p",
+      "Number": 0,
+      "Unit": "N",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "J_L",
+      "Number": 0.004,
+      "Unit": "kg*m^2",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.004"
+    },
+    {
+      "Symbol": "J_mech",
+      "Number": 0.001,
+      "Unit": "kg*m^2",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.001"
+    },
+    {
+      "Symbol": "J_motor",
+      "Number": 0.1,
+      "Unit": "kg*m^2",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.1"
+    },
+    {
+      "Symbol": "J_ratio_max",
+      "Number": 10,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "SF",
+      "Number": 1.25,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.25"
+    },
+    {
+      "Symbol": "T_L",
+      "Number": 76.97311793171667,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:0556960c16a2408bae20314b4afe7d10#T_shaft",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "76.9731"
+    },
+    {
+      "Symbol": "T_basis",
+      "Text": "Load peak (T_pk)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Load peak (T_pk)"
+    },
+    {
+      "Symbol": "T_peak",
+      "Number": 275,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "275"
+    },
+    {
+      "Symbol": "T_rated",
+      "Number": 120,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "120"
+    },
+    {
+      "Symbol": "brake",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
+    },
+    {
+      "Symbol": "duty_mode",
+      "Text": "continuous",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "continuous"
+    },
+    {
+      "Symbol": "eta",
+      "Number": 0.99,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.99"
+    },
+    {
+      "Symbol": "f_acc",
+      "Number": 0.3333333333333333,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.333333"
+    },
+    {
+      "Symbol": "i",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "m",
+      "Number": 50,
+      "Unit": "kg",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "50"
+    },
+    {
+      "Symbol": "mechanism",
+      "Text": "direct rotary",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "direct rotary"
+    },
+    {
+      "Symbol": "mu",
+      "Number": 0.1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.1"
+    },
+    {
+      "Symbol": "n_L",
+      "Number": 1450.0000000000002,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:0556960c16a2408bae20314b4afe7d10#n_shaft",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1450"
+    },
+    {
+      "Symbol": "n_max",
+      "Number": 3000,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3000"
+    },
+    {
+      "Symbol": "n_rated",
+      "Number": 1460,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1460"
+    },
+    {
+      "Symbol": "p_screw",
+      "Number": 10,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "profile",
+      "Text": "trapezoidal",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "trapezoidal"
+    },
+    {
+      "Symbol": "s",
+      "Number": 0.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "t_dwell",
+      "Number": 0.5,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "t_move",
+      "Number": 0.5,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.5"
+    },
+    {
+      "Symbol": "t_start",
+      "Number": 2,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2"
+    },
+    {
+      "Symbol": "theta",
+      "Number": 0,
+      "Unit": "deg",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    }
+  ],
+  "e4": [
+    {
+      "Symbol": "C_a",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "C_c",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "C_g",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "C_i",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "L",
+      "Number": 30,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "N_g",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "P",
+      "Number": 18.34690109696439,
+      "Unit": "kW",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:83b060cd5dc44c1aaa85fdb2eb5f7af6#P_rated",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "18.3469"
+    },
+    {
+      "Symbol": "T_amb",
+      "Number": 30,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "T_ref",
+      "Number": 30,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "U",
+      "Number": 400,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "400"
+    },
+    {
+      "Symbol": "ampacity",
+      "Rows": [
+        {
+          "Cells": {
+            "CSA": {
+              "Number": 1.5,
+              "Unit": "mm^2"
+            },
+            "I_t": {
+              "Number": 12.3,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "CSA": {
+              "Number": 2.5,
+              "Unit": "mm^2"
+            },
+            "I_t": {
+              "Number": 17.7,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "CSA": {
+              "Number": 4,
+              "Unit": "mm^2"
+            },
+            "I_t": {
+              "Number": 24.1,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "CSA": {
+              "Number": 6,
+              "Unit": "mm^2"
+            },
+            "I_t": {
+              "Number": 31.9,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "CSA": {
+              "Number": 10,
+              "Unit": "mm^2"
+            },
+            "I_t": {
+              "Number": 44.6,
+              "Unit": "A"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Reference",
+        "Reference": "record:6023867c6bd247b0a9a1f805fac47235@1 \u00B7 invented values for the worked example",
+        "Revision": "n/a",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5 row(s)"
+    },
+    {
+      "Symbol": "context",
+      "Text": "BS EN 60204-1 machine wiring",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "BS EN 60204-1 machine wiring"
+    },
+    {
+      "Symbol": "cos_phi",
+      "Number": 0.86,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.86"
+    },
+    {
+      "Symbol": "derive_Ca",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
+    },
+    {
+      "Symbol": "device",
+      "Text": "MCB type C",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "MCB type C"
+    },
+    {
+      "Symbol": "eta",
+      "Number": 0.92,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.92"
+    },
+    {
+      "Symbol": "insulation",
+      "Text": "PVC 70 \u00B0C",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "PVC 70 \u00B0C"
+    },
+    {
+      "Symbol": "method",
+      "Text": "C",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "C"
+    },
+    {
+      "Symbol": "ratings",
+      "Rows": [
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 6,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 10,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 16,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 20,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 25,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 32,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 40,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 50,
+              "Unit": "A"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "I_n": {
+              "Number": 63,
+              "Unit": "A"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Reference",
+        "Reference": "record:fa519baf596349798b7f0ddfe76e6eb2@1 \u00B7 invented values for the worked example",
+        "Revision": "n/a",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "9 row(s)"
+    },
+    {
+      "Symbol": "supply",
+      "Text": "three-phase",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "three-phase"
+    },
+    {
+      "Symbol": "system",
+      "Text": "metric",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "metric"
+    }
+  ],
+  "e3": [
+    {
+      "Symbol": "A_c",
+      "Number": 10,
+      "Unit": "mm^2",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:3c76290768c045caaeb422f21ec88bd2#CSA",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "I",
+      "Number": 33.47000849067186,
+      "Unit": "A",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:3c76290768c045caaeb422f21ec88bd2#I_b",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "33.47"
+    },
+    {
+      "Symbol": "L",
+      "Number": 30,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:3c76290768c045caaeb422f21ec88bd2#L",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "T_amb",
+      "Number": 30,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "T_c",
+      "Number": 70,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:3c76290768c045caaeb422f21ec88bd2#T_op",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "70"
+    },
+    {
+      "Symbol": "T_rated",
+      "Number": 70,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "70"
+    },
+    {
+      "Symbol": "V_n",
+      "Number": 400,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "400"
+    },
+    {
+      "Symbol": "X_km",
+      "Number": 0.08,
+      "Unit": "ohm/km",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.08"
+    },
+    {
+      "Symbol": "alpha",
+      "Number": 0.00393,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.00393"
+    },
+    {
+      "Symbol": "cos_phi",
+      "Number": 0.86,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.86"
+    },
+    {
+      "Symbol": "data",
+      "Text": "resistivity and area",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "resistivity and area"
+    },
+    {
+      "Symbol": "dv_limit",
+      "Number": 5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5"
+    },
+    {
+      "Symbol": "n_par",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "rho_20",
+      "Number": 0.0194,
+      "Unit": "ohm*mm^2/m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.0194"
+    },
+    {
+      "Symbol": "system",
+      "Text": "AC three-phase",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (power supply)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "AC three-phase"
+    }
+  ],
+  "e5": [
+    {
+      "Symbol": "C_min",
+      "Number": 0.95,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.95"
+    },
+    {
+      "Symbol": "I2t_let",
+      "Number": 80000,
+      "Unit": "A^2*s",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (earthing and protection)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "80000"
+    },
+    {
+      "Symbol": "I_cn",
+      "Number": 25,
+      "Unit": "kA",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (earthing and protection)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "25"
+    },
+    {
+      "Symbol": "I_n",
+      "Number": 40,
+      "Unit": "A",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:3c76290768c045caaeb422f21ec88bd2#I_n",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
+      "Symbol": "L",
+      "Number": 30,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:3c76290768c045caaeb422f21ec88bd2#L",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "Q_c",
+      "Number": 0.00345,
+      "Unit": "J/(K*mm^3)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.00345"
+    },
+    {
+      "Symbol": "S_cpc",
+      "Number": 10,
+      "Unit": "mm^2",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:3c76290768c045caaeb422f21ec88bd2#CSA",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "S_line",
+      "Number": 10,
+      "Unit": "mm^2",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:3c76290768c045caaeb422f21ec88bd2#CSA",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "S_r",
+      "Number": 400,
+      "Unit": "kVA",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (earthing and protection)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "400"
+    },
+    {
+      "Symbol": "T_op",
+      "Number": 70,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:3c76290768c045caaeb422f21ec88bd2#T_op",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "70"
+    },
+    {
+      "Symbol": "U_0",
+      "Number": 230,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (earthing and protection)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "230"
+    },
+    {
+      "Symbol": "Z_e",
+      "Number": 0.05,
+      "Unit": "ohm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (earthing and protection)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.05"
+    },
+    {
+      "Symbol": "alpha",
+      "Number": 0.00393,
+      "Unit": "1/K",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.00393"
+    },
+    {
+      "Symbol": "beta",
+      "Number": 234.5,
+      "Unit": "K",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "234.5"
+    },
+    {
+      "Symbol": "c_max",
+      "Number": 1.1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.1"
+    },
+    {
+      "Symbol": "device",
+      "Text": "MCB type C (I_a = 10 I_n)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (earthing and protection)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "MCB type C (I_a = 10 I_n)"
+    },
+    {
+      "Symbol": "device_code",
+      "Number": 2,
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:3c76290768c045caaeb422f21ec88bd2#device_code",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2"
+    },
+    {
+      "Symbol": "k_R",
+      "Number": 1.125,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.125"
+    },
+    {
+      "Symbol": "rho_20",
+      "Number": 0.017241,
+      "Unit": "ohm*mm^2/m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.017241"
+    },
+    {
+      "Symbol": "t_req",
+      "Number": 0.4,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (earthing and protection)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.4"
+    },
+    {
+      "Symbol": "theta_f",
+      "Number": 160,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "160"
+    },
+    {
+      "Symbol": "theta_i",
+      "Number": 70,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "70"
+    },
+    {
+      "Symbol": "u_k",
+      "Number": 4,
+      "Unit": "%",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A76 (earthing and protection)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4"
+    }
+  ],
+  "e9": [
+    {
+      "Symbol": "A_c",
+      "Number": 10,
+      "Unit": "mm^2",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:3c76290768c045caaeb422f21ec88bd2#CSA",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "I_LR_r",
+      "Number": 7,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive starting)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "7"
+    },
+    {
+      "Symbol": "I_k",
+      "Number": 15.942028985507251,
+      "Unit": "kA",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:b893d5b5ffe84d388507b6d64884e2dc#I_k3",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "15.942"
+    },
+    {
+      "Symbol": "L_cab",
+      "Number": 30,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:3c76290768c045caaeb422f21ec88bd2#L",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "P",
+      "Number": 18.34690109696439,
+      "Unit": "kW",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:83b060cd5dc44c1aaa85fdb2eb5f7af6#P_rated",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "18.3469"
+    },
+    {
+      "Symbol": "S_k",
+      "Number": 10,
+      "Unit": "MVA",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "S_n",
+      "Number": 500,
+      "Unit": "kVA",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "500"
+    },
+    {
+      "Symbol": "T_c",
+      "Number": 70,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "70"
+    },
+    {
+      "Symbol": "U",
+      "Number": 400,
+      "Unit": "V",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive starting)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "400"
+    },
+    {
+      "Symbol": "XR",
+      "Number": 4.2,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4.2"
+    },
+    {
+      "Symbol": "XR_Q",
+      "Number": 10,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "X_km",
+      "Number": 0.08,
+      "Unit": "ohm/km",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.08"
+    },
+    {
+      "Symbol": "alpha",
+      "Number": 0.00393,
+      "Unit": "1/K",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.00393"
+    },
+    {
+      "Symbol": "c_src",
+      "Number": 1.1,
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:b893d5b5ffe84d388507b6d64884e2dc#c_k3",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.1"
+    },
+    {
+      "Symbol": "cable_data",
+      "Text": "resistivity and area",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "resistivity and area"
+    },
+    {
+      "Symbol": "cos_phi",
+      "Number": 0.86,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive starting)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.86"
+    },
+    {
+      "Symbol": "cos_phi_st",
+      "Number": 0.3,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive starting)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.3"
+    },
+    {
+      "Symbol": "cos_phi_target",
+      "Number": 0.95,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.95"
+    },
+    {
+      "Symbol": "cos_phi_vfd",
+      "Number": 0.95,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.95"
+    },
+    {
+      "Symbol": "dip_limit",
+      "Number": 10,
+      "Unit": "%",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "eta",
+      "Number": 0.92,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive starting)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.92"
+    },
+    {
+      "Symbol": "fault_basis",
+      "Text": "Fault current I_k (kA)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive starting)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Fault current I_k (kA)"
+    },
+    {
+      "Symbol": "harmonics",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
+    },
+    {
+      "Symbol": "k_soft",
+      "Number": 3.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3.5"
+    },
+    {
+      "Symbol": "k_vfd",
+      "Number": 1.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.5"
+    },
+    {
+      "Symbol": "n_par",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive starting)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "rho_20",
+      "Number": 0.01724,
+      "Unit": "ohm*mm^2/m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.01724"
+    },
+    {
+      "Symbol": "source",
+      "Text": "Fault level at the supply",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive starting)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Fault level at the supply"
+    },
+    {
+      "Symbol": "starter",
+      "Text": "Star-delta",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-HPU-05 \u00A75 (pump drive starting)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Star-delta"
+    },
+    {
+      "Symbol": "u_k",
+      "Number": 4,
+      "Unit": "%",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4"
+    }
+  ]
+}

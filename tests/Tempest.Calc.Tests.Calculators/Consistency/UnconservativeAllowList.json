@@ -1,0 +1,131 @@
+{
+  "bs.glaser": {
+    "en15026": "Not fixed (C): whether a build-up is timber or breathable is not an input of the sheet, so it cannot tell when to block or fail; it needs a vapour-open flag on the material record, and until then the EN 15026 pointer stays a notice.",
+    "layer-subdivision": "Not fixed (B): the verdict flips only when the Glaser profile is solved again with each layer subdivided and the two compared, a second solve that needs its own verification case.",
+    "rsi-f-low": "Not fixed (A): R_si is an input the user may set from the method they follow, and holding it at the conventional value would override a deliberate input, so the notice stays and the owner decides whether to fix it."
+  },
+  "bs.heat-exchanger": {
+    "condensation": "Not fixed (B): adding the latent duty needs the air moisture state and a coil contact model that this sensible-duty sheet does not carry, so until then the notice says the duty is understated."
+  },
+  "bs.insulation": {
+    "bare-complies": "Not fixed (B): the bare-pipe comparison is a second heat-loss calculation of the same pipe without insulation, which the sheet does not run; adding it is new method work with its own verification case.",
+    "critical-radius": "Not fixed (B): failing the heat loss against the bare pipe needs the same bare-pipe calculation as the bare-complies rule, so the two are one piece of work.",
+    "h-se-condensation": "Not fixed (A): the comparison needs the correlation run beside the fixed h_se and a judgement of how large a difference is acceptable, which is the owner's decision, so the fixed value stays the user's stated input.",
+    "no-condensation-check": "Not fixed (A): requiring a dew-point margin would refuse saved cold-pipe sheets that have none, so the owner has to decide to require it."
+  },
+  "bs.pipe-expansion": {
+    "friction": "Not fixed (A): support friction needs the slide friction and the weight per metre, and a blank pair is the legitimate case of a line on rollers or hangers; a block would refuse it, so the force is labelled as holding no friction."
+  },
+  "bs.pipe-pump": {
+    "eta-default": "Not fixed (A): the efficiency of a small circulator depends on its make; requiring it below 1 kW would refuse saved small-circulator sheets, so the notice states the effect and the owner decides whether to require it.",
+    "fittings": "Not fixed (C): the rise of K at low Reynolds number differs by fitting and the sheet holds one K per segment, so applying a rise would be a number with no source, and failing the range would fail the transitional line the pack example runs; the notice says the term is understated.",
+    "fluid-cp": "Not fixed (A): a water sheet whose heat-load flow used another specific heat is the user's own entry, and the custom fluid choice is the way to carry the right properties; a block would refuse saved circuits that never entered one.",
+    "npsh-no-suction": "Not fixed (A): a blank side column means discharge, and a pump with no friction in its suction line (a flooded inlet) is a real case; a block would refuse it, so the optimism is stated and the user marks the suction segments.",
+    "plant-loss": "Not fixed (A): a blank h_out is the pipework-only question the sheet is also used for; a block would refuse that use, so the head is labelled as pipe friction only and the owner decides whether to require the plant loss."
+  },
+  "bs.room-heat-loss": {
+    "f-and-adjacent": "Not fixed (A): whether an element takes one reduction or both is a modelling judgement; choosing one would change the results of saved rooms, so the owner has to decide.",
+    "mvhr-no-infiltration": "Not fixed (A): a blank n_inf with an MVHR supply states no infiltration, and requiring it would change saved rooms, so the owner has to decide to require it."
+  },
+  "bs.sealed-system": {
+    "v-pipe-default": "Not fixed (A): requiring V_pipe would refuse saved systems that rely on the 20 L default, so the vessel is sized on the stated default with the notice and the owner decides whether to require it."
+  },
+  "elec.conductor-sizing": {
+    "C_g": "Not fixed (A): C_g left at 1 is right for a single circuit, and a block on a blank would refuse it; counting grouped circuits needs a new input, so the notice stays.",
+    "theta_a": "Not fixed (C): taking C_a from the ambient needs the correction table for the cable's insulation, which the sheet does not hold, so C_a stays an input and the notice states the undersizing."
+  },
+  "elec.containment": {
+    "P_lim": "Not fixed (A): a blank sidewall pressure limit skips the check, which is the usual case for straight runs; a block would refuse them, so the check is skipped with a notice.",
+    "T_cab": "Not fixed (A): many cable data sheets give no maximum pulling tension; a block on a blank would refuse those cables, so the check is skipped with a notice.",
+    "jam": "Not fixed (A): the jam condition is a rule of thumb with no standard limit to fail against, so the owner has to choose the limit before it can be a check.",
+    "n_bend": "Not fixed (A): a blank bend-radius multiple skips the bend check, and a straight pull is a legitimate case; a block would refuse it, so the notice stays."
+  },
+  "elec.fault-protection": {
+    "adiabatic": "Not fixed (A): a blank disconnection time skips the adiabatic check, and the time comes from the device the user has not chosen yet in early use of the sheet; a block would refuse that use, so the notice stays.",
+    "curve-range": "Not fixed (C): outside the points entered the device curve is the manufacturer's data and the sheet cannot extend it; whether to fail outside the curve or hold the end value is the owner's decision.",
+    "let-through": "Not fixed (A): the let-through value is a device datum the user enters, and a block on its absence would refuse sheets whose device data is not at hand; the line conductor is labelled as unchecked.",
+    "resistance": "Not fixed (A): the factor on R1 + R2 is the user's own value from the method they follow, and holding it at the standard factor would override a deliberate input, so the notice stays.",
+    "theta": "Not fixed (A): the conductor temperature for Z_s is the user's stated state, and raising it or failing the check is a decision on which state the method intends, which the owner has to make."
+  },
+  "elec.load-budget": {
+    "battery-charge": "Not fixed (B): the charging term needs the charger and the battery state, which the sheet does not model; adding it is new method work with its own verification case.",
+    "derate": "Not fixed (C): the derating above 40 degC is the supplier's curve, which the sheet does not hold; a block would refuse every hot-room sheet without it, so the notice stays.",
+    "load-defaults": "Not fixed (A): a blank optional cell is taken as 1 in saved budgets; requiring the cells changes them, so the owner has to decide.",
+    "psu_bus": "Not fixed (A): DC loads with no AC bus omit the supply input from the bus currents; requiring the bus would refuse saved budgets without one, so the notice stays.",
+    "rated-add": "Not fixed (A): a linked machine with no rated power is sized on its duty power, and the rating is another sheet's output; a block would refuse the link before that sheet is complete, so the notice stays."
+  },
+  "elec.motor-sizing": {
+    "inertia-ratio": "Not fixed (A): the inertia ratio limit is the drive maker's advice and not a standard limit, so there is no number to fail against until the owner chooses one.",
+    "overhauling": "Not fixed (B): a load that drives the motor needs a regeneration or braking model that the sheet does not have; adding it is new method work with its own verification case.",
+    "peak-at-speed": "Not fixed (C): comparing T_peak with the speed-torque curve needs the motor's curve as an input, which the sheet does not take; failing above 70 percent of n_max would be a number with no source.",
+    "rated-speed": "Not fixed (A): n_rated comes from the motor data sheet, and a block on a blank would refuse the sizing question asked before a motor is chosen, so the rated-power check is skipped with a notice.",
+    "return-move": "Not fixed (B): the return stroke of an inclined axis or a one-way process force needs its own load model, which is new method work with its own verification case."
+  },
+  "elec.motor-start": {
+    "harmonics": "Not fixed (C): a resonance order check needs the network short-circuit level and the harmonic spectrum, which the sheet does not take; the notice is the pointer to that study."
+  },
+  "fp.accumulator": {
+    "exponent-real": "Not fixed (C): the real-gas isentropic exponent needs a gas-property source that the sheet does not hold; the real-gas factor f_rg that the user enters is the way to correct it, and a block would refuse every adiabatic sheet above 50 bar.",
+    "load-pressure": "Not fixed (A): an emergency stroke with no load pressure leaves p_1 unchecked, and the pressure comes from the cylinder sheet by a link; a block would refuse the sheet before the cylinder is sized, so the notice stays.",
+    "process": "Not fixed (A): the gas process is the user's stated choice (a pulsation cycle really is charged as fast as it is discharged), and failing it would override a deliberate input, so the notice gives the volume of the other process.",
+    "realgas-window": "Not fixed (C): the larger factor for a narrow window needs the compressibility factor at three pressures from a gas-property source, which the sheet does not hold; the notice gives the formula and the user enters f_rg."
+  },
+  "fp.oring-gland": {
+    "expansion": "Not fixed (B): evaluating the cold, hot and a mid point needs the gland solved at each temperature, a change of method with its own verification case; the two ends are the stated bounds.",
+    "installed-state": "Not fixed (B): the installed squeeze needs the assembly temperature as an input and a third evaluation, which is new method work with its own verification case.",
+    "stretch": "Not fixed (C): the limits on stretch come from the seal maker's installation practice and differ by compound, so failing outside them needs a record kind for the limits first.",
+    "worst-case": "Not fixed (B): the exact corner of the stack needs a search over the tolerance corners instead of the stated bounds, which is new method work with its own verification case."
+  },
+  "mech.bearing-life": {
+    "heavy-load": "Not fixed (A): above P = 0.5 C the limit is the bearing maker's advice and not a standard value, so the owner has to choose whether to fail there or to use the maker's curve."
+  },
+  "mech.iso286-fit": {
+    "interference-letter": "Not fixed (C): using the tabulated fundamental deviations from p to zc needs the full table of them as data, with its own verification against the standard; the formula in use is the stated approximation."
+  },
+  "mech.shaft": {
+    "key": "Not fixed (A): a shaft without a key is a legitimate case, and a block on a missing key dimension would refuse every keyless shaft, so the check is skipped and said to be.",
+    "key-hub": "Not fixed (A): without a hub strength the bearing check uses the key and the shaft only; a block would refuse sheets whose hub is not chosen yet, so the notice states what is compared."
+  },
+  "mech.snap-fit": {
+    "hold-unused": "Not fixed (A): a force to hold with no number of latches could be refused, but saved sheets that gave only the force would stop working, so the owner has to decide.",
+    "large-deflection": "Not fixed (B): the large-deflection solution is a second model of the beam with its own verification case; the notice quotes the size of the error (4 percent strain and 10 percent force at y/l 0.3) so that the margin can be judged."
+  },
+  "mech.spring": {
+    "fatigue-cycles": "Not fixed (B): a life under 10^4 cycles needs a low-cycle (strain-life) method, which is a different calculation and not a check; a block would refuse stored-energy springs, so the notice stays.",
+    "hook-fatigue": "Not fixed (B): the hook fatigue of an extension spring needs the stress at the hook bend, a model the sheet does not have; the notice says the hook is not assessed.",
+    "surge": "Not fixed (A): a surge frequency under 13 times the operating frequency is a design guideline and the operating frequency is optional; the owner has to decide the factor before it can fail."
+  },
+  "mech.thick-cylinder": {
+    "stability": "Not fixed (B): the collapse pressure of a thin wall under external pressure is a buckling solution the sheet does not contain; adding it is new method work with its own verification case."
+  },
+  "mech.tolerance-stack": {
+    "few-contributors": "Not fixed (A): reporting the worst case as governing for fewer than four contributors changes the verdict of saved stacks, and RSS against worst case is the user's stated method, so the owner has to decide."
+  },
+  "struct.base-plate": {
+    "alpha_basis": "Not fixed (A): a concentration factor above 1 needs the foundation geometry stated, and the sheet takes no inputs for it; adding them changes saved bases, so the owner has to decide.",
+    "anchorage-result": "Not fixed (A): u_profis is the result of another program's anchor design, and a block without it would refuse every base whose anchors are designed elsewhere; the result is labelled as excluding the anchorage.",
+    "f_y_thickness": "Not fixed (C): taking the yield strength by thickness needs the EN 10025-2 table by grade as a record, which the sheet does not hold; the user enters the strength for the thickness used.",
+    "grout": "Not fixed (A): beta_j = 2/3 needs the grout strength and thickness stated, and the sheet takes no inputs for them; adding them changes saved bases, so the owner has to decide."
+  },
+  "struct.connection-ec3": {
+    "block": "Not fixed (A): block tearing needs the group force and both net areas, and a connection with no tearing path is legitimate; a block would refuse it, so the check is skipped and said to be.",
+    "weld": "Not fixed (A): the weld check needs a throat and a force per length, and a connection with no weld has neither; a block would refuse it, so the check is skipped and said to be."
+  },
+  "struct.frame-2d": {
+    "large-deflection": "Not fixed (B): above 1/50 of the member length a second-order solution is needed, which is a different method; failing or blocking there needs the owner to choose the limit."
+  },
+  "struct.lifting": {
+    "beam-area": "Not fixed (A): with no beam area the spreader check covers the lug only, and a lug-only lift is a legitimate case; a block would refuse it, so the notice states what is not checked.",
+    "dishing": "Not fixed (A): the dishing limit is the user's own acceptance criterion and a blank means none; a block would refuse lifts with no such criterion, so the check is skipped and said to be.",
+    "k-svc": "Not fixed (A): the service-class factor of 1.0 is the stated default in saved sheets; requiring it changes them, so the owner has to decide."
+  },
+  "struct.ltb-interaction": {
+    "c1-psi": "Not fixed (B): the exact elastic C1 needs the moment diagram solved for the member, a second solve the sheet does not have; the closed form from psi is the one in use, and capping it would be a number with no source.",
+    "welded-pair": "Not fixed (C): the National Annex's λ̄_LT,0 and β for welded sections are licensed values the sheet does not hold, so they come only from an ec3.ltb-factors record; the owner chose a warning (DC-03, DC-21), which a recorded basis on lambda_LT0 and beta_LT clears."
+  },
+  "struct.plate-bending": {
+    "large-deflection": "Not fixed (A): above w/t = 0.5 the small-deflection theory overstates the deflection and the bending stress and omits the membrane stress, so the plate result is on the safe side for bending; the notice says so, and a block would refuse plates meant to act as membranes.",
+    "patch-thin": "Not fixed (A): the sheet already refuses patches below the minimum size of the solution, and where between that size and the plate thickness to draw the line against a concentrated load is an engineering choice the owner has to make.",
+    "ritz-frequency": "Not fixed (A): the frequency is a secondary output and the sheet reports it, with this notice, when the iteration has not settled; withholding it changes the output list, which the owner has to decide."
+  }
+}

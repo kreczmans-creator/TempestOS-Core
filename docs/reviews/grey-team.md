@@ -1,0 +1,149 @@
+# ⚪ Grey team — integration and upgrade
+
+| Item | Evidence | Status |
+|---|---|---|
+| Migrate a database containing issued Evidence; it opens, stays immutable, new register links are correct | `UpgradeTests.A_Database_With_Issued_Evidence_Opens_Unchanged_And_Accepts_New_Calculations` (Library, real SQLite file in a temp root): phase A issues Evidence through the pre-calc two-step `IssueAsync`; phase B reopens the file with the v0.26.0 code and rehydrates every kind as the product does at start-up — the legacy record is Issued with its reference, a second issue is refused and leaves it unchanged, a calc instance is created in the same project, checked, issued in one transaction and linked `documentedBy` from its Calculation register object; phase C reopens again and finds both persisted. | Pass |
+| Schema version bump | None needed: `SqlitePersistenceStore.SchemaVersion` stays 1; calc instances and packs are JSON documents in two new collections; no migration script (D-26). The existing pre-migration backup path (`BackupServiceTests`) is untouched. | Pass (no change) |
+| Linux build | Every phase gate built the solution with 0 warnings; CI Linux jobs (Launch Smoke) green on every release push. | Pass |
+| Windows build | CI runs `Build & Test` on `windows-2022`: Debug and Release builds succeed on every release push; two Windows-only test failures (CRLF sheet assertion; PDFs 650 KB because the platform default font was embedded whole) are fixed on the Phase 6 branch (LF everywhere; Body face subset). The verdict comes from the CI run on the next `release/v0.26.0` push and is recorded in STATUS. | Pending CI |
+| Crash recovery after a kill during Issue | Fault injection at the commit boundary: `IssueTransactionFaultInjectionTests` (Core: the sheet bytes, attachment, issue record and status commit together or not at all), `Crash_Mid_Issue_Leaves_Instance_Checked_And_Evidence_Checked` and `Pack_Crash_Mid_Issue_Leaves_Every_Member_Unissued` (Library); the race variant `ConcurrentIssueTests` / `ConcurrencyTests`. SQLite WAL journalling (existing) covers a process kill between statements. | Pass |
+| Performance baselines before / after | Core suite 7,202 → 7,221 tests, wall time unchanged (≈ 65 s); Desktop suite 1,150 → 1,184 (≈ 13–17 min on this 2-core container, same as the v0.25 baseline run at the start of the build); new budgets enforced by `PerformanceBudgetTests`: every sheet < 1 s (16 templates), 10,000-sample Monte Carlo < 2 s, 510-element frame < 1 s (measured 47 ms). | Pass |
+| Reports path opens an issued calc sheet; page < 200 KB | `WorkedExamplePdfTests` renders all 24 examples through the Desktop renderer: max 187 KB, mean 168 KB on Linux; the issued sheet is a normal Evidence attachment the Reports view already lists. | Pass (Linux); Windows pending CI |
+
+Findings: GR-01 (Low, Open until CI): the Windows PDF size depends on DirectWrite accepting the subset fonts (RR-01). GR-02 (Info): the upgrade test rehydrates with the Workspace registries plus the Evidence kind, mirroring `EngineeringWorkspaceComposer`; if the composer's kind list grows, the test's list must follow.
+
+## Addendum A
+
+Checked at `v0.26.0/addA-9-blue` (`efa30499`) against `6afead3`. v0.26.0 is not released and the `rc1` tag is not pushed (DA-01), so the "stored instances" below exist only in development and owner-test databases. Evidence is from the code and the git diff; the Windows and Linux CI verdict for this branch is not yet in.
+
+| Item | Evidence | Status |
+|---|---|---|
+| Template version bumps | Seven templates that were in `6afead3` were raised: `bs.pipe-pump` 1.0.0 → 1.2.0, `elec.enclosure-heat` 1.0.0 → 1.2.0, `elec.motor-sizing` 1.0.0 → 1.2.0, `mech.bolt-group` 1.0.0 → 1.1.0, `mech.iso286-fit` 1.0.0 → 1.1.0, `struct.frame-2d` 1.0.0 → 1.1.0, `struct.en1993-member` 1.0.0 → 1.0.1 (`git diff` on the `*Calculator.cs` files). The twelve new templates (M4, M5, M6, S4, S5, S6, B4, B5, B6, E4, E5, E6) first appear in this release at versions from 1.0.0 to 1.2.0, so no released database holds an older one. | Pass |
+| A stored draft or checked instance of an old version | The catalogue registers one version per template. `CalcCatalogue.Find("id@1.0.0")` returns nothing once 1.2.0 is registered. The instance is shown as stale ("has a newer version"). Edit, Check and Issue are refused with "Template '…' is no longer registered." So the old instance no longer runs. A draft has no upgrade path inside the product: Revise accepts only an issued calculation, or a checked one that has gone stale. The route is to export its inputs (CSV or JSON) and import them into a new sheet. No test pins this behaviour. | Pass with a gap (GR-A-01) |
+| A stored issued instance of an old version | It stays immutable and readable: the issued sheet is stored text, with the template hash, engine version and known-answer result of the day. Revise is allowed and starts the next revision on the current template version (`ReviseCoreAsync` calls `Get(instance.TemplateId)`). Staleness names the newer version. | Pass |
+| Stale propagation after a version bump | A downstream instance of an upstream on an old version is stale at every depth (Red R-A-03, fixed in Blue round 1). `StalenessForProjectAsync` answers for a whole project in one pass (R-A-07). Both are tested in `BlueRoundTests`. | Pass |
+| Legacy bolt-shear values (ADR-0169) | The v0.25.2 `calc.bolt-shear-capacity` module is scoped as the shank-in-plane case (gross area, α_v 0.6 for every class). Picker values for existing classes are unchanged (4.6 → 240, 5.6 → 300, 8.8 → 480, 10.9 → 600, 12.9 → 720 MPa), so stored picks still match their labels. Classes 4.8, 5.8 and 6.8 are added. Only the labels and the stated scope changed, in two Core files (13 lines added). The threads-in-plane case is the S4 worksheet. | Pass |
+| New sheets open on declared defaults | `CalcTemplateHasher.NewSheetInputs` takes a Quantity or Number `Default`, a Choice `DefaultChoice` and a Boolean, and leaves tables and anything else blank. The Library service and the Desktop form use it (G-A-02, G-B-06). `DefaultInputs` is kept for the template hash, known-answer runs and the derived ports, so the hash does not move for this reason. Stored instances keep the inputs they were saved with. Eleven templates now open blocked on a new sheet until the user supplies a table or a required value; six of them predate Addendum A (P-A-05). | Pass; UX gap (P-A-05) |
+| Shaft density on a new sheet | A new shaft sheet opens at 7850 kg/m³, not 0 (the first test case's value). A new wet-heating pump motor opens at its declared 6000 rpm. Stored shaft instances keep ρ as saved. | Pass |
+| Database | No schema change. `SqlitePersistenceStore.SchemaVersion` is untouched. Two new collections are used (`Calc.PackTemplates`, `Calc.DataRecords`). The instance key layout (`<project>/<id>`) is unchanged, so listing by key prefix reads the keys already stored. New record fields are optional: `EditedBy` is null on old instances and `Authors` falls back to the creator. `UpgradeTests` (phase 6) is unchanged. | Pass |
+| Packs | Built-in pack templates are code (`CalcPackTemplates.All`), composed into the Desktop by `CalcPackTemplateComposition`. Stored pack templates (saved from a chain) stay readable: `CalcPackStep.Example`, `Omit`, `Hint` and `CalcPackBinding.Row`/`Column` are optional and nulls are not written. Saved packs keep their members. A checked pack can now be reopened as a draft under the next pack revision with new Evidence; the earlier check stays on the earlier Evidence (DA-23). A pack refused at instantiation now stores nothing (dry run, then write). | Pass |
+| Instance and record JSON | Cell provenance is optional and null is not written, so an instance without cell links serialises as before. Cell provenance is in no hash (ADR-0168 amendment 2). Record revisions are never edited, and a licensed record's later revisions stay licensed (DA-17). | Pass |
+| CSV compatibility | A CSV written before Blue round 1 has one blank row per table input and no rows. It still imports: the table comes back without rows, and nothing is invented. The new export writes `name`, `name[r]`, `name[r].column` with each cell's unit and provenance (cell links included). A gap in row numbers, a bad number or a formula-like cell blocks the import. A value or table withheld on export comes back withheld, with a warning. Proved over every worked example (`CsvRoundTripTests`, 44/44). Gap: a licensed scalar withheld on export re-imports as the template default (P-A-01). | Pass; one gap (P-A-01) |
+| JSON compatibility | The 32 earlier worked examples' `inputs.json` files are unchanged in git. 17 new `inputs.json` files were added (12 new calculators' examples, five packs). A JSON flag written as text `"no"` is still refused (B-A-20(b)). Pack `inputs.json` is an object keyed by step; it is not a single-sheet import (B-A-22(a), README wording still to be fixed). | Pass; two open items |
+| Worked examples and PDFs | Fourteen sheets and PDFs of the earlier examples were regenerated, two for each of the seven templates whose version moved (the sheet footer carries the template version). Their inputs did not change. Twelve new examples and their PDFs were added. Known answers still pass. The per-sheet PDF test skips pack folders. | Pass |
+| Reports path and PDF size | The pack issue sheet and each member's own sheet open from Reports as normal Evidence attachments. A member's own sheet now shows the pack's checker and client (B-A-13). Licensed table rows are withheld from every sheet, preview and PDF (R-A-01). The Windows PDF size check (RR-01) still waits for the CI run. | Pass; Windows pending |
+| Event bus and project lists | Staleness events publish on update and supersede only. The Desktop relist reads one project's keys, with no whole-collection scan (R-A-07). A pack holds the calculations of one project; the no-project list is its own (R-A-12). | Pass |
+| Test totals | At the last build gate (`LOG.md`): Engine 384, Sheets 93, Calculators 721, Library 132 (+1 skipped), Core 7,230 (+15 skipped), Desktop 1,221; 0 failures; 0 warnings. Purple ran filtered suites after Blue round 1 (Library 113, Sheets 33, Calculators `CsvRoundTripTests` 44). The full gate follows Blue round 2. | Pass (build gate); full gate pending |
+| Windows build and CI | Not run for Addendum A in this review. The `windows-2022` run on the next push of `release/v0.26.0` decides. | Pending CI |
+
+Findings:
+
+- GR-A-01 (Low, Open): a draft on an old template version cannot be edited, checked or revised. Add a "start a new sheet from these inputs" action to the stale marker, or let Revise take a draft. Add a test that pins the refusal text.
+- GR-A-02 (Low, Open): `Revise` calls `_catalogue.Get(TemplateId)`. A template removed from the catalogue (not renamed) would throw instead of refusing. No template is removed in this release.
+- GR-A-03 (Info): when v0.26.0 merges forward into `release/v0.27.0` (DA-02), three templates exist in both (`mech.bearing-life`, `bs.plane-wall`, `struct.fillet-weld`). Their ids and versions must be compared before the merge, or stored instances will point at the wrong version.
+- GR-A-04 (Low, Open): P-A-01 and P-A-05 are the two upgrade-visible defects of Blue round 1. Both are in the round 2 brief.
+
+## Addendum B
+
+Checked at `34f196cc` (`v0.26.0/addB-4-workflows`, not yet merged into `release/v0.26.0`) against `510f337c` (end of Addendum A). No v0.26.0 tag exists (DA-01). The "stored instances" below exist only in development and owner-test databases. S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.
+
+| Item | Evidence | Status |
+|---|---|---|
+| Template version bumps | 14 new templates (versions 1.0.1 to 1.3.0). Seven earlier ones raised: `bs.pipe-pump` 1.5.0, `elec.motor-sizing` 1.4.0, `elec.enclosure-heat` 1.4.0, `elec.fault-protection` 1.2.0, `bs.psychrometrics` 1.1.0, `bs.room-heat-loss` 1.2.0, `mech.tolerance-stack` 2.1.0. `bs.sealed-system` moved onto the gas-law kernel with identical output and kept 1.2.0 (B-0 gate: B6 tests unchanged). | Pass; drafts on the old versions stop (GR-B-01) |
+| Database | No schema change. Two new collections: `Calc.ImportProfiles` and `Calc.ScanProfiles` (versioned, immutable). Import records live on the instance, capped at 20, and are kept while an input cites them. Record values gain an optional `Source` (source, edition, page, licence class, entered by, date, evidence SHA-256); old records have none and stay unlicensed unless flagged. `UpgradeTests` unchanged. | Pass |
+| Material library (W3) | Materials are reference records of kind `material.properties`. Four generic seeds are written on first use, idempotent and indicative. A pin `record:<id>@<n>` goes stale on a new revision. Exports withhold licensed values. A material licensed from any revision is locked in every revision (SEC-B-02, fixed in `051647fb`). | Pass |
+| New discipline | Fluid Power (ADR-0170): `Tempest.Calc.FluidPower` and its test project, `DisciplineCatalogue`, the explorer module (37 modules pinned), the Desktop composition. The Core change is a comment only. Dashboard export v3 gains a fourth `disciplines` entry with no schema bump (GR-B-05). | Pass |
+| New assemblies and CI | `Tempest.Calc.Import` and `Tempest.Calc.Tests.Import`. Both new test projects run on both CI legs (`ci.yml:309, 331`). Licence Check job, required by the CI Gate (DB-08). `Svg.Custom` MS-PL flagged for the owner. | Pass |
+| Import files | Read from picker streams only. 5 MB per file; W2 up to 64 files and 20 MB. Nothing is written beside the source. Profiles are stored in the database, not in a folder. No import is logged (GR-B-02). | Pass; logging gap |
+| Feature flags (S8) | On the S8 branch the flag is read only from `appsettings.json` in the install folder (`Calc:Features:Lifting`); off by default. S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default. | Pending B-5 |
+| Test totals at `6a189078` (verification, Linux, 4 cores) | Engine 457, Sheets 135, Calculators 1515, FluidPower 94, Import 625, Library 343 (+1 skipped): all pass. Desktop `WorkedExamplePdfTests` 64 of 64 (Y-B-01 fixed; 8 PDFs stale again, Yellow Y-B-12). At `34f196cc` the Calculators suite failed one timing test under load (Y-B-11, fixed) and the PDF test failed 4 (Y-B-01, fixed). Core and the full Desktop suite were not run. | Pass |
+| Performance | `PerformanceBudgetTests` covers every registered template, Fluid Power included. Worst Addendum B cases (Security): F3 at 100 000 samples 0.6 s, M9 at 3600 steps 48 ms, S9 Navier at the 1024-term cap 21 ms. | Pass |
+| Worked-example PDFs | 16 new PDFs, the largest 189 KiB (LTB, GR-B-06). The four M9/E9 PDFs are missing (Y-B-01). | Pass (Linux) with one gap |
+| Windows build and CI | Last Windows green: `510f337c` (Addendum A). Not run for Addendum B. | Pending CI |
+| STATUS | Final line still "READY FOR OWNER TESTING" while Addendum B is 14/19 (GR-B-03). | Open |
+
+Findings:
+
+- GR-B-01 (Low, Closed by `d1141f45`: a draft on an older version opens as a new sheet on the current one): seven Addendum A templates were raised again, so Addendum A owner-test drafts on them stop running. Fix GR-A-01, or tell the owner to start new sheets.
+- GR-B-02 (Low, Open: fix now if the Desktop logger is at hand, otherwise record as accepted): CAD and scan imports are not logged. Log the refusal code, file kind, size and a hash prefix; never content.
+- GR-B-03 (Low, Open: fix now, one line): STATUS's final line should say Addendum B is in progress until §B9 is met.
+- GR-B-04 (Info, accepted): the material seeds are written on first use; the `Indicative` origin cannot be read by an older build (no downgrade path, as before).
+- GR-B-05 (Info, accepted): the dashboard export gains a Fluid Power entry in `disciplines` with no schema version change.
+- GR-B-06 (Info, open until the stale LTB PDF is regenerated and Windows runs): the LTB PDF is 189 KiB against the 200 KiB cap; watch the Windows run (GR-01).
+
+### Verification at `6a189078`
+
+| ID | Fix | Verdict |
+|---|---|---|
+| GR-B-01 | `d1141f45`: a draft on an older template version opens as a new sheet on the current one, with its inputs and a clear message; the old draft is left unchanged. | Verified: `CalcInstanceServiceTests.Grey_GR_B_01_*`, `WorksheetSavedAndPacksTests.Grey_GR_B_01_*`. Closed; this also covers GR-A-01 for drafts. |
+| GR-B-02 | — | Open: no logging added. |
+| GR-B-03 | — | Open: STATUS's last line still reads "READY FOR OWNER TESTING", and its header "Addendum B: 14/19". |
+| GR-B-06 | — | Open: the LTB PDF is one of the 8 stale ones (Yellow Y-B-12); recheck its size after regeneration. |
+
+Test runs at `6a189078` (Linux, 4 cores) are in `scratchpad/b9colour/verify-suites.log`. Core and the full Desktop suite were not run.
+
+S8: reviewed separately in three Opus rounds (Security and Red sections, S8 lifting); no open Critical, High or Medium finding; the flag stays off by default.
+
+## Addendum C
+
+Checked at `v0.26.0/addC-reviews-colour` on `1474cd0a` against `76935116` (the delta: C-1 fixes, C-3 record import, C-4 dashboard, C-5 guided test, C-6 demo). Nothing is released or tagged, so a "stored" calculation below exists only in development and owner-test databases. The Opus review findings of each feature were fixed before its merge and are not repeated. Probes were throwaway tests in the Library test project, removed afterwards; their output is quoted.
+
+| Item | Evidence | Status |
+|---|---|---|
+| Old databases open with the new collections | Probe: the two real SQLite fixtures (`legacy-v0.25.3.db.gz`, `legacy-v0.26.0-rc1.db.gz`) were opened under the current code. The results: `Manual.TestRuns` absent, so 0 runs and no manual status; `Calc.DataRecords` absent, so 0 records; the dashboard built 65 rows with no data problem, 31 of them listing records not entered; a guided run was started, recorded, finished and counted on the old file. | Pass |
+| Schema | No schema change. `SqlitePersistenceStore.SchemaVersion` is untouched. C-3 writes into the existing `Calc.DataRecords`. C-5 adds `Manual.TestRuns`, which is created on its first write; each run carries `Schema` 1, and a reader leaves out a newer or unreadable document. C-6 adds no collection: it writes rows of existing collections through the existing services. | Pass |
+| C-3 records stay readable by an earlier build | An imported record is a `CalcDataRecord` with fields that existed in Addendum B (`CalcValueSource` with `EvidenceSha256`). The revision rule is unchanged: a record is never edited, and a licence on any revision locks every revision. | Pass |
+| C-1: removed or renamed inputs | A scan of the C-1 diff for `CalcInputSpec` and `CalcOutputPort` found additions only. Inputs: F2 `p_load`, S-base `u_profis`, M-joint `nu_perm`, S4 `block_load`, `hole_type`, `single_lap`, `t_2`, E8 `bend_model`, F1 `L_closed`, E5 `k_R`, B-hx `T_dew`, E6 `P_rated_add`, E1 `SF_c`, `T_basis`, `T_lim`, `brake`, F3 `ecc`, B8 `L_slide`, `mu`, `w_pipe`, B1 `D_law`, `p_v_custom`, M-press `Rz_h`, `Rz_s`, M4 `S_y_hub`, `T_a`, `w_masses`, M7 `S_e_b`, M-cyl `E`, `nu`. Ports: E4 `theta_op`, F1 `p_push`, E6 `U_L`, `pf_link`, B4 `theta_int`, and 11 on E1. An earlier CSV or JSON input file still imports, and a new input takes its default. | Pass |
+| C-1: defaults that move a result | Two new defaults change a re-run of an earlier sheet: E5 `k_R` 1.125 and E3 `rho_20` 0.0194. The `workshop-radial-c16` example now fails Z_s by 2.8 % (DC-05). A draft re-opened as a new sheet on the current version takes them, with the "template default is used" warning (GR-C-03). | Pass with a note |
+| Template versions (DC-14) | 35 of the 54 templates moved in the delta; 22 of them moved more than once (manifest diff, `TemplateVersionManifest.json`). For example: `elec.motor-sizing` 1.5.0 → 1.9.0, `struct.base-plate` 1.1.1 → 1.5.0, `struct.connection-ec3` 1.2.1 → 1.6.0, `mech.iso286-fit` 1.2.0 → 1.5.0. The catalogue registers one version, so a checked or issued owner-test calculation on any of the 35 cannot be re-run in the worksheet. Its issued sheet stays readable and byte-stable, Revise starts the next revision on the current version, and a draft opens as a new sheet (GR-B-01). | Pass; owner decision open (GR-C-01) |
+| Guided runs across an upgrade | The script version is `<release>+<hash of all steps>`. Any regeneration of a worked example or of the runbook changes it, and `LatestByTemplateAsync` counts only finished runs on the current script. After an update that touches one README, the dashboard's manual-test column reads "Not tested" for every template, not only the changed one (GR-C-02). | Pass with a gap |
+| The demo across an upgrade | The demo's 60 calculations are drafts on the versions of the day. After a later version bump they show "has a newer version" and open as new sheets. The removal reads no template, so Remove and Install again works on any later build. | Pass (GR-C-04) |
+| Crash recovery | C-3 commits a file in one transaction (`RecordImportTests.A_Failed_Write_Rolls_The_Whole_Import_Back`, `One_Bad_Row_Among_Good_Ones_Saves_Nothing`). The C-6 row deletion is one transaction, and its audit row is written before the soft delete (`DemoProjectTests.A_Failure_After_The_Rows_Are_Deleted_Is_Audited_With_The_Real_Counts_…`, `A_Failed_Install_Whose_Clean_Up_Also_Fails_Says_Part_Of_It_Is_Left_And_Remove_Clears_It`). Each guided result is written in its own transaction. SQLite WAL covers a kill between statements, as before. | Pass |
+| Performance baselines | See `orange-team.md`, Addendum C. With 1,000 records the dashboard builds in 0.08–0.13 s. With 1,000 runs of 110 results (a 53 MB database) it builds in 0.8–0.9 s. The records screen list took 2.2 s with 1,000 records and takes 0.18 s after O-C-01. The demo installs in 6.1 s and is removed in 0.09 s (in-memory store). The 0.5 MB guided script parses in 71 ms at start-up. | Pass |
+| Reports path and PDF | A flagged project's sheets and PDFs carry the DEMO watermark from the project flag. Real sheets are unchanged, because `CalcSheetHeader.Watermark` is a new optional last member that is null on every real sheet and the goldens did not move (`DemoWatermarkTests`, `DemoWatermarkPdfTests`). | Pass |
+| Test totals (this review, Linux) | Library, Addendum C classes (record import, dashboard, manual testing, demo, materials, colour regressions): 486/486. Desktop, Addendum C classes (guided test, verification dashboard, demo project and watermark, records screen, seeded unit): 113/113. Core and the full Desktop suite were not run here. The integration gate in `LOG.md` (Engine 465, Sheets 138, Calculators 2,320, FluidPower 118, Import 625, Library 937, Core 7,235, Desktop 1,506) stands. | Pass |
+| Windows build and CI | Not run for Addendum C in this review. | Pending CI |
+
+Findings:
+
+- GR-C-01 (Low, Open, owner, DC-14): 35 templates moved in Addendum C, so owner-test calculations checked or issued on the earlier versions cannot be re-run. Proposed fix: before the first release, decide between the two DC-14 options (keep superseded versions resolvable, or take display-only text out of the content hash). Add a test that pins the refusal text (carried from GR-A-01).
+- GR-C-02 (Low, Open): an upgrade that regenerates any worked example resets the manual-test status of every template to "Not tested". Proposed fix: count a result while its own step is unchanged (a hash per step: template version, inputs and expected values) instead of requiring the whole script version.
+- GR-C-03 (Low, Open, owner, DC-05): a draft re-run on the new E3 and E5 versions picks up the higher resistance defaults, which can turn a PASS into a FAIL (the `workshop-radial-c16` example now fails Z_s by 2.8 %). This is intended, but it is not said on the new-sheet message. Proposed fix: name the changed defaults in the "opened as a new sheet on the current version" message.
+- GR-C-04 (Info): an installed demo goes out of date at the next version bump. Remove and Install again is the route; the user page could say so.
+- The removed demo project staying in the project lists was Black B-C-03, fixed in the second colour round: the lists leave deleted projects out, and a deleted project keeps its number.
+
+### 2026-10-27: C-2, DC-21 builds and DI-08
+
+Checked on `08315a20`. The scope is the work merged after the sections above. It covers C-2 phases A to C, the SVG reader and the self-check (DC-22), ADR-0177, the DC-21 builds and DI-08. Nothing is released, so a stored calculation below exists only in development and owner-test databases. The evidence is code reading, the tests named and the integration reviews. No database probe ran here.
+
+| Item | Evidence | Status |
+|---|---|---|
+| Renamed inputs and columns | The old symbols stay as aliases (DC-24 lists them). An old input file, CSV, link or pack binding is read through them. A conflict is refused, naming both names (`AliasCompatibilityTests`, `ColumnAliasTests`). | Pass |
+| Renamed ports | The old port names stay. `RenamedPortContractTests` pins 222 ports against `PortsBaseline.json`. | Pass |
+| Default units changed (20 inputs and columns) | Each declares `UnitChangedAt` and `UnitWas`. A stored value keeps its own unit, so its number does not move. `UnitChangeContractTests` holds them to the 02260766 catalogue. | Pass |
+| Meaning changed (`struct.section-properties` 1.2.0) | A link, import or pack binding from a 1.1.1 record to `W_el_y` or `W_pl_y` is refused (`SectionPropertiesAxisSwapTests`). | Pass |
+| Superseded versions (DC-14) | The add-only manifest keeps every version resolvable. About 55 % of the 106 superseded versions replay for any record, 25 % for some, and 20 % never (DC-23). A record that does not replay opens read-only. | Pass; owner decision open (DC-23) |
+| Revision labels (DC-15) | After Z come AA, AB … ZZ, AAA. Stored Z+ and Z++ read as the 27th and 28th revision (`CalcRevisionLabelTests`). | Pass |
+| New inputs on saved data | A saved set without `factor_set` runs on the EN recommended set. Without `C_c` it takes 1. `U_g`, `Z_s_max_table` and `mVAm_table` are optional. No value moves (the DC-21 builds' tests). | Pass |
+| Frame caps lowered (DC-15) | A frame stored with more than 1,200 nodes, 2,400 members or 2,400 loads is refused at entry on 1.6.0. Its own version 1.5.0 runs on today's code, which holds the same caps. | Pass with a gap (GR-C-05) |
+| SVG attachments | The in-house reader replaces `Svg.Skia`. All 14 rendering baselines still pass (`SvgRenderComparisonTests`). A nested viewport is now clipped, as the specification says. A file over 16 M characters is now refused where it opened before. | Pass with a note (GR-C-07) |
+| Self-check data | `CheckRecord.SelfCheck` is a new field, read as false on an old row. A pack self-check without `MemberIds` prints on no member. No such record exists before this release. | Pass |
+| New record kinds | Six kinds join `Calc.DataRecords`, with no schema change. Template 48 stays proposed. | Pass |
+| CI | The run of `08315a20` is red: the SVG probe job (SEC-C-12), one chain test and three soak tests. | Pending CI |
+
+Findings (2026-10-27):
+
+- GR-C-05 (Low, Open, owner-test data only): a frame stored above the new caps cannot be re-run on any version. An issued one opens read-only; a draft opens as a new sheet and is refused at entry. Proposed fix: name the caps in that sentence, so the person knows to split the frame.
+- GR-C-06 (Info): ADR-0177 answers GR-C-01, because superseded versions stay resolvable. What is left is DC-23, for the owner before the first release.
+- GR-C-07 (Info): an SVG attachment over 16 M characters that opened before is now refused. Say so in the release notes (DC-22).
+
+> The sections below were written on `release/v0.27.0` (23–24 October 2026) for the legacy calculator replacement (ADR-0167). The owner decided that nothing ships as 0.27.0: the work is part of v0.26.0 and is kept here, unchanged, as a marked part of this file.
+
+## v0.27.0 — legacy records on real release databases (ADR-0167 §2)
+
+| Item | Evidence | Status |
+|---|---|---|
+| Real v0.25.3 and v0.26.0-rc1 databases migrate with nothing lost | `GreyLegacyDatabaseTests` (Library): two SQLite fixtures, each written by that release's own code — its legacy module tests (worked examples and vectors) and the five original definitions executed through a SQLite store with the product's record index — hold 46 records of all 19 legacy calculations. Under the current code every record lists, migrates to an archive (same Id, Draft, Manual provenance), carries a figure, renders an archive sheet with no NaN, and stays readable as a legacy record; on reopening, a second migration adds nothing. | Pass |
+| Fixture regeneration | `git worktree add <dir> <release>`; in that worktree only, point `ModuleTestSupport.BareEngine` at a `SqlitePersistenceStore` rooted at an output folder (passing it as `recordIndex`) and add a test executing the five original definitions; run `dotnet test tests/Tempest.Core.Tests --filter Calculations.Modules` single-threaded; `VACUUM`, gzip and copy to `tests/Tempest.Calc.Tests.Library/Fixtures/`. The release branches are not changed. | Documented |
+
+Findings: GR-03 (Info): the fixtures are written by the release code's engine and store, not by a Desktop session, so they hold no project, Evidence or register objects beside the records; the v0.26 `UpgradeTests` already covers those beside a legacy record.

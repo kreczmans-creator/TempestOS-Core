@@ -118,6 +118,10 @@ internal sealed partial class MainWindowComposer
             callbacks.SetCurrentArea(area.Title);
         };
 
+        // Shot-fix A, item 7: the status bar's area names the open
+        // worksheet's discipline, not the Explorer area last switched to.
+        views.Worksheets.TemplateShown += entry => views.StatusBar.SetArea(Tempest.Desktop.CalcSheets.CalcSheetView.CategoryFor(entry.Template.Discipline));
+
         // The Engineering Calculation surface raises intent; the
         // coordinator performs it through the App-layer workbench.
         views.EngineeringCalculation.PopulateRequested += () => _ = coordinators.EngineeringCalculationCoordinator.PopulateAsync();

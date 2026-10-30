@@ -1,0 +1,232 @@
+[
+  {
+    "Symbol": "D_int",
+    "Number": 40,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "CND-ROUTE-07",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "P_lim",
+    "Number": 3000,
+    "Unit": "N/m",
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: sidewall pressure limit (a value invented for this example; enter the cable maker\u0027s figure)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3000"
+  },
+  {
+    "Symbol": "T_1",
+    "Number": 150,
+    "Unit": "N",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Pulling method statement PMS-4: 150 N rope and pulling-head tension at the start of the pull",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "150"
+  },
+  {
+    "Symbol": "bend_model",
+    "Text": "Horizontal bend, cable on the containment floor (weight term)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Horizontal bends with the cable weight on the conduit floor, as the analytic source computes them.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Horizontal bend, cable on the containment floor (weight term)"
+  },
+  {
+    "Symbol": "cables",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "Servo power"
+          },
+          "od": {
+            "Number": 14,
+            "Unit": "mm"
+          },
+          "count": {
+            "Number": 2
+          },
+          "mass": {
+            "Number": 0.35,
+            "Unit": "kg/m"
+          },
+          "T_max": {
+            "Number": 600,
+            "Unit": "N"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "Encoder and control"
+          },
+          "od": {
+            "Number": 9,
+            "Unit": "mm"
+          },
+          "count": {
+            "Number": 4
+          },
+          "mass": {
+            "Number": 0.12,
+            "Unit": "kg/m"
+          },
+          "T_max": {
+            "Number": 200,
+            "Unit": "N"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Cable data sheets CDS-21 (servo power) and CDS-22 (encoder): overall diameter, mass and maximum pulling tension",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "2 row(s)"
+  },
+  {
+    "Symbol": "cont_type",
+    "Text": "Conduit (round)",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "CND-ROUTE-07",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Conduit (round)"
+  },
+  {
+    "Symbol": "f_max",
+    "Number": 0.5,
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: space factor for this arrangement (a value invented for this example; enter your own from your installation standard or company rule)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.5"
+  },
+  {
+    "Symbol": "mu",
+    "Number": 0.3,
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: coefficient of friction, sheath on lubricated conduit (a value invented for this example; enter your own)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.3"
+  },
+  {
+    "Symbol": "n_bend",
+    "Number": 10,
+    "Provenance": {
+      "Kind": "Reference",
+      "Reference": "record: minimum bend radius multiple (a value invented for this example; enter the largest multiple from the cable data sheets)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10"
+  },
+  {
+    "Symbol": "route",
+    "Rows": [
+      {
+        "Cells": {
+          "kind": {
+            "Text": "Straight"
+          },
+          "L": {
+            "Number": 6,
+            "Unit": "m"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "kind": {
+            "Text": "Bend"
+          },
+          "theta": {
+            "Number": 90,
+            "Unit": "deg"
+          },
+          "R": {
+            "Number": 500,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "kind": {
+            "Text": "Straight"
+          },
+          "L": {
+            "Number": 14,
+            "Unit": "m"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "kind": {
+            "Text": "Bend"
+          },
+          "theta": {
+            "Number": 90,
+            "Unit": "deg"
+          },
+          "R": {
+            "Number": 400,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "kind": {
+            "Text": "Straight"
+          },
+          "L": {
+            "Number": 9,
+            "Unit": "m"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "kind": {
+            "Text": "Bend"
+          },
+          "theta": {
+            "Number": 45,
+            "Unit": "deg"
+          },
+          "R": {
+            "Number": 600,
+            "Unit": "mm"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "CND-ROUTE-07",
+      "Revision": "C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "6 row(s)"
+  }
+]

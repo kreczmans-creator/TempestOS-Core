@@ -1,0 +1,91 @@
+[
+  {
+    "Symbol": "E",
+    "Number": 207,
+    "Unit": "GPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Generic steel Young modulus for the elastic collapse pressure; take it from the material record of the tube.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "207"
+  },
+  {
+    "Symbol": "a",
+    "Number": 40,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-CYL-02",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "b",
+    "Number": 60,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-CYL-02",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "60"
+  },
+  {
+    "Symbol": "closed",
+    "Flag": true,
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-CYL-02",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "yes"
+  },
+  {
+    "Symbol": "nu",
+    "Number": 0.3,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Generic steel Poisson ratio for the elastic collapse pressure; take it from the material record of the tube.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.3"
+  },
+  {
+    "Symbol": "p_i",
+    "Number": 0,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Vented bore.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "p_o",
+    "Number": 20,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-SUB-1 \u00A72 external pressure",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20"
+  },
+  {
+    "Symbol": "sigma_allow",
+    "Number": 100,
+    "Unit": "MPa",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-SUB-1 \u00A74",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "100"
+  }
+]

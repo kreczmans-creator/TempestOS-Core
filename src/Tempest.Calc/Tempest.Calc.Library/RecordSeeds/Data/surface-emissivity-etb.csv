@@ -1,0 +1,14 @@
+finish[text],eps[-]
+"Aluminium, highly polished (low end of 0.039 to 0.057)",0.039
+"Aluminium, commercial sheet",0.09
+"Aluminium, heavily oxidised (low end of 0.2 to 0.31)",0.2
+"Galvanised steel, new",0.23
+"Galvanised steel, old",0.88
+"Stainless steel, polished",0.075
+"Stainless steel, weathered",0.85
+"Steel, oxidised",0.79
+PVC (low end of 0.91 to 0.93),0.91
+Plastics (low end of 0.90 to 0.97),0.9
+Aluminium paint (low end of 0.27 to 0.67),0.27
+"Oil paint, all colours (low end of 0.92 to 0.96)",0.92
+"Rubber, foam",0.9

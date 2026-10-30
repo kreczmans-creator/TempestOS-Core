@@ -1,0 +1,154 @@
+[
+  {
+    "Symbol": "D_i",
+    "Number": 90,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "M-PIP-014",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "90"
+  },
+  {
+    "Symbol": "L_surf",
+    "Number": 1,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used: a pipe.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "RH_a",
+    "Number": 70,
+    "Unit": "%",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-M-11 \u00A72: plant-room design humidity",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "70"
+  },
+  {
+    "Symbol": "T_amb",
+    "Number": 28,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-M-11 \u00A72: plant-room design temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "28"
+  },
+  {
+    "Symbol": "T_proc",
+    "Number": 6,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-M-11 \u00A73: chilled-water flow temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "6"
+  },
+  {
+    "Symbol": "dew_margin",
+    "Number": 1,
+    "Unit": "K",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-M-11 \u00A75: surface at least 1 K above the dew point",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "eps",
+    "Number": 0.9,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Painted or plastic jacket (invented for this example); with h_se given it only judges that value against condensation.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.9"
+  },
+  {
+    "Symbol": "geometry",
+    "Text": "pipe (cylinder)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "A round pipe.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "pipe (cylinder)"
+  },
+  {
+    "Symbol": "h_mode",
+    "Text": "h_se as given",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "A surface coefficient is given, not computed.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "h_se as given"
+  },
+  {
+    "Symbol": "h_se",
+    "Number": 8,
+    "Unit": "W/(m^2*K)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Still air in a plant room; replace with the project\u0027s own record.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "8"
+  },
+  {
+    "Symbol": "lambda",
+    "Number": 0.035,
+    "Unit": "W/(m*K)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Closed-cell elastomeric insulation; take the maker\u0027s value at the mean temperature (W3 material)",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.035"
+  },
+  {
+    "Symbol": "q_max_m",
+    "Number": 12,
+    "Unit": "W/m",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "SPEC-M-11 \u00A75: heat gain not to exceed 12 W/m",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "12"
+  },
+  {
+    "Symbol": "t_chosen",
+    "Number": 25,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Pipework schedule M-SCH-014: 25 mm sleeves",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "25"
+  },
+  {
+    "Symbol": "v_wind",
+    "Number": 0,
+    "Unit": "m/s",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Not used: h_se is given.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  }
+]

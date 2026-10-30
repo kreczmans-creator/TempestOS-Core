@@ -1,0 +1,144 @@
+[
+  {
+    "Symbol": "Q_req",
+    "Number": 120,
+    "Unit": "kW",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Building peak heat load",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "120"
+  },
+  {
+    "Symbol": "R_f",
+    "Number": 0.0001,
+    "Unit": "m^2*K/W",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Treated closed circuits on both sides.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.0001"
+  },
+  {
+    "Symbol": "T_c_in",
+    "Number": 40,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "M-SCH-201",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "T_h_in",
+    "Number": 80,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Network supply temperature",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "80"
+  },
+  {
+    "Symbol": "U_clean",
+    "Number": 3000,
+    "Unit": "W/(m^2*K)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Typical clean plate exchanger, water/water.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3000"
+  },
+  {
+    "Symbol": "arrangement",
+    "Text": "counterflow",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Plate exchanger treated as pure counterflow.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "counterflow"
+  },
+  {
+    "Symbol": "const_side",
+    "Text": "hot side at constant temperature (e.g. condensing vapour)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Used only when one side is at constant temperature (C_r = 0); both streams change temperature here, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "hot side at constant temperature (e.g. condensing vapour)"
+  },
+  {
+    "Symbol": "cp_c",
+    "Number": 4180,
+    "Unit": "J/(kg*K)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Water at about 50 \u00B0C.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4180"
+  },
+  {
+    "Symbol": "cp_h",
+    "Number": 4190,
+    "Unit": "J/(kg*K)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Water at about 70 \u00B0C.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4190"
+  },
+  {
+    "Symbol": "dT_min",
+    "Number": 3,
+    "Unit": "K",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Practical approach for a plate exchanger.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3"
+  },
+  {
+    "Symbol": "m_c",
+    "Number": 1.5,
+    "Unit": "kg/s",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "M-SCH-201",
+      "Revision": "B",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.5"
+  },
+  {
+    "Symbol": "m_h",
+    "Number": 1.2,
+    "Unit": "kg/s",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Network connection agreement, primary flow",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.2"
+  },
+  {
+    "Symbol": "mode",
+    "Text": "sizing (given duty)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Sizing a new exchanger.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "sizing (given duty)"
+  }
+]

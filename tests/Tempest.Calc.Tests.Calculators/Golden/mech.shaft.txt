@@ -1,0 +1,184 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: mech.shaft    Revision: A
+Title: Shaft design
+
+1. Scope and method
+Calculates the bending moment, slope, deflection, fatigue and yield safety factors, critical speed and keys of a stepped shaft on two bearings. It takes radial loads in two planes and a steady torque with an optional alternating part.
+Shaft bending moment: the shaft as an S2 beam (pin at A, roller at B) in each plane; M = √(M_y² + M_z²) Stress at a section: σ_a = K_f·32M_a·d/(π(d⁴ − d_i⁴)), τ_m = K_fs·16T_m·d/(π(d⁴ − d_i⁴)), τ_a = K_fs·16T_a·d/(π(d⁴ − d_i⁴)); K_f = 1 + q(K_t − 1) Endurance limit: S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e1, S_e1 (the rotating-beam limit S_e′) = 0.5·S_ut (S_ut ≤ 1400 MPa, else 700 MPa); k_a = a·S_ut^b, k_b = 1.24d^−0.107 or 1.51d^−0.157, k_e = 1 − 0.08·z_R Fatigue (DE-Goodman, bending fully reversed, torque T_m ± T_a): 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3·τ_m/S_ut; yield n_y = S_y/√((σ_a)² + 3τ_pk²), τ_pk from the larger of T_m + T_a and the peak torque T_pk when given Critical speed: Rayleigh ω = √(g·Σm·y/Σm·y²), y signed (an overhung mass lifts the span, which lowers the quotient); Dunkerley 1/ω² = Σ m_i·δ_ii (lower bound, used for the ratio to the operating speed) Weight loads (with w_masses): F_y,i = −m_i·g at each node, m_i the carried mass plus the shaft's own mass split to the node; without it the loads table is the whole load Parallel key, on the peak torque T_k = the larger of T_m + T_a and T_pk: τ = 2T_k/(d·w·L), σ = 4T_k/(d·h·L); required length L = max(2T_k·n_target/(d·w·0.577·S_y,key), 4T_k·n_target/(d·h·S_y,min)), S_y,min the lowest of the key, the shaft and (when entered) the hub; a shoulder is checked on both sides and the lower n_f governs
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  segments | Shaft segments (left to right) | 1 row(s) |  | manual | any
+  segments[1] |  | x_end = 400 mm; d = 30 mm; d_i = 0 mm |  |  | 
+  loads | Radial loads and masses (a carried mass adds no weight unless w_masses is on: enter its weight as a force in F_y) | 1 row(s) |  | manual | any
+  loads[1] |  | x = 200 mm; F_y = -2 kN; F_z = 0 kN; m = 20 kg |  |  | 
+  sections | Sections to check | 1 row(s) |  | manual | any
+  sections[1] |  | x = 200 mm; K_t = 1; K_ts = 1; q = 0; q_s = 0 |  |  | 
+  x_A | Bearing A position | 0 | mm | manual | 0 … 2000 mm
+  x_B | Bearing B position | 400 | mm | manual | 1 … 2000 mm
+  S_ut | Ultimate tensile strength | 600 | MPa | manual | 300 … 1800 MPa
+  S_y | Yield strength | 450 | MPa | manual | 150 … 1900 MPa
+  E | Young's modulus | 207 | GPa | manual | 50 … 250 GPa
+  rho | Density (shaft self-mass in the critical speed) | 0 | kg/m³ | manual | 0 … 12000 kg/m³
+  T | Torque transmitted, steady or mean part T_m | 0 | kN·m | manual | 0 … 40 kN·m
+  x_T1 | Torque enters at | 0 | mm | manual | 0 … 2000 mm
+  w_masses | Add the weight of the carried masses and of the shaft itself as downward vertical loads (optional; blank = refused when a mass is carried; off: the loads table is the whole load, the weights are entered as forces and the masses enter the critical speed only) | no |  | manual | any
+  n | Operating speed | 1500 | rpm | manual | 0 … 20000 rpm
+  finish | Surface finish | machined or cold-drawn |  | manual | any
+  R_rel | Reliability | 99 | % | manual | 90 … 99.9 %
+  k_d | Temperature factor | 1 |  | manual | 0.5 … 1.1
+  k_f | Miscellaneous factor | 1 |  | manual | 0.3 … 1.5
+  n_target | Target safety factor | 1.5 |  | manual | 1.2 … 3
+  r_c_min | Smallest ratio of the first critical speed to the operating speed | 2 |  | manual | 1.5 … 4
+  theta_max | Slope limit at the bearings | 0.001 | rad | manual | 0.00001 … 0.1 rad
+  y_max | Deflection limit at the loads | 0.13 | mm | manual | 0.001 … 10 mm
+
+3. Assumptions
+  A1. The shaft is linear elastic on two simple bearing supports, a pin at A and a roller at B. (Shigley 10th ed. §7-4.)
+  A2. Bending is fully reversed by rotation. (Shigley 10th ed. §7-4.)
+  A3. The torque is a steady part T_m plus an alternating part T_a, acting between the torque-in and torque-out positions. (The torque is fully alternating when T_m = 0.)
+  A4. The critical speed is the first lateral mode, by Rayleigh with Dunkerley as a lower bound. (Shigley 10th ed. §7-6.)
+  A5. K_t and K_ts come from user records or published fit equations. (No stress-concentration chart is shipped, so the factors are entered or derived.)
+  A6. At a shoulder both sides are checked, each on its own diameter and bore, and the lower factor governs. (Shigley 10th ed. §6-9, §7-4.)
+  A7. The load factor k_c is 1, because the stresses are combined by von Mises. (Shigley 10th ed. §6-9, §7-4.)
+  A8. The loads table is the whole load unless w_masses is on, which adds the weights. (With w_masses on, the sheet adds m·g at the nodes in the vertical plane.)
+  A9. Loads, sections and steps closer together than 1/200 of the shaft length share one node. (Keeps the beam model well conditioned.)
+  A10. The torque leaves at the shaft end, 400 mm, because x_T2 is blank. (Every section beyond the torque entry carries the torque, so enter x_T2 for a torque taken off part-way.)
+
+4. Working
+  [17] R_A = √(R_A,y² + R_A,z²)
+      = √(1² + 0²)
+      = 1 kN
+        Radial reaction at bearing A
+  [18] R_B = √(R_B,y² + R_B,z²)
+      = √(1² + 0²)
+      = 1 kN
+        Radial reaction at bearing B
+  [19] d_A = seat diameter at A
+      = x = 0 mm
+      = 30 mm
+        Shaft diameter at bearing A
+  [20] d_B = seat diameter at B
+      = x = 400 mm
+      = 30 mm
+        Shaft diameter at bearing B
+  [21] M_max = max √(M_y² + M_z²) along the shaft
+      = 9 stations
+      = 0.2 kN·m
+        Largest bending moment
+  [22] theta_A = slope at A (two planes)
+      = x = 0 mm
+      = 0.00243 rad
+        Slope at bearing A
+  [23] theta_B = slope at B (two planes)
+      = x = 400 mm
+      = 0.00243 rad
+        Slope at bearing B
+  [24] y_load = largest deflection at a load
+      = 0.324 mm at 200
+      = 0.324 mm
+        Deflection at the loads
+  [26] k_a = a·S_ut^b    « Shigley 10th ed. §6-9, Table 6-2
+      = 4.51 × 600^-0.265 (machined or cold-drawn)
+      = 0.82788
+        Surface factor
+  [27] k_e = 1 − 0.08·z_R    « Shigley 10th ed. §6-9
+      = 1 − 0.08 × 2.3263
+      = 0.81389
+        Reliability factor
+  [28] S_e1 = 0.5·S_ut (S_e′)
+      = 600 MPa
+      = 300 MPa
+        Rotating-beam endurance limit
+  [29] X1 = σ_a = K_f·32M/(πd³′), τ_m = K_fs·16T_m/(πd³′), τ_a = K_fs·16T_a/(πd³′); 1/n_f = √(σ_a² + 3τ_a²)/S_e + √3τ_m/S_ut    « Shigley 10th ed. §7-4
+      = x = 200 mm, d = 30 mm, k_b = 0.86173, S_e = 174.19 MPa, K_f = 1, K_fs = 1, M = 200 N·m, T = 0 N·m, σ_a = 75.451 MPa, τ_m = 0 MPa, n_y = 5.9641
+      = 2.3086
+        Section at 200 mm: fatigue safety factor (DE-Goodman)
+  [30] S_e = k_a·k_b·k_c·k_d·k_e·k_f·S_e′ (governing section)
+      = k_c = 1
+      = 174.19 MPa
+        Endurance limit at the governing section
+  [31] n_f_min = min over sections
+      = 1 section(s)
+      = 2.3086
+        Lowest fatigue safety factor
+  [32] n_y_min = min over sections S_y/σ′_max
+      = 1 section(s)
+      = 5.9641
+        Lowest yield safety factor
+  [33] n_c = √(g·Σm·y/Σm·y²) (Rayleigh, y signed)    « Shigley 10th ed. §7-6
+      = Σm = 20 kg over 9 nodes
+      = 5305.2 rpm
+        First lateral critical speed (Rayleigh)
+  [34] n_c_D = 1/ω² = Σ m_i·δ_ii (Dunkerley, lower bound)    « Shigley 10th ed. §7-6
+      = 1 masses
+      = 5305.2 rpm
+        First critical speed, Dunkerley lower bound
+  [35] r_c = n_c,D/n
+      = 5305.2 / 1500
+      = 3.5368
+        Critical-speed ratio (Dunkerley lower bound over operating speed)
+  [37] n_c_req = r_c,min·n
+      = 2 × 1500 rpm
+      = 3000 rpm
+        Critical speed required, r_c_min times the operating speed
+  [38] u_f = n_target/n_f,min
+      = 1.5 / 2.3086
+      = 0.64973
+        Fatigue utilisation
+  [39] u_y = n_target/n_y,min
+      = 1.5 / 5.9641
+      = 0.2515
+        Yield utilisation
+  [40] theta_bearing = max(θ_A, θ_B)
+      = max(0.00243, 0.00243)
+      = 0.00243 rad
+        Larger slope at a bearing
+  [41] u_slope = max(θ_A, θ_B)/θ_max
+      = 0.00243 / 0.001
+      = 2.43
+        Slope utilisation
+  [42] u_defl = y_load/y_max
+      = 0.324 / 0.13 mm
+      = 2.4923
+        Deflection utilisation
+
+5. Results
+  R_A = 1 kN    Reaction at A
+  R_B = 1 kN    Reaction at B
+  d_A = 30 mm    Seat diameter at A
+  d_B = 30 mm    Seat diameter at B
+  n_f_min = 2.3086    Lowest fatigue safety factor
+  n_c = 5305 rpm    First critical speed (Rayleigh)
+  M_max = 0.2000 kN·m    Largest bending moment
+  theta_A = 0.002430 rad    Slope at A
+  theta_B = 0.002430 rad    Slope at B
+  y_load = 0.3240 mm    Deflection at the loads
+  S_e = 174.2 MPa    Endurance limit
+  n_y_min = 5.9641    Lowest yield safety factor
+  n_c_D = 5305 rpm    Dunkerley lower bound
+  r_c = 3.5367    Critical-speed ratio
+  u_crit = 0.57    Utilisation of critical speed against the operating speed
+  u_f = 0.65    Fatigue utilisation
+  u_y = 0.25    Yield utilisation
+  u_slope = 2.43    Slope utilisation
+  u_defl = 2.50    Deflection utilisation (governing)
+
+6. Checks (governing first)
+  FAIL  Deflection at the loads against limit: 0.3240 mm vs 0.1300 mm  utilisation 2.50
+  FAIL  Slope at the bearings against limit: 0.002430 rad vs 0.001000 rad  utilisation 2.43
+  PASS  Fatigue safety factor against target (DE-Goodman): 1.5 vs 2.3086  utilisation 0.65  « Shigley 10th ed. §7-4
+  PASS  Critical speed against the operating speed: 3000 rpm vs 5305 rpm  utilisation 0.57  « Shigley 10th ed. §7-6
+  PASS  Yield safety factor against target: 1.5 vs 5.9641  utilisation 0.25
+
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are S_ut, S_y, E (Shaft material); theta_max, y_max (Slope and deflection limits). Enter each as one so its source, edition and licence travel with it.  [record]
+
+8. Verification
+  Template: mech.shaft@1.7.0
+  Known-answer cases passed: 3/3
+
+9. References
+  1. Budynas, Shigley's Mechanical Engineering Design Ch. 6 (§6-9, Table 6-2 Marin surface factors) and Ch. 7 (§7-4 to §7-7), 10th ed. — Fatigue, shaft stresses, deflection, critical speeds, keys
+  2. Mott, Machine Elements in Mechanical Design Ch. 12, 6th ed. — Shaft design

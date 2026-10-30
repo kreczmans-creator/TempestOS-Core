@@ -1,0 +1,758 @@
+{
+  "m9": [
+    {
+      "Symbol": "F_ext",
+      "Number": 0,
+      "Unit": "N",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "F_load",
+      "Number": 3000,
+      "Unit": "N",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A72 (ejector duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3000"
+    },
+    {
+      "Symbol": "F_pre",
+      "Number": 20,
+      "Unit": "N",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "20"
+    },
+    {
+      "Symbol": "J_out",
+      "Number": 0.002,
+      "Unit": "kg*m^2",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.002"
+    },
+    {
+      "Symbol": "L1",
+      "Number": 100,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "100"
+    },
+    {
+      "Symbol": "L2",
+      "Number": 100,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A72 (ejector duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "100"
+    },
+    {
+      "Symbol": "L3",
+      "Number": 300,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A72 (ejector duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "300"
+    },
+    {
+      "Symbol": "L4",
+      "Number": 70,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "70"
+    },
+    {
+      "Symbol": "R_r",
+      "Number": 8,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "8"
+    },
+    {
+      "Symbol": "Rb",
+      "Number": 40,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
+      "Symbol": "T_load",
+      "Number": 1.5,
+      "Unit": "N*m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.5"
+    },
+    {
+      "Symbol": "circuit",
+      "Text": "Open",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A72 (ejector duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Open"
+    },
+    {
+      "Symbol": "e_off",
+      "Number": 0,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A72 (ejector duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "follower",
+      "Text": "Roller",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Roller"
+    },
+    {
+      "Symbol": "k_sp",
+      "Number": 5,
+      "Unit": "kN/m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5"
+    },
+    {
+      "Symbol": "load_dir",
+      "Text": "Opposes motion",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A72 (ejector duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Opposes motion"
+    },
+    {
+      "Symbol": "m_f",
+      "Number": 0.2,
+      "Unit": "kg",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.2"
+    },
+    {
+      "Symbol": "m_slider",
+      "Number": 40,
+      "Unit": "kg",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A72 (ejector duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
+      "Symbol": "mode",
+      "Text": "Slider-crank",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A72 (ejector duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Slider-crank"
+    },
+    {
+      "Symbol": "mu_req",
+      "Number": 40,
+      "Unit": "deg",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A72 (ejector duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
+      "Symbol": "n_in",
+      "Number": 30,
+      "Unit": "rpm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A72 (ejector duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "phi_max",
+      "Number": 30,
+      "Unit": "deg",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "30"
+    },
+    {
+      "Symbol": "steps",
+      "Number": 72,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A72 (ejector duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "72"
+    },
+    {
+      "Symbol": "theta_range",
+      "Number": 360,
+      "Unit": "deg",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A72 (ejector duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "360"
+    },
+    {
+      "Symbol": "theta_start",
+      "Number": 0,
+      "Unit": "deg",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A72 (ejector duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    }
+  ],
+  "f1": [
+    {
+      "Symbol": "C_d",
+      "Number": 0.62,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.62"
+    },
+    {
+      "Symbol": "D",
+      "Number": 40,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-EJT-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
+      "Symbol": "E",
+      "Number": 210,
+      "Unit": "GPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "210"
+    },
+    {
+      "Symbol": "F_pull",
+      "Number": 3.052637890139143,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:eb2172463a2e4813b80b333ada138b23#follower_force",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3.05264"
+    },
+    {
+      "Symbol": "F_push",
+      "Number": 3.052637890139143,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:eb2172463a2e4813b80b333ada138b23#follower_force",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3.05264"
+    },
+    {
+      "Symbol": "K_m",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "L_add",
+      "Number": 100,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "100"
+    },
+    {
+      "Symbol": "S_f",
+      "Number": 3.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3.5"
+    },
+    {
+      "Symbol": "d_prs",
+      "Number": 16,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "16"
+    },
+    {
+      "Symbol": "d_r",
+      "Number": 22,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-EJT-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "22"
+    },
+    {
+      "Symbol": "d_ret",
+      "Number": 25,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "25"
+    },
+    {
+      "Symbol": "d_suc",
+      "Number": 40,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
+      "Symbol": "eta_hm",
+      "Number": 0.9,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.9"
+    },
+    {
+      "Symbol": "eta_m",
+      "Number": 0.95,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.95"
+    },
+    {
+      "Symbol": "eta_tp",
+      "Number": 0.88,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.88"
+    },
+    {
+      "Symbol": "eta_vc",
+      "Number": 0.98,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.98"
+    },
+    {
+      "Symbol": "eta_vp",
+      "Number": 0.95,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.95"
+    },
+    {
+      "Symbol": "f_y",
+      "Number": 500,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "500"
+    },
+    {
+      "Symbol": "mode",
+      "Text": "Standard",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-EJT-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Standard"
+    },
+    {
+      "Symbol": "p_back",
+      "Number": 0,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "p_sys",
+      "Number": 100,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-EJT-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "100"
+    },
+    {
+      "Symbol": "rho",
+      "Number": 870,
+      "Unit": "kg/m^3",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-EJT-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "870"
+    },
+    {
+      "Symbol": "stroke",
+      "Number": 200,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-EJT-210",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "200"
+    },
+    {
+      "Symbol": "t_dwell",
+      "Number": 0,
+      "Unit": "s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "v_prs_max",
+      "Number": 5,
+      "Unit": "m/s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "5"
+    },
+    {
+      "Symbol": "v_req",
+      "Number": 331.32478515945087,
+      "Unit": "mm/s",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:eb2172463a2e4813b80b333ada138b23#output_motion",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "331.325"
+    },
+    {
+      "Symbol": "v_ret_max",
+      "Number": 3,
+      "Unit": "m/s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3"
+    },
+    {
+      "Symbol": "v_suc_max",
+      "Number": 1.2,
+      "Unit": "m/s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.2"
+    }
+  ],
+  "f2": [
+    {
+      "Symbol": "T_c",
+      "Number": 20,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "20"
+    },
+    {
+      "Symbol": "T_max",
+      "Number": 50,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A74 (accumulator)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "50"
+    },
+    {
+      "Symbol": "T_min",
+      "Number": 10,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A74 (accumulator)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "dV",
+      "Number": 0.25132741228718347,
+      "Unit": "L",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:4409c1a50cba407d874cb77d71d7831e#dV",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.251327"
+    },
+    {
+      "Symbol": "f_rg",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "mode",
+      "Text": "Emergency stroke",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A74 (accumulator)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Emergency stroke"
+    },
+    {
+      "Symbol": "n_gas",
+      "Number": 1.4,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A74 (accumulator)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.4"
+    },
+    {
+      "Symbol": "p_0",
+      "Number": 50,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A74 (accumulator)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "50"
+    },
+    {
+      "Symbol": "p_1",
+      "Number": 60,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-EJT-02 \u00A74 (accumulator)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "60"
+    },
+    {
+      "Symbol": "p_2",
+      "Number": 100,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:4409c1a50cba407d874cb77d71d7831e#p_sys",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "100"
+    },
+    {
+      "Symbol": "p_atm",
+      "Number": 1.01325,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.01325"
+    },
+    {
+      "Symbol": "p_basis",
+      "Text": "Gauge",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "Gauge"
+    },
+    {
+      "Symbol": "p_load",
+      "Number": 25.570653141329416,
+      "Unit": "bar",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:4409c1a50cba407d874cb77d71d7831e#p_push",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "25.5707"
+    },
+    {
+      "Symbol": "process",
+      "Text": "By duty",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "By duty"
+    },
+    {
+      "Symbol": "r_0",
+      "Number": 0.9,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.9"
+    },
+    {
+      "Symbol": "r_p",
+      "Number": 4,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4"
+    }
+  ]
+}

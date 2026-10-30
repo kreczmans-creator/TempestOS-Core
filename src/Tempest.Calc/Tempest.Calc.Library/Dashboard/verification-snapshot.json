@@ -1,0 +1,3109 @@
+{
+ "schema": 1,
+ "generatedBy": "scripts/generate-verification-snapshot.py",
+ "sources": {
+  "rederivation": "3738520fd54a185312ad9441b014f89a0e52620ca01f5d3390e706fb0ae90082",
+  "knownDefects": "7b31f620002431f204885bce359ca6a72161ca0cfdae6660daa7ec8c3d8c59e3",
+  "katResults": "4e7e1f7277bca28c1652d81667cb78b4a619f62b6bb37299a8370924816139af",
+  "workedExamples": "fbf11fca3e3a09fc1973af2a1fe90747aa98169bc766cf739ce32be339525996",
+  "generator": "44f38f035fcf5937ab168f648e6a714578568d822ffce5c1d151e261c577171e"
+ },
+ "defectTotals": {
+  "Critical": {
+   "fixed": 4
+  },
+  "High": {
+   "fixed": 53,
+   "owner-decision": 2
+  },
+  "Medium": {
+   "fixed": 78,
+   "open": 7,
+   "owner-decision": 1
+  }
+ },
+ "items": {
+  "bs.duct-sizing": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.2.1",
+    "kats": 3,
+    "katsPassed": 3,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (confirmed in review: no Critical or High)",
+    "findings": [
+     {
+      "id": "bs.duct-sizing-01",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "bs.duct-sizing-02",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.duct-sizing-03",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.duct-sizing-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.duct-sizing-05",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "bs.duct-sizing-06",
+      "severity": "Info",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "bs.glaser": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.4.0",
+    "kats": 8,
+    "katsPassed": 8,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: P1-01 upgraded to High)",
+    "findings": [
+     {
+      "id": "bs.glaser-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "bs.glaser-02",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.glaser-03",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.glaser-04",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "bs.glaser-05",
+      "severity": "Info",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "bs.heat-exchanger": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.5.0",
+    "kats": 7,
+    "katsPassed": 7,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (confirmed in review: no Critical or High)",
+    "findings": [
+     {
+      "id": "bs.heat-exchanger-01",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "bs.heat-exchanger-02",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.heat-exchanger-03",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.heat-exchanger-04",
+      "severity": "Info",
+      "defect": "fixed"
+     },
+     {
+      "id": "bs.heat-exchanger-05",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "bs.heat-exchanger-06",
+      "severity": "Info",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "bs.insulation": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.2.0",
+    "kats": 14,
+    "katsPassed": 14,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: one High, -01)",
+    "findings": [
+     {
+      "id": "bs.insulation-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "bs.insulation-02",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.insulation-03",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "bs.insulation-04",
+      "severity": "Info",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "bs.pipe-expansion": {
+   "workedExamples": 3,
+   "kat": {
+    "version": "1.5.2",
+    "kats": 6,
+    "katsPassed": 6,
+    "failedKats": [],
+    "examplesPassed": 3,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: one Medium, R1; the rest Low or Info)",
+    "findings": [
+     {
+      "id": "bs.pipe-expansion-01",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.pipe-expansion-02",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.pipe-expansion-03",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "bs.pipe-expansion-04",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "bs.pipe-expansion-R1",
+      "severity": "Medium",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "bs.pipe-pump": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.10.1",
+    "kats": 5,
+    "katsPassed": 5,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (after independent review: 3 High, 3 Medium open)",
+    "findings": [
+     {
+      "id": "bs.pipe-pump-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "bs.pipe-pump-02",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "bs.pipe-pump-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "bs.pipe-pump-04",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "bs.pipe-pump-05",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.pipe-pump-06",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "bs.pipe-pump-07",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.pipe-pump-08",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "bs.pipe-pump-09",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.pipe-pump-C1",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.pipe-pump-C2",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "bs.pipe-pump-R1",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "bs.pipe-pump-R2",
+      "severity": "Medium",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "bs.plane-wall": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.1.0",
+    "kats": 3,
+    "katsPassed": 3,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   }
+  },
+  "bs.psychrometrics": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.4.0",
+    "kats": 4,
+    "katsPassed": 4,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (after independent review: 1 Critical, 1 High open)",
+    "findings": [
+     {
+      "id": "bs.psychrometrics-01",
+      "severity": "Critical",
+      "defect": "fixed"
+     },
+     {
+      "id": "bs.psychrometrics-02",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.psychrometrics-03",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.psychrometrics-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.psychrometrics-05",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.psychrometrics-06",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.psychrometrics-07",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "bs.psychrometrics-08",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "bs.psychrometrics-R1",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "bs.psychrometrics-R2",
+      "severity": "Low",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "bs.room-heat-loss": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.6.0",
+    "kats": 6,
+    "katsPassed": 6,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (after review: one High, two Medium)",
+    "findings": [
+     {
+      "id": "bs.room-heat-loss-01",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "bs.room-heat-loss-02",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.room-heat-loss-03",
+      "severity": "Low",
+      "defect": "fixed"
+     },
+     {
+      "id": "bs.room-heat-loss-04",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "bs.room-heat-loss-05",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "bs.room-heat-loss-R1",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "bs.room-heat-loss-R2",
+      "severity": "Medium",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "bs.sealed-system": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.5.1",
+    "kats": 4,
+    "katsPassed": 4,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (after independent review: 2 High open, owner to confirm the standard values)",
+    "findings": [
+     {
+      "id": "bs.sealed-system-01",
+      "severity": "Low",
+      "defect": "fixed"
+     },
+     {
+      "id": "bs.sealed-system-02",
+      "severity": "High",
+      "defect": "owner-decision"
+     },
+     {
+      "id": "bs.sealed-system-03",
+      "severity": "High",
+      "defect": "owner-decision"
+     },
+     {
+      "id": "bs.sealed-system-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.sealed-system-05",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.sealed-system-06",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "bs.sealed-system-07",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "bs.sealed-system-C1",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "bs.sealed-system-R1",
+      "severity": "Low",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "elec.conductor-sizing": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.5.0",
+    "kats": 7,
+    "katsPassed": 7,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (after review: two High, three Medium on the calculator; the arithmetic and the selection logic are right)",
+    "findings": [
+     {
+      "id": "elec.conductor-sizing-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.conductor-sizing-02",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.conductor-sizing-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.conductor-sizing-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.conductor-sizing-05",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.conductor-sizing-06",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.conductor-sizing-07",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.conductor-sizing-08",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "elec.conductor-sizing-09",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "elec.conductor-sizing-10",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "elec.conductor-sizing-E1",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.conductor-sizing-R1",
+      "severity": "High",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "elec.containment": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.3.0",
+    "kats": 8,
+    "katsPassed": 8,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: one High, -01)",
+    "findings": [
+     {
+      "id": "elec.containment-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.containment-02",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.containment-03",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "elec.containment-04",
+      "severity": "Info",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "elec.enclosure-heat": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.7.1",
+    "kats": 4,
+    "katsPassed": 4,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: no High; one Medium)",
+    "findings": [
+     {
+      "id": "elec.enclosure-heat-01",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.enclosure-heat-02",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.enclosure-heat-03",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.enclosure-heat-04",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "elec.enclosure-heat-05",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "elec.enclosure-heat-R1",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.enclosure-heat-R2",
+      "severity": "Low",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "elec.fault-protection": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.6.0",
+    "kats": 6,
+    "katsPassed": 6,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: five High)",
+    "findings": [
+     {
+      "id": "elec.fault-protection-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.fault-protection-02",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.fault-protection-03",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.fault-protection-04",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.fault-protection-05",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.fault-protection-06",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.fault-protection-07",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.fault-protection-08",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.fault-protection-09",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.fault-protection-10",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.fault-protection-11",
+      "severity": "Rejected",
+      "defect": null
+     },
+     {
+      "id": "elec.fault-protection-12",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "elec.fault-protection-13",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "elec.fault-protection-E1",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "elec.fault-protection-E2",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.fault-protection-R1",
+      "severity": "High",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "elec.load-budget": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.6.1",
+    "kats": 4,
+    "katsPassed": 4,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: three High, four Medium)",
+    "findings": [
+     {
+      "id": "elec.load-budget-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.load-budget-02",
+      "severity": "Medium",
+      "defect": "open"
+     },
+     {
+      "id": "elec.load-budget-03",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.load-budget-04",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.load-budget-05",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.load-budget-06",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.load-budget-07",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.load-budget-08",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.load-budget-09",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "elec.load-budget-10",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "elec.load-budget-C1",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.load-budget-R1",
+      "severity": "High",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "elec.motor-sizing": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.11.1",
+    "kats": 3,
+    "katsPassed": 3,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: two High, four Medium including R1 and R2; the re-check at 2f53791c adds one Medium, G1)",
+    "findings": [
+     {
+      "id": "elec.motor-sizing-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.motor-sizing-02",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.motor-sizing-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.motor-sizing-04",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.motor-sizing-05",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.motor-sizing-06",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.motor-sizing-07",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.motor-sizing-08",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "elec.motor-sizing-C1",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.motor-sizing-C2",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.motor-sizing-C3",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.motor-sizing-C4",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.motor-sizing-E1",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.motor-sizing-G1",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.motor-sizing-R1",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.motor-sizing-R2",
+      "severity": "Medium",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "elec.motor-start": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.3.0",
+    "kats": 8,
+    "katsPassed": 8,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   }
+  },
+  "elec.pcb-trace": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.3.0",
+    "kats": 6,
+    "katsPassed": 6,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS",
+    "findings": [
+     {
+      "id": "elec.pcb-trace-01",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.pcb-trace-02",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.pcb-trace-03",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.pcb-trace-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.pcb-trace-05",
+      "severity": "Info",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "elec.thermal-chain": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.1.1",
+    "kats": 4,
+    "katsPassed": 4,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   }
+  },
+  "elec.voltage-drop": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.5.0",
+    "kats": 4,
+    "katsPassed": 4,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: one High, two Medium)",
+    "findings": [
+     {
+      "id": "elec.voltage-drop-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.voltage-drop-02",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.voltage-drop-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "elec.voltage-drop-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.voltage-drop-05",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "elec.voltage-drop-R1",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "elec.voltage-drop-R2",
+      "severity": "Low",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "fp.accumulator": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.7.0",
+    "kats": 10,
+    "katsPassed": 10,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: one Critical, three High; see Independent review)",
+    "findings": [
+     {
+      "id": "fp.accumulator-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "fp.accumulator-02",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "fp.accumulator-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "fp.accumulator-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "fp.accumulator-05",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "fp.accumulator-R1",
+      "severity": "Critical",
+      "defect": "fixed"
+     },
+     {
+      "id": "fp.accumulator-R2",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "fp.accumulator-R3",
+      "severity": "Low",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "fp.cylinder": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.5.0",
+    "kats": 7,
+    "katsPassed": 7,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: one High, R1, the buckling length; the original findings are Low or Info)",
+    "findings": [
+     {
+      "id": "fp.cylinder-01",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "fp.cylinder-02",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "fp.cylinder-03",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "fp.cylinder-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "fp.cylinder-05",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "fp.cylinder-06",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "fp.cylinder-07",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "fp.cylinder-08",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "fp.cylinder-R1",
+      "severity": "High",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "fp.oring-gland": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.5.0",
+    "kats": 13,
+    "katsPassed": 13,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: one High, -01; three Medium including R1)",
+    "findings": [
+     {
+      "id": "fp.oring-gland-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "fp.oring-gland-02",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "fp.oring-gland-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "fp.oring-gland-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "fp.oring-gland-05",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "fp.oring-gland-06",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "fp.oring-gland-07",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "fp.oring-gland-08",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "fp.oring-gland-09",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "fp.oring-gland-10",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "fp.oring-gland-11",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "fp.oring-gland-12",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "fp.oring-gland-R1",
+      "severity": "Medium",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "mech.bearing-life": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.3.0",
+    "kats": 5,
+    "katsPassed": 5,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (two findings upgraded to High in review)",
+    "findings": [
+     {
+      "id": "mech.bearing-life-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.bearing-life-02",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.bearing-life-03",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.bearing-life-04",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.bearing-life-05",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.bearing-life-E1",
+      "severity": "Info",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "mech.bearing-life-basic": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.1.0",
+    "kats": 3,
+    "katsPassed": 3,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   }
+  },
+  "mech.bolt-group": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.5.0",
+    "kats": 8,
+    "katsPassed": 8,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS",
+    "findings": [
+     {
+      "id": "mech.bolt-group-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.bolt-group-02",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.bolt-group-03",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.bolt-group-04",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.bolt-group-05",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.bolt-group-06",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.bolt-group-E1",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.bolt-group-R1",
+      "severity": "Medium",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "mech.bolted-joint": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.3.1",
+    "kats": 5,
+    "katsPassed": 5,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (one High added in review: -R1)",
+    "findings": [
+     {
+      "id": "mech.bolted-joint-01",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.bolted-joint-02",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.bolted-joint-03",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.bolted-joint-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.bolted-joint-05",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.bolted-joint-06",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.bolted-joint-07",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.bolted-joint-R1",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.bolted-joint-R2",
+      "severity": "Medium",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "mech.fatigue-miner": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.1.0",
+    "kats": 2,
+    "katsPassed": 2,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   }
+  },
+  "mech.iso286-fit": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.6.1",
+    "kats": 3,
+    "katsPassed": 3,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: three High — -01, -02, -05 — and two Medium)",
+    "findings": [
+     {
+      "id": "mech.iso286-fit-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.iso286-fit-02",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.iso286-fit-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.iso286-fit-04",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.iso286-fit-05",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.iso286-fit-06",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.iso286-fit-07",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.iso286-fit-08",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.iso286-fit-09",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.iso286-fit-E1",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.iso286-fit-R1",
+      "severity": "Low",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "mech.lifting-lug": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.2.0",
+    "kats": 2,
+    "katsPassed": 2,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   }
+  },
+  "mech.material-margin": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.1.0",
+    "kats": 2,
+    "katsPassed": 2,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   }
+  },
+  "mech.mechanism": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.3.1",
+    "kats": 16,
+    "katsPassed": 16,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   }
+  },
+  "mech.press-fit": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.3.0",
+    "kats": 2,
+    "katsPassed": 2,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: one High, one Medium R1)",
+    "findings": [
+     {
+      "id": "mech.press-fit-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.press-fit-02",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.press-fit-03",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.press-fit-04",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.press-fit-R1",
+      "severity": "Medium",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "mech.shaft": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.7.0",
+    "kats": 3,
+    "katsPassed": 3,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: one High, five Medium including R1)",
+    "findings": [
+     {
+      "id": "mech.shaft-01",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.shaft-02",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.shaft-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.shaft-04",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.shaft-05",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.shaft-06",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.shaft-07",
+      "severity": "Rejected",
+      "defect": null
+     },
+     {
+      "id": "mech.shaft-08",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.shaft-09",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.shaft-C1",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.shaft-C2",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.shaft-E1",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.shaft-R1",
+      "severity": "Medium",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "mech.shaft-stress": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.1.1",
+    "kats": 3,
+    "katsPassed": 3,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   }
+  },
+  "mech.snap-fit": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.5.0",
+    "kats": 11,
+    "katsPassed": 11,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS",
+    "findings": [
+     {
+      "id": "mech.snap-fit-01",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.snap-fit-02",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.snap-fit-03",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.snap-fit-04",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.snap-fit-05",
+      "severity": "Info",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "mech.spring": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.6.0",
+    "kats": 8,
+    "katsPassed": 8,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS",
+    "findings": [
+     {
+      "id": "mech.spring-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.spring-02",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.spring-03",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.spring-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.spring-05",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.spring-06",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.spring-07",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.spring-08",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.spring-09",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.spring-R1",
+      "severity": "Medium",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "mech.thermal-expansion": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.1.1",
+    "kats": 5,
+    "katsPassed": 5,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   }
+  },
+  "mech.thick-cylinder": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "2.2.1",
+    "kats": 3,
+    "katsPassed": 3,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: one High, -01)",
+    "findings": [
+     {
+      "id": "mech.thick-cylinder-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.thick-cylinder-02",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.thick-cylinder-03",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.thick-cylinder-04",
+      "severity": "Info",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "mech.thin-vessel": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.1.0",
+    "kats": 2,
+    "katsPassed": 2,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   }
+  },
+  "mech.tolerance-stack": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "2.3.0",
+    "kats": 7,
+    "katsPassed": 7,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: no Critical, High or Medium findings)",
+    "findings": [
+     {
+      "id": "mech.tolerance-stack-01",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.tolerance-stack-02",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.tolerance-stack-03",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.tolerance-stack-04",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "mech.tolerance-stack-R1",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.tolerance-stack-R2",
+      "severity": "Low",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "mech.weld-group": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.3.0",
+    "kats": 4,
+    "katsPassed": 4,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS",
+    "findings": [
+     {
+      "id": "mech.weld-group-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.weld-group-02",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.weld-group-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "mech.weld-group-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "mech.weld-group-05",
+      "severity": "Info",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "pack.actuated-linkage": {
+   "workedExamples": 1,
+   "exampleChecks": 12,
+   "exampleChecksPassed": 12,
+   "packRun": {
+    "steps": 3,
+    "bindings": 6,
+    "passed": true,
+    "failures": []
+   }
+  },
+  "pack.bracket-assembly-m2-m3-s1": {
+   "workedExamples": 1,
+   "exampleChecks": 0,
+   "exampleChecksPassed": 0
+  },
+  "pack.cold-pipe": {
+   "workedExamples": 1,
+   "exampleChecks": 2,
+   "exampleChecksPassed": 2,
+   "packRun": {
+    "steps": 3,
+    "bindings": 5,
+    "passed": true,
+    "failures": []
+   }
+  },
+  "pack.cooling": {
+   "workedExamples": 1,
+   "exampleChecks": 3,
+   "exampleChecksPassed": 2,
+   "packRun": {
+    "steps": 4,
+    "bindings": 7,
+    "passed": true,
+    "failures": []
+   },
+   "rederivation": {
+    "result": "values-transfer",
+    "verdict": "VALUES TRANSFER CORRECTLY; FOUR MEDIUM (-01 TO -04), SIX LOW, THREE INFO (reviewed 2026-10-24; no Critical or High)",
+    "findings": [
+     {
+      "id": "chain.cooling-01",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.cooling-02",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.cooling-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.cooling-04",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.cooling-05",
+      "severity": "Low",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.cooling-06",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.cooling-07",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.cooling-08",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.cooling-09",
+      "severity": "Low",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.cooling-10",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "chain.cooling-11",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "chain.cooling-12",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "chain.cooling-R1",
+      "severity": "Low",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "pack.drive-train": {
+   "workedExamples": 1,
+   "exampleChecks": 17,
+   "exampleChecksPassed": 17,
+   "packRun": {
+    "steps": 5,
+    "bindings": 9,
+    "passed": true,
+    "failures": []
+   },
+   "rederivation": {
+    "result": "values-transfer",
+    "verdict": "VALUES TRANSFER CORRECTLY; THE TORQUE LINKS ARE WRONG IN MEANING (one Critical, three High, four Medium; reviewed at 298ade36)",
+    "findings": [
+     {
+      "id": "chain.drive-train-01",
+      "severity": "Critical",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.drive-train-02",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.drive-train-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.drive-train-04",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "chain.drive-train-05",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.drive-train-06",
+      "severity": "Medium",
+      "defect": "open"
+     },
+     {
+      "id": "chain.drive-train-07",
+      "severity": "Medium",
+      "defect": "open"
+     },
+     {
+      "id": "chain.drive-train-08",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.drive-train-09",
+      "severity": "Low",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.drive-train-10",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.drive-train-C1",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.drive-train-D1",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.drive-train-D2",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.drive-train-D3",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.drive-train-E1",
+      "severity": "Low",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "pack.electronics-enclosure": {
+   "workedExamples": 1,
+   "exampleChecks": 7,
+   "exampleChecksPassed": 7,
+   "packRun": {
+    "steps": 5,
+    "bindings": 5,
+    "passed": true,
+    "failures": []
+   }
+  },
+  "pack.envelope-moisture": {
+   "workedExamples": 1,
+   "exampleChecks": 4,
+   "exampleChecksPassed": 4,
+   "packRun": {
+    "steps": 3,
+    "bindings": 3,
+    "passed": true,
+    "failures": []
+   }
+  },
+  "pack.hydraulic-power-unit": {
+   "workedExamples": 1,
+   "exampleChecks": 26,
+   "exampleChecksPassed": 26,
+   "packRun": {
+    "steps": 8,
+    "bindings": 24,
+    "passed": true,
+    "failures": []
+   },
+   "rederivation": {
+    "result": "values-transfer",
+    "verdict": "VALUES TRANSFER CORRECTLY; TWO HIGH (-01 INHERITED FROM F2, -02), ONE MEDIUM (-03), SIX LOW OR INFO (reviewed)",
+    "findings": [
+     {
+      "id": "chain.hydraulic-power-unit-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.hydraulic-power-unit-02",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.hydraulic-power-unit-03",
+      "severity": "Medium",
+      "defect": "open"
+     },
+     {
+      "id": "chain.hydraulic-power-unit-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.hydraulic-power-unit-05",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.hydraulic-power-unit-06",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.hydraulic-power-unit-07",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.hydraulic-power-unit-08",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.hydraulic-power-unit-09",
+      "severity": "Info",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "pack.mechanism-review": {
+   "workedExamples": 1,
+   "exampleChecks": 23,
+   "exampleChecksPassed": 23,
+   "packRun": {
+    "steps": 6,
+    "bindings": 12,
+    "passed": true,
+    "failures": []
+   }
+  },
+  "pack.motor-circuit": {
+   "workedExamples": 1,
+   "exampleChecks": 12,
+   "exampleChecksPassed": 12,
+   "packRun": {
+    "steps": 6,
+    "bindings": 16,
+    "passed": true,
+    "failures": []
+   },
+   "rederivation": {
+    "result": "values-transfer",
+    "verdict": "VALUES TRANSFER CORRECTLY; after review THREE HIGH FINDINGS IN THE LINKS (an unlinked device type, duty-weighted current from E6 R1, an unlinked cpc size), FIVE MEDIUM",
+    "findings": [
+     {
+      "id": "chain.motor-circuit-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.motor-circuit-02",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.motor-circuit-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.motor-circuit-04",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.motor-circuit-05",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.motor-circuit-06",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.motor-circuit-07",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.motor-circuit-08",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.motor-circuit-09",
+      "severity": "Low",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.motor-circuit-10",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.motor-circuit-11",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "chain.motor-circuit-C1",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.motor-circuit-E1",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.motor-circuit-R1",
+      "severity": "Medium",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "pack.pipework-supports": {
+   "workedExamples": 1,
+   "exampleChecks": 9,
+   "exampleChecksPassed": 9,
+   "packRun": {
+    "steps": 3,
+    "bindings": 4,
+    "passed": true,
+    "failures": []
+   }
+  },
+  "pack.steel-support": {
+   "workedExamples": 1,
+   "exampleChecks": 28,
+   "exampleChecksPassed": 28,
+   "packRun": {
+    "steps": 7,
+    "bindings": 17,
+    "passed": true,
+    "failures": []
+   },
+   "rederivation": {
+    "result": "values-transfer",
+    "verdict": "VALUES TRANSFER CORRECTLY; SEVEN MEDIUM (-01 TO -05, -13, R1), SEVEN LOW, THREE INFO (reviewed 2026-10-24; no Critical or High)",
+    "findings": [
+     {
+      "id": "chain.steel-support-01",
+      "severity": "Medium",
+      "defect": "open"
+     },
+     {
+      "id": "chain.steel-support-02",
+      "severity": "Medium",
+      "defect": "open"
+     },
+     {
+      "id": "chain.steel-support-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.steel-support-04",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.steel-support-05",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.steel-support-06",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.steel-support-07",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.steel-support-08",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.steel-support-09",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.steel-support-10",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.steel-support-11",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.steel-support-12",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.steel-support-13",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.steel-support-14",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "chain.steel-support-15",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "chain.steel-support-16",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "chain.steel-support-E1",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "chain.steel-support-R1",
+      "severity": "Medium",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "pack.wet-heating": {
+   "workedExamples": 1,
+   "exampleChecks": 7,
+   "exampleChecksPassed": 7,
+   "packRun": {
+    "steps": 5,
+    "bindings": 9,
+    "passed": true,
+    "failures": []
+   },
+   "rederivation": {
+    "result": "values-transfer",
+    "verdict": "VALUES TRANSFER CORRECTLY; TWO HIGH (-01 INHERITED FROM B4, R1 AFFINITY SPEED NOT PASSED TO E1), FOUR MEDIUM (-03 to -06), NINE LOW OR INFO (after independent review)",
+    "findings": [
+     {
+      "id": "chain.wet-heating-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.wet-heating-02",
+      "severity": "Low",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.wet-heating-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.wet-heating-04",
+      "severity": "Medium",
+      "defect": "open"
+     },
+     {
+      "id": "chain.wet-heating-05",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.wet-heating-06",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.wet-heating-07",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.wet-heating-08",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.wet-heating-09",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.wet-heating-10",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.wet-heating-11",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.wet-heating-12",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "chain.wet-heating-13",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "chain.wet-heating-14",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "chain.wet-heating-D1",
+      "severity": "Low",
+      "defect": "fixed"
+     },
+     {
+      "id": "chain.wet-heating-R1",
+      "severity": "High",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "struct.base-plate": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.8.0",
+    "kats": 9,
+    "katsPassed": 9,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (after review: one High, three Medium)",
+    "findings": [
+     {
+      "id": "struct.base-plate-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.base-plate-02",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.base-plate-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.base-plate-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.base-plate-05",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "struct.base-plate-06",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "struct.base-plate-07",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "struct.base-plate-E1",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.base-plate-R1",
+      "severity": "Medium",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "struct.beam-formulas": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.2.0",
+    "kats": 8,
+    "katsPassed": 8,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS",
+    "findings": [
+     {
+      "id": "struct.beam-formulas-01",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.beam-formulas-02",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.beam-formulas-03",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.beam-formulas-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.beam-formulas-05",
+      "severity": "Info",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "struct.column-buckling": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.1.0",
+    "kats": 3,
+    "katsPassed": 3,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   }
+  },
+  "struct.connection-ec3": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.9.0",
+    "kats": 9,
+    "katsPassed": 9,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (reviewed: four High — -01, -03, -04, R1 — and one Medium)",
+    "findings": [
+     {
+      "id": "struct.connection-ec3-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.connection-ec3-02",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.connection-ec3-03",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.connection-ec3-04",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.connection-ec3-05",
+      "severity": "Low",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.connection-ec3-06",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.connection-ec3-07",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.connection-ec3-08",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.connection-ec3-09",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "struct.connection-ec3-C1",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.connection-ec3-D1",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.connection-ec3-E1",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.connection-ec3-R1",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.connection-ec3-R2",
+      "severity": "Low",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.connection-ec3-R3",
+      "severity": "Low",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "struct.en1993-member": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.6.0",
+    "kats": 3,
+    "katsPassed": 3,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (two High after review: -02 upgraded, -R1 added)",
+    "findings": [
+     {
+      "id": "struct.en1993-member-01",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.en1993-member-02",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.en1993-member-03",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.en1993-member-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.en1993-member-05",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.en1993-member-06",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.en1993-member-07",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "struct.en1993-member-R1",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.en1993-member-R2",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.en1993-member-R3",
+      "severity": "Low",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "struct.fillet-weld": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.2.0",
+    "kats": 3,
+    "katsPassed": 3,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   }
+  },
+  "struct.frame-2d": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.6.1",
+    "kats": 6,
+    "katsPassed": 6,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS",
+    "findings": [
+     {
+      "id": "struct.frame-2d-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.frame-2d-02",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.frame-2d-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.frame-2d-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.frame-2d-05",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.frame-2d-D1",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.frame-2d-R1",
+      "severity": "Medium",
+      "defect": "fixed"
+     }
+    ]
+   }
+  },
+  "struct.lifting": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.2.0",
+    "kats": 5,
+    "katsPassed": 5,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   }
+  },
+  "struct.load-combinations": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.3.0",
+    "kats": 5,
+    "katsPassed": 5,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS",
+    "findings": [
+     {
+      "id": "struct.load-combinations-01",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.load-combinations-02",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.load-combinations-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.load-combinations-04",
+      "severity": "Info",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "struct.ltb-interaction": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.3.2",
+    "kats": 8,
+    "katsPassed": 8,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS (after independent review: 2 High, 3 Medium; see the Reviewed column)",
+    "findings": [
+     {
+      "id": "struct.ltb-interaction-01",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.ltb-interaction-02",
+      "severity": "Rejected",
+      "defect": null
+     },
+     {
+      "id": "struct.ltb-interaction-03",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.ltb-interaction-04",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "struct.ltb-interaction-05",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "struct.ltb-interaction-06",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "struct.ltb-interaction-R1",
+      "severity": "High",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.ltb-interaction-R2",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.ltb-interaction-R3",
+      "severity": "Medium",
+      "defect": "owner-decision"
+     },
+     {
+      "id": "struct.ltb-interaction-R4",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.ltb-interaction-R5",
+      "severity": "Low",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "struct.plate-bending": {
+   "workedExamples": 1,
+   "kat": {
+    "version": "1.4.0",
+    "kats": 11,
+    "katsPassed": 11,
+    "failedKats": [],
+    "examplesPassed": 1,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS",
+    "findings": [
+     {
+      "id": "struct.plate-bending-01",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.plate-bending-02",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.plate-bending-03",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.plate-bending-04",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.plate-bending-05",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "struct.plate-bending-06",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "struct.plate-bending-07",
+      "severity": "Info",
+      "defect": null
+     }
+    ]
+   }
+  },
+  "struct.section-properties": {
+   "workedExamples": 2,
+   "kat": {
+    "version": "1.2.2",
+    "kats": 5,
+    "katsPassed": 5,
+    "failedKats": [],
+    "examplesPassed": 2,
+    "failedExamples": []
+   },
+   "rederivation": {
+    "result": "match-with-findings",
+    "verdict": "MATCH WITH FINDINGS",
+    "findings": [
+     {
+      "id": "struct.section-properties-01",
+      "severity": "Critical",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.section-properties-02",
+      "severity": "Low",
+      "defect": null
+     },
+     {
+      "id": "struct.section-properties-03",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.section-properties-04",
+      "severity": "Medium",
+      "defect": "fixed"
+     },
+     {
+      "id": "struct.section-properties-05",
+      "severity": "Info",
+      "defect": null
+     },
+     {
+      "id": "struct.section-properties-R1",
+      "severity": "Low",
+      "defect": null
+     }
+    ]
+   }
+  }
+ }
+}

@@ -1,0 +1,314 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: office-supply-equal-friction    Revision: A
+Title: Duct sizing
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. Scope and method
+Calculates duct sizes by the equal-friction or the velocity method, rounded up to standard sizes. It reports the velocity, friction rate and losses of each section and the pressure drop along the index run.
+Round duct diameter from the design target: D by Colebrook with the air properties at T (equal friction), or D = √(4Q/πv) (velocity), rounded up to the next standard size. Rectangular duct of equal friction and capacity: D_e = 1.30 (ab)^0.625/(a + b)^0.25. Flat-oval duct of equal friction and capacity: D_e = 1.55 A^0.625/P^0.25, with A = πb²/4 + b(a − b) and P = πb + 2(a − b). Velocity method, rectangular or flat-oval duct with side a fixed: b from the free area A = Q/v (rectangle b = A/a; flat oval the smaller root of (1 − π/4)b² − ab + A = 0), rounded up; D_e is kept for the friction only. Friction loss per metre, at the velocity v_e of the equivalent round duct: Δp/L = f ρ v_e²/(2D_e). Fitting losses, at the actual velocity: Δp = ΣC ρ v²/2. Index-run totals, summed over every section of the run: Δp_run = Σ(Δp/L · L + ΣC ρ v²/2).
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  method | Sizing method | equal friction |  | assumption: Equal friction for a low-pressure system. | any
+  sections | Duct sections | 5 row(s) |  | drawing: DRG-M-205 rev B | any
+  sections[1] |  | name = AHU to riser; Q = 2 m³/s; L = 15 m; shape = rectangular; a = 800 mm; D = —; C = 0.8; dp_eq = 0 Pa; index = yes |  |  | 
+  sections[2] |  | name = riser; Q = 2 m³/s; L = 12 m; shape = round; a = —; D = —; C = 0.3; dp_eq = 0 Pa; index = yes |  |  | 
+  sections[3] |  | name = floor main; Q = 1.2 m³/s; L = 25 m; shape = rectangular; a = 500 mm; D = —; C = 1.1; dp_eq = 0 Pa; index = yes |  |  | 
+  sections[4] |  | name = branch to VAV; Q = 0.4 m³/s; L = 10 m; shape = round; a = —; D = —; C = 0.9; dp_eq = 60 Pa; index = yes |  |  | 
+  sections[5] |  | name = other branch; Q = 0.8 m³/s; L = 18 m; shape = round; a = —; D = —; C = 1; dp_eq = 60 Pa; index = no |  |  | 
+  round_to | Round sizes up to a multiple of | 50 | mm | spec: BS EN 1505 / 1506 preferred sizes, 50 mm steps | 1 … 100 mm
+  eps_rough | Duct roughness | 0.09 | mm | spec: Galvanised sheet, medium roughness (ASHRAE Ch. 21 category) | 0.03 … 3 mm
+  T_air | Air temperature | 20 | °C | assumption: Supply air 20 °C. | -20 … 60 °C
+  p_atm | Barometric pressure | 101.325 | kPa | assumption: Sea level. | 80 … 105 kPa
+  dp_target | Target friction rate (equal friction) | 1 | Pa/m | spec: SPEC-M-07 §5: 1 Pa/m design friction rate | 0.3 … 5 Pa/m
+  v_target | Target velocity (velocity method) | 6 | m/s | assumption: Velocity method only; equal friction does not use it, so the template default is kept. | 2 … 20 m/s
+  v_limit | Velocity limit (warning and check) | 8 | m/s | spec: SPEC-M-07 §5: 8 m/s in risers | 2 … 30 m/s
+  dp_limit | Total pressure-drop limit (check) | 250 | Pa | spec: Fan external static allowance 250 Pa | 50 … 2000 Pa
+
+3. Assumptions
+  A1. Air is dry at the stated temperature and pressure. (Ideal gas, ρ = p/(287.055 T).)
+  A2. The viscosity of air follows Sutherland's law. (Standard air properties.)
+  A3. Rectangular and flat-oval ducts are sized through the equivalent diameter for equal friction and capacity. (Huebscher / Heyt–Diaz relations as given in ASHRAE Fundamentals Ch. 21.)
+  A4. Fitting loss coefficients C are user-supplied (manufacturer or ASHRAE/CIBSE data, not embedded) and refer to the section's velocity pressure. (Non-negotiable: no standard tables embedded.)
+  A5. method (Sizing method) is taken as equal friction. (Equal friction for a low-pressure system.)
+  A6. T_air (Air temperature) is taken as 20 °C. (Supply air 20 °C.)
+  A7. p_atm (Barometric pressure) is taken as 101.325 kPa. (Sea level.)
+  A8. v_target (Target velocity (velocity method)) is taken as 6 m/s. (Velocity method only; equal friction does not use it, so the template default is kept.)
+
+4. Working
+  [10] rho = p / (287.055 T)
+      = 101320 Pa / (287.055 × 293.15 K)
+      = 1.2041 kg/m³
+        Air density
+  [11] mu = Sutherland's law
+      = T = 293.15 K
+      = 18.133 uPa·s
+        Air dynamic viscosity
+  [12] a_s1 = AHU to riser: side a
+      = as given
+      = 800 mm
+        Side a, AHU to riser
+  [13] b_s1 = AHU to riser: side b
+      = from the target equivalent diameter 573.91 mm
+      = 400 mm
+        Side b, AHU to riser
+  [14] De_s1 = AHU to riser: equivalent diameter    « ASHRAE Ch. 21
+      = 1.30 (ab)^0.625/(a + b)^0.25
+      = 609.35 mm
+        Equivalent diameter, AHU to riser
+  [15] v_s1 = AHU to riser: Q / A
+      = 2 / 0.32
+      = 6.25 m/s
+        Velocity, AHU to riser
+  [16] Re_s1 = AHU to riser: ρ v_e D_e / μ (v_e = 4Q/πD_e²)
+      = 1.2041 × 6.8581 × 0.60935 / 0.000018133
+      = 277500
+        Reynolds number, AHU to riser
+  [17] f_s1 = AHU to riser: friction factor
+      = Colebrook–White
+      = 0.015999
+        Friction factor, AHU to riser
+  [18] dpL_s1 = AHU to riser: f ρ v_e² / (2 D_e)
+      = 0.015999 × 1.2041 × 6.8581² / (2 × 0.60935)
+      = 0.74347 Pa/m
+        Friction rate, AHU to riser
+  [19] dp_f_s1 = AHU to riser: (Δp/L) L
+      = 0.74347 × 15
+      = 11.152 Pa
+        Friction loss, AHU to riser
+  [20] dp_fit_s1 = AHU to riser: ΣC ρ v²/2
+      = 0.8 × 23.518
+      = 18.814 Pa
+        Fitting loss, AHU to riser
+  [21] dp_s1 = AHU to riser: friction + fittings + equipment
+      = 11.152 + 18.814 + 0
+      = 29.966 Pa
+        Section loss, AHU to riser (index run)
+  [22] D_s2 = riser: diameter
+      = target 573.91 mm rounded up to 50 mm
+      = 600 mm
+        Diameter, riser
+  [23] v_s2 = riser: Q / A
+      = 2 / 0.28274
+      = 7.0736 m/s
+        Velocity, riser
+  [24] Re_s2 = riser: ρ v_e D_e / μ (v_e = 4Q/πD_e²)
+      = 1.2041 × 7.0736 × 0.6 / 0.000018133
+      = 281820
+        Reynolds number, riser
+  [25] f_s2 = riser: friction factor
+      = Colebrook–White
+      = 0.015985
+        Friction factor, riser
+  [26] dpL_s2 = riser: f ρ v_e² / (2 D_e)
+      = 0.015985 × 1.2041 × 7.0736² / (2 × 0.6)
+      = 0.80253 Pa/m
+        Friction rate, riser
+  [27] dp_f_s2 = riser: (Δp/L) L
+      = 0.80253 × 12
+      = 9.6303 Pa
+        Friction loss, riser
+  [28] dp_fit_s2 = riser: ΣC ρ v²/2
+      = 0.3 × 30.124
+      = 9.0371 Pa
+        Fitting loss, riser
+  [29] dp_s2 = riser: friction + fittings + equipment
+      = 9.6303 + 9.0371 + 0
+      = 18.667 Pa
+        Section loss, riser (index run)
+  [30] a_s3 = floor main: side a
+      = as given
+      = 500 mm
+        Side a, floor main
+  [31] b_s3 = floor main: side b
+      = from the target equivalent diameter 473.16 mm
+      = 400 mm
+        Side b, floor main
+  [32] De_s3 = floor main: equivalent diameter    « ASHRAE Ch. 21
+      = 1.30 (ab)^0.625/(a + b)^0.25
+      = 488.12 mm
+        Equivalent diameter, floor main
+  [33] v_s3 = floor main: Q / A
+      = 1.2 / 0.2
+      = 6 m/s
+        Velocity, floor main
+  [34] Re_s3 = floor main: ρ v_e D_e / μ (v_e = 4Q/πD_e²)
+      = 1.2041 × 6.4127 × 0.48812 / 0.000018133
+      = 207850
+        Reynolds number, floor main
+  [35] f_s3 = floor main: friction factor
+      = Colebrook–White
+      = 0.016905
+        Friction factor, floor main
+  [36] dpL_s3 = floor main: f ρ v_e² / (2 D_e)
+      = 0.016905 × 1.2041 × 6.4127² / (2 × 0.48812)
+      = 0.85744 Pa/m
+        Friction rate, floor main
+  [37] dp_f_s3 = floor main: (Δp/L) L
+      = 0.85744 × 25
+      = 21.436 Pa
+        Friction loss, floor main
+  [38] dp_fit_s3 = floor main: ΣC ρ v²/2
+      = 1.1 × 21.674
+      = 23.841 Pa
+        Fitting loss, floor main
+  [39] dp_s3 = floor main: friction + fittings + equipment
+      = 21.436 + 23.841 + 0
+      = 45.277 Pa
+        Section loss, floor main (index run)
+  [40] D_s4 = branch to VAV: diameter
+      = target 312.82 mm rounded up to 50 mm
+      = 350 mm
+        Diameter, branch to VAV
+  [41] v_s4 = branch to VAV: Q / A
+      = 0.4 / 0.096211
+      = 4.1575 m/s
+        Velocity, branch to VAV
+  [42] Re_s4 = branch to VAV: ρ v_e D_e / μ (v_e = 4Q/πD_e²)
+      = 1.2041 × 4.1575 × 0.35 / 0.000018133
+      = 96625
+        Reynolds number, branch to VAV
+  [43] f_s4 = branch to VAV: friction factor
+      = Colebrook–White
+      = 0.01938
+        Friction factor, branch to VAV
+  [44] dpL_s4 = branch to VAV: f ρ v_e² / (2 D_e)
+      = 0.01938 × 1.2041 × 4.1575² / (2 × 0.35)
+      = 0.57623 Pa/m
+        Friction rate, branch to VAV
+  [45] dp_f_s4 = branch to VAV: (Δp/L) L
+      = 0.57623 × 10
+      = 5.7623 Pa
+        Friction loss, branch to VAV
+  [46] dp_fit_s4 = branch to VAV: ΣC ρ v²/2
+      = 0.9 × 10.406
+      = 9.3657 Pa
+        Fitting loss, branch to VAV
+  [47] dp_s4 = branch to VAV: friction + fittings + equipment
+      = 5.7623 + 9.3657 + 60
+      = 75.128 Pa
+        Section loss, branch to VAV (index run)
+  [48] D_s5 = other branch: diameter
+      = target 406.05 mm rounded up to 50 mm
+      = 450 mm
+        Diameter, other branch
+  [49] v_s5 = other branch: Q / A
+      = 0.8 / 0.15904
+      = 5.0301 m/s
+        Velocity, other branch
+  [50] Re_s5 = other branch: ρ v_e D_e / μ (v_e = 4Q/πD_e²)
+      = 1.2041 × 5.0301 × 0.45 / 0.000018133
+      = 150310
+        Reynolds number, other branch
+  [51] f_s5 = other branch: friction factor
+      = Colebrook–White
+      = 0.017809
+        Friction factor, other branch
+  [52] dpL_s5 = other branch: f ρ v_e² / (2 D_e)
+      = 0.017809 × 1.2041 × 5.0301² / (2 × 0.45)
+      = 0.60286 Pa/m
+        Friction rate, other branch
+  [53] dp_f_s5 = other branch: (Δp/L) L
+      = 0.60286 × 18
+      = 10.851 Pa
+        Friction loss, other branch
+  [54] dp_fit_s5 = other branch: ΣC ρ v²/2
+      = 1 × 15.233
+      = 15.233 Pa
+        Fitting loss, other branch
+  [55] dp_s5 = other branch: friction + fittings + equipment
+      = 10.851 + 15.233 + 60
+      = 86.084 Pa
+        Section loss, other branch
+  [56] dp_index = Σ section losses on the index run
+      = 4 section(s)
+      = 169.04 Pa
+        Index-run pressure drop
+  [57] dp_all = Σ section losses, all sections
+      = 5 section(s)
+      = 255.12 Pa
+        Sum over every section (not a path)
+  [58] v_peak = highest section velocity
+      = v of riser, the highest of 5 section(s)
+      = 7.0736 m/s
+        Highest velocity
+  [59] u_dp = dp_index / dp_limit
+      = 169.04 / 250
+      = 0.67616
+        Pressure-drop utilisation
+  [60] u_v = v_peak / v_limit
+      = 7.0736 / 8
+      = 0.88419
+        Velocity utilisation
+
+5. Results
+  dp_index = 169.0 Pa    Index-run Δp
+  v_peak = 7.074 m/s    Highest velocity (governing)
+  a_s1 = 800 mm    a, AHU to riser
+  b_s1 = 400 mm    b, AHU to riser
+  De_s1 = 609.3 mm    D_e, AHU to riser
+  v_s1 = 6.250 m/s    v, AHU to riser
+  Re_s1 = 277500    Re, AHU to riser
+  f_s1 = 0.015999    f, AHU to riser
+  dpL_s1 = 0.7435 Pa/m    Δp/L, AHU to riser
+  dp_f_s1 = 11.15 Pa    Friction loss, AHU to riser
+  dp_fit_s1 = 18.81 Pa    Fitting loss, AHU to riser
+  dp_s1 = 29.97 Pa    Section loss, AHU to riser
+  D_s2 = 600 mm    D, riser
+  v_s2 = 7.074 m/s    v, riser
+  Re_s2 = 281820    Re, riser
+  f_s2 = 0.015985    f, riser
+  dpL_s2 = 0.8025 Pa/m    Δp/L, riser
+  dp_f_s2 = 9.630 Pa    Friction loss, riser
+  dp_fit_s2 = 9.037 Pa    Fitting loss, riser
+  dp_s2 = 18.67 Pa    Section loss, riser
+  a_s3 = 500 mm    a, floor main
+  b_s3 = 400 mm    b, floor main
+  De_s3 = 488.1 mm    D_e, floor main
+  v_s3 = 6 m/s    v, floor main
+  Re_s3 = 207850    Re, floor main
+  f_s3 = 0.016905    f, floor main
+  dpL_s3 = 0.8574 Pa/m    Δp/L, floor main
+  dp_f_s3 = 21.44 Pa    Friction loss, floor main
+  dp_fit_s3 = 23.84 Pa    Fitting loss, floor main
+  dp_s3 = 45.28 Pa    Section loss, floor main
+  D_s4 = 350 mm    D, branch to VAV
+  v_s4 = 4.158 m/s    v, branch to VAV
+  Re_s4 = 96625    Re, branch to VAV
+  f_s4 = 0.01938    f, branch to VAV
+  dpL_s4 = 0.5762 Pa/m    Δp/L, branch to VAV
+  dp_f_s4 = 5.762 Pa    Friction loss, branch to VAV
+  dp_fit_s4 = 9.366 Pa    Fitting loss, branch to VAV
+  dp_s4 = 75.13 Pa    Section loss, branch to VAV
+  D_s5 = 450 mm    D, other branch
+  v_s5 = 5.030 m/s    v, other branch
+  Re_s5 = 150310    Re, other branch
+  f_s5 = 0.017809    f, other branch
+  dpL_s5 = 0.6029 Pa/m    Δp/L, other branch
+  dp_f_s5 = 10.85 Pa    Friction loss, other branch
+  dp_fit_s5 = 15.23 Pa    Fitting loss, other branch
+  dp_s5 = 86.08 Pa    Section loss, other branch
+  dp_all = 255.1 Pa    Σ all sections
+
+6. Checks (governing first)
+  PASS  Highest velocity against limit: 7.074 m/s vs 8 m/s  utilisation 0.88
+  PASS  Index-run pressure drop against limit: 169.0 Pa vs 250 Pa  utilisation 0.68
+
+7. Applicability
+  None.
+
+8. Verification
+  Template: bs.duct-sizing@1.2.1
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 3/3
+  Test run: —
+
+9. References
+  1. ASHRAE Handbook — Fundamentals Ch. 21 — Duct design (friction chart basis, equivalent diameters, loss coefficients)
+  2. CIBSE Guide C §4 — Flow of fluids in pipes and ducts
+  3. BS EN 1505:1998 — Ventilation for buildings: sheet metal air ducts and fittings with rectangular cross-section, dimensions
+  4. BS EN 1506:2007 — Ventilation for buildings: sheet metal air ducts and fittings with circular cross-section, dimensions

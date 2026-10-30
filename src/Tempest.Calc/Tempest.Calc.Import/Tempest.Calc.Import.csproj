@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ADR-0171: CAD and scan import. The hardened primitives every untrusted
+       engineering file passes through (bounded reader, strict numbers, path
+       canonicalisation, RFC 4180 CSV, safe .xlsx reader, CSV-injection-safe
+       writer) and the W1 CAD parameter parsers, mapping profiles and
+       provenance built on them. Depends on Engine (units) and Sheets (inputs,
+       provenance, notices) only; no package beyond the BCL. W2 (scan
+       deviation import) reuses the primitives. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Tempest.Calc.Import</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisModeSecurity>All</AnalysisModeSecurity>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tempest.Calc.Sheets\Tempest.Calc.Sheets.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Tempest.Calc.Tests.Import" />
+  </ItemGroup>
+
+</Project>

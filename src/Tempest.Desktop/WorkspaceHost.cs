@@ -48,6 +48,7 @@ public sealed class WorkspaceHost : IAsyncDisposable
     private readonly string? _persistenceRootPathOverride;
     private readonly ISessionPrincipalSource? _sessionPrincipalsOverride;
     private readonly IReadOnlyList<string>? _commandLineArgs;
+    private readonly Tempest.Calc.Library.ICalcFeatureSource? _calcFeatureSource;
 
     private ITempestHost? _host;
     private WorkspaceManager? _manager;
@@ -106,15 +107,27 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// <see langword="null"/> (the default) to contribute none — reaches
     /// the Host's default configuration source (`WP 17.2A`, ADR-0146).
     /// </param>
+    /// <param name="calcFeatureSource">
+    /// Where the optional calculator features (`ADR-0173`) are switched on, or <see langword="null"/> (the default) for the machine's own
+    /// administrator-only source (the HKLM policy key on Windows, the root-owned file elsewhere). A test supplies its own.
+    /// </param>
     public WorkspaceHost(
         string? persistenceRootPathOverride = null,
         ISessionPrincipalSource? sessionPrincipals = null,
-        IReadOnlyList<string>? commandLineArgs = null)
+        IReadOnlyList<string>? commandLineArgs = null,
+        Tempest.Calc.Library.ICalcFeatureSource? calcFeatureSource = null)
     {
         _persistenceRootPathOverride = persistenceRootPathOverride;
         _sessionPrincipalsOverride = sessionPrincipals;
         _commandLineArgs = commandLineArgs;
+        _calcFeatureSource = calcFeatureSource;
     }
+
+    /// <summary>
+    /// Whether start-up saves the bundled reference records (owner decision 2026-10-29, comment 5). On by default; a test of the empty-store record
+    /// flow turns it off, as a database that predates the bundled records would look.
+    /// </summary>
+    public bool SeedBundledRecords { get; init; } = true;
 
     /// <summary>
     /// Builds the Host, starts the Workspace (loading any persisted session
@@ -323,27 +336,105 @@ public sealed class WorkspaceHost : IAsyncDisposable
             (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
             (ITemplateCatalog)host.Services!.GetService(typeof(ITemplateCatalog)));
 
-        // `WP 21.7B`/`WP 21.7C`: the Engineering Calculators. The governed
-        // service runs any product calculation on pinned records from the
-        // three libraries; the workbench names each run as a Calculation
-        // object (the same register the bracket workbench uses) and offers
-        // the record's own Re-run and Compare commands through the
-        // dispatcher and the Template registry — every module registered
-        // there so the commands reach all nineteen.
-        CalculationModuleService = new CalculationModuleService(
-            (IMaterialCatalog)host.Services!.GetService(typeof(IMaterialCatalog)),
-            (IFastenerCatalog)host.Services!.GetService(typeof(IFastenerCatalog)),
-            (IBearingCatalog)host.Services!.GetService(typeof(IBearingCatalog)),
-            (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)));
-        CalculationModules = new CalculationModuleWorkbench(
-            CalculationModuleService,
-            CalculationTemplates!,
-            new EngineeringCalculationRegister(
-                domainContext,
-                (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher)),
-                projectContext),
-            (ICommandDispatcher)host.Services!.GetService(typeof(ICommandDispatcher)),
-            domainContext);
+        // Optional calculators (S8 lifting, `ADR-0173`) are composed in but withheld from the catalogue unless the machine's administrator switches
+        // their feature on (the HKLM policy key on Windows, a root-owned file elsewhere). The application installs per user, so the install folder, the
+        // current directory, the environment and the command line are not read for it, and nothing at run time changes it. Enabling is logged with its source.
+        var calcFeatures = Tempest.Calc.Library.CalcFeatureFlags.FromSource(_calcFeatureSource ?? Tempest.Calc.Library.CalcFeatureSources.ForThisMachine(), out var calcFeatureProblem);
+
+        if (calcFeatureProblem is not null)
+            hostLogger?.Warning(calcFeatureProblem);
+
+        foreach (var feature in calcFeatures.Enabled)
+            hostLogger?.Warning($"Optional calculator feature '{feature}' is ENABLED by {calcFeatures.SourceOf(feature)}. It has not been through the owner's review checklist unless the owner has recorded it.");
+
+        // The engine refuses a gated calculation run by id until told its feature is on: the one choke point for every caller (`ADR-0173`).
+        ((Tempest.Core.Calculations.CalculationEngine)host.Services!.GetService(typeof(ICalculationEngine))).ConfigureFeatures(calcFeatures.IsEnabled);
+        // `v0.26.0` (ADR-0165): the worksheet calculation surface. The
+        // catalogue is composed statically (`CalcCalculatorComposition`),
+        // instances live in the one store, and Issue goes through the
+        // Evidence service in one transaction with the rendered PDF.
+        CalcCatalogue = new Tempest.Calc.Library.CalcCatalogue(
+            Tempest.Desktop.CalcSheets.CalcCalculatorComposition.All(),
+            calcFeatures);
+        CalcInstances = new Tempest.Calc.Library.CalcInstanceService(
+            CalcCatalogue,
+            new Tempest.Calc.Library.CalcInstanceStore(domainContext.PersistenceStore),
+            EvidenceService!,
+            domainContext,
+            CalcSheetRenderer = new Tempest.Desktop.CalcSheets.CalcSheetPdfRenderer(),
+            applicationVersion: $"TempestOS {typeof(WorkspaceHost).Assembly.GetName().Version?.ToString(3)}",
+            events: eventBus,
+            packTemplates: Tempest.Desktop.CalcSheets.CalcPackTemplateComposition.All(),
+            principals: (Tempest.Core.Identity.IPrincipalDirectory)host.Services!.GetService(typeof(Tempest.Core.Identity.IPrincipalDirectory)),
+            audit: (Tempest.Core.Audit.IAuditRecorder)host.Services!.GetService(typeof(Tempest.Core.Audit.IAuditRecorder)));
+
+        // Addendum C, C-5 (ADR-0175): the guided test's run records. They live in their own collection, are written by nothing else and read by
+        // nothing that calculates; the build and the tester are the ones the title bar and the sign-off use. A script this build cannot read
+        // leaves the guided test out; it never stops the application from starting.
+        try
+        {
+            var testers = (Tempest.Core.Identity.ICurrentPrincipalAccessor)host.Services!.GetService(typeof(Tempest.Core.Identity.ICurrentPrincipalAccessor));
+            var services = host.Services!;
+            ManualTests = new Tempest.Calc.Library.ManualTesting.ManualTestRunService(
+                domainContext.PersistenceStore,
+                Tempest.Calc.Library.ManualTesting.GuidedTestScript.Current,
+                () => MainWindow.DescribeBuild(services),
+                () => BuildDescription.Commit(services),
+                () => testers.Current?.Identity is { } who ? (who.Id, who.DisplayName) : (string.Empty, string.Empty));
+        }
+        catch (Exception ex) when (ex is InvalidDataException or InvalidOperationException)
+        {
+            hostLogger?.Warning($"The guided test is not available: {ex.Message}");
+        }
+
+        // Addendum C, C-6: the seeded demonstration project. Built here and never run: nothing at start-up installs it; Settings → Demo project does, when asked.
+        CalcDemo = new Tempest.Calc.Library.CalcDemoProjectService(CalcInstances, domainContext, Tempest.Desktop.CalcSheets.CalcCalculatorComposition.DemoCableTables(),
+            (Tempest.Core.Audit.IAuditRecorder)host.Services!.GetService(typeof(Tempest.Core.Audit.IAuditRecorder)));
+
+        // Owner decision 2026-10-29 (comment 5): the bundled reference records go into the store once, through the ordinary record import, each
+        // with its sources and licence status. A set already in is skipped; a refused set is logged and never stops start-up.
+        try
+        {
+            var seeds = SeedBundledRecords
+                ? await CalcInstances.RecordSeeds.EnsureSeededAsync(cancellationToken).ConfigureAwait(false)
+                : Array.Empty<Tempest.Calc.Library.RecordSeeds.RecordSeedOutcome>();
+
+            foreach (var seed in seeds)
+            {
+                if (seed.Result == Tempest.Calc.Library.RecordSeeds.RecordSeedResult.Refused)
+                    hostLogger?.Warning($"Bundled reference records '{seed.Set.Id}' were not saved: {seed.Problem}");
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            hostLogger?.Warning($"Saving the bundled reference records failed ({ex.GetType().Name}); they are tried again at the next start.");
+        }
+
+        // One-off sweep (`ADR-0173`): Evidence a worksheet made before the managed marker existed is marked now, so the generic Evidence acts refuse it.
+        try
+        {
+            await CalcInstances.AdoptAllEvidenceAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            hostLogger?.Warning($"Marking calculation Evidence as managed failed ({ex.GetType().Name}); it is marked at its next check or issue instead.");
+        }
+
+        // ADR-0167: every stored legacy calculation record is copied once into an archive worksheet (same Id; the record
+        // itself is untouched), so it stays readable once the legacy modules are retired. Idempotent; a failure to read
+        // one record is reported, never fatal to start-up.
+        try
+        {
+            LegacyMigrationReport = await new Tempest.Calc.Library.LegacyCalculationMigration(
+                (ICalculationEngine)host.Services!.GetService(typeof(ICalculationEngine)),
+                new Tempest.Calc.Library.CalcInstanceStore(domainContext.PersistenceStore))
+                .MigrateAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception failure) when (failure is not OperationCanceledException)
+        {
+            LegacyMigrationReport = new Tempest.Calc.Library.LegacyMigrationReport(0, 0, [(Guid.Empty, failure.Message)]);
+        }
+
 
         // `WP 21.2B` (`TD-160`, `TD-165`): the merged engineering capability's
         // own three governed libraries and their validation services, so the
@@ -398,7 +489,11 @@ public sealed class WorkspaceHost : IAsyncDisposable
 
         _principalSession.Establish(principal);
         SessionPrincipal = principal;
+        PrincipalChanged?.Invoke(principal);
     }
+
+    /// <summary>Raised by <see cref="SwitchPrincipal"/> after the switch, so the shell header names the person every new record will.</summary>
+    public event Action<ISessionPrincipal>? PrincipalChanged;
 
     /// <summary>Gets what startup rehydration recovered (`TD-85`) — <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
     public EngineeringRehydrationResult? RehydrationResult { get; private set; }
@@ -534,11 +629,26 @@ public sealed class WorkspaceHost : IAsyncDisposable
     /// </remarks>
     public BracketCalculationWorkbench? BracketCalculations { get; private set; }
 
-    /// <summary>Gets the Engineering Calculators' own read-and-run model (`WP 21.7B`). <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
-    public CalculationModuleWorkbench? CalculationModules { get; private set; }
+    /// <summary>`v0.26.0` (ADR-0165): every worksheet calculator this build composes in.</summary>
+    public Tempest.Calc.Library.CalcCatalogue? CalcCatalogue { get; private set; }
 
-    /// <summary>Gets the governed entry point of every calculation module (`WP 21.7C`): a form-less caller runs a module on pinned records through it. <see langword="null"/> before <see cref="StartAsync"/> completes.</summary>
-    public CalculationModuleService? CalculationModuleService { get; private set; }
+    /// <summary>`v0.26.0` (ADR-0165): the worksheet instance service (create, run, check, issue, revise, packs).</summary>
+    public Tempest.Calc.Library.CalcInstanceService? CalcInstances { get; private set; }
+
+    /// <summary>
+    /// Addendum C, C-5: the guided test's run records (start, resume, record, finish, export). It also answers the verification dashboard's read-only
+    /// <see cref="Tempest.Calc.Library.ManualTesting.IManualTestStatusSource"/> question; <see langword="null"/> before start, or when the build's script could not be read.
+    /// </summary>
+    public Tempest.Calc.Library.ManualTesting.ManualTestRunService? ManualTests { get; private set; }
+
+    /// <summary>Addendum C, C-6: installs and removes the seeded demonstration project; built with the worksheet service and run only by an act of the person (Settings → Demo project).</summary>
+    public Tempest.Calc.Library.CalcDemoProjectService? CalcDemo { get; private set; }
+
+    /// <summary>What the start-up migration of legacy calculation records did (ADR-0167); <see langword="null"/> before start.</summary>
+    public Tempest.Calc.Library.LegacyMigrationReport? LegacyMigrationReport { get; private set; }
+
+    /// <summary>`v0.26.0`: the calc-sheet PDF renderer, so the composer can hand it the organisation identity.</summary>
+    public Tempest.Desktop.CalcSheets.CalcSheetPdfRenderer? CalcSheetRenderer { get; private set; }
 
     /// <summary>Setting milestones and deliverables, as the Project Workspace performs it.</summary>
     public IProjectMilestoneService? ProjectMilestoneWorkflow { get; private set; }

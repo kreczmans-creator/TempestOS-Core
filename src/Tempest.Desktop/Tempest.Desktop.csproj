@@ -57,21 +57,14 @@
     -->
     <PackageReference Include="PDFtoImage" Version="4.1.1" />
     <!--
-      `TD-99`, `WP 21.4A`: the SVG rasteriser the Product Owner's decision
-      2026-09-15 §5 requires a stated package, version and licence for —
-      `Svg.Skia` by Wiesław Šoltés, MIT-licensed (see the root
-      `THIRD-PARTY-NOTICES.md`). Pinned to 2.0.0.8 rather than the latest
-      release (5.x at the time of writing) deliberately: this is the last
-      version on the 2.x line, and the only line whose own `SkiaSharp`
-      dependency floor (2.88.9, exactly) matches the version this solution
-      already resolves through `PDFtoImage` above — every release from
-      3.0.0 onward moves to a 3.x/4.x SkiaSharp line, which is exactly the
-      class of transitive-dependency change `TD-116`'s own remark above
-      flags as wanting its own timeboxed spike, not a version bump inside
-      an unrelated Work Package's scope (this WP's own kill switch: "try
-      the version matching the solution's SkiaSharp").
+      `TD-99`, `WP 21.4A`, owner decision DB-08: the SVG rasteriser is the
+      app's own `Viewing/SvgPictureBuilder.cs` over `SkiaSharp` (MIT, already
+      resolved through `PDFtoImage` above). It replaced `Svg.Skia` 2.0.0.8,
+      whose transitive `Svg.Custom` is MS-PL, a licence outside the MIT, BSD
+      and Apache set `scripts/check-licences.py` allows. No package is
+      referenced for SVG; `SvgRenderComparisonTests` holds the builder to
+      the pictures `Svg.Skia` produced before the switch.
     -->
-    <PackageReference Include="Svg.Skia" Version="2.0.0.8" />
     <!--
       The Tempest Engineering Design System's prose face (Inter) ships in
       this official Avalonia package; Chakra Petch and Space Mono are
@@ -112,6 +105,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Tempest.Workspace\Tempest.Workspace.csproj" />
+    <!-- v0.26.0 (ADR-0165): the calculation surface; Library brings Sheets, Verification and Engine. -->
+    <ProjectReference Include="..\Tempest.Calc\Tempest.Calc.Library\Tempest.Calc.Library.csproj" />
+    <ProjectReference Include="..\Tempest.Calc\Tempest.Calc.Mechanical\Tempest.Calc.Mechanical.csproj" />
+    <ProjectReference Include="..\Tempest.Calc\Tempest.Calc.Structural\Tempest.Calc.Structural.csproj" />
+    <ProjectReference Include="..\Tempest.Calc\Tempest.Calc.BuildingServices\Tempest.Calc.BuildingServices.csproj" />
+    <ProjectReference Include="..\Tempest.Calc\Tempest.Calc.FluidPower\Tempest.Calc.FluidPower.csproj" />
+    <ProjectReference Include="..\Tempest.Calc\Tempest.Calc.Electrical\Tempest.Calc.Electrical.csproj" />
   </ItemGroup>
 
   <!-- WP 17.2A / ADR-0146: documents every configuration key the platform

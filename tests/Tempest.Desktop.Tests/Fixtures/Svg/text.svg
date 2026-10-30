@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150">
+  <rect width="200" height="150" fill="#ffffff"/>
+  <text x="10" y="40" font-size="24" fill="#1c2d97">Beam L = 6 m</text>
+  <text x="100" y="90" font-size="18" text-anchor="middle" font-weight="bold" fill="#c0392b">Centred</text>
+  <text x="190" y="130" font-size="14" text-anchor="end" font-family="monospace">end <tspan fill="#40a2ce">tspan</tspan></text>
+</svg>

@@ -1,0 +1,237 @@
+[
+  {
+    "Symbol": "F_ext",
+    "Number": 0,
+    "Unit": "N",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "No external load on the follower in this example.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "F_pre",
+    "Number": 20,
+    "Unit": "N",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Example preload at the base circle; link a force of the spring sheet.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20"
+  },
+  {
+    "Symbol": "R_r",
+    "Number": 8,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "IDX-12-CAM",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "8"
+  },
+  {
+    "Symbol": "Rb",
+    "Number": 40,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "IDX-12-CAM",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "40"
+  },
+  {
+    "Symbol": "circuit",
+    "Text": "Open",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Four-bar and slider-crank only; the cam does not use it, so the template default is kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Open"
+  },
+  {
+    "Symbol": "e_off",
+    "Number": 10,
+    "Unit": "mm",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "IDX-12-CAM",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10"
+  },
+  {
+    "Symbol": "follower",
+    "Text": "Roller",
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "IDX-12-CAM",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Roller"
+  },
+  {
+    "Symbol": "k_sp",
+    "Number": 5,
+    "Unit": "kN/m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Example return-spring rate; link the rate k of the spring sheet.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "5"
+  },
+  {
+    "Symbol": "load_dir",
+    "Text": "Opposes motion",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "The follower carries no external load (F_ext = 0), so the direction has no effect; template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Opposes motion"
+  },
+  {
+    "Symbol": "m_f",
+    "Number": 0.2,
+    "Unit": "kg",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Example: follower arm, roller and tooling; take it from the CAD mass properties.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.2"
+  },
+  {
+    "Symbol": "mode",
+    "Text": "Cam",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Indexing station IDX-12 \u00A72",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "Cam"
+  },
+  {
+    "Symbol": "n_in",
+    "Number": 120,
+    "Unit": "rpm",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Indexing station IDX-12 \u00A72: 120 index cycles/min",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "120"
+  },
+  {
+    "Symbol": "phi_max",
+    "Number": 30,
+    "Unit": "deg",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Usual limit for a translating roller follower; set it from your design rule.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "30"
+  },
+  {
+    "Symbol": "segs",
+    "Rows": [
+      {
+        "Cells": {
+          "kind": {
+            "Text": "Rise"
+          },
+          "law": {
+            "Text": "Cycloidal"
+          },
+          "beta": {
+            "Number": 120,
+            "Unit": "deg"
+          },
+          "h": {
+            "Number": 20,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "kind": {
+            "Text": "Dwell"
+          },
+          "law": {},
+          "beta": {
+            "Number": 60,
+            "Unit": "deg"
+          },
+          "h": {
+            "Number": 0,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "kind": {
+            "Text": "Return"
+          },
+          "law": {
+            "Text": "3-4-5 polynomial"
+          },
+          "beta": {
+            "Number": 120,
+            "Unit": "deg"
+          },
+          "h": {
+            "Number": 20,
+            "Unit": "mm"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "kind": {
+            "Text": "Dwell"
+          },
+          "law": {},
+          "beta": {
+            "Number": 60,
+            "Unit": "deg"
+          },
+          "h": {
+            "Number": 0,
+            "Unit": "mm"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Indexing station IDX-12 \u00A72.3 motion table",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4 row(s)"
+  },
+  {
+    "Symbol": "steps",
+    "Number": 72,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "5\u00B0 table step.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "72"
+  }
+]

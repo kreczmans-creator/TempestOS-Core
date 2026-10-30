@@ -1,0 +1,4 @@
+case[text],Rsi[m2*K/W],Rse[m2*K/W],Rsi_f[m2*K/W]
+"Wall, horizontal heat flow",0.13,0.04,0.25
+"Roof or ceiling, upward heat flow",0.1,0.04,0.25
+"Floor, downward heat flow",0.17,0.04,0.25

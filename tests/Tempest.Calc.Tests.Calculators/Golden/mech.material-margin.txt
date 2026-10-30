@@ -1,0 +1,56 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: mech.material-margin    Revision: A
+Title: Material strength margin
+
+1. Scope and method
+Calculates the factors of safety of a material against an applied equivalent stress, on yield and, when given, on ultimate strength. It does not check fatigue or stability.
+Factor of safety against yield and against ultimate: n_y = f_y/σ; n_u = f_u/σ. Governing factor, the ultimate margin scaled to the yield basis by k_u ≥ 1: n_gov = min(n_y, n_u/k_u). Utilisation against the required factor: u = n_req/n_gov.
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  sigma | Applied (equivalent) stress | 120 | MPa | manual | 0.01 … 5000 MPa
+  f_y | Yield strength | 300 | MPa | manual | 1 … 5000 MPa
+  f_u | Ultimate tensile strength (optional) | 450 | MPa | manual | 1 … 5000 MPa
+  k_u | Ratio of the ultimate to the yield safety factor required | 1.5 |  | manual | 1 … 3
+  n_req | Required factor of safety on yield | 1.5 |  | manual | 1 … 10
+
+3. Assumptions
+  A1. The load is static and the applied stress is the equivalent stress at the critical point. (Fatigue and stability are separate checks.)
+
+4. Working
+  [5] n_y = f_y / sigma    « Shigley §1-10
+      = 300 MPa / 120 MPa
+      = 2.5
+        Factor of safety on yield
+  [7] n_u = f_u / sigma
+      = 450 MPa / 120 MPa
+      = 3.75
+        Factor of safety on ultimate strength
+  [8] n_gov = min(n_y, n_u / k_u)
+      = min(2.5, 3.75 / 1.5)
+      = 2.5
+        Governing factor (ultimate margin scaled to the yield basis)
+  [9] u = n_req / n_gov
+      = 1.5 / 2.5
+      = 0.6
+        Required over governing factor of safety
+
+5. Results
+  n_gov = 2.5    Governing factor
+  n_y = 2.5    Factor on yield
+  n_u = 3.75    Factor on ultimate
+  u = 0.60    Utilisation (governing)
+
+6. Checks (governing first)
+  PASS  Required factor of safety against the governing factor: 1.5 vs 2.5  utilisation 0.60  « Shigley §1-10
+
+7. Applicability
+  None.
+
+8. Verification
+  Template: mech.material-margin@1.1.0
+  Known-answer cases passed: 2/2
+
+9. References
+  1. Budynas and Nisbett, Shigley's Mechanical Engineering Design §1-10, 11th ed. — Design factor and factor of safety

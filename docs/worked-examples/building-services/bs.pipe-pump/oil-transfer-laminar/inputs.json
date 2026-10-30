@@ -1,0 +1,195 @@
+[
+  {
+    "Symbol": "D_law",
+    "Text": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "The impeller is unchanged (D_ratio = 1), so the law has no effect; template default kept.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)"
+  },
+  {
+    "Symbol": "D_ratio",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Impeller unchanged.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "Q",
+    "Number": 1,
+    "Unit": "m^3/h",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Transfer pump duty",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "T_fluid",
+    "Number": 20,
+    "Unit": "degC",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Ambient 20 \u00B0C.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "20"
+  },
+  {
+    "Symbol": "circuit",
+    "Text": "open (the pump lifts the water by the rises entered)",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Open transfer line to an open discharge.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "open (the pump lifts the water by the rises entered)"
+  },
+  {
+    "Symbol": "eta_pump",
+    "Number": 0.7,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Illustrative pump efficiency for the shaft power; take it from the pump datasheet.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.7"
+  },
+  {
+    "Symbol": "fluid",
+    "Text": "custom (\u03C1 and \u03BC given)",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Oil datasheet ISO VG 680 at 20 \u00B0C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "custom (\u03C1 and \u03BC given)"
+  },
+  {
+    "Symbol": "h_out",
+    "Number": 0,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Open discharge.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  },
+  {
+    "Symbol": "mu_custom",
+    "Number": 800,
+    "Unit": "mPa*s",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Oil datasheet ISO VG 680 at 20 \u00B0C",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "800"
+  },
+  {
+    "Symbol": "n_ratio",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "No speed change.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  },
+  {
+    "Symbol": "p_atm",
+    "Number": 101.325,
+    "Unit": "kPa",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Sea level.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "101.325"
+  },
+  {
+    "Symbol": "rho_custom",
+    "Number": 888,
+    "Unit": "kg/m^3",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Oil datasheet ISO VG 680",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "888"
+  },
+  {
+    "Symbol": "segments",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "transfer line"
+          },
+          "L": {
+            "Number": 40,
+            "Unit": "m"
+          },
+          "D": {
+            "Number": 50,
+            "Unit": "mm"
+          },
+          "eps": {
+            "Number": 0,
+            "Unit": "mm"
+          },
+          "K": {
+            "Number": 0
+          },
+          "L_eq": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "dz": {
+            "Number": 0,
+            "Unit": "m"
+          },
+          "side": {
+            "Text": "discharge"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Drawing",
+      "Reference": "DRG-L-020",
+      "Revision": "A",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1 row(s)"
+  },
+  {
+    "Symbol": "v_limit",
+    "Number": 3,
+    "Unit": "m/s",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Practice limit.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3"
+  },
+  {
+    "Symbol": "z_s",
+    "Number": 0,
+    "Unit": "m",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Pump suction level with the tank outlet.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0"
+  }
+]

@@ -305,9 +305,9 @@ public class DocumentFormatDetectorTests
     [Fact]
     public void AnSvgIsRecognisedByItsContentTypeAndItsBytes()
     {
-        // TD-99's SVG half, closed by WP 21.4A: Svg.Skia (MIT) is now
-        // referenced, so an SVG is a real, renderable format rather than
-        // the Unsupported one it used to report.
+        // TD-99's SVG half, closed by WP 21.4A and re-based on the app's own
+        // SvgPictureBuilder under DB-08: an SVG is a real, renderable format
+        // rather than the Unsupported one it used to report.
         Assert.Equal(ViewableDocumentFormat.Svg, DocumentFormatDetector.Detect("image/svg+xml", "<svg/>"u8, "icon.svg"));
     }
 

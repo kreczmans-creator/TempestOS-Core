@@ -1,0 +1,780 @@
+{
+  "b8": [
+    {
+      "Symbol": "E",
+      "Number": 210,
+      "Unit": "GPa",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-PIP-11 \u00A74 (thermal movement)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "210"
+    },
+    {
+      "Symbol": "H",
+      "Number": 9.5,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-PIP-11 \u00A74 (thermal movement)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "9.5"
+    },
+    {
+      "Symbol": "K_scr",
+      "Number": 400,
+      "Unit": "mm^2/m^2",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-PIP-11 \u00A74 (thermal movement)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "400"
+    },
+    {
+      "Symbol": "L",
+      "Number": 60,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-PIP-11 \u00A74 (thermal movement)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "60"
+    },
+    {
+      "Symbol": "OD",
+      "Number": 219.1,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-PIP-11 \u00A74 (thermal movement)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "219.1"
+    },
+    {
+      "Symbol": "Sa",
+      "Number": 160,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-PIP-11 \u00A74 (thermal movement)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "160"
+    },
+    {
+      "Symbol": "T_install",
+      "Number": 10,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-PIP-11 \u00A74 (thermal movement)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "T_operate",
+      "Number": 150,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-PIP-11 \u00A74 (thermal movement)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "150"
+    },
+    {
+      "Symbol": "alpha",
+      "Number": 12,
+      "Unit": "um/(m*K)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-PIP-11 \u00A74 (thermal movement)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "12"
+    },
+    {
+      "Symbol": "layout",
+      "Text": "offset leg (L- or Z-bend: the leg takes the whole movement)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-PIP-11 \u00A74 (thermal movement)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "offset leg (L- or Z-bend: the leg takes the whole movement)"
+    },
+    {
+      "Symbol": "t_wall",
+      "Number": 6.3,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-PIP-11 \u00A74 (thermal movement)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "6.3"
+    },
+    {
+      "Symbol": "temp_mode",
+      "Text": "install and operating temperatures",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-PIP-11 \u00A74 (thermal movement)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "install and operating temperatures"
+    }
+  ],
+  "s2": [
+    {
+      "Symbol": "E",
+      "Number": 210,
+      "Unit": "GPa",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-610",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "210"
+    },
+    {
+      "Symbol": "combinations",
+      "Rows": [
+        {
+          "Cells": {
+            "name": {
+              "Text": "ULS"
+            },
+            "case": {
+              "Number": 1
+            },
+            "factor": {
+              "Number": 1.5
+            }
+          }
+        },
+        {
+          "Cells": {
+            "name": {
+              "Text": "ULS"
+            },
+            "case": {
+              "Number": 2
+            },
+            "factor": {
+              "Number": 1.35
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-610",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2 row(s)"
+    },
+    {
+      "Symbol": "elements",
+      "Rows": [
+        {
+          "Cells": {
+            "id": {
+              "Number": 1
+            },
+            "i": {
+              "Number": 1
+            },
+            "j": {
+              "Number": 2
+            },
+            "A": {
+              "Number": 58.7,
+              "Unit": "cm^2"
+            },
+            "I": {
+              "Number": 4568,
+              "Unit": "cm^4"
+            },
+            "rel_i": {
+              "Flag": false
+            },
+            "rel_j": {
+              "Flag": false
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-610",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1 row(s)"
+    },
+    {
+      "Symbol": "loads",
+      "Rows": [
+        {
+          "Cells": {
+            "case": {
+              "Number": 1
+            },
+            "kind": {
+              "Text": "nodal"
+            },
+            "target": {
+              "Number": 2
+            },
+            "a": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "b": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "w1": {
+              "Number": 0,
+              "Unit": "kN/m"
+            },
+            "w2": {
+              "Number": 0,
+              "Unit": "kN/m"
+            },
+            "F_x": {
+              "Number": 7.069458166484483,
+              "Unit": "kN",
+              "Provenance": {
+                "Kind": "Link",
+                "Reference": "calc:a8b22609af994fddb00d1a44ccc5d8ac#anchor_force",
+                "Revision": "A",
+                "IsSufficientToIssue": true
+              }
+            },
+            "F_y": {
+              "Number": 0,
+              "Unit": "kN"
+            },
+            "M": {
+              "Number": 0,
+              "Unit": "kN*m"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "case": {
+              "Number": 2
+            },
+            "kind": {
+              "Text": "nodal"
+            },
+            "target": {
+              "Number": 2
+            },
+            "a": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "b": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "w1": {
+              "Number": 0,
+              "Unit": "kN/m"
+            },
+            "w2": {
+              "Number": 0,
+              "Unit": "kN/m"
+            },
+            "F_x": {
+              "Number": 0,
+              "Unit": "kN"
+            },
+            "F_y": {
+              "Number": -6,
+              "Unit": "kN"
+            },
+            "M": {
+              "Number": 0,
+              "Unit": "kN*m"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-610",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2 row(s)"
+    },
+    {
+      "Symbol": "n_div",
+      "Number": 20,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "20"
+    },
+    {
+      "Symbol": "nodes",
+      "Rows": [
+        {
+          "Cells": {
+            "id": {
+              "Number": 1
+            },
+            "x": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "y": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "support": {
+              "Text": "fixed"
+            }
+          }
+        },
+        {
+          "Cells": {
+            "id": {
+              "Number": 2
+            },
+            "x": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "y": {
+              "Number": 2.5,
+              "Unit": "m"
+            },
+            "support": {
+              "Text": "free"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-610",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2 row(s)"
+    },
+    {
+      "Symbol": "report",
+      "Text": "ULS",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-610",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "ULS"
+    }
+  ],
+  "s6": [
+    {
+      "Symbol": "A_s",
+      "Number": 244.79,
+      "Unit": "mm^2",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "244.79"
+    },
+    {
+      "Symbol": "B",
+      "Number": 300,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "300"
+    },
+    {
+      "Symbol": "C_fd",
+      "Number": 0.2,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.2"
+    },
+    {
+      "Symbol": "D",
+      "Number": 220,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "220"
+    },
+    {
+      "Symbol": "F_1_vb_Rd",
+      "Number": 248.48,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "248.48"
+    },
+    {
+      "Symbol": "F_t_Rd",
+      "Number": 141,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "141"
+    },
+    {
+      "Symbol": "L",
+      "Number": 350,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "350"
+    },
+    {
+      "Symbol": "M_Ed",
+      "Number": 26.510468124316812,
+      "Unit": "kN*m",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:926f3d10c7aa4068ba697fb96d841d6f#R1_m_abs",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "26.5105"
+    },
+    {
+      "Symbol": "N_Ed",
+      "Number": 8.100000000000001,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:926f3d10c7aa4068ba697fb96d841d6f#R1_y",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "8.1"
+    },
+    {
+      "Symbol": "V_Ed",
+      "Number": 10.604187249726724,
+      "Unit": "kN",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:926f3d10c7aa4068ba697fb96d841d6f#R1_x_abs",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10.6042"
+    },
+    {
+      "Symbol": "alpha",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "alpha_cc",
+      "Number": 0.85,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.85"
+    },
+    {
+      "Symbol": "b",
+      "Number": 203.6,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "203.6"
+    },
+    {
+      "Symbol": "column",
+      "Text": "I/H",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "I/H"
+    },
+    {
+      "Symbol": "e_min",
+      "Number": 40,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "40"
+    },
+    {
+      "Symbol": "f_ck",
+      "Number": 25,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "25"
+    },
+    {
+      "Symbol": "f_ub",
+      "Number": 800,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "800"
+    },
+    {
+      "Symbol": "f_y",
+      "Number": 275,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "275"
+    },
+    {
+      "Symbol": "f_yb",
+      "Number": 640,
+      "Unit": "MPa",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "640"
+    },
+    {
+      "Symbol": "gamma_M0",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "gamma_M2",
+      "Number": 1.25,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.25"
+    },
+    {
+      "Symbol": "gamma_c",
+      "Number": 1.5,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1.5"
+    },
+    {
+      "Symbol": "h",
+      "Number": 203.2,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "203.2"
+    },
+    {
+      "Symbol": "l_eff",
+      "Number": 150,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "150"
+    },
+    {
+      "Symbol": "m",
+      "Number": 28,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "28"
+    },
+    {
+      "Symbol": "n_b",
+      "Number": 4,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "4"
+    },
+    {
+      "Symbol": "n_t",
+      "Number": 2,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2"
+    },
+    {
+      "Symbol": "profis_ref",
+      "Text": "PROFIS-BP1-PLACEHOLDER.txt",
+      "Provenance": {
+        "Kind": "Evidence",
+        "Reference": "b1ef23c946184547bd28d3c660237c99/4ae391cb01104d18a65936cd16ae5cc9",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "PROFIS-BP1-PLACEHOLDER.txt"
+    },
+    {
+      "Symbol": "prying",
+      "Flag": false,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "no"
+    },
+    {
+      "Symbol": "t_f",
+      "Number": 11,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "11"
+    },
+    {
+      "Symbol": "t_p",
+      "Number": 25,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "25"
+    },
+    {
+      "Symbol": "t_w",
+      "Number": 7.2,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "7.2"
+    },
+    {
+      "Symbol": "t_wall",
+      "Number": 10,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "10"
+    },
+    {
+      "Symbol": "x_b",
+      "Number": 135,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-PIP-611",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "135"
+    }
+  ]
+}

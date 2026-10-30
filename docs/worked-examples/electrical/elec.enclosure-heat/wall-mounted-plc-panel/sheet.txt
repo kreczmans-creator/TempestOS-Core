@@ -1,0 +1,170 @@
+CALCULATION SHEET — DRAFT
+Project: Worked example
+Calc ID: wall-mounted-plc-panel    Revision: A
+Title: Enclosure heat dissipation and fan sizing
+Author: TempestOS    Authored: —
+Checker: —    Checked: —
+Issued: —
+
+1. Scope and method
+Calculates the heat load of a control enclosure, its natural temperature rise and the airflow for a target rise. It also gives the fan duty point and the cooling-unit capacity needed when the limit cannot be met.
+Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+ α I A_sun). Effective cooling surface, each face weighted by how freely it sheds heat: A_eff = Σ f_face × A_face. Temperature rise with natural cooling, one coefficient over the exposed faces (the IEC TR 60890 tables are not used): ΔT = P/(h_conv·A_eff). Air flow a fan must move to hold the target rise: V = P/(ρ c_p ΔT_target), with ρ = p(z)/(287.055 T) and c_p = 1006 J/(kg·K). Fan duty point, where the fan curve meets the system resistance (found by bisection): p_fan(V) = p_sys (V/V_ref)². Cooling unit capacity, when the surfaces alone cannot reject the heat: P_cool = P − h_conv·A_eff·(T_max − T_amb); with T_max at or below T_amb the term is a gain, P_cool = P + h_conv·A_eff·(T_amb − T_max), and no ventilation airflow or fan duty is given. Sealed enclosure (sealing temperature T_seal entered, no breather): Δp = p_site·|T_int/T_seal − 1|, the pressure difference across the walls when the air warms or cools from the sealing temperature at constant volume, in absolute temperatures (a rise when T_int > T_seal, a suction when below); a breather or relief element limits it, dp_seal = min(Δp, dp_relief); the force on a cover of area A_cover is F_seal = dp_seal·A_cover
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  loads | Heat loads | 2 row(s) |  | spec: Panel schedule PNL-04 | any
+  loads[1] |  | name = PLC and I/O; P = 80 W; qty = 1; duty = 1 |  |  | 
+  loads[2] |  | name = drives; P = 55 W; qty = 4; duty = 1 |  |  | 
+  W | Enclosure width | 0.6 | m | spec: Enclosure datasheet AE-1380: 600 × 800 × 300 | 0.1 … 5 m
+  H | Enclosure height | 0.8 | m | spec: Enclosure datasheet AE-1380: 600 × 800 × 300 | 0.1 … 5 m
+  D | Enclosure depth | 0.3 | m | spec: Enclosure datasheet AE-1380: 600 × 800 × 300 | 0.1 … 5 m
+  f_top | Top exposure (1 free, 0 covered) | 1 |  | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 1
+  f_front | Front exposure | 1 |  | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 1
+  f_rear | Rear exposure (0 = wall-mounted) | 0 |  | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 1
+  f_left | Left side exposure | 1 |  | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 1
+  f_right | Right side exposure | 1 |  | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 1
+  f_bottom | Bottom exposure (0 = on the floor) | 0 |  | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 1
+  A_sun | Sunlit area | 0 | m² | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 100 m²
+  alpha_sun | Surface absorptivity | 0.5 |  | assumption: Not used indoors (no sun); template default kept. | 0.1 … 1
+  h_conv | Overall heat-transfer coefficient of the enclosure surface (editable reference value) | 5.5 | W/(m²·K) | reference: Reference record: painted steel enclosure, still air, 5.5 W/m²K (manufacturer guide) | 3 … 8 W/(m²·K)
+  P_add | Additional heat load (linked from the load-budget dissipated heat or another calculation) | 0 | kW | assumption: No further heat load linked into this panel. | 0 … 100 kW
+  I_sun | Solar irradiance on the enclosure (0 = indoors) | 0 | W/m² | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 1200 W/m²
+  T_amb | Ambient temperature | 35 | °C | spec: Site conditions SC-2: 35 °C plant room; 50 °C inside limit for the drives | -20 … 55 °C
+  altitude | Site altitude (air density) | 0 | m | assumption: Wall mounted on a floor plinth: rear and bottom covered; indoors. | 0 … 4000 m
+  T_max | Maximum internal temperature | 50 | °C | spec: Site conditions SC-2: 35 °C plant room; 50 °C inside limit for the drives | 20 … 80 °C
+  p_sys | System resistance (filters, grilles) at the reference airflow | 20 | Pa | spec: Filter datasheet: 20 Pa at 100 m³/h | 0 … 500 Pa
+  V_ref | Reference airflow for the system resistance | 100 | m³/h | spec: Filter datasheet: 20 Pa at 100 m³/h | 1 … 100000 m³/h
+  V_pts | Fan curve: airflow points | [0, 100, 200] | m³/h | spec: Fan datasheet FF-120: curve points | any
+  p_pts | Fan curve: static pressure points | [60, 30, 0] | Pa | spec: Fan datasheet FF-120: curve points | any
+
+3. Assumptions
+  A1. Heat leaves the enclosure through its exposed faces at one overall coefficient h_conv. (Plain exposed-area method of manufacturer practice, not an IEC TR 60890 verification; h_conv is a reference value the user may edit.)
+  A2. The coefficient covers natural convection and radiation to surroundings at the ambient temperature. (Plain exposed-area method of manufacturer practice, not an IEC TR 60890 verification; h_conv is a reference value the user may edit.)
+  A3. Covered faces dissipate nothing. (Plain exposed-area method of manufacturer practice, not an IEC TR 60890 verification; h_conv is a reference value the user may edit.)
+  A4. Forced ventilation removes the full heat load with air entering at ambient and leaving at the target rise. (Manufacturer fan-sizing practice.)
+  A5. Natural dissipation is neglected for the airflow, which is conservative. (Manufacturer fan-sizing practice.)
+  A6. A sealed enclosure (T_seal entered) is a closed, rigid, leak-free volume of dry air at the site pressure when closed. (Ideal gas at constant volume (derived).)
+  A7. The pressure difference follows the ideal-gas relation at constant volume, from the sealing temperature to T_int. (Ideal gas at constant volume (derived).)
+  A8. T_int is the internal temperature with natural dissipation, without a cooling unit. (Ideal gas at constant volume (derived).)
+  A9. A breather, a seal that leaks or a flexing wall reduces the difference, so the result is an upper bound. (Ideal gas at constant volume (derived).)
+  A10. A pressure-compensation element is modelled only as a cap at its cracking pressure, with no flow resistance. (Ideal gas at constant volume (derived).)
+  A11. The site pressure is the standard atmosphere at the altitude. (Ideal gas at constant volume (derived).)
+  A12. The fan curve is linear between the entered points. (Duty-point idealisation.)
+  A13. The system resistance scales with airflow squared. (Duty-point idealisation.)
+  A14. f_top (Top exposure (1 free, 0 covered)) is taken as 1. (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A15. f_front (Front exposure) is taken as 1. (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A16. f_rear (Rear exposure (0 = wall-mounted)) is taken as 0. (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A17. f_left (Left side exposure) is taken as 1. (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A18. f_right (Right side exposure) is taken as 1. (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A19. f_bottom (Bottom exposure (0 = on the floor)) is taken as 0. (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A20. A_sun (Sunlit area) is taken as 0 m². (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A21. alpha_sun (Surface absorptivity) is taken as 0.5. (Not used indoors (no sun); template default kept.)
+  A22. P_add (Additional heat load (linked from the load-budget dissipated heat or another calculation)) is taken as 0 kW. (No further heat load linked into this panel.)
+  A23. I_sun (Solar irradiance on the enclosure (0 = indoors)) is taken as 0 W/m². (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A24. altitude (Site altitude (air density)) is taken as 0 m. (Wall mounted on a floor plinth: rear and bottom covered; indoors.)
+  A25. The effective surface is the plain exposed-area method of manufacturer practice: each face area weighted by how freely it sheds heat, one overall coefficient h. This is not a verification of temperature rise to IEC TR 60890 or BS EN 61439-1 cl. 10.10 (neither the surface factors nor the standard's temperature-rise correlation is used). (Stated on every run so the result is not read as an assembly verification.)
+
+4. Working
+  [18] P_loads = Σ P_i × n_i × d_i
+      = 2 item(s)
+      = 0.3 kW
+        Internal heat load
+  [19] P_solar = alpha_sun * I_sun * A_sun
+      = 0.5 × 0 W/m² × 0 m²
+      = 0 kW
+        Solar gain
+  [20] P_total = P_loads + P_add + P_solar
+      = 0.3 kW + 0 kW + 0 kW
+      = 0.3 kW
+        Total heat to remove
+  [21] A_eff = f_top * W * D + f_bottom * W * D + f_front * W * H + f_rear * W * H + f_left * H * D + f_right * H * D    « plain exposed-area method (manufacturer practice), not an IEC TR 60890 verification
+      = 1 × 0.6 m × 0.3 m + 0 × 0.6 m × 0.3 m + 1 × 0.6 m × 0.8 m + 0 × 0.6 m × 0.8 m + 1 × 0.8 m × 0.3 m + 1 × 0.8 m × 0.3 m
+      = 1.14 m²
+        Effective dissipating surface
+  [22] dT_nat = P_total / (h_conv * A_eff)
+      = 0.3 kW / (5.5 W/(m²·K) × 1.14 m²)
+      = 47.847 K
+        Temperature rise with natural dissipation
+  [23] T_int = T_amb + dT_nat
+      = 35 degC + 47.847 K
+      = 82.847 degC
+        Internal temperature with natural dissipation
+  [24] dT_allow = T_max - T_amb
+      = 50 degC − 35 degC
+      = 15 K
+        Allowed rise
+  [25] u_nat = dT_nat / dT_allow
+      = 47.847 K / 15 K
+      = 3.1898
+        Natural dissipation utilisation
+  [26] P_nat_max = h_conv * A_eff * dT_allow
+      = 5.5 W/(m²·K) × 1.14 m² × 15 K
+      = 0.09405 kW
+        Heat the enclosure dissipates naturally at the limit
+  [27] P_cool = max(0 W, P_total - P_nat_max)
+      = max(0 W, 0.3 kW − 0.09405 kW)
+      = 0.20595 kW
+        Cooling-unit capacity needed if ventilation is not used
+  [28] p_site = 101325 (1 − 2.25577e-5 z)^5.2559
+      = z = 0 m
+      = 101.32 kPa
+        Site pressure
+  [29] rho_air = p_site / (287.055 J/(kg*K) * T_amb)
+      = 101.32 kPa / (287.055 J/(kg*K) × 35 degC)
+      = 1.1455 kg/m³
+        Air density at ambient and altitude
+  [30] V_req = P_total / (rho_air * 1006 J/(kg*K) * dT_allow)
+      = 0.3 kW / (1.1455 kg/m³ × 1006 J/(kg*K) × 15 K)
+      = 62.481 m³/h
+        Airflow for forced ventilation at the allowed rise (natural dissipation neglected)
+  [31] V_req_net = max(0 m^3/h, (P_total - P_nat_max) / (rho_air * 1006 J/(kg*K) * dT_allow))
+      = max(0 m^3/h, (0.3 kW − 0.09405 kW) / (1.1455 kg/m³ × 1006 J/(kg*K) × 15 K))
+      = 42.893 m³/h
+        Airflow crediting natural dissipation
+  [36] V_duty = p_fan(V) = p_sys (V/V_ref)², bisection
+      = p_fan(V) = 20 × (V/100)², V from 0 to 200 m³/h
+      = 113.75 m³/h
+        Fan duty airflow
+  [37] p_duty = p_sys (V_duty/V_ref)²
+      = 20 × (113.7/100)²
+      = 25.876 Pa
+        Static pressure at duty
+  [38] u_fan = V_req / V_duty
+      = 62.481 m³/h / 113.75 m³/h
+      = 0.5493
+        Airflow utilisation (required / delivered)
+
+5. Results
+  P_total = 0.3000 kW    Total heat
+  P_cool = 0.2060 kW    Cooling unit needed
+  P_nat_max = 0.09405 kW    Natural dissipation at the limit
+  T_max = 50 °C    Internal temperature limit
+  dT_nat = 47.85 K    Natural temperature rise (governing)
+  T_int = 82.85 °C    Internal temperature (natural)
+  V_req = 62.48 m³/h    Required airflow
+  V_duty = 113.7 m³/h    Fan duty airflow
+  P_loads = 0.3000 kW    Internal heat load
+  P_solar = 0 kW    Solar gain
+  A_eff = 1.140 m²    Effective surface
+  rho_air = 1.145 kg/m³    Air density
+  V_req_net = 42.89 m³/h    Required airflow (net)
+  p_duty = 25.88 Pa    Fan duty pressure
+  u_fan = 0.55    Airflow utilisation
+
+6. Checks (governing first)
+  FAIL  Natural temperature rise against the allowed rise: 47.85 K vs 15 K  utilisation 3.19
+  PASS  Required airflow against the fan duty airflow: 62.48 m³/h vs 113.7 m³/h  utilisation 0.55
+
+7. Applicability
+  WARNING  T_max: natural dissipation holds 94.05 W of 300 W. Ventilate, or fit a 206 W cooling unit.  [cooling-unit]
+
+8. Verification
+  Template: elec.enclosure-heat@1.7.1
+  Content hash: 0000000000000000
+  Engine: engine
+  Known-answer cases passed: 4/4
+  Test run: —
+
+9. References
+  1. IEC TR 60890:2022 — A method of temperature-rise verification of low-voltage switchgear and controlgear assemblies by calculation
+  2. BS EN 61439-1:2021 cl. 10.10 — Verification of temperature rise (edition to be checked)

@@ -1,0 +1,172 @@
+[
+  {
+    "Symbol": "contributors",
+    "Rows": [
+      {
+        "Cells": {
+          "name": {
+            "Text": "a shoulder length"
+          },
+          "direction": {
+            "Text": "adds"
+          },
+          "nominal": {
+            "Number": 1.75,
+            "Unit": "in"
+          },
+          "upper": {
+            "Number": 0.003,
+            "Unit": "in"
+          },
+          "lower": {
+            "Number": -0.003,
+            "Unit": "in"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "b sleeve"
+          },
+          "direction": {
+            "Text": "subtracts"
+          },
+          "nominal": {
+            "Number": 0.75,
+            "Unit": "in"
+          },
+          "upper": {
+            "Number": 0.001,
+            "Unit": "in"
+          },
+          "lower": {
+            "Number": -0.001,
+            "Unit": "in"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "c washer"
+          },
+          "direction": {
+            "Text": "subtracts"
+          },
+          "nominal": {
+            "Number": 0.12,
+            "Unit": "in"
+          },
+          "upper": {
+            "Number": 0.005,
+            "Unit": "in"
+          },
+          "lower": {
+            "Number": -0.005,
+            "Unit": "in"
+          }
+        }
+      },
+      {
+        "Cells": {
+          "name": {
+            "Text": "d sleeve"
+          },
+          "direction": {
+            "Text": "subtracts"
+          },
+          "nominal": {
+            "Number": 0.875,
+            "Unit": "in"
+          },
+          "upper": {
+            "Number": 0.001,
+            "Unit": "in"
+          },
+          "lower": {
+            "Number": -0.001,
+            "Unit": "in"
+          }
+        }
+      }
+    ],
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Shigley 9e Ch. 1 example, part dimensions",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "4 row(s)"
+  },
+  {
+    "Symbol": "cpk_req",
+    "Number": 1.33,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Usual capability target.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.33"
+  },
+  {
+    "Symbol": "f_rss",
+    "Number": 1.5,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Bender factor 1.5.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1.5"
+  },
+  {
+    "Symbol": "k",
+    "Number": 3,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Each part at \u00B13\u03C3 within its band.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "3"
+  },
+  {
+    "Symbol": "minimum",
+    "Number": 0.003,
+    "Unit": "in",
+    "Provenance": {
+      "Kind": "Specification",
+      "Reference": "Shigley 9e Ch. 1 example, required gap",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "0.003"
+  },
+  {
+    "Symbol": "n_mc",
+    "Number": 10000,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Default sample count.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "10000"
+  },
+  {
+    "Symbol": "notation",
+    "Text": "ASME Y14.5",
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Inch drawing.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "ASME Y14.5"
+  },
+  {
+    "Symbol": "seed",
+    "Number": 1,
+    "Provenance": {
+      "Kind": "Assumption",
+      "Reference": "Fixed seed for reproducibility.",
+      "IsSufficientToIssue": true
+    },
+    "ValueText": "1"
+  }
+]

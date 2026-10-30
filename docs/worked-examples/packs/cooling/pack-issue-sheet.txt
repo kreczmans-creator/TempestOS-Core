@@ -1,0 +1,733 @@
+CALCULATION SHEET — ISSUED
+Project: Motor control centre 3
+Calc ID: Drive panel cooling calc pack    Revision: A
+Title: Calculation pack
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: MCC-COOL-001    Client: Client Co
+
+PACK INDEX
+  1. Panel load budget — Load budget, PSU, transformer and battery — rev A — ISSUED
+  2. Enclosure heat — Enclosure heat dissipation and fan sizing — rev A — ISSUED — Natural temperature rise against the allowed rise FAIL
+  3. Cooling-water air coil — Heat exchanger (LMTD and ε-NTU) — rev A — ISSUED — Approach against minimum PASS
+  4. Cooling-water pipework and pump — Pipe pressure drop and pump duty — rev A — ISSUED — Highest velocity against limit PASS
+
+REVISIONS
+  A  2026-10-27  test.engineer  First issue
+
+1. Scope and method
+Calculation pack: the calculations listed in the index, issued together under one issue sheet.
+
+
+2. Inputs
+  None.
+
+3. Assumptions
+  None.
+
+4. Working
+  None.
+
+5. Results
+  None.
+
+6. Checks (governing first)
+  None.
+
+7. Applicability
+  None.
+
+8. Verification
+  Template: pack
+  Content hash: —
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 20/20
+  Test run: 2026-10-27 03:56 UTC
+  Application: TempestOS test
+
+9. References
+  None.
+
+CALCULATION SHEET — ISSUED
+Project: Motor control centre 3
+Calc ID: Panel load budget    Revision: A
+Title: Load budget, PSU, transformer and battery
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: MCC-COOL-001    Client: Client Co
+
+1. Scope and method
+Calculates the demand of a set of loads per supply and the minimum DC power supply, transformer and battery for it. It also gives the heat the loads dissipate for the enclosure calculation.
+Demand per load: P_i·d_i·k_i; apparent power P_i·d_i·k_i/cosφ_i (arithmetic sum, conservative); this duty-weighted demand sizes the transformer and the enclosure heat Running load of each load while it is on: P_i·k_i, apparent P_i·k_i/cosφ_i (the duty d is the share of time on, so it is left out: a cable, a bus and a power supply carry the load while it is on) Bus currents: I_3φ = S_3φ,run/(√3·U), I_1φ = S_1φ,run/U, I_DC = P_DC,run/U_DC, from the running loads; when a bus is chosen for the DC power supply its input P_DC,run/η_PSU (power factor 1) is added to that bus Heat dissipated inside the enclosure: Φ = Σ h_i·P_i·d_i·k_i + P_DC·(1/η_PSU − 1), h_i = the share of the input power released inside (blank: the loss 1 − η_i; electronics 1; a machine outside the enclosure 0); the second term is the power supply's own loss, present when an AC bus is chosen for it Power supply sizing: P_PSU ≥ SF·P_DC,run/f_derate (the running DC load, duty not applied; f_derate from the manufacturer's curve at T_amb and altitude) Transformer sizing: S_T ≥ SF·S for the running load; starting peak S_peak = S + max(m_i·P_i/cosφ_i − S_i) ≤ k_T·S_T (the starting load undiversified), so S_T ≥ S_peak/k_T for the start; the rating to buy is the larger of the two Battery sizing: C = I_b·t/(DoD·η_b·k_temp·k_age), I_b = Σ backed P_i·d_i·k_i/(U_b·η_conv); Peukert: I_b·H·(t/H)^(1/k_p) in place of I_b·t, never below I_b·t (the exponent is not valid beyond the rated hour rate H)
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  loads | Loads | 4 row(s) |  | spec: SPEC-MCC-03 §4 (panel schedule) | any
+  loads[1] |  | name = Extruder drive; supply = AC three-phase; P = 55 kW; cosphi = 0.95; eta = 0.97; d = 1; k = 1; inrush = 1; backed = no |  |  | 
+  loads[2] |  | name = Pump drive; supply = AC three-phase; P = 30 kW; cosphi = 0.95; eta = 0.975; d = 1; k = 1; inrush = 1; backed = no |  |  | 
+  loads[3] |  | name = Servo drives (4); supply = AC three-phase; P = 30 kW; cosphi = 0.9; eta = 0.96; d = 0.8; k = 1; inrush = 1; backed = no |  |  | 
+  loads[4] |  | name = 24 V supplies; supply = AC three-phase; P = 1.5 kW; cosphi = 0.9; eta = 0.9; d = 1; k = 1; inrush = 1; backed = no |  |  | 
+  psu_bus | AC bus that feeds the DC power supply (its input P_DC/η_PSU is added to that bus) | not counted on an AC bus |  | assumption: Sheet default value; no project figure given. | any
+  P_add | Additional three-phase load (linked from the motor-sizing RMS power) | 0 | kW | assumption: Sheet default value; no project figure given. | 0 … 100 kW
+  cosphi_add | Power factor of the additional load | 0.85 |  | spec: SPEC-MCC-03 §4 (panel schedule) | 0.6 … 1
+  eta_add | Efficiency of the additional load | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.6 … 1
+  inrush_add | Starting multiple of the additional load | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 10
+  heat_add | Share of the additional load's input power released inside the enclosure (a linked machine is outside it: 0) | 0 |  | assumption: Sheet default value; no project figure given. | 0 … 0.5
+  U_3ph | Three-phase line voltage | 400 | V | assumption: Sheet default value; no project figure given. | 12 … 690 V
+  U_1ph | Single-phase voltage | 230 | V | assumption: Sheet default value; no project figure given. | 12 … 480 V
+  U_DC | DC bus voltage | 24 | V | assumption: Sheet default value; no project figure given. | 12 … 600 V
+  T_amb | Ambient temperature | 40 | °C | assumption: Sheet default value; no project figure given. | 0 … 60 °C
+  U_b | Battery nominal voltage | 24 | V | assumption: Sheet default value; no project figure given. | 2 … 1000 V
+  eta_psu | DC power supply efficiency (power factor taken as 1) | 0.9 |  | assumption: Sheet default value; no project figure given. | 0.7 … 1
+  SF | Sizing safety factor | 1.25 |  | assumption: Sheet default value; no project figure given. | 1 … 1.4
+  f_derate | PSU derating factor at the ambient and altitude | 1 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
+  k_T | Transformer short-time overload allowed for inrush | 3 |  | assumption: Sheet default value; no project figure given. | 1 … 20
+  eta_conv | Conversion efficiency battery → loads | 1 |  | assumption: Sheet default value; no project figure given. | 0.7 … 1
+  DoD | Allowed depth of discharge | 0.8 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
+  eta_b | Battery discharge efficiency | 0.95 |  | assumption: Sheet default value; no project figure given. | 0.7 … 1
+  k_temp | Temperature capacity factor | 1 |  | assumption: Sheet default value; no project figure given. | 0.3 … 1.2
+  k_age | Ageing (end-of-life) factor | 0.8 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
+  t_auto | Battery autonomy | 0 | h | assumption: Sheet default value; no project figure given. | 0 … 48 h
+
+3. Assumptions
+  A1. Each load's P is its electrical input. (Load budget convention.)
+  A2. DC loads count at power factor 1 in the transformer demand. (Load budget convention.)
+  A3. With a PSU bus chosen, DC loads count at P/η_PSU, which already includes the supply's own loss. (Load budget convention.)
+  A4. The sheet adds that loss to Φ itself, as P_DC·(1/η_PSU − 1), whenever psu_bus and η_PSU are set. (Load budget convention.)
+  A5. Do not add the power supply as a load row, which would count its loss twice. (Load budget convention.)
+  A6. The heat released inside the enclosure is h·P·d·k per load. (Stated convention for the heat a load releases inside the panel.)
+  A7. The default h = 1 − η is the loss of a drive or supply. (Stated convention for the heat a load releases inside the panel; change h for a load that differs.)
+  A8. Electronics release all their input (h = 1) and a machine outside the panel releases none (h = 0). (Stated convention for the heat a load releases inside the panel; change h for a load that differs.)
+  A9. Apparent powers are added arithmetically, which is conservative when power factors differ. (Upper bound on S.)
+  A10. PSU derating, transformer overload and battery factors are the manufacturer's values, entered as records. (Entered as reference records, which carry their source, edition and licence.)
+  A11. psu_bus (AC bus that feeds the DC power supply (its input P_DC/η_PSU is added to that bus)) is taken as not counted on an AC bus. (Sheet default value; no project figure given.)
+  A12. P_add (Additional three-phase load (linked from the motor-sizing RMS power)) is taken as 0 kW. (Sheet default value; no project figure given.)
+  A13. eta_add (Efficiency of the additional load) is taken as 0.9. (Sheet default value; no project figure given.)
+  A14. inrush_add (Starting multiple of the additional load) is taken as 1. (Sheet default value; no project figure given.)
+  A15. heat_add (Share of the additional load's input power released inside the enclosure (a linked machine is outside it: 0)) is taken as 0. (Sheet default value; no project figure given.)
+  A16. U_3ph (Three-phase line voltage) is taken as 400 V. (Sheet default value; no project figure given.)
+  A17. U_1ph (Single-phase voltage) is taken as 230 V. (Sheet default value; no project figure given.)
+  A18. U_DC (DC bus voltage) is taken as 24 V. (Sheet default value; no project figure given.)
+  A19. T_amb (Ambient temperature) is taken as 40 °C. (Sheet default value; no project figure given.)
+  A20. U_b (Battery nominal voltage) is taken as 24 V. (Sheet default value; no project figure given.)
+  A21. eta_psu (DC power supply efficiency (power factor taken as 1)) is taken as 0.9. (Sheet default value; no project figure given.)
+  A22. SF (Sizing safety factor) is taken as 1.25. (Sheet default value; no project figure given.)
+  A23. f_derate (PSU derating factor at the ambient and altitude) is taken as 1. (Sheet default value; no project figure given.)
+  A24. k_T (Transformer short-time overload allowed for inrush) is taken as 3. (Sheet default value; no project figure given.)
+  A25. eta_conv (Conversion efficiency battery → loads) is taken as 1. (Sheet default value; no project figure given.)
+  A26. DoD (Allowed depth of discharge) is taken as 0.8. (Sheet default value; no project figure given.)
+  A27. eta_b (Battery discharge efficiency) is taken as 0.95. (Sheet default value; no project figure given.)
+  A28. k_temp (Temperature capacity factor) is taken as 1. (Sheet default value; no project figure given.)
+  A29. k_age (Ageing (end-of-life) factor) is taken as 0.8. (Sheet default value; no project figure given.)
+  A30. t_auto (Battery autonomy) is taken as 0 h. (Sheet default value; no project figure given.)
+
+4. Working
+  [21] L1 = P·d·k; P·d·k/cosφ
+      = 55 × 1 × 1 = 55 kW; 57.895 kVA
+      = 55 kW
+        Extruder drive (AC three-phase)
+  [22] L2 = P·d·k; P·d·k/cosφ
+      = 30 × 1 × 1 = 30 kW; 31.579 kVA
+      = 30 kW
+        Pump drive (AC three-phase)
+  [23] L3 = P·d·k; P·d·k/cosφ
+      = 30 × 0.8 × 1 = 24 kW; 26.667 kVA
+      = 24 kW
+        Servo drives (4) (AC three-phase)
+  [24] L4 = P·d·k; P·d·k/cosφ
+      = 1.5 × 1 × 1 = 1.5 kW; 1.6667 kVA
+      = 1.5 kW
+        24 V supplies (AC three-phase)
+  [25] P_conn = Σ P_i
+      = 55 + 30 + 30 + 1.5
+      = 116.5 kW
+        Connected load
+  [26] P_dem = Σ P_i·d_i·k_i
+      = 55 + 30 + 24 + 1.5
+      = 110.5 kW
+        Demand active power
+  [27] S_dem = Σ P_i·d_i·k_i/cosφ_i
+      = 57.895 + 31.579 + 26.667 + 1.6667
+      = 117.81 kVA
+        Demand apparent power (arithmetic)
+  [28] I_3ph = S_3φ,run/(√3·U_3ph), S_run = Σ P_i·k_i/cosφ_i
+      = 124470 / (√3 × 400)
+      = 179.66 A
+        Three-phase bus current, loads while on (duty not applied)
+  [29] I_1ph = S_1φ,run/U_1ph, S_run = Σ P_i·k_i/cosφ_i
+      = 0 / 230
+      = 0 A
+        Single-phase bus current, loads while on (duty not applied)
+  [30] I_DC = P_DC,run/U_DC, P_DC,run = Σ DC P_i·k_i
+      = 0 / 24
+      = 0 A
+        DC bus current, loads while on (duty not applied)
+  [31] Phi = Σ h_i·P_i·d_i·k_i
+      = 0.03×55 + 0.025×30 + 0.04×24 + 0.1×1.5
+      = 3.51 kW
+        Heat dissipated inside the enclosure (→ enclosure-heat P_add)
+  [32] P_DC = Σ DC P_i·d_i·k_i
+      = 0 W
+      = 0 W
+        DC demand (duty-weighted)
+  [33] P_DC_run = Σ DC P_i·k_i
+      = 0 W
+      = 0 W
+        DC load while on (duty not applied)
+  [34] P_PSU_req = SF * P_DC_run / f_derate
+      = 1.25 × 0 W / 1
+      = 0 kW
+        Minimum PSU rating (the supply carries the load while it is on)
+  [35] S_T_req = SF * S_dem
+      = 1.25 × 117.81 kVA
+      = 147.26 kVA
+        Minimum transformer rating for the running load
+  [36] S_peak = S_dem + max(m_i·P_i/cosφ_i − S_i)
+      = 117.81 + 6.6667 (Servo drives (4) starting)
+      = 124.47 kVA
+        Peak apparent power while the largest load starts
+  [37] S_T_req_start = S_peak / k_T
+      = 124.47 kVA / 3
+      = 41.491 kVA
+        Minimum transformer rating for the starting peak
+  [38] S_T_min = max(S_T_req, S_T_req_start)
+      = max(147.26 kVA, 41.491 kVA)
+      = 147.26 kVA
+        Minimum transformer rating (running load and starting peak)
+  [39] U_L = U_3ph
+      = 400 V
+      = 400 V
+        Three-phase line voltage of the bus
+  [40] pf_link = cosφ of the linked machine
+      = 0.85
+      = 0.85
+        Power factor of the linked machine
+
+5. Results
+  P_dem = 110.50 kW    Demand active power
+  S_dem = 117.81 kVA    Demand apparent power
+  I_3ph = 179.66 A    Three-phase bus current
+  I_1ph = 0 A    Single-phase bus current
+  I_DC = 0 A    DC bus current
+  Phi = 3.510 kW    Heat dissipated inside the enclosure
+  U_L = 400 V    Three-phase line voltage
+  pf_link = 0.85    Power factor of the linked machine
+  P_conn = 116.50 kW    Connected load
+  P_PSU_req = 0 kW    Minimum PSU rating
+  S_T_req = 147.26 kVA    Minimum transformer rating, running load
+  S_peak = 124.47 kVA    Peak apparent power at start
+  S_T_req_start = 41.49 kVA    Minimum transformer rating, starting peak
+  S_T_min = 147.26 kVA    Minimum transformer rating, running and starting
+
+6. Checks (governing first)
+  None.
+
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are f_derate (PSU derating); DoD, eta_b, k_temp, k_age (Battery factors). Enter each as one so its source, edition and licence travel with it.  [record]
+
+8. Verification
+  Template: elec.load-budget@1.6.1
+  Content hash: 37b6289e618acdb2
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 4/4
+  Test run: 2026-10-27 03:56 UTC
+  Application: TempestOS test
+
+9. References
+  1. Reddy (ed.), Linden's Handbook of Batteries Ch. 3–4, 5th ed. — Battery sizing and the Peukert relation
+  2. BS EN 60204-1:2018 cl. 4.3 — Electrical supply (supply voltage tolerance)
+
+
+CALCULATION SHEET — ISSUED
+Project: Motor control centre 3
+Calc ID: Enclosure heat    Revision: A
+Title: Enclosure heat dissipation and fan sizing
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: MCC-COOL-001    Client: Client Co
+
+1. Scope and method
+Calculates the heat load of a control enclosure, its natural temperature rise and the airflow for a target rise. It also gives the fan duty point and the cooling-unit capacity needed when the limit cannot be met.
+Heat dissipated inside the enclosure, plus any solar gain: P = Σ P_i n_i d_i (+ α I A_sun). Effective cooling surface, each face weighted by how freely it sheds heat: A_eff = Σ f_face × A_face. Temperature rise with natural cooling, one coefficient over the exposed faces (the IEC TR 60890 tables are not used): ΔT = P/(h_conv·A_eff). Air flow a fan must move to hold the target rise: V = P/(ρ c_p ΔT_target), with ρ = p(z)/(287.055 T) and c_p = 1006 J/(kg·K). Fan duty point, where the fan curve meets the system resistance (found by bisection): p_fan(V) = p_sys (V/V_ref)². Cooling unit capacity, when the surfaces alone cannot reject the heat: P_cool = P − h_conv·A_eff·(T_max − T_amb); with T_max at or below T_amb the term is a gain, P_cool = P + h_conv·A_eff·(T_amb − T_max), and no ventilation airflow or fan duty is given. Sealed enclosure (sealing temperature T_seal entered, no breather): Δp = p_site·|T_int/T_seal − 1|, the pressure difference across the walls when the air warms or cools from the sealing temperature at constant volume, in absolute temperatures (a rise when T_int > T_seal, a suction when below); a breather or relief element limits it, dp_seal = min(Δp, dp_relief); the force on a cover of area A_cover is F_seal = dp_seal·A_cover
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  loads | Heat loads | 1 row(s) |  | drawing: DRG-MCC-210 rev B | any
+  loads[1] |  | name = Busbars, contactors and terminals; P = 150 W; qty = 1; duty = 1 |  |  | 
+  W | Enclosure width | 1.2 | m | drawing: DRG-MCC-210 rev B | 0.1 … 5 m
+  H | Enclosure height | 2 | m | drawing: DRG-MCC-210 rev B | 0.1 … 5 m
+  D | Enclosure depth | 0.6 | m | drawing: DRG-MCC-210 rev B | 0.1 … 5 m
+  f_top | Top exposure (1 free, 0 covered) | 1 |  | drawing: DRG-MCC-210 rev B | 0 … 1
+  f_front | Front exposure | 1 |  | drawing: DRG-MCC-210 rev B | 0 … 1
+  f_rear | Rear exposure (0 = wall-mounted) | 0 |  | drawing: DRG-MCC-210 rev B | 0 … 1
+  f_left | Left side exposure | 1 |  | drawing: DRG-MCC-210 rev B | 0 … 1
+  f_right | Right side exposure | 0 |  | drawing: DRG-MCC-210 rev B | 0 … 1
+  f_bottom | Bottom exposure (0 = on the floor) | 0 |  | drawing: DRG-MCC-210 rev B | 0 … 1
+  A_sun | Sunlit area | 0 | m² | assumption: Sheet default value; no project figure given. | 0 … 100 m²
+  alpha_sun | Surface absorptivity | 0.5 |  | assumption: Sheet default value; no project figure given. | 0.1 … 1
+  h_conv | Overall heat-transfer coefficient of the enclosure surface (editable reference value) | 5.5 | W/(m²·K) | assumption: Sheet default value; no project figure given. | 3 … 8 W/(m²·K)
+  P_add | Additional heat load (linked from the load-budget dissipated heat or another calculation) | 3.51 | kW | link: Panel load budget rev A · Phi | 0 … 100 kW
+  I_sun | Solar irradiance on the enclosure (0 = indoors) | 0 | W/m² | assumption: Sheet default value; no project figure given. | 0 … 1200 W/m²
+  T_amb | Ambient temperature | 35 | °C | drawing: DRG-MCC-210 rev B | -20 … 55 °C
+  altitude | Site altitude (air density) | 0 | m | assumption: Sheet default value; no project figure given. | 0 … 4000 m
+  T_max | Maximum internal temperature | 45 | °C | drawing: DRG-MCC-210 rev B | 20 … 80 °C
+  p_sys | System resistance (filters, grilles) at the reference airflow | 20 | Pa | assumption: Sheet default value; no project figure given. | 0 … 500 Pa
+  V_ref | Reference airflow for the system resistance | 100 | m³/h | assumption: Sheet default value; no project figure given. | 1 … 100000 m³/h
+
+3. Assumptions
+  A1. Heat leaves the enclosure through its exposed faces at one overall coefficient h_conv. (Plain exposed-area method of manufacturer practice, not an IEC TR 60890 verification; h_conv is a reference value the user may edit.)
+  A2. The coefficient covers natural convection and radiation to surroundings at the ambient temperature. (Plain exposed-area method of manufacturer practice, not an IEC TR 60890 verification; h_conv is a reference value the user may edit.)
+  A3. Covered faces dissipate nothing. (Plain exposed-area method of manufacturer practice, not an IEC TR 60890 verification; h_conv is a reference value the user may edit.)
+  A4. Forced ventilation removes the full heat load with air entering at ambient and leaving at the target rise. (Manufacturer fan-sizing practice.)
+  A5. Natural dissipation is neglected for the airflow, which is conservative. (Manufacturer fan-sizing practice.)
+  A6. A sealed enclosure (T_seal entered) is a closed, rigid, leak-free volume of dry air at the site pressure when closed. (Ideal gas at constant volume (derived).)
+  A7. The pressure difference follows the ideal-gas relation at constant volume, from the sealing temperature to T_int. (Ideal gas at constant volume (derived).)
+  A8. T_int is the internal temperature with natural dissipation, without a cooling unit. (Ideal gas at constant volume (derived).)
+  A9. A breather, a seal that leaks or a flexing wall reduces the difference, so the result is an upper bound. (Ideal gas at constant volume (derived).)
+  A10. A pressure-compensation element is modelled only as a cap at its cracking pressure, with no flow resistance. (Ideal gas at constant volume (derived).)
+  A11. The site pressure is the standard atmosphere at the altitude. (Ideal gas at constant volume (derived).)
+  A12. The fan curve is linear between the entered points. (Duty-point idealisation.)
+  A13. The system resistance scales with airflow squared. (Duty-point idealisation.)
+  A14. A_sun (Sunlit area) is taken as 0 m². (Sheet default value; no project figure given.)
+  A15. alpha_sun (Surface absorptivity) is taken as 0.5. (Sheet default value; no project figure given.)
+  A16. h_conv (Overall heat-transfer coefficient of the enclosure surface (editable reference value)) is taken as 5.5 W/(m²·K). (Sheet default value; no project figure given.)
+  A17. I_sun (Solar irradiance on the enclosure (0 = indoors)) is taken as 0 W/m². (Sheet default value; no project figure given.)
+  A18. altitude (Site altitude (air density)) is taken as 0 m. (Sheet default value; no project figure given.)
+  A19. p_sys (System resistance (filters, grilles) at the reference airflow) is taken as 20 Pa. (Sheet default value; no project figure given.)
+  A20. V_ref (Reference airflow for the system resistance) is taken as 100 m³/h. (Sheet default value; no project figure given.)
+  A21. The effective surface is the plain exposed-area method of manufacturer practice: each face area weighted by how freely it sheds heat, one overall coefficient h. This is not a verification of temperature rise to IEC TR 60890 or BS EN 61439-1 cl. 10.10 (neither the surface factors nor the standard's temperature-rise correlation is used). (Stated on every run so the result is not read as an assembly verification.)
+
+4. Working
+  [18] P_loads = Σ P_i × n_i × d_i
+      = 1 item(s)
+      = 0.15 kW
+        Internal heat load
+  [19] P_solar = alpha_sun * I_sun * A_sun
+      = 0.5 × 0 W/m² × 0 m²
+      = 0 kW
+        Solar gain
+  [20] P_total = P_loads + P_add + P_solar
+      = 0.15 kW + 3.51 kW + 0 kW
+      = 3.66 kW
+        Total heat to remove
+  [21] A_eff = f_top * W * D + f_bottom * W * D + f_front * W * H + f_rear * W * H + f_left * H * D + f_right * H * D    « plain exposed-area method (manufacturer practice), not an IEC TR 60890 verification
+      = 1 × 1.2 m × 0.6 m + 0 × 1.2 m × 0.6 m + 1 × 1.2 m × 2 m + 0 × 1.2 m × 2 m + 1 × 2 m × 0.6 m + 0 × 2 m × 0.6 m
+      = 4.32 m²
+        Effective dissipating surface
+  [22] dT_nat = P_total / (h_conv * A_eff)
+      = 3.66 kW / (5.5 W/(m²·K) × 4.32 m²)
+      = 154.04 K
+        Temperature rise with natural dissipation
+  [23] T_int = T_amb + dT_nat
+      = 35 degC + 154.04 K
+      = 189.04 degC
+        Internal temperature with natural dissipation
+  [24] dT_allow = T_max - T_amb
+      = 45 degC − 35 degC
+      = 10 K
+        Allowed rise
+  [25] u_nat = dT_nat / dT_allow
+      = 154.04 K / 10 K
+      = 15.404
+        Natural dissipation utilisation
+  [26] P_nat_max = h_conv * A_eff * dT_allow
+      = 5.5 W/(m²·K) × 4.32 m² × 10 K
+      = 0.2376 kW
+        Heat the enclosure dissipates naturally at the limit
+  [27] P_cool = max(0 W, P_total - P_nat_max)
+      = max(0 W, 3.66 kW − 0.2376 kW)
+      = 3.4224 kW
+        Cooling-unit capacity needed if ventilation is not used
+  [28] p_site = 101325 (1 − 2.25577e-5 z)^5.2559
+      = z = 0 m
+      = 101.32 kPa
+        Site pressure
+  [29] rho_air = p_site / (287.055 J/(kg*K) * T_amb)
+      = 101.32 kPa / (287.055 J/(kg*K) × 35 degC)
+      = 1.1455 kg/m³
+        Air density at ambient and altitude
+  [30] V_req = P_total / (rho_air * 1006 J/(kg*K) * dT_allow)
+      = 3.66 kW / (1.1455 kg/m³ × 1006 J/(kg*K) × 10 K)
+      = 1143.4 m³/h
+        Airflow for forced ventilation at the allowed rise (natural dissipation neglected)
+  [31] V_req_net = max(0 m^3/h, (P_total - P_nat_max) / (rho_air * 1006 J/(kg*K) * dT_allow))
+      = max(0 m^3/h, (3.66 kW − 0.2376 kW) / (1.1455 kg/m³ × 1006 J/(kg*K) × 10 K))
+      = 1069.2 m³/h
+        Airflow crediting natural dissipation
+
+5. Results
+  P_total = 3.660 kW    Total heat
+  P_cool = 3.422 kW    Cooling unit needed
+  P_nat_max = 0.2376 kW    Natural dissipation at the limit
+  T_max = 45 °C    Internal temperature limit
+  dT_nat = 154.1 K    Natural temperature rise (governing)
+  T_int = 189.0 °C    Internal temperature (natural)
+  V_req = 1143.4 m³/h    Required airflow
+  P_loads = 0.1500 kW    Internal heat load
+  P_solar = 0 kW    Solar gain
+  A_eff = 4.320 m²    Effective surface
+  rho_air = 1.145 kg/m³    Air density
+  V_req_net = 1069.2 m³/h    Required airflow (net)
+
+6. Checks (governing first)
+  FAIL  Natural temperature rise against the allowed rise: 154.1 K vs 10 K  utilisation 15.41
+
+7. Applicability
+  WARNING  T_max: natural dissipation holds 237.6 W of 3660 W. Ventilate, or fit a 3422 W cooling unit.  [cooling-unit]
+
+8. Verification
+  Template: elec.enclosure-heat@1.7.1
+  Content hash: c419a03dc9212448
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 4/4
+  Test run: 2026-10-27 03:56 UTC
+  Application: TempestOS test
+
+9. References
+  1. IEC TR 60890:2022 — A method of temperature-rise verification of low-voltage switchgear and controlgear assemblies by calculation
+  2. BS EN 61439-1:2021 cl. 10.10 — Verification of temperature rise (edition to be checked)
+
+
+CALCULATION SHEET — ISSUED
+Project: Motor control centre 3
+Calc ID: Cooling-water air coil    Revision: A
+Title: Heat exchanger (LMTD and ε-NTU)
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: MCC-COOL-001    Client: Client Co
+
+1. Scope and method
+Calculates a single-phase heat exchanger with constant properties: the duty and outlet temperatures for a given area, or the area for a given duty. It covers counterflow, parallel flow, shell and tube, crossflow and one fluid at constant temperature.
+Capacity rates: C_h = ṁ_h·c_p,h, C_c = ṁ_c·c_p,c, C_r = C_min/C_max; with one fluid at constant temperature (C_r = 0) that fluid's capacity rate is infinite, C_min is the other stream's and the constant stream leaves at its inlet temperature Overall coefficient with fouling: U_f = 1/(1/U_clean + R_f) Transfer units: NTU = U_f·A/C_min; effectiveness ε(NTU, C_r) for the arrangement Heat exchanger duty: Phi = ε·C_min·(T_h,in − T_c,in); outlets from the energy balance Area for a required duty: ε = Q_req/(C_min·ΔT_max), NTU from the inverse relation, A = NTU·C_min/U_f Cross-check with LMTD: Phi = U_f·A·F_corr·ΔT_lm, F_corr from R and P (one shell pass) or back-calculated
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  arrangement | Flow arrangement | counterflow |  | spec: SPEC-MCC-03 §7 (cooling water) | any
+  mode | Mode | sizing (given duty) |  | spec: SPEC-MCC-03 §7 (cooling water) | any
+  const_side | Which side is at constant temperature (used only by the C_r = 0 arrangement) | hot side at constant temperature (e.g. condensing vapour) |  | assumption: Sheet default value; no project figure given. | any
+  m_h | Hot-side mass flow | 0.4 | kg/s | spec: SPEC-MCC-03 §7 (cooling water) | 0.01 … 50 kg/s
+  cp_h | Hot-side specific heat | 1006 | J/(kg·K) | spec: SPEC-MCC-03 §7 (cooling water) | 500 … 10000 J/(kg·K)
+  T_h_in | Hot-side inlet temperature | 45 | °C | link: Enclosure heat rev A · T_max | -20 … 180 °C
+  m_c | Cold-side mass flow | 0.25 | kg/s | spec: SPEC-MCC-03 §7 (cooling water) | 0.01 … 50 kg/s
+  cp_c | Cold-side specific heat | 4180 | J/(kg·K) | spec: SPEC-MCC-03 §7 (cooling water) | 500 … 10000 J/(kg·K)
+  T_c_in | Cold-side inlet temperature | 22 | °C | spec: SPEC-MCC-03 §7 (cooling water) | -20 … 150 °C
+  U_clean | Overall heat transfer coefficient (clean) | 60 | W/(m²·K) | spec: SPEC-MCC-03 §7 (cooling water) | 20 … 8000 W/(m²·K)
+  R_f | Total fouling resistance | 0.0001 | m²·K/W | spec: SPEC-MCC-03 §7 (cooling water) | 0 … 0.01 m²·K/W
+  dT_min | Minimum approach temperature difference | 2 | K | assumption: Sheet default value; no project figure given. | 0 … 50 K
+  Q_req | Required duty | 3.4224 | kW | link: Enclosure heat rev A · P_cool | 0.001 … 100000 kW
+
+3. Assumptions
+  A1. Single phase on both sides (except the C_r = 0 arrangement), constant properties, no heat loss to surroundings. (Incropera 7th ed. §11.3–11.4.)
+  A2. The crossflow both-unmixed effectiveness is the published approximate correlation, flagged on the sheet. (Incropera 7th ed. Table 11.3.)
+  A3. Specific heats are user records at the mean temperature of each stream. (Entered as reference records, which carry their source, edition and licence.)
+  A4. const_side (Which side is at constant temperature (used only by the C_r = 0 arrangement)) is taken as hot side at constant temperature (e.g. condensing vapour). (Sheet default value; no project figure given.)
+  A5. dT_min (Minimum approach temperature difference) is taken as 2 K. (Sheet default value; no project figure given.)
+
+4. Working
+  [12] C_h = m_h * cp_h
+      = 0.4 kg/s × 1006 J/(kg·K)
+      = 402.4 W/K
+        Hot-side capacity rate
+  [13] C_c = m_c * cp_c
+      = 0.25 kg/s × 4180 J/(kg·K)
+      = 1045 W/K
+        Cold-side capacity rate
+  [14] C_min = min(C_h, C_c)
+      = min(402.4 W/K, 1045 W/K)
+      = 402.4 W/K
+        Minimum capacity rate
+  [15] C_r = min(C_h, C_c) / max(C_h, C_c)
+      = min(402.4 W/K, 1045 W/K) / max(402.4 W/K, 1045 W/K)
+      = 0.38507
+        Capacity ratio
+  [16] U_f = 1 / (1 / U_clean + R_f)
+      = 1 / (1 / 60 W/(m²·K) + 0.0001 m²·K/W)
+      = 59.642 W/(m²·K)
+        Overall coefficient with fouling
+  [18] eps = Q_req / (C_min·ΔT_max)
+      = 3422.4 / (402.4 × 23)
+      = 0.36978
+        Effectiveness required
+  [19] NTU = NTU(ε, C_r) inverse relation    « Incropera 7th ed. Table 11.4
+      = ε = 0.36978, C_r = 0.38507
+      = 0.501
+        Transfer units required
+  [20] A_req = NTU·C_min / U_f
+      = 0.501 × 402.4 / 59.642
+      = 3.3802 m²
+        Required heat transfer area
+  [21] UA = NTU·C_min
+      = 0.501 × 402.4
+      = 201.6 W/K
+        Required UA
+  [22] Phi = ε·C_min·(T_h,in − T_c,in)
+      = 0.36978 × 402.4 × 23
+      = 3.4224 kW
+        Heat duty
+  [23] T_h_out = T_h,in − Q/C_h
+      = 45 °C − 3422.4 / 402.4
+      = 36.495 degC
+        Hot-side outlet temperature
+  [24] T_c_out = T_c,in + Q/C_c
+      = 22 °C + 3422.4 / 1045
+      = 25.275 degC
+        Cold-side outlet temperature
+  [25] dT_c = T_c,out − T_c,in
+      = 25.275 °C − 22 °C
+      = 3.275 K
+        Cold-side temperature rise
+  [26] T_c_m = (T_c,in + T_c,out)/2
+      = (22 °C + 25.275 °C)/2
+      = 23.638 degC
+        Mean cold-side temperature
+  [27] dT_app = min(T_h,in − T_c,out, T_h,out − T_c,in)
+      = 14.495 K
+      = 14.495 K
+        Approach temperature difference
+  [28] dT_lm = (ΔT_1 − ΔT_2)/ln(ΔT_1/ΔT_2), counterflow ends
+      = ΔT_1 = 19.725 K, ΔT_2 = 14.495 K
+      = 16.976 K
+        Log-mean temperature difference
+  [29] F_corr = 1 (pure counterflow, parallel flow or C_r = 0)    « Incropera 7th ed. §11.3
+      = R = 2.5969, P = 0.14239
+      = 1
+        LMTD correction factor
+  [30] Q_lmtd = U_f·A·F·ΔT_lm
+      = 59.642 × 3.3802 × 1 × 16.976
+      = 3.4224 kW
+        Duty by the LMTD method (cross-check)
+  [31] u_app = dT_min / dT_app
+      = 2 K / 14.495 K
+      = 0.13798
+        Approach utilisation (minimum / actual)
+
+5. Results
+  Phi = 3.422 kW    Heat duty
+  T_h_out = 36.50 °C    Hot outlet
+  T_c_out = 25.28 °C    Cold outlet
+  dT_c = 3.275 K    Cold-side rise
+  T_c_m = 23.64 °C    Cold-side mean
+  cp_c = 4180 J/(kg·K)    Cold-side specific heat
+  A_req = 3.380 m²    Required area
+  C_r = 0.38507    Capacity ratio
+  NTU = 0.501    Transfer units
+  eps = 0.36978    Effectiveness
+  dT_app = 14.50 K    Approach
+  UA = 201.60 W/K    Overall conductance U·A
+  dT_lm = 16.98 K    Log-mean temperature difference
+  Q_lmtd = 3.422 kW    Duty by the LMTD method
+  F_corr = 1    LMTD correction factor
+  u_app = 0.14    Approach utilisation (minimum / actual) (governing)
+
+6. Checks (governing first)
+  PASS  Approach against minimum: 2 K vs 14.50 K  utilisation 0.14
+
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are cp_h, cp_c (Fluid properties (specific heats)). Enter each as one so its source, edition and licence travel with it.  [record]
+
+8. Verification
+  Template: bs.heat-exchanger@1.5.0
+  Content hash: 35bb6b8737222112
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 7/7
+  Test run: 2026-10-27 03:56 UTC
+  Application: TempestOS test
+
+9. References
+  1. Incropera, Fundamentals of Heat and Mass Transfer §11.3–11.5, Tables 11.3–11.4, 7th ed. — LMTD and effectiveness-NTU methods
+  2. Çengel & Ghajar, Heat and Mass Transfer Ch. 11, 5th ed. — Heat exchangers
+
+
+CALCULATION SHEET — ISSUED
+Project: Motor control centre 3
+Calc ID: Cooling-water pipework and pump    Revision: A
+Title: Pipe pressure drop and pump duty
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: MCC-COOL-001    Client: Client Co
+
+1. Scope and method
+Calculates the friction and fitting losses of series pipe segments at a given flow, the system curve and the duty point against a pump curve. It also gives the affinity-law shift for a speed or impeller change, and the NPSH.
+Design flow and velocity: Q = Φ/(ρ c_p ΔT) when a heat load is given in place of a flow; v = Q/(πD²/4) Reynolds number and friction factor: Re = ρvD/μ; f = 64/Re for laminar flow (Re < 2300); Colebrook–White 1/√f = −2 log10(ε/3.7D + 2.51/(Re√f)) for turbulent flow, by fixed-point iteration (at most 100 steps) from the Swamee–Jain value, which also cross-checks it Head lost in a segment: h_f = f (L + L_eq)/D · v²/2g + K v²/2g System curve: H_sys(Q) = Σdz + h_out + Σh_f,lam·(Q/Q₀) + Σh_f,other·(Q/Q₀)², with a laminar segment's friction scaled as Q and every other friction and fitting loss as Q² (a closed circuit has Σdz = 0) Water held in the pipes: V_pipe = Σ π/4·D²·L Duty point: H_pump(Q) = H_sys(Q), every crossing found by a scan and refined by bisection, the stable one nearest the design flow reported; pump affinity laws Q ∝ n·D^a, H ∝ n²·D², with a = 1 for a trimmed impeller (the default) and a = 3 for a geometrically similar pump Net positive suction head available: NPSH_a = p_atm/ρg + z_s − h_f,suction − p_v/ρg, with h_f,suction that of the 'suction' segments at the larger of the design flow and the duty flow Shaft torque for the motor: T = P/ω, with P the larger of the design-flow and duty-point shaft power at the speed n_pump, or the shifted duty power at the shifted speed n_pump·n₂/n₁
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  fluid | Fluid | water |  | drawing: DRG-MCC-215 rev B | any
+  circuit | Circuit (a closed flow-and-return loop has no static lift: the rises entered are ignored) | closed (flow and return: the rises cancel, no static lift) |  | drawing: DRG-MCC-215 rev B | any
+  segments | Pipe segments in series | 1 row(s) |  | drawing: DRG-MCC-215 rev B | any
+  segments[1] |  | name = cooling water supply and return; L = 30 m; D = 25 mm; eps = 0.045 mm; K = 12; L_eq = 0 m; dz = 0 m; side = discharge |  |  | 
+  h_out | Pressure head required at the outlet | 0 | m | assumption: Sheet default value; no project figure given. | 0 … 1000 m
+  Phi_load | Heat carried by the water (gives the design flow with ΔT; replaces Q) | 3.4224 | kW | link: Cooling-water air coil rev A · Phi | 0.01 … 100000 kW
+  dT_load | Flow-to-return temperature difference across the load | 3.27502 | K | link: Cooling-water air coil rev A · dT_c | 1 … 100 K
+  cp_load | Specific heat of the fluid in the heat-load flow (optional; blank = 4186 J/(kg·K) assumed for water, and required for a custom fluid) | 4180 | J/(kg·K) | link: Cooling-water air coil rev A · cp_c | 1000 … 6000 J/(kg·K)
+  T_fluid | Fluid temperature (mean; link the mean water temperature of the sealed system for a heating loop) | 23.6375 | °C | link: Cooling-water air coil rev A · T_c_m | 0 … 100 °C
+  p_atm | Atmospheric pressure (NPSH) | 101.325 | kPa | assumption: Sheet default value; no project figure given. | 50 … 110 kPa
+  z_s | Static head at the pump suction (+ flooded, − lift) | 0 | m | assumption: Sheet default value; no project figure given. | -10 … 100 m
+  v_limit | Velocity limit (warning and check) | 3 | m/s | assumption: Sheet default value; no project figure given. | 0.5 … 10 m/s
+  D_law | Law for the diameter ratio: a trimmed impeller of the same casing (Q ∝ D, H ∝ D²) or a geometrically similar pump (Q ∝ D³, H ∝ D²) | impeller trim (Q ∝ n·D, H ∝ n²·D²) |  | assumption: Sheet default value; no project figure given. | any
+  n_ratio | Speed ratio n₂/n₁ (affinity) | 1 |  | assumption: Sheet default value; no project figure given. | 0.2 … 2
+  D_ratio | Impeller diameter ratio D₂/D₁ (affinity; the law is chosen above) | 1 |  | assumption: Sheet default value; no project figure given. | 0.7 … 1.1
+  eta_pump | Pump efficiency at duty (for shaft power) | 0.7 |  | assumption: Sheet default value; no project figure given. | 0.2 … 0.95
+  n_pump | Pump rated speed, the speed of the pump curve as entered, which gives the shaft torque (optional; blank = no shaft torque) | 2800 | rpm | drawing: DRG-MCC-215 rev B | 100 … 6000 rpm
+
+3. Assumptions
+  A1. Flow is steady, incompressible and fully developed, and all segments carry the full design flow in series. (Darcy–Weisbach.)
+  A2. Fitting losses scale with velocity head (K method) or add pipe length (equivalent-length method). (Crane TP-410 practice.)
+  A3. Both fitting methods may be used on one segment. (Crane TP-410 practice.)
+  A4. The system curve scales turbulent and transitional friction and all fitting losses with Q² from the design flow. (H_sys = H_static + k₁ Q + k₂ Q².)
+  A5. The friction factor is held at its design-flow value on the system curve. (H_sys = H_static + k₁ Q + k₂ Q².)
+  A6. The friction of a laminar segment scales with Q, and the static part is independent of flow. (H_sys = H_static + k₁ Q + k₂ Q².)
+  A7. Water properties are from published correlations at atmospheric pressure, 0 to 100 °C. (Kell 1975; Vogel fit; Hyland & Wexler 1983.)
+  A8. Any other fluid is entered with its own density and viscosity and their provenance. (Stated.)
+  A9. h_out (Pressure head required at the outlet) is taken as 0 m. (Sheet default value; no project figure given.)
+  A10. p_atm (Atmospheric pressure (NPSH)) is taken as 101.325 kPa. (Sheet default value; no project figure given.)
+  A11. z_s (Static head at the pump suction (+ flooded, − lift)) is taken as 0 m. (Sheet default value; no project figure given.)
+  A12. v_limit (Velocity limit (warning and check)) is taken as 3 m/s. (Sheet default value; no project figure given.)
+  A13. D_law (Law for the diameter ratio: a trimmed impeller of the same casing (Q ∝ D, H ∝ D²) or a geometrically similar pump (Q ∝ D³, H ∝ D²)) is taken as impeller trim (Q ∝ n·D, H ∝ n²·D²). (Sheet default value; no project figure given.)
+  A14. n_ratio (Speed ratio n₂/n₁ (affinity)) is taken as 1. (Sheet default value; no project figure given.)
+  A15. D_ratio (Impeller diameter ratio D₂/D₁ (affinity; the law is chosen above)) is taken as 1. (Sheet default value; no project figure given.)
+  A16. eta_pump (Pump efficiency at duty (for shaft power)) is taken as 0.7. (Sheet default value; no project figure given.)
+
+4. Working
+  [3] rho = Kell (1975) density of water at T    « Kell 1975
+      = T = 23.638 °C
+      = 997.39 kg/m³
+        Density
+  [4] mu = Vogel fit μ = 0.02939 exp(507.88/(T_K − 149.3)) mPa·s
+      = T_K = 296.79 K
+      = 0.91984 mPa·s
+        Dynamic viscosity
+  [5] p_v = Hyland–Wexler saturation pressure
+      = T = 23.638 °C
+      = 2.9207 kPa
+        Vapour pressure (NPSH)
+  [6] T_line = T (no T_line entered)
+      = 23.638 °C
+      = 23.638 degC
+        Design temperature of the line to insulate: the fluid temperature T, since no T_line was entered
+  [12] c_p = cp_load
+      = 4180 J/(kg·K)
+      = 4180 J/(kg·K)
+        Specific heat (as entered)
+  [13] Q_design = Phi_load / (rho * c_p * dT_load)
+      = 3.4224 kW / (997.39 kg/m³ × 4180 J/(kg·K) × 3.275 K)
+      = 0.90236 m³/h
+        Design flow from the heat carried: Φ / (ρ c_p ΔT)
+  [14] v_s1 = cooling water supply and return: Q / (π D²/4)
+      = 0.90236 m³/h / (π × 25² mm² / 4)
+      = 0.51063 m/s
+        Velocity, cooling water supply and return
+  [15] Re_s1 = cooling water supply and return: ρ v D / μ
+      = 997.39 × 0.51063 × 0.025 / 0.00091984
+      = 13842
+        Reynolds number, cooling water supply and return
+  [16] f_s1 = cooling water supply and return: Darcy friction factor
+      = Colebrook–White, 11 iterations (Swamee–Jain start 0.031748)
+      = 0.031412
+        Friction factor, cooling water supply and return
+  [17] f_sj_s1 = cooling water supply and return: Swamee–Jain check
+      = 0.25 / log10(ε/3.7D + 5.74/Re^0.9)²
+      = 0.031748
+        Explicit cross-check, cooling water supply and return
+  [18] h_f_s1 = cooling water supply and return: f (L + L_eq)/D · v²/2g + K v²/2g
+      = 0.031412 × (30 + 0) / 0.025 × 0.013294 + 12 × 0.013294
+      = 0.66065 m
+        Head loss, cooling water supply and return
+  [19] h_f_total = Σ h_f
+      = 1 segment(s)
+      = 0.66065 m
+        Total friction and fitting loss at the design flow
+  [21] V_pipe = Σ π/4·D²·L
+      = 1 segment(s)
+      = 14.726 L
+        Water held in the pipe segments
+  [22] H_static = h_out (closed circuit: no static lift)
+      = 0
+      = 0 m
+        Static head
+  [23] H_sys = H_static + h_f_total
+      = 0 m + 0.66065 m
+      = 0.66065 m
+        System head at the design flow
+  [24] dp_total = rho * 9.80665 m/s^2 * h_f_total
+      = 997.39 kg/m³ × 9.80665 m/s^2 × 0.66065 m
+      = 6.4618 kPa
+        Friction pressure drop at the design flow
+  [25] dp_sys = rho * 9.80665 m/s^2 * H_sys
+      = 997.39 kg/m³ × 9.80665 m/s^2 × 0.66065 m
+      = 6.4618 kPa
+        System pressure at the design flow
+  [26] P_hyd = rho * 9.80665 m/s^2 * Q_design * H_sys
+      = 997.39 kg/m³ × 9.80665 m/s^2 × 0.90236 m³/h × 0.66065 m
+      = 0.0016197 kW
+        Hydraulic power at the design point
+  [29] P_shaft_design = P_hyd / eta_pump
+      = 0.0016197 kW / 0.7
+      = 0.0023138 kW
+        Pump shaft power at the design flow
+  [30] T_shaft = P_shaft_design / n_pump
+      = 0.0023138 kW / 2800 rpm
+      = 0.0000078912 kN·m
+        Pump shaft torque P / ω at the design flow
+  [31] n_shaft = n_pump
+      = 2800 rpm
+      = 2800 rpm
+        Pump shaft speed
+  [34] h_f_suction = Σ h_f on the suction side
+      = 0 suction segment(s)
+      = 0 m
+        Suction-side friction loss
+  [35] NPSH_a = p_atm / (rho * 9.80665 m/s^2) + z_s - h_f_suction - p_v / (rho * 9.80665 m/s^2)    « Çengel Ch. 8
+      = 101.32 kPa / (997.39 kg/m³ × 9.80665 m/s^2) + 0 m − 0 m − 2.9207 kPa / (997.39 kg/m³ × 9.80665 m/s^2)
+      = 10.061 m
+        NPSH available
+  [36] v_peak = highest segment velocity
+      = 0.51063 m/s
+      = 0.51063 m/s
+        Highest velocity
+  [37] u_v = v_peak / v_limit
+      = 0.51063 / 3
+      = 0.17021
+        Velocity utilisation
+
+5. Results
+  Q_design = 0.9024 m³/h    Design flow
+  H_static = 0 m    Static head
+  V_pipe = 14.73 L    Water held in the pipes
+  H_sys = 0.6606 m    System head at Q
+  h_f_total = 0.6606 m    Σ h_f
+  dp_total = 6.462 kPa    Friction Δp
+  dp_sys = 6.462 kPa    System Δp
+  P_hyd = 0.001620 kW    Hydraulic power
+  P_shaft_design = 0.002314 kW    Shaft power at the design flow
+  T_shaft = 0.000007891 kN·m    Shaft torque
+  n_shaft = 2800 rpm    Shaft speed
+  v_peak = 0.5106 m/s    Highest velocity (governing)
+  T_line = 23.64 °C    Line design temperature
+  NPSH_a = 10.06 m    NPSH available
+  v_s1 = 0.5106 m/s    Velocity, cooling water supply and return
+  Re_s1 = 13842    Re, cooling water supply and return
+  f_s1 = 0.031412    f, cooling water supply and return
+  f_sj_s1 = 0.031748    f (Swamee–Jain), cooling water supply and return
+  h_f_s1 = 0.6606 m    h_f, cooling water supply and return
+
+6. Checks (governing first)
+  PASS  Highest velocity against limit: 0.5106 m/s vs 3 m/s  utilisation 0.17
+
+7. Applicability
+  WARNING  h_out: the head required at the outlet is 0, so the pump head holds pipe friction only. Enter the plant's water-side loss in h_out, or as K or L_eq on a segment.  [plant-loss]
+  WARNING  eta_pump: the default 0.7 is used for a pump of only 2.3138 W shaft power. A small circulator often has an efficiency of 0.2 or less, so enter the efficiency at its duty point.  [eta-default]
+
+8. Verification
+  Template: bs.pipe-pump@1.10.1
+  Content hash: 2df24301b0231856
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 5/5
+  Test run: 2026-10-27 03:56 UTC
+  Application: TempestOS test
+
+9. References
+  1. Crane Co., Flow of Fluids Through Valves, Fittings and Pipe (Technical Paper No. 410) — Flow of fluids through valves, fittings and pipe
+  2. Çengel & Cimbala, Fluid Mechanics Ch. 8, 4th ed. — Internal flow: friction factor, minor losses, pump duty
+  3. CIBSE Guide C §4 — Flow of fluids in pipes and ducts (principles)
+  4. Kell, J. Chem. Eng. Data 20(1), 1975 — Density of liquid water

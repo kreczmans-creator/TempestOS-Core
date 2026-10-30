@@ -4,7 +4,8 @@ namespace Tempest.Workspace.Disciplines;
 /// The engineering disciplines built on the shared
 /// <see cref="Tempest.Core.EngineeringDomain.DisciplineObject"/> shape
 /// (`ADR-0163`) — the three `Capability Categories.md` named and nothing
-/// had delivered: Structural, Electrical and Building Services / HVAC.
+/// had delivered: Structural, Electrical and Building Services / HVAC —
+/// and, from `ADR-0170`, Fluid Power.
 /// </summary>
 /// <remarks>
 /// Attributes are recorded as the engineer types them. No design-code
@@ -55,8 +56,20 @@ public static class DisciplineCatalogue
                 ["Distribution type", "Size", "Material", "Flow rate"]),
         ]);
 
+    /// <summary>Fluid power (`ADR-0170`): hydraulic circuits, actuators and power units. Pneumatics follows later as further Kinds.</summary>
+    public static DisciplineDefinition FluidPower { get; } = new(
+        "Fluid Power", "fluid-power", "tempest.fluid-power.management",
+        [
+            new("FluidPowerCircuit", "Circuit", "Circuits", new("00000000-0000-4013-8000-000000000001"),
+                ["Circuit type", "Working pressure (bar)", "Fluid", "Flow rate (L/min)"]),
+            new("FluidPowerActuator", "Actuator", "Actuators", new("00000000-0000-4013-8000-000000000002"),
+                ["Actuator type", "Bore (mm)", "Rod diameter (mm)", "Stroke (mm)", "Working pressure (bar)"]),
+            new("FluidPowerPowerUnit", "Power unit", "Power units", new("00000000-0000-4013-8000-000000000003"),
+                ["Pump type", "Displacement (cm³/rev)", "Motor power (kW)", "Reservoir volume (L)", "Relief setting (bar)"]),
+        ]);
+
     /// <summary>Every discipline in this catalogue, in the order the Engineering tree lists them.</summary>
-    public static IReadOnlyList<DisciplineDefinition> All { get; } = [Structural, Electrical, BuildingServices];
+    public static IReadOnlyList<DisciplineDefinition> All { get; } = [Structural, Electrical, BuildingServices, FluidPower];
 
     /// <summary>Every Kind any discipline in this catalogue offers.</summary>
     public static IReadOnlyList<string> AllKinds { get; } = [.. All.SelectMany(d => d.KindNames)];

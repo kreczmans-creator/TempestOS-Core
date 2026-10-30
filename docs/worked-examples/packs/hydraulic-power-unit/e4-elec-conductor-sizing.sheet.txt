@@ -1,0 +1,179 @@
+CALCULATION SHEET — ISSUED
+Project: Press 5 hydraulic power unit
+Calc ID: Motor supply cable    Revision: A
+Title: Conductor sizing and overload coordination
+Author: unknown    Authored: 2026-10-27
+Checker: J. Reviewer    Checked: 2026-10-27
+Issued: 2026-10-27    Issue: HPU-001    Client: Client Co
+
+1. Scope and method
+Calculates the design current, the smallest preferred device rating and the smallest conductor whose tabulated capacity carries that rating. It checks I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45 I_z, using your own capacity and rating records.
+Design current: I_b = P/(√3·U·cosφ·η) three-phase, P/(U·cosφ·η) single-phase, P/U DC; or the linked I_b Protective device rating: I_n = smallest preferred rating in the ratings record with I_n ≥ I_b Device and installation factors: C_f = 0.725 for a semi-enclosed fuse (1.45/2, derived), else 1; C_c = the entered factor for a cable buried direct or in ducts, 1 when none applies Required tabulated capacity: I_t,req = I_n/(C_a·C_g·C_i·C_f·C_c); optional derived C_a = √[(θ_p − θ_a)/(θ_p − θ_ref)] (derived approximation — compare with the licensed table) Conductor cross-section: CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req; AWG gauge n: d = 0.127·92^((36 − n)/39) mm, area = π d²/4 (derived) Carrying capacity: I_z = I_t·C_a·C_g·C_i Device and conductor coordination: I_b ≤ I_n ≤ I_z and I₂ ≤ 1.45·I_z, I₂ = 1.45·I_n inherent for MCB types B, C, D; I₂ = 2·I_n by default for a semi-enclosed fuse; an entered I₂ (datasheet) is always checked; in the BS 7671 installation context a gG fuse to BS 88 (and an MCCB or MPCB entered without I₂, taken as I₂ ≤ 1.45·I_n) has the I₂ condition deemed satisfied when I_n ≤ I_z; in the machine-wiring context (IEC 60269-1 gG fuses have I₂ = 1.6·I_n, not 1.45·I_n) I₂ must be entered Device code: 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB (carried to fault-protection so the fault check uses the device chosen here)
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  context | Design context (changes clause citations and the scope note only) | BS EN 60204-1 machine wiring |  | assumption: Sheet default value; no project figure given. | any
+  supply | Supply | three-phase |  | assumption: Sheet default value; no project figure given. | any
+  device | Protective device | MCB type C |  | spec: SPEC-HPU-05 §6 (power supply) | any
+  insulation | Insulation | PVC 70 °C |  | spec: SPEC-HPU-05 §6 (power supply) | any
+  system | Conductor system (AWG: geometry only, no AWG capacities are supplied) | metric |  | assumption: Sheet default value; no project figure given. | any
+  method | Installation method key (descriptive only, e.g. B2, C, E) | C |  | spec: SPEC-HPU-05 §6 (power supply) | any
+  ratings | Preferred device ratings | 9 row(s) |  | record: SYNTHETIC device ratings (test values, not a manufacturer table) — Synthetic test data, not from any catalogue, n/a, invented values for the worked example rev 1 | any
+  ratings[1] |  | I_n = 6 A |  |  | 
+  ratings[2] |  | I_n = 10 A |  |  | 
+  ratings[3] |  | I_n = 16 A |  |  | 
+  ratings[4] |  | I_n = 20 A |  |  | 
+  ratings[5] |  | I_n = 25 A |  |  | 
+  ratings[6] |  | I_n = 32 A |  |  | 
+  ratings[7] |  | I_n = 40 A |  |  | 
+  ratings[8] |  | I_n = 50 A |  |  | 
+  ratings[9] |  | I_n = 63 A |  |  | 
+  ampacity | Current-carrying capacities for the installation method | 5 row(s) |  | record: SYNTHETIC cable capacities (test values, not a regulation table) — Synthetic test data, not from any standard, n/a, invented values for the worked example rev 1 | any
+  ampacity[1] |  | CSA = 1.5 mm²; I_t = 12.3 A |  |  | 
+  ampacity[2] |  | CSA = 2.5 mm²; I_t = 17.7 A |  |  | 
+  ampacity[3] |  | CSA = 4 mm²; I_t = 24.1 A |  |  | 
+  ampacity[4] |  | CSA = 6 mm²; I_t = 31.9 A |  |  | 
+  ampacity[5] |  | CSA = 10 mm²; I_t = 44.6 A |  |  | 
+  L | Circuit length (carried to the voltage-drop calculation) | 30 | m | spec: SPEC-HPU-05 §6 (power supply) | 1 … 300 m
+  P | Rated output (shaft) power; η converts it to input (DC: electrical power drawn, η not applied) | 18.3469 | kW | link: Pump drive motor rev A · P_rated | 0.1 … 200 kW
+  U | Supply voltage (line voltage for three-phase) | 400 | V | spec: SPEC-HPU-05 §6 (power supply) | 12 … 690 V
+  cos_phi | Power factor (not used for DC) | 0.86 |  | spec: SPEC-HPU-05 §6 (power supply) | 0.6 … 1
+  eta | Efficiency (not used for DC) | 0.92 |  | spec: SPEC-HPU-05 §6 (power supply) | 0.6 … 1
+  T_amb | Ambient temperature | 30 | °C | assumption: Sheet default value; no project figure given. | 0 … 60 °C
+  T_ref | Reference ambient temperature for the derived C_a | 30 | °C | assumption: Sheet default value; no project figure given. | 20 … 40 °C
+  N_g | Grouped circuits | 1 |  | assumption: Sheet default value; no project figure given. | 1 … 10
+  C_a | Ambient correction factor (1 does not apply the ambient: enter the factor for T_amb from your licensed table) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1.3
+  C_g | Grouping correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.3 … 1
+  C_i | Thermal insulation correction factor (at most 1) | 1 |  | assumption: Sheet default value; no project figure given. | 0.3 … 1
+  C_c | Buried or ducted installation factor, at most 1 (1 does not apply it: enter the factor for a cable buried direct or in ducts from your licensed table) | 1 |  | assumption: Sheet default value; no project figure given. | 0.5 … 1
+  derive_Ca | Derive C_a from the temperatures instead of the entered factor | no |  | assumption: Sheet default value; no project figure given. | any
+
+3. Assumptions
+  A1. Every tabulated value is entered from the user's own licensed copy or a manufacturer datasheet. (No table from a standard or a manufacturer is shipped.)
+  A2. No table from a standard or a manufacturer ships with the calculator. (No table from a standard or a manufacturer is shipped.)
+  A3. The capacities in the table are for the installation method stated. (Records carry their source and edition.)
+  A4. The method key is descriptive and is not interpreted. (Records carry their source and edition.)
+  A5. A gG fuse is deemed to meet I₂ ≤ 1.45·I_z when I_n ≤ I_z only under BS 7671. (BS 7671 reg. 433.1.201; IEC 60269-1.)
+  A6. An IEC 60269-1 gG fuse has I₂ = 1.6·I_n, so in the machine-wiring context I₂ is entered from the datasheet. (BS 7671 reg. 433.1.201; IEC 60269-1.)
+  A7. The ambient, grouping, insulation, fuse and installation factors are applied as a product. (The count is carried to the sheet and warns when C_g = 1 with more than one circuit.)
+  A8. C_g is not looked up from the number of grouped circuits. (The count is carried to the sheet and warns when C_g = 1 with more than one circuit.)
+  A9. The optional derived C_a is an approximation for the temperature difference only. (Derived, not tabulated.)
+  A10. The derived C_a is labelled as an approximation, so compare it with the licensed table. (Derived, not tabulated.)
+  A11. C_f = 0.725 applies to a semi-enclosed fuse only: 1.45 divided by an assumed fusing factor of 2. (Derived.)
+  A12. C_c is the factor for a cable buried direct or in ducts, entered from the user's licensed table. (BS 7671 App. 4 names the factor; its value is licensed and is not shipped.)
+  A13. AWG areas follow the geometry d = 0.127·92^((36 − n)/39) mm. (Derived.)
+  A14. No AWG capacity is supplied. (Derived.)
+  A15. DC circuits use I_b = P/U. (Method.)
+  A16. The power factor and the efficiency are not applied to a DC circuit. (Method.)
+  A17. context (Design context (changes clause citations and the scope note only)) is taken as BS EN 60204-1 machine wiring. (Sheet default value; no project figure given.)
+  A18. supply (Supply) is taken as three-phase. (Sheet default value; no project figure given.)
+  A19. system (Conductor system (AWG: geometry only, no AWG capacities are supplied)) is taken as metric. (Sheet default value; no project figure given.)
+  A20. T_amb (Ambient temperature) is taken as 30 °C. (Sheet default value; no project figure given.)
+  A21. T_ref (Reference ambient temperature for the derived C_a) is taken as 30 °C. (Sheet default value; no project figure given.)
+  A22. N_g (Grouped circuits) is taken as 1. (Sheet default value; no project figure given.)
+  A23. C_a (Ambient correction factor (1 does not apply the ambient: enter the factor for T_amb from your licensed table)) is taken as 1. (Sheet default value; no project figure given.)
+  A24. C_g (Grouping correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
+  A25. C_i (Thermal insulation correction factor (at most 1)) is taken as 1. (Sheet default value; no project figure given.)
+  A26. C_c (Buried or ducted installation factor, at most 1 (1 does not apply it: enter the factor for a cable buried direct or in ducts from your licensed table)) is taken as 1. (Sheet default value; no project figure given.)
+  A27. derive_Ca (Derive C_a from the temperatures instead of the entered factor) is taken as no. (Sheet default value; no project figure given.)
+  A28. Machine wiring context (BS EN 60204-1): the conductor is sized for the protective device rating; the capacities and factors are the user's records for the installation method stated. (The context changes citations, and whether a gG fuse, MCCB or MPCB without I₂ may be deemed to meet I₂ ≤ 1.45·I_z (installation) or must have I₂ entered (machine wiring); no other number differs.)
+  A29. No factor for a cable buried direct or in ducts is applied (C_c = 1). (Enter C_c from your licensed table for a cable buried direct or in ducts.)
+
+4. Working
+  [14] I_b = P / (sqrt(3) * U * cos_phi * eta)
+      = 18.347 kW / (sqrt(3) × 400 V × 0.86 × 0.92)
+      = 33.47 A
+        Design current (three-phase)
+  [15] I_n = smallest preferred rating with I_n ≥ I_b    « BS EN 60204-1 cl. 7.2
+      = smallest rating ≥ 33.47 A in the ratings record
+      = 40 A
+        Rated current of the protective device (ratings record)
+  [16] device_code = 1 = MCB type B, 2 = type C, 3 = type D, 4 = fuse, MCCB or MPCB    « BS EN 60204-1 cl. 7.2
+      = MCB type C
+      = 2
+        Protective device type code (carried to E5 so the fault check uses this device)
+  [17] C_f = 1 (not a semi-enclosed fuse)    « BS EN 60204-1 cl. 12.4
+      = MCB type C
+      = 1
+        Semi-enclosed fuse factor
+  [22] T_op = 70 degC
+      = 70 degC
+        Conductor operating temperature for the insulation
+  [25] I_t_req = I_n / (C_a * C_g * C_i * C_f * C_c)    « BS EN 60204-1 cl. 12.4
+      = 40 A / (1 × 1 × 1 × 1 × 1)
+      = 40 A
+        Required tabulated capacity
+  [26] I_t = I_t of the selected row of the ampacity record    « BS EN 60204-1 cl. 12.4
+      = I_t,req = 40 A
+      = 44.6 A
+        Tabulated current-carrying capacity of the selected conductor
+  [27] CSA = smallest cross-section in the ampacity record with I_t ≥ I_t,req    « BS EN 60204-1 cl. 12.4
+      = I_t,req = 40 A
+      = 10 mm²
+        Selected conductor cross-section
+  [28] I_z = I_t * C_a * C_g * C_i    « BS EN 60204-1 cl. 12.4
+      = 44.6 A × 1 × 1 × 1
+      = 44.6 A
+        Current-carrying capacity in the installed conditions
+  [29] u_Ib = I_b / I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+      = 33.47 A / 40 A
+      = 0.83675
+        Design current utilisation of the device
+  [30] u_In = I_n / I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+      = 40 A / 44.6 A
+      = 0.89686
+        Device rating utilisation of the conductor
+  [31] I2 = 1.45 * I_n    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+      = 1.45 × 40 A
+      = 58 A
+        Conventional operating current (inherent 1.45 I_n)
+  [32] I2_lim = 1.45 * I_z    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+      = 1.45 × 44.6 A
+      = 64.67 A
+        Largest conventional operating current the conductor allows, 1.45 I_z
+  [33] u_I2 = I2 / I2_lim    « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+      = 58 A / 64.67 A
+      = 0.89686
+        I₂ utilisation of 1.45 I_z
+
+5. Results
+  I_b = 33.47 A    Design current
+  I_n = 40 A    Rated current of the device (governing)
+  CSA = 10 mm²    Selected cross-section
+  I_z = 44.60 A    Current-carrying capacity
+  L = 30 m    Circuit length
+  T_op = 70 °C    Conductor operating temperature for the insulation
+  device_code = 2    Protective device type code
+  C_f = 1    Semi-enclosed fuse factor
+  C_c = 1    Buried or ducted installation factor
+  C_a = 1    Ambient factor
+  I_t_req = 40 A    Required tabulated capacity
+  I2 = 58 A    Conventional operating current
+  u_Ib = 0.84    I_b / I_n
+  u_In = 0.90    I_n / I_z
+  u_I2 = 0.90    I₂ / (1.45 I_z)
+
+6. Checks (governing first)
+  PASS  Device rating against the conductor capacity: 40 A vs 44.60 A  utilisation 0.90  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Conventional operating current against 1.45 times the conductor capacity: 58 A vs 64.67 A  utilisation 0.90  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+  PASS  Design current against the device rating: 33.47 A vs 40 A  utilisation 0.84  « BS EN 60204-1 cl. 7.2; BS 7671 reg. 433.1.1
+
+7. Applicability
+  WARNING  records: tabulated values not taken from a reference record are C_a, C_g, C_i (Cable correction factors). Enter each as one so its source, edition and licence travel with it.  [record]
+
+8. Verification
+  Template: elec.conductor-sizing@1.5.0
+  Content hash: c0657fdab51c927d
+  Engine: calc-engine/1.0.0
+  Known-answer cases passed: 7/7
+  Test run: 2026-10-27 06:48 UTC
+  Application: TempestOS test
+
+9. References
+  1. BS 7671:2018 reg. 433.1.1 — Co-ordination of conductors and overload protective devices
+  2. BS 7671:2018 reg. 523.1 — Current-carrying capacity of a cable
+  3. BS EN 60204-1:2018 cl. 12.4 — Current-carrying capacity of conductors and cables in normal service
+  4. BS EN 60204-1:2018 cl. 7.2 — Overcurrent protection
+  5. BS EN 60898-1:2019 cl. (number to be checked) — Circuit-breakers for overcurrent protection: conventional tripping current
+  6. BS 7671:2018 reg. 433.1.201, 433.1.202 — Overload protection by gG fuses and semi-enclosed fuses: deemed conditions
+  7. BS 7671:2018 App. 4 §5 (section number to be checked against the owner's copy) — Rating factors for the protective device type and for a cable buried in the ground or in ducts

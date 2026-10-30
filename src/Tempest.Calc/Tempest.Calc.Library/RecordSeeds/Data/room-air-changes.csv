@@ -1,0 +1,25 @@
+room_type[text],n_ach[1/h]
+"Flats and residences, living rooms",1
+"Flats and residences, bedrooms",0.5
+"Flats and residences, bed-sitting rooms",1
+"Flats and residences, bathrooms",2
+"Flats and residences, lavatories and cloakrooms",1.5
+"Flats and residences, service rooms",0.5
+"Flats and residences, staircases and corridors",1.5
+"Flats and residences, entrance halls and foyers",1.5
+Art galleries and museums,1
+Assembly and lecture halls,0.5
+Bars,1
+Canteens and dining rooms,1
+Hospital wards and patient areas,2
+Hotel bedrooms,1
+Hotel staircases and corridors,1.5
+Laboratories,1
+Offices,1
+"Offices, stores",0.5
+Restaurants and tea shops,1
+Classrooms,2
+Lecture rooms,1
+"Shops, small",1
+"Shops, large",0.5
+"Warehouses, working and packing spaces",0.5

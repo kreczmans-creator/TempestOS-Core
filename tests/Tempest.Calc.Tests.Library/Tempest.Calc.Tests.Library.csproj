@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Tempest.Calc\Tempest.Calc.Library\Tempest.Calc.Library.csproj" />
+    <ProjectReference Include="..\..\src\Tempest.Calc\Tempest.Calc.Mechanical\Tempest.Calc.Mechanical.csproj" />
+    <ProjectReference Include="..\..\src\Tempest.Calc\Tempest.Calc.Structural\Tempest.Calc.Structural.csproj" />
+    <ProjectReference Include="..\..\src\Tempest.Calc\Tempest.Calc.Electrical\Tempest.Calc.Electrical.csproj" />
+    <ProjectReference Include="..\..\src\Tempest.Calc\Tempest.Calc.BuildingServices\Tempest.Calc.BuildingServices.csproj" />
+    <ProjectReference Include="..\..\src\Tempest.Calc\Tempest.Calc.FluidPower\Tempest.Calc.FluidPower.csproj" />
+    <ProjectReference Include="..\Tempest.Calc.Tests.Sheets\Tempest.Calc.Tests.Sheets.csproj" />
+    <ProjectReference Include="..\Tempest.Core.Tests\Tempest.Core.Tests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Fixtures\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+</Project>

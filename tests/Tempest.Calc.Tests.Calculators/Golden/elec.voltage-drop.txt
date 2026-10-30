@@ -1,0 +1,95 @@
+CALCULATION SHEET — DRAFT
+Project: GOLDEN
+Calc ID: elec.voltage-drop    Revision: A
+Title: Voltage drop and I²R loss
+
+1. Scope and method
+Calculates the voltage drop, the conductor power loss and the estimated conductor temperature of a DC, single-phase or three-phase circuit. The drop limit is a user input, because the limits of BS 7671 are not embedded.
+Conductor resistance at its operating temperature, for n conductors in parallel: R = ρ_T L/(A n), with ρ_T = ρ_20 [1 + α (T_c − 20)]. Resistance and reactance from per-length figures instead: R = R′ L/n; X = X′ L/n. Voltage drop on a DC circuit: ΔV = 2 I R. Voltage drop on a single-phase AC circuit: ΔV = 2 I (R cos φ + X sin φ). Voltage drop on a three-phase AC circuit: ΔV = √3 I (R cos φ + X sin φ). Voltage drop from a tabulated mV/A/m figure, which already carries the 2 or √3: ΔV = (mV/A/m) I L / 1000. Power lost in the cable: P_loss = 2 I² R (DC and single-phase); 3 I² R (three-phase). Estimated conductor temperature at this current: T_c,est = T_amb + (T_rated − T_amb)(I/I_z)².
+
+2. Inputs
+  Symbol | Description | Value | Unit | Source | Valid range
+  system | System | DC |  | manual | any
+  data | Conductor data from | resistivity and area |  | manual | any
+  L | Route length (one way) | 30 | m | manual | 0.1 … 5000 m
+  n_par | Parallel conductors per phase | 1 |  | manual | 1 … 6
+  A_c | Conductor cross-section | 6 | mm² | manual | 1 … 1000 mm²
+  alpha | Temperature coefficient of resistance | 0.00393 |  | manual | 0.003 … 0.0045
+  X_km | Reactance per km per conductor | 0 | Ω/km | manual | 0 … 1 Ω/km
+  T_rated | Conductor rated temperature | 70 | °C | manual | 60 … 90 °C
+  rho_20 | Resistivity at 20 °C, the effective value for the conductor resistance (default 0.0194 Ω·mm²/m: the largest class 2 maximum conductor resistance of the cable standard for 1.5 to 120 mm², so the drop is not below the cable tables; pure annealed copper is 0.01724, aluminium 0.0282 Ω·mm²/m) | 0.01724 | Ω·mm²/m | manual | 0.01 … 0.05 Ω·mm²/m
+  V_n | Nominal voltage (line-to-line for three-phase) | 48 | V | manual | 12 … 1000 V
+  I | Design current | 20 | A | manual | 0.1 … 5000 A
+  cos_phi | Power factor (AC) | 0.85 |  | manual | 0.5 … 1
+  T_c | Conductor operating temperature for the resistance | 70 | °C | manual | 20 … 90 °C
+  T_amb | Ambient temperature | 30 | °C | manual | 0 … 60 °C
+  dv_limit | Voltage-drop limit | 5 |  | manual | 1 … 10
+
+3. Assumptions
+  A1. The load is balanced across the phases. (Standard engineering approximation.)
+  A2. The conductor reactance is the entered X′ per kilometre times the length. (Standard engineering approximation.)
+  A3. The voltage drop is the arithmetic sum R cos φ + X sin φ, not the vector difference. (Standard engineering approximation.)
+  A4. A mV/A/m figure is used as tabulated, with its own temperature and system convention. (Cable table convention.)
+  A5. The estimated conductor temperature scales the rated temperature rise with (I/I_z)². (BS 7671:2018 Appendix 4 approach, formula only.)
+  A6. I_z is the tabulated capacity for the installation method, with its correction factors applied. (BS 7671:2018 Appendix 4 approach, formula only.)
+  A7. When the estimate is above T_c, the resistance and the drop are computed at the estimate. (Keeps the drop on the safe side.)
+
+4. Working
+  [9] sin_phi = 0
+      = 0
+        sin φ
+  [15] rho_T = rho_20 * (1 + alpha * (T_c - 20 degC) / (1 K))
+      = 0.01724 ohm·mm²/m × (1 + 0.00393 × (70 degC − 20 degC) / 1 K)
+      = 0.020628 ohm·mm²/m
+        Resistivity at the operating temperature
+  [16] R = rho_T * L / (A_c * n_par)
+      = 0.020628 ohm·mm²/m × 30 m / (6 mm² × 1)
+      = 0.10314 ohm
+        Conductor resistance (one conductor, parallel paths combined)
+  [17] X = X_km * L / n_par
+      = 0 ohm/km × 30 m / 1
+      = 0 ohm
+        Conductor reactance
+  [18] dV = 2 * I * R
+      = 2 × 20 A × 0.10314 ohm
+      = 4.1255 V
+        Voltage drop
+  [19] dV_pct = 100 * dV / V_n
+      = 100 × 4.1255 V / 48 V
+      = 8.5949
+        Voltage drop, per cent
+  [20] P_loss = 2 * I^2 * R
+      = 2 × (20 A)^2 × 0.10314 ohm
+      = 0.082511 kW
+        Conductor power loss
+  [21] u_dv = dV_pct / dv_limit
+      = 8.5949 / 5
+      = 1.719
+        Drop utilisation against the limit
+  [22] dV_max = dv_limit / 100 * V_n
+      = 5 / 100 × 48 V
+      = 2.4 V
+        Largest voltage drop the limit allows
+
+5. Results
+  dV = 4.126 V    Voltage drop
+  dV_pct = 8.5949    Voltage drop (%)
+  P_loss = 0.08251 kW    Power loss
+  R = 0.1031 Ω    Resistance
+  X = 0 Ω    Reactance
+  u_dv = 1.72    Drop utilisation against the limit (governing)
+
+6. Checks (governing first)
+  FAIL  Voltage drop against the limit: 4.126 V vs 2.400 V  utilisation 1.72  « BS 7671:2018 reg. 525
+
+7. Applicability
+  None.
+
+8. Verification
+  Template: elec.voltage-drop@1.5.0
+  Known-answer cases passed: 4/4
+
+9. References
+  1. BS 7671:2018 reg. 525 — Voltage drop in consumers' installations
+  2. BS 7671:2018 App. 4 §6 — Voltage drop (mV/A/m tables and the temperature-correction method)
+  3. Hughes, Electrical and Electronic Technology Ch. on DC and AC circuits, 12th ed. (edition to be checked) — Resistance, resistivity and temperature coefficient

@@ -1,0 +1,428 @@
+{
+  "b1": [
+    {
+      "Symbol": "D_law",
+      "Text": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "impeller trim (Q \u221D n\u00B7D, H \u221D n\u00B2\u00B7D\u00B2)"
+    },
+    {
+      "Symbol": "D_ratio",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "Q",
+      "Number": 12,
+      "Unit": "m^3/h",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CHW-04 \u00A72 (chilled water duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "12"
+    },
+    {
+      "Symbol": "T_fluid",
+      "Number": 9,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CHW-04 \u00A72 (chilled water duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "9"
+    },
+    {
+      "Symbol": "T_line",
+      "Number": 6,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CHW-04 \u00A72 (chilled water duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "6"
+    },
+    {
+      "Symbol": "circuit",
+      "Text": "closed (flow and return: the rises cancel, no static lift)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CHW-04 \u00A72 (chilled water duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "closed (flow and return: the rises cancel, no static lift)"
+    },
+    {
+      "Symbol": "eta_pump",
+      "Number": 0.7,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.7"
+    },
+    {
+      "Symbol": "fluid",
+      "Text": "water",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CHW-04 \u00A72 (chilled water duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "water"
+    },
+    {
+      "Symbol": "h_out",
+      "Number": 0,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "n_ratio",
+      "Number": 1,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "p_atm",
+      "Number": 101.325,
+      "Unit": "kPa",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "101.325"
+    },
+    {
+      "Symbol": "segments",
+      "Rows": [
+        {
+          "Cells": {
+            "name": {
+              "Text": "chilled water flow and return"
+            },
+            "L": {
+              "Number": 60,
+              "Unit": "m"
+            },
+            "D": {
+              "Number": 51.6,
+              "Unit": "mm"
+            },
+            "OD": {
+              "Number": 54,
+              "Unit": "mm"
+            },
+            "eps": {
+              "Number": 0.0015,
+              "Unit": "mm"
+            },
+            "K": {
+              "Number": 10
+            },
+            "L_eq": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "dz": {
+              "Number": 0,
+              "Unit": "m"
+            },
+            "side": {
+              "Text": "discharge"
+            }
+          }
+        }
+      ],
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CHW-04 \u00A72 (chilled water duty)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1 row(s)"
+    },
+    {
+      "Symbol": "v_limit",
+      "Number": 3,
+      "Unit": "m/s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "3"
+    },
+    {
+      "Symbol": "z_s",
+      "Number": 0,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    }
+  ],
+  "b2": [
+    {
+      "Symbol": "RH",
+      "Number": 60,
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CHW-04 \u00A73 (plant room conditions)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "60"
+    },
+    {
+      "Symbol": "T_db",
+      "Number": 28,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CHW-04 \u00A73 (plant room conditions)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "28"
+    },
+    {
+      "Symbol": "altitude",
+      "Number": 0,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CHW-04 \u00A73 (plant room conditions)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    },
+    {
+      "Symbol": "h_steam",
+      "Number": 2676,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "2676"
+    },
+    {
+      "Symbol": "known",
+      "Text": "relative humidity",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CHW-04 \u00A73 (plant room conditions)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "relative humidity"
+    },
+    {
+      "Symbol": "m_da",
+      "Number": 1,
+      "Unit": "kg/s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "process",
+      "Text": "none (state only)",
+      "Provenance": {
+        "Kind": "Specification",
+        "Reference": "SPEC-CHW-04 \u00A73 (plant room conditions)",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "none (state only)"
+    }
+  ],
+  "b9": [
+    {
+      "Symbol": "D_i",
+      "Number": 54,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:44b1a9882b7948cb85ac9eab1c2a482c#OD_1",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "54"
+    },
+    {
+      "Symbol": "L_surf",
+      "Number": 1,
+      "Unit": "m",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "RH_a",
+      "Number": 60,
+      "Unit": "%",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:682af6b82a714285827f5e1e0f45e727#phi_1",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "60"
+    },
+    {
+      "Symbol": "T_amb",
+      "Number": 28,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:682af6b82a714285827f5e1e0f45e727#T_1_out",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "28"
+    },
+    {
+      "Symbol": "T_dew",
+      "Number": 19.514064574614167,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:682af6b82a714285827f5e1e0f45e727#T_dp_1",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "19.5141"
+    },
+    {
+      "Symbol": "T_proc",
+      "Number": 6,
+      "Unit": "degC",
+      "Provenance": {
+        "Kind": "Link",
+        "Reference": "calc:44b1a9882b7948cb85ac9eab1c2a482c#T_line",
+        "Revision": "A",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "6"
+    },
+    {
+      "Symbol": "dew_margin",
+      "Number": 1,
+      "Unit": "K",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CHW-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "1"
+    },
+    {
+      "Symbol": "eps",
+      "Number": 0.9,
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.9"
+    },
+    {
+      "Symbol": "geometry",
+      "Text": "pipe (cylinder)",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CHW-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "pipe (cylinder)"
+    },
+    {
+      "Symbol": "h_mode",
+      "Text": "h_se as given",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CHW-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "h_se as given"
+    },
+    {
+      "Symbol": "h_se",
+      "Number": 8,
+      "Unit": "W/(m^2*K)",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CHW-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "8"
+    },
+    {
+      "Symbol": "lambda",
+      "Number": 0.035,
+      "Unit": "W/(m*K)",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CHW-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0.035"
+    },
+    {
+      "Symbol": "t_chosen",
+      "Number": 25,
+      "Unit": "mm",
+      "Provenance": {
+        "Kind": "Drawing",
+        "Reference": "DRG-CHW-410",
+        "Revision": "B",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "25"
+    },
+    {
+      "Symbol": "v_wind",
+      "Number": 0,
+      "Unit": "m/s",
+      "Provenance": {
+        "Kind": "Assumption",
+        "Reference": "Sheet default value; no project figure given.",
+        "IsSufficientToIssue": true
+      },
+      "ValueText": "0"
+    }
+  ]
+}

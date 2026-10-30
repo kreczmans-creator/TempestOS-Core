@@ -1,0 +1,192 @@
+#!/usr/bin/env python3
+"""Independent re-derivation of mech.bolt-group (Track P, P1).
+
+Sources, cited by title and number only:
+- AISC Steel Construction Manual, Part 7: elastic method for eccentrically loaded bolt groups.
+- EN 1993-1-8:2005, Table 3.4: shear plus tension interaction (linear form with 1.4).
+- Shigley's Mechanical Engineering Design, 9th ed., Chapter 8: bolted joints loaded in shear.
+Units: mm, kN, kN*mm inside the model. Moments are given in kN*m and converted.
+
+Model: the connected parts are rigid.
+- Shear: direct share A_i F/sum(A) plus torsion share T A_i r_i / J, perpendicular to the radius.
+- Tension: plane-section distribution t_i = A_i (N/sum(A) + c1 x'_i + c2 y'_i). The constants c1 and c2
+  satisfy moment equilibrium about both centroidal axes, including the product Sum(A x' y').
+- Bolts with negative tension (net compression) carry no tension.
+- Prying: t_p = t (1 + b/a) (simple lever model, upper bound).
+- Interaction: circular u = sqrt((v/V_R)^2 + (t_p/T_R)^2) and the EN 1993-1-8 linear form v/V_R + t_p/(1.4 T_R).
+
+Exit code: 0 when every KAT row passes (tolerance max(KAT tol, 1e-6)), else 1.
+EXTRA rows compare product values read from the Probe tool. They do not set the exit code.
+Product version 1.1.0 (since 3c637a3d) solves the unsymmetric-bending form with the product moment and blocks a
+collinear pattern when the moment has a component about the line. The KAT ka-unsymmetric-bending covers it.
+"""
+import math
+import sys
+
+import numpy as np
+
+
+def group(bolts, F_x=0.0, F_y=0.0, e_x=0.0, e_y=0.0, T_z=0.0, N=0.0, M_x=0.0, M_y=0.0,
+          V_R=30.0, T_R=45.0, a=None, b=None, tension="plane"):
+    """bolts: list of (x, y, A) in mm, mm, mm^2. Loads in kN, mm and kN*m. Returns a dict."""
+    B = np.array(bolts, dtype=float)
+    x, y, A = B[:, 0], B[:, 1], B[:, 2]
+    SA = A.sum()
+    xc, yc = (A * x).sum() / SA, (A * y).sum() / SA
+    dx, dy = x - xc, y - yc
+    J = (A * (dx ** 2 + dy ** 2)).sum()                       # mm^4
+    T = F_y * (e_x - xc) - F_x * (e_y - yc) + T_z * 1e3       # kN*mm
+    # Shear: forces on the bolts, same sense as the applied load.
+    vx = A * F_x / SA + T * A * (-dy) / J
+    vy = A * F_y / SA + T * A * (dx) / J
+    v = np.hypot(vx, vy)
+    # Tension: plane section.
+    Sxx, Syy, Sxy = (A * dx * dx).sum(), (A * dy * dy).sum(), (A * dx * dy).sum()
+    rhs = np.array([M_y * 1e3, M_x * 1e3])
+    mat = np.array([[Sxx, Sxy], [Sxy, Syy]])
+    if abs(np.linalg.det(mat)) < 1e-9 * max(Sxx * Syy, 1.0):
+        c = np.linalg.lstsq(mat, rhs, rcond=None)[0]
+    else:
+        c = np.linalg.solve(mat, rhs)
+    if tension == "decoupled":   # each axis alone, product of inertia ignored (textbook shortcut)
+        t = A * (N / SA + (M_y * 1e3 / Sxx if Sxx > 0 else 0) * dx + (M_x * 1e3 / Syy if Syy > 0 else 0) * dy)
+    else:
+        t = A * (N / SA + c[0] * dx + c[1] * dy)
+    # Moment carried by the tension distribution about each centroidal axis, kN*mm.
+    res_Mx, res_My = float((t * dy).sum()), float((t * dx).sum())
+    # A bolt in net compression carries no tension: the parts bear on each other there.
+    tp = np.maximum(t, 0.0) * ((1 + b / a) if (a is not None and b is not None) else 1.0)
+    u_circ = np.sqrt((v / V_R) ** 2 + (tp / T_R) ** 2)
+    u_lin = v / V_R + tp / (1.4 * T_R)
+    g = int(np.argmax(np.maximum(u_circ, u_lin)))
+    gc = int(np.argmax(u_circ))
+    return dict(xc=xc, yc=yc, T=T / 1e3, J=J, v=v, t=t, tp=tp, v_max=v.max(), t_max=t.max(),
+                u_circ=u_circ, u_lin=u_lin, u_max_circ=u_circ[gc], u_max_lin=u_lin.max(),
+                governing=g, governing_circ=gc, c=c, res_Mx=res_Mx, res_My=res_My)
+
+
+A0 = 84.3
+SQUARE = [(0, 0, A0), (100, 0, A0), (100, 100, A0), (0, 100, A0)]
+TWO_ROWS = [(0, -100, A0), (100, -100, A0), (0, 100, A0), (100, 100, A0)]
+
+rows = []   # (kind, case, symbol, expected, value, rel, tol, ok)
+
+
+def check(kind, name, sym, expected, value, tol):
+    rel = abs(value - expected) / abs(expected) if expected != 0 else abs(value - expected)
+    rows.append((kind, name, sym, expected, value, rel, tol, rel <= max(tol, 1e-6)))
+
+
+# ---------------------------------------------------------------- KATs (exit code)
+g1 = group(SQUARE, F_y=-50, e_x=200, e_y=50, V_R=40, T_R=45)
+check("KAT", "ka-four-bolt-eccentric", "T", -7.5, g1["T"], 1e-6)
+check("KAT", "ka-four-bolt-eccentric", "J", 1.686e6, g1["J"], 1e-6)
+check("KAT", "ka-four-bolt-eccentric", "v_max", 36.443, g1["v_max"], 1e-3)
+check("KAT", "ka-four-bolt-eccentric", "u_max", 0.91109, g1["u_max_circ"], 1e-3)
+g2 = group(TWO_ROWS, M_x=20, V_R=40, T_R=60)
+check("KAT", "ka-moment-tension", "t_max", 50.0, g2["t_max"], 1e-6)
+check("KAT", "ka-moment-tension", "u_max", 0.83333, g2["u_max_circ"], 1e-4)
+UNSYM4 = [(0, 0, 84.3), (120, 0, 84.3), (60, 80, 84.3), (0, 160, 84.3)]
+g3 = group(UNSYM4, M_x=12, V_R=1000, T_R=100)
+check("KAT", "ka-unsymmetric-bending", "t_max", 62.5, g3["t_max"], 1e-9)
+check("KAT", "ka-unsymmetric-bending", "u_max", 0.625, g3["u_max_circ"], 1e-9)
+n_kat = len(rows)
+
+# ---------------------------------------------------------------- extra checks
+# Pattern constants used by the probes.
+G6 = [(x, y, A0) for x in (0, 80, 160) for y in (0, 100)]
+TRI = [(0, 0, A0), (100, 0, A0), (0, 100, A0)]
+COL = [(0, 0, A0), (100, 0, A0), (200, 0, A0)]
+DIFFA = [(0, 0, 50), (100, 0, 150), (100, 100, 300), (0, 100, 80)]
+OFF = [(x + 5e4, y + 5e4, A0) for x in range(0, 500, 100) for y in range(0, 500, 100)]
+RING = [(1000 * math.cos(2 * math.pi * i / 100), 1000 * math.sin(2 * math.pi * i / 100), A0) for i in range(100)]
+TWO = [(0, 0, A0), (150, 0, A0)]
+TINY = [(0, 0, A0), (1e-4, 0, A0)]
+SLOPE = [(0, 0, A0), (100, 100, A0), (200, 200, A0)]
+
+# Product values come from the Probe tool (C# calculator): (name, pattern, loads, outputs, governing bolt no.).
+# The product reports v_max, t_max and u_lin for its governing bolt (highest circular interaction).
+EXTRAS = [
+    ('grid6-all-loads', G6, {'F_x': 20, 'F_y': -80, 'e_x': 250, 'e_y': 30, 'T_z': 2, 'N': 30, 'M_x': 15, 'M_y': -8, 'V_R': 60, 'T_R': 90},
+     {'T': -11.2, 'J': 3422580.0, 'v_max': 19.2256627, 't_max': 80.0, 'u_max': 0.944879556, 'u_lin': 0.955348347}, 2),
+    ('grid6-prying', G6, {'F_x': 20, 'F_y': -80, 'e_x': 250, 'e_y': 30, 'T_z': 2, 'N': 30, 'M_x': 15, 'M_y': -8, 'V_R': 60, 'T_R': 90, 'a': 30, 'b': 60},
+     {'T': -11.2, 'J': 3422580.0, 'v_max': 19.2256627, 't_max': 240.0, 'u_max': 2.68584903, 'u_lin': 2.22518962}, 2),
+    ('two-bolts', TWO, {'F_y': -30, 'e_x': 300, 'e_y': 0, 'M_y': 5, 'V_R': 40, 'T_R': 50},
+     {'T': -6.75, 'J': 948375.0, 'v_max': 60.0, 't_max': 33.3333333, 'u_max': 1.6414763, 'u_lin': 1.97619048}, 2),
+    ('grid6-compression', G6, {'N': -100, 'M_x': 5, 'F_y': -20, 'e_x': 100, 'V_R': 40, 'T_R': 50},
+     {'T': -0.4, 'J': 3422580.0, 'v_max': 4.15084518, 't_max': 0.0, 'u_max': 0.103771129, 'u_lin': 0.103771129}, 5),
+    ('offset-5x5', OFF, {'F_y': -900, 'e_x': 50300, 'e_y': 50000, 'N': 200, 'M_x': 30, 'M_y': 20, 'V_R': 200, 'T_R': 300},
+     {'T': -90.0, 'J': 84300000.0, 'v_max': 56.9209979, 't_max': 28.0, 'u_max': 0.299518132, 'u_lin': 0.351271656}, 25),
+    ('ring-100', RING, {'F_x': 100, 'F_y': -500, 'e_x': 3000, 'e_y': 0, 'T_z': 50, 'N': -300, 'M_x': 100, 'M_y': 0, 'V_R': 40, 'T_R': 60},
+     {'T': -1450.0, 'J': 8430000000.0, 'v_max': 19.5988701, 't_max': 0.0, 'u_max': 0.489971753, 'u_lin': 0.489971753}, 4),
+    ('tiny-spread', TINY, {'F_y': -10, 'e_x': 100, 'V_R': 40},
+     {'T': -0.9999995, 'J': 4.215e-07, 'v_max': 10000000.0, 't_max': 0.0, 'u_max': 250000.0, 'u_lin': 250000.0}, 2),
+    ('zero-loads', G6, {'F_y': 0, 'e_x': 0},
+     {'T': 0.0, 'J': 3422580.0, 'v_max': 0.0, 't_max': 0.0, 'u_max': 0.0, 'u_lin': 0.0}, 1),
+    ('prying-a-only', G6, {'F_y': -10, 'e_x': 0, 'N': 60, 'V_R': 40, 'T_R': 50, 'a': 30},
+     {'T': 0.8, 'J': 3422580.0, 'v_max': 3.38937298, 't_max': 10.0, 'u_max': 0.217209359, 'u_lin': 0.227591467}, 1),
+    ('linear-mismatch', G6, {'F_x': 25, 'F_y': -75, 'e_x': 300, 'e_y': 100, 'N': 55, 'M_x': -5, 'M_y': 0, 'V_R': 60, 'T_R': 90},
+     {'T': -17.75, 'J': 3422580.0, 'v_max': 54.1412742, 't_max': 0.0, 'u_max': 0.90235457, 'u_lin': 0.90235457}, 6),
+    ('unequal-areas', DIFFA, {'F_x': 10, 'F_y': -40, 'e_x': 180, 'e_y': 20, 'N': 20, 'M_x': 3, 'V_R': 40, 'T_R': 50},
+     {'T': -3.64137931, 'J': 2318965.517, 'v_max': 37.88300647, 't_max': 33.28600406, 'u_max': 1.157641822, 'u_lin': 1.422589505}, 3),
+    ('triangle-Mx', TRI, {'M_x': 10, 'V_R': 40, 'T_R': 50, 'F_y': 0},
+     {'T': 0.0, 'J': 1124000.0, 'v_max': 0.0, 't_max': 100.0, 'u_max': 2.0, 'u_lin': 1.428571429}, 3),
+    ('triangle-Mx-My', TRI, {'M_x': 10, 'M_y': 10, 'V_R': 40, 'T_R': 50, 'F_y': 0},
+     {'T': 0.0, 'J': 1124000.0, 'v_max': 0.0, 't_max': 100.0, 'u_max': 2.0, 'u_lin': 1.428571429}, 2),
+    ('collinear-My (moment about the line is not involved: resisted)', COL, {'M_y': 20, 'V_R': 40, 'T_R': 50, 'F_y': 0},
+     {'T': 0.0, 'J': 1686000.0, 'v_max': 0.0, 't_max': 100.0, 'u_max': 2.0, 'u_lin': 1.428571429}, 3),
+    ('sloped-line-along', SLOPE, {'M_x': 10, 'M_y': 10, 'V_R': 400, 'T_R': 500, 'F_y': 0},
+     {'T': 0.0, 'J': 3372000.0, 'v_max': 0.0, 't_max': 50.0, 'u_max': 0.1, 'u_lin': 0.071428571}, 3),
+    ('unsym-Mx', UNSYM4, {'M_x': 12, 'V_R': 1000, 'T_R': 100, 'F_y': 0},
+     {'T': 0.0, 'J': 2318250.0, 'v_max': 0.0, 't_max': 62.5, 'u_max': 0.625, 'u_lin': 0.446428571}, 4),
+    ('unsym-all-loads', UNSYM4, {'M_x': 12, 'M_y': -7, 'N': 40, 'F_x': 10, 'F_y': -30, 'e_x': 200, 'e_y': 50, 'V_R': 60, 'T_R': 100},
+     {'T': -4.55, 'J': 2318250.0, 'v_max': 19.04553265, 't_max': 82.22222222, 'u_max': 0.881367323, 'u_lin': 0.904727131}, 4),
+    ('unsym-prying', UNSYM4, {'M_x': 12, 'V_R': 1000, 'T_R': 100, 'F_y': 0, 'a': 30, 'b': 60},
+     {'T': 0.0, 'J': 2318250.0, 'v_max': 0.0, 't_max': 187.5, 'u_max': 1.875, 'u_lin': 1.339285714}, 4),
+]
+
+EX_TOL = 1e-4
+for name, bl, kw, prod, gov in EXTRAS:
+    p = group(bl, **kw)
+    d = group(bl, tension="decoupled", **kw)
+    gc = p["governing_circ"]
+    check("EXTRA", name, "T", prod["T"], p["T"], EX_TOL)
+    check("EXTRA", name, "J", prod["J"], p["J"], EX_TOL)
+    # Same-bolt comparison: independent plane-section values at the bolt the product calls governing.
+    check("EXTRA", name, "v_max(gov)", prod["v_max"], p["v"][gc], EX_TOL)
+    check("EXTRA", name, "t_max(gov)", prod["t_max"], p["tp"][gc], EX_TOL)
+    check("EXTRA", name, "u_max", prod["u_max"], p["u_circ"][gc], EX_TOL)
+    check("EXTRA", name, "u_lin(gov)", prod["u_lin"], p["u_lin"][gc], EX_TOL)
+    # Group-wide maxima against what the product reports (finding rows).
+    check("GROUP", name, "v_max(all)", prod["v_max"], p["v"].max(), EX_TOL)
+    check("GROUP", name, "t_max(all)", prod["t_max"], p["tp"].max(), EX_TOL)
+    check("GROUP", name, "u_lin(all)", prod["u_lin"], p["u_lin"].max(), EX_TOL)
+
+# Blocked cases (product 1.1.0): a collinear pattern with a moment component about the line.  The product returns no outputs and a
+# 'collinear' Block notice.  Independent criterion: det of the 2 x 2 second-moment matrix is zero and the moment has a part across the line.
+def blocked(bolts, M_x, M_y):
+    B = np.array(bolts, dtype=float)
+    x, y, A = B[:, 0], B[:, 1], B[:, 2]
+    dx, dy = x - (A * x).sum() / A.sum(), y - (A * y).sum() / A.sum()
+    Sxx, Syy, Sxy = (A * dx * dx).sum(), (A * dy * dy).sum(), (A * dx * dy).sum()
+    if abs(Sxx * Syy - Sxy ** 2) > 1e-9 * (Sxx + Syy) ** 2:
+        return False
+    # Pattern lies along u; moments resisted only if the moment vector (M_x, M_y) satisfies t = c (u . d) solvable: compatibility.
+    m = np.array([M_y, M_x])
+    mat = np.array([[Sxx, Sxy], [Sxy, Syy]])
+    c = np.linalg.lstsq(mat, m, rcond=None)[0]
+    return np.linalg.norm(mat @ c - m) > 1e-6 * max(np.linalg.norm(m), 1e-30)
+
+
+for name, bl, mx, my, prod_blocked in (("collinear-Mx (three in a row)", COL, 20, 0, 1), ("sloped-line-across (M_x 10, M_y -10)", SLOPE, 10, -10, 1),
+                                       ("sloped-line-Mx (R1)", SLOPE, 20, 0, 1), ("two-bolts-Mx", TWO, 20, 0, 1), ("collinear-My", COL, 0, 20, 0), ("sloped-line-along", SLOPE, 10, 10, 0)):
+    check("BLOCK", name, "blocked (1 = yes)", float(prod_blocked), 1.0 if blocked(bl, mx, my) else 0.0, 1e-9)
+
+# ---------------------------------------------------------------- report
+print(f"{'kind':6} {'case':24} {'symbol':14} {'expected':>13} {'independent':>13} {'rel.diff':>10} {'tol':>7}  result")
+for kind, c, s, e, v, r, t, ok in rows:
+    print(f"{kind:6} {c:24} {s:14} {e:13.6g} {v:13.6g} {r:10.2e} {t:7.0e}  {'PASS' if ok else 'FAIL'}")
+kat_bad = sum(1 for r in rows[:n_kat] if not r[7])
+ex = rows[n_kat:]
+print(f"KAT rows pass: {n_kat - kat_bad}/{n_kat}; extra rows pass: {sum(1 for r in ex if r[7])}/{len(ex)}")
+sys.exit(1 if kat_bad else 0)

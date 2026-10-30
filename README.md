@@ -27,8 +27,8 @@ project/quotation/deliverable/timesheet/invoicing consultancy seam,
 evidence recorded, independently checked and issued against governed
 reference data, fourteen engineering calculation modules (the eleven of
 `WP 21.7A`, plus tolerance stack-up and two thermal modules recovered from
-the v0.16.0 suite) with an
-Engineering Calculators surface (Re-run/Compare), the Engineering Assets
+the v0.16.0 suite), superseded in v0.26.0 by a
+worksheet calculation surface (54 templates, Compare), the Engineering Assets
 surfaces, documents rendered from templates, a Velopack Windows
 installer with backup and restore, and undo across commands. See
 [`PHYSICAL_REVIEW.md`](PHYSICAL_REVIEW.md) §7 for the smoke-test walk
@@ -40,6 +40,28 @@ what shipped and what is still owed.
 
 TempestOS is implemented in C# on .NET 10. This is the sole canonical,
 actively developed codebase.
+
+### v0.26.0 — the calculation surface (`Tempest.Calc.*`)
+
+- **What it is.** A transparent, unit-aware worksheet engine and 28
+  engineering worksheet templates (116 known-answer cases) across Mechanical,
+  Structural, Building Services and Electrical, each sheet showing
+  formula → substitution → result with clause references and issued
+  through the Evidence lifecycle (ADR-0165, `docs/releases/v0.26.0/`).
+- **Where.** `src/Tempest.Calc/` holds Engine, Sheets, Verification,
+  Library (the only assembly that depends on Core) and the four
+  calculator assemblies; the Desktop composes them in
+  `CalcCalculatorComposition` and shows them under Modules → Calculations.
+- **Worked examples.** `docs/worked-examples/README.md` indexes 44 worked
+  examples, each with `inputs.json` (loads into the worksheet), `sheet.txt`
+  and `sheet.pdf`, and 6 calculation packs (issue sheet, each step's sheet
+  and a record of every step's inputs).
+- **Tests.** `tests/Tempest.Calc.Tests.{Engine,Sheets,Library,Calculators}`
+  run in seconds; `tests/Tempest.Desktop.Tests --filter CalcSheets` covers
+  the form and the PDF. The known-answer cases of every template run in
+  the suite and are printed in each sheet's verification footer.
+- **SDK.** `global.json` pins 10.0.302 with `rollForward: latestFeature`,
+  so any 10.0.3xx or later feature band of the 10.0 SDK builds it.
 
 ## Architecture
 
